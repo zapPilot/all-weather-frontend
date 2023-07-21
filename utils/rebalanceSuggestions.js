@@ -5,10 +5,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 // Custom poller function
 function usePoller(callback, interval) {
   useEffect(() => {
-    const poller = setInterval(callback, interval);
-
+    const poller = setInterval(() => {
+      callback();
+    }, interval);
     // Clean up the interval on component unmount
-    return () => clearInterval(poller);
+    return () => {
+      clearInterval(poller);
+    };
   }, [callback, interval]);
 }
 
@@ -22,6 +25,8 @@ export default function useRebalanceSuggestions(address, pollTime = 300000) {
   const [topNPoolConsistOfSameLpToken, setTopNPoolConsistOfSameLpToken] =
     useState([]);
   const [topNStableCoins, setTopNStableCoins] = useState([]);
+
+  // Function to load suggestions from the API
   const loadSuggestions = async () => {
     await axios
       .get(`${API_URL}/address?addresses=${address}`)
@@ -46,8 +51,15 @@ export default function useRebalanceSuggestions(address, pollTime = 300000) {
       })
       .catch((error) => console.log(error));
   };
-  loadSuggestions();
+
+  // Use useEffect to load suggestions once when the component mounts
+  useEffect(() => {
+    loadSuggestions();
+  }, []);
+
+  // Use usePoller to periodically load suggestions at the specified polling interval
   usePoller(loadSuggestions, pollTime);
+
   return {
     netWorth,
     rebalanceSuggestions,
