@@ -29,9 +29,9 @@ const Home: NextPage = () => {
           />
       </main>
 
-      <footer className={styles.footer}>
-        <a href="https://rainbow.me" rel="noopener noreferrer" target="_blank">
-          Made with ❤️ by your frens at 🌈
+      <footer className={styles.footer} style={{ color: "white" }}>
+        <a href="https://all-weather.webflow.io/" rel="noopener noreferrer" target="_blank">
+          All Weather Protocol
         </a>
       </footer>
     </div>
