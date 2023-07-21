@@ -9,18 +9,28 @@
 
 /* Remove margin and padding for all elements */
 body,
-h1, h2, h3, h4, h5, h6,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
 p,
-ul, ol, li,
+ul,
+ol,
+li,
 figure,
 blockquote,
-dl, dd, dt {
+dl,
+dd,
+dt {
   margin: 0;
   padding: 0;
 }
 
 /* Remove list styles (bullet points) */
-ul, ol {
+ul,
+ol {
   list-style: none;
 }
 

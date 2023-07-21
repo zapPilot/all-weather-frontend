@@ -28,7 +28,7 @@ const useWindowHeight = () => {
   return windowHeight;
 };
 
-const RebalancerWidget = ({address}) => {
+const RebalancerWidget = ({ address }) => {
   const {
     netWorth,
     rebalanceSuggestions,

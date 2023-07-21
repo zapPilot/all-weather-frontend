@@ -116,7 +116,7 @@ const SuggestionsForLPTokens = (props) => {
 
   const handleDataClick = (record) => {
     const filteredArray = topNData.filter(
-      (metadata) => metadata[0] === record["pool"]
+      (metadata) => metadata[0] === record["pool"],
     );
     if (filteredArray.length > 0 && Array.isArray(filteredArray[0][1])) {
       const nestedArray = filteredArray[0][1];

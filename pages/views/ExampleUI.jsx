@@ -3,9 +3,7 @@ import { MessageFilled } from "@ant-design/icons";
 import React from "react";
 import RebalancerWidget from "./Rebalancer";
 
-export default function ExampleUI({
-  address,
-}) {
+export default function ExampleUI({ address }) {
   return (
     <div style={{ padding: 30 }}>
       <RebalancerWidget address={address} />

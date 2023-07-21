@@ -20,7 +20,6 @@
 import { Spin } from "antd";
 import React, { useState, useEffect } from "react";
 
-// import "../../../../node_modules/react-vis/dist/style.css";
 import { Sunburst, LabelSeries } from "react-vis";
 import { EXTENDED_DISCRETE_COLOR_RANGE } from "react-vis/dist/theme";
 
@@ -51,7 +50,7 @@ function getKeyPath(node) {
   }
 
   return [(node.data && node.data.name) || node.name].concat(
-    getKeyPath(node.parent)
+    getKeyPath(node.parent),
   );
 }
 
@@ -96,13 +95,13 @@ function createChartData(rebalanceSuggestions, netWorth) {
   const children = rebalanceSuggestions.map((categoryObj, idx) => {
     return {
       name: `${categoryObj["category"]}: ${Math.round(
-        (categoryObj.sum_of_this_category_in_the_portfolio / netWorth) * 100
+        (categoryObj.sum_of_this_category_in_the_portfolio / netWorth) * 100,
       )}%`,
       hex: colorList[idx],
       children: categoryObj.suggestions_for_positions.map((subCategoryObj) => {
         return {
           name: `${subCategoryObj.symbol}: ${Math.round(
-            (subCategoryObj.balanceUSD / netWorth) * 100
+            (subCategoryObj.balanceUSD / netWorth) * 100,
           )}%`,
           value: subCategoryObj.balanceUSD,
           hex: colorList[idx],
