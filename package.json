@@ -9,8 +9,7 @@
     "lint": "next lint",
     "export": "next export",
     "format": "prettier --write . '!(node_modules|build)/**/*'",
-    "check-format": "prettier --check . '!(node_modules|build)/**/*'",
-    "prepare": "husky install"
+    "check-format": "prettier --check . '!(node_modules|build)/**/*'"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^1.0.7",
