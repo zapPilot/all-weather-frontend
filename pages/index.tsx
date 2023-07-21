@@ -1,10 +1,14 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
 import Head from 'next/head';
+import { useEffect } from "react";
+import { useAccount, useNetwork, useWalletClient } from 'wagmi'
+
 import styles from '../styles/Home.module.css';
 import ExampleUI from './views/ExampleUI.jsx';
 
 const Home: NextPage = () => {
+  const { address } = useAccount();
   return (
     <div className={styles.container}>
       <Head>
@@ -19,7 +23,7 @@ const Home: NextPage = () => {
       <main className={styles.main}>
         <ConnectButton />
         <ExampleUI
-            address="1"
+            address={address}
           />
       </main>
 

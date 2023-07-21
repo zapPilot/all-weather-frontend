@@ -1,6 +1,8 @@
 import axios from "axios";
 import { useState, useEffect } from "react";
-const API_URL = process.env.REACT_APP_API_URL;
+// const API_URL = process.env.REACT_APP_API_URL;
+const API_URL = 'http://0.0.0.0:3001';
+
 
 // Custom poller function
 function usePoller(callback, interval) {
@@ -23,6 +25,14 @@ export default function useRebalanceSuggestions(address, pollTime = 300000) {
     useState([]);
   const [topNStableCoins, setTopNStableCoins] = useState([]);
   const loadSuggestions = async () => {
+    console.log(`${API_URL}/address?addresses=${address}`);
+    console.log(`${API_URL}/address?addresses=${address}`);
+    console.log(`${API_URL}/address?addresses=${address}`);
+    console.log(`${API_URL}/address?addresses=${address}`);
+    console.log(`${API_URL}/address?addresses=${address}`);
+    console.log(`${API_URL}/address?addresses=${address}`);
+    console.log(`${API_URL}/address?addresses=${address}`);
+    console.log(`${API_URL}/address?addresses=${address}`);
     await axios
       .get(`${API_URL}/address?addresses=${address}`)
       .then((response) => {
@@ -46,7 +56,7 @@ export default function useRebalanceSuggestions(address, pollTime = 300000) {
       })
       .catch((error) => console.log(error));
   };
-
+  loadSuggestions();
   usePoller(loadSuggestions, pollTime);
   return {
     netWorth,
