@@ -25,14 +25,6 @@ export default function useRebalanceSuggestions(address, pollTime = 300000) {
     useState([]);
   const [topNStableCoins, setTopNStableCoins] = useState([]);
   const loadSuggestions = async () => {
-    console.log(`${API_URL}/address?addresses=${address}`);
-    console.log(`${API_URL}/address?addresses=${address}`);
-    console.log(`${API_URL}/address?addresses=${address}`);
-    console.log(`${API_URL}/address?addresses=${address}`);
-    console.log(`${API_URL}/address?addresses=${address}`);
-    console.log(`${API_URL}/address?addresses=${address}`);
-    console.log(`${API_URL}/address?addresses=${address}`);
-    console.log(`${API_URL}/address?addresses=${address}`);
     await axios
       .get(`${API_URL}/address?addresses=${address}`)
       .then((response) => {

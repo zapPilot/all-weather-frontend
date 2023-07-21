@@ -4,6 +4,7 @@ import Head from 'next/head';
 import { useEffect } from "react";
 import { useAccount, useNetwork, useWalletClient } from 'wagmi'
 
+
 import styles from '../styles/Home.module.css';
 import ExampleUI from './views/ExampleUI.jsx';
 

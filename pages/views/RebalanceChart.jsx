@@ -146,10 +146,6 @@ export default function BasicSunburst(props) {
           setFinalValue(path[path.length - 1]);
           setPathValue(path.join(" > "));
           setData(updateData(data, pathAsMap));
-          // console.log(node);
-
-          // console.log(path);
-          // console.log(pathAsMap);
         }}
         onValueMouseOut={() => {
           if (!clicked) {
