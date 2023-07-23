@@ -2,20 +2,7 @@ import axios from "axios";
 import { useState, useEffect } from "react";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// Custom poller function
-function usePoller(callback, interval) {
-  useEffect(() => {
-    const poller = setInterval(() => {
-      callback();
-    }, interval);
-    // Clean up the interval on component unmount
-    return () => {
-      clearInterval(poller);
-    };
-  }, [callback, interval]);
-}
-
-export default function useRebalanceSuggestions(address, pollTime = 300000) {
+export default function useRebalanceSuggestions(address) {
   const [netWorth, setNetWorth] = useState(0);
   const [rebalanceSuggestions, setRebalanceSuggestions] = useState([]);
   const [totalInterest, setTotalInterest] = useState(0);
@@ -56,9 +43,6 @@ export default function useRebalanceSuggestions(address, pollTime = 300000) {
   useEffect(() => {
     loadSuggestions();
   }, []);
-
-  // Use usePoller to periodically load suggestions at the specified polling interval
-  usePoller(loadSuggestions, pollTime);
 
   return {
     netWorth,
