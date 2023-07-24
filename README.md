@@ -33,3 +33,7 @@ Check out the [Next.js deployment documentation](https://nextjs.org/docs/deploym
 1. [./github/workflows/lint.yaml]: before committing to Github, run `yarn format`. Otherwise, `prettier` would raise an exception
 2. Fleek: Click this link
    ![fleek](docs/fleek.png)
+
+## TO-DO
+
+need a linter like this one <https://github.com/david30907d/all-weather-scaffold/actions/runs/5637981937/job/15271636819>
