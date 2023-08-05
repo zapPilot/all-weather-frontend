@@ -22,15 +22,15 @@ body {
     background-color: $dark-color;
     color: white;
 
-    .ant-table-thead > tr > th {
+    .ant-table-thead>tr>th {
       background-color: $primary-color;
     }
 
-    .ant-table-thead > tr > td {
+    .ant-table-thead>tr>td {
       background-color: $primary-color;
     }
 
-    .ant-table-tbody > tr > td.ant-table-cell-row-hover {
+    .ant-table-tbody>tr>td.ant-table-cell-row-hover {
       background-color: #474747;
     }
   }
@@ -86,4 +86,10 @@ body {
 
 ::-webkit-scrollbar-track {
   box-shadow: transparent;
+}
+
+.iekbcc0.iekbcc9.ju367v73.ju367v7o.ju367v9c.ju367vn.ju367vec.ju367vex.ju367v11.ju367v1c.ju367v2b.ju367v8o._12cbo8i3.ju367v8m._12cbo8i4._12cbo8i6 {
+  color: $primary-color;
+  background-color: #000000;
+  font-weight: 400;
 }

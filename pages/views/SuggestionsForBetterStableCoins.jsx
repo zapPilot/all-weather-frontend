@@ -29,6 +29,7 @@ export default function SuggestionsForBetterStableCoins(props) {
         dataSource={data}
         pagination={false}
         scroll={{
+          x: 600,
           y: props.windowHeight,
         }}
       />
