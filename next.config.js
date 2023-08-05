@@ -6,8 +6,8 @@ const nextConfig = {
     return config;
   },
   images: {
-    unoptimized: true
-  }
+    unoptimized: true,
+  },
 };
 
 module.exports = nextConfig;

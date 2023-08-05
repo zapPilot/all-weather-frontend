@@ -22,15 +22,15 @@ body {
     background-color: $dark-color;
     color: white;
 
-    .ant-table-thead>tr>th {
+    .ant-table-thead > tr > th {
       background-color: $primary-color;
     }
 
-    .ant-table-thead>tr>td {
+    .ant-table-thead > tr > td {
       background-color: $primary-color;
     }
 
-    .ant-table-tbody>tr>td.ant-table-cell-row-hover {
+    .ant-table-tbody > tr > td.ant-table-cell-row-hover {
       background-color: #474747;
     }
   }
