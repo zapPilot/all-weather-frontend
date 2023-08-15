@@ -126,7 +126,6 @@ export default function BasicSunburst(props) {
     const updatedData = updateData(chartData, false);
     setData(updatedData);
   }, [rebalanceSuggestions, netWorth]);
-  console.log(props.windowWidth);
   return (
     <div>
       {/* <div>{clicked ? "click to unlock selection" : "click to lock selection"}</div> */}

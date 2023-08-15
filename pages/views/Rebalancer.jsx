@@ -1,12 +1,16 @@
 // import suggestions from "./suggestions.json";
 import { Spin, Row, Col, Button } from "antd";
-import { DollarOutlined, FireOutlined } from "@ant-design/icons";
+import { DollarOutlined, FireOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
 import RebalanceChart from "./RebalanceChart";
 import SuggestionsForBetterStableCoins from "./SuggestionsForBetterStableCoins";
 import SuggestionsForLPTokens from "./SuggestionsForLPTokens";
 import TopNLowestAprPools from "./TopNLowestAprPools";
+import ZapInButton from "./ZapInButton";
+import APRPopOver from "./APRPopOver";
+
+
 
 const useWindowWidth = () => {
   const [windowWidth, setWindowWidth] = useState(0); // 視窗高度狀態
@@ -105,24 +109,11 @@ const RebalancerWidget = ({ address }) => {
                     Monthly Interest: ${(totalInterest / 12).toFixed(2)}
                   </text>
                   <text style={{ color: "white", fontSize: 12 }}>
-                    Portfolio APR: {portfolioApr.toFixed(2)}%
+                    Portfolio APR: {portfolioApr.toFixed(2)}% <APRPopOver address={address} mode="percentage"/>
                   </text>
                 </div>
                 <div style={{ textAlign: "left" }}>
-                  <Button
-                    style={{
-                      color: "white",
-                      borderColor: "white",
-                      paddingInline: 10,
-                      lineHeight: 1,
-                      marginRight: 15,
-                    }}
-                    shape="round"
-                    icon={<DollarOutlined />}
-                    size="small"
-                  >
-                    Buy eth
-                  </Button>
+                  <ZapInButton/>
                   <Button
                     style={{
                       color: "white",
@@ -134,7 +125,21 @@ const RebalancerWidget = ({ address }) => {
                     icon={<FireOutlined />}
                     size="small"
                   >
-                    Gas：12g
+                    Withdraw
+                  </Button>
+                  <Button
+                    style={{
+                      color: "white",
+                      borderColor: "white",
+                      paddingInline: 10,
+                      lineHeight: 1,
+                      marginLeft: 15,
+                    }}
+                    shape="round"
+                    icon={<DollarOutlined />}
+                    size="small"
+                  >
+                    Claim
                   </Button>
                 </div>
               </div>

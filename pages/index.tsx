@@ -7,10 +7,7 @@ import ExampleUI from "./views/ExampleUI.jsx";
 import Header from "./views/Header";
 
 const Home: NextPage = () => {
-  // TODO(david): use the account address to fetch the user's data, once I've deployed the contract
-  // const { address } = useAccount();
-  const address =
-    "0xe4bac3e44e8080e1491c11119197d33e396ea82b+0x7ee54ab0f204bb3a83df90fdd824d8b4abe93222+0x43cd745bd5fbfc8cfd79ebc855f949abc79a1e0c+0x038919c63aff9c932c77a0c9c9d98eabc1a4dd08";
+  const { address } = useAccount();
   return (
     <div>
       <Head>
