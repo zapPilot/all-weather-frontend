@@ -5,6 +5,7 @@ import { useAccount } from "wagmi";
 import styles from "../styles/Home.module.css";
 import ExampleUI from "./views/ExampleUI.jsx";
 import Header from "./views/Header";
+import DebankApiProvider from "./views/DebankApiProvider";
 
 const Home: NextPage = () => {
   const { address } = useAccount();
@@ -29,7 +30,9 @@ const Home: NextPage = () => {
           <ConnectButton />
         </div>
       </Header>
-      <ExampleUI address={address} />
+      <DebankApiProvider>
+        <ExampleUI address={address} />
+      </DebankApiProvider>
       <footer className={styles.footer} style={{ color: "white" }}>
         <a
           href="https://all-weather.webflow.io/"

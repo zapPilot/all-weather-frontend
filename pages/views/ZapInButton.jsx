@@ -3,7 +3,6 @@ import { DollarOutlined, FireOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 const { ethers } = require("ethers");
 
-
 // Import ABI
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 
@@ -12,28 +11,36 @@ const ZapInButton = ({ address }) => {
   const [permanentPortfolio, setPermanentPortfolio] = useState(null);
 
   useEffect(() => {
-    if (typeof window.ethereum !== 'undefined') {
+    if (typeof window.ethereum !== "undefined") {
       // Define a provider and connect to a signer (e.g., Metamask)
-      const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545'); // or the port your local blockchain is running on
+      const provider = new ethers.providers.JsonRpcProvider(
+        "http://localhost:8545",
+      ); // or the port your local blockchain is running on
       // const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       setSigner(signer);
-      const contract = new ethers.Contract("0x3378b974E111B6A27Df5CF8b96AD646b1860EcD0", permanentPortfolioJson.abi, signer);
+      const contract = new ethers.Contract(
+        "0x3378b974E111B6A27Df5CF8b96AD646b1860EcD0",
+        permanentPortfolioJson.abi,
+        signer,
+      );
       setPermanentPortfolio(contract);
       getClaimableRewards(permanentPortfolio);
     }
   }, []);
-  
+
   const getClaimableRewards = async (permanentPortfolio) => {
     try {
       // Define any parameters required by the deposit function
-      const claimableRewards = await permanentPortfolio.getClaimableRewards("0x43cd745Bd5FbFc8CfD79ebC855f949abc79a1E0C");
+      const claimableRewards = await permanentPortfolio.getClaimableRewards(
+        "0x43cd745Bd5FbFc8CfD79ebC855f949abc79a1E0C",
+      );
       console.log("claimableRewards: ", claimableRewards);
       setClaimableRewards(claimableRewards);
     } catch (error) {
       console.error("An error occurred:", error);
     }
-  }
+  };
 
   const handleZapIn = async () => {
     try {
