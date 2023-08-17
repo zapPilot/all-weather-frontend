@@ -4,27 +4,11 @@ import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToke
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { DebankContext } from "./DebankApiProvider";
 import { ethers } from "ethers";
-
-const RewardItem = ({
-  claimableReward,
-  tokenInfo,
-  portfolioApr,
-  sumOfRewards,
-}) => {
-  const rewardPrice = parseFloat(claimableReward.amount * tokenInfo.price);
-  const displayValue = portfolioApr
-    ? `${((rewardPrice * portfolioApr) / sumOfRewards).toFixed(2)}%`
-    : `$${rewardPrice.toFixed(2)}`;
-  return (
-    <li key={`${claimableReward.protocol}-${claimableReward.token}`}>
-      <img src={tokenInfo.img} width="20" height="20" alt={tokenInfo.symbol} />
-      {tokenInfo.symbol}: {displayValue}
-    </li>
-  );
-};
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const APRPopOver = ({ address, mode, portfolioApr }) => {
   const [claimableRewards, setClaimableRewards] = useState([]);
+  const [aprComposition, setAprComposition] = useState({});
   const DEBANK_CONTEXT = useContext(DebankContext);
 
   useEffect(() => {
@@ -62,7 +46,7 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
               claimableRewards: [
                 {
                   token: "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
-                  amount: "3",
+                  amount: "2",
                 },
                 {
                   token: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
@@ -70,7 +54,7 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
                 },
                 {
                   token: "0xBfbCFe8873fE28Dfa25f1099282b088D52bbAD9C",
-                  amount: "5",
+                  amount: "1",
                 },
               ],
             },
@@ -79,11 +63,11 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
               claimableRewards: [
                 {
                   token: "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
-                  amount: "7",
+                  amount: "6",
                 },
                 {
                   token: "0xBfbCFe8873fE28Dfa25f1099282b088D52bbAD9C",
-                  amount: "2",
+                  amount: "3",
                 },
               ],
             },
@@ -92,11 +76,11 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
               claimableRewards: [
                 {
                   token: "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
-                  amount: "11",
+                  amount: "10",
                 },
                 {
                   token: "0xBfbCFe8873fE28Dfa25f1099282b088D52bbAD9C",
-                  amount: "111",
+                  amount: "5",
                 },
               ],
             },
@@ -107,54 +91,84 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
         }
       }
     }
+    async function fetchAprComposition() {
+      fetch(`${API_URL}/apr_composition`)
+        .then((response) => response.json())
+        .then((result) => setAprComposition(result))
+        .catch((error) => console.error("Error of apr_composition:", error));
+    }
     fetchData();
+    fetchAprComposition();
   }, []);
 
-  const sumOfRewards = useMemo(
-    () =>
-      DEBANK_CONTEXT
-        ? claimableRewards.reduce(
-            (sum, reward) =>
-              sum +
-              reward.claimableRewards.reduce((sum, claimableReward) => {
-                const tokenInfo =
-                  DEBANK_CONTEXT[claimableReward.token.toLowerCase()];
-                return (
-                  sum +
-                  (tokenInfo ? claimableReward.amount * tokenInfo.price : 0)
-                );
-              }, 0),
-            0,
-          )
-        : 0,
-    [claimableRewards, DEBANK_CONTEXT],
-  );
-  // Rest of the code remains the same ...
   function renderContent() {
-    if (!DEBANK_CONTEXT) return <div>Loading...</div>;
+    if (!DEBANK_CONTEXT || !aprComposition) return <div>Loading...</div>;
 
     return (
       <ul>
-        {claimableRewards.map((reward, index) => (
+        {Object.keys(aprComposition).map((protocol, index) => (
           <li key={index}>
-            {reward.protocol}
+            - {protocol}
             <ul>
-              {reward.claimableRewards.map((claimableReward) => (
-                <RewardItem
-                  claimableReward={claimableReward}
-                  tokenInfo={
-                    DEBANK_CONTEXT[claimableReward.token.toLowerCase()]
-                  }
-                  portfolioApr={mode === "percentage" ? portfolioApr : null}
-                  sumOfRewards={sumOfRewards}
-                />
-              ))}
+              {Object.keys(aprComposition[protocol]).map((rewardKey, idx) => {
+                return (
+                  <RewardItem
+                    protocol={protocol}
+                    rewardKey={rewardKey}
+                    value={aprComposition[protocol][rewardKey]}
+                  />
+                );
+              })}
             </ul>
           </li>
         ))}
       </ul>
     );
   }
+
+  const RewardItem = ({ protocol, rewardKey, value }) => {
+    const renderImageAndAPR = (tokenAddr) => (
+      <>
+        <img
+          src={DEBANK_CONTEXT[tokenAddr].img}
+          width="20"
+          height="20"
+          alt={rewardKey}
+        />
+        {DEBANK_CONTEXT[tokenAddr].symbol}: {(value["APR"] * 100).toFixed(2)}%
+      </>
+    );
+
+    const renderToken = () => {
+      for (const tokenAddr of value["token"]) {
+        if (DEBANK_CONTEXT.hasOwnProperty(tokenAddr)) {
+          return renderImageAndAPR(tokenAddr);
+        }
+      }
+    };
+
+    const renderReward = () => {
+      if (rewardKey === "Underlying APY") {
+        return renderToken();
+      } else if (rewardKey === "Swap Fee") {
+        return (
+          <>
+            <img
+              src="https://icons-for-free.com/iconfiles/png/512/currency+dollar+money+icon-1320085755803367648.png"
+              width="20"
+              height="20"
+              alt={rewardKey}
+            />
+            {`${rewardKey}: ${(value["APR"] * 100).toFixed(2)}%`}
+          </>
+        );
+      } else if (DEBANK_CONTEXT.hasOwnProperty(value["token"])) {
+        return renderImageAndAPR(value["token"]);
+      }
+    };
+
+    return <li key={`${protocol}-${rewardKey}`}>{renderReward()}</li>;
+  };
 
   function calculateClaimableRewards() {
     if (!DEBANK_CONTEXT) return [];
