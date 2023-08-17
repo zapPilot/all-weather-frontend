@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useContext, useMemo } from "react";
 import { Popover, Table, Tag } from "antd";
-import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { web3Context } from "./Web3DataProvider";
-import { ethers } from "ethers";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const APRPopOver = ({ address, mode, portfolioApr }) => {
@@ -13,82 +11,69 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
 
   useEffect(() => {
     async function fetchData() {
-      if (typeof window.ethereum !== "undefined") {
-        const provider = new ethers.providers.JsonRpcProvider(
-          process.env.NEXT_RPC_URL,
-        );
-        const signer = provider.getSigner();
-        const contract = new ethers.Contract(
-          "0x52B1CA27095283a359Cc46F1dE04f6123e289935",
-          permanentPortfolioJson.abi,
-          signer,
-        );
-
-        try {
-          // Uncomment to get claimable rewards from the contract
-          // const claimableRewards = await contract.getClaimableRewards(address);
-          const hardcodedClaimableRewards = [
-            {
-              protocol: "SushSwap-DpxETH",
-              claimableRewards: [
-                {
-                  token: "0xd4d42F0b6DEF4CE0383636770eF773390d85c61A",
-                  amount: "2",
-                },
-                {
-                  token: "0x6C2C06790b3E3E3c38e12Ee22F8183b37a13EE55",
-                  amount: "0.001",
-                },
-              ],
-            },
-            {
-              protocol: "Equilibria-GLP",
-              claimableRewards: [
-                {
-                  token: "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
-                  amount: "2",
-                },
-                {
-                  token: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-                  amount: "0.0001",
-                },
-                {
-                  token: "0xBfbCFe8873fE28Dfa25f1099282b088D52bbAD9C",
-                  amount: "1",
-                },
-              ],
-            },
-            {
-              protocol: "Equilibria-GDAI",
-              claimableRewards: [
-                {
-                  token: "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
-                  amount: "6",
-                },
-                {
-                  token: "0xBfbCFe8873fE28Dfa25f1099282b088D52bbAD9C",
-                  amount: "3",
-                },
-              ],
-            },
-            {
-              protocol: "Equilibria-RETH",
-              claimableRewards: [
-                {
-                  token: "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
-                  amount: "10",
-                },
-                {
-                  token: "0xBfbCFe8873fE28Dfa25f1099282b088D52bbAD9C",
-                  amount: "5",
-                },
-              ],
-            },
-          ];
-          setClaimableRewards(hardcodedClaimableRewards);
-        } catch (error) {
-          console.error("Error fetching data:", error);
-        }
+      try {
+        // const hardcodedClaimableRewards = await WEB3_CONTEXT.portfolioContract.getClaimableRewards(address);
+        const hardcodedClaimableRewards = [
+          {
+            protocol: "SushSwap-DpxETH",
+            claimableRewards: [
+              {
+                token: "0xd4d42F0b6DEF4CE0383636770eF773390d85c61A",
+                amount: "2",
+              },
+              {
+                token: "0x6C2C06790b3E3E3c38e12Ee22F8183b37a13EE55",
+                amount: "0.001",
+              },
+            ],
+          },
+          {
+            protocol: "Equilibria-GLP",
+            claimableRewards: [
+              {
+                token: "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
+                amount: "2",
+              },
+              {
+                token: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                amount: "0.0001",
+              },
+              {
+                token: "0xBfbCFe8873fE28Dfa25f1099282b088D52bbAD9C",
+                amount: "1",
+              },
+            ],
+          },
+          {
+            protocol: "Equilibria-GDAI",
+            claimableRewards: [
+              {
+                token: "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
+                amount: "6",
+              },
+              {
+                token: "0xBfbCFe8873fE28Dfa25f1099282b088D52bbAD9C",
+                amount: "3",
+              },
+            ],
+          },
+          {
+            protocol: "Equilibria-RETH",
+            claimableRewards: [
+              {
+                token: "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
+                amount: "10",
+              },
+              {
+                token: "0xBfbCFe8873fE28Dfa25f1099282b088D52bbAD9C",
+                amount: "5",
+              },
+            ],
+          },
+        ];
+        setClaimableRewards(hardcodedClaimableRewards);
+      } catch (error) {
+        console.error("Error fetching data:", error);
       }
     }
     async function fetchAprComposition() {
