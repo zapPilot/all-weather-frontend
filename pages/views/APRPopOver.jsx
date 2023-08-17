@@ -2,20 +2,20 @@ import React, { useState, useEffect, useContext, useMemo } from "react";
 import { Popover, Table, Tag } from "antd";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import { InfoCircleOutlined } from "@ant-design/icons";
-import { DebankContext } from "./DebankApiProvider";
+import { web3Context } from "./Web3DataProvider";
 import { ethers } from "ethers";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const APRPopOver = ({ address, mode, portfolioApr }) => {
   const [claimableRewards, setClaimableRewards] = useState([]);
   const [aprComposition, setAprComposition] = useState({});
-  const DEBANK_CONTEXT = useContext(DebankContext);
+  const WEB3_CONTEXT = useContext(web3Context);
 
   useEffect(() => {
     async function fetchData() {
       if (typeof window.ethereum !== "undefined") {
         const provider = new ethers.providers.JsonRpcProvider(
-          "http://localhost:8545",
+          process.env.NEXT_RPC_URL,
         );
         const signer = provider.getSigner();
         const contract = new ethers.Contract(
@@ -102,7 +102,7 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
   }, []);
 
   function renderContent() {
-    if (!DEBANK_CONTEXT || !aprComposition) return <div>Loading...</div>;
+    if (!WEB3_CONTEXT || !aprComposition) return <div>Loading...</div>;
 
     return (
       <ul>
@@ -130,18 +130,19 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
     const renderImageAndAPR = (tokenAddr) => (
       <>
         <img
-          src={DEBANK_CONTEXT[tokenAddr].img}
+          src={WEB3_CONTEXT["debankContext"][tokenAddr].img}
           width="20"
           height="20"
           alt={rewardKey}
         />
-        {DEBANK_CONTEXT[tokenAddr].symbol}: {(value["APR"] * 100).toFixed(2)}%
+        {WEB3_CONTEXT["debankContext"][tokenAddr].symbol}:{" "}
+        {(value["APR"] * 100).toFixed(2)}%
       </>
     );
 
     const renderToken = () => {
       for (const tokenAddr of value["token"]) {
-        if (DEBANK_CONTEXT.hasOwnProperty(tokenAddr)) {
+        if (WEB3_CONTEXT["debankContext"].hasOwnProperty(tokenAddr)) {
           return renderImageAndAPR(tokenAddr);
         }
       }
@@ -162,7 +163,7 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
             {`${rewardKey}: ${(value["APR"] * 100).toFixed(2)}%`}
           </>
         );
-      } else if (DEBANK_CONTEXT.hasOwnProperty(value["token"])) {
+      } else if (WEB3_CONTEXT["debankContext"].hasOwnProperty(value["token"])) {
         return renderImageAndAPR(value["token"]);
       }
     };
@@ -171,18 +172,20 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
   };
 
   function calculateClaimableRewards() {
-    if (!DEBANK_CONTEXT) return [];
+    if (!WEB3_CONTEXT) return [];
     const turnReward2Price = (claimableReward) =>
       parseFloat(
         claimableReward.amount *
-          DEBANK_CONTEXT[claimableReward.token.toLowerCase()].price,
+          WEB3_CONTEXT["debankContext"][claimableReward.token.toLowerCase()]
+            .price,
       );
 
     return claimableRewards
       .map((reward) =>
         reward.claimableRewards.map((claimableReward) => ({
           pool: reward.protocol,
-          token: DEBANK_CONTEXT[claimableReward.token.toLowerCase()],
+          token:
+            WEB3_CONTEXT["debankContext"][claimableReward.token.toLowerCase()],
           value: turnReward2Price(claimableReward),
         })),
       )
