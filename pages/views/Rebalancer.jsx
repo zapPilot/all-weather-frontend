@@ -13,6 +13,7 @@ import SuggestionsForLPTokens from "./SuggestionsForLPTokens";
 import TopNLowestAprPools from "./TopNLowestAprPools";
 import ZapInButton from "./ZapInButton";
 import APRPopOver from "./APRPopOver";
+import UserBalanceInfo from "./UserBalanceInfo";
 
 const useWindowWidth = () => {
   const [windowWidth, setWindowWidth] = useState(0); // 視窗高度狀態
@@ -96,27 +97,30 @@ const RebalancerWidget = ({ address }) => {
               <div style={{ position: "relative" }}>
                 <div style={{ textAlign: "left", marginBottom: 10 }}>
                   <text style={{ color: "#BEED54", fontSize: 12 }}>
-                    All Weather Portfolio
+                    Current Strategy: Permanent Portfolio
                   </text>
                 </div>
                 <div style={{ textAlign: "left", marginBottom: 10 }}>
                   <strong style={{ color: "white", fontSize: 26 }}>
-                    Net Worth: ${netWorth.toFixed(2)}
+                    TVL: ${netWorth.toFixed(2)}
                   </strong>
                 </div>
+                <div style={{ textAlign: "left", marginBottom: 10 }}>
+                  <strong style={{ color: "white", fontSize: 26 }}>
+                    <text>
+                      Reward APR: {portfolioApr.toFixed(2)}%{" "}
+                      <APRPopOver
+                        address={address}
+                        mode="percentage"
+                        portfolioApr={portfolioApr}
+                      />
+                    </text>
+                  </strong>
+                </div>
+                <UserBalanceInfo address={address} tvl={1100} />
                 <div style={{ textAlign: "left", marginBottom: 20 }}>
-                  <text
-                    style={{ color: "white", fontSize: 12, marginRight: 15 }}
-                  >
-                    Monthly Interest: ${(totalInterest / 12).toFixed(2)}
-                  </text>
                   <text style={{ color: "white", fontSize: 12 }}>
-                    Portfolio APR: {portfolioApr.toFixed(2)}%{" "}
-                    <APRPopOver
-                      address={address}
-                      mode="percentage"
-                      portfolioApr={portfolioApr}
-                    />
+                    Monthly Interest: ${(totalInterest / 12).toFixed(2)}
                   </text>
                 </div>
                 <div style={{ textAlign: "left" }}>
