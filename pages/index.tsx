@@ -30,9 +30,10 @@ const Home: NextPage = () => {
           <ConnectButton />
         </div>
       </Header>
-      <Web3DataProvider>
+      <Web3DataProvider address={address}>
         <ExampleUI address={address} />
       </Web3DataProvider>
+
       <footer className={styles.footer} style={{ color: "white" }}>
         <a
           href="https://all-weather.webflow.io/"
