@@ -9,7 +9,7 @@ export default function SuggestionsForBetterStableCoins(props) {
 
   useEffect(() => {
     if (topNData) {
-      const extractedData = topNData.map((metadata, idx) => ({
+      let extractedData = topNData.map((metadata, idx) => ({
         key: idx,
         chain: metadata.chain,
         pool: metadata.project,
@@ -17,6 +17,18 @@ export default function SuggestionsForBetterStableCoins(props) {
         tvl: metadata.tvlUsd / 1e6,
         apr: ((metadata.apy / 100 + 1) ** (1 / 365) - 1) * 365,
       }));
+      if (extractedData.length === 0) {
+        extractedData = [
+          {
+            key: 1,
+            chain: "",
+            pool: "",
+            coin: "Your Current Pool is the best one",
+            tvl: 0,
+            apr: ""
+          }
+        ]
+      }
       setData(extractedData);
     }
   }, [topNData]);
