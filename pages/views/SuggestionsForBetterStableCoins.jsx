@@ -25,9 +25,9 @@ export default function SuggestionsForBetterStableCoins(props) {
             pool: "",
             coin: "Your Current Pool is the best one",
             tvl: 0,
-            apr: ""
-          }
-        ]
+            apr: "",
+          },
+        ];
       }
       setData(extractedData);
     }
