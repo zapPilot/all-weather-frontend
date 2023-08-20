@@ -1,4 +1,5 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const SDK_API_URL = process.env.NEXT_PUBLIC_SDK_API_URL;
 
 export const portfolioContractAddress =
   "0x3378b974E111B6A27Df5CF8b96AD646b1860EcD0";
@@ -61,54 +62,31 @@ export async function getPendleZapInData(
   poolAddress,
   amount,
   slippage,
-  tokenInAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+  tokenInAddress
 ) {
-  const provider = new ethers.providers.JsonRpcProvider(process.env.API_URL);
-  const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-  const router = Router.getRouterWithKyberAggregator({
-    chainId: chainId,
-    provider,
-    signer,
-  });
+  const url = `${SDK_API_URL}/pendle/zapIn?chainId=${chainId}&poolAddress=${poolAddress}&amount=${amount.toString()}&slippage=${slippage}&tokenInAddress=${tokenInAddress}`;
+  const retryLimit = 3;
+  const retryStatusCodes = [429, 500, 502, 503, 504];
 
-  const GLP_POOL_ADDRESS = toAddress(poolAddress);
-  const TOKEN_IN_ADDRESS = toAddress(tokenInAddress);
-  return await router.addLiquiditySingleToken(
-    GLP_POOL_ADDRESS,
-    TOKEN_IN_ADDRESS,
-    amount,
-    slippage,
-    { method: "extractParams" },
-  );
-}
-export async function getPendleZapOutData(
-  chainId,
-  poolAddress,
-  tokenOutAddress,
-  amount,
-  slippage,
-) {
-  const provider = new ethers.providers.JsonRpcProvider(process.env.API_URL);
-  const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-  const marketContract = new MarketEntity(toAddress(poolAddress), {
-    chainId: chainId,
-    provider,
-    signer: signer,
-  });
-  const router = Router.getRouterWithKyberAggregator({
-    chainId: chainId,
-    provider,
-    signer,
-  });
-  // TODO(david): ask pendle team about this. Is it possible to extract Param before approving contract?
-  // await marketContract.approve(router.address, amount).then((tx)=> tx.wait());
-  // await marketContract.approve(router.address, ethers.BigNumber.from('115792089237316195423570985008687907853269984665640564039457')).then((tx) => tx.wait());
+  for (let attempt = 0; attempt < retryLimit; attempt++) {
+    try {
+      const res = await fetch(url);
 
-  return await router.removeLiquiditySingleToken(
-    toAddress(poolAddress),
-    amount,
-    toAddress(tokenOutAddress),
-    slippage,
-    { method: "extractParams" },
-  );
+      if (!res.ok && !retryStatusCodes.includes(res.status)) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      if (res.ok) {
+        return res.json(); // This parses the JSON body for you
+      }
+    } catch (error) {
+      if (attempt === retryLimit - 1) {
+        throw error; // Re-throw the error on the last attempt
+      }
+    }
+
+    // Delay before retrying; you can adjust the delay as needed
+    await new Promise((resolve) => setTimeout(resolve, (attempt + 1) * 3000));
+  }
+  throw new Error("Failed to fetch data after retries");
 }

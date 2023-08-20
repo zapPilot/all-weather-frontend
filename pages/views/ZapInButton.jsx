@@ -31,6 +31,9 @@ const ZapInButton = ({ address }) => {
   const [oneInchSwapDataForDpx, setOneInchSwapDataForDpx] = useState("");
   const [oneInchSwapDataForGDAI, setOneInchSwapDataForGDAI] = useState("");
   const [oneInchSwapDataForRETH, setOneInchSwapDataForRETH] = useState("");
+  const [pendleGDAIZapInData, setPendleGDAIZapInData] = useState("");
+  const [pendleGLPZapInData, setPendleGLPZapInData] = useState("");
+  const [pendleRETHZapInData, setPendleRETHZapInData] = useState("");
 
   useEffect(() => {
     if (WEB3_CONTEXT) {
@@ -42,25 +45,6 @@ const ZapInButton = ({ address }) => {
         dpxVaultAddress,
         50,
       );
-      const oneInchSwapDataForGDAI = fetch1InchSwapData(
-        42161,
-        wethAddress,
-        daiAddress,
-        ethers.utils.parseEther("10"),
-        equilibriaGDAIVaultAddress,
-        50,
-      );
-      const oneInchSwapDataForRETH = fetch1InchSwapData(
-        42161,
-        wethAddress,
-        rethTokenAddress,
-        ethers.utils.parseEther("10"),
-        equilibriaRETHVaultAddress,
-        50,
-      );
-      // pendleGDAIZapInData = getPendleZapInData(42161, gDAIMarketPoolAddress, ethers.utils.parseEther(etherAmount.toString())(100), 0.2, daiAddress);
-      // pendleGLPZapInData = getPendleZapInData(42161, glpMarketPoolAddress, ethers.utils.parseEther(etherAmount.toString())(4), 0.99);
-      // pendleRETHZapInData = getPendleZapInData(42161, rethMarketPoolAddress, ethers.utils.parseEther(etherAmount.toString())(100), 0.2, rethTokenAddress);
     }
   }, []);
   const handleInputChange = async (e) => {
@@ -82,7 +66,7 @@ const ZapInButton = ({ address }) => {
       equilibriaGDAIVaultAddress,
       50,
     );
-    setOneInchSwapDataForDpx(oneInchSwapDataForGDAI.tx.data);
+    setOneInchSwapDataForGDAI(oneInchSwapDataForGDAI.tx.data);
 
     const oneInchSwapDataForRETH = await fetch1InchSwapData(
       42161,
@@ -92,19 +76,19 @@ const ZapInButton = ({ address }) => {
       equilibriaRETHVaultAddress,
       50,
     );
-    setOneInchSwapDataForDpx(oneInchSwapDataForRETH.tx.data);
-    // pendleGDAIZapInData = getPendleZapInData(42161, gDAIMarketPoolAddress, ethers.utils.parseEther(etherAmount.toString())(100), 0.2, daiAddress);
-    // pendleGLPZapInData = getPendleZapInData(42161, glpMarketPoolAddress, ethers.utils.parseEther(etherAmount.toString())(4), 0.99);
-    // pendleRETHZapInData = getPendleZapInData(42161, rethMarketPoolAddress, ethers.utils.parseEther(etherAmount.toString())(100), 0.2, rethTokenAddress);
+    setOneInchSwapDataForRETH(oneInchSwapDataForRETH.tx.data);
+
+    const pendleGDAIZapInData = await getPendleZapInData(42161, gDAIMarketPoolAddress, ethers.BigNumber.from("4169610544157379271081"), 0.2, daiAddress);
+    setPendleGDAIZapInData(pendleGDAIZapInData);
+
+    const pendleGLPZapInData = await getPendleZapInData(42161, glpMarketPoolAddress, ethers.utils.parseEther("10"), 0.2, wethAddress);
+    setPendleGLPZapInData(pendleGLPZapInData);
+
+    const pendleRETHZapInData = await getPendleZapInData(42161, rethMarketPoolAddress, ethers.utils.parseEther("10"), 0.2, rethTokenAddress);
+    setPendleRETHZapInData(pendleRETHZapInData);
   };
   const handleZapIn = async () => {
     // Define any parameters required by the deposit function
-    console.log(
-      "1inch data:",
-      oneInchSwapDataForDpx,
-      oneInchSwapDataForGDAI,
-      oneInchSwapDataForRETH,
-    );
     const tx = await WEB3_CONTEXT.portfolioContract.deposit();
     console.log("Transaction sent:", tx.hash);
 
