@@ -2,12 +2,8 @@ import { Input, Button, Space, Select } from "antd";
 import {
   fetch1InchSwapData,
   getPendleZapInData,
-  getPendleZapOutData,
   wethAddress,
   dpxTokenAddress,
-  dpxVault,
-  equilibriaGDAIVault,
-  equilibriaRETHVault,
   daiAddress,
   gDAIMarketPoolAddress,
   glpMarketPoolAddress,
@@ -19,82 +15,164 @@ import {
   equilibriaRETHVaultAddress,
 } from "../../utils/oneInch";
 import { DollarOutlined } from "@ant-design/icons";
-import { useEffect, useState, useContext } from "react";
-import { web3Context } from "./Web3DataProvider";
+import { useEffect, useState } from "react";
+import { useContractWrite, useAccount } from "wagmi";
+import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
+
 const { Option } = Select;
 const { ethers } = require("ethers");
 
-const ZapInButton = ({ address }) => {
-  const [signer, setSigner] = useState(null);
-  const [permanentPortfolio, setPermanentPortfolio] = useState(null);
-  const WEB3_CONTEXT = useContext(web3Context);
+const ZapInButton = () => {
+  const { address } = useAccount();
+  const normalWording = "Deposit";
+  const loadingWording = "Fetching the best route to deposit (23s)";
+  const [amount, setAmount] = useState(0);
   const [oneInchSwapDataForDpx, setOneInchSwapDataForDpx] = useState("");
   const [oneInchSwapDataForGDAI, setOneInchSwapDataForGDAI] = useState("");
   const [oneInchSwapDataForRETH, setOneInchSwapDataForRETH] = useState("");
   const [pendleGDAIZapInData, setPendleGDAIZapInData] = useState("");
   const [pendleGLPZapInData, setPendleGLPZapInData] = useState("");
   const [pendleRETHZapInData, setPendleRETHZapInData] = useState("");
+  const [apiDataReady, setApiDataReady] = useState(true);
+  const { write } = useContractWrite({
+    address: portfolioContractAddress,
+    abi: permanentPortfolioJson.abi,
+    functionName: "deposit",
+  });
 
-  useEffect(() => {
-    if (WEB3_CONTEXT) {
-      const oneInchSwapDataForDpx = fetch1InchSwapData(
+  useEffect(() => {}, []);
+  const handleInputChange = async (e) => {
+    setApiDataReady(false);
+    const amount_ = ethers.utils.parseEther(e.target.value);
+    setAmount(amount_);
+
+    const [
+      oneInchSwapDataForDpx,
+      oneInchSwapDataForGDAI,
+      oneInchSwapDataForRETH,
+      pendleGDAIZapInData,
+      pendleGLPZapInData,
+      pendleRETHZapInData,
+    ] = await Promise.all([
+      fetch1InchSwapData(
         42161,
         wethAddress,
         dpxTokenAddress,
-        ethers.utils.parseEther("10"),
+        amount_,
         dpxVaultAddress,
         50,
-      );
-    }
-  }, []);
-  const handleInputChange = async (e) => {
-    const oneInchSwapDataForDpx = await fetch1InchSwapData(
-      42161,
-      wethAddress,
-      dpxTokenAddress,
-      ethers.utils.parseEther(e.target.value),
-      dpxVaultAddress,
-      50,
-    );
+      ),
+      fetch1InchSwapData(
+        42161,
+        wethAddress,
+        daiAddress,
+        amount_,
+        equilibriaGDAIVaultAddress,
+        50,
+      ),
+      fetch1InchSwapData(
+        42161,
+        wethAddress,
+        rethTokenAddress,
+        amount_,
+        equilibriaRETHVaultAddress,
+        50,
+      ),
+      getPendleZapInData(
+        42161,
+        gDAIMarketPoolAddress,
+        ethers.BigNumber.from("4169610544157379271081"),
+        0.2,
+        daiAddress,
+      ),
+      getPendleZapInData(
+        42161,
+        glpMarketPoolAddress,
+        amount_,
+        0.2,
+        wethAddress,
+      ),
+      getPendleZapInData(
+        42161,
+        rethMarketPoolAddress,
+        amount_,
+        0.2,
+        rethTokenAddress,
+      ),
+    ]);
+
     setOneInchSwapDataForDpx(oneInchSwapDataForDpx.tx.data);
-
-    const oneInchSwapDataForGDAI = await fetch1InchSwapData(
-      42161,
-      wethAddress,
-      daiAddress,
-      ethers.utils.parseEther(e.target.value),
-      equilibriaGDAIVaultAddress,
-      50,
-    );
     setOneInchSwapDataForGDAI(oneInchSwapDataForGDAI.tx.data);
-
-    const oneInchSwapDataForRETH = await fetch1InchSwapData(
-      42161,
-      wethAddress,
-      rethTokenAddress,
-      ethers.utils.parseEther(e.target.value),
-      equilibriaRETHVaultAddress,
-      50,
-    );
     setOneInchSwapDataForRETH(oneInchSwapDataForRETH.tx.data);
-
-    const pendleGDAIZapInData = await getPendleZapInData(42161, gDAIMarketPoolAddress, ethers.BigNumber.from("4169610544157379271081"), 0.2, daiAddress);
     setPendleGDAIZapInData(pendleGDAIZapInData);
-
-    const pendleGLPZapInData = await getPendleZapInData(42161, glpMarketPoolAddress, ethers.utils.parseEther("10"), 0.2, wethAddress);
     setPendleGLPZapInData(pendleGLPZapInData);
-
-    const pendleRETHZapInData = await getPendleZapInData(42161, rethMarketPoolAddress, ethers.utils.parseEther("10"), 0.2, rethTokenAddress);
     setPendleRETHZapInData(pendleRETHZapInData);
+    setApiDataReady(true);
   };
+
   const handleZapIn = async () => {
     // Define any parameters required by the deposit function
-    const tx = await WEB3_CONTEXT.portfolioContract.deposit();
-    console.log("Transaction sent:", tx.hash);
+    pendleGLPZapInData[3]["eps"] = ethers.BigNumber.from(
+      pendleGLPZapInData[3]["eps"],
+    );
+    pendleGLPZapInData[3]["guessMax"] = ethers.BigNumber.from(
+      pendleGLPZapInData[3]["guessMax"],
+    );
+    pendleGLPZapInData[3]["guessMin"] = ethers.BigNumber.from(
+      pendleGLPZapInData[3]["guessMin"],
+    );
+    pendleGLPZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
+      pendleGLPZapInData[3]["guessOffchain"],
+    );
+    pendleGLPZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
+      pendleGLPZapInData[4]["netTokenIn"],
+    );
 
-    // Wait for the transaction to be confirmed
-    const receipt = await tx.wait();
-    console.log("Transaction confirmed:", receipt);
+    pendleGDAIZapInData[3]["guessMax"] = ethers.BigNumber.from(
+      pendleGDAIZapInData[3]["guessMax"],
+    );
+    pendleGDAIZapInData[3]["guessMin"] = ethers.BigNumber.from(
+      pendleGDAIZapInData[3]["guessMin"],
+    );
+    pendleGDAIZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
+      pendleGDAIZapInData[3]["guessOffchain"],
+    );
+    pendleGDAIZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
+      pendleGDAIZapInData[4]["netTokenIn"],
+    );
+
+    pendleRETHZapInData[3]["guessMax"] = ethers.BigNumber.from(
+      pendleRETHZapInData[3]["guessMax"],
+    );
+    pendleRETHZapInData[3]["guessMin"] = ethers.BigNumber.from(
+      pendleRETHZapInData[3]["guessMin"],
+    );
+    pendleRETHZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
+      pendleRETHZapInData[3]["guessOffchain"],
+    );
+    pendleRETHZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
+      pendleRETHZapInData[4]["netTokenIn"],
+    );
+    const depositData = {
+      amount,
+      receiver: address,
+      oneInchDataDpx: oneInchSwapDataForDpx,
+      glpMinLpOut: ethers.BigNumber.from(pendleGLPZapInData[2]),
+      glpGuessPtReceivedFromSy: pendleGLPZapInData[3],
+      glpInput: pendleGLPZapInData[4],
+      gdaiMinLpOut: ethers.BigNumber.from(pendleGDAIZapInData[2]),
+      gdaiGuessPtReceivedFromSy: pendleGDAIZapInData[3],
+      gdaiInput: pendleGDAIZapInData[4],
+      gdaiOneInchDataGDAI: oneInchSwapDataForGDAI,
+      rethMinLpOut: ethers.BigNumber.from(pendleRETHZapInData[2]),
+      rethGuessPtReceivedFromSy: pendleRETHZapInData[3],
+      rethInput: pendleRETHZapInData[4],
+      rethOneInchDataRETH: oneInchSwapDataForRETH,
+    };
+    write({
+      args: [depositData],
+      from: address,
+    });
   };
   const selectBefore = (
     <Select
@@ -117,6 +195,7 @@ const ZapInButton = ({ address }) => {
         <Button type="primary">Max</Button>
       </Space.Compact>
       <Button
+        loading={!apiDataReady}
         onClick={handleZapIn} // Added onClick handler
         style={{
           color: "white",
@@ -129,7 +208,7 @@ const ZapInButton = ({ address }) => {
         icon={<DollarOutlined />}
         size="small"
       >
-        Deposit
+        {apiDataReady ? normalWording : loadingWording}
       </Button>
     </div>
   );

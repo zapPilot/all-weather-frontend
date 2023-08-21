@@ -16,7 +16,8 @@ const UserBalanceInfo = ({ address, tvl }) => {
     fetchSharesInfo();
   }, [WEB3_CONTEXT]);
 
-  const userPercentage = (totalSupply === 0n) ? 0 : (userShares / totalSupply).toFixed(2);
+  const userPercentage =
+    totalSupply === 0n ? 0 : (userShares / totalSupply).toFixed(2);
   const userDeposit = userPercentage * parseFloat(tvl.toFixed(2));
 
   return (

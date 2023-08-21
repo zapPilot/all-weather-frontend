@@ -1,8 +1,9 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const SDK_API_URL = process.env.NEXT_PUBLIC_SDK_API_URL;
 
+// when testing on local, place the localhost porfolio address here
 export const portfolioContractAddress =
-  "0x3378b974E111B6A27Df5CF8b96AD646b1860EcD0";
+  "0x36bb138Eb364889317Fd324a8f4A1d4CB244A198";
 export const dpxVaultAddress = "0x3378b974E111B6A27Df5CF8b96AD646b1860EcD0";
 export const equilibriaGDAIVaultAddress =
   "0x3378b974E111B6A27Df5CF8b96AD646b1860EcD0";
@@ -62,7 +63,7 @@ export async function getPendleZapInData(
   poolAddress,
   amount,
   slippage,
-  tokenInAddress
+  tokenInAddress,
 ) {
   const url = `${SDK_API_URL}/pendle/zapIn?chainId=${chainId}&poolAddress=${poolAddress}&amount=${amount.toString()}&slippage=${slippage}&tokenInAddress=${tokenInAddress}`;
   const retryLimit = 3;

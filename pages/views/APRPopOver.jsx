@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { Popover, Table, Tag } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { web3Context } from "./Web3DataProvider";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const APRPopOver = ({ address, mode, portfolioApr }) => {
@@ -12,7 +13,7 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
   useEffect(() => {
     async function fetchData() {
       try {
-        // const hardcodedClaimableRewards = await WEB3_CONTEXT.portfolioContract.getClaimableRewards(address);
+        // const hardcodedClaimableRewards = WEB3_CONTEXT.dataOfGetClaimableRewards;
         const hardcodedClaimableRewards = [
           {
             protocol: "SushSwap-DpxETH",

@@ -15,7 +15,7 @@ import {
   optimism,
   polygon,
   zora,
-  arbitrumGoerli
+  arbitrumGoerli,
 } from "wagmi/chains";
 import { publicProvider } from "wagmi/providers/public";
 

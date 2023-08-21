@@ -12,8 +12,6 @@ const useModalState = () => {
 
     const buttonRect = e.target.getBoundingClientRect();
     const modalTop = buttonRect.bottom + 20;
-    // const modalLeft = window.innerWidth - (window.innerWidth - buttonRect.left + window.innerWidth * 0.85) + 10;
-    console.log(modalTop);
     setModalPosition({ top: modalTop });
   };
 
