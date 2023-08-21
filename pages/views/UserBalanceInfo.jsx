@@ -16,8 +16,8 @@ const UserBalanceInfo = ({ address, tvl }) => {
     fetchSharesInfo();
   }, [WEB3_CONTEXT]);
 
-  const userDeposit = (userShares / totalSupply) * tvl.toFixed(2);
-  const userShare = (userShares / totalSupply).toFixed(2);
+  const userPercentage = (totalSupply === 0n) ? 0 : (userShares / totalSupply).toFixed(2);
+  const userDeposit = userPercentage * parseFloat(tvl.toFixed(2));
 
   return (
     <div style={{ textAlign: "left", marginBottom: 20 }}>
@@ -25,7 +25,7 @@ const UserBalanceInfo = ({ address, tvl }) => {
         Your Deposit: ${userDeposit}
       </span>
       <span style={{ color: "white", fontSize: 12 }}>
-        Your Share: {userShare}%
+        Your Share: {userPercentage}%
       </span>
     </div>
   );
