@@ -15,7 +15,6 @@ const ZapOutButton = () => {
   const [withdrawAmount, setWithdrawAmount] = useState(0);
   const [userShares, setUserShares] = useState(0);
   const [inputValue, setInputValue] = useState("");
-  const [placeholder, setPlaceholder] = useState(`Balance: ${userShares}`);
   const { write } = useContractWrite({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
@@ -26,6 +25,7 @@ const ZapOutButton = () => {
     if (WEB3_CONTEXT) {
       setUserShares(WEB3_CONTEXT.userShares);
     }
+    // TODO(david): if WEB#_CONTEXT is not ready, then we won't have userShares. The placeholder will be "Balance: undefined", which needs to be fixed.
   }, []);
   const handleInputChange = async (eventValue) => {
     setInputValue(eventValue);
@@ -38,7 +38,6 @@ const ZapOutButton = () => {
   const handleOnClickMax = async () => {
     const withdrawAmount_ = ethers.utils.parseEther(userShares.toString());
     setWithdrawAmount(withdrawAmount_);
-    setPlaceholder("");
     setInputValue(userShares);
   };
 
@@ -53,7 +52,7 @@ const ZapOutButton = () => {
     <div>
       <Space.Compact style={{ width: "90%" }}>
         <NumericInput
-          placeholder={placeholder}
+          placeholder={`Balance: ${userShares}`}
           value={inputValue}
           onChange={handleInputChange}
         />

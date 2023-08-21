@@ -125,6 +125,11 @@ const ZapInButton = () => {
     setPendleRETHZapInData(pendleRETHZapInData);
     setApiDataReady(true);
   };
+  const handleOnClickMax = async () => {
+    setAmount(ethBalance.formatted);
+    setInputValue(ethBalance.formatted);
+    handleInputChange(ethBalance.formatted);
+  };
 
   const handleZapIn = async () => {
     // Define any parameters required by the deposit function
@@ -209,7 +214,9 @@ const ZapInButton = () => {
           value={inputValue}
           onChange={handleInputChange}
         />
-        <Button type="primary">Max</Button>
+        <Button type="primary" onClick={handleOnClickMax}>
+          Max
+        </Button>
       </Space.Compact>
       <Button
         loading={!apiDataReady}
