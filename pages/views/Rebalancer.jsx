@@ -126,20 +126,6 @@ const RebalancerWidget = ({ address }) => {
                 </div>
                 <div style={{ textAlign: "left" }}>
                   <ZapInButton />
-                  <Button
-                    style={{
-                      color: "white",
-                      borderColor: "white",
-                      paddingInline: 10,
-                      lineHeight: 1,
-                      marginRight: 15,
-                    }}
-                    shape="round"
-                    icon={<DollarOutlined />}
-                    size="small"
-                  >
-                    Claim
-                  </Button>
                   <ZapOutButton />
                   <APRPopOver address={address} mode="price" />
                 </div>

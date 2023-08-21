@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { Popover, Table, Tag } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { web3Context } from "./Web3DataProvider";
+import ClaimButton from "./ClaimButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -226,6 +227,7 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
     return (
       <div>
         <h2 className="ant-table-title">Claimable Rewards:</h2>
+        <ClaimButton />
         <Table
           columns={getColumnsForSuggestionsTable}
           dataSource={calculateClaimableRewards()}
