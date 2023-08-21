@@ -12,6 +12,7 @@ import SuggestionsForBetterStableCoins from "./SuggestionsForBetterStableCoins";
 import SuggestionsForLPTokens from "./SuggestionsForLPTokens";
 import TopNLowestAprPools from "./TopNLowestAprPools";
 import ZapInButton from "./ZapInButton";
+import ZapOutButton from "./ZapOutButton";
 import APRPopOver from "./APRPopOver";
 import UserBalanceInfo from "./UserBalanceInfo";
 
@@ -131,20 +132,7 @@ const RebalancerWidget = ({ address }) => {
                       borderColor: "white",
                       paddingInline: 10,
                       lineHeight: 1,
-                    }}
-                    shape="round"
-                    icon={<FireOutlined />}
-                    size="small"
-                  >
-                    Withdraw
-                  </Button>
-                  <Button
-                    style={{
-                      color: "white",
-                      borderColor: "white",
-                      paddingInline: 10,
-                      lineHeight: 1,
-                      marginLeft: 15,
+                      marginRight: 15,
                     }}
                     shape="round"
                     icon={<DollarOutlined />}
@@ -152,6 +140,7 @@ const RebalancerWidget = ({ address }) => {
                   >
                     Claim
                   </Button>
+                  <ZapOutButton />
                   <APRPopOver address={address} mode="price" />
                 </div>
               </div>

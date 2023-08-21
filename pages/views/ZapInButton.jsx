@@ -16,17 +16,27 @@ import {
 } from "../../utils/oneInch";
 import { DollarOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
-import { useContractWrite, useAccount } from "wagmi";
+import { useContractWrite, useAccount, useBalance } from "wagmi";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
+import NumericInput from "./NumberInput";
 
 const { Option } = Select;
 const { ethers } = require("ethers");
 
 const ZapInButton = () => {
   const { address } = useAccount();
+  const { data: ethBalance } = useBalance({
+    address,
+    onError(error) {
+      console.log("ethBalance, Error", error);
+    },
+  });
+
   const normalWording = "Deposit";
   const loadingWording = "Fetching the best route to deposit (23s)";
   const [amount, setAmount] = useState(0);
+  const [inputValue, setInputValue] = useState("");
+
   const [oneInchSwapDataForDpx, setOneInchSwapDataForDpx] = useState("");
   const [oneInchSwapDataForGDAI, setOneInchSwapDataForGDAI] = useState("");
   const [oneInchSwapDataForRETH, setOneInchSwapDataForRETH] = useState("");
@@ -41,10 +51,16 @@ const ZapInButton = () => {
   });
 
   useEffect(() => {}, []);
-  const handleInputChange = async (e) => {
-    setApiDataReady(false);
-    const amount_ = ethers.utils.parseEther(e.target.value);
+  const handleInputChange = async (eventValue) => {
+    let amount_;
+    try {
+      amount_ = ethers.utils.parseEther(eventValue);
+    } catch (error) {
+      return;
+    }
     setAmount(amount_);
+    setInputValue(eventValue);
+    setApiDataReady(false);
 
     const [
       oneInchSwapDataForDpx,
@@ -186,10 +202,11 @@ const ZapInButton = () => {
 
   return (
     <div>
-      <Space.Compact style={{ width: "70%" }}>
-        <Input
+      <Space.Compact style={{ width: "90%" }}>
+        <NumericInput
           addonBefore={selectBefore}
-          defaultValue=""
+          placeholder={`Balance: ${ethBalance.formatted}`}
+          value={inputValue}
           onChange={handleInputChange}
         />
         <Button type="primary">Max</Button>

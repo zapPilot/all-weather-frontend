@@ -17,7 +17,7 @@ const Web3DataProvider = ({ children, address }) => {
     functionName: "getClaimableRewards",
     args: [address],
     onError(error) {
-      console.log("Error", error);
+      console.log("getClaimableRewards Error", error);
     },
   });
   const userShares = useContractRead({
@@ -25,11 +25,17 @@ const Web3DataProvider = ({ children, address }) => {
     abi: permanentPortfolioJson.abi,
     functionName: "balanceOf",
     args: [address],
+    onError(error) {
+      console.log("userShares Error", error);
+    },
   });
   const totalSupply = useContractRead({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "totalSupply",
+    onError(error) {
+      console.log("totalSupply Error", error);
+    },
   });
   useEffect(() => {
     async function fetchData() {
@@ -39,7 +45,6 @@ const Web3DataProvider = ({ children, address }) => {
         totalSupply.loading === true
       )
         return; // Don't proceed if loading
-
       // Fetch data from API
       fetch(`${API_URL}/debank`)
         .then((response) => response.json())
