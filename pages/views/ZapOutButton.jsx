@@ -25,8 +25,7 @@ const ZapOutButton = () => {
     if (WEB3_CONTEXT) {
       setUserShares(WEB3_CONTEXT.userShares);
     }
-    // TODO(david): if WEB#_CONTEXT is not ready, then we won't have userShares. The placeholder will be "Balance: undefined", which needs to be fixed.
-  }, []);
+  }, [WEB3_CONTEXT]);
   const handleInputChange = async (eventValue) => {
     setInputValue(eventValue);
     if (eventValue !== "") {
