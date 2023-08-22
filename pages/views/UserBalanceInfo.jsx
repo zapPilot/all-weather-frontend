@@ -18,7 +18,7 @@ const UserBalanceInfo = ({ address, tvl }) => {
 
   const userPercentage =
     totalSupply === 0n ? 0 : (userShares / totalSupply).toFixed(2);
-  const userDeposit = userPercentage * parseFloat(tvl.toFixed(2));
+  const userDeposit = userPercentage * parseFloat(tvl ? tvl.toFixed(2) : 0);
 
   return (
     <div style={{ textAlign: "left", marginBottom: 20 }}>
