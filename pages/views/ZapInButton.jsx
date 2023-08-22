@@ -1,4 +1,4 @@
-import { Spin, Button, Space, Select } from "antd";
+import { Button, Space, Select } from "antd";
 import {
   fetch1InchSwapData,
   getPendleZapInData,
@@ -38,7 +38,6 @@ const ZapInButton = () => {
   });
 
   const normalWording = "Deposit";
-  const approvingWording = "Approve";
   const loadingWording = "Fetching the best route to deposit (23s)";
   const [amount, setAmount] = useState(0);
   const [inputValue, setInputValue] = useState("");
@@ -83,7 +82,7 @@ const ZapInButton = () => {
   useEffect(() => {
     if (approveAmountContract.loading === true) return; // Don't proceed if loading
     setApproveAmount(approveAmountContract.data);
-  }, [address, approveAmountContract.loading]);
+  }, [address, approveAmountContract.loading, approveReady]);
   const handleInputChange = async (eventValue) => {
     let amount_;
     try {
@@ -178,10 +177,9 @@ const ZapInButton = () => {
     if (approveAmount < amount) {
       setApiDataReady(false);
       approveWrite({
-        args: [portfolioContractAddress, ethers.BigNumber.from(amount)],
+        args: [portfolioContractAddress, amount],
         from: address,
       });
-      setApproveAmount(amount);
       setApproveReady(true);
     }
     setApiDataReady(false);
