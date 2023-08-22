@@ -1,4 +1,4 @@
-import { Input, Button, Space, Select } from "antd";
+import { Spin, Button, Space, Select } from "antd";
 import {
   fetch1InchSwapData,
   getPendleZapInData,
@@ -16,7 +16,12 @@ import {
 } from "../../utils/oneInch";
 import { DollarOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
-import { useContractWrite, useAccount, useBalance } from "wagmi";
+import {
+  useContractWrite,
+  useAccount,
+  useBalance,
+  useContractRead,
+} from "wagmi";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import NumericInput from "./NumberInput";
 
@@ -33,6 +38,7 @@ const ZapInButton = () => {
   });
 
   const normalWording = "Deposit";
+  const approvingWording = "Approve";
   const loadingWording = "Fetching the best route to deposit (23s)";
   const [amount, setAmount] = useState(0);
   const [inputValue, setInputValue] = useState("");
@@ -44,13 +50,40 @@ const ZapInButton = () => {
   const [pendleGLPZapInData, setPendleGLPZapInData] = useState("");
   const [pendleRETHZapInData, setPendleRETHZapInData] = useState("");
   const [apiDataReady, setApiDataReady] = useState(true);
-  const { write } = useContractWrite({
+  const [approveReady, setApproveReady] = useState(true);
+  const [approveAmount, setApproveAmount] = useState(0);
+  const { write, isLoading: depositIsLoading } = useContractWrite({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "deposit",
   });
+  const {
+    write: approveWrite,
+    isLoading: approveIsLoading,
+    isSuccess: approveIsSuccess,
+  } = useContractWrite({
+    address: wethAddress,
+    // for testing
+    // address: portfolioContractAddress,
+    abi: permanentPortfolioJson.abi,
+    functionName: "approve",
+  });
+  const approveAmountContract = useContractRead({
+    // address: wethAddress,
+    // for testing
+    address: portfolioContractAddress,
+    abi: permanentPortfolioJson.abi,
+    functionName: "allowance",
+    args: [address, portfolioContractAddress],
+    onError(error) {
+      console.log("allowance Error", error);
+    },
+  });
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+    if (approveAmountContract.loading === true) return; // Don't proceed if loading
+    setApproveAmount(approveAmountContract.data);
+  }, [address, approveAmountContract.loading]);
   const handleInputChange = async (eventValue) => {
     let amount_;
     try {
@@ -60,6 +93,9 @@ const ZapInButton = () => {
     }
     setAmount(amount_);
     setInputValue(eventValue);
+    if (approveAmount < amount) {
+      setApproveReady(false);
+    }
     setApiDataReady(false);
 
     const [
@@ -129,9 +165,26 @@ const ZapInButton = () => {
     setAmount(ethBalance.formatted);
     setInputValue(ethBalance.formatted);
     handleInputChange(ethBalance.formatted);
+
+    // TODO(david): find a better way to implement.
+    // Since `setAmount` need some time to propagate, the `amount` would be 0 at the first click.
+    // then be updated to the correct value at the second click.
+    if (approveAmount < amount || amount === 0) {
+      setApproveReady(false);
+    }
   };
 
   const handleZapIn = async () => {
+    if (approveAmount < amount) {
+      setApiDataReady(false);
+      approveWrite({
+        args: [portfolioContractAddress, ethers.BigNumber.from(amount)],
+        from: address,
+      });
+      setApproveAmount(amount);
+      setApproveReady(true);
+    }
+    setApiDataReady(false);
     // Define any parameters required by the deposit function
     pendleGLPZapInData[3]["eps"] = ethers.BigNumber.from(
       pendleGLPZapInData[3]["eps"],
@@ -175,7 +228,7 @@ const ZapInButton = () => {
       pendleRETHZapInData[4]["netTokenIn"],
     );
     const depositData = {
-      amount,
+      amount: ethers.BigNumber.from(amount),
       receiver: address,
       oneInchDataDpx: oneInchSwapDataForDpx,
       glpMinLpOut: ethers.BigNumber.from(pendleGLPZapInData[2]),
@@ -194,6 +247,7 @@ const ZapInButton = () => {
       args: [depositData],
       from: address,
     });
+    setApiDataReady(true);
   };
   const selectBefore = (
     <Select
@@ -210,7 +264,7 @@ const ZapInButton = () => {
       <Space.Compact style={{ width: "90%" }}>
         <NumericInput
           addonBefore={selectBefore}
-          placeholder={`Balance: ${ethBalance.formatted}`}
+          placeholder={`Balance: ${ethBalance ? ethBalance.formatted : 0}`}
           value={inputValue}
           onChange={handleInputChange}
         />
@@ -232,6 +286,7 @@ const ZapInButton = () => {
         icon={<DollarOutlined />}
         size="small"
       >
+        {/* {!approveReady ? approvingWording : apiDataReady ? normalWording : loadingWording} */}
         {apiDataReady ? normalWording : loadingWording}
       </Button>
     </div>

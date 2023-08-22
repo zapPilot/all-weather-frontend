@@ -57,7 +57,12 @@ const Web3DataProvider = ({ children, address }) => {
         .catch((error) => console.error("Error:", error));
     }
     fetchData();
-  }, []);
+  }, [
+    address,
+    dataOfGetClaimableRewards.loading,
+    userShares.loading,
+    totalSupply.loading,
+  ]);
 
   return <web3Context.Provider value={data}>{children}</web3Context.Provider>;
 };
