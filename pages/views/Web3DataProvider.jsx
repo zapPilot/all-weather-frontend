@@ -1,8 +1,6 @@
 import React, { createContext, useState, useEffect } from "react";
-import { ethers } from "ethers";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
-import { useContract, useWalletClient } from "wagmi";
-import { useContractRead, useContractWrite } from "wagmi";
+import { useContractRead } from "wagmi";
 import { portfolioContractAddress } from "../../utils/oneInch";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -59,7 +57,7 @@ const Web3DataProvider = ({ children, address }) => {
         .catch((error) => console.error("Error:", error));
     }
     fetchData();
-  }, [dataOfGetClaimableRewards, userShares, totalSupply]);
+  }, []);
 
   return <web3Context.Provider value={data}>{children}</web3Context.Provider>;
 };

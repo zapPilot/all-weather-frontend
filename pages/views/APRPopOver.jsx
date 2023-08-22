@@ -95,6 +95,7 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
         .then((result) => setAprComposition(result))
         .catch((error) => console.error("Error of apr_composition:", error));
     }
+    if (!WEB3_CONTEXT) return;
     fetchData();
     fetchAprComposition();
   }, [WEB3_CONTEXT]);
@@ -111,6 +112,7 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
               {Object.keys(aprComposition[protocol]).map((rewardKey, idx) => {
                 return (
                   <RewardItem
+                    key={`${protocol}-${rewardKey}-${idx}`}
                     protocol={protocol}
                     rewardKey={rewardKey}
                     value={aprComposition[protocol][rewardKey]}
