@@ -3,6 +3,8 @@ import { Popover, Table, Tag } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { web3Context } from "./Web3DataProvider";
 import ClaimButton from "./ClaimButton";
+import { ethers } from "ethers";
+const BigNumber = require("bignumber.js");
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -15,67 +17,9 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
 
   useEffect(() => {
     async function fetchData() {
-      // const hardcodedClaimableRewards = WEB3_CONTEXT.dataOfGetClaimableRewards;
-      const hardcodedClaimableRewards = [
-        {
-          protocol: "SushSwap-DpxETH",
-          claimableRewards: [
-            {
-              token: "0xd4d42F0b6DEF4CE0383636770eF773390d85c61A",
-              amount: "2",
-            },
-            {
-              token: "0x6C2C06790b3E3E3c38e12Ee22F8183b37a13EE55",
-              amount: "0.001",
-            },
-          ],
-        },
-        {
-          protocol: "Equilibria-GLP",
-          claimableRewards: [
-            {
-              token: "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
-              amount: "2",
-            },
-            {
-              token: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-              amount: "0.0001",
-            },
-            {
-              token: "0xBfbCFe8873fE28Dfa25f1099282b088D52bbAD9C",
-              amount: "1",
-            },
-          ],
-        },
-        {
-          protocol: "Equilibria-GDAI",
-          claimableRewards: [
-            {
-              token: "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
-              amount: "6",
-            },
-            {
-              token: "0xBfbCFe8873fE28Dfa25f1099282b088D52bbAD9C",
-              amount: "3",
-            },
-          ],
-        },
-        {
-          protocol: "Equilibria-RETH",
-          claimableRewards: [
-            {
-              token: "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
-              amount: "10",
-            },
-            {
-              token: "0xBfbCFe8873fE28Dfa25f1099282b088D52bbAD9C",
-              amount: "5",
-            },
-          ],
-        },
-      ];
-      setClaimableRewards(hardcodedClaimableRewards);
-      const sumOfRewardsDenominatedInUSD_ = hardcodedClaimableRewards.reduce(
+      const claimableRewards = WEB3_CONTEXT.dataOfGetClaimableRewards;
+      setClaimableRewards(claimableRewards);
+      const sumOfRewardsDenominatedInUSD_ = claimableRewards.reduce(
         (total, reward) => {
           return (
             total +
@@ -218,12 +162,27 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
       render: (price) => <Tag key={price}>${price.toFixed(2)}</Tag>,
     },
   ];
-  const turnReward2Price = (claimableReward) =>
-    parseFloat(
-      claimableReward.amount *
-        WEB3_CONTEXT["debankContext"][claimableReward.token.toLowerCase()]
-          .price,
+  const turnReward2Price = (claimableReward) => {
+    const priceAsFloat =
+      WEB3_CONTEXT["debankContext"][claimableReward.token.toLowerCase()].price;
+
+    // Use BigNumber from 'bignumber.js' to multiply the price by 10^18
+    const priceBigNumber = new BigNumber(priceAsFloat).times(
+      new BigNumber(10).pow(18),
     );
+    // Convert the result to a string
+    const priceAsString = priceBigNumber.toFixed();
+
+    // Convert to an ethers BigNumber
+    const priceInBigNumber = ethers.BigNumber.from(priceAsString);
+
+    // Multiply price with amount (both as ethers BigNumbers)
+    const resultInBigNumber = priceInBigNumber.mul(claimableReward.amount);
+    // Divide by 10^18 to get the final result
+    const finalResult = ethers.utils.formatEther(resultInBigNumber);
+    // Convert to float
+    return parseFloat(finalResult);
+  };
 
   if (mode === "percentage") {
     return (

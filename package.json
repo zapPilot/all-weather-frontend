@@ -15,6 +15,7 @@
     "@rainbow-me/rainbowkit": "^1.0.7",
     "antd": "5.8.2",
     "axios": "^1.4.0",
+    "bignumber.js": "^9.1.1",
     "create-next-app": "13.3.1",
     "eth-hooks": "2.3.19",
     "ethers": "5.4.1",
