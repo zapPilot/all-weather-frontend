@@ -241,6 +241,7 @@ const ZapInButton = () => {
       rethInput: pendleRETHZapInData[4],
       rethOneInchDataRETH: oneInchSwapDataForRETH,
     };
+    console.log("depositData", depositData);
     write({
       args: [depositData],
       from: address,
