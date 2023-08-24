@@ -134,7 +134,7 @@ const ZapInButton = () => {
           42161,
           gDAIMarketPoolAddress,
           ethers.BigNumber.from(oneInchSwapDataForGDAI.toAmount)
-            .mul(50)
+            .mul(95)
             .div(100),
           0.1,
           daiAddress,
