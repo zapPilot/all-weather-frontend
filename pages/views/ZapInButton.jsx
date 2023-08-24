@@ -97,60 +97,65 @@ const ZapInButton = () => {
     }
     setApiDataReady(false);
 
+    const amountAfterChargingFee = amount_.mul(997).div(1000);
     const [
       oneInchSwapDataForDpx,
       oneInchSwapDataForGDAI,
       oneInchSwapDataForRETH,
-      pendleGDAIZapInData,
-      pendleGLPZapInData,
-      pendleRETHZapInData,
     ] = await Promise.all([
       fetch1InchSwapData(
         42161,
         wethAddress,
         dpxTokenAddress,
-        amount_,
+        amountAfterChargingFee.div(8),
         dpxVaultAddress,
-        50,
+        5,
       ),
       fetch1InchSwapData(
         42161,
         wethAddress,
         daiAddress,
-        amount_,
+        amountAfterChargingFee.div(4),
         equilibriaGDAIVaultAddress,
-        50,
+        5,
       ),
       fetch1InchSwapData(
         42161,
         wethAddress,
         rethTokenAddress,
-        amount_,
+        amountAfterChargingFee.div(4),
         equilibriaRETHVaultAddress,
-        50,
-      ),
-      getPendleZapInData(
-        42161,
-        gDAIMarketPoolAddress,
-        ethers.BigNumber.from("4169610544157379271081"),
-        0.2,
-        daiAddress,
-      ),
-      getPendleZapInData(
-        42161,
-        glpMarketPoolAddress,
-        amount_,
-        0.2,
-        wethAddress,
-      ),
-      getPendleZapInData(
-        42161,
-        rethMarketPoolAddress,
-        amount_,
-        0.2,
-        rethTokenAddress,
+        5,
       ),
     ]);
+    const [pendleGDAIZapInData, pendleGLPZapInData, pendleRETHZapInData] =
+      await Promise.all([
+        getPendleZapInData(
+          42161,
+          gDAIMarketPoolAddress,
+          ethers.BigNumber.from(oneInchSwapDataForGDAI.toAmount)
+            .mul(50)
+            .div(100),
+          0.1,
+          daiAddress,
+        ),
+        getPendleZapInData(
+          42161,
+          glpMarketPoolAddress,
+          amountAfterChargingFee.div(4),
+          0.1,
+          wethAddress,
+        ),
+        getPendleZapInData(
+          42161,
+          rethMarketPoolAddress,
+          ethers.BigNumber.from(oneInchSwapDataForRETH.toAmount)
+            .mul(95)
+            .div(100),
+          0.1,
+          rethTokenAddress,
+        ),
+      ]);
 
     setOneInchSwapDataForDpx(oneInchSwapDataForDpx.tx.data);
     setOneInchSwapDataForGDAI(oneInchSwapDataForGDAI.tx.data);
@@ -241,7 +246,6 @@ const ZapInButton = () => {
       rethInput: pendleRETHZapInData[4],
       rethOneInchDataRETH: oneInchSwapDataForRETH,
     };
-    console.log("depositData", depositData);
     write({
       args: [depositData],
       from: address,

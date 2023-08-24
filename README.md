@@ -5,6 +5,7 @@ This is a [RainbowKit](https://rainbowkit.com) + [wagmi](https://wagmi.sh) + [Ne
 First, `cp .env.sample .env.local` and update the values if needed.
 
 Then:
+
 ```bash
 npm run dev
 ```
