@@ -1,5 +1,6 @@
 import { useEffect, useState, useContext } from "react";
 import { web3Context } from "./Web3DataProvider";
+const BigNumber = require("bignumber.js");
 
 const UserBalanceInfo = ({ address, tvl }) => {
   const WEB3_CONTEXT = useContext(web3Context);
@@ -16,8 +17,10 @@ const UserBalanceInfo = ({ address, tvl }) => {
     fetchSharesInfo();
   }, [WEB3_CONTEXT]);
 
-  const userPercentage =
-    totalSupply === 0n ? 0 : (userShares / totalSupply).toFixed(2);
+  const userPercentage = new BigNumber(userShares)
+    .div(totalSupply)
+    .times(100)
+    .toFixed(2);
   const userDeposit = userPercentage * parseFloat(tvl ? tvl.toFixed(2) : 0);
 
   return (

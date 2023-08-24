@@ -7,14 +7,14 @@ const SDK_API_URL = process.env.NEXT_PUBLIC_SDK_API_URL;
 //   "0x36bb138Eb364889317Fd324a8f4A1d4CB244A198";
 // for contract read
 export const portfolioContractAddress =
-  "0x36bb138Eb364889317Fd324a8f4A1d4CB244A198";
-export const dpxVaultAddress = "0x3e6506564daDD92502207E7b69AE583d7f2Fb184";
-export const equilibriaGDAIVaultAddress =
-  "0x38FAE405C9c78Ca8C1b4B548b5a9960b38f240F3";
-export const equilibriaRETHVaultAddress =
-  "0x47cF63A2C2a60efD53193504c8a9846D38254549";
+  "0xEDBDbd03784C8dBA343A23877799d113E2F257Af";
+export const dpxVaultAddress = "0xC6a58A8494E61fc4EF04F6075c4541C9664ADcC9";
 export const equilibriaGLPVaultAddress =
-  "0x7aF1A8eD846316c192D4418711134C76c1BbDDEf";
+  "0x271E3409093f7ECffFB2a1C82e5E87B2ecB3E310";
+export const equilibriaGDAIVaultAddress =
+  "0x549caec2C863a04853Fb829aac4190E1B50df0Cc";
+export const equilibriaRETHVaultAddress =
+  "0xE66c4EA218Cdb8DCbCf3f605ed1aC29461CBa4b8";
 
 export const wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 export const dpxTokenAddress = "0x6C2C06790b3E3E3c38e12Ee22F8183b37a13EE55";

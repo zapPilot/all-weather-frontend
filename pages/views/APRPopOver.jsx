@@ -19,6 +19,7 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
     async function fetchData() {
       const claimableRewards = WEB3_CONTEXT.dataOfGetClaimableRewards;
       setClaimableRewards(claimableRewards);
+      if (claimableRewards === undefined) return;
       const sumOfRewardsDenominatedInUSD_ = claimableRewards.reduce(
         (total, reward) => {
           return (
@@ -116,7 +117,7 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
   };
 
   function calculateClaimableRewards() {
-    if (!WEB3_CONTEXT) return [];
+    if (!WEB3_CONTEXT || claimableRewards === undefined) return [];
 
     return claimableRewards
       .map((reward) =>
