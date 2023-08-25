@@ -118,7 +118,7 @@ const RebalancerWidget = ({ address }) => {
                     </text>
                   </strong>
                 </div>
-                <UserBalanceInfo address={address} tvl={1100} />
+                <UserBalanceInfo tvl={netWorth} />
                 <div style={{ textAlign: "left", marginBottom: 20 }}>
                   <text style={{ color: "white", fontSize: 12 }}>
                     Monthly Interest: ${(totalInterest / 12).toFixed(2)}
