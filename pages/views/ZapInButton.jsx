@@ -270,10 +270,10 @@ const ZapInButton = () => {
           addonBefore={selectBefore}
           placeholder={`Balance: ${ethBalance ? ethBalance.formatted : 0}`}
           value={inputValue}
-            onChange={(value) => {
-                setInputValue(value);
-                handleInputChange(value);
-            }}
+          onChange={(value) => {
+            setInputValue(value);
+            handleInputChange(value);
+          }}
         />
         <Button type="primary" onClick={handleOnClickMax}>
           Max
