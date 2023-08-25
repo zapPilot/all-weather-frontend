@@ -125,6 +125,7 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
           pool: reward.protocol,
           token:
             WEB3_CONTEXT["debankContext"][claimableReward.token.toLowerCase()],
+          amount: ethers.utils.formatEther(claimableReward.amount),
           value: turnReward2Price(claimableReward),
         })),
       )
@@ -156,6 +157,13 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
       ),
     },
     {
+      title: "Amount",
+      dataIndex: "amount",
+      key: "amount",
+      width: 24,
+      render: (amount) => <Tag key={amount}>{amount}</Tag>,
+    },
+    {
       title: "Value",
       dataIndex: "value",
       key: "value",
@@ -181,8 +189,10 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
     const resultInBigNumber = priceInBigNumber.mul(claimableReward.amount);
     // Divide by 10^18 to get the final result
     const finalResult = ethers.utils.formatEther(resultInBigNumber);
-    // Convert to float
-    return parseFloat(finalResult);
+    if (finalResult > 0) {
+      return parseFloat(ethers.utils.formatEther(Math.floor(finalResult)));
+    }
+    return 0;
   };
 
   if (mode === "percentage") {
