@@ -30,9 +30,10 @@ const { chains, publicClient, webSocketPublicClient } = configureChains(
 
 const { connectors } = getDefaultWallets({
   appName: "RainbowKit App",
-  projectId: "bee6af70ea57e6499462532060febf40",
+  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID ?? "",
   chains,
 });
+
 
 const wagmiConfig = createConfig({
   autoConnect: true,
