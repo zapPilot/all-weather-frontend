@@ -18,7 +18,6 @@ const UserBalanceInfo = ({ tvl }) => {
   }, [WEB3_CONTEXT]);
 
   const userPercentage = new BigNumber(userShares).div(totalSupply);
-  console.log("tvl", tvl);
   const userDeposit = userPercentage * parseFloat(tvl ? tvl.toFixed(2) : 0);
 
   return (
