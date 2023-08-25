@@ -52,7 +52,7 @@ const ZapOutButton = () => {
   const handleInputChange = async (eventValue) => {
     setInputValue(eventValue);
     if (eventValue !== "") {
-      const withdrawAmount_ = ethers.utils.parseEther(eventValue);
+      const withdrawAmount_ = eventValue;
       setWithdrawAmount(withdrawAmount_);
     }
     if (approveAmount < eventValue) {
@@ -61,7 +61,7 @@ const ZapOutButton = () => {
   };
 
   const handleOnClickMax = async () => {
-    const withdrawAmount_ = ethers.utils.parseEther(userShares.toString());
+    const withdrawAmount_ = userShares.toString();
     setWithdrawAmount(withdrawAmount_);
     setInputValue(userShares);
     // TODO(david): find a better way to implement.
