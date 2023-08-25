@@ -30,10 +30,11 @@ const { ethers } = require("ethers");
 
 const ZapInButton = () => {
   const { address } = useAccount();
-  const { data: ethBalance } = useBalance({
+  const { data: wethBalance } = useBalance({
     address,
+    token: wethAddress,
     onError(error) {
-      console.log("ethBalance, Error", error);
+      console.log("wethBalance, Error", error);
     },
   });
 
@@ -166,9 +167,9 @@ const ZapInButton = () => {
     setApiDataReady(true);
   };
   const handleOnClickMax = async () => {
-    setAmount(ethBalance.formatted);
-    setInputValue(ethBalance.formatted);
-    handleInputChange(ethBalance.formatted);
+    setAmount(wethBalance.formatted);
+    setInputValue(wethBalance.formatted);
+    handleInputChange(wethBalance.formatted);
 
     // TODO(david): find a better way to implement.
     // Since `setAmount` need some time to propagate, the `amount` would be 0 at the first click.
@@ -254,11 +255,11 @@ const ZapInButton = () => {
   };
   const selectBefore = (
     <Select
-      defaultValue="ETH"
+      defaultValue="WETH"
       theme="light"
       style={{ backgroundColor: "white" }}
     >
-      <Option value="ETH">ETH</Option>
+      <Option value="WETH">WETH</Option>
     </Select>
   );
 
@@ -267,7 +268,7 @@ const ZapInButton = () => {
       <Space.Compact style={{ width: "90%" }}>
         <NumericInput
           addonBefore={selectBefore}
-          placeholder={`Balance: ${ethBalance ? ethBalance.formatted : 0}`}
+          placeholder={`Balance: ${wethBalance ? wethBalance.formatted : 0}`}
           value={inputValue}
           onChange={handleInputChange}
         />
