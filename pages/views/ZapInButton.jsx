@@ -1,4 +1,5 @@
 import { Button, Space, Select } from "antd";
+import debounce from "lodash/debounce";
 import {
   fetch1InchSwapData,
   getPendleZapInData,
@@ -84,7 +85,8 @@ const ZapInButton = () => {
     if (approveAmountContract.loading === true) return; // Don't proceed if loading
     setApproveAmount(approveAmountContract.data);
   }, [address, approveAmountContract.loading, approveReady]);
-  const handleInputChange = async (eventValue) => {
+
+  const handleInputChange = debounce(async (eventValue) => {
     let amount_;
     try {
       amount_ = ethers.utils.parseEther(eventValue);
@@ -92,7 +94,6 @@ const ZapInButton = () => {
       return;
     }
     setAmount(amount_);
-    setInputValue(eventValue);
     if (approveAmount < amount) {
       setApproveReady(false);
     }
@@ -165,7 +166,7 @@ const ZapInButton = () => {
     setPendleGLPZapInData(pendleGLPZapInData);
     setPendleRETHZapInData(pendleRETHZapInData);
     setApiDataReady(true);
-  };
+  }, 1000);
   const handleOnClickMax = async () => {
     setAmount(wethBalance.formatted);
     setInputValue(wethBalance.formatted);
@@ -270,7 +271,10 @@ const ZapInButton = () => {
           addonBefore={selectBefore}
           placeholder={`Balance: ${wethBalance ? wethBalance.formatted : 0}`}
           value={inputValue}
-          onChange={handleInputChange}
+          onChange={(value) => {
+            setInputValue(value);
+            handleInputChange(value);
+          }}
         />
         <Button type="primary" onClick={handleOnClickMax}>
           Max

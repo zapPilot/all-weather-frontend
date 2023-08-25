@@ -41,7 +41,7 @@ const NumericInput = (props) => {
   return (
     <NumericInputComponent
       style={{
-        width: 120,
+        width: 220,
       }}
       value={value}
       onChange={onChange}
