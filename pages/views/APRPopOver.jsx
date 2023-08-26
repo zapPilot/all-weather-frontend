@@ -18,20 +18,31 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
   useEffect(() => {
     async function fetchData() {
       const claimableRewards = WEB3_CONTEXT.dataOfGetClaimableRewards;
-      setClaimableRewards(claimableRewards);
-      if (claimableRewards === undefined) return;
-      const sumOfRewardsDenominatedInUSD_ = claimableRewards.reduce(
-        (total, reward) => {
+      const claimableRewardsWithChainInfo =
+        addChainInfoToToken(claimableRewards);
+      setClaimableRewards(claimableRewardsWithChainInfo);
+      if (claimableRewardsWithChainInfo === undefined) return;
+      const sumOfRewardsDenominatedInUSD_ =
+        claimableRewardsWithChainInfo.reduce((total, reward) => {
           return (
             total +
             reward.claimableRewards.reduce((innerTotal, claimableReward) => {
               return innerTotal + turnReward2Price(claimableReward);
             }, 0)
           );
-        },
-        0,
-      );
+        }, 0);
       setSumOfRewardsDenominatedInUSD(sumOfRewardsDenominatedInUSD_);
+    }
+
+    function addChainInfoToToken(claimableRewards) {
+      for (const reward of claimableRewards) {
+        for (const claimableReward of reward.claimableRewards) {
+          if (!claimableReward.token.startsWith("arb")) {
+            claimableReward.token = `arb:${claimableReward.token}`;
+          }
+        }
+      }
+      return claimableRewards;
     }
 
     async function fetchAprComposition() {

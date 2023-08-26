@@ -50,7 +50,7 @@ const RebalancerWidget = ({ address }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (rebalanceSuggestions !== undefined) {
+    if (rebalanceSuggestions && rebalanceSuggestions.length > 0) {
       setIsLoading(false);
     }
   }, [rebalanceSuggestions]);
