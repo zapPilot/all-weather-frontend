@@ -1,10 +1,5 @@
 // import suggestions from "./suggestions.json";
-import { Spin, Row, Col, Button } from "antd";
-import {
-  DollarOutlined,
-  FireOutlined,
-  InfoCircleOutlined,
-} from "@ant-design/icons";
+import { Spin, Row, Col } from "antd";
 import { useEffect, useState } from "react";
 import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
 import RebalanceChart from "./RebalanceChart";
@@ -50,10 +45,10 @@ const RebalancerWidget = ({ address }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (rebalanceSuggestions && rebalanceSuggestions.length > 0) {
+    if (netWorth > 0) {
       setIsLoading(false);
     }
-  }, [rebalanceSuggestions]);
+  }, [netWorth]);
 
   const windowWidth = useWindowWidth();
 

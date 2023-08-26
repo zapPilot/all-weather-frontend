@@ -201,7 +201,11 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
     // Divide by 10^18 to get the final result
     const finalResult = ethers.utils.formatEther(resultInBigNumber);
     if (finalResult > 0) {
-      return parseFloat(ethers.utils.formatEther(Math.floor(finalResult)));
+      return parseFloat(
+        new BigNumber(Math.floor(finalResult)).div(
+          BigInt("1000000000000000000"),
+        ),
+      );
     }
     return 0;
   };
