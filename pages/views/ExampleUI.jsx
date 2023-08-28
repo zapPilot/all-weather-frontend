@@ -29,6 +29,14 @@ export default function ExampleUI({ address }) {
 
   return (
     <div style={{ padding: "3rem 1.5rem", minHeight: windowHeight }}>
+      <center>
+        <h1 className="ant-table-title">All Weather Portfolio</h1>
+      </center>
+      <center>
+        <h2 className="ant-table-title">
+          Click Once, Diversify Forever. Why Gamble with Volatility?
+        </h2>
+      </center>
       <RebalancerWidget address={address} />
       <Affix style={{ position: "fixed", bottom: "1.5rem", right: "1.5rem" }}>
         <Button
