@@ -35,6 +35,7 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
     }
 
     function addChainInfoToToken(claimableRewards) {
+      if (claimableRewards === undefined) return;
       for (const reward of claimableRewards) {
         for (const claimableReward of reward.claimableRewards) {
           if (!claimableReward.token.startsWith("arb")) {
