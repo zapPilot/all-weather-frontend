@@ -1,6 +1,6 @@
 import { Button, Space, Select, Modal } from "antd";
-import { Spin } from 'antd';
-import { z } from 'zod';
+import { Spin } from "antd";
+import { z } from "zod";
 import debounce from "lodash/debounce";
 import {
   fetch1InchSwapData,
@@ -18,42 +18,152 @@ import {
   equilibriaRETHVaultAddress,
 } from "../../utils/oneInch";
 import { DollarOutlined, CheckCircleOutlined } from "@ant-design/icons";
-import {ethers} from "ethers";
-import {parseEther} from 'viem';
+import { ethers } from "ethers";
+import { parseEther } from "viem";
 
 import { useEffect, useState } from "react";
 import {
   useContractWrite,
   useAccount,
   useBalance,
+  usePrepareContractWrite,
   useContractRead,
 } from "wagmi";
+
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import NumericInput from "./NumberInput";
 
 const { Option } = Select;
-const depositSchema = z.number().min(0.01, "Deposit amount should be larger than 0.01");
+const depositSchema = z
+  .number()
+  .min(0.01, "Deposit amount should be larger than 0.01");
+
+function validateDepositData(depositData) {
+  function isBigNumber(obj) {
+    return obj && obj._isBigNumber === true && typeof obj._hex === "string";
+  }
+
+  function isAddress(str) {
+    return typeof str === "string" && str.startsWith("0x") && str.length === 42;
+  }
+
+  function isSwapData(obj) {
+    return (
+      obj &&
+      typeof obj.swapType === "number" &&
+      isAddress(obj.extRouter) &&
+      Array.isArray(obj.extCalldata) &&
+      typeof obj.needScale === "boolean"
+    );
+  }
+
+  function isGuessData(obj) {
+    return (
+      obj &&
+      isBigNumber(obj.guessMin) &&
+      isBigNumber(obj.guessMax) &&
+      isBigNumber(obj.guessOffchain) &&
+      typeof obj.maxIteration === "number" &&
+      typeof obj.eps === "string"
+    );
+  }
+
+  function isInputData(obj) {
+    return (
+      obj &&
+      isAddress(obj.tokenIn) &&
+      isBigNumber(obj.netTokenIn) &&
+      isAddress(obj.tokenMintSy) &&
+      isAddress(obj.bulk) &&
+      isAddress(obj.pendleSwap) &&
+      isSwapData(obj.swapData)
+    );
+  }
+
+  if (!isBigNumber(depositData.amount)) {
+    throw new Error("Expected amount to be a BigNumber");
+  }
+
+  if (!isAddress(depositData.receiver)) {
+    throw new Error("Expected receiver to be an address");
+  }
+
+  if (typeof depositData.oneInchDataDpx !== "string") {
+    throw new Error("Expected oneInchDataDpx to be a string");
+  }
+
+  if (!isBigNumber(depositData.glpMinLpOut)) {
+    throw new Error("Expected glpMinLpOut to be a BigNumber");
+  }
+
+  if (!isGuessData(depositData.glpGuessPtReceivedFromSy)) {
+    throw new Error(
+      "Expected glpGuessPtReceivedFromSy to be correctly formatted",
+    );
+  }
+
+  if (!isInputData(depositData.glpInput)) {
+    throw new Error("Expected glpInput to be correctly formatted");
+  }
+
+  if (!isBigNumber(depositData.gdaiMinLpOut)) {
+    throw new Error("Expected gdaiMinLpOut to be a BigNumber");
+  }
+
+  if (!isGuessData(depositData.gdaiGuessPtReceivedFromSy)) {
+    throw new Error(
+      "Expected gdaiGuessPtReceivedFromSy to be correctly formatted",
+    );
+  }
+
+  if (!isInputData(depositData.gdaiInput)) {
+    throw new Error("Expected gdaiInput to be correctly formatted");
+  }
+
+  if (typeof depositData.gdaiOneInchDataGDAI !== "string") {
+    throw new Error("Expected gdaiOneInchDataGDAI to be a string");
+  }
+
+  if (!isBigNumber(depositData.rethMinLpOut)) {
+    throw new Error("Expected rethMinLpOut to be a BigNumber");
+  }
+
+  if (!isGuessData(depositData.rethGuessPtReceivedFromSy)) {
+    throw new Error(
+      "Expected rethGuessPtReceivedFromSy to be correctly formatted",
+    );
+  }
+
+  if (!isInputData(depositData.rethInput)) {
+    throw new Error("Expected rethInput to be correctly formatted");
+  }
+
+  if (typeof depositData.rethOneInchDataRETH !== "string") {
+    throw new Error("Expected rethOneInchDataRETH to be a string");
+  }
+
+  console.log("All checks passed!");
+}
 
 const ZapInButton = () => {
   const { address } = useAccount();
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-    const showModal = () => {
+  const showModal = () => {
     setOpen(true);
-};
+  };
 
-const handleOk = () => {
+  const handleOk = () => {
     setLoading(true);
     setTimeout(() => {
-        setLoading(false);
-        setOpen(false);
+      setLoading(false);
+      setOpen(false);
     }, 3000);
-};
+  };
 
-const handleCancel = () => {
+  const handleCancel = () => {
     setOpen(false);
-};
-
+  };
 
   const { data: wethBalance } = useBalance({
     address,
@@ -68,6 +178,7 @@ const handleCancel = () => {
   const [amount, setAmount] = useState(0);
   const [inputValue, setInputValue] = useState("");
   const [alert, setAlert] = useState(false);
+  const [depositData, setDepositData] = useState({});
 
   const [oneInchSwapDataForDpx, setOneInchSwapDataForDpx] = useState("");
   const [oneInchSwapDataForGDAI, setOneInchSwapDataForGDAI] = useState("");
@@ -81,20 +192,38 @@ const handleCancel = () => {
   const [approveAmount, setApproveAmount] = useState(0);
   const [isApproved, setIsApproved] = useState(false);
   const renderStatusCircle = (isLoading, isSuccess) => {
-        if (isLoading) {
-            return <Spin />;
-        } else if (isSuccess) {
-            return <CheckCircleOutlined style={{ color: 'green', marginRight: '10px' }} />;
-        } else {
-            return <div style={{ border: '1px solid white', borderRadius: '50%', width: '20px', height: '20px', marginRight: '10px', display: 'inline-block' }}></div>
-
+    if (isLoading) {
+      return <Spin />;
+    } else if (isSuccess) {
+      return (
+        <CheckCircleOutlined style={{ color: "green", marginRight: "10px" }} />
+      );
+    } else {
+      return (
+        <div
+          style={{
+            border: "1px solid white",
+            borderRadius: "50%",
+            width: "20px",
+            height: "20px",
+            marginRight: "10px",
+            display: "inline-block",
+          }}
+        ></div>
+      );
     }
   };
-const { write, isLoading: depositIsLoading, isSuccess: depositIsSuccess } = useContractWrite({
+  const { config, error } = usePrepareContractWrite({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "deposit",
+    args: [depositData],
   });
+  const {
+    write,
+    isLoading: depositIsLoading,
+    isSuccess: depositIsSuccess,
+  } = useContractWrite(config);
   const {
     write: approveWrite,
     isLoading: approveIsLoading,
@@ -145,189 +274,187 @@ const { write, isLoading: depositIsLoading, isSuccess: depositIsSuccess } = useC
 
   const handleZapIn = async () => {
     const validationResult = depositSchema.safeParse(Number(inputValue));
-      console.log("validationResult", validationResult);
-      if (!validationResult.success) {
-          console.log("validationResult.error", validationResult.error);
-          setAlert(true);
-          return;
-      } else {
-    setAlert(false);
-    showModal();
-    let amount_;
-    try {
-      amount_ = ethers.utils.parseEther(inputValue);
-      setAmount(amount_);
-      console.log("amount_", amount_);
-    } catch (error) {
+    console.log("validationResult", validationResult);
+    if (!validationResult.success) {
+      console.log("validationResult.error", validationResult.error);
+      setAlert(true);
       return;
-    }
-    setAmount(amount_);
-    // check the type of amount and the approveAmount
-    console.log("approveAmount", approveAmount, typeof approveAmount);
-    console.log("amount", amount, typeof amount);
-    if (approveAmount < amount) {
+    } else {
+      setAlert(false);
+      showModal();
+      let amount_;
+      try {
+        amount_ = ethers.utils.parseEther(inputValue);
+        setAmount(amount_);
+        console.log("amount_", amount_);
+      } catch (error) {
+        return;
+      }
+      setAmount(amount_);
+      // check the type of amount and the approveAmount
+      console.log("approveAmount", approveAmount, typeof approveAmount);
+      console.log("amount", amount, typeof amount);
+      if (approveAmount < amount) {
         console.log(amount);
         console.log(amount.toString());
-      console.log("approveAmount", approveAmount);
-      setApiDataReady(false);
-      approveWrite({
-        args: [portfolioContractAddress, amount.toString()],
-        from: address,
-      });
-      console.log("approveWrite", approveWrite);
-      // wait until the approve transaction is successful
-      if (approveIsSuccess) {
+        console.log("approveAmount", approveAmount);
+        setApiDataReady(false);
+        approveWrite({
+          args: [portfolioContractAddress, amount.toString()],
+          from: address,
+        });
+        console.log("approveWrite", approveWrite);
+        // wait until the approve transaction is successful
+        if (approveIsSuccess) {
+          setApproveReady(true);
+          console.log("approveAmount", approveAmount);
+        }
+      } else {
         setApproveReady(true);
         console.log("approveAmount", approveAmount);
+        console.log("approveWrite", approveWrite);
       }
-    } else {
-      setApproveReady(true);
-    console.log("approveAmount", approveAmount);
-    console.log("approveWrite", approveWrite);
-    }
-    setApiLoading(true);
-    const amountAfterChargingFee = amount_.mul(997).div(1000);
-    const [
-      oneInchSwapDataForDpx,
-      oneInchSwapDataForGDAI,
-      oneInchSwapDataForRETH,
-    ] = await Promise.all([
-      fetch1InchSwapData(
-        42161,
-        wethAddress,
-        dpxTokenAddress,
-        amountAfterChargingFee.div(8),
-        dpxVaultAddress,
-        5,
-      ),
-      fetch1InchSwapData(
-        42161,
-        wethAddress,
-        daiAddress,
-        amountAfterChargingFee.div(4),
-        equilibriaGDAIVaultAddress,
-        5,
-      ),
-      fetch1InchSwapData(
-        42161,
-        wethAddress,
-        rethTokenAddress,
-        amountAfterChargingFee.div(4),
-        equilibriaRETHVaultAddress,
-        5,
-      ),
-    ]);
-    const [pendleGDAIZapInData, pendleGLPZapInData, pendleRETHZapInData] =
-      await Promise.all([
-        getPendleZapInData(
+      setApiLoading(true);
+      const amountAfterChargingFee = amount_.mul(997).div(1000);
+      const [
+        oneInchSwapDataForDpx,
+        oneInchSwapDataForGDAI,
+        oneInchSwapDataForRETH,
+      ] = await Promise.all([
+        fetch1InchSwapData(
           42161,
-          gDAIMarketPoolAddress,
-          ethers.BigNumber.from(oneInchSwapDataForGDAI.toAmount)
-            .mul(95)
-            .div(100),
-          0.1,
-          daiAddress,
-        ),
-        getPendleZapInData(
-          42161,
-          glpMarketPoolAddress,
-          amountAfterChargingFee.div(4),
-          0.1,
           wethAddress,
+          dpxTokenAddress,
+          amountAfterChargingFee.div(8),
+          dpxVaultAddress,
+          5,
         ),
-        getPendleZapInData(
+        fetch1InchSwapData(
           42161,
-          rethMarketPoolAddress,
-          ethers.BigNumber.from(oneInchSwapDataForRETH.toAmount)
-            .mul(95)
-            .div(100),
-          0.1,
+          wethAddress,
+          daiAddress,
+          amountAfterChargingFee.div(4),
+          equilibriaGDAIVaultAddress,
+          5,
+        ),
+        fetch1InchSwapData(
+          42161,
+          wethAddress,
           rethTokenAddress,
+          amountAfterChargingFee.div(4),
+          equilibriaRETHVaultAddress,
+          5,
         ),
       ]);
+      const [pendleGDAIZapInData, pendleGLPZapInData, pendleRETHZapInData] =
+        await Promise.all([
+          getPendleZapInData(
+            42161,
+            gDAIMarketPoolAddress,
+            ethers.BigNumber.from(oneInchSwapDataForGDAI.toAmount)
+              .mul(95)
+              .div(100),
+            0.1,
+            daiAddress,
+          ),
+          getPendleZapInData(
+            42161,
+            glpMarketPoolAddress,
+            amountAfterChargingFee.div(4),
+            0.1,
+            wethAddress,
+          ),
+          getPendleZapInData(
+            42161,
+            rethMarketPoolAddress,
+            ethers.BigNumber.from(oneInchSwapDataForRETH.toAmount)
+              .mul(95)
+              .div(100),
+            0.1,
+            rethTokenAddress,
+          ),
+        ]);
 
-    setOneInchSwapDataForDpx(oneInchSwapDataForDpx.tx.data);
-    setOneInchSwapDataForGDAI(oneInchSwapDataForGDAI.tx.data);
-    setOneInchSwapDataForRETH(oneInchSwapDataForRETH.tx.data);
-    setPendleGDAIZapInData(pendleGDAIZapInData);
-    setPendleGLPZapInData(pendleGLPZapInData);
-    setPendleRETHZapInData(pendleRETHZapInData);
+      // Define any parameters required by the deposit function
+      pendleGLPZapInData[3]["eps"] = ethers.BigNumber.from(
+        pendleGLPZapInData[3]["eps"],
+      );
+      pendleGLPZapInData[3]["guessMax"] = ethers.BigNumber.from(
+        pendleGLPZapInData[3]["guessMax"],
+      );
+      pendleGLPZapInData[3]["guessMin"] = ethers.BigNumber.from(
+        pendleGLPZapInData[3]["guessMin"],
+      );
+      pendleGLPZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
+        pendleGLPZapInData[3]["guessOffchain"],
+      );
+      pendleGLPZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
+        pendleGLPZapInData[4]["netTokenIn"],
+      );
 
-    console.log("amount:", amount);
-    console.log("address:", address);
-    console.log("oneInchSwapDataForDpx:", oneInchSwapDataForDpx);
-    console.log("pendleGLPZapInData:", pendleGLPZapInData);
-    console.log("pendleGDAIZapInData:", pendleGDAIZapInData);
-    console.log("oneInchSwapDataForGDAI:", oneInchSwapDataForGDAI);
-    console.log("pendleRETHZapInData:", pendleRETHZapInData);
-    console.log("oneInchSwapDataForRETH:", oneInchSwapDataForRETH);
+      pendleGDAIZapInData[3]["guessMax"] = ethers.BigNumber.from(
+        pendleGDAIZapInData[3]["guessMax"],
+      );
+      pendleGDAIZapInData[3]["guessMin"] = ethers.BigNumber.from(
+        pendleGDAIZapInData[3]["guessMin"],
+      );
+      pendleGDAIZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
+        pendleGDAIZapInData[3]["guessOffchain"],
+      );
+      pendleGDAIZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
+        pendleGDAIZapInData[4]["netTokenIn"],
+      );
 
-    // Define any parameters required by the deposit function
-    pendleGLPZapInData[3]["eps"] = ethers.BigNumber.from(
-      pendleGLPZapInData[3]["eps"],
-    );
-    pendleGLPZapInData[3]["guessMax"] = ethers.BigNumber.from(
-      pendleGLPZapInData[3]["guessMax"],
-    );
-    pendleGLPZapInData[3]["guessMin"] = ethers.BigNumber.from(
-      pendleGLPZapInData[3]["guessMin"],
-    );
-    pendleGLPZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
-      pendleGLPZapInData[3]["guessOffchain"],
-    );
-    pendleGLPZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
-      pendleGLPZapInData[4]["netTokenIn"],
-    );
+      pendleRETHZapInData[3]["guessMax"] = ethers.BigNumber.from(
+        pendleRETHZapInData[3]["guessMax"],
+      );
+      pendleRETHZapInData[3]["guessMin"] = ethers.BigNumber.from(
+        pendleRETHZapInData[3]["guessMin"],
+      );
+      pendleRETHZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
+        pendleRETHZapInData[3]["guessOffchain"],
+      );
+      pendleRETHZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
+        pendleRETHZapInData[4]["netTokenIn"],
+      );
+      console.log(amount);
+      console.log(ethers.BigNumber.from(amount));
+      const depositData = {
+        amount: ethers.BigNumber.from(amount),
+        receiver: address,
+        oneInchDataDpx: oneInchSwapDataForDpx.tx.data,
+        glpMinLpOut: ethers.BigNumber.from(pendleGLPZapInData[2]),
+        glpGuessPtReceivedFromSy: pendleGLPZapInData[3],
+        glpInput: pendleGLPZapInData[4],
+        gdaiMinLpOut: ethers.BigNumber.from(pendleGDAIZapInData[2]),
+        gdaiGuessPtReceivedFromSy: pendleGDAIZapInData[3],
+        gdaiInput: pendleGDAIZapInData[4],
+        gdaiOneInchDataGDAI: oneInchSwapDataForGDAI.tx.data,
+        rethMinLpOut: ethers.BigNumber.from(pendleRETHZapInData[2]),
+        rethGuessPtReceivedFromSy: pendleRETHZapInData[3],
+        rethInput: pendleRETHZapInData[4],
+        rethOneInchDataRETH: oneInchSwapDataForRETH.tx.data,
+      };
+      setDepositData(depositData);
+      setApiLoading(false);
+      setApiDataReady(true);
 
-    pendleGDAIZapInData[3]["guessMax"] = ethers.BigNumber.from(
-      pendleGDAIZapInData[3]["guessMax"],
-    );
-    pendleGDAIZapInData[3]["guessMin"] = ethers.BigNumber.from(
-      pendleGDAIZapInData[3]["guessMin"],
-    );
-    pendleGDAIZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
-      pendleGDAIZapInData[3]["guessOffchain"],
-    );
-    pendleGDAIZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
-      pendleGDAIZapInData[4]["netTokenIn"],
-    );
+      // The third step: deposit
+      console.log("depositData", depositData);
+      console.log(apiDataReady);
 
-    pendleRETHZapInData[3]["guessMax"] = ethers.BigNumber.from(
-      pendleRETHZapInData[3]["guessMax"],
-    );
-    pendleRETHZapInData[3]["guessMin"] = ethers.BigNumber.from(
-      pendleRETHZapInData[3]["guessMin"],
-    );
-    pendleRETHZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
-      pendleRETHZapInData[3]["guessOffchain"],
-    );
-    pendleRETHZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
-      pendleRETHZapInData[4]["netTokenIn"],
-    );
-    const depositData = {
-      amount: ethers.BigNumber.from(amount),
-      receiver: address,
-      oneInchDataDpx: oneInchSwapDataForDpx,
-      glpMinLpOut: ethers.BigNumber.from(pendleGLPZapInData[2]),
-      glpGuessPtReceivedFromSy: pendleGLPZapInData[3],
-      glpInput: pendleGLPZapInData[4],
-      gdaiMinLpOut: ethers.BigNumber.from(pendleGDAIZapInData[2]),
-      gdaiGuessPtReceivedFromSy: pendleGDAIZapInData[3],
-      gdaiInput: pendleGDAIZapInData[4],
-      gdaiOneInchDataGDAI: oneInchSwapDataForGDAI,
-      rethMinLpOut: ethers.BigNumber.from(pendleRETHZapInData[2]),
-      rethGuessPtReceivedFromSy: pendleRETHZapInData[3],
-      rethInput: pendleRETHZapInData[4],
-      rethOneInchDataRETH: oneInchSwapDataForRETH,
-    };
-    setApiDataReady(true);
-
-    // The third step: deposit
-    console.log("depositData", depositData);
-    write({
-      args: [depositData],
-      from: address,
-    });
+      if (write) {
+        console.log("here is the ", depositData);
+        write({
+          args: [depositData],
+          from: address,
+        });
+      } else {
+        console.log("here is the ", depositData);
+        console.log(error);
+        // validateDepositData(depositData);
+        console.log("write is not defined");
+      }
     }
   };
   const selectBefore = (
@@ -339,45 +466,72 @@ const { write, isLoading: depositIsLoading, isSuccess: depositIsSuccess } = useC
       <Option value="WETH">WETH</Option>
     </Select>
   );
-const modalContent = (
+  const modalContent = (
     <Modal
-        visible={open}
-        closeIcon={<> </>}
-        onCancel={handleCancel}
-        bodyStyle={{ backgroundColor: 'black', color: 'white' }} // Set background and font color for the body
-        wrapClassName="black-modal" // Custom class to style the modal wrapper
-        footer={[
-            <Button key="back" onClick={handleCancel} style={{ color: 'black', backgroundColor: '#beed54', borderColor: '#beed54'}}>
-                Return
-            </Button>,
-        ]}
+      visible={open}
+      closeIcon={<> </>}
+      onCancel={handleCancel}
+      bodyStyle={{ backgroundColor: "black", color: "white" }} // Set background and font color for the body
+      wrapClassName="black-modal" // Custom class to style the modal wrapper
+      footer={[
+        <Button
+          key="back"
+          onClick={handleCancel}
+          style={{
+            color: "black",
+            backgroundColor: "#beed54",
+            borderColor: "#beed54",
+          }}
+        >
+          Return
+        </Button>,
+      ]}
     >
-        <div style={{ 
-            border: '2px solid #beed54', 
-            borderRadius: '1rem',
-            padding: '10px', // This creates a margin-like effect for the border
-            margin: '10px'  // Adjust this value to set the distance of the border from the modal frame
-        }}>
-    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-        {renderStatusCircle(approveIsLoading, approveIsSuccess)}
-    <span> Approve </span>
-    </div>
-    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-        {renderStatusCircle(approveIsLoading, approveIsSuccess)}
-    <span> Fetching the best route </span>
-    </div>
-    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-        {renderStatusCircle(depositIsLoading, depositIsSuccess)}
-        <span>  Deposit </span>
-    </div>
+      <div
+        style={{
+          border: "2px solid #beed54",
+          borderRadius: "1rem",
+          padding: "10px", // This creates a margin-like effect for the border
+          margin: "10px", // Adjust this value to set the distance of the border from the modal frame
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: "10px",
+          }}
+        >
+          {renderStatusCircle(approveIsLoading, approveIsSuccess)}
+          <span> Approve </span>
         </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: "10px",
+          }}
+        >
+          {renderStatusCircle(apiLoading, apiDataReady)}
+          <span> Fetching the best route </span>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: "10px",
+          }}
+        >
+          {renderStatusCircle(depositIsLoading, depositIsSuccess)}
+          <span> Deposit </span>
+        </div>
+      </div>
     </Modal>
-);
-
+  );
 
   return (
     <div>
-         {modalContent}
+      {modalContent}
       <Space.Compact style={{ width: "90%" }}>
         <NumericInput
           addonBefore={selectBefore}
@@ -408,13 +562,12 @@ const modalContent = (
         {/* {!approveReady ? approvingWording : apiDataReady ? normalWording : loadingWording} */}
         {apiDataReady ? normalWording : loadingWording}
       </Button>
-        {alert && (
-            // make text color red, and state please enter an amount larger than 0.01
-            <div style={{ color: 'red' }}>
-                Please enter an amount larger than 0.01
-            </div>
-
-          )}
+      {alert && (
+        // make text color red, and state please enter an amount larger than 0.01
+        <div style={{ color: "red" }}>
+          Please enter an amount larger than 0.01
+        </div>
+      )}
     </div>
   );
 };
