@@ -417,6 +417,8 @@ const ZapInButton = () => {
           Max
         </Button>
       </Space.Compact>
+      <div style={{ color: "white" }}>slippage: 0.05%</div>
+
       <Button
         loading={!apiDataReady}
         onClick={handleZapIn} // Added onClick handler
@@ -434,7 +436,6 @@ const ZapInButton = () => {
         {/* {!approveReady ? approvingWording : apiDataReady ? normalWording : loadingWording} */}
         {apiDataReady ? normalWording : loadingWording}
       </Button>
-      <div style={{ color: "white" }}>slipptage: 0.05%</div>
       {alert && (
         // make text color red, and state please enter an amount larger than 0.01
         <div style={{ color: "red" }}>
