@@ -147,7 +147,6 @@ const ZapInButton = () => {
 
   const handleInputChange = async (eventValue) => {
     setInputValue(eventValue);
-    console.log(Number(eventValue));
     let amount_;
     amount_ = ethers.utils.parseEther(eventValue);
     setAmount(amount_);
@@ -167,7 +166,6 @@ const ZapInButton = () => {
 
   const handleZapIn = async () => {
     const validationResult = depositSchema.safeParse(Number(inputValue));
-    console.log("validationResult", validationResult);
     if (!validationResult.success) {
       console.log("validationResult.error", validationResult.error);
       setAlert(true);
@@ -179,33 +177,23 @@ const ZapInButton = () => {
       try {
         amount_ = ethers.utils.parseEther(inputValue);
         setAmount(amount_);
-        console.log("amount_", amount_);
       } catch (error) {
         return;
       }
       setAmount(amount_);
       // check the type of amount and the approveAmount
-      console.log("approveAmount", approveAmount, typeof approveAmount);
-      console.log("amount", amount, typeof amount);
       if (approveAmount < amount) {
-        console.log(amount);
-        console.log(amount.toString());
-        console.log("approveAmount", approveAmount);
         setApiDataReady(false);
         approveWrite({
           args: [portfolioContractAddress, amount.toString()],
           from: address,
         });
-        console.log("approveWrite", approveWrite);
         // wait until the approve transaction is successful
         if (approveIsSuccess) {
           setApproveReady(true);
-          console.log("approveAmount", approveAmount);
         }
       } else {
         setApproveReady(true);
-        console.log("approveAmount", approveAmount);
-        console.log("approveWrite", approveWrite);
       }
       setApiLoading(true);
       const amountAfterChargingFee = amount_.mul(997).div(1000);
@@ -310,8 +298,7 @@ const ZapInButton = () => {
       pendleRETHZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
         pendleRETHZapInData[4]["netTokenIn"],
       );
-      console.log(amount);
-      console.log(ethers.BigNumber.from(amount));
+
       const depositData = {
         amount: ethers.BigNumber.from(amount),
         receiver: address,
@@ -332,21 +319,13 @@ const ZapInButton = () => {
       setApiLoading(false);
       setApiDataReady(true);
 
-      // The third step: deposit
-      console.log("depositData", depositData);
-      console.log(apiDataReady);
-
       if (write) {
-        console.log("here is the ", depositData);
         write({
           args: [depositData],
           from: address,
         });
       } else {
-        console.log("here is the ", depositData);
         console.log(error);
-        // validateDepositData(depositData);
-        console.log("write is not defined");
       }
     }
   };
