@@ -1,4 +1,6 @@
-import { Button, Space, Select } from "antd";
+import { Button, Space, Select, Modal } from "antd";
+import { Spin } from 'antd';
+import { z } from 'zod';
 import debounce from "lodash/debounce";
 import {
   fetch1InchSwapData,
@@ -15,7 +17,10 @@ import {
   equilibriaGDAIVaultAddress,
   equilibriaRETHVaultAddress,
 } from "../../utils/oneInch";
-import { DollarOutlined } from "@ant-design/icons";
+import { DollarOutlined, CheckCircleOutlined } from "@ant-design/icons";
+import {ethers} from "ethers";
+import {parseEther} from 'viem';
+
 import { useEffect, useState } from "react";
 import {
   useContractWrite,
@@ -27,10 +32,29 @@ import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToke
 import NumericInput from "./NumberInput";
 
 const { Option } = Select;
-const { ethers } = require("ethers");
+const depositSchema = z.number().min(0.01, "Deposit amount should be larger than 0.01");
 
 const ZapInButton = () => {
   const { address } = useAccount();
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+    const showModal = () => {
+    setOpen(true);
+};
+
+const handleOk = () => {
+    setLoading(true);
+    setTimeout(() => {
+        setLoading(false);
+        setOpen(false);
+    }, 3000);
+};
+
+const handleCancel = () => {
+    setOpen(false);
+};
+
+
   const { data: wethBalance } = useBalance({
     address,
     token: wethAddress,
@@ -43,6 +67,7 @@ const ZapInButton = () => {
   const loadingWording = "Fetching the best route to deposit (23s)";
   const [amount, setAmount] = useState(0);
   const [inputValue, setInputValue] = useState("");
+  const [alert, setAlert] = useState(false);
 
   const [oneInchSwapDataForDpx, setOneInchSwapDataForDpx] = useState("");
   const [oneInchSwapDataForGDAI, setOneInchSwapDataForGDAI] = useState("");
@@ -51,9 +76,21 @@ const ZapInButton = () => {
   const [pendleGLPZapInData, setPendleGLPZapInData] = useState("");
   const [pendleRETHZapInData, setPendleRETHZapInData] = useState("");
   const [apiDataReady, setApiDataReady] = useState(true);
+  const [apiLoading, setApiLoading] = useState(false);
   const [approveReady, setApproveReady] = useState(true);
   const [approveAmount, setApproveAmount] = useState(0);
-  const { write, isLoading: depositIsLoading } = useContractWrite({
+  const [isApproved, setIsApproved] = useState(false);
+  const renderStatusCircle = (isLoading, isSuccess) => {
+        if (isLoading) {
+            return <Spin />;
+        } else if (isSuccess) {
+            return <CheckCircleOutlined style={{ color: 'green', marginRight: '10px' }} />;
+        } else {
+            return <div style={{ border: '1px solid white', borderRadius: '50%', width: '20px', height: '20px', marginRight: '10px', display: 'inline-block' }}></div>
+
+    }
+  };
+const { write, isLoading: depositIsLoading, isSuccess: depositIsSuccess } = useContractWrite({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "deposit",
@@ -86,19 +123,69 @@ const ZapInButton = () => {
     setApproveAmount(approveAmountContract.data);
   }, [address, approveAmountContract.loading, approveReady]);
 
-  const handleInputChange = debounce(async (eventValue) => {
+  const handleInputChange = async (eventValue) => {
+    setInputValue(eventValue);
+    console.log(Number(eventValue));
+    let amount_;
+    amount_ = ethers.utils.parseEther(eventValue);
+    setAmount(amount_);
+  };
+  const handleOnClickMax = async () => {
+    setAmount(wethBalance.formatted);
+    setInputValue(wethBalance.formatted);
+    handleInputChange(wethBalance.formatted);
+
+    // TODO(david): find a better way to implement.
+    // Since `setAmount` need some time to propagate, the `amount` would be 0 at the first click.
+    // then be updated to the correct value at the second click.
+    if (approveAmount < amount || amount === 0) {
+      setApproveReady(false);
+    }
+  };
+
+  const handleZapIn = async () => {
+    const validationResult = depositSchema.safeParse(Number(inputValue));
+      console.log("validationResult", validationResult);
+      if (!validationResult.success) {
+          console.log("validationResult.error", validationResult.error);
+          setAlert(true);
+          return;
+      } else {
+    setAlert(false);
+    showModal();
     let amount_;
     try {
-      amount_ = ethers.utils.parseEther(eventValue);
+      amount_ = ethers.utils.parseEther(inputValue);
+      setAmount(amount_);
+      console.log("amount_", amount_);
     } catch (error) {
       return;
     }
     setAmount(amount_);
+    // check the type of amount and the approveAmount
+    console.log("approveAmount", approveAmount, typeof approveAmount);
+    console.log("amount", amount, typeof amount);
     if (approveAmount < amount) {
-      setApproveReady(false);
+        console.log(amount);
+        console.log(amount.toString());
+      console.log("approveAmount", approveAmount);
+      setApiDataReady(false);
+      approveWrite({
+        args: [portfolioContractAddress, amount.toString()],
+        from: address,
+      });
+      console.log("approveWrite", approveWrite);
+      // wait until the approve transaction is successful
+      if (approveIsSuccess) {
+        setApproveReady(true);
+        console.log("approveAmount", approveAmount);
+      }
+    } else {
+      setApproveReady(true);
+    console.log("approveAmount", approveAmount);
+    console.log("approveWrite", approveWrite);
     }
-    setApiDataReady(false);
-
+    setApiLoading(true);
     const amountAfterChargingFee = amount_.mul(997).div(1000);
     const [
       oneInchSwapDataForDpx,
@@ -165,31 +252,16 @@ const ZapInButton = () => {
     setPendleGDAIZapInData(pendleGDAIZapInData);
     setPendleGLPZapInData(pendleGLPZapInData);
     setPendleRETHZapInData(pendleRETHZapInData);
-    setApiDataReady(true);
-  }, 1000);
-  const handleOnClickMax = async () => {
-    setAmount(wethBalance.formatted);
-    setInputValue(wethBalance.formatted);
-    handleInputChange(wethBalance.formatted);
 
-    // TODO(david): find a better way to implement.
-    // Since `setAmount` need some time to propagate, the `amount` would be 0 at the first click.
-    // then be updated to the correct value at the second click.
-    if (approveAmount < amount || amount === 0) {
-      setApproveReady(false);
-    }
-  };
+    console.log("amount:", amount);
+    console.log("address:", address);
+    console.log("oneInchSwapDataForDpx:", oneInchSwapDataForDpx);
+    console.log("pendleGLPZapInData:", pendleGLPZapInData);
+    console.log("pendleGDAIZapInData:", pendleGDAIZapInData);
+    console.log("oneInchSwapDataForGDAI:", oneInchSwapDataForGDAI);
+    console.log("pendleRETHZapInData:", pendleRETHZapInData);
+    console.log("oneInchSwapDataForRETH:", oneInchSwapDataForRETH);
 
-  const handleZapIn = async () => {
-    if (approveAmount < amount) {
-      setApiDataReady(false);
-      approveWrite({
-        args: [portfolioContractAddress, amount],
-        from: address,
-      });
-      setApproveReady(true);
-    }
-    setApiDataReady(false);
     // Define any parameters required by the deposit function
     pendleGLPZapInData[3]["eps"] = ethers.BigNumber.from(
       pendleGLPZapInData[3]["eps"],
@@ -248,11 +320,15 @@ const ZapInButton = () => {
       rethInput: pendleRETHZapInData[4],
       rethOneInchDataRETH: oneInchSwapDataForRETH,
     };
+    setApiDataReady(true);
+
+    // The third step: deposit
+    console.log("depositData", depositData);
     write({
       args: [depositData],
       from: address,
     });
-    setApiDataReady(true);
+    }
   };
   const selectBefore = (
     <Select
@@ -263,16 +339,51 @@ const ZapInButton = () => {
       <Option value="WETH">WETH</Option>
     </Select>
   );
+const modalContent = (
+    <Modal
+        visible={open}
+        closeIcon={<> </>}
+        onCancel={handleCancel}
+        bodyStyle={{ backgroundColor: 'black', color: 'white' }} // Set background and font color for the body
+        wrapClassName="black-modal" // Custom class to style the modal wrapper
+        footer={[
+            <Button key="back" onClick={handleCancel} style={{ color: 'black', backgroundColor: '#beed54', borderColor: '#beed54'}}>
+                Return
+            </Button>,
+        ]}
+    >
+        <div style={{ 
+            border: '2px solid #beed54', 
+            borderRadius: '1rem',
+            padding: '10px', // This creates a margin-like effect for the border
+            margin: '10px'  // Adjust this value to set the distance of the border from the modal frame
+        }}>
+    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+        {renderStatusCircle(approveIsLoading, approveIsSuccess)}
+    <span> Approve </span>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+        {renderStatusCircle(approveIsLoading, approveIsSuccess)}
+    <span> Fetching the best route </span>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+        {renderStatusCircle(depositIsLoading, depositIsSuccess)}
+        <span>  Deposit </span>
+    </div>
+        </div>
+    </Modal>
+);
+
 
   return (
     <div>
+         {modalContent}
       <Space.Compact style={{ width: "90%" }}>
         <NumericInput
           addonBefore={selectBefore}
           placeholder={`Balance: ${wethBalance ? wethBalance.formatted : 0}`}
           value={inputValue}
           onChange={(value) => {
-            setInputValue(value);
             handleInputChange(value);
           }}
         />
@@ -297,6 +408,13 @@ const ZapInButton = () => {
         {/* {!approveReady ? approvingWording : apiDataReady ? normalWording : loadingWording} */}
         {apiDataReady ? normalWording : loadingWording}
       </Button>
+        {alert && (
+            // make text color red, and state please enter an amount larger than 0.01
+            <div style={{ color: 'red' }}>
+                Please enter an amount larger than 0.01
+            </div>
+
+          )}
     </div>
   );
 };
