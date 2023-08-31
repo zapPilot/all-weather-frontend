@@ -18,7 +18,6 @@ import {
   equilibriaRETHVaultAddress,
 } from "../../utils/oneInch";
 import { DollarOutlined, CheckCircleOutlined } from "@ant-design/icons";
-import { ethers } from "ethers";
 import { parseEther } from "viem";
 
 import { useEffect, useState } from "react";
@@ -32,7 +31,7 @@ import {
 
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import NumericInput from "./NumberInput";
-
+const { ethers } = require("ethers");
 const { Option } = Select;
 const depositSchema = z
   .number()
@@ -319,14 +318,20 @@ const ZapInButton = () => {
       setApiLoading(false);
       setApiDataReady(true);
 
-      if (write) {
-        write({
-          args: [depositData],
-          from: address,
-        });
-      } else {
-        console.log(error);
-      }
+        // wait for the write function to be called
+        function waitForWrite() {
+          if (write) {
+            write({
+              args: [depositData],
+              from: address,
+            });
+            return;
+          }
+          setTimeout(waitForWrite, 3000);
+        console.log(depositData, error);
+        }
+        waitForWrite();
+
     }
   };
   const selectBefore = (
