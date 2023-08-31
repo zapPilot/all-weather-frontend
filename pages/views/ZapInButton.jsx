@@ -318,20 +318,19 @@ const ZapInButton = () => {
       setApiLoading(false);
       setApiDataReady(true);
 
-        // wait for the write function to be called
-        function waitForWrite() {
-          if (write) {
-            write({
-              args: [depositData],
-              from: address,
-            });
-            return;
-          }
-          setTimeout(waitForWrite, 3000);
-        console.log(depositData, error);
+      // wait for the write function to be called
+      function waitForWrite() {
+        if (write) {
+          write({
+            args: [depositData],
+            from: address,
+          });
+          return;
         }
-        waitForWrite();
-
+        setTimeout(waitForWrite, 3000);
+        console.log(depositData, error);
+      }
+      waitForWrite();
     }
   };
   const selectBefore = (
