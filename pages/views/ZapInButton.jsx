@@ -70,7 +70,6 @@ const ZapInButton = () => {
   const [amount, setAmount] = useState(0);
   const [inputValue, setInputValue] = useState("");
   const [alert, setAlert] = useState(false);
-  const [depositData, setDepositData] = useState({});
 
   const [oneInchSwapDataForDpx, setOneInchSwapDataForDpx] = useState("");
   const [oneInchSwapDataForGDAI, setOneInchSwapDataForGDAI] = useState("");
@@ -105,17 +104,15 @@ const ZapInButton = () => {
       );
     }
   };
-  const { config, error } = usePrepareContractWrite({
-    address: portfolioContractAddress,
-    abi: permanentPortfolioJson.abi,
-    functionName: "deposit",
-    args: [depositData],
-  });
   const {
     write,
     isLoading: depositIsLoading,
     isSuccess: depositIsSuccess,
-  } = useContractWrite(config);
+  } = useContractWrite({
+          address: portfolioContractAddress,
+    abi: permanentPortfolioJson.abi,
+    functionName: "deposit",
+  });
   const {
     write: approveWrite,
     isLoading: approveIsLoading,
@@ -142,10 +139,12 @@ const ZapInButton = () => {
   useEffect(() => {
     if (approveAmountContract.loading === true) return; // Don't proceed if loading
     setApproveAmount(approveAmountContract.data);
-  }, [address, approveAmountContract.loading, approveReady]);
+      console.log("the approveAmountContract.data is", approveAmountContract.data);
+  }, [address, approveAmountContract.loading, approveReady, inputValue]);
 
   const handleInputChange = async (eventValue) => {
     setInputValue(eventValue);
+      console.log(inputValue);
     let amount_;
     amount_ = ethers.utils.parseEther(eventValue);
     setAmount(amount_);
@@ -181,7 +180,8 @@ const ZapInButton = () => {
       }
       setAmount(amount_);
       // check the type of amount and the approveAmount
-      if (approveAmount < amount) {
+      if (approveAmountContract.data < amount_) {
+          console.log("approveAmountContract.data", approveAmountContract.data);
         setApiDataReady(false);
         approveWrite({
           args: [portfolioContractAddress, amount.toString()],
@@ -298,7 +298,7 @@ const ZapInButton = () => {
         pendleRETHZapInData[4]["netTokenIn"],
       );
 
-      const depositData = {
+      const preparedDepositData = {
         amount: ethers.BigNumber.from(amount),
         receiver: address,
         oneInchDataDpx: oneInchSwapDataForDpx.tx.data,
@@ -314,7 +314,6 @@ const ZapInButton = () => {
         rethInput: pendleRETHZapInData[4],
         rethOneInchDataRETH: oneInchSwapDataForRETH.tx.data,
       };
-      setDepositData(depositData);
       setApiLoading(false);
       setApiDataReady(true);
 
@@ -322,13 +321,13 @@ const ZapInButton = () => {
       function waitForWrite() {
         if (write) {
           write({
-            args: [depositData],
+            args: [preparedDepositData],
             from: address,
           });
           return;
         }
         setTimeout(waitForWrite, 3000);
-        console.log(depositData, error);
+        console.log(preparedDepositData, error);
       }
       waitForWrite();
     }
