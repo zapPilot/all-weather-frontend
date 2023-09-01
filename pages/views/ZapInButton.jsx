@@ -109,7 +109,7 @@ const ZapInButton = () => {
     isLoading: depositIsLoading,
     isSuccess: depositIsSuccess,
   } = useContractWrite({
-          address: portfolioContractAddress,
+    address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "deposit",
   });
@@ -139,12 +139,15 @@ const ZapInButton = () => {
   useEffect(() => {
     if (approveAmountContract.loading === true) return; // Don't proceed if loading
     setApproveAmount(approveAmountContract.data);
-      console.log("the approveAmountContract.data is", approveAmountContract.data);
+    console.log(
+      "the approveAmountContract.data is",
+      approveAmountContract.data,
+    );
   }, [address, approveAmountContract.loading, approveReady, inputValue]);
 
   const handleInputChange = async (eventValue) => {
     setInputValue(eventValue);
-      console.log(inputValue);
+    console.log(inputValue);
     let amount_;
     amount_ = ethers.utils.parseEther(eventValue);
     setAmount(amount_);
@@ -181,7 +184,7 @@ const ZapInButton = () => {
       setAmount(amount_);
       // check the type of amount and the approveAmount
       if (approveAmountContract.data < amount_) {
-          console.log("approveAmountContract.data", approveAmountContract.data);
+        console.log("approveAmountContract.data", approveAmountContract.data);
         setApiDataReady(false);
         approveWrite({
           args: [portfolioContractAddress, amount.toString()],
