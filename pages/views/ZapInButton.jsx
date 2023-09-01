@@ -1,4 +1,6 @@
-import { Button, Space, Select } from "antd";
+import { Button, Space, Select, Modal } from "antd";
+import { Spin } from "antd";
+import { z } from "zod";
 import debounce from "lodash/debounce";
 import {
   fetch1InchSwapData,
@@ -15,22 +17,46 @@ import {
   equilibriaGDAIVaultAddress,
   equilibriaRETHVaultAddress,
 } from "../../utils/oneInch";
-import { DollarOutlined } from "@ant-design/icons";
+import { DollarOutlined, CheckCircleOutlined } from "@ant-design/icons";
+import { parseEther } from "viem";
+
 import { useEffect, useState } from "react";
 import {
   useContractWrite,
   useAccount,
   useBalance,
+  usePrepareContractWrite,
   useContractRead,
 } from "wagmi";
+
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import NumericInput from "./NumberInput";
-
-const { Option } = Select;
 const { ethers } = require("ethers");
+const { Option } = Select;
+const depositSchema = z
+  .number()
+  .min(0.01, "Deposit amount should be larger than 0.01");
 
 const ZapInButton = () => {
   const { address } = useAccount();
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const showModal = () => {
+    setOpen(true);
+  };
+
+  const handleOk = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setOpen(false);
+    }, 3000);
+  };
+
+  const handleCancel = () => {
+    setOpen(false);
+  };
+
   const { data: wethBalance } = useBalance({
     address,
     token: wethAddress,
@@ -43,6 +69,7 @@ const ZapInButton = () => {
   const loadingWording = "Fetching the best route to deposit (23s)";
   const [amount, setAmount] = useState(0);
   const [inputValue, setInputValue] = useState("");
+  const [alert, setAlert] = useState(false);
 
   const [oneInchSwapDataForDpx, setOneInchSwapDataForDpx] = useState("");
   const [oneInchSwapDataForGDAI, setOneInchSwapDataForGDAI] = useState("");
@@ -51,9 +78,37 @@ const ZapInButton = () => {
   const [pendleGLPZapInData, setPendleGLPZapInData] = useState("");
   const [pendleRETHZapInData, setPendleRETHZapInData] = useState("");
   const [apiDataReady, setApiDataReady] = useState(true);
+  const [apiLoading, setApiLoading] = useState(false);
   const [approveReady, setApproveReady] = useState(true);
   const [approveAmount, setApproveAmount] = useState(0);
-  const { write, isLoading: depositIsLoading } = useContractWrite({
+  const [isApproved, setIsApproved] = useState(false);
+  const renderStatusCircle = (isLoading, isSuccess) => {
+    if (isLoading) {
+      return <Spin />;
+    } else if (isSuccess) {
+      return (
+        <CheckCircleOutlined style={{ color: "green", marginRight: "10px" }} />
+      );
+    } else {
+      return (
+        <div
+          style={{
+            border: "1px solid white",
+            borderRadius: "50%",
+            width: "20px",
+            height: "20px",
+            marginRight: "10px",
+            display: "inline-block",
+          }}
+        ></div>
+      );
+    }
+  };
+  const {
+    write,
+    isLoading: depositIsLoading,
+    isSuccess: depositIsSuccess,
+  } = useContractWrite({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "deposit",
@@ -64,15 +119,11 @@ const ZapInButton = () => {
     isSuccess: approveIsSuccess,
   } = useContractWrite({
     address: wethAddress,
-    // for testing
-    // address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "approve",
   });
   const approveAmountContract = useContractRead({
-    // address: wethAddress,
-    // for testing
-    address: portfolioContractAddress,
+    address: wethAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "allowance",
     args: [address, portfolioContractAddress],
@@ -84,89 +135,19 @@ const ZapInButton = () => {
   useEffect(() => {
     if (approveAmountContract.loading === true) return; // Don't proceed if loading
     setApproveAmount(approveAmountContract.data);
-  }, [address, approveAmountContract.loading, approveReady]);
+    console.log(
+      "the approveAmountContract.data is",
+      approveAmountContract.data,
+    );
+  }, [address, approveAmountContract.loading, approveReady, inputValue]);
 
-  const handleInputChange = debounce(async (eventValue) => {
+  const handleInputChange = async (eventValue) => {
+    setInputValue(eventValue);
+    console.log(inputValue);
     let amount_;
-    try {
-      amount_ = ethers.utils.parseEther(eventValue);
-    } catch (error) {
-      return;
-    }
+    amount_ = ethers.utils.parseEther(eventValue);
     setAmount(amount_);
-    if (approveAmount < amount) {
-      setApproveReady(false);
-    }
-    setApiDataReady(false);
-
-    const amountAfterChargingFee = amount_.mul(997).div(1000);
-    const [
-      oneInchSwapDataForDpx,
-      oneInchSwapDataForGDAI,
-      oneInchSwapDataForRETH,
-    ] = await Promise.all([
-      fetch1InchSwapData(
-        42161,
-        wethAddress,
-        dpxTokenAddress,
-        amountAfterChargingFee.div(8),
-        dpxVaultAddress,
-        5,
-      ),
-      fetch1InchSwapData(
-        42161,
-        wethAddress,
-        daiAddress,
-        amountAfterChargingFee.div(4),
-        equilibriaGDAIVaultAddress,
-        5,
-      ),
-      fetch1InchSwapData(
-        42161,
-        wethAddress,
-        rethTokenAddress,
-        amountAfterChargingFee.div(4),
-        equilibriaRETHVaultAddress,
-        5,
-      ),
-    ]);
-    const [pendleGDAIZapInData, pendleGLPZapInData, pendleRETHZapInData] =
-      await Promise.all([
-        getPendleZapInData(
-          42161,
-          gDAIMarketPoolAddress,
-          ethers.BigNumber.from(oneInchSwapDataForGDAI.toAmount)
-            .mul(95)
-            .div(100),
-          0.1,
-          daiAddress,
-        ),
-        getPendleZapInData(
-          42161,
-          glpMarketPoolAddress,
-          amountAfterChargingFee.div(4),
-          0.1,
-          wethAddress,
-        ),
-        getPendleZapInData(
-          42161,
-          rethMarketPoolAddress,
-          ethers.BigNumber.from(oneInchSwapDataForRETH.toAmount)
-            .mul(95)
-            .div(100),
-          0.1,
-          rethTokenAddress,
-        ),
-      ]);
-
-    setOneInchSwapDataForDpx(oneInchSwapDataForDpx.tx.data);
-    setOneInchSwapDataForGDAI(oneInchSwapDataForGDAI.tx.data);
-    setOneInchSwapDataForRETH(oneInchSwapDataForRETH.tx.data);
-    setPendleGDAIZapInData(pendleGDAIZapInData);
-    setPendleGLPZapInData(pendleGLPZapInData);
-    setPendleRETHZapInData(pendleRETHZapInData);
-    setApiDataReady(true);
-  }, 1000);
+  };
   const handleOnClickMax = async () => {
     setAmount(wethBalance.formatted);
     setInputValue(wethBalance.formatted);
@@ -181,78 +162,174 @@ const ZapInButton = () => {
   };
 
   const handleZapIn = async () => {
-    if (approveAmount < amount) {
-      setApiDataReady(false);
-      approveWrite({
-        args: [portfolioContractAddress, amount],
-        from: address,
-      });
-      setApproveReady(true);
+    const validationResult = depositSchema.safeParse(Number(inputValue));
+    if (!validationResult.success) {
+      console.log("validationResult.error", validationResult.error);
+      setAlert(true);
+      return;
+    } else {
+      setAlert(false);
+      showModal();
+      let amount_;
+      try {
+        amount_ = ethers.utils.parseEther(inputValue);
+        setAmount(amount_);
+      } catch (error) {
+        return;
+      }
+      setAmount(amount_);
+      // check the type of amount and the approveAmount
+      if (approveAmountContract.data < amount_) {
+        console.log("approveAmountContract.data", approveAmountContract.data);
+        setApiDataReady(false);
+        approveWrite({
+          args: [portfolioContractAddress, amount.toString()],
+          from: address,
+        });
+        // wait until the approve transaction is successful
+        if (approveIsSuccess) {
+          setApproveReady(true);
+        }
+      } else {
+        setApproveReady(true);
+      }
+      setApiLoading(true);
+      const amountAfterChargingFee = amount_.mul(997).div(1000);
+      const [
+        oneInchSwapDataForDpx,
+        oneInchSwapDataForGDAI,
+        oneInchSwapDataForRETH,
+      ] = await Promise.all([
+        fetch1InchSwapData(
+          42161,
+          wethAddress,
+          dpxTokenAddress,
+          amountAfterChargingFee.div(8),
+          dpxVaultAddress,
+          5,
+        ),
+        fetch1InchSwapData(
+          42161,
+          wethAddress,
+          daiAddress,
+          amountAfterChargingFee.div(4),
+          equilibriaGDAIVaultAddress,
+          5,
+        ),
+        fetch1InchSwapData(
+          42161,
+          wethAddress,
+          rethTokenAddress,
+          amountAfterChargingFee.div(4),
+          equilibriaRETHVaultAddress,
+          5,
+        ),
+      ]);
+      const [pendleGDAIZapInData, pendleGLPZapInData, pendleRETHZapInData] =
+        await Promise.all([
+          getPendleZapInData(
+            42161,
+            gDAIMarketPoolAddress,
+            ethers.BigNumber.from(oneInchSwapDataForGDAI.toAmount)
+              .mul(95)
+              .div(100),
+            0.1,
+            daiAddress,
+          ),
+          getPendleZapInData(
+            42161,
+            glpMarketPoolAddress,
+            amountAfterChargingFee.div(4),
+            0.1,
+            wethAddress,
+          ),
+          getPendleZapInData(
+            42161,
+            rethMarketPoolAddress,
+            ethers.BigNumber.from(oneInchSwapDataForRETH.toAmount)
+              .mul(95)
+              .div(100),
+            0.1,
+            rethTokenAddress,
+          ),
+        ]);
+
+      // Define any parameters required by the deposit function
+      pendleGLPZapInData[3]["eps"] = ethers.BigNumber.from(
+        pendleGLPZapInData[3]["eps"],
+      );
+      pendleGLPZapInData[3]["guessMax"] = ethers.BigNumber.from(
+        pendleGLPZapInData[3]["guessMax"],
+      );
+      pendleGLPZapInData[3]["guessMin"] = ethers.BigNumber.from(
+        pendleGLPZapInData[3]["guessMin"],
+      );
+      pendleGLPZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
+        pendleGLPZapInData[3]["guessOffchain"],
+      );
+      pendleGLPZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
+        pendleGLPZapInData[4]["netTokenIn"],
+      );
+
+      pendleGDAIZapInData[3]["guessMax"] = ethers.BigNumber.from(
+        pendleGDAIZapInData[3]["guessMax"],
+      );
+      pendleGDAIZapInData[3]["guessMin"] = ethers.BigNumber.from(
+        pendleGDAIZapInData[3]["guessMin"],
+      );
+      pendleGDAIZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
+        pendleGDAIZapInData[3]["guessOffchain"],
+      );
+      pendleGDAIZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
+        pendleGDAIZapInData[4]["netTokenIn"],
+      );
+
+      pendleRETHZapInData[3]["guessMax"] = ethers.BigNumber.from(
+        pendleRETHZapInData[3]["guessMax"],
+      );
+      pendleRETHZapInData[3]["guessMin"] = ethers.BigNumber.from(
+        pendleRETHZapInData[3]["guessMin"],
+      );
+      pendleRETHZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
+        pendleRETHZapInData[3]["guessOffchain"],
+      );
+      pendleRETHZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
+        pendleRETHZapInData[4]["netTokenIn"],
+      );
+
+      const preparedDepositData = {
+        amount: ethers.BigNumber.from(amount),
+        receiver: address,
+        oneInchDataDpx: oneInchSwapDataForDpx.tx.data,
+        glpMinLpOut: ethers.BigNumber.from(pendleGLPZapInData[2]),
+        glpGuessPtReceivedFromSy: pendleGLPZapInData[3],
+        glpInput: pendleGLPZapInData[4],
+        gdaiMinLpOut: ethers.BigNumber.from(pendleGDAIZapInData[2]),
+        gdaiGuessPtReceivedFromSy: pendleGDAIZapInData[3],
+        gdaiInput: pendleGDAIZapInData[4],
+        gdaiOneInchDataGDAI: oneInchSwapDataForGDAI.tx.data,
+        rethMinLpOut: ethers.BigNumber.from(pendleRETHZapInData[2]),
+        rethGuessPtReceivedFromSy: pendleRETHZapInData[3],
+        rethInput: pendleRETHZapInData[4],
+        rethOneInchDataRETH: oneInchSwapDataForRETH.tx.data,
+      };
+      setApiLoading(false);
+      setApiDataReady(true);
+
+      // wait for the write function to be called
+      function waitForWrite() {
+        if (write) {
+          write({
+            args: [preparedDepositData],
+            from: address,
+          });
+          return;
+        }
+        setTimeout(waitForWrite, 3000);
+        console.log(preparedDepositData, error);
+      }
+      waitForWrite();
     }
-    setApiDataReady(false);
-    // Define any parameters required by the deposit function
-    pendleGLPZapInData[3]["eps"] = ethers.BigNumber.from(
-      pendleGLPZapInData[3]["eps"],
-    );
-    pendleGLPZapInData[3]["guessMax"] = ethers.BigNumber.from(
-      pendleGLPZapInData[3]["guessMax"],
-    );
-    pendleGLPZapInData[3]["guessMin"] = ethers.BigNumber.from(
-      pendleGLPZapInData[3]["guessMin"],
-    );
-    pendleGLPZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
-      pendleGLPZapInData[3]["guessOffchain"],
-    );
-    pendleGLPZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
-      pendleGLPZapInData[4]["netTokenIn"],
-    );
-
-    pendleGDAIZapInData[3]["guessMax"] = ethers.BigNumber.from(
-      pendleGDAIZapInData[3]["guessMax"],
-    );
-    pendleGDAIZapInData[3]["guessMin"] = ethers.BigNumber.from(
-      pendleGDAIZapInData[3]["guessMin"],
-    );
-    pendleGDAIZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
-      pendleGDAIZapInData[3]["guessOffchain"],
-    );
-    pendleGDAIZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
-      pendleGDAIZapInData[4]["netTokenIn"],
-    );
-
-    pendleRETHZapInData[3]["guessMax"] = ethers.BigNumber.from(
-      pendleRETHZapInData[3]["guessMax"],
-    );
-    pendleRETHZapInData[3]["guessMin"] = ethers.BigNumber.from(
-      pendleRETHZapInData[3]["guessMin"],
-    );
-    pendleRETHZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
-      pendleRETHZapInData[3]["guessOffchain"],
-    );
-    pendleRETHZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
-      pendleRETHZapInData[4]["netTokenIn"],
-    );
-    const depositData = {
-      amount: ethers.BigNumber.from(amount),
-      receiver: address,
-      oneInchDataDpx: oneInchSwapDataForDpx,
-      glpMinLpOut: ethers.BigNumber.from(pendleGLPZapInData[2]),
-      glpGuessPtReceivedFromSy: pendleGLPZapInData[3],
-      glpInput: pendleGLPZapInData[4],
-      gdaiMinLpOut: ethers.BigNumber.from(pendleGDAIZapInData[2]),
-      gdaiGuessPtReceivedFromSy: pendleGDAIZapInData[3],
-      gdaiInput: pendleGDAIZapInData[4],
-      gdaiOneInchDataGDAI: oneInchSwapDataForGDAI,
-      rethMinLpOut: ethers.BigNumber.from(pendleRETHZapInData[2]),
-      rethGuessPtReceivedFromSy: pendleRETHZapInData[3],
-      rethInput: pendleRETHZapInData[4],
-      rethOneInchDataRETH: oneInchSwapDataForRETH,
-    };
-    write({
-      args: [depositData],
-      from: address,
-    });
-    setApiDataReady(true);
   };
   const selectBefore = (
     <Select
@@ -263,16 +340,78 @@ const ZapInButton = () => {
       <Option value="WETH">WETH</Option>
     </Select>
   );
+  const modalContent = (
+    <Modal
+      visible={open}
+      closeIcon={<> </>}
+      onCancel={handleCancel}
+      bodyStyle={{ backgroundColor: "black", color: "white" }} // Set background and font color for the body
+      wrapClassName="black-modal" // Custom class to style the modal wrapper
+      footer={[
+        <Button
+          key="back"
+          onClick={handleCancel}
+          style={{
+            color: "black",
+            backgroundColor: "#beed54",
+            borderColor: "#beed54",
+          }}
+        >
+          Return
+        </Button>,
+      ]}
+    >
+      <div
+        style={{
+          border: "2px solid #beed54",
+          borderRadius: "1rem",
+          padding: "10px", // This creates a margin-like effect for the border
+          margin: "10px", // Adjust this value to set the distance of the border from the modal frame
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: "10px",
+          }}
+        >
+          {renderStatusCircle(approveIsLoading, approveReady)}
+          <span> Approve </span>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: "10px",
+          }}
+        >
+          {renderStatusCircle(apiLoading, apiDataReady)}
+          <span> Fetching the best route </span>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: "10px",
+          }}
+        >
+          {renderStatusCircle(depositIsLoading, depositIsSuccess)}
+          <span> Deposit </span>
+        </div>
+      </div>
+    </Modal>
+  );
 
   return (
     <div>
+      {modalContent}
       <Space.Compact style={{ width: "90%" }}>
         <NumericInput
           addonBefore={selectBefore}
           placeholder={`Balance: ${wethBalance ? wethBalance.formatted : 0}`}
           value={inputValue}
           onChange={(value) => {
-            setInputValue(value);
             handleInputChange(value);
           }}
         />
@@ -280,6 +419,8 @@ const ZapInButton = () => {
           Max
         </Button>
       </Space.Compact>
+      <div style={{ color: "white" }}>slippage: 0.05%</div>
+
       <Button
         loading={!apiDataReady}
         onClick={handleZapIn} // Added onClick handler
@@ -297,6 +438,12 @@ const ZapInButton = () => {
         {/* {!approveReady ? approvingWording : apiDataReady ? normalWording : loadingWording} */}
         {apiDataReady ? normalWording : loadingWording}
       </Button>
+      {alert && (
+        // make text color red, and state please enter an amount larger than 0.01
+        <div style={{ color: "red" }}>
+          Please enter an amount larger than 0.01
+        </div>
+      )}
     </div>
   );
 };

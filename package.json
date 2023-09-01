@@ -26,7 +26,8 @@
     "react-vis": "^1.12.1",
     "sass": "^1.64.0",
     "viem": "~1.1.8",
-    "wagmi": "~1.3.2"
+    "wagmi": "~1.3.2",
+    "zod": "^3.22.2"
   },
   "devDependencies": {
     "@types/node": "^18.16.12",
