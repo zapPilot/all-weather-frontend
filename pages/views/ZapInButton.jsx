@@ -119,15 +119,11 @@ const ZapInButton = () => {
     isSuccess: approveIsSuccess,
   } = useContractWrite({
     address: wethAddress,
-    // for testing
-    // address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "approve",
   });
   const approveAmountContract = useContractRead({
     address: wethAddress,
-    // for testing
-    // address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "allowance",
     args: [address, portfolioContractAddress],
