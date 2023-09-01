@@ -47,20 +47,8 @@ body {
   margin-bottom: 15px;
 }
 
-// Modal styles
-.black-modal .ant-modal-content {
-  background-color: $dark-color;
-  border-radius: 1rem;
-}
-
-.black-modal .ant-modal-header,
-.black-modal .ant-modal-footer {
-  background-color: $dark-color;
-  border: none;
-}
-
-.black-modal .ant-modal-close-x {
-  color: white;
+.ant-modal .ant-modal-content {
+  padding: 0;
 }
 
 // popover css
@@ -82,6 +70,7 @@ body {
 
 ::-webkit-scrollbar-button {
   background: transparent;
+
   border-radius: 4px;
 }
 
@@ -91,6 +80,7 @@ body {
 
 ::-webkit-scrollbar-thumb {
   border-radius: 4px;
+
   background-color: #c9caca;
 }
 
