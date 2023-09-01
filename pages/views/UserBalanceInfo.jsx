@@ -10,14 +10,12 @@ const UserBalanceInfo = ({ tvl }) => {
   useEffect(() => {
     async function fetchSharesInfo() {
       if (WEB3_CONTEXT) {
-        if (
-          web3Context.userShares === undefined ||
-          web3Context.totalSupply === undefined
-        ) {
-          return;
-        }
-        setUserShares(WEB3_CONTEXT.userShares);
-        setTotalSupply(WEB3_CONTEXT.totalSupply);
+        setUserShares(
+          WEB3_CONTEXT.userShares === undefined ? 0 : WEB3_CONTEXT.userShares,
+        );
+        setTotalSupply(
+          WEB3_CONTEXT.totalSupply === undefined ? 0 : WEB3_CONTEXT.totalSupply,
+        );
       }
     }
     fetchSharesInfo();

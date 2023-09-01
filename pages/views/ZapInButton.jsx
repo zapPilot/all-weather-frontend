@@ -1,7 +1,6 @@
 import { Button, Space, Select, Modal } from "antd";
 import { Spin } from "antd";
 import { z } from "zod";
-import debounce from "lodash/debounce";
 import {
   fetch1InchSwapData,
   getPendleZapInData,
@@ -18,14 +17,12 @@ import {
   equilibriaRETHVaultAddress,
 } from "../../utils/oneInch";
 import { DollarOutlined, CheckCircleOutlined } from "@ant-design/icons";
-import { parseEther } from "viem";
 
 import { useEffect, useState } from "react";
 import {
   useContractWrite,
   useAccount,
   useBalance,
-  usePrepareContractWrite,
   useContractRead,
 } from "wagmi";
 
@@ -35,7 +32,7 @@ const { ethers } = require("ethers");
 const { Option } = Select;
 const depositSchema = z
   .number()
-  .min(0.01, "Deposit amount should be larger than 0.01");
+  .min(0.01004, "Deposit amount should be greater than 0.01004");
 
 const ZapInButton = () => {
   const { address } = useAccount();
@@ -135,15 +132,10 @@ const ZapInButton = () => {
   useEffect(() => {
     if (approveAmountContract.loading === true) return; // Don't proceed if loading
     setApproveAmount(approveAmountContract.data);
-    console.log(
-      "the approveAmountContract.data is",
-      approveAmountContract.data,
-    );
   }, [address, approveAmountContract.loading, approveReady, inputValue]);
 
   const handleInputChange = async (eventValue) => {
     setInputValue(eventValue);
-    console.log(inputValue);
     let amount_;
     amount_ = ethers.utils.parseEther(eventValue);
     setAmount(amount_);
@@ -164,7 +156,6 @@ const ZapInButton = () => {
   const handleZapIn = async () => {
     const validationResult = depositSchema.safeParse(Number(inputValue));
     if (!validationResult.success) {
-      console.log("validationResult.error", validationResult.error);
       setAlert(true);
       return;
     } else {
@@ -180,7 +171,6 @@ const ZapInButton = () => {
       setAmount(amount_);
       // check the type of amount and the approveAmount
       if (approveAmountContract.data < amount_) {
-        console.log("approveAmountContract.data", approveAmountContract.data);
         setApiDataReady(false);
         approveWrite({
           args: [portfolioContractAddress, amount.toString()],
@@ -326,7 +316,6 @@ const ZapInButton = () => {
           return;
         }
         setTimeout(waitForWrite, 3000);
-        console.log(preparedDepositData, error);
       }
       waitForWrite();
     }
@@ -441,7 +430,7 @@ const ZapInButton = () => {
       {alert && (
         // make text color red, and state please enter an amount larger than 0.01
         <div style={{ color: "red" }}>
-          Please enter an amount larger than 0.01
+          Please enter an amount greater than 0.01004
         </div>
       )}
     </div>
