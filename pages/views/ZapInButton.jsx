@@ -87,7 +87,6 @@ const ZapInButton = () => {
     functionName: "deposit",
   });
   const {
-
     write: approveWrite,
     isLoading: approveIsLoading,
     isSuccess: approveIsSuccess,
@@ -287,7 +286,6 @@ const ZapInButton = () => {
       <Option value="WETH">WETH</Option>
     </Select>
   );
-
   const modalContent = (
     <Modal
       visible={open}
