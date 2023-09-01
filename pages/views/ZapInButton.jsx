@@ -30,9 +30,13 @@ import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToke
 import NumericInput from "./NumberInput";
 const { ethers } = require("ethers");
 const { Option } = Select;
+const MINIMUM_ZAP_IN_AMOUNT = 0.037;
 const depositSchema = z
   .number()
-  .min(0.01004, "Deposit amount should be greater than 0.01004");
+  .min(
+    MINIMUM_ZAP_IN_AMOUNT,
+    `Deposit amount should be greater than ${MINIMUM_ZAP_IN_AMOUNT}`,
+  );
 
 const ZapInButton = () => {
   const { address } = useAccount();
@@ -221,25 +225,25 @@ const ZapInButton = () => {
             42161,
             gDAIMarketPoolAddress,
             ethers.BigNumber.from(oneInchSwapDataForGDAI.toAmount)
-              .mul(95)
+              .mul(99)
               .div(100),
-            1,
+            0.01,
             daiAddress,
           ),
           getPendleZapInData(
             42161,
             glpMarketPoolAddress,
             amountAfterChargingFee.div(4),
-            1,
+            0.01,
             wethAddress,
           ),
           getPendleZapInData(
             42161,
             rethMarketPoolAddress,
             ethers.BigNumber.from(oneInchSwapDataForRETH.toAmount)
-              .mul(95)
+              .mul(99)
               .div(100),
-            1,
+            0.01,
             rethTokenAddress,
           ),
         ]);
@@ -430,7 +434,7 @@ const ZapInButton = () => {
       {alert && (
         // make text color red, and state please enter an amount larger than 0.01
         <div style={{ color: "red" }}>
-          Please enter an amount greater than 0.01004
+          Please enter an amount greater than {MINIMUM_ZAP_IN_AMOUNT}
         </div>
       )}
     </div>
