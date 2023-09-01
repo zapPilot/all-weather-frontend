@@ -196,7 +196,7 @@ const ZapInButton = () => {
           dpxTokenAddress,
           amountAfterChargingFee.div(8),
           dpxVaultAddress,
-          5,
+          1,
         ),
         fetch1InchSwapData(
           42161,
@@ -204,7 +204,7 @@ const ZapInButton = () => {
           daiAddress,
           amountAfterChargingFee.div(4),
           equilibriaGDAIVaultAddress,
-          5,
+          1,
         ),
         fetch1InchSwapData(
           42161,
@@ -212,7 +212,7 @@ const ZapInButton = () => {
           rethTokenAddress,
           amountAfterChargingFee.div(4),
           equilibriaRETHVaultAddress,
-          5,
+          1,
         ),
       ]);
       const [pendleGDAIZapInData, pendleGLPZapInData, pendleRETHZapInData] =
@@ -223,14 +223,14 @@ const ZapInButton = () => {
             ethers.BigNumber.from(oneInchSwapDataForGDAI.toAmount)
               .mul(95)
               .div(100),
-            0.1,
+            1,
             daiAddress,
           ),
           getPendleZapInData(
             42161,
             glpMarketPoolAddress,
             amountAfterChargingFee.div(4),
-            0.1,
+            1,
             wethAddress,
           ),
           getPendleZapInData(
@@ -239,7 +239,7 @@ const ZapInButton = () => {
             ethers.BigNumber.from(oneInchSwapDataForRETH.toAmount)
               .mul(95)
               .div(100),
-            0.1,
+            1,
             rethTokenAddress,
           ),
         ]);
@@ -408,7 +408,7 @@ const ZapInButton = () => {
           Max
         </Button>
       </Space.Compact>
-      <div style={{ color: "white" }}>slippage: 0.05%</div>
+      <div style={{ color: "white" }}>Max Slippage: 1%</div>
 
       <Button
         loading={!apiDataReady}
