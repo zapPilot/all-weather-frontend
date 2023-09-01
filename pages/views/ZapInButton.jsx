@@ -125,9 +125,9 @@ const ZapInButton = () => {
     functionName: "approve",
   });
   const approveAmountContract = useContractRead({
-    // address: wethAddress,
+    address: wethAddress,
     // for testing
-    address: portfolioContractAddress,
+    // address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "allowance",
     args: [address, portfolioContractAddress],
@@ -377,7 +377,7 @@ const ZapInButton = () => {
             marginBottom: "10px",
           }}
         >
-          {renderStatusCircle(approveIsLoading, approveIsSuccess)}
+          {renderStatusCircle(approveIsLoading, approveReady)}
           <span> Approve </span>
         </div>
         <div
