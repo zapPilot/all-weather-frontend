@@ -5,6 +5,7 @@ import { useAccount } from "wagmi";
 import styles from "../styles/Home.module.css";
 import ExampleUI from "./views/ExampleUI.jsx";
 import Header from "./views/Header";
+import NavBar from "./views/Navbar";
 import Web3DataProvider from "./views/Web3DataProvider";
 
 const Home: NextPage = () => {
@@ -17,6 +18,7 @@ const Home: NextPage = () => {
         <link href="/favicon.ico" rel="icon" />
       </Head>
       <Header>
+        <NavBar />
         <div
           style={{
             position: "relative",
