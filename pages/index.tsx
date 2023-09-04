@@ -7,6 +7,7 @@ import ExampleUI from "./views/ExampleUI.jsx";
 import Header from "./views/Header";
 import NavBar from "./views/Navbar";
 import Web3DataProvider from "./views/Web3DataProvider";
+import { HomeFilled, TwitterCircleFilled } from "@ant-design/icons";
 
 const Home: NextPage = () => {
   const { address } = useAccount();
@@ -39,7 +40,23 @@ const Home: NextPage = () => {
           rel="noopener noreferrer"
           target="_blank"
         >
-          All Weather Protocol
+          <HomeFilled />
+          Landing Page
+        </a>
+        <a
+          href="https://twitter.com/all_weather_p"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <TwitterCircleFilled />
+          Twitter
+        </a>
+        <a
+          href="https://discord.gg/sNsMmtsCCV"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          Discord
         </a>
       </footer>
     </div>
