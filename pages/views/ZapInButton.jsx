@@ -31,11 +31,16 @@ import NumericInput from "./NumberInput";
 const { ethers } = require("ethers");
 const { Option } = Select;
 const MINIMUM_ZAP_IN_AMOUNT = 0.037;
+const MAXIMUM_ZAP_IN_AMOUNT = 0.06;
 const depositSchema = z
   .number()
   .min(
     MINIMUM_ZAP_IN_AMOUNT,
     `Deposit amount should be greater than ${MINIMUM_ZAP_IN_AMOUNT}`,
+  )
+  .max(
+    MAXIMUM_ZAP_IN_AMOUNT,
+    `Deposit amount should be less than ${MAXIMUM_ZAP_IN_AMOUNT}`,
   );
 
 const ZapInButton = () => {
@@ -434,7 +439,8 @@ const ZapInButton = () => {
       {alert && (
         // make text color red, and state please enter an amount larger than 0.01
         <div style={{ color: "red" }}>
-          Please enter an amount greater than {MINIMUM_ZAP_IN_AMOUNT}
+          Please enter an amount greater than {MINIMUM_ZAP_IN_AMOUNT} and at
+          most {MAXIMUM_ZAP_IN_AMOUNT}
         </div>
       )}
     </div>
