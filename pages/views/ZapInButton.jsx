@@ -1,18 +1,20 @@
 import { Button, Space, Select, Modal } from "antd";
 import { Spin } from "antd";
 import { z } from "zod";
+import { encodeFunctionData } from "viem";
 import {
   fetch1InchSwapData,
   getPendleZapInData,
   wethAddress,
-  dpxTokenAddress,
+  magicTokenAddress,
   daiAddress,
   gDAIMarketPoolAddress,
   glpMarketPoolAddress,
   rethMarketPoolAddress,
+  pendleMarketPoolAddress,
   rethTokenAddress,
   portfolioContractAddress,
-  dpxVaultAddress,
+  magicVaultAddress,
   equilibriaGDAIVaultAddress,
   equilibriaRETHVaultAddress,
 } from "../../utils/oneInch";
@@ -77,17 +79,10 @@ const ZapInButton = () => {
   const [inputValue, setInputValue] = useState("");
   const [alert, setAlert] = useState(false);
 
-  const [oneInchSwapDataForDpx, setOneInchSwapDataForDpx] = useState("");
-  const [oneInchSwapDataForGDAI, setOneInchSwapDataForGDAI] = useState("");
-  const [oneInchSwapDataForRETH, setOneInchSwapDataForRETH] = useState("");
-  const [pendleGDAIZapInData, setPendleGDAIZapInData] = useState("");
-  const [pendleGLPZapInData, setPendleGLPZapInData] = useState("");
-  const [pendleRETHZapInData, setPendleRETHZapInData] = useState("");
   const [apiDataReady, setApiDataReady] = useState(true);
   const [apiLoading, setApiLoading] = useState(false);
   const [approveReady, setApproveReady] = useState(true);
   const [approveAmount, setApproveAmount] = useState(0);
-  const [isApproved, setIsApproved] = useState(false);
   const renderStatusCircle = (isLoading, isSuccess) => {
     if (isLoading) {
       return <Spin />;
@@ -144,6 +139,9 @@ const ZapInButton = () => {
   }, [address, approveAmountContract.loading, approveReady, inputValue]);
 
   const handleInputChange = async (eventValue) => {
+    if (eventValue === "") {
+      return;
+    }
     setInputValue(eventValue);
     let amount_;
     amount_ = ethers.utils.parseEther(eventValue);
@@ -195,23 +193,23 @@ const ZapInButton = () => {
       setApiLoading(true);
       const amountAfterChargingFee = amount_.mul(997).div(1000);
       const [
-        oneInchSwapDataForDpx,
+        oneInchSwapDataForMagic,
         oneInchSwapDataForGDAI,
         oneInchSwapDataForRETH,
       ] = await Promise.all([
         fetch1InchSwapData(
           42161,
           wethAddress,
-          dpxTokenAddress,
-          amountAfterChargingFee.div(8),
-          dpxVaultAddress,
+          magicTokenAddress,
+          amountAfterChargingFee.mul(8).div(200),
+          magicVaultAddress,
           1,
         ),
         fetch1InchSwapData(
           42161,
           wethAddress,
           daiAddress,
-          amountAfterChargingFee.div(4),
+          amountAfterChargingFee.mul(12).div(100),
           equilibriaGDAIVaultAddress,
           1,
         ),
@@ -219,87 +217,82 @@ const ZapInButton = () => {
           42161,
           wethAddress,
           rethTokenAddress,
-          amountAfterChargingFee.div(4),
+          amountAfterChargingFee.mul(6).div(100),
           equilibriaRETHVaultAddress,
           1,
         ),
       ]);
-      const [pendleGDAIZapInData, pendleGLPZapInData, pendleRETHZapInData] =
-        await Promise.all([
-          getPendleZapInData(
-            42161,
-            gDAIMarketPoolAddress,
-            ethers.BigNumber.from(oneInchSwapDataForGDAI.toAmount)
-              .mul(99)
-              .div(100),
-            0.01,
-            daiAddress,
-          ),
-          getPendleZapInData(
-            42161,
-            glpMarketPoolAddress,
-            amountAfterChargingFee.div(4),
-            0.01,
-            wethAddress,
-          ),
-          getPendleZapInData(
-            42161,
-            rethMarketPoolAddress,
-            ethers.BigNumber.from(oneInchSwapDataForRETH.toAmount)
-              .mul(99)
-              .div(100),
-            0.01,
-            rethTokenAddress,
-          ),
-        ]);
+      const [
+        pendleGDAIZapInData,
+        pendleGLPZapInData,
+        pendleRETHZapInData,
+        pendlePendleZapInData,
+      ] = await Promise.all([
+        getPendleZapInData(
+          42161,
+          gDAIMarketPoolAddress,
+          ethers.BigNumber.from(oneInchSwapDataForGDAI.toAmount)
+            .mul(99)
+            .div(100),
+          0.01,
+          daiAddress,
+        ),
+        getPendleZapInData(
+          42161,
+          glpMarketPoolAddress,
+          amountAfterChargingFee.mul(35).div(100),
+          0.01,
+          wethAddress,
+        ),
+        getPendleZapInData(
+          42161,
+          rethMarketPoolAddress,
+          ethers.BigNumber.from(oneInchSwapDataForRETH.toAmount)
+            .mul(99)
+            .div(100),
+          0.01,
+          rethTokenAddress,
+        ),
+        getPendleZapInData(
+          42161,
+          pendleMarketPoolAddress,
+          amountAfterChargingFee.mul(24).div(100),
+          0.01,
+          wethAddress,
+        ),
+      ]);
 
       // Define any parameters required by the deposit function
-      pendleGLPZapInData[3]["eps"] = ethers.BigNumber.from(
-        pendleGLPZapInData[3]["eps"],
-      );
-      pendleGLPZapInData[3]["guessMax"] = ethers.BigNumber.from(
-        pendleGLPZapInData[3]["guessMax"],
-      );
-      pendleGLPZapInData[3]["guessMin"] = ethers.BigNumber.from(
-        pendleGLPZapInData[3]["guessMin"],
-      );
-      pendleGLPZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
-        pendleGLPZapInData[3]["guessOffchain"],
-      );
-      pendleGLPZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
-        pendleGLPZapInData[4]["netTokenIn"],
-      );
+      const dataArrays = [
+        pendleGLPZapInData,
+        pendleGDAIZapInData,
+        pendleRETHZapInData,
+        pendlePendleZapInData,
+      ];
+      const keysToUpdate = [
+        "eps",
+        "guessMax",
+        "guessMin",
+        "guessOffchain",
+        "netTokenIn",
+      ];
+      const indicesToUpdate = [3, 4];
 
-      pendleGDAIZapInData[3]["guessMax"] = ethers.BigNumber.from(
-        pendleGDAIZapInData[3]["guessMax"],
-      );
-      pendleGDAIZapInData[3]["guessMin"] = ethers.BigNumber.from(
-        pendleGDAIZapInData[3]["guessMin"],
-      );
-      pendleGDAIZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
-        pendleGDAIZapInData[3]["guessOffchain"],
-      );
-      pendleGDAIZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
-        pendleGDAIZapInData[4]["netTokenIn"],
-      );
-
-      pendleRETHZapInData[3]["guessMax"] = ethers.BigNumber.from(
-        pendleRETHZapInData[3]["guessMax"],
-      );
-      pendleRETHZapInData[3]["guessMin"] = ethers.BigNumber.from(
-        pendleRETHZapInData[3]["guessMin"],
-      );
-      pendleRETHZapInData[3]["guessOffchain"] = ethers.BigNumber.from(
-        pendleRETHZapInData[3]["guessOffchain"],
-      );
-      pendleRETHZapInData[4]["netTokenIn"] = ethers.BigNumber.from(
-        pendleRETHZapInData[4]["netTokenIn"],
-      );
+      for (let dataArray of dataArrays) {
+        for (let index of indicesToUpdate) {
+          for (let key of keysToUpdate) {
+            if (dataArray[index] && dataArray[index][key] !== undefined) {
+              dataArray[index][key] = ethers.BigNumber.from(
+                dataArray[index][key],
+              );
+            }
+          }
+        }
+      }
 
       const preparedDepositData = {
         amount: ethers.BigNumber.from(amount),
         receiver: address,
-        oneInchDataDpx: oneInchSwapDataForDpx.tx.data,
         glpMinLpOut: ethers.BigNumber.from(pendleGLPZapInData[2]),
         glpGuessPtReceivedFromSy: pendleGLPZapInData[3],
         glpInput: pendleGLPZapInData[4],
@@ -311,7 +304,18 @@ const ZapInButton = () => {
         rethGuessPtReceivedFromSy: pendleRETHZapInData[3],
         rethInput: pendleRETHZapInData[4],
         rethOneInchDataRETH: oneInchSwapDataForRETH.tx.data,
+        oneInchDataMagic: oneInchSwapDataForMagic.tx.data,
+        pendleMinLpOut: ethers.BigNumber.from(pendlePendleZapInData[2]),
+        pendleGuessPtReceivedFromSy: pendlePendleZapInData[3],
+        pendleInput: pendlePendleZapInData[4],
       };
+      // print out the encoded data for debugging
+      encodeFunctionData({
+        abi: permanentPortfolioJson.abi,
+        functionName: "deposit",
+        args: [preparedDepositData],
+      });
+
       setApiLoading(false);
       setApiDataReady(true);
 

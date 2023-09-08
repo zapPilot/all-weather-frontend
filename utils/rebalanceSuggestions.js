@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useState, useEffect } from "react";
 import {
-  dpxVaultAddress,
+  magicVaultAddress,
   equilibriaGDAIVaultAddress,
   equilibriaRETHVaultAddress,
   equilibriaGLPVaultAddress,
@@ -24,7 +24,7 @@ export default function useRebalanceSuggestions() {
     await axios
       .get(
         `${API_URL}/addresses?addresses=${[
-          dpxVaultAddress,
+          magicVaultAddress,
           equilibriaGDAIVaultAddress,
           equilibriaRETHVaultAddress,
           equilibriaGLPVaultAddress,

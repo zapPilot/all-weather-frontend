@@ -7,20 +7,25 @@ const SDK_API_URL = process.env.NEXT_PUBLIC_SDK_API_URL;
 //   "0x36bb138Eb364889317Fd324a8f4A1d4CB244A198";
 // for contract read
 export const portfolioContractAddress =
-  "0xEDBDbd03784C8dBA343A23877799d113E2F257Af";
-export const dpxVaultAddress = "0xC6a58A8494E61fc4EF04F6075c4541C9664ADcC9";
+  // "0xEDBDbd03784C8dBA343A23877799d113E2F257Af";
+  "0x95503FfAffD9E8B2aEa782F36bb5C8B85a4e41D4";
+export const magicVaultAddress = "0xA3CDd5a4b9f5a69C5C3a297A428A10B742F1c6E1";
+// "0xC6a58A8494E61fc4EF04F6075c4541C9664ADcC9";
 export const equilibriaGLPVaultAddress =
-  "0x271E3409093f7ECffFB2a1C82e5E87B2ecB3E310";
+  // "0x271E3409093f7ECffFB2a1C82e5E87B2ecB3E310";
+  "0xBb4D0819089879d83ae13fEe71aBeAa345629389";
 export const equilibriaGDAIVaultAddress =
-  "0x549caec2C863a04853Fb829aac4190E1B50df0Cc";
+  // "0x549caec2C863a04853Fb829aac4190E1B50df0Cc";
+  "0x0F658FC0C72A729F1B8F8444601D657D3F30Db41";
 export const equilibriaRETHVaultAddress =
-  "0xE66c4EA218Cdb8DCbCf3f605ed1aC29461CBa4b8";
+  // "0xE66c4EA218Cdb8DCbCf3f605ed1aC29461CBa4b8";
+  "0x5073bf9aE65963A5881F36560072adf5d4c6e870";
+export const equilibriaPendleVaultAddress =
+  "0x4999AE9fDD361Ca6278B0295dd65776b4587E1aA";
+export const radiantDlpAddress = "0x99E9cE14C807e95329a2A35aDD52683528e53231";
 
 export const wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
-export const dpxTokenAddress = "0x6C2C06790b3E3E3c38e12Ee22F8183b37a13EE55";
-export const dpxVault = "0x3378b974E111B6A27Df5CF8b96AD646b1860EcD0"; // replace it once deployed
-export const equilibriaGDAIVault = "0x3378b974E111B6A27Df5CF8b96AD646b1860EcD0"; // replace it once deployed
-export const equilibriaRETHVault = "0x3378b974E111B6A27Df5CF8b96AD646b1860EcD0"; // replace it once deployed
+export const magicTokenAddress = "0x539bdE0d7Dbd336b79148AA742883198BBF60342";
 export const gDAIMarketPoolAddress =
   "0xa0192f6567f8f5DC38C53323235FD08b318D2dcA";
 export const daiAddress = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1";
@@ -28,6 +33,8 @@ export const glpMarketPoolAddress =
   "0x7D49E5Adc0EAAD9C027857767638613253eF125f";
 export const rethMarketPoolAddress =
   "0x14FbC760eFaF36781cB0eb3Cb255aD976117B9Bd";
+export const pendleMarketPoolAddress =
+  "0x24e4Df37ea00C4954d668e3ce19fFdcffDEc2cF6";
 export const rethTokenAddress = "0xEC70Dcb4A1EFa46b8F2D97C310C9c4790ba5ffA8";
 export async function fetch1InchSwapData(
   chainId,

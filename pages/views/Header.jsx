@@ -21,9 +21,7 @@ export default function Header({ ...props }) {
             flex: 1,
             alignItems: "start",
           }}
-        >
-          <Image src="/logo.png" alt="logo" width={120} height={55} />
-        </div>
+        ></div>
         {props.children}
       </div>
     </>
