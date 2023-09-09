@@ -23,6 +23,14 @@ export const equilibriaRETHVaultAddress =
 export const equilibriaPendleVaultAddress =
   "0x4999AE9fDD361Ca6278B0295dd65776b4587E1aA";
 export const radiantDlpAddress = "0x99E9cE14C807e95329a2A35aDD52683528e53231";
+export const portfolioVaults = [
+  magicVaultAddress,
+  equilibriaGLPVaultAddress,
+  equilibriaGDAIVaultAddress,
+  equilibriaRETHVaultAddress,
+  equilibriaPendleVaultAddress,
+  radiantDlpAddress,
+];
 
 export const wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 export const magicTokenAddress = "0x539bdE0d7Dbd336b79148AA742883198BBF60342";

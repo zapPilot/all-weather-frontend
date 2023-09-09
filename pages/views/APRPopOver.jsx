@@ -133,13 +133,17 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
 
     return claimableRewards
       .map((reward) =>
-        reward.claimableRewards.map((claimableReward) => ({
-          pool: reward.protocol,
-          token:
-            WEB3_CONTEXT["debankContext"][claimableReward.token.toLowerCase()],
-          amount: ethers.utils.formatEther(claimableReward.amount),
-          value: turnReward2Price(claimableReward),
-        })),
+        reward.claimableRewards.map((claimableReward) => {
+          return {
+            pool: reward.protocol,
+            token:
+              WEB3_CONTEXT["debankContext"][
+                claimableReward.token.toLowerCase()
+              ],
+            amount: ethers.utils.formatEther(claimableReward.amount),
+            value: turnReward2Price(claimableReward),
+          };
+        }),
       )
       .flat();
   }

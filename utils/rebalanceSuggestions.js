@@ -1,11 +1,6 @@
 import axios from "axios";
 import { useState, useEffect } from "react";
-import {
-  magicVaultAddress,
-  equilibriaGDAIVaultAddress,
-  equilibriaRETHVaultAddress,
-  equilibriaGLPVaultAddress,
-} from "./oneInch";
+import { portfolioVaults } from "./oneInch";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function useRebalanceSuggestions() {
@@ -22,14 +17,7 @@ export default function useRebalanceSuggestions() {
   // Function to load suggestions from the API
   const loadSuggestions = async () => {
     await axios
-      .get(
-        `${API_URL}/addresses?addresses=${[
-          magicVaultAddress,
-          equilibriaGDAIVaultAddress,
-          equilibriaRETHVaultAddress,
-          equilibriaGLPVaultAddress,
-        ].join("+")}`,
-      )
+      .get(`${API_URL}/addresses?addresses=${portfolioVaults.join("+")}`)
       .then((response) => {
         const newNetWorth = response.data.net_worth;
         setNetWorth(newNetWorth);

@@ -36,6 +36,14 @@ export default function ExampleUI({ address }) {
         <h2 className="ant-table-title">
           Click Once, Diversify Forever. Why Gamble with Volatility?
         </h2>
+        <h3 className="ant-table-title">
+          1. Fee: 0.3% (will be replaced by locking governance tokens in the
+          beta version)
+        </h3>
+        <h3 className="ant-table-title">
+          2. There's a 1-year lock on your deposit (by Radiant Protocol). This
+          will also be improved in the beta version.
+        </h3>
       </center>
       <RebalancerWidget address={address} />
       <Affix style={{ position: "fixed", bottom: "1.5rem", right: "1.5rem" }}>
