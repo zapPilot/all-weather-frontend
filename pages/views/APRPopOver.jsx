@@ -55,7 +55,7 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
     if (!WEB3_CONTEXT) return;
     fetchData();
     fetchAprComposition();
-  }, [WEB3_CONTEXT]);
+  }, git[WEB3_CONTEXT]);
 
   function renderContent() {
     if (!WEB3_CONTEXT || !aprComposition) return <div>Loading...</div>;

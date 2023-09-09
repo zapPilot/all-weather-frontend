@@ -136,7 +136,13 @@ const ZapInButton = () => {
   useEffect(() => {
     if (approveAmountContract.loading === true) return; // Don't proceed if loading
     setApproveAmount(approveAmountContract.data);
-  }, [address, approveAmountContract.loading, approveReady, inputValue]);
+  }, [
+    address,
+    approveAmountContract.loading,
+    approveAmountContract.data,
+    approveReady,
+    inputValue,
+  ]);
 
   const handleInputChange = async (eventValue) => {
     if (eventValue === "") {

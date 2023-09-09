@@ -60,8 +60,11 @@ const Web3DataProvider = ({ children, address }) => {
   }, [
     address,
     dataOfGetClaimableRewards.loading,
+    dataOfGetClaimableRewards.data,
     userShares.loading,
+    userShares.data,
     totalSupply.loading,
+    totalSupply.data,
   ]);
 
   return <web3Context.Provider value={data}>{children}</web3Context.Provider>;

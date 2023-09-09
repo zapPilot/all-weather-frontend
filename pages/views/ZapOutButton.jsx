@@ -48,7 +48,13 @@ const ZapOutButton = () => {
     }
     if (approveAmountContract.loading === true) return; // Don't proceed if loading
     setApproveAmount(approveAmountContract.data);
-  }, [WEB3_CONTEXT, address, approveAmountContract.loading, approveReady]);
+  }, [
+    WEB3_CONTEXT,
+    address,
+    approveAmountContract.loading,
+    approveAmountContract.data,
+    approveReady,
+  ]);
   const handleInputChange = async (eventValue) => {
     setInputValue(eventValue);
     if (eventValue !== "") {

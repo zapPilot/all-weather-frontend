@@ -41,8 +41,8 @@ export default function ExampleUI({ address }) {
           beta version)
         </h3>
         <h3 className="ant-table-title">
-          2. There's a 1-year lock on your deposit (by Radiant Protocol). This
-          will also be improved in the beta version.
+          2. There&apos;s a 1-year lock on your deposit (by Radiant Protocol).
+          This will also be improved in the beta version.
         </h3>
       </center>
       <RebalancerWidget address={address} />
