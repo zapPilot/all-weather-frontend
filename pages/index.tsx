@@ -4,8 +4,8 @@ import Head from "next/head";
 import { useAccount } from "wagmi";
 import styles from "../styles/Home.module.css";
 import ExampleUI from "./views/ExampleUI.jsx";
+// import NavBar from "./views/Navbar.jsx";
 import Header from "./views/Header";
-import NavBar from "./views/Navbar.jsx";
 import Web3DataProvider from "./views/Web3DataProvider";
 import { HomeFilled, TwitterCircleFilled } from "@ant-design/icons";
 
