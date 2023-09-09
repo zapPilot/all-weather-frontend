@@ -54,7 +54,7 @@ const items = [
     disabled: true,
   },
 ];
-const NavBar = () => {
+export default function NavBar() {
   const [current, setCurrent] = useState("portfolio");
   const onClick = (e) => {
     setCurrent(e.key);
@@ -68,5 +68,4 @@ const NavBar = () => {
       items={items}
     />
   );
-};
-export default NavBar;
+}
