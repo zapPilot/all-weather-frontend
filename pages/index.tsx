@@ -19,7 +19,7 @@ const Home: NextPage = () => {
         <link href="/favicon.ico" rel="icon" />
       </Head>
       <Header>
-        <NavBar />
+        {/* <NavBar /> */}
         <div
           style={{
             position: "relative",
