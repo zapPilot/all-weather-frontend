@@ -297,13 +297,26 @@ const ZapInButton = () => {
           }
         }
       }
-
+      const glpInputWorkAround = {
+        tokenIn: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+        netTokenIn: pendleGLPZapInData[4]["netTokenIn"],
+        tokenMintSy: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+        bulk: "0x0000000000000000000000000000000000000000",
+        pendleSwap: "0x0000000000000000000000000000000000000000",
+        swapData: {
+          swapType: 0,
+          extRouter: "0x0000000000000000000000000000000000000000",
+          extCalldata: [],
+          needScale: false,
+        },
+      };
       const preparedDepositData = {
         amount: ethers.BigNumber.from(amount),
         receiver: address,
         glpMinLpOut: ethers.BigNumber.from(pendleGLPZapInData[2]),
         glpGuessPtReceivedFromSy: pendleGLPZapInData[3],
-        glpInput: pendleGLPZapInData[4],
+        // glpInput: pendleGLPZapInData[4],
+        glpInput: glpInputWorkAround,
         gdaiMinLpOut: ethers.BigNumber.from(pendleGDAIZapInData[2]),
         gdaiGuessPtReceivedFromSy: pendleGDAIZapInData[3],
         gdaiInput: pendleGDAIZapInData[4],
