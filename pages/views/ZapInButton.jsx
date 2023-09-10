@@ -113,6 +113,7 @@ const ZapInButton = () => {
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "deposit",
+    gas: 30000000,
   });
   const {
     write: approveWrite,
@@ -128,6 +129,7 @@ const ZapInButton = () => {
     abi: permanentPortfolioJson.abi,
     functionName: "allowance",
     args: [address, portfolioContractAddress],
+    watch: true,
     onError(error) {
       console.log("allowance Error", error);
     },
