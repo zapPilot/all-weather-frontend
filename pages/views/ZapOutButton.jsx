@@ -37,6 +37,7 @@ const ZapOutButton = () => {
     abi: permanentPortfolioJson.abi,
     functionName: "allowance",
     args: [address, portfolioContractAddress],
+    watch: true,
     onError(error) {
       console.log("allowance Error", error);
     },

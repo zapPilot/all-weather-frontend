@@ -32,7 +32,7 @@ import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToke
 import NumericInput from "./NumberInput";
 const { ethers } = require("ethers");
 const { Option } = Select;
-const MINIMUM_ZAP_IN_AMOUNT = 0.037;
+const MINIMUM_ZAP_IN_AMOUNT = 0.04;
 const MAXIMUM_ZAP_IN_AMOUNT = 0.06;
 const depositSchema = z
   .number()
@@ -113,7 +113,6 @@ const ZapInButton = () => {
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "deposit",
-    gas: 30000000,
   });
   const {
     write: approveWrite,
@@ -346,6 +345,7 @@ const ZapInButton = () => {
           write({
             args: [preparedDepositData],
             from: address,
+            gas: 30_000_000n,
           });
           return;
         }

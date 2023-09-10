@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Popover, Table, Tag } from "antd";
+import { Popover, Table, Tag, Spin } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { web3Context } from "./Web3DataProvider";
 import ClaimButton from "./ClaimButton";
@@ -58,7 +58,13 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
   }, [WEB3_CONTEXT]);
 
   function renderContent() {
-    if (!WEB3_CONTEXT || !aprComposition) return <div>Loading...</div>;
+    if (!WEB3_CONTEXT || aprComposition === {})
+      return (
+        <center>
+          <Spin size="small" />
+          Loading (5s)
+        </center>
+      );
 
     return (
       <ul>

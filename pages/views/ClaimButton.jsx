@@ -11,6 +11,7 @@ const ClaimButton = () => {
     abi: permanentPortfolioJson.abi,
     functionName: "claim",
     args: [address],
+    gas: 28_000_000n,
   });
 
   return (
