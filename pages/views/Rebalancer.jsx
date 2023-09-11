@@ -128,7 +128,8 @@ const RebalancerWidget = ({ address }) => {
             </div>
           </Row>
         </Col>
-        <Col xl={14} md={24} xs={24} align="center">
+        {/* put this block to different page */}
+        {/* <Col xl={14} md={24} xs={24} align="center">
           <Row gutter={[30, 20]} align="center">
             <Col xl={12} md={24} xs={24} align="left">
               <TopNLowestAprPools
@@ -155,7 +156,7 @@ const RebalancerWidget = ({ address }) => {
               />
             </Col>
           </Row>
-        </Col>
+        </Col> */}
       </Row>
     </>
   );
