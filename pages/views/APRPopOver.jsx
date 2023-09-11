@@ -58,7 +58,7 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
   }, [WEB3_CONTEXT]);
 
   function renderContent() {
-    if (!WEB3_CONTEXT || aprComposition === {})
+    if (!WEB3_CONTEXT || Object.keys(aprComposition).length === 0)
       return (
         <center>
           <Spin size="small" />
