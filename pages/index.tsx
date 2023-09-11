@@ -7,7 +7,11 @@ import ExampleUI from "./views/ExampleUI.jsx";
 // import NavBar from "./views/Navbar.jsx";
 import Header from "./views/Header";
 import Web3DataProvider from "./views/Web3DataProvider";
-import { HomeFilled, TwitterCircleFilled } from "@ant-design/icons";
+import {
+  HomeFilled,
+  TwitterCircleFilled,
+  AuditOutlined,
+} from "@ant-design/icons";
 
 const Home: NextPage = () => {
   const { address } = useAccount();
@@ -42,6 +46,14 @@ const Home: NextPage = () => {
         >
           <HomeFilled />
           Landing Page
+        </a>
+        <a
+          href="https://all-weather.gitbook.io/all-weather-protocol/"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <AuditOutlined />
+          Documentation
         </a>
         <a
           href="https://twitter.com/all_weather_p"
