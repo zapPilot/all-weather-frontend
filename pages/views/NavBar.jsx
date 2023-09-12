@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { Menu } from "antd";
+import Link from "next/link";
+import { useRouter } from "next/router";
+
 const items = [
   {
-    label: "Portfolio",
+    label: <Link href="/">Portfolio</Link>,
     key: "portfolio",
   },
   {
@@ -14,7 +17,7 @@ const items = [
         label: "Recommendations",
         children: [
           {
-            label: "Better Pools",
+            label: <Link href="/betterPools">Better Pools</Link>,
             key: "setting:1",
           },
         ],
@@ -24,7 +27,7 @@ const items = [
         label: "Performance",
         children: [
           {
-            label: "Backtesting",
+            label: "Backtesting(WIP)",
             key: "setting:2",
           },
         ],
@@ -50,7 +53,8 @@ const items = [
   },
 ];
 export default function NavBar() {
-  const [current, setCurrent] = useState("portfolio");
+  const router = useRouter();
+  const [current, setCurrent] = useState(router.pathname);
   const onClick = (e) => {
     setCurrent(e.key);
   };
