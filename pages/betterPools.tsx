@@ -18,9 +18,9 @@ const BetterPools: NextPage = () => {
     <BasePage>
       <center>
         <h1 className="ant-table-title">Analytics - Better Pools</h1>
-        <Col xl={14} md={24} xs={24} align="center">
-          <Row gutter={[30, 20]} align="center">
-            <Col xl={12} md={24} xs={24} align="left">
+        <Col xl={14} md={24} xs={24}>
+          <Row gutter={[30, 20]}>
+            <Col xl={12} md={24} xs={24}>
               <TopNLowestAprPools
                 wording="TopN Lowest APR Pools"
                 topNData={topNLowestAprPools}
@@ -28,7 +28,7 @@ const BetterPools: NextPage = () => {
                 windowHeight={300}
               />
             </Col>
-            <Col xl={12} md={24} xs={24} align="left">
+            <Col xl={12} md={24} xs={24}>
               <SuggestionsForLPTokens
                 wording="Better Pool for LP Tokens"
                 topNData={topNPoolConsistOfSameLpToken}
@@ -36,7 +36,7 @@ const BetterPools: NextPage = () => {
                 windowHeight={300}
               />
             </Col>
-            <Col span={24} align="left">
+            <Col span={24}>
               <SuggestionsForBetterStableCoins
                 wording="Better Stable Coin Pools"
                 topNData={topNStableCoins}

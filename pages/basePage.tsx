@@ -11,8 +11,11 @@ import {
   TwitterCircleFilled,
   AuditOutlined,
 } from "@ant-design/icons";
+interface BasePageProps {
+  children: React.ReactNode;
+}
 
-const BasePage: NextPage = ({ children }) => {
+const BasePage: NextPage<BasePageProps> = ({ children }) => {
   const { address } = useAccount();
   return (
     <div>
