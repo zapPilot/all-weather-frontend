@@ -30,7 +30,7 @@ export default function ExampleUI({ address }) {
   return (
     <div style={{ padding: "3rem 1.5rem", minHeight: windowHeight }}>
       <center>
-        <h1 className="ant-table-title">All Weather Portfolio</h1>
+        <h1 className="ant-table-title">All Weather Protocol</h1>
       </center>
       <center>
         <h2 className="ant-table-title">

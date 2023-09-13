@@ -13,24 +13,24 @@ const items = [
     key: "analytics",
     children: [
       {
-        type: "group",
-        label: "Recommendations",
-        children: [
-          {
-            label: <Link href="/betterPools">Better Pools</Link>,
-            key: "setting:1",
-          },
-        ],
+        label: (
+          <a
+            href="https://debank.com/bundles/126382/portfolio"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Vault - DeBank
+          </a>
+        ),
+        key: "setting:1",
       },
       {
-        type: "group",
-        label: "Performance",
-        children: [
-          {
-            label: "Backtesting(WIP)",
-            key: "setting:2",
-          },
-        ],
+        label: <Link href="/betterPools">Better Pools</Link>,
+        key: "setting:2",
+      },
+      {
+        label: "Backtesting(WIP)",
+        key: "setting:3",
       },
     ],
   },
