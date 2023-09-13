@@ -1,5 +1,6 @@
 // import suggestions from "./suggestions.json";
 import { Spin, Row, Col } from "antd";
+import { LinkOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
 import RebalanceChart from "./RebalanceChart";
@@ -88,8 +89,15 @@ const RebalancerWidget = ({ address }) => {
                 </div>
                 <div style={{ textAlign: "left", marginBottom: 10 }}>
                   <strong style={{ color: "white", fontSize: 26 }}>
-                    TVL: ${netWorth.toFixed(2)}
+                    TVL: ${netWorth.toFixed(2)}{" "}
+                    <a
+                      href="https://debank.com/bundles/126382/portfolio"
+                      target="_blank"
+                    >
+                      <LinkOutlined />
+                    </a>
                   </strong>
+                  <div style={{ color: "white" }}>Data updated 5mins ago</div>
                 </div>
                 <div style={{ textAlign: "left", marginBottom: 10 }}>
                   <strong style={{ color: "white", fontSize: 26 }}>
