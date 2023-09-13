@@ -47,18 +47,9 @@ const depositSchema = z
 
 const ZapInButton = () => {
   const { address } = useAccount();
-  const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const showModal = () => {
     setOpen(true);
-  };
-
-  const handleOk = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setOpen(false);
-    }, 3000);
   };
 
   const handleCancel = () => {
