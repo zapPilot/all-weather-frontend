@@ -345,7 +345,7 @@ const ZapInButton = () => {
           write({
             args: [preparedDepositData],
             from: address,
-            gas: 30_000_000n,
+            gas: 40_000_000n,
           });
           return;
         }
