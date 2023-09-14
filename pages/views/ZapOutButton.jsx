@@ -1,4 +1,4 @@
-import { Button, Space, Select } from "antd";
+import { Button, Space, message } from "antd";
 import { portfolioContractAddress } from "../../utils/oneInch";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
@@ -17,11 +17,21 @@ const ZapOutButton = () => {
   const [inputValue, setInputValue] = useState("");
   const [approveReady, setApproveReady] = useState(true);
   const [approveAmount, setApproveAmount] = useState(0);
+  const [messageApi, contextHolder] = message.useMessage();
 
   const { write } = useContractWrite({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "redeem",
+    onError(error) {
+      messageApi.error({
+        content: error.shortMessage,
+        duration: 5,
+      });
+    },
+    onSuccess() {
+      messageApi.info("Redeem succeeded");
+    },
   });
   const {
     write: approveWrite,
@@ -31,6 +41,15 @@ const ZapOutButton = () => {
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "approve",
+    onError(error) {
+      messageApi.error({
+        content: error.shortMessage,
+        duration: 5,
+      });
+    },
+    onSuccess() {
+      messageApi.info("Approved");
+    },
   });
   const approveAmountContract = useContractRead({
     address: portfolioContractAddress,
@@ -95,6 +114,7 @@ const ZapOutButton = () => {
 
   return (
     <div>
+      {contextHolder}
       <Space.Compact style={{ width: "90%" }}>
         <NumericInput
           placeholder={`Balance: ${userShares}`}
