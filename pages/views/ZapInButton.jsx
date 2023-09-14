@@ -32,17 +32,17 @@ import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToke
 import NumericInput from "./NumberInput";
 const { ethers } = require("ethers");
 const { Option } = Select;
-const MINIMUM_ZAP_IN_AMOUNT = 0.04;
+const MINIMUM_ZAP_IN_AMOUNT = 0.047;
 const MAXIMUM_ZAP_IN_AMOUNT = 0.06;
 const depositSchema = z
   .number()
   .min(
-    MINIMUM_ZAP_IN_AMOUNT,
-    `Deposit amount should be greater than ${MINIMUM_ZAP_IN_AMOUNT}`,
+    MINIMUM_ZAP_IN_AMOUNT - 0.000000001,
+    `The deposit amount should be at least ${MINIMUM_ZAP_IN_AMOUNT}`,
   )
   .max(
     MAXIMUM_ZAP_IN_AMOUNT,
-    `Deposit amount should be less than ${MAXIMUM_ZAP_IN_AMOUNT}`,
+    `The deposit amount should be at most ${MAXIMUM_ZAP_IN_AMOUNT}`,
   );
 
 const ZapInButton = () => {
@@ -109,7 +109,7 @@ const ZapInButton = () => {
     functionName: "deposit",
     onError(error) {
       messageApi.error({
-        content: `${error.shortMessage}. Amout: ${error.args[0].amount}`,
+        content: `${error.shortMessage}. Amout: ${error.args[0].amount}. Increase the deposit amount and try again.`,
         duration: 5,
       });
     },
