@@ -74,6 +74,7 @@ const ZapInButton = () => {
   const [apiLoading, setApiLoading] = useState(false);
   const [approveReady, setApproveReady] = useState(true);
   const [approveAmount, setApproveAmount] = useState(0);
+  const [depositHash, setDepositHash] = useState("");
   const [messageApi, contextHolder] = message.useMessage();
 
   const renderStatusCircle = (isLoading, isSuccess) => {
@@ -113,8 +114,8 @@ const ZapInButton = () => {
       });
     },
     onSuccess(data) {
-      console.log(Object.keys(data));
-      messageApi.info(data.shortMessage);
+      setDepositHash(data.hash);
+      messageApi.info("Deposit succeeded");
     },
   });
   const {
@@ -189,10 +190,17 @@ const ZapInButton = () => {
       // check the type of amount and the approveAmount
       if (approveAmountContract.data < amount_) {
         setApiDataReady(false);
-        approveWrite({
-          args: [portfolioContractAddress, amount.toString()],
-          from: address,
-        });
+        function waitForApprove() {
+          if (approveWrite) {
+            approveWrite({
+              args: [portfolioContractAddress, amount.toString()],
+              from: address,
+            });
+            return;
+          }
+          setTimeout(waitForApprove, 3000);
+        }
+        waitForApprove();
         // wait until the approve transaction is successful
         if (approveIsSuccess) {
           setApproveReady(true);
@@ -425,6 +433,16 @@ const ZapInButton = () => {
           {renderStatusCircle(depositIsLoading, depositIsSuccess)}
           <span> Deposit </span>
         </div>
+        {depositHash === "" ? (
+          <div></div>
+        ) : (
+          <center>
+            🚀 Finishied! Check your transaction on the explorer 🚀
+            <a
+              href={`https://arbiscan.io/tx/{${depositHash}}`}
+            >{`https://arbiscan.io/tx/{${depositHash}}`}</a>
+          </center>
+        )}
       </div>
     </Modal>
   );
