@@ -128,7 +128,6 @@ export default function BasicSunburst(props) {
   }, [rebalanceSuggestions, netWorth]);
   return (
     <div>
-      {/* <div>{clicked ? "click to unlock selection" : "click to lock selection"}</div> */}
       <Sunburst
         animation
         hideRootNode
@@ -152,7 +151,6 @@ export default function BasicSunburst(props) {
             setData(updateData(data, false));
           }
         }}
-        onValueClick={() => setClicked(!clicked)}
         style={{
           stroke: "#ddd",
           strokeOpacity: 0.3,
