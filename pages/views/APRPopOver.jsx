@@ -4,11 +4,14 @@ import { InfoCircleOutlined } from "@ant-design/icons";
 import { web3Context } from "./Web3DataProvider";
 import ClaimButton from "./ClaimButton";
 import { ethers } from "ethers";
+import { useAccount } from "wagmi";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 const BigNumber = require("bignumber.js");
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const APRPopOver = ({ address, mode, portfolioApr }) => {
+  const { connector: isConnected } = useAccount();
   const [claimableRewards, setClaimableRewards] = useState([]);
   const [aprComposition, setAprComposition] = useState({});
   const [sumOfRewardsDenominatedInUSD, setSumOfRewardsDenominatedInUSD] =
@@ -239,11 +242,15 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
           Claimable Rewards: ${sumOfRewardsDenominatedInUSD.toFixed(2)}
         </h2>
         <ClaimButton />
-        <Table
-          columns={getColumnsForSuggestionsTable}
-          dataSource={calculateClaimableRewards()}
-          pagination={false}
-        />
+        {isConnected ? (
+          <Table
+            columns={getColumnsForSuggestionsTable}
+            dataSource={calculateClaimableRewards()}
+            pagination={false}
+          />
+        ) : (
+          <ConnectButton />
+        )}
       </div>
     );
   }
