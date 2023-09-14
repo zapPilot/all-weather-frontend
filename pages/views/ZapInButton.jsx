@@ -1,4 +1,4 @@
-import { Button, Space, Select, Modal } from "antd";
+import { Button, Space, Select, Modal, message } from "antd";
 import { Spin } from "antd";
 import { z } from "zod";
 import { encodeFunctionData } from "viem";
@@ -74,6 +74,8 @@ const ZapInButton = () => {
   const [apiLoading, setApiLoading] = useState(false);
   const [approveReady, setApproveReady] = useState(true);
   const [approveAmount, setApproveAmount] = useState(0);
+  const [messageApi, contextHolder] = message.useMessage();
+
   const renderStatusCircle = (isLoading, isSuccess) => {
     if (isLoading) {
       return <Spin />;
@@ -104,6 +106,16 @@ const ZapInButton = () => {
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "deposit",
+    onError(error) {
+      messageApi.error({
+        content: `${error.shortMessage}. Amout: ${error.args[0].amount}`,
+        duration: 5,
+      });
+    },
+    onSuccess(data) {
+      console.log(Object.keys(data));
+      messageApi.info(data.shortMessage);
+    },
   });
   const {
     write: approveWrite,
@@ -419,6 +431,7 @@ const ZapInButton = () => {
 
   return (
     <div>
+      {contextHolder}
       {modalContent}
       <Space.Compact style={{ width: "90%" }}>
         <NumericInput
