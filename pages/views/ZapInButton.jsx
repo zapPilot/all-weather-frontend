@@ -307,6 +307,10 @@ const ZapInButton = () => {
           }
         }
       }
+
+      // WORKAROUND: pendle SDK would return the wrong path for zapping in for small amount (with MIM route)
+      // so we need to provide a hardcoded path, though not guaranteed to be the best route
+      // workaround on pendle router side: https://stackblitz.com/edit/stackblitz-starters-lov3oa?file=index.ts
       const glpInputWorkAround = {
         tokenIn: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
         netTokenIn: pendleGLPZapInData[4]["netTokenIn"],
