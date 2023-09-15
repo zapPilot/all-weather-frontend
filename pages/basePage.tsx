@@ -6,6 +6,7 @@ import styles from "../styles/Home.module.css";
 import NavBar from "./views/NavBar.jsx";
 import Header from "./views/Header";
 import Web3DataProvider from "./views/Web3DataProvider";
+
 import {
   HomeFilled,
   TwitterCircleFilled,

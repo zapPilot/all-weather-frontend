@@ -8,16 +8,9 @@ import {
 } from "@rainbow-me/rainbowkit";
 import type { AppProps } from "next/app";
 import { configureChains, createConfig, WagmiConfig } from "wagmi";
-import {
-  arbitrum,
-  goerli,
-  mainnet,
-  optimism,
-  polygon,
-  zora,
-  arbitrumGoerli,
-} from "wagmi/chains";
+import { arbitrum, goerli, arbitrumGoerli } from "wagmi/chains";
 import { publicProvider } from "wagmi/providers/public";
+import GTag from "./gTag.js";
 
 const { chains, publicClient, webSocketPublicClient } = configureChains(
   [
@@ -45,6 +38,8 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <WagmiConfig config={wagmiConfig}>
       <RainbowKitProvider chains={chains} theme={darkTheme()}>
+        {/* <!-- Google tag (gtag.js) --> */}
+        <GTag />
         <Component {...pageProps} />
       </RainbowKitProvider>
     </WagmiConfig>
