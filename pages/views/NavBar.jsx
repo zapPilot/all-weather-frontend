@@ -25,12 +25,24 @@ const items = [
         key: "setting:1",
       },
       {
-        label: <Link href="/betterPools">Better Pools</Link>,
+        label: (
+          <a
+            href="https://dune.com/davidtnfsh/all-weather-protocol"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Dune Analytics
+          </a>
+        ),
         key: "setting:2",
       },
       {
-        label: "Backtesting(WIP)",
+        label: <Link href="/betterPools">Better Pools</Link>,
         key: "setting:3",
+      },
+      {
+        label: "Backtesting(WIP)",
+        key: "setting:4",
       },
     ],
   },
