@@ -15,7 +15,7 @@ function ThirdPartyPlugin() {
         `}
       </Script>
       {/* Crisp Chat */}
-      <Script type="text/javascript">
+      <Script id="crisp-chat">
         {`
           window.$crisp=[];window.CRISP_WEBSITE_ID="3349c459-6071-4b8d-929e-10383598563b";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();
         `}
