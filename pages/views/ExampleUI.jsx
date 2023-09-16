@@ -46,14 +46,6 @@ export default function ExampleUI({ address }) {
         </h3>
       </center>
       <RebalancerWidget address={address} />
-      <Affix style={{ position: "fixed", bottom: "1.5rem", right: "1.5rem" }}>
-        <Button
-          shape="circle"
-          size="large"
-          icon={<MessageFilled style={{ color: "white" }} />}
-          style={{ backgroundColor: "#5C7724", borderColor: "#5C7724" }}
-        />
-      </Affix>
     </div>
   );
 }
