@@ -32,7 +32,7 @@ import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToke
 import NumericInput from "./NumberInput";
 const { ethers } = require("ethers");
 const { Option } = Select;
-const MINIMUM_ZAP_IN_AMOUNT = 0.047;
+const MINIMUM_ZAP_IN_AMOUNT = 0.055;
 const MAXIMUM_ZAP_IN_AMOUNT = 0.06;
 const depositSchema = z
   .number()
@@ -443,8 +443,8 @@ const ZapInButton = () => {
           <center>
             🚀 Finishied! Check your transaction on the explorer 🚀
             <a
-              href={`https://arbiscan.io/tx/{${depositHash}}`}
-            >{`https://arbiscan.io/tx/{${depositHash}}`}</a>
+              href={`https://arbiscan.io/tx/${depositHash}`}
+            >{`https://arbiscan.io/tx/${depositHash}`}</a>
           </center>
         )}
       </div>
