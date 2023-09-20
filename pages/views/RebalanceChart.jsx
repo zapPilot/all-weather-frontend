@@ -81,7 +81,7 @@ function updateData(data, keyPath) {
 
 const defaultData = updateData(DefaultValue, false);
 
-function createChartData(rebalanceSuggestions, netWorth) {
+function createChartData(rebalanceSuggestions, netWorth, showCategory = false) {
   const colorList = [
     "#12939A",
     "#125C77",
@@ -91,27 +91,75 @@ function createChartData(rebalanceSuggestions, netWorth) {
     "#F15C17",
     "#223F9A",
     "#DA70BF",
+    "#FF5733",
+    "#C70039",
+    "#900C3F",
+    "#581845",
+    "#1C2833",
+    "#BFC9CA",
+    "#ABB2B9",
+    "#2E4053",
+    "#212F3C",
+    "#5D6D7E",
+    "#34495E",
+    "#16A085",
+    "#1ABC9C",
+    "#2ECC71",
+    "#27AE60",
+    "#2980B9",
+    "#8E44AD",
+    "#2C3E50",
+    "#F1C40F",
+    "#E67E22",
+    "#E74C3C",
+    "#ECF0F1",
   ];
-  const children = rebalanceSuggestions.map((categoryObj, idx) => {
+
+  let aggregatedDict = {};
+
+  rebalanceSuggestions.forEach((item) => {
+    for (let value of Object.values(item.suggestions_for_positions)) {
+      const { symbol: key, balanceUSD } = value;
+      aggregatedDict[key] = (aggregatedDict[key] || 0) + balanceUSD;
+    }
+  });
+
+  if (!showCategory) {
+    const aggregatedArray = Object.entries(aggregatedDict).sort(
+      (a, b) => b[1] - a[1],
+    );
     return {
-      name: `${categoryObj["category"]}: ${Math.round(
-        (categoryObj.sum_of_this_category_in_the_portfolio / netWorth) * 100,
+      children: aggregatedArray.map(([name, value], idx) => ({
+        name,
+        hex: colorList[idx],
+        value,
+      })),
+    };
+  }
+
+  return {
+    children: rebalanceSuggestions.map((categoryObj, idx) => ({
+      name: `${categoryObj.category}: ${getPercentage(
+        categoryObj.sum_of_this_category_in_the_portfolio,
+        netWorth,
       )}%`,
       hex: colorList[idx],
-      children: categoryObj.suggestions_for_positions.map((subCategoryObj) => {
-        return {
-          name: `${subCategoryObj.symbol}: ${Math.round(
-            (subCategoryObj.balanceUSD / netWorth) * 100,
+      children: categoryObj.suggestions_for_positions
+        .sort((a, b) => b.balanceUSD - a.balanceUSD)
+        .map((subCategoryObj) => ({
+          name: `${subCategoryObj.symbol}: ${getPercentage(
+            subCategoryObj.balanceUSD,
+            netWorth,
           )}%`,
           value: subCategoryObj.balanceUSD,
           hex: colorList[idx],
-        };
-      }),
-    };
-  });
-  return {
-    children,
+        })),
+    })),
   };
+}
+
+function getPercentage(value, total) {
+  return Math.round((value / total) * 100);
 }
 
 export default function BasicSunburst(props) {
@@ -122,9 +170,9 @@ export default function BasicSunburst(props) {
   const [clicked, setClicked] = useState(false);
 
   useEffect(() => {
-    const chartData = createChartData(rebalanceSuggestions, netWorth);
-    const updatedData = updateData(chartData, false);
-    setData(updatedData);
+    // set showCategory = true, to show its category. For instance, long_term_bond
+    const chartData = createChartData(rebalanceSuggestions, netWorth, false);
+    setData(chartData);
   }, [rebalanceSuggestions, netWorth]);
   return (
     <div>
@@ -169,7 +217,6 @@ export default function BasicSunburst(props) {
           />
         )}
       </Sunburst>
-      {/* <div className="basic-sunburst-example-path-name">{pathValue}</div> */}
     </div>
   );
 }
