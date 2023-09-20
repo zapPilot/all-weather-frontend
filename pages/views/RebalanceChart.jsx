@@ -118,11 +118,17 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
   let aggregatedDict = {};
 
   rebalanceSuggestions.forEach((item) => {
-    for (let value of Object.values(item.suggestions_for_positions)) {
-      const { symbol: key, balanceUSD } = value;
-      aggregatedDict[key] = (aggregatedDict[key] || 0) + balanceUSD;
-    }
+    item.suggestions_for_positions.forEach(({ symbol, balanceUSD }) => {
+      aggregatedDict[symbol] = (aggregatedDict[symbol] || 0) + balanceUSD;
+    });
   });
+
+  aggregatedDict = Object.fromEntries(
+    Object.entries(aggregatedDict).map(([key, value]) => [
+      `${key} ${((value / netWorth) * 100).toFixed(2)}%`,
+      value,
+    ]),
+  );
 
   if (!showCategory) {
     const aggregatedArray = Object.entries(aggregatedDict).sort(
@@ -164,7 +170,6 @@ function getPercentage(value, total) {
 
 export default function BasicSunburst(props) {
   const { rebalanceSuggestions, netWorth, showCategory } = props;
-  const [pathValue, setPathValue] = useState(false);
   const [data, setData] = useState(defaultData);
   const [finalValue, setFinalValue] = useState("Your Portfolio Chart");
   const [clicked, setClicked] = useState(false);
@@ -193,12 +198,10 @@ export default function BasicSunburst(props) {
             return res;
           }, {});
           setFinalValue(path[path.length - 1]);
-          setPathValue(path.join(" > "));
           setData(updateData(data, pathAsMap));
         }}
         onValueMouseOut={() => {
           if (!clicked) {
-            setPathValue(false);
             setFinalValue(false);
             setData(updateData(data, false));
           }
