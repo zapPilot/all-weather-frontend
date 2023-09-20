@@ -4,7 +4,6 @@ import { Row, Col, Spin } from "antd";
 import SuggestionsForBetterStableCoins from "./views/SuggestionsForBetterStableCoins.jsx";
 import SuggestionsForLPTokens from "./views/SuggestionsForLPTokens";
 import TopNLowestAprPools from "./views/TopNLowestAprPools";
-import { useAccount } from "wagmi";
 import useRebalanceSuggestions from "../utils/rebalanceSuggestions";
 
 const BetterPools: NextPage = () => {
@@ -14,10 +13,12 @@ const BetterPools: NextPage = () => {
     topNPoolConsistOfSameLpToken,
     topNStableCoins,
   } = useRebalanceSuggestions();
+
   return (
     <BasePage>
       <center>
         <h1 className="ant-table-title">Analytics - Better Pools</h1>
+
         {topNLowestAprPools.length === 0 ? (
           <div
             style={{

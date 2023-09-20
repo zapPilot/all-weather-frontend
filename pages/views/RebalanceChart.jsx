@@ -81,7 +81,7 @@ function updateData(data, keyPath) {
 
 const defaultData = updateData(DefaultValue, false);
 
-function createChartData(rebalanceSuggestions, netWorth, showCategory = false) {
+function createChartData(rebalanceSuggestions, netWorth, showCategory) {
   const colorList = [
     "#12939A",
     "#125C77",
@@ -163,7 +163,7 @@ function getPercentage(value, total) {
 }
 
 export default function BasicSunburst(props) {
-  const { rebalanceSuggestions, netWorth } = props;
+  const { rebalanceSuggestions, netWorth, showCategory } = props;
   const [pathValue, setPathValue] = useState(false);
   const [data, setData] = useState(defaultData);
   const [finalValue, setFinalValue] = useState("Your Portfolio Chart");
@@ -171,7 +171,11 @@ export default function BasicSunburst(props) {
 
   useEffect(() => {
     // set showCategory = true, to show its category. For instance, long_term_bond
-    const chartData = createChartData(rebalanceSuggestions, netWorth, false);
+    const chartData = createChartData(
+      rebalanceSuggestions,
+      netWorth,
+      showCategory,
+    );
     setData(chartData);
   }, [rebalanceSuggestions, netWorth]);
   return (
