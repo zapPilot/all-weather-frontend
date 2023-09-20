@@ -36,8 +36,8 @@ export default function ExampleUI({ address }) {
       </center>
       <center>
         <h3 className="ant-table-title">
-          Don't place all your eggs in a single basket. Click once, diversify
-          forever!
+          Don&apos;t place all your eggs in a single basket. Click once,
+          diversify forever!
         </h3>
         <h5 className="ant-table-title">
           1. Fee: 0.3% (will be replaced by locking governance tokens in the
