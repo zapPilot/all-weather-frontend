@@ -30,20 +30,23 @@ export default function ExampleUI({ address }) {
   return (
     <div style={{ padding: "3rem 1.5rem", minHeight: windowHeight }}>
       <center>
-        <h1 className="ant-table-title">All Weather Protocol</h1>
+        <h1 className="ant-table-title">
+          All Weather Portfolio: An Omnichain Index Fund
+        </h1>
       </center>
       <center>
-        <h2 className="ant-table-title">
-          Click Once, Diversify Forever. Why Gamble with Volatility?
-        </h2>
         <h3 className="ant-table-title">
+          Don't place all your eggs in a single basket. Click once, diversify
+          forever!
+        </h3>
+        <h5 className="ant-table-title">
           1. Fee: 0.3% (will be replaced by locking governance tokens in the
           beta version)
-        </h3>
-        <h3 className="ant-table-title">
+        </h5>
+        <h5 className="ant-table-title">
           2. There&apos;s a 1-year lock on your deposit (by Radiant Protocol).
           This will also be improved in the beta version.
-        </h3>
+        </h5>
       </center>
       <RebalancerWidget address={address} />
     </div>

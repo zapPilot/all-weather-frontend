@@ -21,8 +21,8 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
   return (
     <div>
       <Head>
-        <title>All Weather Protocol</title>
-        <meta content="All Weather Protocol" name="description" />
+        <title>All Weather Portfolio: An Omnichain Index Fund</title>
+        <meta content="All Weather Portfolio" name="description" />
         <link href="/favicon.ico" rel="icon" />
       </Head>
       <Header>
@@ -43,7 +43,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
 
       <footer className={styles.footer} style={{ color: "white" }}>
         <a
-          href="https://all-weather.webflow.io/"
+          href="https://all-weather-portfolio.webflow.io/"
           rel="noopener noreferrer"
           target="_blank"
         >

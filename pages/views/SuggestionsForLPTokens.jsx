@@ -1,4 +1,4 @@
-import { Space, Table, Button, Tag, Modal } from "antd";
+import { Table, Button, Tag, Modal } from "antd";
 import { DownOutlined, UpOutlined } from "@ant-design/icons";
 import { useState, useEffect } from "react";
 import { getColumnsForSuggestionsTable } from "../../utils/tableExpansionUtils";
@@ -131,29 +131,7 @@ const SuggestionsForLPTokens = (props) => {
       const commonColumns = getColumnsForSuggestionsTable(portfolioApr);
       const popoverContent = (
         <Table
-          columns={[
-            ...commonColumns,
-            {
-              title: "Action",
-              dataIndex: "operation",
-              key: "operation",
-              width: 24,
-              render: () => {
-                const textConfig = {
-                  style: {
-                    textDecoration: "underline",
-                    color: "white",
-                  },
-                };
-                return (
-                  <Space size="middle">
-                    <text {...textConfig}>Accept</text>
-                    <text {...textConfig}>Decline</text>
-                  </Space>
-                );
-              },
-            },
-          ]}
+          columns={[...commonColumns]}
           dataSource={data}
           pagination={false}
           scroll={{
