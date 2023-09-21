@@ -65,7 +65,7 @@ const APRPopOver = ({ mode }) => {
       return (
         <center>
           <Spin size="small" />
-          Loading (5s)
+          Loading (13s)
         </center>
       );
     return (
@@ -130,32 +130,50 @@ const APRPopOver = ({ mode }) => {
   };
 
   function calculateClaimableRewards() {
+    // Early return if conditions are not met
     if (!WEB3_CONTEXT || claimableRewards === undefined) return [];
 
-    return claimableRewards
-      .map((reward) =>
-        reward.claimableRewards.map((claimableReward) => {
-          return {
-            pool: reward.protocol,
-            token:
-              WEB3_CONTEXT["debankContext"][
-                claimableReward.token.toLowerCase()
-              ],
-            amount: ethers.utils.formatEther(claimableReward.amount),
-            value: turnReward2Price(claimableReward),
-          };
-        }),
-      )
-      .flat();
+    // Flatten and map claimable rewards to include price
+    const claimableRewardsWithPrice = claimableRewards.flatMap((reward) =>
+      reward.claimableRewards.map((claimableReward) => ({
+        token:
+          WEB3_CONTEXT["debankContext"][claimableReward.token.toLowerCase()],
+        amount: ethers.utils.formatEther(claimableReward.amount),
+        value: turnReward2Price(claimableReward),
+      })),
+    );
+
+    // Initialize an empty object to hold aggregated claimable rewards
+    const aggregatedClaimableRewards = {};
+
+    // Loop through each claimable reward to aggregate them
+    for (const { token, amount, value } of claimableRewardsWithPrice) {
+      // Skip if the amount is '0.0'
+      if (amount === "0.0") continue;
+
+      const tokenSymbol = token.symbol;
+
+      // Initialize if the token does not exist in the aggregated object
+      if (!aggregatedClaimableRewards.hasOwnProperty(tokenSymbol)) {
+        aggregatedClaimableRewards[tokenSymbol] = { token, amount, value };
+      } else {
+        // Update the aggregated amount and value for the token
+        aggregatedClaimableRewards[tokenSymbol].amount = (
+          parseFloat(aggregatedClaimableRewards[tokenSymbol].amount) +
+          parseFloat(amount)
+        ).toString();
+
+        aggregatedClaimableRewards[tokenSymbol].value += value;
+      }
+    }
+
+    // Convert the aggregated object to an array and sort it by value
+    return Object.values(aggregatedClaimableRewards)
+      .sort((a, b) => b.value - a.value)
+      .map(({ token, amount, value }) => ({ token, amount, value }));
   }
 
   const getColumnsForSuggestionsTable = [
-    {
-      title: "Pool",
-      dataIndex: "pool",
-      key: "pool",
-      width: 24,
-    },
     {
       title: "Token",
       dataIndex: "token",
