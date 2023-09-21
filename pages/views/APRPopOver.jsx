@@ -10,7 +10,7 @@ const BigNumber = require("bignumber.js");
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const APRPopOver = ({ address, mode, portfolioApr }) => {
+const APRPopOver = ({ mode }) => {
   const { connector: isConnected } = useAccount();
   const [claimableRewards, setClaimableRewards] = useState([]);
   const [aprComposition, setAprComposition] = useState({});
@@ -68,26 +68,20 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
           Loading (5s)
         </center>
       );
-
     return (
       <ul>
-        {Object.keys(aprComposition).map((protocol, index) => (
-          <li key={index}>
-            - {protocol}
-            <ul>
-              {Object.keys(aprComposition[protocol]).map((rewardKey, idx) => {
-                return (
-                  <RewardItem
-                    key={`${protocol}-${rewardKey}-${idx}`}
-                    protocol={protocol}
-                    rewardKey={rewardKey}
-                    value={aprComposition[protocol][rewardKey]}
-                  />
-                );
-              })}
-            </ul>
-          </li>
-        ))}
+        {Object.entries(aprComposition["aggregated_apr_composition"])
+          .sort((a, b) => b[1].APR - a[1].APR)
+          .map(([rewardKey, metadata], idx) => {
+            return (
+              <RewardItem
+                key={`aggregated_apr_composition-${rewardKey}-${idx}`}
+                protocol="aggregated_apr_composition"
+                rewardKey={rewardKey}
+                value={metadata}
+              />
+            );
+          })}
       </ul>
     );
   }
@@ -115,9 +109,7 @@ const APRPopOver = ({ address, mode, portfolioApr }) => {
     };
 
     const renderReward = () => {
-      if (rewardKey === "Underlying APY") {
-        return renderToken();
-      } else if (rewardKey === "Swap Fee") {
+      if (rewardKey === "Swap Fee" || rewardKey === "Underlying APY") {
         return (
           <>
             <img
