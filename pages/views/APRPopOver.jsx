@@ -132,15 +132,18 @@ const APRPopOver = ({ mode }) => {
   function calculateClaimableRewards() {
     // Early return if conditions are not met
     if (!WEB3_CONTEXT || claimableRewards === undefined) return [];
-
     // Flatten and map claimable rewards to include price
     const claimableRewardsWithPrice = claimableRewards.flatMap((reward) =>
-      reward.claimableRewards.map((claimableReward) => ({
-        token:
-          WEB3_CONTEXT["debankContext"][claimableReward.token.toLowerCase()],
-        amount: ethers.utils.formatEther(claimableReward.amount),
-        value: turnReward2Price(claimableReward),
-      })),
+      reward.claimableRewards.map((claimableReward) => {
+        const tokenInLowerCase = claimableReward.token.toLowerCase();
+        return {
+          token: WEB3_CONTEXT["debankContext"][tokenInLowerCase],
+          amount: new BigNumber(claimableReward.amount)
+            .div(BigInt(10 ** _getDecimalPerToken(tokenInLowerCase)))
+            .toString(),
+          value: turnReward2Price(claimableReward),
+        };
+      }),
     );
 
     // Initialize an empty object to hold aggregated claimable rewards
@@ -207,8 +210,8 @@ const APRPopOver = ({ mode }) => {
     },
   ];
   const turnReward2Price = (claimableReward) => {
-    const priceAsFloat =
-      WEB3_CONTEXT["debankContext"][claimableReward.token.toLowerCase()].price;
+    const tokenInLowerCase = claimableReward.token.toLowerCase();
+    const priceAsFloat = WEB3_CONTEXT["debankContext"][tokenInLowerCase].price;
 
     // Use BigNumber from 'bignumber.js' to multiply the price by 10^18
     const priceBigNumber = new BigNumber(priceAsFloat).times(
@@ -227,11 +230,32 @@ const APRPopOver = ({ mode }) => {
     if (finalResult > 0) {
       return parseFloat(
         new BigNumber(Math.floor(finalResult)).div(
-          BigInt("1000000000000000000"),
+          BigInt(10 ** _getDecimalPerToken(tokenInLowerCase)),
         ),
       );
     }
     return 0;
+  };
+
+  const _getDecimalPerToken = (token) => {
+    if (
+      [
+        "arb:0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
+        "arb:0xd69d402d1bdb9a2b8c3d88d98b9ceaf9e4cd72d9",
+        "arb:0xff970a61a04b1ca14834a43f5de4533ebddb5cc8",
+        "arb:0x48a29e756cc1c097388f3b2f3b570ed270423b3d",
+      ].includes(token)
+    ) {
+      return 6;
+    } else if (
+      [
+        "arb:0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f",
+        "arb:0x727354712bdfcd8596a3852fd2065b3c34f4f770",
+      ].includes(token)
+    ) {
+      return 8;
+    }
+    return 18;
   };
 
   if (mode === "percentage") {
