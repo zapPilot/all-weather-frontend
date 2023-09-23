@@ -19,21 +19,22 @@ import {
   equilibriaRETHVaultAddress,
 } from "../../utils/oneInch";
 import { DollarOutlined, CheckCircleOutlined } from "@ant-design/icons";
-
 import { useEffect, useState } from "react";
 import {
   useContractWrite,
   useAccount,
   useBalance,
   useContractRead,
+  useWaitForTransaction,
 } from "wagmi";
 
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import NumericInput from "./NumberInput";
-const { ethers } = require("ethers");
+import { useEthersSigner } from "../../utils/ethers";
+import { ethers } from "ethers";
 const { Option } = Select;
-const MINIMUM_ZAP_IN_AMOUNT = 0.055;
-const MAXIMUM_ZAP_IN_AMOUNT = 0.06;
+const MINIMUM_ZAP_IN_AMOUNT = 0.058;
+const MAXIMUM_ZAP_IN_AMOUNT = 0.07;
 const depositSchema = z
   .number()
   .min(
@@ -75,8 +76,13 @@ const ZapInButton = () => {
   const [apiLoading, setApiLoading] = useState(false);
   const [approveReady, setApproveReady] = useState(true);
   const [approveAmount, setApproveAmount] = useState(0);
-  const [depositHash, setDepositHash] = useState("");
+  const [depositHash, setDepositHash] = useState(undefined);
   const [messageApi, contextHolder] = message.useMessage();
+  const signer = useEthersSigner();
+  const { isSuccess: depositIsSuccess, depositIsLoading } =
+    useWaitForTransaction({
+      hash: depositHash,
+    });
 
   const renderStatusCircle = (isLoading, isSuccess) => {
     if (isLoading) {
@@ -101,26 +107,6 @@ const ZapInButton = () => {
     }
   };
   const {
-    write,
-    isLoading: depositIsLoading,
-    isSuccess: depositIsSuccess,
-  } = useContractWrite({
-    address: portfolioContractAddress,
-    abi: permanentPortfolioJson.abi,
-    functionName: "deposit",
-    onError(error) {
-      messageApi.error({
-        content: `${error.shortMessage}. Amout: ${error.args[0].amount}. Increase the deposit amount and try again.`,
-        duration: 5,
-      });
-      throw error;
-    },
-    onSuccess(data) {
-      setDepositHash(data.hash);
-      messageApi.info("Deposit succeeded");
-    },
-  });
-  const {
     write: approveWrite,
     isLoading: approveIsLoading,
     isSuccess: approveIsSuccess,
@@ -137,7 +123,7 @@ const ZapInButton = () => {
     watch: true,
     onError(error) {
       console.log("allowance Error", error);
-      throw error
+      throw error;
     },
   });
 
@@ -348,28 +334,19 @@ const ZapInButton = () => {
         pendleInput: pendlePendleZapInData[4],
       };
       // print out the encoded data for debugging
-      encodeFunctionData({
+      const encodedFunctionData = encodeFunctionData({
         abi: permanentPortfolioJson.abi,
         functionName: "deposit",
         args: [preparedDepositData],
       });
-
       setApiLoading(false);
       setApiDataReady(true);
-
-      // wait for the write function to be called
-      function waitForWrite() {
-        if (write) {
-          write({
-            args: [preparedDepositData],
-            from: address,
-            gas: 40_000_000n,
-          });
-          return;
-        }
-        setTimeout(waitForWrite, 3000);
-      }
-      waitForWrite();
+      const tx = await signer.sendTransaction({
+        to: portfolioContractAddress,
+        data: encodedFunctionData,
+        gasLimit: 40_000_000n,
+      });
+      setDepositHash(tx.hash);
     }
   };
   const selectBefore = (
@@ -440,7 +417,7 @@ const ZapInButton = () => {
           {renderStatusCircle(depositIsLoading, depositIsSuccess)}
           <span> Deposit </span>
         </div>
-        {depositHash === "" ? (
+        {typeof depositHash === "undefined" ? (
           <div></div>
         ) : (
           <center>
