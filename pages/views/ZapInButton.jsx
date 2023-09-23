@@ -32,7 +32,7 @@ import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToke
 import NumericInput from "./NumberInput";
 const { ethers } = require("ethers");
 const { Option } = Select;
-const MINIMUM_ZAP_IN_AMOUNT = 0.025;
+const MINIMUM_ZAP_IN_AMOUNT = 0.055;
 const MAXIMUM_ZAP_IN_AMOUNT = 0.06;
 const depositSchema = z
   .number()
@@ -61,6 +61,7 @@ const ZapInButton = () => {
     token: wethAddress,
     onError(error) {
       console.log("wethBalance, Error", error);
+      throw error;
     },
   });
 
@@ -112,6 +113,7 @@ const ZapInButton = () => {
         content: `${error.shortMessage}. Amout: ${error.args[0].amount}. Increase the deposit amount and try again.`,
         duration: 5,
       });
+      throw error;
     },
     onSuccess(data) {
       setDepositHash(data.hash);
@@ -135,6 +137,7 @@ const ZapInButton = () => {
     watch: true,
     onError(error) {
       console.log("allowance Error", error);
+      throw error
     },
   });
 
