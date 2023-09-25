@@ -165,190 +165,197 @@ const ZapInButton = () => {
     if (!validationResult.success) {
       setAlert(true);
       return;
-    } else {
-      setAlert(false);
-      showModal();
-      let amount_;
-      try {
-        amount_ = ethers.utils.parseEther(inputValue);
-        setAmount(amount_);
-      } catch (error) {
-        return;
-      }
+    }
+    await _sendDepositTransaction();
+    await sendEvents();
+  };
+
+  const _sendDepositTransaction = async () => {
+    setAlert(false);
+    showModal();
+    let amount_;
+    try {
+      amount_ = ethers.utils.parseEther(inputValue);
       setAmount(amount_);
-      // check the type of amount and the approveAmount
-      if (approveAmountContract.data < amount_) {
-        setApiDataReady(false);
-        function waitForApprove() {
-          if (approveWrite) {
-            approveWrite({
-              args: [portfolioContractAddress, amount.toString()],
-              from: address,
-            });
-            return;
-          }
-          setTimeout(waitForApprove, 3000);
+    } catch (error) {
+      return;
+    }
+    setAmount(amount_);
+    // check the type of amount and the approveAmount
+    if (approveAmountContract.data < amount_) {
+      setApiDataReady(false);
+      function waitForApprove() {
+        if (approveWrite) {
+          approveWrite({
+            args: [portfolioContractAddress, amount.toString()],
+            from: address,
+          });
+          return;
         }
-        waitForApprove();
-        // wait until the approve transaction is successful
-        if (approveIsSuccess) {
-          setApproveReady(true);
-        }
-      } else {
+        setTimeout(waitForApprove, 3000);
+      }
+      waitForApprove();
+      // wait until the approve transaction is successful
+      if (approveIsSuccess) {
         setApproveReady(true);
       }
-      setApiLoading(true);
-      const amountAfterChargingFee = amount_.mul(997).div(1000);
-      const [
-        oneInchSwapDataForMagic,
-        oneInchSwapDataForGDAI,
-        oneInchSwapDataForRETH,
-      ] = await Promise.all([
-        fetch1InchSwapData(
-          42161,
-          wethAddress,
-          magicTokenAddress,
-          amountAfterChargingFee.mul(8).div(200),
-          magicVaultAddress,
-          1,
-        ),
-        fetch1InchSwapData(
-          42161,
-          wethAddress,
-          daiAddress,
-          amountAfterChargingFee.mul(12).div(100),
-          equilibriaGDAIVaultAddress,
-          1,
-        ),
-        fetch1InchSwapData(
-          42161,
-          wethAddress,
-          rethTokenAddress,
-          amountAfterChargingFee.mul(6).div(100),
-          equilibriaRETHVaultAddress,
-          1,
-        ),
-      ]);
-      const [
-        pendleGDAIZapInData,
-        pendleGLPZapInData,
-        pendleRETHZapInData,
-        pendlePendleZapInData,
-      ] = await Promise.all([
-        getPendleZapInData(
-          42161,
-          gDAIMarketPoolAddress,
-          ethers.BigNumber.from(oneInchSwapDataForGDAI.toAmount)
-            .mul(99)
-            .div(100),
-          0.01,
-          daiAddress,
-        ),
-        getPendleZapInData(
-          42161,
-          glpMarketPoolAddress,
-          amountAfterChargingFee.mul(35).div(100),
-          0.01,
-          wethAddress,
-        ),
-        getPendleZapInData(
-          42161,
-          rethMarketPoolAddress,
-          ethers.BigNumber.from(oneInchSwapDataForRETH.toAmount)
-            .mul(99)
-            .div(100),
-          0.01,
-          rethTokenAddress,
-        ),
-        getPendleZapInData(
-          42161,
-          pendleMarketPoolAddress,
-          amountAfterChargingFee.mul(24).div(100),
-          0.01,
-          wethAddress,
-        ),
-      ]);
+    } else {
+      setApproveReady(true);
+    }
+    setApiLoading(true);
+    const amountAfterChargingFee = amount_.mul(997).div(1000);
+    const [
+      oneInchSwapDataForMagic,
+      oneInchSwapDataForGDAI,
+      oneInchSwapDataForRETH,
+    ] = await Promise.all([
+      fetch1InchSwapData(
+        42161,
+        wethAddress,
+        magicTokenAddress,
+        amountAfterChargingFee.mul(8).div(200),
+        magicVaultAddress,
+        1,
+      ),
+      fetch1InchSwapData(
+        42161,
+        wethAddress,
+        daiAddress,
+        amountAfterChargingFee.mul(12).div(100),
+        equilibriaGDAIVaultAddress,
+        1,
+      ),
+      fetch1InchSwapData(
+        42161,
+        wethAddress,
+        rethTokenAddress,
+        amountAfterChargingFee.mul(6).div(100),
+        equilibriaRETHVaultAddress,
+        1,
+      ),
+    ]);
+    const [
+      pendleGDAIZapInData,
+      pendleGLPZapInData,
+      pendleRETHZapInData,
+      pendlePendleZapInData,
+    ] = await Promise.all([
+      getPendleZapInData(
+        42161,
+        gDAIMarketPoolAddress,
+        ethers.BigNumber.from(oneInchSwapDataForGDAI.toAmount).mul(99).div(100),
+        0.01,
+        daiAddress,
+      ),
+      getPendleZapInData(
+        42161,
+        glpMarketPoolAddress,
+        amountAfterChargingFee.mul(35).div(100),
+        0.01,
+        wethAddress,
+      ),
+      getPendleZapInData(
+        42161,
+        rethMarketPoolAddress,
+        ethers.BigNumber.from(oneInchSwapDataForRETH.toAmount).mul(99).div(100),
+        0.01,
+        rethTokenAddress,
+      ),
+      getPendleZapInData(
+        42161,
+        pendleMarketPoolAddress,
+        amountAfterChargingFee.mul(24).div(100),
+        0.01,
+        wethAddress,
+      ),
+    ]);
 
-      // Define any parameters required by the deposit function
-      const dataArrays = [
-        pendleGLPZapInData,
-        pendleGDAIZapInData,
-        pendleRETHZapInData,
-        pendlePendleZapInData,
-      ];
-      const keysToUpdate = [
-        "eps",
-        "guessMax",
-        "guessMin",
-        "guessOffchain",
-        "netTokenIn",
-      ];
-      const indicesToUpdate = [3, 4];
+    // Define any parameters required by the deposit function
+    const dataArrays = [
+      pendleGLPZapInData,
+      pendleGDAIZapInData,
+      pendleRETHZapInData,
+      pendlePendleZapInData,
+    ];
+    const keysToUpdate = [
+      "eps",
+      "guessMax",
+      "guessMin",
+      "guessOffchain",
+      "netTokenIn",
+    ];
+    const indicesToUpdate = [3, 4];
 
-      for (let dataArray of dataArrays) {
-        for (let index of indicesToUpdate) {
-          for (let key of keysToUpdate) {
-            if (dataArray[index] && dataArray[index][key] !== undefined) {
-              dataArray[index][key] = ethers.BigNumber.from(
-                dataArray[index][key],
-              );
-            }
+    for (let dataArray of dataArrays) {
+      for (let index of indicesToUpdate) {
+        for (let key of keysToUpdate) {
+          if (dataArray[index] && dataArray[index][key] !== undefined) {
+            dataArray[index][key] = ethers.BigNumber.from(
+              dataArray[index][key],
+            );
           }
         }
       }
-
-      // WORKAROUND: pendle SDK would return the wrong path for zapping in for small amount (with MIM route)
-      // so we need to provide a hardcoded path, though not guaranteed to be the best route
-      // workaround on pendle router side: https://stackblitz.com/edit/stackblitz-starters-lov3oa?file=index.ts
-      const glpInputWorkAround = {
-        tokenIn: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
-        netTokenIn: pendleGLPZapInData[4]["netTokenIn"],
-        tokenMintSy: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
-        bulk: "0x0000000000000000000000000000000000000000",
-        pendleSwap: "0x0000000000000000000000000000000000000000",
-        swapData: {
-          swapType: 0,
-          extRouter: "0x0000000000000000000000000000000000000000",
-          extCalldata: [],
-          needScale: false,
-        },
-      };
-      const preparedDepositData = {
-        amount: ethers.BigNumber.from(amount),
-        receiver: address,
-        glpMinLpOut: ethers.BigNumber.from(pendleGLPZapInData[2]),
-        glpGuessPtReceivedFromSy: pendleGLPZapInData[3],
-        // glpInput: pendleGLPZapInData[4],
-        glpInput: glpInputWorkAround,
-        gdaiMinLpOut: ethers.BigNumber.from(pendleGDAIZapInData[2]),
-        gdaiGuessPtReceivedFromSy: pendleGDAIZapInData[3],
-        gdaiInput: pendleGDAIZapInData[4],
-        gdaiOneInchDataGDAI: oneInchSwapDataForGDAI.tx.data,
-        rethMinLpOut: ethers.BigNumber.from(pendleRETHZapInData[2]),
-        rethGuessPtReceivedFromSy: pendleRETHZapInData[3],
-        rethInput: pendleRETHZapInData[4],
-        rethOneInchDataRETH: oneInchSwapDataForRETH.tx.data,
-        oneInchDataMagic: oneInchSwapDataForMagic.tx.data,
-        pendleMinLpOut: ethers.BigNumber.from(pendlePendleZapInData[2]),
-        pendleGuessPtReceivedFromSy: pendlePendleZapInData[3],
-        pendleInput: pendlePendleZapInData[4],
-      };
-      // print out the encoded data for debugging
-      const encodedFunctionData = encodeFunctionData({
-        abi: permanentPortfolioJson.abi,
-        functionName: "deposit",
-        args: [preparedDepositData],
-      });
-      setApiLoading(false);
-      setApiDataReady(true);
-      const tx = await signer.sendTransaction({
-        to: portfolioContractAddress,
-        data: encodedFunctionData,
-        gasLimit: 40_000_000n,
-      });
-      setDepositHash(tx.hash);
     }
+
+    // WORKAROUND: pendle SDK would return the wrong path for zapping in for small amount (with MIM route)
+    // so we need to provide a hardcoded path, though not guaranteed to be the best route
+    // workaround on pendle router side: https://stackblitz.com/edit/stackblitz-starters-lov3oa?file=index.ts
+    const glpInputWorkAround = {
+      tokenIn: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+      netTokenIn: pendleGLPZapInData[4]["netTokenIn"],
+      tokenMintSy: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+      bulk: "0x0000000000000000000000000000000000000000",
+      pendleSwap: "0x0000000000000000000000000000000000000000",
+      swapData: {
+        swapType: 0,
+        extRouter: "0x0000000000000000000000000000000000000000",
+        extCalldata: [],
+        needScale: false,
+      },
+    };
+    const preparedDepositData = {
+      amount: ethers.BigNumber.from(amount),
+      receiver: address,
+      glpMinLpOut: ethers.BigNumber.from(pendleGLPZapInData[2]),
+      glpGuessPtReceivedFromSy: pendleGLPZapInData[3],
+      // glpInput: pendleGLPZapInData[4],
+      glpInput: glpInputWorkAround,
+      gdaiMinLpOut: ethers.BigNumber.from(pendleGDAIZapInData[2]),
+      gdaiGuessPtReceivedFromSy: pendleGDAIZapInData[3],
+      gdaiInput: pendleGDAIZapInData[4],
+      gdaiOneInchDataGDAI: oneInchSwapDataForGDAI.tx.data,
+      rethMinLpOut: ethers.BigNumber.from(pendleRETHZapInData[2]),
+      rethGuessPtReceivedFromSy: pendleRETHZapInData[3],
+      rethInput: pendleRETHZapInData[4],
+      rethOneInchDataRETH: oneInchSwapDataForRETH.tx.data,
+      oneInchDataMagic: oneInchSwapDataForMagic.tx.data,
+      pendleMinLpOut: ethers.BigNumber.from(pendlePendleZapInData[2]),
+      pendleGuessPtReceivedFromSy: pendlePendleZapInData[3],
+      pendleInput: pendlePendleZapInData[4],
+    };
+    // print out the encoded data for debugging
+    const encodedFunctionData = encodeFunctionData({
+      abi: permanentPortfolioJson.abi,
+      functionName: "deposit",
+      args: [preparedDepositData],
+    });
+    setApiLoading(false);
+    setApiDataReady(true);
+    const tx = await signer.sendTransaction({
+      to: portfolioContractAddress,
+      data: encodedFunctionData,
+      gasLimit: 40_000_000n,
+    });
+    setDepositHash(tx.hash);
   };
+
+  const sendEvents = () => {
+    window.gtag("event", "deposit", {
+      amount: parseFloat(amount.toString()),
+    });
+  };
+
   const selectBefore = (
     <Select
       defaultValue="WETH"
