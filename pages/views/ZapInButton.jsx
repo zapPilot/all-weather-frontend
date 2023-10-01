@@ -79,7 +79,7 @@ const ZapInButton = () => {
   const [depositHash, setDepositHash] = useState(undefined);
   const [messageApi, contextHolder] = message.useMessage();
   const signer = useEthersSigner();
-  const { isSuccess: depositIsSuccess, depositIsLoading } =
+  const { isSuccess: depositIsSuccess, isLoading: depositIsLoading } =
     useWaitForTransaction({
       hash: depositHash,
     });
@@ -167,7 +167,9 @@ const ZapInButton = () => {
       return;
     }
     await _sendDepositTransaction();
-    await sendEvents();
+    setTimeout(() => {
+      sendEvents();
+    }, 2000);
   };
 
   const _sendDepositTransaction = async () => {
@@ -351,6 +353,16 @@ const ZapInButton = () => {
   };
 
   const sendEvents = () => {
+    if (depositIsSuccess) {
+      messageApi.info({
+        content: "Deposit Succeeded!",
+      });
+    } else if (depositIsError) {
+      messageApi.error({
+        content: `Error, Please report this transaction hash, ${depositHash}, to customer service`,
+        duration: 5,
+      });
+    }
     window.gtag("event", "deposit", {
       amount: parseFloat(amount.toString()),
     });
