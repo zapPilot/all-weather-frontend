@@ -152,7 +152,7 @@ const APRPopOver = ({ mode }) => {
     // Loop through each claimable reward to aggregate them
     for (const { token, amount, value } of claimableRewardsWithPrice) {
       // Skip if the amount is '0.0'
-      if (amount === "0.0") continue;
+      if (amount === "0.0" || amount === "0") continue;
 
       const tokenSymbol = token.symbol;
 
