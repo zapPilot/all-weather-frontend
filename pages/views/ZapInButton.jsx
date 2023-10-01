@@ -215,7 +215,7 @@ const ZapInButton = () => {
         magicTokenAddress,
         amountAfterChargingFee.mul(8).div(200),
         magicVaultAddress,
-        1,
+        2,
       ),
       fetch1InchSwapData(
         42161,
@@ -223,7 +223,7 @@ const ZapInButton = () => {
         daiAddress,
         amountAfterChargingFee.mul(12).div(100),
         equilibriaGDAIVaultAddress,
-        1,
+        2,
       ),
       fetch1InchSwapData(
         42161,
@@ -231,7 +231,7 @@ const ZapInButton = () => {
         rethTokenAddress,
         amountAfterChargingFee.mul(6).div(100),
         equilibriaRETHVaultAddress,
-        1,
+        2,
       ),
     ]);
     const [
@@ -244,28 +244,28 @@ const ZapInButton = () => {
         42161,
         gDAIMarketPoolAddress,
         ethers.BigNumber.from(oneInchSwapDataForGDAI.toAmount).mul(99).div(100),
-        0.01,
+        0.02,
         daiAddress,
       ),
       getPendleZapInData(
         42161,
         glpMarketPoolAddress,
         amountAfterChargingFee.mul(35).div(100),
-        0.01,
+        0.02,
         wethAddress,
       ),
       getPendleZapInData(
         42161,
         rethMarketPoolAddress,
         ethers.BigNumber.from(oneInchSwapDataForRETH.toAmount).mul(99).div(100),
-        0.01,
+        0.02,
         rethTokenAddress,
       ),
       getPendleZapInData(
         42161,
         pendleMarketPoolAddress,
         amountAfterChargingFee.mul(24).div(100),
-        0.01,
+        0.02,
         wethAddress,
       ),
     ]);
@@ -456,7 +456,7 @@ const ZapInButton = () => {
           Max
         </Button>
       </Space.Compact>
-      <div style={{ color: "white" }}>Max Slippage: 1%</div>
+      <div style={{ color: "white" }}>Max Slippage: 2%</div>
 
       <Button
         loading={!apiDataReady}
