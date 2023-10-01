@@ -12,7 +12,7 @@ const ClaimButton = () => {
     abi: permanentPortfolioJson.abi,
     functionName: "claim",
     args: [address],
-    gas: 28_000_000n,
+    gas: 40_000_000n,
     onError(error) {
       messageApi.error({
         content: error.shortMessage,
