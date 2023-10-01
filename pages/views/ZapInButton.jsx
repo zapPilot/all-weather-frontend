@@ -79,10 +79,16 @@ const ZapInButton = () => {
   const [depositHash, setDepositHash] = useState(undefined);
   const [messageApi, contextHolder] = message.useMessage();
   const signer = useEthersSigner();
-  const { isSuccess: depositIsSuccess, isLoading: depositIsLoading } =
-    useWaitForTransaction({
-      hash: depositHash,
-    });
+  const {
+    isSuccess: depositIsSuccess,
+    isLoading: depositIsLoading,
+    isError: depositIsError,
+  } = useWaitForTransaction({
+    hash: depositHash,
+  });
+  useEffect(() => {
+    sendEvents();
+  }, [depositHash, depositIsSuccess, depositIsLoading, depositIsError]);
 
   const renderStatusCircle = (isLoading, isSuccess) => {
     if (isLoading) {
@@ -167,9 +173,6 @@ const ZapInButton = () => {
       return;
     }
     await _sendDepositTransaction();
-    setTimeout(() => {
-      sendEvents();
-    }, 2000);
   };
 
   const _sendDepositTransaction = async () => {
