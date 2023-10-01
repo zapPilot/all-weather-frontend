@@ -33,7 +33,7 @@ import NumericInput from "./NumberInput";
 import { useEthersSigner } from "../../utils/ethers";
 import { ethers } from "ethers";
 const { Option } = Select;
-const MINIMUM_ZAP_IN_AMOUNT = 0.058;
+const MINIMUM_ZAP_IN_AMOUNT = 0.05;
 const MAXIMUM_ZAP_IN_AMOUNT = 0.07;
 const depositSchema = z
   .number()
