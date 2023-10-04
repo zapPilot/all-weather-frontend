@@ -43,10 +43,6 @@ export default function ExampleUI() {
         <Link href="#zapSection">
           <Button type="primary">Invest Now!</Button>
         </Link>
-        <h5 className="ant-table-title">
-          2. There&apos;s a 1-year lock on your deposit (by Radiant Protocol).
-          This will also be improved in the beta version.
-        </h5>
         <PortfolioMetaTab />
       </center>
       <RebalancerWidget />

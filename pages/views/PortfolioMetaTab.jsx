@@ -4,6 +4,8 @@ import Fees from "./Fees.jsx";
 import Performance from "./Performance.jsx";
 import Assets from "./Assets.jsx";
 import Strategy from "./Strategy.jsx";
+import Risks from "./Risks.jsx";
+import Maintenance from "./Maintenance.jsx";
 import { web3Context } from "./Web3DataProvider";
 
 const TabWordings = [
@@ -14,7 +16,6 @@ const TabWordings = [
   "Strategy",
   "Risks",
   "Maintenance",
-  "Depositors",
 ];
 
 const PortfolioMetaTab = () => {
@@ -63,6 +64,10 @@ const _getChildrenTab = (wording, index, portfolioApr) => {
     return <Fees />;
   } else if (wording === "Strategy") {
     return <Strategy />;
+  } else if (wording === "Risks") {
+    return <Risks />;
+  } else if (wording === "Maintenance") {
+    return <Maintenance />;
   }
 };
 
