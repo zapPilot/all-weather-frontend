@@ -10,7 +10,7 @@ import APRPopOver from "./APRPopOver";
 import UserBalanceInfo from "./UserBalanceInfo";
 import useWindowWidth from "../../utils/chartUtils";
 
-const RebalancerWidget = ({ address }) => {
+const RebalancerWidget = () => {
   const { netWorth, rebalanceSuggestions, totalInterest, portfolioApr } =
     useRebalanceSuggestions();
 

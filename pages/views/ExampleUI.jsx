@@ -25,7 +25,7 @@ const useWindowHeight = () => {
   return windowHeight;
 };
 
-export default function ExampleUI({ address }) {
+export default function ExampleUI() {
   const windowHeight = useWindowHeight();
 
   return (
@@ -49,7 +49,7 @@ export default function ExampleUI({ address }) {
         </h5>
         <PortfolioMetaTab />
       </center>
-      <RebalancerWidget address={address} />
+      <RebalancerWidget />
     </div>
   );
 }

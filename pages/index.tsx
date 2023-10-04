@@ -4,10 +4,9 @@ import ExampleUI from "./views/ExampleUI.jsx";
 import BasePage from "./basePage.tsx";
 
 const Home: NextPage = () => {
-  const { address } = useAccount();
   return (
     <BasePage>
-      <ExampleUI address={address} />
+      <ExampleUI />
     </BasePage>
   );
 };
