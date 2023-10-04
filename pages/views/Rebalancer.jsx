@@ -81,7 +81,10 @@ const RebalancerWidget = ({ address }) => {
                   </strong>
                   <div style={{ color: "white" }}>Data updated 5mins ago</div>
                 </div>
-                <div style={{ textAlign: "left", marginBottom: 10 }}>
+                <div
+                  style={{ textAlign: "left", marginBottom: 10 }}
+                  id="zapSection"
+                >
                   <strong style={{ color: "white", fontSize: 26 }}>
                     <text>
                       Reward APR: {portfolioApr ? portfolioApr.toFixed(2) : 0}%{" "}
