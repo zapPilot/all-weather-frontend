@@ -3,6 +3,7 @@ import { Tabs } from "antd";
 import Fees from "./Fees.jsx";
 import Performance from "./Performance.jsx";
 import Assets from "./Assets.jsx";
+import Strategy from "./Strategy.jsx";
 import { web3Context } from "./Web3DataProvider";
 
 const TabWordings = [
@@ -10,9 +11,9 @@ const TabWordings = [
   "Performance",
   "Assets",
   "Fees",
-  "Portfolio Composition & Strategy",
+  "Strategy",
   "Risks",
-  "Maintenance & Policies",
+  "Maintenance",
   "Depositors",
 ];
 
@@ -60,6 +61,8 @@ const _getChildrenTab = (wording, index, portfolioApr) => {
     return <Assets />;
   } else if (wording === "Fees") {
     return <Fees />;
+  } else if (wording === "Strategy") {
+    return <Strategy />;
   }
 };
 
