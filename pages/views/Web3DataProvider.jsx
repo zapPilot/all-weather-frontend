@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect } from "react";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import { useContractRead } from "wagmi";
 import { portfolioContractAddress } from "../../utils/oneInch";
+import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -35,6 +36,15 @@ const Web3DataProvider = ({ children, address }) => {
       console.log("totalSupply Error", error);
     },
   });
+
+  const {
+    netWorth,
+    rebalanceSuggestions,
+    totalInterest,
+    portfolioApr,
+    aggregatedPositions,
+  } = useRebalanceSuggestions();
+
   useEffect(() => {
     async function fetchData() {
       if (
@@ -52,6 +62,11 @@ const Web3DataProvider = ({ children, address }) => {
             dataOfGetClaimableRewards: dataOfGetClaimableRewards.data,
             userShares: userShares.data,
             totalSupply: totalSupply.data,
+            netWorth,
+            rebalanceSuggestions,
+            totalInterest,
+            portfolioApr,
+            aggregatedPositions,
           });
         })
         .catch((error) => console.error("Error:", error));
@@ -65,6 +80,7 @@ const Web3DataProvider = ({ children, address }) => {
     userShares.data,
     totalSupply.loading,
     totalSupply.data,
+    portfolioApr,
   ]);
 
   return <web3Context.Provider value={data}>{children}</web3Context.Provider>;

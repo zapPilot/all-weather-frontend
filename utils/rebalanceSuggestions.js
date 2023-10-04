@@ -13,6 +13,7 @@ export default function useRebalanceSuggestions() {
   const [topNPoolConsistOfSameLpToken, setTopNPoolConsistOfSameLpToken] =
     useState([]);
   const [topNStableCoins, setTopNStableCoins] = useState([]);
+  const [aggregatedPositions, setAggregatedPosisions] = useState([]);
 
   // Function to load suggestions from the API
   const loadSuggestions = async () => {
@@ -36,6 +37,9 @@ export default function useRebalanceSuggestions() {
         setTopNPoolConsistOfSameLpToken(topNPoolConsistOfSameLpToken);
         const topNStableCoins = response.data.topn_stable_coins;
         setTopNStableCoins(topNStableCoins);
+
+        const aggregatedPositions = response.data.aggregated_positions;
+        setAggregatedPosisions(aggregatedPositions);
       })
       .catch((error) => console.log(error));
   };
@@ -54,5 +58,6 @@ export default function useRebalanceSuggestions() {
     topNLowestAprPools,
     topNPoolConsistOfSameLpToken,
     topNStableCoins,
+    aggregatedPositions,
   };
 }
