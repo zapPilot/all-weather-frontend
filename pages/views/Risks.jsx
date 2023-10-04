@@ -1,5 +1,5 @@
 import React from "react";
-import { Descriptions, Button } from "antd";
+import { Descriptions } from "antd";
 const items = [
   {
     key: "1",

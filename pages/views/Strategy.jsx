@@ -34,25 +34,13 @@ const columns = [
     render: (_, { examples }) => (
       <>
         {examples.map((tokenSymbol, index) => {
-          // const colors = [
-          //   "geekblue",
-          //   "green",
-          //   "volcano",
-          //   "purple",
-          //   "cyan",
-          //   "magenta",
-          //   "gold",
-          // ];
-          // const color = colors[index % colors.length]; // Cyclically assign colors
           return (
             <Image
               src={`tokenPictures/${tokenSymbol}.png`}
               height={28}
               width={28}
+              key={index}
             />
-            //   <Tag color={color} key={tag}>
-            //     {tag.toUpperCase()}
-            //   </Tag>
           );
         })}
       </>
