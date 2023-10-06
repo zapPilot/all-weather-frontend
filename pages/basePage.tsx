@@ -21,7 +21,9 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
   return (
     <div>
       <Head>
-        <title>All Weather Portfolio: An Omnichain Index Fund</title>
+        <title>
+          All Weather Portfolio: Biggest Liquidity Mining Index Fund
+        </title>
         <meta content="All Weather Portfolio" name="description" />
         <link href="/favicon.ico" rel="icon" />
       </Head>

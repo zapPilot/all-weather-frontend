@@ -32,7 +32,7 @@ export default function ExampleUI() {
     <div style={{ padding: "3rem 1.5rem", minHeight: windowHeight }}>
       <center>
         <h1 className="ant-table-title">
-          All Weather Portfolio: An Omnichain Index Fund
+          All Weather Portfolio: Biggest Liquidity Mining Index Fund
         </h1>
       </center>
       <center>
