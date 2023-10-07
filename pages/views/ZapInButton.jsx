@@ -25,13 +25,12 @@ import {
   useAccount,
   useBalance,
   useContractRead,
-  useWaitForTransaction,
 } from "wagmi";
 
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import NumericInput from "./NumberInput";
-import { useEthersSigner } from "../../utils/ethers";
 import { ethers } from "ethers";
+import { sendDiscordMessage } from "../../utils/discord";
 const { Option } = Select;
 const MINIMUM_ZAP_IN_AMOUNT = 0.05;
 const MAXIMUM_ZAP_IN_AMOUNT = 0.07;
@@ -78,18 +77,7 @@ const ZapInButton = () => {
   const [approveAmount, setApproveAmount] = useState(0);
   const [depositHash, setDepositHash] = useState(undefined);
   const [messageApi, contextHolder] = message.useMessage();
-  const signer = useEthersSigner();
-  const {
-    isSuccess: depositIsSuccess,
-    isLoading: depositIsLoading,
-    isError: depositIsError,
-  } = useWaitForTransaction({
-    hash: depositHash,
-  });
-  useEffect(() => {
-    sendEvents();
-  }, [depositHash, depositIsSuccess, depositIsLoading, depositIsError]);
-
+  const roleIdOfMod = "<@&1108070617753862156>";
   const renderStatusCircle = (isLoading, isSuccess) => {
     if (isLoading) {
       return <Spin />;
@@ -112,6 +100,28 @@ const ZapInButton = () => {
       );
     }
   };
+  const {
+    write,
+    isLoading: depositIsLoading,
+    isSuccess: depositIsSuccess,
+  } = useContractWrite({
+    address: portfolioContractAddress,
+    abi: permanentPortfolioJson.abi,
+    functionName: "deposit",
+    onError(error) {
+      sendDiscordMessage(`${roleIdOfMod}, ${address} handleZapin failed!`);
+      messageApi.error({
+        content: `${error.shortMessage}. Amout: ${error.args[0].amount}. Increase the deposit amount and try again.`,
+        duration: 5,
+      });
+      throw error;
+    },
+    onSuccess(data) {
+      sendDiscordMessage(`${roleIdOfMod}, ${address} handleZapin succeeded!`);
+      setDepositHash(data.hash);
+      messageApi.info("Deposit succeeded");
+    },
+  });
   const {
     write: approveWrite,
     isLoading: approveIsLoading,
@@ -167,12 +177,14 @@ const ZapInButton = () => {
   };
 
   const handleZapIn = async () => {
+    await sendDiscordMessage(`${roleIdOfMod}, ${address} starts handleZapin()`);
     const validationResult = depositSchema.safeParse(Number(inputValue));
     if (!validationResult.success) {
       setAlert(true);
       return;
     }
     await _sendDepositTransaction();
+    _sendEvents();
   };
 
   const _sendDepositTransaction = async () => {
@@ -347,25 +359,22 @@ const ZapInButton = () => {
     });
     setApiLoading(false);
     setApiDataReady(true);
-    const tx = await signer.sendTransaction({
-      to: portfolioContractAddress,
-      data: encodedFunctionData,
-      gasLimit: 40_000_000n,
-    });
+    function waitForWrite() {
+      if (write) {
+        write({
+          args: [preparedDepositData],
+          from: address,
+          gas: 40_000_000n,
+        });
+        return;
+      }
+      setTimeout(waitForWrite, 3000);
+    }
+    waitForWrite();
     setDepositHash(tx.hash);
   };
 
-  const sendEvents = () => {
-    if (depositIsSuccess) {
-      messageApi.info({
-        content: "Deposit Succeeded!",
-      });
-    } else if (depositIsError) {
-      messageApi.error({
-        content: `Error, Please report this transaction hash, ${depositHash}, to customer service`,
-        duration: 5,
-      });
-    }
+  const _sendEvents = () => {
     window.gtag("event", "deposit", {
       amount: parseFloat(amount.toString()),
     });
