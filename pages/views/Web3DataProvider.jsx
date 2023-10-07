@@ -9,7 +9,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export const web3Context = createContext();
 
 const Web3DataProvider = ({ children, address }) => {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState({});
   const dataOfGetClaimableRewards = useContractRead({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
@@ -43,6 +43,9 @@ const Web3DataProvider = ({ children, address }) => {
     totalInterest,
     portfolioApr,
     aggregatedPositions,
+    topNLowestAprPools,
+    topNPoolConsistOfSameLpToken,
+    topNStableCoins,
   } = useRebalanceSuggestions();
 
   useEffect(() => {
@@ -67,6 +70,9 @@ const Web3DataProvider = ({ children, address }) => {
             totalInterest,
             portfolioApr,
             aggregatedPositions,
+            topNLowestAprPools,
+            topNPoolConsistOfSameLpToken,
+            topNStableCoins,
           });
         })
         .catch((error) => console.error("Error:", error));

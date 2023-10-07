@@ -1,8 +1,9 @@
 import React from "react";
-import { Space, Table, Tag } from "antd";
+import { useContext, useState, useEffect } from "react";
+import { web3Context } from "./Web3DataProvider";
+import { Table } from "antd";
 import { Image, Button } from "antd";
 import RebalanceChart from "./RebalanceChart";
-import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
 import useWindowWidth from "../../utils/chartUtils";
 
 const columns = [
@@ -129,9 +130,19 @@ const data = [
   },
 ];
 const Strategy = () => {
-  const { netWorth, rebalanceSuggestions } = useRebalanceSuggestions();
   const windowWidth = useWindowWidth();
-
+  const WEB3_CONTEXT = useContext(web3Context);
+  const [netWorth, setNetWorth] = useState(0);
+  const [rebalanceSuggestions, setRebalanceSuggestions] = useState([]);
+  useEffect(() => {
+    async function fetchPortfolioMetadata() {
+      if (WEB3_CONTEXT !== undefined) {
+        setNetWorth(WEB3_CONTEXT.netWorth);
+        setRebalanceSuggestions(WEB3_CONTEXT.rebalanceSuggestions);
+      }
+    }
+    fetchPortfolioMetadata();
+  }, [WEB3_CONTEXT]);
   return (
     <>
       <Table columns={columns} dataSource={data} />

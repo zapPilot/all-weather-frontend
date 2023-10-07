@@ -1,18 +1,32 @@
 // import suggestions from "./suggestions.json";
 import { Spin, Row, Col } from "antd";
 import { LinkOutlined } from "@ant-design/icons";
-import { useEffect, useState } from "react";
-import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
 import RebalanceChart from "./RebalanceChart";
 import ZapInButton from "./ZapInButton";
 import ZapOutButton from "./ZapOutButton";
 import APRPopOver from "./APRPopOver";
 import UserBalanceInfo from "./UserBalanceInfo";
 import useWindowWidth from "../../utils/chartUtils";
+import { useEffect, useContext, useState } from "react";
+import { web3Context } from "./Web3DataProvider";
 
 const RebalancerWidget = () => {
-  const { netWorth, rebalanceSuggestions, totalInterest, portfolioApr } =
-    useRebalanceSuggestions();
+  const WEB3_CONTEXT = useContext(web3Context);
+  const [portfolioApr, setPortfolioApr] = useState(0);
+  const [netWorth, setNetWorth] = useState(0);
+  const [rebalanceSuggestions, setRebalanceSuggestions] = useState([]);
+  const [totalInterest, setTotalInterest] = useState(0);
+  useEffect(() => {
+    async function fetchPortfolioMetadata() {
+      if (WEB3_CONTEXT !== undefined) {
+        setPortfolioApr(WEB3_CONTEXT.portfolioApr);
+        setNetWorth(WEB3_CONTEXT.netWorth);
+        setRebalanceSuggestions(WEB3_CONTEXT.rebalanceSuggestions);
+        setTotalInterest(WEB3_CONTEXT.totalInterest);
+      }
+    }
+    fetchPortfolioMetadata();
+  }, [WEB3_CONTEXT]);
 
   const [isLoading, setIsLoading] = useState(true);
 
