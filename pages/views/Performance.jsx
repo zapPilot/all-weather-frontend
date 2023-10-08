@@ -1,5 +1,7 @@
 import React from "react";
 import { Card, Col, Row, Statistic } from "antd";
+import HistoricalDataChart from "./HistoricalDataChart";
+
 const Performance = ({ portfolioApr }) => (
   <>
     <Row gutter={16}>
@@ -29,6 +31,12 @@ const Performance = ({ portfolioApr }) => (
         </Card>
       </Col>
     </Row>
+      <center>
+      <HistoricalDataChart/>
+
+      </center>
+
+    {/* </Row> */}
   </>
 );
 export default Performance;
