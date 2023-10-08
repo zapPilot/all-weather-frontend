@@ -9,7 +9,6 @@ import Maintenance from "./Maintenance.jsx";
 import { web3Context } from "./Web3DataProvider";
 
 const TabWordings = [
-  "Overview",
   "Performance",
   "Assets",
   "Fees",
@@ -52,10 +51,6 @@ const PortfolioMetaTab = () => {
 };
 
 const _getChildrenTab = (wording, index, portfolioApr) => {
-  if (index === 0) {
-    // only shows the Pie Chart
-    return;
-  }
   if (wording === "Performance") {
     return <Performance portfolioApr={portfolioApr} />;
   } else if (wording === "Assets") {
