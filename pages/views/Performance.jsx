@@ -31,11 +31,8 @@ const Performance = ({ portfolioApr }) => (
         </Card>
       </Col>
     </Row>
-    <center>
-      <HistoricalDataChart />
-    </center>
-
-    {/* </Row> */}
+    <h2>Historical APRs</h2>
+    <HistoricalDataChart />
   </>
 );
 export default Performance;
