@@ -6,7 +6,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
   const colorLogic = (value) => ({
     color: value < 0 ? "#cf1322" : "#3f8600",
   });
-  return (
+  return ROI && ROI.days ? (
     <>
       <Row gutter={16}>
         <Col span={12}>
@@ -59,6 +59,9 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
       <h2>Historical Reward APRs</h2>
       <HistoricalDataChart />
     </>
+  ) : (
+    // loading
+    <></>
   );
 };
 export default Performance;

@@ -20,8 +20,8 @@ const TabWordings = [
 const PortfolioMetaTab = () => {
   const WEB3_CONTEXT = useContext(web3Context);
   const [portfolioApr, setPortfolioApr] = useState(0);
-  const [sharpeRatio, setSharpeRatio] = useState({});
-  const [ROI, setROI] = useState({});
+  const [sharpeRatio, setSharpeRatio] = useState({ days: 0, value: 0 });
+  const [ROI, setROI] = useState({ days: 0, total: 0 });
   const [maxDrawdown, setMaxDrawdown] = useState(0);
 
   useEffect(() => {
