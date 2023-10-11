@@ -8,12 +8,14 @@ export default function useRebalanceSuggestions() {
   const [rebalanceSuggestions, setRebalanceSuggestions] = useState([]);
   const [totalInterest, setTotalInterest] = useState(0);
   const [portfolioApr, setPortfolioApr] = useState(0);
-  const [sharpeRatio, setSharpeRatio] = useState(0);
+  const [sharpeRatio, setSharpeRatio] = useState({});
+  const [ROI, setROI] = useState({});
   const [topNLowestAprPools, setTopNLowestAprPools] = useState([]);
   const [topNPoolConsistOfSameLpToken, setTopNPoolConsistOfSameLpToken] =
     useState([]);
   const [topNStableCoins, setTopNStableCoins] = useState([]);
   const [aggregatedPositions, setAggregatedPosisions] = useState([]);
+  const [maxDrawdown, setMaxDrawdown] = useState(0);
 
   // Function to load suggestions from the API
   const loadSuggestions = async () => {
@@ -30,6 +32,8 @@ export default function useRebalanceSuggestions() {
         setPortfolioApr(portfolioApr);
         const sharpeRatio = response.data.sharpe_ratio;
         setSharpeRatio(sharpeRatio);
+        const roi = response.data.ROI;
+        setROI(roi);
         const topNLowestAprPools = response.data.top_n_lowest_apr_pools;
         setTopNLowestAprPools(topNLowestAprPools);
         const topNPoolConsistOfSameLpToken =
@@ -40,6 +44,8 @@ export default function useRebalanceSuggestions() {
 
         const aggregatedPositions = response.data.aggregated_positions;
         setAggregatedPosisions(aggregatedPositions);
+        const max_drawdown = response.data.max_drawdown;
+        setMaxDrawdown(max_drawdown);
       })
       .catch((error) => console.log(error));
   };
@@ -59,5 +65,7 @@ export default function useRebalanceSuggestions() {
     topNPoolConsistOfSameLpToken,
     topNStableCoins,
     aggregatedPositions,
+    ROI,
+    maxDrawdown,
   };
 }

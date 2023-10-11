@@ -46,6 +46,9 @@ const Web3DataProvider = ({ children, address }) => {
     topNLowestAprPools,
     topNPoolConsistOfSameLpToken,
     topNStableCoins,
+    sharpeRatio,
+    ROI,
+    maxDrawdown,
   } = useRebalanceSuggestions();
 
   useEffect(() => {
@@ -73,6 +76,9 @@ const Web3DataProvider = ({ children, address }) => {
             topNLowestAprPools,
             topNPoolConsistOfSameLpToken,
             topNStableCoins,
+            sharpeRatio,
+            ROI,
+            maxDrawdown,
           });
         })
         .catch((error) => console.error("Error:", error));

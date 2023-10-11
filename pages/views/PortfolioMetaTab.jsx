@@ -20,6 +20,9 @@ const TabWordings = [
 const PortfolioMetaTab = () => {
   const WEB3_CONTEXT = useContext(web3Context);
   const [portfolioApr, setPortfolioApr] = useState(0);
+  const [sharpeRatio, setSharpeRatio] = useState({});
+  const [ROI, setROI] = useState({});
+  const [maxDrawdown, setMaxDrawdown] = useState(0);
 
   useEffect(() => {
     async function fetchPortfolioMetadata() {
@@ -29,15 +32,28 @@ const PortfolioMetaTab = () => {
             ? 0
             : WEB3_CONTEXT.portfolioApr,
         );
+        setSharpeRatio(
+          WEB3_CONTEXT.sharpeRatio === undefined ? 0 : WEB3_CONTEXT.sharpeRatio,
+        );
+        setROI(WEB3_CONTEXT.ROI === undefined ? 0 : WEB3_CONTEXT.ROI);
+        setMaxDrawdown(
+          WEB3_CONTEXT.maxDrawdown === undefined ? 0 : WEB3_CONTEXT.maxDrawdown,
+        );
       }
     }
     fetchPortfolioMetadata();
-  }, [WEB3_CONTEXT, portfolioApr]);
+  }, [WEB3_CONTEXT, portfolioApr, sharpeRatio, ROI, maxDrawdown]);
 
   const tabs = TabWordings.map((wording, index) => ({
     label: wording,
     key: index,
-    children: _getChildrenTab(wording, index, portfolioApr),
+    children: _getChildrenTab(
+      wording,
+      portfolioApr,
+      sharpeRatio,
+      ROI,
+      maxDrawdown,
+    ),
   }));
 
   return (
@@ -50,9 +66,22 @@ const PortfolioMetaTab = () => {
   );
 };
 
-const _getChildrenTab = (wording, index, portfolioApr) => {
+const _getChildrenTab = (
+  wording,
+  portfolioApr,
+  sharpeRatio,
+  ROI,
+  maxDrawdown,
+) => {
   if (wording === "Performance") {
-    return <Performance portfolioApr={portfolioApr} />;
+    return (
+      <Performance
+        portfolioApr={portfolioApr}
+        sharpeRatio={sharpeRatio}
+        ROI={ROI}
+        maxDrawdown={maxDrawdown}
+      />
+    );
   } else if (wording === "Assets") {
     return <Assets />;
   } else if (wording === "Fees") {
