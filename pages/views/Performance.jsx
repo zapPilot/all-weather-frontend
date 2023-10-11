@@ -56,6 +56,37 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
           </Card>
         </Col>
       </Row>
+      <Row gutter={16}>
+        <Col span={12}>
+          <Card bordered={false}>
+            <Statistic
+              title={
+                <>
+                  <a href="https://www.pm-research.com/content/iijpormgmt/32/1/108">
+                    SDR Sharpe Ratio
+                  </a>{" "}
+                  ({sharpeRatio.days} days)
+                </>
+              }
+              value={sharpeRatio["SDR Sharpe Ratio"]}
+              precision={2}
+              valueStyle={colorLogic(sharpeRatio["SDR Sharpe Ratio"])}
+              suffix=""
+            />
+          </Card>
+        </Col>
+        <Col span={12}>
+          <Card bordered={false}>
+            <Statistic
+              title="Beta"
+              value="? WIP"
+              precision={2}
+              valueStyle={colorLogic(-sharpeRatio["SDR Sharpe Ratio"])}
+              suffix=""
+            />
+          </Card>
+        </Col>
+      </Row>
       <h2>Historical Reward APRs</h2>
       <HistoricalDataChart />
     </>
