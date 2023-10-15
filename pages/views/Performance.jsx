@@ -3,9 +3,19 @@ import { Card, Col, Row, Statistic } from "antd";
 import HistoricalDataChart from "./HistoricalDataChart";
 
 const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
-  const colorLogic = (value) => ({
-    color: value < 0 ? "#cf1322" : "#3f8600",
-  });
+  const colorLogic = (value, notSharpe = true) => {
+    if (notSharpe === false) {
+      if (value < 2) {
+        return { color: "red" };
+      } else if (value >= 2 && value < 3) {
+        return { color: "yellow" };
+      } else if (value >= 3) {
+        return { color: "green" };
+      }
+    } else {
+      return { color: value < 0 ? "red" : "green" };
+    }
+  };
   return ROI && ROI.days ? (
     <>
       <Row gutter={16}>
@@ -50,7 +60,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
               title={`MAX Drawdown (${ROI.days} days)`}
               value={(maxDrawdown * 100).toFixed(2)}
               precision={2}
-              valueStyle={{ color: "#cf1322" }}
+              valueStyle={{ color: "red" }}
               suffix="%"
             />
           </Card>
@@ -70,7 +80,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
               }
               value={sharpeRatio["SDR Sharpe Ratio"]}
               precision={2}
-              valueStyle={colorLogic(sharpeRatio["SDR Sharpe Ratio"])}
+              valueStyle={colorLogic(sharpeRatio["SDR Sharpe Ratio"], false)}
               suffix=""
             />
           </Card>
@@ -81,7 +91,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
               title="Beta"
               value="? WIP"
               precision={2}
-              valueStyle={colorLogic(-sharpeRatio["SDR Sharpe Ratio"])}
+              valueStyle={colorLogic(-sharpeRatio["SDR Sharpe Ratio"], false)}
               suffix=""
             />
           </Card>
