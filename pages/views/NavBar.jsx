@@ -40,10 +40,6 @@ const items = [
         label: <Link href="/betterPools">Better Pools</Link>,
         key: "setting:3",
       },
-      {
-        label: "Backtesting(WIP)",
-        key: "setting:4",
-      },
     ],
   },
   {
@@ -59,9 +55,19 @@ const items = [
     key: "docs",
   },
   {
-    label: "Vote (WIP)",
-    key: "vote",
-    disabled: true,
+    label: "Others",
+    key: "others",
+    children: [
+      {
+        label: <Link href="/cefi">Cefi</Link>,
+        key: "setting:1",
+      },
+      {
+        label: "Vote (WIP)",
+        key: "setting:2",
+        disabled: true,
+      },
+    ],
   },
 ];
 export default function NavBar() {

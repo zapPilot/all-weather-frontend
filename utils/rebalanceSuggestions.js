@@ -16,6 +16,7 @@ export default function useRebalanceSuggestions() {
   const [topNStableCoins, setTopNStableCoins] = useState([]);
   const [aggregatedPositions, setAggregatedPosisions] = useState([]);
   const [maxDrawdown, setMaxDrawdown] = useState(0);
+  const [claimableRewards, setClaimableRewards] = useState(0);
 
   // Function to load suggestions from the API
   const loadSuggestions = async () => {
@@ -67,5 +68,6 @@ export default function useRebalanceSuggestions() {
     aggregatedPositions,
     ROI,
     maxDrawdown,
+    claimableRewards,
   };
 }
