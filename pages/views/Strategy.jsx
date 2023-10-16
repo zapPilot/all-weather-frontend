@@ -4,7 +4,7 @@ import { web3Context } from "./Web3DataProvider";
 import { Table } from "antd";
 import { Image, Button } from "antd";
 import RebalanceChart from "./RebalanceChart";
-import useWindowWidth from "../../utils/chartUtils";
+import { useWindowWidth } from "../../utils/chartUtils";
 
 const columns = [
   {
