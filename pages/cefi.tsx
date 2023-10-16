@@ -40,7 +40,7 @@ const Cefi: NextPage = () => {
                 <DOMforCefi betterPoolsMetadata={betterPoolsMetadata} />
               </Col>
               <Col xl={12} md={24} xs={24}>
-                <h2 className="ant-table-title">User's Balance</h2>
+                <h2 className="ant-table-title">User Balances</h2>
                 <DOMforCefiUsers betterPoolsMetadata={betterPoolsMetadata} />
               </Col>
               <Col xl={12} md={24} xs={24}>
