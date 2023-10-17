@@ -1,5 +1,5 @@
 import { Image, Table, Spin } from "antd";
-import React, { useEffect } from "react";
+import React from "react";
 const DOMforCefi = ({ betterPoolsMetadata }) => {
   let longTermBondsAPR = _calAverageAPR(betterPoolsMetadata, "long_term_bond");
   let intermediateBondsAPR = _calAverageAPR(
@@ -11,24 +11,20 @@ const DOMforCefi = ({ betterPoolsMetadata }) => {
     {
       key: "1",
       token: <Image src="../tokenPictures/ETH.png" height={28} width={28} />,
-      tvl:
-        betterPoolsMetadata.categorized_positions.long_term_bond.sum !== 0 ? (
-          "$" +
-          betterPoolsMetadata.categorized_positions.long_term_bond.sum.toFixed(
-            2,
-          )
-        ) : (
-          <Spin size="small" />
-        ),
-      claimable_rewards:
-        betterPoolsMetadata.categorized_positions.long_term_bond.sum !== 0 ? (
-          "$" +
-          betterPoolsMetadata.categorized_positions.long_term_bond.claimable_rewards.toFixed(
-            2,
-          )
-        ) : (
-          <Spin size="small" />
-        ),
+      tvl: betterPoolsMetadata ? (
+        "$" +
+        betterPoolsMetadata.categorized_positions.long_term_bond.sum.toFixed(2)
+      ) : (
+        <Spin size="small" />
+      ),
+      claimable_rewards: betterPoolsMetadata ? (
+        "$" +
+        betterPoolsMetadata.categorized_positions.long_term_bond.claimable_rewards.toFixed(
+          2,
+        )
+      ) : (
+        <Spin size="small" />
+      ),
       apr: `${longTermBondsAPR}%`,
       roi: "?",
     },
@@ -42,26 +38,22 @@ const DOMforCefi = ({ betterPoolsMetadata }) => {
           <Image src="../tokenPictures/FRAX.png" height={28} width={28} />
         </>
       ),
-      tvl:
-        betterPoolsMetadata.categorized_positions.intermediate_term_bond.sum !==
-        0 ? (
-          "$" +
-          betterPoolsMetadata.categorized_positions.intermediate_term_bond.sum.toFixed(
-            2,
-          )
-        ) : (
-          <Spin size="small" />
-        ),
-      claimable_rewards:
-        betterPoolsMetadata.categorized_positions.intermediate_term_bond.sum !==
-        0 ? (
-          "$" +
-          betterPoolsMetadata.categorized_positions.intermediate_term_bond.claimable_rewards.toFixed(
-            2,
-          )
-        ) : (
-          <Spin size="small" />
-        ),
+      tvl: betterPoolsMetadata ? (
+        "$" +
+        betterPoolsMetadata.categorized_positions.intermediate_term_bond.sum.toFixed(
+          2,
+        )
+      ) : (
+        <Spin size="small" />
+      ),
+      claimable_rewards: betterPoolsMetadata ? (
+        "$" +
+        betterPoolsMetadata.categorized_positions.intermediate_term_bond.claimable_rewards.toFixed(
+          2,
+        )
+      ) : (
+        <Spin size="small" />
+      ),
       apr: `${intermediateBondsAPR}%`,
       roi: "?",
     },
@@ -99,7 +91,12 @@ const DOMforCefi = ({ betterPoolsMetadata }) => {
 
 const _calAverageAPR = (betterPoolsMetadata, key) => {
   let longTermBondsAPR = 0;
-  if (betterPoolsMetadata.categorized_positions[key].sum !== 0) {
+  if (
+    betterPoolsMetadata &&
+    betterPoolsMetadata.categorized_positions &&
+    betterPoolsMetadata.categorized_positions.long_term_bond &&
+    betterPoolsMetadata.categorized_positions[key].sum !== 0
+  ) {
     for (const position of Object.values(
       betterPoolsMetadata.categorized_positions[key].portfolio,
     )) {

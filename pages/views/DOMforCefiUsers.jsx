@@ -80,63 +80,6 @@ const DOMforCefiUsers = ({ betterPoolsMetadata }) => {
       )
     ).toFixed(2),
   }));
-  [
-    {
-      key: "1",
-      token: <Image src="../tokenPictures/ETH.png" height={28} width={28} />,
-      tvl:
-        betterPoolsMetadata.categorized_positions.long_term_bond.sum !== 0 ? (
-          "$" +
-          betterPoolsMetadata.categorized_positions.long_term_bond.sum.toFixed(
-            2,
-          )
-        ) : (
-          <Spin size="small" />
-        ),
-      claimable_rewards:
-        betterPoolsMetadata.categorized_positions.long_term_bond.sum !== 0 ? (
-          "$" +
-          betterPoolsMetadata.categorized_positions.long_term_bond.claimable_rewards.toFixed(
-            2,
-          )
-        ) : (
-          <Spin size="small" />
-        ),
-      apr: cefiLedger,
-      roi: "?",
-    },
-    {
-      key: "2",
-      token: (
-        <>
-          <Image src="../tokenPictures/USDT.png" height={28} width={28} />
-          <Image src="../tokenPictures/USDC.png" height={28} width={28} />
-          <Image src="../tokenPictures/DAI.png" height={28} width={28} />
-          <Image src="../tokenPictures/FRAX.png" height={28} width={28} />
-        </>
-      ),
-      tvl:
-        betterPoolsMetadata.categorized_positions.long_term_bond.sum !== 0 ? (
-          "$" +
-          betterPoolsMetadata.categorized_positions.intermediate_term_bond.sum.toFixed(
-            2,
-          )
-        ) : (
-          <Spin size="small" />
-        ),
-      claimable_rewards:
-        betterPoolsMetadata.categorized_positions.long_term_bond.sum !== 0 ? (
-          "$" +
-          betterPoolsMetadata.categorized_positions.intermediate_term_bond.claimable_rewards.toFixed(
-            2,
-          )
-        ) : (
-          <Spin size="small" />
-        ),
-      apr: tokenPriceMapping,
-      roi: "?",
-    },
-  ];
 
   const columns = [
     {
