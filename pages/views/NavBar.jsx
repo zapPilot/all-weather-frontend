@@ -55,19 +55,8 @@ const items = [
     key: "docs",
   },
   {
-    label: "Others",
-    key: "others",
-    children: [
-      {
-        label: <Link href="/cefi">Cefi</Link>,
-        key: "setting:1",
-      },
-      {
-        label: "Vote (WIP)",
-        key: "setting:2",
-        disabled: true,
-      },
-    ],
+    label: <Link href="/cefi">Cefi</Link>,
+    key: "setting:3",
   },
 ];
 export default function NavBar() {
