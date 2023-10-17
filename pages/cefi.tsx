@@ -21,6 +21,13 @@ const Cefi: NextPage = () => {
     <BasePage>
       <center>
         <h1 className="ant-table-title">Discretionary Investment Service</h1>
+        <h3 className="ant-table-title">
+          Sometimes the claimable rewards may appear to be less than expected.
+        </h3>
+        <h3 className="ant-table-title">
+          This is because some rewards are distributed linearly over 7 days.
+          Give it some time, and it will eventually catch up!
+        </h3>
         {topNLowestAprPools.length === 0 ? (
           <div
             style={{
