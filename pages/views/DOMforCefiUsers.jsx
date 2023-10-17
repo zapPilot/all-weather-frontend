@@ -41,7 +41,7 @@ const DOMforCefiUsers = ({ betterPoolsMetadata }) => {
     }
     fetchTokenPirces();
     fetchCefiLedger();
-    const nonSharableRewards = cefiLedger.reduce((acc, row, idx) => {
+    const nonSharableRewards = cefiLedger.reduce((acc, row, _) => {
       return (
         acc +
         Object.entries(JSON.parse(row["Rewards"])).reduce(
@@ -52,11 +52,17 @@ const DOMforCefiUsers = ({ betterPoolsMetadata }) => {
         )
       );
     }, 0);
-    setRewardDifferenceBetweenClaimableAndNonSharable(
+    if (
+      betterPoolsMetadata &&
+      betterPoolsMetadata.categorized_positions &&
       betterPoolsMetadata.categorized_positions.long_term_bond
-        .claimable_rewards - nonSharableRewards,
-    );
-  }, []);
+    ) {
+      setRewardDifferenceBetweenClaimableAndNonSharable(
+        betterPoolsMetadata.categorized_positions.long_term_bond
+          .claimable_rewards - nonSharableRewards,
+      );
+    }
+  }, [betterPoolsMetadata]);
 
   const dataSource = cefiLedger.map((row, idx) => ({
     key: idx,
