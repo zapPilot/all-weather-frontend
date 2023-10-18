@@ -1,4 +1,4 @@
-import { Image, Table, Spin } from "antd";
+import { Table, Spin } from "antd";
 import React, { useEffect, useState } from "react";
 const PublicGoogleSheetsParser = require("public-google-sheets-parser");
 
@@ -69,16 +69,21 @@ const DOMforCefiUsers = ({ betterPoolsMetadata }) => {
     user: row["Depositor"],
     deposit: row["Deposit"],
     shares: row["Percentage"].toFixed(2),
-    rewards: (
-      (rewardDifferenceBetweenClaimableAndNonSharable * row["Percentage"]) /
-        100 +
-      Object.entries(JSON.parse(row["Rewards"])).reduce(
-        (subAcc, [key, amount]) => {
-          return subAcc + amount * tokenPriceMapping[key];
-        },
-        0,
-      )
-    ).toFixed(2),
+    rewards:
+      rewardDifferenceBetweenClaimableAndNonSharable !== 0 ? (
+        (
+          (rewardDifferenceBetweenClaimableAndNonSharable * row["Percentage"]) /
+            100 +
+          Object.entries(JSON.parse(row["Rewards"])).reduce(
+            (subAcc, [key, amount]) => {
+              return subAcc + amount * tokenPriceMapping[key];
+            },
+            0,
+          )
+        ).toFixed(2)
+      ) : (
+        <Spin size="small" />
+      ),
   }));
 
   const columns = [
