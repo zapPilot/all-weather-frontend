@@ -211,7 +211,10 @@ const APRPopOver = ({ mode }) => {
   ];
   const turnReward2Price = (claimableReward) => {
     const tokenInLowerCase = claimableReward.token.toLowerCase();
-    const priceAsFloat = WEB3_CONTEXT["debankContext"][tokenInLowerCase].price;
+    const priceAsFloat =
+      WEB3_CONTEXT["debankContext"][tokenInLowerCase] !== undefined
+        ? WEB3_CONTEXT["debankContext"][tokenInLowerCase].price
+        : 0;
 
     // Use BigNumber from 'bignumber.js' to multiply the price by 10^18
     const priceBigNumber = new BigNumber(priceAsFloat).times(
