@@ -56,7 +56,7 @@ const items = [
   },
   {
     label: <Link href="/cefi">Cefi</Link>,
-    key: "setting:3",
+    key: "cefi",
   },
 ];
 export default function NavBar() {

@@ -32,8 +32,8 @@ import NumericInput from "./NumberInput";
 import { ethers } from "ethers";
 import { sendDiscordMessage } from "../../utils/discord";
 const { Option } = Select;
-const MINIMUM_ZAP_IN_AMOUNT = 0.05;
-const MAXIMUM_ZAP_IN_AMOUNT = 0.07;
+const MINIMUM_ZAP_IN_AMOUNT = 0.001;
+const MAXIMUM_ZAP_IN_AMOUNT = 0.1;
 const depositSchema = z
   .number()
   .min(
@@ -101,6 +101,7 @@ const ZapInButton = () => {
     }
   };
   const {
+    data: depositData,
     write,
     isLoading: depositIsLoading,
     isSuccess: depositIsSuccess,
@@ -357,6 +358,7 @@ const ZapInButton = () => {
       functionName: "deposit",
       args: [preparedDepositData],
     });
+    console.log("encodedFunctionData", encodedFunctionData);
     setApiLoading(false);
     setApiDataReady(true);
     function waitForWrite() {
@@ -371,7 +373,7 @@ const ZapInButton = () => {
       setTimeout(waitForWrite, 3000);
     }
     waitForWrite();
-    setDepositHash(tx.hash);
+    setDepositHash(depositData.hash);
   };
 
   const _sendEvents = () => {

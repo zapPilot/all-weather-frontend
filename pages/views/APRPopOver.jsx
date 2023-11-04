@@ -95,7 +95,7 @@ const APRPopOver = ({ mode }) => {
           height="20"
           alt={rewardKey}
         />
-        {WEB3_CONTEXT["debankContext"][tokenAddr].symbol}:{" "}
+        {/* {WEB3_CONTEXT["debankContext"][tokenAddr].symbol}:{" "} */}
         {(value["APR"] * 100).toFixed(2)}%
       </>
     );
@@ -188,7 +188,7 @@ const APRPopOver = ({ mode }) => {
             src={tokenInfo.img}
             width="20"
             height="20"
-            alt={tokenInfo.symbol}
+            // alt={tokenInfo.symbol}
           />
           {tokenInfo.symbol}
         </div>
