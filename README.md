@@ -6,9 +6,8 @@ First, `cp .env.sample .env.local` and update the values if needed.
 
 Then:
 
-```bash
-npm run dev
-```
+1. `yarn`
+2. `yarn dev`
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
