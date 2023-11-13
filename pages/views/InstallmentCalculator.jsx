@@ -1,29 +1,13 @@
 import React, { useContext, useEffect, useState } from "react";
-import { Row, Col, InputNumber, Select, Button, ConfigProvider } from "antd";
+import { Row, Col, Button, ConfigProvider } from "antd";
 import { web3Context } from "./Web3DataProvider";
+import InstallmentInput from "./InstallmentInput";
 
 const InstallmentCalculator = () => {
   const WEB3_CONTEXT = useContext(web3Context);
-  const [amount, setAmount] = useState(1000);
-  const [interestRate, setInterestRate] = useState(11);
-  const [installment, setInstallment] = useState(12);
   const [portfolioApr, setPortfolioApr] = useState(0);
-
-  const amountChange = (value) => {
-    setAmount(value)
-  };
-
-  const interestRateChange = (value) => {
-    setInterestRate(value)
-  };
-
-  const installmentChange = (value) => {
-    setInstallment(value)
-  };
-
-  const getAPR = () => {
-    console.log(`amount: ${amount}, interestRate: ${interestRate}, installment: ${installment}`)
-  }
+  const [interest, setInterest] = useState(0);
+  const { planAvalue, setplanAvalue } = useState(0);
 
   const divInput = {
     display: 'flex',
@@ -54,75 +38,68 @@ const InstallmentCalculator = () => {
     fetchPortfolioMetadata();
   }, [WEB3_CONTEXT, portfolioApr]);
 
+  const updateInterest = () => {
+    const calculateInterest = Number((amount / installment) * (1 + installment) * installment / 2 * (Number(portfolioApr).toFixed(2) / 100 - (interestRate / 100)) / 12).toFixed(2)
+    setInterest(calculateInterest)
+    console.log(`portfolioApr:${portfolioApr}`)
+    if (calculateInterest > 0) {
+      console.log('You should interest!')
+    } else {
+      console.log("You should'nt interest!")
+    }
+  }
+
+  const test = () => {
+    console.log(`planAvalue:${planAvalue}`)
+  }
+
   return (
-    <Row 
-      gutter={16}>
+    <ConfigProvider
+      theme={{
+        components: {
+          InputNumber: {
+            colorPrimaryHover: '#beed54',
+            colorFillAlter: 'white'
+          },
+          Select: {
+            colorPrimaryHover: '#beed54'
+          },
+          Button: {
+            colorPrimaryActive: '#beed54',
+            colorPrimaryHover: '#beed54',
+            colorText: '#beed54',
+          }
+        },
+      }}
+    >
+      <Row
+        gutter={16}
+        justify="center"
+      >
         <Col span={12}>
           <h2>Calculator</h2>
-          <ConfigProvider
-            theme={{
-              components: {
-                InputNumber: {
-                  colorPrimaryHover: '#beed54',
-                  colorFillAlter: 'white'
-                },
-                Select: {
-                  colorPrimaryHover: '#beed54'
-                },
-                Button: {
-                  colorPrimaryActive: '#beed54',
-                  colorPrimaryHover: '#beed54',
-                  colorText: '#beed54',
-                }
-              },
-            }}
-          >
-            <div style={divInput}>
-              <p style={labelStyle}>Amount :</p>
-                <InputNumber
-                  addonBefore="$"
-                  defaultValue={1000}
-                  formatter={(value) => value.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                  style={inputStyle}
-                  onChange={amountChange}
-                />
-            </div>
-            <div style={divInput}>
-              <p style={labelStyle}>Interest Rate :</p>
-              <InputNumber
-                addonAfter="%"
-                defaultValue={11}
-                style={inputStyle}
-                onChange={interestRateChange}
-              />
-            </div>
-            <div style={divInput}>
-              <p style={labelStyle}>Installment :</p>
-              <Select
-                defaultValue={12}
-                style={inputStyle}
-                options={[
-                  { value: 3, label: 3 },
-                  { value: 6, label: 6 },
-                  { value: 12, label: 12 },
-                  { value: 24, label: 24 },
-                  { value: 30, label: 30 },
-                ]}
-                onChange={installmentChange}
-              />
-            </div>
-            <div>
-              <Button onClick={getAPR}>Calculate</Button>
-            </div>
-          </ConfigProvider>
+          <Row>
+            <Col span={12}>
+              <h3>Plan A</h3>
+              <InstallmentInput portfolioApr={portfolioApr}/>
+            </Col>
+            <Col span={12}>
+              <h3>Plan B</h3>
+              <InstallmentInput portfolioApr={portfolioApr} getNum={updateInterest}/>
+            </Col>
+          </Row>
+          <div>
+            <Button onClick={test}>Calculate</Button>
+          </div>
         </Col>
-        <Col span={12}>
+        <Col span={6}>
           <h2>Result</h2>
-            All Weather Portfolio APR:{Number(portfolioApr).toFixed(2)}
-          <p>Interest :{Number((amount / installment) * (1 + installment) * installment / 2 * (Number(portfolioApr).toFixed(2) / 100 - (interestRate / 100)) / 12).toFixed(2)}</p>
+          <p>Interest :{interest}</p>
+          <p>All Weather Portfolio APR:{Number(portfolioApr).toFixed(2)}</p>
           <p>formula:(Amount / Installment) * (1 + Installment) * Installment / 2 * (All Weather Portfolio APR - Interest Rate ) / 12 </p>
         </Col>
-    </Row>
+      </Row>
+    </ConfigProvider>
   )
 }
 
