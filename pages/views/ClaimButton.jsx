@@ -1,5 +1,10 @@
 import { Button, message } from "antd";
-import { fetch1InchSwapData, portfolioContractAddress, USDT, APX } from "../../utils/oneInch";
+import {
+  fetch1InchSwapData,
+  portfolioContractAddress,
+  USDT,
+  APX,
+} from "../../utils/oneInch";
 import { DollarOutlined } from "@ant-design/icons";
 import { encodeFunctionData } from "viem";
 import { useContractWrite, useAccount } from "wagmi";
@@ -7,7 +12,7 @@ import { useState, useContext, useEffect } from "react";
 import { web3Context } from "./Web3DataProvider";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import { sendDiscordMessage } from "../../utils/discord";
-import {waitForWrite} from "../../utils/contractInteractions"; 
+import { waitForWrite } from "../../utils/contractInteractions";
 
 const ClaimButton = () => {
   const { address } = useAccount();
@@ -24,7 +29,7 @@ const ClaimButton = () => {
     async function fetchData() {
       const claimableRewards = WEB3_CONTEXT.dataOfGetClaimableRewards;
       if (claimableRewards === undefined) return;
-      setClaimableRewards(claimableRewards[0].claimableRewards[0].amount)
+      setClaimableRewards(claimableRewards[0].claimableRewards[0].amount);
     }
     fetchData();
   }, [WEB3_CONTEXT]);
@@ -41,7 +46,9 @@ const ClaimButton = () => {
     },
     onSuccess(data) {
       sendDiscordMessage(`${address} successfully claimed!`);
-      messageApi.info(`Successfully claimed! https://bscscan.com/tx/${data.hash}`);
+      messageApi.info(
+        `Successfully claimed! https://bscscan.com/tx/${data.hash}`,
+      );
     },
   });
 
@@ -51,16 +58,24 @@ const ClaimButton = () => {
   };
   const _sendDepositTransaction = async () => {
     setAggregatorDataReady(false);
-    const aggregatorDatas = await _getAggregatorData(claimableRewards, portfolioContractAddress, APX, USDT);
+    const aggregatorDatas = await _getAggregatorData(
+      claimableRewards,
+      portfolioContractAddress,
+      APX,
+      USDT,
+    );
     setAggregatorDataReady(true);
     const claimData = _getClaimData(useDump, aggregatorDatas);
     waitForWrite(write, claimData, address);
   };
 
-  const _getAggregatorData = async (amount, fromAddress, rewardAddress, tokenOutAddress) => {
-    const [
-      apolloxAggregatorData,
-    ] = await Promise.all([
+  const _getAggregatorData = async (
+    amount,
+    fromAddress,
+    rewardAddress,
+    tokenOutAddress,
+  ) => {
+    const [apolloxAggregatorData] = await Promise.all([
       fetch1InchSwapData(
         56,
         rewardAddress,
@@ -71,21 +86,22 @@ const ClaimButton = () => {
       ),
     ]);
     return {
-      apolloxAggregatorData
-    }
-  }
+      apolloxAggregatorData,
+    };
+  };
 
   const _getClaimData = (useDump, aggregatorDatas) => {
-    return [{
-      receiver: address,
-      apolloXClaimData: {
-        tokenOut: USDT,
-        aggregatorData: aggregatorDatas.apolloxAggregatorData.tx.data,
-      }
-    },
-      useDump
-    ]
-  }
+    return [
+      {
+        receiver: address,
+        apolloXClaimData: {
+          tokenOut: USDT,
+          aggregatorData: aggregatorDatas.apolloxAggregatorData.tx.data,
+        },
+      },
+      useDump,
+    ];
+  };
   return (
     <div>
       {contextHolder}

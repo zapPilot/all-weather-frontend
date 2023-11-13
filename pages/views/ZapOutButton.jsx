@@ -107,12 +107,18 @@ const ZapOutButton = () => {
       setApproveReady(true);
     }
     write({
-      args: [{amount: withdrawAmount, receiver: address, apolloXRedeemData: {
-        alpTokenOut: USDC,
-        minOut: withdrawAmount,
-        tokenOut: USDT,
-        aggregatorData: ''
-      }}],
+      args: [
+        {
+          amount: withdrawAmount,
+          receiver: address,
+          apolloXRedeemData: {
+            alpTokenOut: USDC,
+            minOut: withdrawAmount,
+            tokenOut: USDT,
+            aggregatorData: "",
+          },
+        },
+      ],
       from: address,
     });
   };

@@ -12,7 +12,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const APRPopOver = ({ mode }) => {
   const { connector: isConnected } = useAccount();
-  const { chain } = useNetwork()
+  const { chain } = useNetwork();
 
   const [claimableRewards, setClaimableRewards] = useState([]);
   const [aprComposition, setAprComposition] = useState({});

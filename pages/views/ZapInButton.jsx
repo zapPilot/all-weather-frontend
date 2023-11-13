@@ -6,9 +6,9 @@ import {
   fetch1InchSwapData,
   portfolioContractAddress,
   USDT,
-  USDC
+  USDC,
 } from "../../utils/oneInch";
-import {waitForWrite} from "../../utils/contractInteractions"; 
+import { waitForWrite } from "../../utils/contractInteractions";
 import { DollarOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import {
@@ -155,7 +155,7 @@ const ZapInButton = () => {
     setAmount(amount_);
   };
   const handleOnClickMax = async () => {
-    console.log("here!")
+    console.log("here!");
     setAmount(wethBalance.formatted);
     setInputValue(wethBalance.formatted);
     handleInputChange(wethBalance.formatted);
@@ -212,8 +212,17 @@ const ZapInButton = () => {
       setApproveReady(true);
     }
     setApiLoading(true);
-    const aggregatorDatas = await _getAggregatorData(amount, portfolioContractAddress);
-    const preparedDepositData = _getDepositData(amount, address, USDT, USDC, aggregatorDatas);
+    const aggregatorDatas = await _getAggregatorData(
+      amount,
+      portfolioContractAddress,
+    );
+    const preparedDepositData = _getDepositData(
+      amount,
+      address,
+      USDT,
+      USDC,
+      aggregatorDatas,
+    );
     // print out the encoded data for debugging
     const encodedFunctionData = encodeFunctionData({
       abi: permanentPortfolioJson.abi,
@@ -234,24 +243,21 @@ const ZapInButton = () => {
   };
 
   const _getAggregatorData = async (amount, fromAddress) => {
-    const [
-      aggregatorData,
-    ] = await Promise.all([
-      fetch1InchSwapData(
-        56,
-        USDT,
-        USDC,
-        amount,
-        fromAddress,
-        1,
-      ),
+    const [aggregatorData] = await Promise.all([
+      fetch1InchSwapData(56, USDT, USDC, amount, fromAddress, 1),
     ]);
     return {
-      aggregatorData
-    }
-  }
+      aggregatorData,
+    };
+  };
 
-  const _getDepositData= (amount, address, tokenIn, tokenInAfterSwap, aggregatorDatas) => {
+  const _getDepositData = (
+    amount,
+    address,
+    tokenIn,
+    tokenInAfterSwap,
+    aggregatorDatas,
+  ) => {
     return {
       amount: ethers.BigNumber.from(amount),
       receiver: address,
@@ -261,10 +267,10 @@ const ZapInButton = () => {
       apolloXDepositData: {
         tokenIn: tokenInAfterSwap,
         // TODO(david): need to figure out a way to calculate minALP
-        minALP: amount.div(2)
-      }
+        minALP: amount.div(2),
+      },
     };
-  }
+  };
 
   const selectBefore = (
     <Select

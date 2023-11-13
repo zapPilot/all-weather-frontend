@@ -17,9 +17,7 @@ export const apolloxVaultAddress = "0xd56d8Dfd3A3D6F6dafc0b7b6945F6E7AB138706e";
 // export const equilibriaPendleVaultAddress =
 //   "0x4999AE9fDD361Ca6278B0295dd65776b4587E1aA";
 // export const radiantDlpAddress = "0x99E9cE14C807e95329a2A35aDD52683528e53231";
-export const portfolioVaults = [
-  apolloxVaultAddress,
-];
+export const portfolioVaults = [apolloxVaultAddress];
 
 export const ALP = "0x4E47057f45adF24ba41375a175dA0357cB3480E5";
 export const ApolloX = "0x1b6F2d3844C6ae7D56ceb3C3643b9060ba28FEb0";

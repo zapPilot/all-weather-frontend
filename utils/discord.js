@@ -5,7 +5,10 @@ export const sendDiscordMessage = async (content) => {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ username: "Frontend", content: roleIdOfMod + ": " + content }),
+    body: JSON.stringify({
+      username: "Frontend",
+      content: roleIdOfMod + ": " + content,
+    }),
   }).catch((error) => {
     console.log(`Discord error: ${error}`);
   });
