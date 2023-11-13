@@ -6,7 +6,7 @@ import ZapInButton from "./ZapInButton";
 import ZapOutButton from "./ZapOutButton";
 import APRPopOver from "./APRPopOver";
 import UserBalanceInfo from "./UserBalanceInfo";
-import { useWindowWidth, useWindowHeight } from "../../utils/chartUtils";
+import { useWindowWidth } from "../../utils/chartUtils";
 import { useEffect, useContext, useState } from "react";
 import { web3Context } from "./Web3DataProvider";
 

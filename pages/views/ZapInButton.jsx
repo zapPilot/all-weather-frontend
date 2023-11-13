@@ -17,6 +17,7 @@ import {
   useBalance,
   useContractRead,
 } from "wagmi";
+import tokens from "./components/tokens.json";
 
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import NumericInput from "./NumberInput";
@@ -271,16 +272,36 @@ const ZapInButton = () => {
       },
     };
   };
-
   const selectBefore = (
     <Select
-      defaultValue="WETH"
+      defaultValue={
+        <Option key="USDT" value="0x55d398326f99059ff775485246999027b3197955">
+          <img
+            src="https://icons.llamao.fi/icons/agg_icons/binance?w=24&h=24"
+            width="20"
+            height="20"
+            alt="usdt"
+          />
+          1USD
+        </Option>
+      }
       theme="light"
       style={{ backgroundColor: "white" }}
     >
-      <Option value="WETH">WETH</Option>
+      {tokens.props.pageProps.tokenList["56"].slice(0, 50).map((option) => (
+        <Option key={option.address} value={option.address}>
+          <img
+            src={option.logoURI2}
+            width="20"
+            height="20"
+            alt={option.symbol}
+          />
+          {option.symbol}
+        </Option>
+      ))}
     </Select>
   );
+
   const modalContent = (
     <Modal
       visible={open}
@@ -372,7 +393,7 @@ const ZapInButton = () => {
           Max
         </Button>
       </Space.Compact>
-      <div style={{ color: "white" }}>Max Slippage: 2%</div>
+      <div style={{ color: "white" }}>Max Slippage: 1%</div>
 
       <Button
         loading={!apiDataReady}
