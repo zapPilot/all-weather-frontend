@@ -1,5 +1,5 @@
 import { Button, Space, message } from "antd";
-import { portfolioContractAddress } from "../../utils/oneInch";
+import { portfolioContractAddress, USDC, USDT } from "../../utils/oneInch";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
 import { useEffect, useState, useContext } from "react";
@@ -107,7 +107,12 @@ const ZapOutButton = () => {
       setApproveReady(true);
     }
     write({
-      args: [withdrawAmount, address],
+      args: [{amount: withdrawAmount, receiver: address, apolloXRedeemData: {
+        alpTokenOut: USDC,
+        minOut: withdrawAmount,
+        tokenOut: USDT,
+        aggregatorData: ''
+      }}],
       from: address,
     });
   };

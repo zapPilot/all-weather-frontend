@@ -4,7 +4,7 @@ import { InfoCircleOutlined } from "@ant-design/icons";
 import { web3Context } from "./Web3DataProvider";
 import ClaimButton from "./ClaimButton";
 import { ethers } from "ethers";
-import { useAccount } from "wagmi";
+import { useAccount, useNetwork } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 const BigNumber = require("bignumber.js");
 
@@ -12,6 +12,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const APRPopOver = ({ mode }) => {
   const { connector: isConnected } = useAccount();
+  const { chain } = useNetwork()
+
   const [claimableRewards, setClaimableRewards] = useState([]);
   const [aprComposition, setAprComposition] = useState({});
   const [sumOfRewardsDenominatedInUSD, setSumOfRewardsDenominatedInUSD] =
@@ -41,8 +43,8 @@ const APRPopOver = ({ mode }) => {
       if (claimableRewards === undefined) return;
       for (const reward of claimableRewards) {
         for (const claimableReward of reward.claimableRewards) {
-          if (!claimableReward.token.startsWith("arb")) {
-            claimableReward.token = `arb:${claimableReward.token}`;
+          if (!claimableReward.token.startsWith(chain.network)) {
+            claimableReward.token = `${chain.network}:${claimableReward.token}`;
           }
         }
       }
@@ -95,7 +97,7 @@ const APRPopOver = ({ mode }) => {
           height="20"
           alt={rewardKey}
         />
-        {/* {WEB3_CONTEXT["debankContext"][tokenAddr].symbol}:{" "} */}
+        {WEB3_CONTEXT["debankContext"][tokenAddr].symbol}:{" "}
         {(value["APR"] * 100).toFixed(2)}%
       </>
     );
@@ -152,8 +154,7 @@ const APRPopOver = ({ mode }) => {
     // Loop through each claimable reward to aggregate them
     for (const { token, amount, value } of claimableRewardsWithPrice) {
       // Skip if the amount is '0.0'
-      if (amount === "0.0" || amount === "0") continue;
-
+      if (amount === "0.0" || amount === "0" || token === undefined) continue;
       const tokenSymbol = token.symbol;
 
       // Initialize if the token does not exist in the aggregated object
@@ -188,7 +189,7 @@ const APRPopOver = ({ mode }) => {
             src={tokenInfo.img}
             width="20"
             height="20"
-            // alt={tokenInfo.symbol}
+            alt={tokenInfo.symbol}
           />
           {tokenInfo.symbol}
         </div>

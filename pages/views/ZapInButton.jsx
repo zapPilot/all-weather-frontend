@@ -8,6 +8,7 @@ import {
   USDT,
   USDC
 } from "../../utils/oneInch";
+import {waitForWrite} from "../../utils/contractInteractions"; 
 import { DollarOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import {
@@ -67,7 +68,6 @@ const ZapInButton = () => {
   const [approveAmount, setApproveAmount] = useState(0);
   const [depositHash, setDepositHash] = useState(undefined);
   const [messageApi, contextHolder] = message.useMessage();
-  const roleIdOfMod = "<@&1108070617753862156>";
   const renderStatusCircle = (isLoading, isSuccess) => {
     if (isLoading) {
       return <Spin />;
@@ -100,7 +100,7 @@ const ZapInButton = () => {
     abi: permanentPortfolioJson.abi,
     functionName: "deposit",
     onError(error) {
-      sendDiscordMessage(`${roleIdOfMod}, ${address} handleZapin failed!`);
+      sendDiscordMessage(`${address} handleZapin failed!`);
       messageApi.error({
         content: `${error.shortMessage}. Amout: ${error.args[0].amount}. Increase the deposit amount and try again.`,
         duration: 5,
@@ -108,7 +108,7 @@ const ZapInButton = () => {
       throw error;
     },
     onSuccess(data) {
-      sendDiscordMessage(`${roleIdOfMod}, ${address} handleZapin succeeded!`);
+      sendDiscordMessage(`${address} handleZapin succeeded!`);
       setDepositHash(data.hash);
       messageApi.info("Deposit succeeded");
     },
@@ -169,7 +169,7 @@ const ZapInButton = () => {
   };
 
   const handleZapIn = async () => {
-    await sendDiscordMessage(`${roleIdOfMod}, ${address} starts handleZapin()`);
+    await sendDiscordMessage(`${address} starts handleZapin()`);
     const validationResult = depositSchema.safeParse(Number(inputValue));
     if (!validationResult.success) {
       setAlert(true);
@@ -213,17 +213,17 @@ const ZapInButton = () => {
     }
     setApiLoading(true);
     const aggregatorDatas = await _getAggregatorData(amount, portfolioContractAddress);
-    const depositData = _getDepositData(amount, address, USDT, USDC, aggregatorDatas);
+    const preparedDepositData = _getDepositData(amount, address, USDT, USDC, aggregatorDatas);
     // print out the encoded data for debugging
     const encodedFunctionData = encodeFunctionData({
       abi: permanentPortfolioJson.abi,
       functionName: "deposit",
-      args: [depositData],
+      args: [preparedDepositData],
     });
     console.log("encodedFunctionData", encodedFunctionData);
     setApiLoading(false);
     setApiDataReady(true);
-    _waitForWrite(depositData);
+    waitForWrite(write, [preparedDepositData], address);
     setDepositHash(depositData.hash);
   };
 
@@ -265,18 +265,6 @@ const ZapInButton = () => {
       }
     };
   }
-
-  function _waitForWrite(preparedDepositData) {
-    if (write) {
-      write({
-        args: [preparedDepositData],
-        from: address,
-      });
-      return;
-    }
-    setTimeout(_waitForWrite, 3000);
-  }
-
 
   const selectBefore = (
     <Select
@@ -352,9 +340,9 @@ const ZapInButton = () => {
           <center>
             🚀 Finishied! Check your transaction on the explorer 🚀
             <a
-              href={`https://arbiscan.io/tx/${depositHash}`}
+              href={`https://bscscan.com/tx/${depositHash}`}
               target="_blank"
-            >{`https://arbiscan.io/tx/${depositHash}`}</a>
+            >{`https://bscscan.com/tx/${depositHash}`}</a>
           </center>
         )}
       </div>

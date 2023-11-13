@@ -102,7 +102,7 @@ const RebalancerWidget = () => {
                   <strong style={{ color: "white", fontSize: 26 }}>
                     <text>
                       Reward APR: {portfolioApr ? portfolioApr.toFixed(2) : 0}%{" "}
-                      {/* <APRPopOver mode="percentage" /> */}
+                      <APRPopOver mode="percentage" />
                     </text>
                   </strong>
                 </div>
@@ -115,7 +115,7 @@ const RebalancerWidget = () => {
                 <div style={{ textAlign: "left" }}>
                   <ZapInButton />
                   <ZapOutButton />
-                  {/* <APRPopOver mode="price" /> */}
+                  <APRPopOver mode="price" />
                 </div>
               </div>
             </div>
