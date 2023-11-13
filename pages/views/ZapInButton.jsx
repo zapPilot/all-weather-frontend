@@ -4,19 +4,9 @@ import { z } from "zod";
 import { encodeFunctionData } from "viem";
 import {
   fetch1InchSwapData,
-  getPendleZapInData,
-  wethAddress,
-  magicTokenAddress,
-  daiAddress,
-  gDAIMarketPoolAddress,
-  glpMarketPoolAddress,
-  rethMarketPoolAddress,
-  pendleMarketPoolAddress,
-  rethTokenAddress,
   portfolioContractAddress,
-  magicVaultAddress,
-  equilibriaGDAIVaultAddress,
-  equilibriaRETHVaultAddress,
+  USDT,
+  USDC
 } from "../../utils/oneInch";
 import { DollarOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
@@ -33,7 +23,7 @@ import { ethers } from "ethers";
 import { sendDiscordMessage } from "../../utils/discord";
 const { Option } = Select;
 const MINIMUM_ZAP_IN_AMOUNT = 0.001;
-const MAXIMUM_ZAP_IN_AMOUNT = 0.1;
+const MAXIMUM_ZAP_IN_AMOUNT = 1000000;
 const depositSchema = z
   .number()
   .min(
@@ -58,7 +48,7 @@ const ZapInButton = () => {
 
   const { data: wethBalance } = useBalance({
     address,
-    token: wethAddress,
+    token: USDT,
     onError(error) {
       console.log("wethBalance, Error", error);
       throw error;
@@ -128,12 +118,12 @@ const ZapInButton = () => {
     isLoading: approveIsLoading,
     isSuccess: approveIsSuccess,
   } = useContractWrite({
-    address: wethAddress,
+    address: USDT,
     abi: permanentPortfolioJson.abi,
     functionName: "approve",
   });
   const approveAmountContract = useContractRead({
-    address: wethAddress,
+    address: USDT,
     abi: permanentPortfolioJson.abi,
     functionName: "allowance",
     args: [address, portfolioContractAddress],
@@ -165,6 +155,7 @@ const ZapInButton = () => {
     setAmount(amount_);
   };
   const handleOnClickMax = async () => {
+    console.log("here!")
     setAmount(wethBalance.formatted);
     setInputValue(wethBalance.formatted);
     handleInputChange(wethBalance.formatted);
@@ -221,158 +212,18 @@ const ZapInButton = () => {
       setApproveReady(true);
     }
     setApiLoading(true);
-    const amountAfterChargingFee = amount_.mul(997).div(1000);
-    const [
-      oneInchSwapDataForMagic,
-      oneInchSwapDataForGDAI,
-      oneInchSwapDataForRETH,
-    ] = await Promise.all([
-      fetch1InchSwapData(
-        42161,
-        wethAddress,
-        magicTokenAddress,
-        amountAfterChargingFee.mul(8).div(200),
-        magicVaultAddress,
-        2,
-      ),
-      fetch1InchSwapData(
-        42161,
-        wethAddress,
-        daiAddress,
-        amountAfterChargingFee.mul(12).div(100),
-        equilibriaGDAIVaultAddress,
-        2,
-      ),
-      fetch1InchSwapData(
-        42161,
-        wethAddress,
-        rethTokenAddress,
-        amountAfterChargingFee.mul(6).div(100),
-        equilibriaRETHVaultAddress,
-        2,
-      ),
-    ]);
-    const [
-      pendleGDAIZapInData,
-      pendleGLPZapInData,
-      pendleRETHZapInData,
-      pendlePendleZapInData,
-    ] = await Promise.all([
-      getPendleZapInData(
-        42161,
-        gDAIMarketPoolAddress,
-        ethers.BigNumber.from(oneInchSwapDataForGDAI.toAmount).mul(99).div(100),
-        0.02,
-        daiAddress,
-      ),
-      getPendleZapInData(
-        42161,
-        glpMarketPoolAddress,
-        amountAfterChargingFee.mul(35).div(100),
-        0.02,
-        wethAddress,
-      ),
-      getPendleZapInData(
-        42161,
-        rethMarketPoolAddress,
-        ethers.BigNumber.from(oneInchSwapDataForRETH.toAmount).mul(99).div(100),
-        0.02,
-        rethTokenAddress,
-      ),
-      getPendleZapInData(
-        42161,
-        pendleMarketPoolAddress,
-        amountAfterChargingFee.mul(24).div(100),
-        0.02,
-        wethAddress,
-      ),
-    ]);
-
-    // Define any parameters required by the deposit function
-    const dataArrays = [
-      pendleGLPZapInData,
-      pendleGDAIZapInData,
-      pendleRETHZapInData,
-      pendlePendleZapInData,
-    ];
-    const keysToUpdate = [
-      "eps",
-      "guessMax",
-      "guessMin",
-      "guessOffchain",
-      "netTokenIn",
-    ];
-    const indicesToUpdate = [3, 4];
-
-    for (let dataArray of dataArrays) {
-      for (let index of indicesToUpdate) {
-        for (let key of keysToUpdate) {
-          if (dataArray[index] && dataArray[index][key] !== undefined) {
-            dataArray[index][key] = ethers.BigNumber.from(
-              dataArray[index][key],
-            );
-          }
-        }
-      }
-    }
-
-    // WORKAROUND: pendle SDK would return the wrong path for zapping in for small amount (with MIM route)
-    // so we need to provide a hardcoded path, though not guaranteed to be the best route
-    // workaround on pendle router side: https://stackblitz.com/edit/stackblitz-starters-lov3oa?file=index.ts
-    const glpInputWorkAround = {
-      tokenIn: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
-      netTokenIn: pendleGLPZapInData[4]["netTokenIn"],
-      tokenMintSy: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
-      bulk: "0x0000000000000000000000000000000000000000",
-      pendleSwap: "0x0000000000000000000000000000000000000000",
-      swapData: {
-        swapType: 0,
-        extRouter: "0x0000000000000000000000000000000000000000",
-        extCalldata: [],
-        needScale: false,
-      },
-    };
-    const preparedDepositData = {
-      amount: ethers.BigNumber.from(amount),
-      receiver: address,
-      glpMinLpOut: ethers.BigNumber.from(pendleGLPZapInData[2]),
-      glpGuessPtReceivedFromSy: pendleGLPZapInData[3],
-      // glpInput: pendleGLPZapInData[4],
-      glpInput: glpInputWorkAround,
-      gdaiMinLpOut: ethers.BigNumber.from(pendleGDAIZapInData[2]),
-      gdaiGuessPtReceivedFromSy: pendleGDAIZapInData[3],
-      gdaiInput: pendleGDAIZapInData[4],
-      gdaiOneInchDataGDAI: oneInchSwapDataForGDAI.tx.data,
-      rethMinLpOut: ethers.BigNumber.from(pendleRETHZapInData[2]),
-      rethGuessPtReceivedFromSy: pendleRETHZapInData[3],
-      rethInput: pendleRETHZapInData[4],
-      rethOneInchDataRETH: oneInchSwapDataForRETH.tx.data,
-      oneInchDataMagic: oneInchSwapDataForMagic.tx.data,
-      pendleMinLpOut: ethers.BigNumber.from(pendlePendleZapInData[2]),
-      pendleGuessPtReceivedFromSy: pendlePendleZapInData[3],
-      pendleInput: pendlePendleZapInData[4],
-    };
+    const aggregatorDatas = await _getAggregatorData(amount, portfolioContractAddress);
+    const depositData = _getDepositData(amount, address, USDT, USDC, aggregatorDatas);
     // print out the encoded data for debugging
     const encodedFunctionData = encodeFunctionData({
       abi: permanentPortfolioJson.abi,
       functionName: "deposit",
-      args: [preparedDepositData],
+      args: [depositData],
     });
     console.log("encodedFunctionData", encodedFunctionData);
     setApiLoading(false);
     setApiDataReady(true);
-    function waitForWrite() {
-      if (write) {
-        write({
-          args: [preparedDepositData],
-          from: address,
-          gas: 40_000_000n,
-        });
-        return;
-      }
-      setTimeout(waitForWrite, 3000);
-    }
-    waitForWrite();
+    _waitForWrite(depositData);
     setDepositHash(depositData.hash);
   };
 
@@ -381,6 +232,51 @@ const ZapInButton = () => {
       amount: parseFloat(amount.toString()),
     });
   };
+
+  const _getAggregatorData = async (amount, fromAddress) => {
+    const [
+      aggregatorData,
+    ] = await Promise.all([
+      fetch1InchSwapData(
+        56,
+        USDT,
+        USDC,
+        amount,
+        fromAddress,
+        1,
+      ),
+    ]);
+    return {
+      aggregatorData
+    }
+  }
+
+  const _getDepositData= (amount, address, tokenIn, tokenInAfterSwap, aggregatorDatas) => {
+    return {
+      amount: ethers.BigNumber.from(amount),
+      receiver: address,
+      tokenIn,
+      tokenInAfterSwap,
+      aggregatorData: aggregatorDatas.aggregatorData.tx.data,
+      apolloXDepositData: {
+        tokenIn: tokenInAfterSwap,
+        // TODO(david): need to figure out a way to calculate minALP
+        minALP: amount.div(2)
+      }
+    };
+  }
+
+  function _waitForWrite(preparedDepositData) {
+    if (write) {
+      write({
+        args: [preparedDepositData],
+        from: address,
+      });
+      return;
+    }
+    setTimeout(_waitForWrite, 3000);
+  }
+
 
   const selectBefore = (
     <Select
