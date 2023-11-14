@@ -1,17 +1,26 @@
 import React, { useContext, useEffect, useState } from "react";
-import { Row, Col, Button, ConfigProvider } from "antd";
+import { Row, Col, Button, ConfigProvider, InputNumber } from "antd";
 import { web3Context } from "./Web3DataProvider";
 import InstallmentInput from "./InstallmentInput";
 
 const InstallmentCalculator = () => {
   const WEB3_CONTEXT = useContext(web3Context);
   const [portfolioApr, setPortfolioApr] = useState(0);
-  const [interest, setInterest] = useState(0);
-  const { planAvalue, setplanAvalue } = useState(0);
+  const [amount, setAmount] = useState(1000);
+  const [planA, setPlanA] = useState({});
+  const [planB, setPlanB] = useState({});
+  const [interest, setInterest] = useState([]);
 
-  const divInput = {
-    display: 'flex',
-    alignItems: 'center'
+  const amountChange = (value) => {
+    setAmount(value)
+  };
+
+  const planAData = (value) => {
+    setPlanA(value)
+  }
+
+  const planBData = (value) => {
+    setPlanB(value)
   }
 
   const labelStyle = {
@@ -36,16 +45,22 @@ const InstallmentCalculator = () => {
       }
     }
     fetchPortfolioMetadata();
-  }, [WEB3_CONTEXT, portfolioApr]);
+  }, [WEB3_CONTEXT, portfolioApr, amount]);
 
   const updateInterest = () => {
-    const calculateInterest = Number((amount / installment) * (1 + installment) * installment / 2 * (Number(portfolioApr).toFixed(2) / 100 - (interestRate / 100)) / 12).toFixed(2)
-    setInterest(calculateInterest)
-    console.log(`portfolioApr:${portfolioApr}`)
-    if (calculateInterest > 0) {
-      console.log('You should interest!')
+    const calculateInterest = (plan) => {
+      return Number((amount / plan.installment) * (1 + plan.installment) * plan.installment / 2 * (Number(portfolioApr).toFixed(2) / 100 - (plan.interestRate / 100)) / 12).toFixed(2)
+    }
+
+    let interestA = calculateInterest(planA)
+    let interestB = calculateInterest(planB)
+
+    setInterest([interestA, interestB])
+   
+    if (interestA > interestB) {
+      console.log('A')
     } else {
-      console.log("You should'nt interest!")
+      console.log("B")
     }
   }
 
@@ -77,24 +92,36 @@ const InstallmentCalculator = () => {
         justify="center"
       >
         <Col span={12}>
-          <h2>Calculator</h2>
+          <h2 style={{marginBottom: '50px'}}>Calculator</h2>
+          <div>
+            <h3>Amount: </h3>
+              <InputNumber
+                addonBefore="$"
+                defaultValue={1000}
+                formatter={(value) => value.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                style={inputStyle}
+                onChange={amountChange}
+              />
+          </div>
           <Row>
             <Col span={12}>
-              <h3>Plan A</h3>
-              <InstallmentInput portfolioApr={portfolioApr}/>
+              <h4>Plan A</h4>
+              <InstallmentInput planData={planAData}/>
             </Col>
             <Col span={12}>
-              <h3>Plan B</h3>
-              <InstallmentInput portfolioApr={portfolioApr} getNum={updateInterest}/>
+              <h4>Plan B</h4>
+              <InstallmentInput planData={planBData}/>
             </Col>
           </Row>
           <div>
-            <Button onClick={test}>Calculate</Button>
+            <Button onClick={updateInterest}>Calculate</Button>
           </div>
         </Col>
         <Col span={6}>
-          <h2>Result</h2>
-          <p>Interest :{interest}</p>
+          <h2 style={{marginBottom: '50px'}}>Result</h2>
+          <h3>Plan {(interest[0]>interest[1])?'A':'B'} is Better!</h3>
+          <p>Plan A Interest: {interest[0]}</p>
+          <p>Plan B Interest: {interest[1]}</p>
           <p>All Weather Portfolio APR:{Number(portfolioApr).toFixed(2)}</p>
           <p>formula:(Amount / Installment) * (1 + Installment) * Installment / 2 * (All Weather Portfolio APR - Interest Rate ) / 12 </p>
         </Col>

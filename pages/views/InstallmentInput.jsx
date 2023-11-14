@@ -1,14 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { InputNumber, Select, Button } from "antd";
 
-const InstallmentInput = ({portfolioApr}) => {
-  const [amount, setAmount] = useState(1000);
+const InstallmentInput = ({planData}) => {
   const [interestRate, setInterestRate] = useState(11);
   const [installment, setInstallment] = useState(12);
-
-  const amountChange = (value) => {
-    setAmount(value)
-  };
 
   const interestRateChange = (value) => {
     setInterestRate(value)
@@ -17,6 +12,13 @@ const InstallmentInput = ({portfolioApr}) => {
   const installmentChange = (value) => {
     setInstallment(value)
   };
+
+  useEffect(() => {
+    planData({
+      interestRate,
+      installment
+    })
+  }, [ interestRate, installment]);
 
   const divInput = {
     display: 'flex',
@@ -36,16 +38,6 @@ const InstallmentInput = ({portfolioApr}) => {
 
   return (
     <div>
-      <div style={divInput}>
-        <p style={labelStyle}>Amount :</p>
-          <InputNumber
-            addonBefore="$"
-            defaultValue={1000}
-            formatter={(value) => value.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-            style={inputStyle}
-            onChange={amountChange}
-          />
-      </div>
       <div style={divInput}>
         <p style={labelStyle}>Interest Rate :</p>
         <InputNumber
