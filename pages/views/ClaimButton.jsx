@@ -6,13 +6,13 @@ import {
   APX,
 } from "../../utils/oneInch";
 import { DollarOutlined } from "@ant-design/icons";
-import { encodeFunctionData } from "viem";
 import { useContractWrite, useAccount } from "wagmi";
 import { useState, useContext, useEffect } from "react";
 import { web3Context } from "./Web3DataProvider";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import { sendDiscordMessage } from "../../utils/discord";
 import { waitForWrite } from "../../utils/contractInteractions";
+import TokenDropdown from "./components/TokenDropdowns.jsx";
 
 const ClaimButton = () => {
   const { address } = useAccount();
@@ -21,7 +21,7 @@ const ClaimButton = () => {
   const WEB3_CONTEXT = useContext(web3Context);
   const [claimableRewards, setClaimableRewards] = useState(0);
 
-  const normalWording = "Claim";
+  const normalWording = "Claim and Swap to";
   const loadingWording = "Fetching the best route to dump these rewards...";
   const useDump = true;
 
@@ -121,6 +121,7 @@ const ClaimButton = () => {
       >
         {aggregatorDataReady ? normalWording : loadingWording}
       </Button>
+      <TokenDropdown handleChange={(value)=>{console.log(`change ${value}`)}}/>
     </div>
   );
 };
