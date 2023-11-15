@@ -61,8 +61,8 @@ const InstallmentCalculator = () => {
       return ((amount / plan.installment) * (1 + plan.installment) * plan.installment / 2 * ((portfolioApr).toFixed(2) / 100 - (plan.interestRate / 100)) / 12).toFixed(2)
     };
 
-    let interestA = calculateInterest(planA);
-    let interestB = calculateInterest(planB);
+    const interestA = calculateInterest(planA);
+    const interestB = calculateInterest(planB);
 
     setInterestA(interestA);
     setInterestB(interestB);
@@ -71,7 +71,6 @@ const InstallmentCalculator = () => {
     :interestA > interestB ? setMsgResult('A is better!')
     :setMsgResult('B is better!');
 
-    console.log(windowWidth)
     windowWidth < 767.98 ? setIsModalOpen(true) : setIsModalOpen(false)
   }
 
