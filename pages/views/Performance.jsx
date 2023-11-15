@@ -34,10 +34,10 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
           <Card bordered={false}>
             <Statistic
               title={`ROI (${ROI.days} days)`}
-              value={(ROI.total * 100).toFixed(2)}
+              value="WIP"
               precision={2}
               valueStyle={colorLogic(ROI.total)}
-              suffix="%"
+              // suffix="%"
             />
           </Card>
         </Col>
@@ -47,7 +47,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
           <Card bordered={false}>
             <Statistic
               title={`Sharpe Ratio (${sharpeRatio.days} days)`}
-              value={sharpeRatio.value}
+              value="WIP"
               precision={2}
               valueStyle={colorLogic(sharpeRatio.value)}
               suffix=""
@@ -58,10 +58,10 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
           <Card bordered={false}>
             <Statistic
               title={`MAX Drawdown (${ROI.days} days)`}
-              value={(maxDrawdown * 100).toFixed(2)}
+              value="WIP"
               precision={2}
               valueStyle={{ color: "red" }}
-              suffix="%"
+              // suffix="%"
             />
           </Card>
         </Col>
@@ -78,7 +78,8 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
                   ({sharpeRatio.days} days)
                 </>
               }
-              value={sharpeRatio["SDR Sharpe Ratio"]}
+              // value={sharpeRatio["SDR Sharpe Ratio"]}
+              value="WIP"
               precision={2}
               valueStyle={colorLogic(sharpeRatio["SDR Sharpe Ratio"], false)}
               suffix=""
@@ -89,7 +90,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
           <Card bordered={false}>
             <Statistic
               title="Beta"
-              value="? WIP"
+              value="WIP"
               precision={2}
               valueStyle={colorLogic(-sharpeRatio["SDR Sharpe Ratio"], false)}
               suffix=""
