@@ -1,38 +1,38 @@
 import React, { useState, useEffect } from "react";
 import { InputNumber, Select, Space } from "antd";
 
-const InstallmentInput = ({planData}) => {
+const InstallmentInput = ({ planData }) => {
   const [interestRate, setInterestRate] = useState(11);
   const [installment, setInstallment] = useState(12);
 
   const interestRateChange = (value) => {
-    setInterestRate(value)
+    setInterestRate(value);
   };
 
   const installmentChange = (value) => {
-    setInstallment(value)
+    setInstallment(value);
   };
 
   useEffect(() => {
     planData({
       interestRate,
-      installment
-    })
-  }, [ interestRate, installment]);
+      installment,
+    });
+  }, [interestRate, installment]);
 
   const divInput = {
-    display: 'flex',
-    alignItems: 'center'
-  }
+    display: "flex",
+    alignItems: "center",
+  };
 
   const labelStyle = {
-    display: 'inline-block',
-    width: '100px',
-    fontWeight: 'Bold'
+    display: "inline-block",
+    width: "100px",
+    fontWeight: "Bold",
   };
-  
+
   const inputStyle = {
-    width: '200px',
+    width: "200px",
   };
 
   return (
@@ -64,7 +64,7 @@ const InstallmentInput = ({planData}) => {
         </Space>
       </Space>
     </div>
-  )
-}
+  );
+};
 
-export default InstallmentInput
+export default InstallmentInput;

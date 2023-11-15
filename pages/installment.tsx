@@ -1,13 +1,13 @@
 import type { NextPage } from "next";
 import BasePage from "./basePage.tsx";
-import InstallmentCalculator from "./views/InstallmentCalculator.jsx"
-import styles from '../styles/Installment.module.css';
+import InstallmentCalculator from "./views/InstallmentCalculator.jsx";
+import styles from "../styles/Installment.module.css";
 
-const Installment : NextPage = () => {
+const Installment: NextPage = () => {
   const divInstallment = {
-    padding: '0 8px',
-    color: 'white',
-  }
+    padding: "0 8px",
+    color: "white",
+  };
 
   return (
     <BasePage>
@@ -23,4 +23,4 @@ const Installment : NextPage = () => {
   );
 };
 
-export default Installment
+export default Installment;

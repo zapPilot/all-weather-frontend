@@ -60,8 +60,8 @@ const items = [
   },
   {
     label: <Link href="/installment">Installment</Link>,
-    key: "installment"
-  }
+    key: "installment",
+  },
 ];
 export default function NavBar() {
   const router = useRouter();
