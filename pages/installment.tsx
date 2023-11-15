@@ -1,19 +1,21 @@
 import type { NextPage } from "next";
 import BasePage from "./basePage.tsx";
 import InstallmentCalculator from "./views/InstallmentCalculator.jsx"
+import styles from '../styles/Installment.module.css';
 
 const Installment : NextPage = () => {
   const divInstallment = {
-    margin: '100px 0'
+    padding: '0 8px',
+    color: 'white',
   }
 
   return (
     <BasePage>
-      <div style={{color: 'white'}}>
+      <div style={divInstallment}>
         <center>
           <h1>Installment</h1>
         </center>
-        <div style={divInstallment}>
+        <div className={styles.installmentContent}>
           <InstallmentCalculator />
         </div>
       </div>

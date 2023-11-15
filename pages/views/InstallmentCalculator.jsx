@@ -1,7 +1,8 @@
-import React, { useContext, useEffect, useState } from "react";
-import { Row, Col, Button, ConfigProvider, InputNumber } from "antd";
+import React, { useContext, useEffect, useState, useRef } from "react";
+import { Row, Col, Space, Button, ConfigProvider, InputNumber, Modal } from "antd";
 import { web3Context } from "./Web3DataProvider";
 import InstallmentInput from "./InstallmentInput";
+import styles from '../../styles/Installment.module.css';
 
 const InstallmentCalculator = () => {
   const WEB3_CONTEXT = useContext(web3Context);
@@ -9,7 +10,11 @@ const InstallmentCalculator = () => {
   const [amount, setAmount] = useState(1000);
   const [planA, setPlanA] = useState({});
   const [planB, setPlanB] = useState({});
-  const [interest, setInterest] = useState([]);
+  const [interestA, setInterestA] = useState(0);
+  const [interestB, setInterestB] = useState(0);
+  const [msgResult, setMsgResult] = useState('Please Calculate!');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
 
   const amountChange = (value) => {
     setAmount(value)
@@ -23,16 +28,20 @@ const InstallmentCalculator = () => {
     setPlanB(value)
   }
 
-  const labelStyle = {
-    display: 'inline-block',
-    width: '100px',
-    fontWeight: 'Bold'
+  const handleCancel = () => {
+    setIsModalOpen(false);
   };
   
   const inputStyle = {
     width: '200px',
-    margin: '10px 0'
   };
+
+  const divResult = {
+    marginBottom: '24px',
+    padding: '8px',
+    backgroundColor: '#333333',
+    color: '#beed54'
+  }
 
   useEffect(() => {
     async function fetchPortfolioMetadata() {
@@ -49,23 +58,21 @@ const InstallmentCalculator = () => {
 
   const updateInterest = () => {
     const calculateInterest = (plan) => {
-      return Number((amount / plan.installment) * (1 + plan.installment) * plan.installment / 2 * (Number(portfolioApr).toFixed(2) / 100 - (plan.interestRate / 100)) / 12).toFixed(2)
-    }
+      return ((amount / plan.installment) * (1 + plan.installment) * plan.installment / 2 * ((portfolioApr).toFixed(2) / 100 - (plan.interestRate / 100)) / 12).toFixed(2)
+    };
 
-    let interestA = calculateInterest(planA)
-    let interestB = calculateInterest(planB)
+    let interestA = calculateInterest(planA);
+    let interestB = calculateInterest(planB);
 
-    setInterest([interestA, interestB])
-   
-    if (interestA > interestB) {
-      console.log('A')
-    } else {
-      console.log("B")
-    }
-  }
+    setInterestA(interestA);
+    setInterestB(interestB);
 
-  const test = () => {
-    console.log(`planAvalue:${planAvalue}`)
+    interestA === interestB ? setMsgResult('is eaqul.')
+    :interestA > interestB ? setMsgResult('A is better!')
+    :setMsgResult('B is better!');
+
+    console.log(windowWidth)
+    windowWidth < 767.98 ? setIsModalOpen(true) : setIsModalOpen(false)
   }
 
   return (
@@ -83,18 +90,32 @@ const InstallmentCalculator = () => {
             colorPrimaryActive: '#beed54',
             colorPrimaryHover: '#beed54',
             colorText: '#beed54',
+          },
+          Modal: {
+            contentBg: '#333333',
+            headerBg: '#333333',
+            titleColor: 'white',
+            colorText: 'white',
+            colorIcon: 'white'
           }
         },
       }}
     >
-      <Row
-        gutter={16}
-        justify="center"
-      >
-        <Col span={12}>
-          <h2 style={{marginBottom: '50px'}}>Calculator</h2>
-          <div>
-            <h3>Amount: </h3>
+      <Row gutter={{ xs: 8, md: 16 }}>
+        <Col 
+          xs={{
+            span: 24,
+            offset: 0,
+          }}
+          md={{
+            span: 12,
+            offset: 4,
+          }}
+        >
+          <h2 className={styles.title}>Calculator</h2>
+          <div style={{marginBottom: '25px'}}>
+            <Space direction="vertical" size="small">
+              <h3>Amount :</h3>
               <InputNumber
                 addonBefore="$"
                 defaultValue={1000}
@@ -102,13 +123,14 @@ const InstallmentCalculator = () => {
                 style={inputStyle}
                 onChange={amountChange}
               />
+            </Space>
           </div>
-          <Row>
-            <Col span={12}>
+          <Row gutter={[0, {xs: 24, md: 0}]}>
+            <Col xs={24} md={12}>
               <h4>Plan A</h4>
               <InstallmentInput planData={planAData}/>
             </Col>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <h4>Plan B</h4>
               <InstallmentInput planData={planBData}/>
             </Col>
@@ -117,15 +139,42 @@ const InstallmentCalculator = () => {
             <Button onClick={updateInterest}>Calculate</Button>
           </div>
         </Col>
-        <Col span={6}>
-          <h2 style={{marginBottom: '50px'}}>Result</h2>
-          <h3>Plan {(interest[0]>interest[1])?'A':'B'} is Better!</h3>
-          <p>Plan A Interest: {interest[0]}</p>
-          <p>Plan B Interest: {interest[1]}</p>
-          <p>All Weather Portfolio APR:{Number(portfolioApr).toFixed(2)}</p>
-          <p>formula:(Amount / Installment) * (1 + Installment) * Installment / 2 * (All Weather Portfolio APR - Interest Rate ) / 12 </p>
+        <Col xs={24} md={6} className={styles.divResult}>
+          <h2 className={styles.title}>Result</h2>
+          <div style={divResult}>
+            <h3>Plan {msgResult}</h3>
+            <h3>
+              {interestA === interestB ? ''
+              :interestA > interestB ? '$'+ interestA
+              :'$' + interestB}
+            </h3>
+          </div>
+          <div>
+            <h4>Detail</h4>
+            <p>Plan A Interest : ${interestA}</p>
+            <p>Plan B Interest : ${interestB}</p>
+            <p>All Weather Portfolio APR : {(portfolioApr).toFixed(2)}%</p>
+            <p>Formula : (Amount / Installment) * (1 + Installment) * Installment / 2 * (All Weather Portfolio APR - Interest Rate ) / 12 </p>
+          </div>
         </Col>
       </Row>
+      <Modal title="Result" centered open={isModalOpen} onCancel={handleCancel} footer={null}>
+        <div style={divResult}>
+          <h3>Plan {msgResult}</h3>
+          <h3>
+            {interestA === interestB ? ''
+            :interestA > interestB ? '$'+ interestA
+            :'$' + interestB}
+          </h3>
+        </div>
+        <div>
+          <h4>Detail</h4>
+          <p>Plan A Interest : ${interestA}</p>
+          <p>Plan B Interest : ${interestB}</p>
+          <p>All Weather Portfolio APR : {(portfolioApr).toFixed(2)}%</p>
+          <p>Formula : (Amount / Installment) * (1 + Installment) * Installment / 2 * (All Weather Portfolio APR - Interest Rate ) / 12 </p>
+        </div>
+      </Modal>
     </ConfigProvider>
   )
 }

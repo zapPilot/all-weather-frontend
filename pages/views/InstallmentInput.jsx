@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { InputNumber, Select, Button } from "antd";
+import { InputNumber, Select, Space } from "antd";
 
 const InstallmentInput = ({planData}) => {
   const [interestRate, setInterestRate] = useState(11);
@@ -33,35 +33,36 @@ const InstallmentInput = ({planData}) => {
   
   const inputStyle = {
     width: '200px',
-    margin: '10px 0'
   };
 
   return (
     <div>
-      <div style={divInput}>
-        <p style={labelStyle}>Interest Rate :</p>
-        <InputNumber
-          addonAfter="%"
-          defaultValue={11}
-          style={inputStyle}
-          onChange={interestRateChange}
-        />
-      </div>
-      <div style={divInput}>
-        <p style={labelStyle}>Installment :</p>
-        <Select
-          defaultValue={12}
-          style={inputStyle}
-          options={[
-            { value: 3, label: 3 },
-            { value: 6, label: 6 },
-            { value: 12, label: 12 },
-            { value: 24, label: 24 },
-            { value: 30, label: 30 },
-          ]}
-          onChange={installmentChange}
-        />
-      </div>
+      <Space direction="vertical" size="middle">
+        <Space size="middle">
+          <p style={labelStyle}>Interest Rate :</p>
+          <InputNumber
+            addonAfter="%"
+            defaultValue={11}
+            style={inputStyle}
+            onChange={interestRateChange}
+          />
+        </Space>
+        <Space size="middle">
+          <p style={labelStyle}>Installment :</p>
+          <Select
+            defaultValue={12}
+            style={inputStyle}
+            options={[
+              { value: 3, label: 3 },
+              { value: 6, label: 6 },
+              { value: 12, label: 12 },
+              { value: 24, label: 24 },
+              { value: 30, label: 30 },
+            ]}
+            onChange={installmentChange}
+          />
+        </Space>
+      </Space>
     </div>
   )
 }
