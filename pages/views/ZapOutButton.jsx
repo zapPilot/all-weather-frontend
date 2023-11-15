@@ -1,23 +1,38 @@
 import { Button, Space, message } from "antd";
-import { portfolioContractAddress, USDC, USDT } from "../../utils/oneInch";
+import { portfolioContractAddress, USDC } from "../../utils/oneInch";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
 import { useEffect, useState, useContext } from "react";
-import { useContractWrite, useContractRead, useAccount } from "wagmi";
+import {
+  useContractWrite,
+  useContractRead,
+  useAccount,
+  useNetwork,
+} from "wagmi";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import { web3Context } from "./Web3DataProvider";
+import {
+  selectBefore,
+  getAggregatorData,
+} from "../../utils/contractInteractions";
 const { ethers } = require("ethers");
 
 const ZapOutButton = () => {
   const { address } = useAccount();
   const WEB3_CONTEXT = useContext(web3Context);
   const normalWording = "Withdraw";
+  const loadingWording = "Fetching the best route to withdraw";
   const [withdrawAmount, setWithdrawAmount] = useState(0);
   const [userShares, setUserShares] = useState(0);
   const [inputValue, setInputValue] = useState("");
   const [approveReady, setApproveReady] = useState(true);
   const [approveAmount, setApproveAmount] = useState(0);
   const [messageApi, contextHolder] = message.useMessage();
+  const [chosenToken, setChosenToken] = useState(
+    "0x55d398326f99059fF775485246999027B3197955",
+  );
+  const [apiDataReady, setApiDataReady] = useState(true);
+  const { chain } = useNetwork();
 
   const { write } = useContractWrite({
     address: portfolioContractAddress,
@@ -99,6 +114,7 @@ const ZapOutButton = () => {
   };
 
   const handleZapOut = async () => {
+    setApiDataReady(false);
     if (approveAmount < inputValue) {
       approveWrite({
         args: [portfolioContractAddress, ethers.BigNumber.from(inputValue)],
@@ -106,6 +122,16 @@ const ZapOutButton = () => {
       });
       setApproveReady(true);
     }
+    setApiDataReady(false);
+    const aggregatorDatas = await getAggregatorData(
+      chain.id,
+      inputValue,
+      USDC,
+      chosenToken,
+      portfolioContractAddress,
+      1,
+    );
+
     write({
       args: [
         {
@@ -114,8 +140,8 @@ const ZapOutButton = () => {
           apolloXRedeemData: {
             alpTokenOut: USDC,
             minOut: withdrawAmount,
-            tokenOut: USDT,
-            aggregatorData: "",
+            tokenOut: chosenToken,
+            aggregatorData: aggregatorDatas.apolloxAggregatorData.tx.data,
           },
         },
       ],
@@ -128,6 +154,9 @@ const ZapOutButton = () => {
       {contextHolder}
       <Space.Compact style={{ width: "90%" }}>
         <NumericInput
+          addonBefore={selectBefore((value) => {
+            setChosenToken(value);
+          })}
           placeholder={`Balance: ${userShares}`}
           value={inputValue}
           onChange={handleInputChange}
@@ -149,7 +178,7 @@ const ZapOutButton = () => {
         icon={<DollarOutlined />}
         size="small"
       >
-        {normalWording}
+        {apiDataReady ? normalWording : loadingWording}
       </Button>
     </div>
   );

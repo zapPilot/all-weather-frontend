@@ -2,28 +2,26 @@ import { Button, Space, Select, Modal, message } from "antd";
 import { Spin } from "antd";
 import { z } from "zod";
 import { encodeFunctionData } from "viem";
+import { portfolioContractAddress, USDC } from "../../utils/oneInch";
 import {
-  fetch1InchSwapData,
-  portfolioContractAddress,
-  USDT,
-  USDC,
-} from "../../utils/oneInch";
-import { waitForWrite } from "../../utils/contractInteractions";
+  waitForWrite,
+  selectBefore,
+  getAggregatorData,
+} from "../../utils/contractInteractions";
 import { DollarOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import {
   useContractWrite,
-  useAccount,
   useBalance,
   useContractRead,
+  useAccount,
+  useNetwork,
 } from "wagmi";
-import tokens from "./components/tokens.json";
 
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import NumericInput from "./NumberInput";
 import { ethers } from "ethers";
 import { sendDiscordMessage } from "../../utils/discord";
-const { Option } = Select;
 const MINIMUM_ZAP_IN_AMOUNT = 0.001;
 const MAXIMUM_ZAP_IN_AMOUNT = 1000000;
 const depositSchema = z
@@ -36,29 +34,13 @@ const depositSchema = z
     MAXIMUM_ZAP_IN_AMOUNT,
     `The deposit amount should be at most ${MAXIMUM_ZAP_IN_AMOUNT}`,
   );
+const fakeAllowanceAddressForBNB = "0x55d398326f99059fF775485246999027B3197955";
 
 const ZapInButton = () => {
   const { address } = useAccount();
   const [open, setOpen] = useState(false);
-  const showModal = () => {
-    setOpen(true);
-  };
-
-  const handleCancel = () => {
-    setOpen(false);
-  };
-
-  const { data: wethBalance } = useBalance({
-    address,
-    token: USDT,
-    onError(error) {
-      console.log("wethBalance, Error", error);
-      throw error;
-    },
-  });
-
   const normalWording = "Deposit";
-  const loadingWording = "Fetching the best route to deposit (23s)";
+  const loadingWording = "Fetching the best route to deposit";
   const [amount, setAmount] = useState(0);
   const [inputValue, setInputValue] = useState("");
   const [alert, setAlert] = useState(false);
@@ -68,7 +50,32 @@ const ZapInButton = () => {
   const [approveReady, setApproveReady] = useState(true);
   const [approveAmount, setApproveAmount] = useState(0);
   const [depositHash, setDepositHash] = useState(undefined);
+  const [chosenToken, setChosenToken] = useState(
+    "0x55d398326f99059fF775485246999027B3197955",
+  );
   const [messageApi, contextHolder] = message.useMessage();
+  const { chain } = useNetwork();
+
+  const showModal = () => {
+    setOpen(true);
+  };
+
+  const handleCancel = () => {
+    setOpen(false);
+  };
+
+  const { data: chosenTokenBalance } = useBalance({
+    address,
+    ...(chosenToken === "0x0000000000000000000000000000000000000000"
+      ? {}
+      : { token: chosenToken }), // Include token only if chosenToken is truthy
+    // token: chosenToken,
+    onError(error) {
+      console.log(`cannot read ${chosenToken} Balance:`, error);
+      throw error;
+    },
+  });
+
   const renderStatusCircle = (isLoading, isSuccess) => {
     if (isLoading) {
       return <Spin />;
@@ -119,12 +126,16 @@ const ZapInButton = () => {
     isLoading: approveIsLoading,
     isSuccess: approveIsSuccess,
   } = useContractWrite({
-    address: USDT,
+    address: chosenToken,
     abi: permanentPortfolioJson.abi,
     functionName: "approve",
   });
+
   const approveAmountContract = useContractRead({
-    address: USDT,
+    address:
+      chosenToken === "0x0000000000000000000000000000000000000000"
+        ? fakeAllowanceAddressForBNB
+        : chosenToken,
     abi: permanentPortfolioJson.abi,
     functionName: "allowance",
     args: [address, portfolioContractAddress],
@@ -156,10 +167,9 @@ const ZapInButton = () => {
     setAmount(amount_);
   };
   const handleOnClickMax = async () => {
-    console.log("here!");
-    setAmount(wethBalance.formatted);
-    setInputValue(wethBalance.formatted);
-    handleInputChange(wethBalance.formatted);
+    setAmount(chosenTokenBalance.formatted);
+    setInputValue(chosenTokenBalance.formatted);
+    handleInputChange(chosenTokenBalance.formatted);
 
     // TODO(david): find a better way to implement.
     // Since `setAmount` need some time to propagate, the `amount` would be 0 at the first click.
@@ -195,7 +205,10 @@ const ZapInButton = () => {
     if (approveAmountContract.data < amount_) {
       setApiDataReady(false);
       function waitForApprove() {
-        if (approveWrite) {
+        if (
+          approveWrite &&
+          chosenToken != "0x0000000000000000000000000000000000000000"
+        ) {
           approveWrite({
             args: [portfolioContractAddress, amount.toString()],
             from: address,
@@ -213,14 +226,18 @@ const ZapInButton = () => {
       setApproveReady(true);
     }
     setApiLoading(true);
-    const aggregatorDatas = await _getAggregatorData(
+    const aggregatorDatas = await getAggregatorData(
+      chain.id,
       amount,
+      chosenToken,
+      USDC,
       portfolioContractAddress,
+      1,
     );
     const preparedDepositData = _getDepositData(
       amount,
       address,
-      USDT,
+      chosenToken,
       USDC,
       aggregatorDatas,
     );
@@ -243,15 +260,6 @@ const ZapInButton = () => {
     });
   };
 
-  const _getAggregatorData = async (amount, fromAddress) => {
-    const [aggregatorData] = await Promise.all([
-      fetch1InchSwapData(56, USDT, USDC, amount, fromAddress, 1),
-    ]);
-    return {
-      aggregatorData,
-    };
-  };
-
   const _getDepositData = (
     amount,
     address,
@@ -264,7 +272,7 @@ const ZapInButton = () => {
       receiver: address,
       tokenIn,
       tokenInAfterSwap,
-      aggregatorData: aggregatorDatas.aggregatorData.tx.data,
+      aggregatorData: aggregatorDatas.apolloxAggregatorData.tx.data,
       apolloXDepositData: {
         tokenIn: tokenInAfterSwap,
         // TODO(david): need to figure out a way to calculate minALP
@@ -272,35 +280,6 @@ const ZapInButton = () => {
       },
     };
   };
-  const selectBefore = (
-    <Select
-      defaultValue={
-        <Option key="USDT" value="0x55d398326f99059ff775485246999027b3197955">
-          <img
-            src="https://icons.llamao.fi/icons/agg_icons/binance?w=24&h=24"
-            width="20"
-            height="20"
-            alt="usdt"
-          />
-          1USD
-        </Option>
-      }
-      theme="light"
-      style={{ backgroundColor: "white" }}
-    >
-      {tokens.props.pageProps.tokenList["56"].slice(0, 50).map((option) => (
-        <Option key={option.address} value={option.address}>
-          <img
-            src={option.logoURI2}
-            width="20"
-            height="20"
-            alt={option.symbol}
-          />
-          {option.symbol}
-        </Option>
-      ))}
-    </Select>
-  );
 
   const modalContent = (
     <Modal
@@ -382,8 +361,12 @@ const ZapInButton = () => {
       {modalContent}
       <Space.Compact style={{ width: "90%" }}>
         <NumericInput
-          addonBefore={selectBefore}
-          placeholder={`Balance: ${wethBalance ? wethBalance.formatted : 0}`}
+          addonBefore={selectBefore((value) => {
+            setChosenToken(value);
+          })}
+          placeholder={`Balance: ${
+            chosenTokenBalance ? chosenTokenBalance.formatted : 0
+          }`}
           value={inputValue}
           onChange={(value) => {
             handleInputChange(value);

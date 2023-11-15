@@ -39,7 +39,7 @@ import { Select } from "antd";
 import tokens from "./tokens.json";
 const { Option } = Select;
 
-const TokenDropdown = ({handleChange}) => (
+const TokenDropdown = ({ handleChange }) => (
   <Select
     onChange={handleChange}
     defaultValue={
@@ -58,12 +58,7 @@ const TokenDropdown = ({handleChange}) => (
   >
     {tokens.props.pageProps.tokenList["56"].slice(0, 20).map((option) => (
       <Option key={option.address} value={option.address}>
-        <img
-          src={option.logoURI2}
-          width="20"
-          height="20"
-          alt={option.symbol}
-        />
+        <img src={option.logoURI2} width="20" height="20" alt={option.symbol} />
         {option.symbol}
       </Option>
     ))}

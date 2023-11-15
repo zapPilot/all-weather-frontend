@@ -20,6 +20,9 @@ const ClaimButton = () => {
   const [aggregatorDataReady, setAggregatorDataReady] = useState(true);
   const WEB3_CONTEXT = useContext(web3Context);
   const [claimableRewards, setClaimableRewards] = useState(0);
+  const [chosenToken, setChosenToken] = useState(
+    "0x55d398326f99059fF775485246999027B3197955",
+  );
 
   const normalWording = "Claim and Swap to";
   const loadingWording = "Fetching the best route to dump these rewards...";
@@ -62,7 +65,7 @@ const ClaimButton = () => {
       claimableRewards,
       portfolioContractAddress,
       APX,
-      USDT,
+      chosenToken,
     );
     setAggregatorDataReady(true);
     const claimData = _getClaimData(useDump, aggregatorDatas);
@@ -121,7 +124,11 @@ const ClaimButton = () => {
       >
         {aggregatorDataReady ? normalWording : loadingWording}
       </Button>
-      <TokenDropdown handleChange={(value)=>{console.log(`change ${value}`)}}/>
+      <TokenDropdown
+        handleChange={(value) => {
+          setChosenToken(value);
+        }}
+      />
     </div>
   );
 };
