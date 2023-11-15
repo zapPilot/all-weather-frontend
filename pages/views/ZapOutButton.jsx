@@ -123,15 +123,16 @@ const ZapOutButton = () => {
       setApproveReady(true);
     }
     setApiDataReady(false);
-    const aggregatorDatas = await getAggregatorData(
-      chain.id,
-      inputValue,
-      USDC,
-      chosenToken,
-      portfolioContractAddress,
-      1,
-    );
-
+    // restore this one after know the price of ALP
+    // const aggregatorDatas = await getAggregatorData(
+    //   chain.id,
+    //   inputValue,
+    //   USDC,
+    //   chosenToken,
+    //   portfolioContractAddress,
+    //   1,
+    // );
+    // console.log("withdrawAmount: ", ethers.utils.parseEther(withdrawAmount));
     write({
       args: [
         {
@@ -141,7 +142,7 @@ const ZapOutButton = () => {
             alpTokenOut: USDC,
             minOut: withdrawAmount,
             tokenOut: chosenToken,
-            aggregatorData: aggregatorDatas.apolloxAggregatorData.tx.data,
+            aggregatorData: "",
           },
         },
       ],
@@ -154,9 +155,9 @@ const ZapOutButton = () => {
       {contextHolder}
       <Space.Compact style={{ width: "90%" }}>
         <NumericInput
-          addonBefore={selectBefore((value) => {
-            setChosenToken(value);
-          })}
+          // addonBefore={selectBefore((value) => {
+          //   setChosenToken(value);
+          // })}
           placeholder={`Balance: ${userShares}`}
           value={inputValue}
           onChange={handleInputChange}
