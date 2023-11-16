@@ -1,10 +1,10 @@
 import React from "react";
-import { Descriptions, Button } from "antd";
+import { Descriptions } from "antd";
 const items = [
   {
     key: "1",
     label: "Rebalance Frequency",
-    children: "Monthly",
+    children: "Monthly (if needed)",
   },
   {
     key: "2",

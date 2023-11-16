@@ -4,12 +4,12 @@ const items = [
   {
     key: "1",
     label: "Expense Ratio",
-    children: "0.3%",
+    children: "0%",
   },
   {
     key: "2",
     label: "Deposit Fee",
-    children: "0.3% (will be replaced by performance fee mentioned below)",
+    children: "0% (will be replaced by performance fee mentioned below)",
   },
   {
     key: "3",
@@ -25,7 +25,7 @@ const items = [
     key: "5",
     label: "Performance Fee",
     children:
-      "0% (In V2, users will not lose any rewards if they lock their dLP and join the governance)",
+      "20% (In V2, the performance fee will go to 0% if they lock their dLP and join the governance)",
   },
   {
     key: "6",

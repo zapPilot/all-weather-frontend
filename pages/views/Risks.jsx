@@ -4,19 +4,17 @@ const items = [
   {
     key: "1",
     label: <div style={{ color: "red" }}>Max Drawback</div>,
-    children: "?%",
+    children: "~0%",
   },
   {
     key: "2",
-    label: <div style={{ color: "red" }}>1-year Lock</div>,
-    children:
-      "There's a 1-year lock on your deposit (by Radiant Protocol). This will also be improved in the beta version.",
+    label: <div style={{ color: "red" }}>Lock</div>,
+    children: "2 days, due to ApolloX's constraint",
   },
   {
     key: "3",
     label: <div style={{ color: "red" }}>Impermanent Loss</div>,
-    children:
-      "?% (If you're not a good trader, then accept the impermanent loss and be content with the average return. If you stay humble and are willing to get rich slowly, you can become a Buffett as well.)",
+    children: "~0%",
   },
 ];
 const Fees = () => (

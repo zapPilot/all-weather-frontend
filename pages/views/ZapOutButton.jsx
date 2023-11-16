@@ -122,7 +122,6 @@ const ZapOutButton = () => {
       });
       setApproveReady(true);
     }
-    setApiDataReady(false);
     // restore this one after know the price of ALP
     // const aggregatorDatas = await getAggregatorData(
     //   chain.id,
@@ -148,6 +147,7 @@ const ZapOutButton = () => {
       ],
       from: address,
     });
+    setApiDataReady(true);
   };
 
   return (
@@ -167,6 +167,7 @@ const ZapOutButton = () => {
         </Button>
       </Space.Compact>
       <Button
+        loading={!apiDataReady}
         onClick={handleZapOut} // Added onClick handler
         style={{
           color: "white",
