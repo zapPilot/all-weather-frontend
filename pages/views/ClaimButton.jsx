@@ -2,7 +2,6 @@ import { Button, message } from "antd";
 import {
   fetch1InchSwapData,
   portfolioContractAddress,
-  USDT,
   APX,
 } from "../../utils/oneInch";
 import { DollarOutlined } from "@ant-design/icons";
@@ -11,7 +10,6 @@ import { useState, useContext, useEffect } from "react";
 import { web3Context } from "./Web3DataProvider";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import { sendDiscordMessage } from "../../utils/discord";
-import { waitForWrite } from "../../utils/contractInteractions";
 import TokenDropdown from "./components/TokenDropdowns.jsx";
 
 const ClaimButton = () => {
@@ -69,7 +67,10 @@ const ClaimButton = () => {
     );
     setAggregatorDataReady(true);
     const claimData = _getClaimData(useDump, aggregatorDatas);
-    waitForWrite(write, claimData, address);
+    write({
+      args: claimData,
+      from: address,
+    });
   };
 
   const _getAggregatorData = async (
@@ -98,7 +99,7 @@ const ClaimButton = () => {
       {
         receiver: address,
         apolloXClaimData: {
-          tokenOut: USDT,
+          tokenOut: chosenToken,
           aggregatorData: aggregatorDatas.apolloxAggregatorData.tx.data,
         },
       },

@@ -48,11 +48,7 @@ const ZapOutButton = () => {
       messageApi.info("Redeem succeeded");
     },
   });
-  const {
-    write: approveWrite,
-    isLoading: approveIsLoading,
-    isSuccess: approveIsSuccess,
-  } = useContractWrite({
+  const { write: approveWrite } = useContractWrite({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "approve",
@@ -62,8 +58,9 @@ const ZapOutButton = () => {
         duration: 5,
       });
     },
-    onSuccess() {
+    async onSuccess() {
       messageApi.info("Approved");
+      await _callbackAfterApprove();
     },
   });
   const approveAmountContract = useContractRead({
@@ -71,6 +68,7 @@ const ZapOutButton = () => {
     abi: permanentPortfolioJson.abi,
     functionName: "allowance",
     args: [address, portfolioContractAddress],
+    // args: ["0x43cd745Bd5FbFc8CfD79ebC855f949abc79a1E0C", "0x78000b0605E81ea9df54b33f72ebC61B5F5c8077"],
     watch: true,
     onError(error) {
       console.log("allowance Error", error);
@@ -120,8 +118,13 @@ const ZapOutButton = () => {
         args: [portfolioContractAddress, ethers.BigNumber.from(inputValue)],
         from: address,
       });
-      setApproveReady(true);
+    } else {
+      await _callbackAfterApprove();
     }
+  };
+
+  const _callbackAfterApprove = async () => {
+    setApproveReady(true);
     // restore this one after know the price of ALP
     // const aggregatorDatas = await getAggregatorData(
     //   chain.id,
@@ -131,7 +134,6 @@ const ZapOutButton = () => {
     //   portfolioContractAddress,
     //   1,
     // );
-    // console.log("withdrawAmount: ", ethers.utils.parseEther(withdrawAmount));
     write({
       args: [
         {

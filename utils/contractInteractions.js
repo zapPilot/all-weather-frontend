@@ -4,17 +4,6 @@ import { fetch1InchSwapData } from "./oneInch";
 
 const { Option } = Select;
 
-export function waitForWrite(write, args, address) {
-  if (write) {
-    write({
-      args,
-      from: address,
-    });
-    return;
-  }
-  setTimeout(waitForWrite, 3000);
-}
-
 export const selectBefore = (handleChange) => (
   <Select
     onChange={handleChange}
@@ -72,3 +61,7 @@ export const getAggregatorData = async (
     apolloxAggregatorData: apolloxAggregatorData.tx.data,
   };
 };
+
+export function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

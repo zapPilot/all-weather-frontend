@@ -102,7 +102,6 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
       <HistoricalDataChart />
     </>
   ) : (
-    // loading
     <></>
   );
 };

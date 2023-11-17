@@ -4,9 +4,9 @@ import { z } from "zod";
 import { encodeFunctionData } from "viem";
 import { portfolioContractAddress, USDT } from "../../utils/oneInch";
 import {
-  waitForWrite,
   selectBefore,
   getAggregatorData,
+  sleep,
 } from "../../utils/contractInteractions";
 import { DollarOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
@@ -120,15 +120,23 @@ const ZapInButton = () => {
       messageApi.info("Deposit succeeded");
     },
   });
-  const {
-    write: approveWrite,
-    isLoading: approveIsLoading,
-    isSuccess: approveIsSuccess,
-  } = useContractWrite({
-    address: chosenToken,
-    abi: permanentPortfolioJson.abi,
-    functionName: "approve",
-  });
+  const { write: approveWrite, isLoading: approveIsLoading } = useContractWrite(
+    {
+      address: chosenToken,
+      abi: permanentPortfolioJson.abi,
+      functionName: "approve",
+      onError(error) {
+        messageApi.error({
+          content: `${error.shortMessage}`,
+          duration: 5,
+        });
+      },
+      onSuccess: async (_) => {
+        await sleep(5000);
+        _callbackAfterApprove();
+      },
+    },
+  );
 
   const approveAmountContract = useContractRead({
     address:
@@ -193,7 +201,6 @@ const ZapInButton = () => {
     } catch (error) {
       return;
     }
-    setAmount(amount_);
     // check the type of amount and the approveAmount
     if (approveAmountContract.data < amount_) {
       setApiDataReady(false);
@@ -201,15 +208,18 @@ const ZapInButton = () => {
         approveWrite &&
         chosenToken != "0x0000000000000000000000000000000000000000"
       ) {
-        await waitForApproveWrite();
-      }
-      // wait until the approve transaction is successful
-      if (approveIsSuccess) {
-        setApproveReady(true);
+        approveWrite({
+          args: [portfolioContractAddress, amount.toString()],
+          from: address,
+        });
       }
     } else {
-      setApproveReady(true);
+      _callbackAfterApprove();
     }
+  };
+
+  const _callbackAfterApprove = async () => {
+    setApproveReady(true);
     setApiLoading(true);
     const aggregatorDatas = await getAggregatorData(
       chain.id,
@@ -234,19 +244,11 @@ const ZapInButton = () => {
     });
     setApiLoading(false);
     setApiDataReady(true);
-    waitForWrite(write, [preparedDepositData], address);
-  };
-
-  function waitForApproveWrite() {
-    return new Promise((resolve, reject) => {
-      approveWrite({
-        args: [portfolioContractAddress, amount.toString()],
-        from: address,
-        onError: (error) => reject(error),
-        onSuccess: (data) => resolve(data),
-      });
+    write({
+      args: [preparedDepositData],
+      from: address,
     });
-  }
+  };
 
   const _sendEvents = () => {
     window.gtag("event", "deposit", {
