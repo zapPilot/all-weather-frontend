@@ -5,14 +5,38 @@ import { fetch1InchSwapData } from "./oneInch";
 const { Option } = Select;
 
 export function waitForWrite(write, args, address) {
-  if (write) {
+  return new Promise((resolve, reject) => {
     write({
       args,
       from: address,
+      onError: (error) => reject(error),
+      onSuccess: (data) => resolve(data),
     });
-    return;
-  }
-  setTimeout(waitForWrite, 3000);
+  });
+}
+
+export function waitForApproveWrite(
+  approveWrite,
+  portfolioContractAddress,
+  approveAmount,
+  address,
+  onSuccessCallback,
+) {
+  // return new Promise((resolve, reject) => {
+  //   console.log("Approve write")
+  approveWrite({
+    args: [portfolioContractAddress, approveAmount],
+    from: address,
+    onError: (error) => {
+      console.log("Approve error");
+    },
+    onSuccess: (data) => {
+      console.log("Approve success", data);
+      onSuccessCallback();
+    },
+  });
+  //   console.log("Approve write done")
+  // });
 }
 
 export const selectBefore = (handleChange) => (
@@ -72,3 +96,7 @@ export const getAggregatorData = async (
     apolloxAggregatorData: apolloxAggregatorData.tx.data,
   };
 };
+
+export function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
