@@ -87,7 +87,7 @@ const RebalancerWidget = () => {
                   <strong style={{ color: "white", fontSize: 26 }}>
                     TVL: ${netWorth.toFixed(2)}{" "}
                     <a
-                      href="https://debank.com/bundles/126382/portfolio"
+                      href="https://debank.com/bundles/136612/portfolio"
                       target="_blank"
                     >
                       <LinkOutlined />
