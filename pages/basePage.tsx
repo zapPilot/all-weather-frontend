@@ -21,10 +21,8 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
   return (
     <div>
       <Head>
-        <title>
-          All Weather Portfolio: Biggest Liquidity Mining Index Fund
-        </title>
-        <meta content="All Weather Portfolio" name="description" />
+        <title>All Weather Protocol: Biggest Liquidity Mining Index Fund</title>
+        <meta content="All Weather Protocol" name="description" />
         <link href="/favicon.ico" rel="icon" />
       </Head>
       <Header>

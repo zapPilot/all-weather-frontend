@@ -173,10 +173,10 @@ const InstallmentCalculator = () => {
             <h4>Detail</h4>
             <p>Plan A Interest : ${interestA}</p>
             <p>Plan B Interest : ${interestB}</p>
-            <p>All Weather Portfolio APR : {portfolioApr.toFixed(2)}%</p>
+            <p>All Weather Protocol APR : {portfolioApr.toFixed(2)}%</p>
             <p>
               Formula : (Amount / Installment) * (1 + Installment) * Installment
-              / 2 * (All Weather Portfolio APR - Interest Rate ) / 12{" "}
+              / 2 * (All Weather Protocol APR - Interest Rate ) / 12{" "}
             </p>
           </div>
         </Col>
@@ -202,10 +202,10 @@ const InstallmentCalculator = () => {
           <h4>Detail</h4>
           <p>Plan A Interest : ${interestA}</p>
           <p>Plan B Interest : ${interestB}</p>
-          <p>All Weather Portfolio APR : {portfolioApr.toFixed(2)}%</p>
+          <p>All Weather Protocol APR : {portfolioApr.toFixed(2)}%</p>
           <p>
             Formula : (Amount / Installment) * (1 + Installment) * Installment /
-            2 * (All Weather Portfolio APR - Interest Rate ) / 12{" "}
+            2 * (All Weather Protocol APR - Interest Rate ) / 12{" "}
           </p>
         </div>
       </Modal>

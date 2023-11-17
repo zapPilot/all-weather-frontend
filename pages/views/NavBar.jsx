@@ -40,6 +40,10 @@ const items = [
         label: <Link href="/betterPools">Better Pools</Link>,
         key: "setting:3",
       },
+      {
+        label: <Link href="/installment">Installment</Link>,
+        key: "installment",
+      },
     ],
   },
   {
@@ -57,10 +61,6 @@ const items = [
   {
     label: <Link href="/cefi">Cefi</Link>,
     key: "cefi",
-  },
-  {
-    label: <Link href="/installment">Installment</Link>,
-    key: "installment",
   },
 ];
 export default function NavBar() {
