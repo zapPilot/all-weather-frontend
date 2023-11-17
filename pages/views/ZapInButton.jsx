@@ -120,25 +120,23 @@ const ZapInButton = () => {
       messageApi.info("Deposit succeeded");
     },
   });
-  const {
-    write: approveWrite,
-    isLoading: approveIsLoading,
-    isSuccess: approveIsSuccess,
-  } = useContractWrite({
-    address: chosenToken,
-    abi: permanentPortfolioJson.abi,
-    functionName: "approve",
-    onError(error) {
-      messageApi.error({
-        content: `${error.shortMessage}`,
-        duration: 5,
-      });
+  const { write: approveWrite, isLoading: approveIsLoading } = useContractWrite(
+    {
+      address: chosenToken,
+      abi: permanentPortfolioJson.abi,
+      functionName: "approve",
+      onError(error) {
+        messageApi.error({
+          content: `${error.shortMessage}`,
+          duration: 5,
+        });
+      },
+      onSuccess: async (_) => {
+        await sleep(5000);
+        _callbackAfterApprove();
+      },
     },
-    onSuccess: async (_) => {
-      await sleep(5000);
-      _callbackAfterApprove();
-    },
-  });
+  );
 
   const approveAmountContract = useContractRead({
     address:
