@@ -2,7 +2,7 @@ import { Button, Space, Select, Modal, message } from "antd";
 import { Spin } from "antd";
 import { z } from "zod";
 import { encodeFunctionData } from "viem";
-import { portfolioContractAddress, USDC } from "../../utils/oneInch";
+import { portfolioContractAddress, USDT } from "../../utils/oneInch";
 import {
   waitForWrite,
   selectBefore,
@@ -99,7 +99,6 @@ const ZapInButton = () => {
     }
   };
   const {
-    data: depositData,
     write,
     isLoading: depositIsLoading,
     isSuccess: depositIsSuccess,
@@ -149,13 +148,7 @@ const ZapInButton = () => {
   useEffect(() => {
     if (approveAmountContract.loading === true) return; // Don't proceed if loading
     setApproveAmount(approveAmountContract.data);
-  }, [
-    address,
-    approveAmountContract.loading,
-    approveAmountContract.data,
-    approveReady,
-    inputValue,
-  ]);
+  }, [approveAmountContract.loading, approveAmountContract.data]);
 
   const handleInputChange = async (eventValue) => {
     if (eventValue === "") {
@@ -204,20 +197,12 @@ const ZapInButton = () => {
     // check the type of amount and the approveAmount
     if (approveAmountContract.data < amount_) {
       setApiDataReady(false);
-      function waitForApprove() {
-        if (
-          approveWrite &&
-          chosenToken != "0x0000000000000000000000000000000000000000"
-        ) {
-          approveWrite({
-            args: [portfolioContractAddress, amount.toString()],
-            from: address,
-          });
-          return;
-        }
-        setTimeout(waitForApprove, 3000);
+      if (
+        approveWrite &&
+        chosenToken != "0x0000000000000000000000000000000000000000"
+      ) {
+        await waitForApproveWrite();
       }
-      waitForApprove();
       // wait until the approve transaction is successful
       if (approveIsSuccess) {
         setApproveReady(true);
@@ -230,7 +215,7 @@ const ZapInButton = () => {
       chain.id,
       amount,
       chosenToken,
-      USDC,
+      USDT,
       portfolioContractAddress,
       1,
     );
@@ -238,7 +223,7 @@ const ZapInButton = () => {
       amount,
       address,
       chosenToken,
-      USDC,
+      USDT,
       aggregatorDatas,
     );
     // print out the encoded data for debugging
@@ -247,12 +232,21 @@ const ZapInButton = () => {
       functionName: "deposit",
       args: [preparedDepositData],
     });
-    console.log("encodedFunctionData", encodedFunctionData);
     setApiLoading(false);
     setApiDataReady(true);
     waitForWrite(write, [preparedDepositData], address);
-    setDepositHash(depositData.hash);
   };
+
+  function waitForApproveWrite() {
+    return new Promise((resolve, reject) => {
+      approveWrite({
+        args: [portfolioContractAddress, amount.toString()],
+        from: address,
+        onError: (error) => reject(error),
+        onSuccess: (data) => resolve(data),
+      });
+    });
+  }
 
   const _sendEvents = () => {
     window.gtag("event", "deposit", {
@@ -272,7 +266,7 @@ const ZapInButton = () => {
       receiver: address,
       tokenIn,
       tokenInAfterSwap,
-      aggregatorData: aggregatorDatas.apolloxAggregatorData.tx.data,
+      aggregatorData: aggregatorDatas.apolloxAggregatorData,
       apolloXDepositData: {
         tokenIn: tokenInAfterSwap,
         // TODO(david): need to figure out a way to calculate minALP

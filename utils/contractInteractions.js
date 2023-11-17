@@ -53,6 +53,11 @@ export const getAggregatorData = async (
     chosenToken === "0x0000000000000000000000000000000000000000"
       ? "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
       : chosenToken;
+  if (chosenTokenFor1Inch === toToken) {
+    return {
+      apolloxAggregatorData: "",
+    };
+  }
   const [apolloxAggregatorData] = await Promise.all([
     fetch1InchSwapData(
       chainID,
@@ -64,6 +69,6 @@ export const getAggregatorData = async (
     ),
   ]);
   return {
-    apolloxAggregatorData,
+    apolloxAggregatorData: apolloxAggregatorData.tx.data,
   };
 };
