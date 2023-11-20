@@ -1,7 +1,10 @@
 import React, { useState } from "react";
-import { Menu } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { 
+  Menu,
+  ConfigProvider,
+} from "antd";
 
 const items = [
   {
@@ -70,12 +73,26 @@ export default function NavBar() {
     setCurrent(e.key);
   };
   return (
-    <Menu
-      theme="dark"
-      onClick={onClick}
-      selectedKeys={[current]}
-      mode="horizontal"
-      items={items}
-    />
+    <ConfigProvider
+      theme={{
+        components: {
+          Menu: {
+            darkItemBg: 'transparent',
+            darkItemColor: '#999999',
+            darkItemHoverColor: '#ffffff',
+            darkSubMenuItemBg: '#001529',
+          },
+        },
+      }}
+    >
+      <Menu
+        theme="dark"
+        onClick={onClick}
+        selectedKeys={[current]}
+        mode="horizontal"
+        items={items}
+      />
+    </ConfigProvider>
+    
   );
 }
