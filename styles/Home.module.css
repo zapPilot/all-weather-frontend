@@ -15,6 +15,7 @@
   justify-content: center;
   align-items: center;
   color: white;
+  background-color: #000000;
 }
 
 .footer a {
@@ -22,6 +23,10 @@
   justify-content: center;
   align-items: center;
   flex-grow: 1;
+}
+
+.footer a:hover {
+  color: #beed54;
 }
 
 .title a {

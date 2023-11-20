@@ -80,7 +80,7 @@ export default function NavBar() {
             darkItemBg: 'transparent',
             darkItemColor: '#999999',
             darkItemHoverColor: '#ffffff',
-            darkSubMenuItemBg: '#001529',
+            darkSubMenuItemBg: '#222222',
           },
         },
       }}

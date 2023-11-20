@@ -29,7 +29,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
         <link href="/favicon.ico" rel="icon" />
       </Head>
       <Layout>
-        <Header>
+        <Header style={{ backgroundColor: '#000000'}}>
           <HeaderInner>
             <NavBar />
           </HeaderInner>
