@@ -1,7 +1,38 @@
 import React, { useContext, useState, useEffect } from "react";
 import { Table, Tag, Image } from "antd";
 import { web3Context } from "./Web3DataProvider";
-
+const upcomingProtocol = [
+  {
+    chain: "bsc",
+    protocol:
+      "https://static.debank.com/image/project/logo_url/bsc_pancakeswap/d575f1697e05d43c237e3986dae3e8bb.png",
+    asset: "AGEUR-USDT",
+    weight: 0,
+    apr: 0.3343,
+    categories: ["intermediate_term_bond"],
+    worth: 0,
+  },
+  {
+    chain: "arb",
+    protocol:
+      "https://static.debank.com/image/project/logo_url/equilibria/7a7b04b1f607ec66798898c008b87046.png",
+    asset: "gDAI",
+    weight: 0,
+    apr: 0.2174,
+    categories: ["intermediate_term_bond"],
+    worth: 0,
+  },
+  {
+    chain: "base",
+    protocol:
+      "https://static.debank.com/image/arb_token/logo_url/0xa9f5606c3e6aab998fd4f4bc54a18d9fe13a0dd8/c103792e3507fc4210e2fa59404410f2.png",
+    asset: "VLP",
+    weight: 0,
+    apr: 0.2725,
+    categories: ["intermediate_term_bond"],
+    worth: 0,
+  },
+];
 const hardcodedShowCases = [
   {
     chain: "base",
@@ -9,7 +40,7 @@ const hardcodedShowCases = [
       "https://static.debank.com/image/arb_token/logo_url/0xa9f5606c3e6aab998fd4f4bc54a18d9fe13a0dd8/c103792e3507fc4210e2fa59404410f2.png",
     asset: "VLP",
     weight: 0,
-    apr: 0.2474,
+    apr: 0.2725,
     categories: ["intermediate_term_bond"],
     worth: 0,
   },
@@ -140,9 +171,11 @@ const Assets = () => {
   }, [WEB3_CONTEXT]);
   return (
     <>
-      <h2>Current Vaults</h2>
+      <h2>Current Protocols</h2>
       <Table columns={columns} dataSource={aggregatedPositions} />
-      <h2>Historical Vaults</h2>
+      <h2>Upcoming Protocols</h2>
+      <Table columns={columns} dataSource={upcomingProtocol} />
+      <h2>Historical Protocols</h2>
       <Table columns={columns} dataSource={hardcodedShowCases} />
     </>
   );
