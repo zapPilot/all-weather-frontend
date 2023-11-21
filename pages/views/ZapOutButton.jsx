@@ -1,4 +1,9 @@
-import { Button, Space, message } from "antd";
+import {
+  Button,
+  Space,
+  message,
+  ConfigProvider,
+} from "antd";
 import { portfolioContractAddress, USDC } from "../../utils/oneInch";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
@@ -166,9 +171,21 @@ const ZapOutButton = () => {
           value={inputValue}
           onChange={handleInputChange}
         />
-        <Button type="primary" onClick={handleOnClickMax}>
-          Max
-        </Button>
+        <ConfigProvider
+          theme={{
+            token: {
+              colorPrimary: '#beed54',
+              colorTextLightSolid: '#000000',
+            },
+          }}
+        >
+          <Button 
+            type="primary"
+            onClick={handleOnClickMax}
+          >
+            Max
+          </Button>
+        </ConfigProvider>
       </Space.Compact>
       <Button
         loading={!apiDataReady}

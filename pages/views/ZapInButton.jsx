@@ -1,5 +1,12 @@
-import { Button, Space, Modal, message } from "antd";
-import { Spin } from "antd";
+import {
+  Button,
+  Space,
+  Modal,
+  message,
+  Spin,
+  ConfigProvider,
+} from "antd";
+
 import { z } from "zod";
 import { encodeFunctionData } from "viem";
 import { portfolioContractAddress, USDT } from "../../utils/oneInch";
@@ -357,7 +364,12 @@ const ZapInButton = () => {
     <div>
       {contextHolder}
       {modalContent}
-      <Space.Compact style={{ width: "90%" }}>
+      <Space.Compact 
+        style={{
+          display: 'block',
+          width: "90%",
+          }}
+      >
         <NumericInput
           addonBefore={selectBefore((value) => {
             setChosenToken(value);
@@ -370,9 +382,21 @@ const ZapInButton = () => {
             handleInputChange(value);
           }}
         />
-        <Button type="primary" onClick={handleOnClickMax}>
-          Max
-        </Button>
+        <ConfigProvider
+          theme={{
+            token: {
+              colorPrimary: '#beed54',
+              colorTextLightSolid: '#000000',
+            },
+          }}
+        >
+          <Button 
+            type="primary"
+            onClick={handleOnClickMax}
+          >
+            Max
+          </Button>
+        </ConfigProvider>
       </Space.Compact>
       <div style={{ color: "white" }}>Max Slippage: 1%</div>
 
