@@ -25,7 +25,7 @@ const UserBalanceInfo = ({ tvl }) => {
   const userDeposit = userPercentage * parseFloat(tvl ? tvl.toFixed(2) : 0);
 
   return (
-    <div style={{ textAlign: "left", marginBottom: 20 }}>
+    <div style={{ marginBottom: 20 }}>
       <span style={{ color: "white", fontSize: 12, marginRight: 15 }}>
         Your Deposit: ${userDeposit}
       </span>

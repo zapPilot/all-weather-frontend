@@ -17,6 +17,7 @@ export default function ExampleUI() {
   const windowHeight = useWindowHeight();
   const WEB3_CONTEXT = useContext(web3Context);
   const [loadingState, setLoadingState] = useState(true);
+  const [portfolioApr, setPortfolioApr] = useState(0);
   const [isHover, setIsHover] = useState(false);
 
    const handleMouseEnter = () => {
@@ -52,10 +53,15 @@ export default function ExampleUI() {
     async function fetchPortfolioMetadata() {
       if (WEB3_CONTEXT !== undefined) {
         setLoadingState(false);
+        setPortfolioApr(
+          WEB3_CONTEXT.portfolioApr === undefined
+            ? 0
+            : WEB3_CONTEXT.portfolioApr,
+        );
       }
     }
     fetchPortfolioMetadata();
-  }, [WEB3_CONTEXT]);
+  }, [WEB3_CONTEXT, portfolioApr]);
   return (
     <div style={divInstallment}>
       <Row 
@@ -94,6 +100,7 @@ export default function ExampleUI() {
               </h1>
               <h1 className="heading-subtitle">Biggest Liquidity Mining Index Fund</h1>
               <h2 className="heading-subtitle">Click Once, Retire Forever.</h2>
+              <h2>{portfolioApr}</h2>
               <ConfigProvider
                 theme={{
                   token: {

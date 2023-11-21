@@ -7,6 +7,17 @@
     align-items: center;
 } */
 
+.header {
+  background-color: #000000;
+}
+
+.menuIcon {
+  position: absolute;
+  left: 16px;
+  color: #999999;
+  visibility: hidden
+}
+
 .footer {
   display: flex;
   flex: 1;
@@ -97,9 +108,21 @@
   line-height: 1.5;
 }
 
-/* @media (max-width: 600px) {
-  .grid {
-    width: 100%;
-    flex-direction: column;
+@media (max-width: 767.98px) {
+  .header {
+    height: 104px;
   }
-} */
+  
+  .menuIcon {
+    visibility: visible;
+  }
+
+  .menuBar {
+    visibility: hidden;
+  }
+  
+  .menuBarShow {
+    margin-top: 40px;
+    visibility: visible;
+  }
+}

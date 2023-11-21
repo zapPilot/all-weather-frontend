@@ -1,4 +1,5 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useState } from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
 import { useAccount } from "wagmi";
@@ -12,6 +13,7 @@ import {
   HomeFilled,
   TwitterCircleFilled,
   AuditOutlined,
+  MenuOutlined,
 } from "@ant-design/icons";
 
 const { Header, Footer, Content } = Layout;
@@ -21,6 +23,11 @@ interface BasePageProps {
 
 const BasePage: NextPage<BasePageProps> = ({ children }) => {
   const { address } = useAccount();
+  const [menuShow, setMenuShow] = useState(false);
+  const handleMenuShow = () => {
+    setMenuShow(!menuShow);
+ };
+
   return (
     <div>
       <Head>
@@ -29,9 +36,20 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
         <link href="/favicon.ico" rel="icon" />
       </Head>
       <Layout>
-        <Header style={{ backgroundColor: '#000000'}}>
+        <Header className={styles.header}>
+          <div className={styles.menuIcon}>
+            <MenuOutlined onClick={handleMenuShow}/>
+          </div>
           <HeaderInner>
-            <NavBar />
+            <div
+              className={
+                menuShow
+                ? styles.menuBarShow
+                : styles.menuBar
+              }
+            >
+              <NavBar />
+            </div>
           </HeaderInner>
           <ConnectButton />
         </Header>
