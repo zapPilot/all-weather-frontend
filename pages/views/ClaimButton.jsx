@@ -1,4 +1,8 @@
-import { Button, message } from "antd";
+import {
+  Button,
+  message,
+  Space,
+} from "antd";
 import {
   fetch1InchSwapData,
   portfolioContractAddress,
@@ -109,27 +113,26 @@ const ClaimButton = () => {
   return (
     <div>
       {contextHolder}
-      <Button
-        loading={!aggregatorDataReady}
+      <Space.Compact 
         style={{
-          color: "white",
-          borderColor: "white",
-          paddingInline: 10,
-          lineHeight: 1,
-          marginRight: 15,
-        }}
-        shape="round"
-        icon={<DollarOutlined />}
-        size="small"
-        onClick={() => handleClaim()}
+          display: 'block',
+          width: "90%",
+          }}
       >
-        {aggregatorDataReady ? normalWording : loadingWording}
-      </Button>
-      <TokenDropdown
-        handleChange={(value) => {
-          setChosenToken(value);
-        }}
-      />
+        <Button
+          loading={!aggregatorDataReady}
+          type="primary"
+          icon={<DollarOutlined />}
+          onClick={() => handleClaim()}
+        >
+          {aggregatorDataReady ? normalWording : loadingWording}
+        </Button>
+        <TokenDropdown
+          handleChange={(value) => {
+            setChosenToken(value);
+          }}
+        />
+      </Space.Compact>
     </div>
   );
 };

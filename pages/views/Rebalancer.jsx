@@ -37,17 +37,16 @@ const RebalancerWidget = () => {
   }, [netWorth]);
 
   const windowWidth = useWindowWidth();
+  const divSpin = {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "15rem",
+  }
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "15rem",
-        }}
-      >
+      <div style={divSpin}>
         <Spin size="large" />
       </div>
     );
@@ -55,67 +54,42 @@ const RebalancerWidget = () => {
 
   return (
     <>
-      <Row
-        gutter={{ 
-          xs: 8,
-          md: 16
-        }} 
-        align="center"
-      >
-        <Col
-          md={12}
-          xs={24}
-          align="center"
-        >
-          <RebalanceChart
-            rebalanceSuggestions={rebalanceSuggestions}
-            netWorth={netWorth}
-            windowWidth={windowWidth}
-            showCategory={false}
-          />
+      <div id="zapSection">
+        <RebalanceChart
+          rebalanceSuggestions={rebalanceSuggestions}
+          netWorth={netWorth}
+          windowWidth={windowWidth}
+          showCategory={false}
+        />
+        <div>
           <div>
-            <div style={{ marginBottom: 10 }}>
-              <text style={{ color: "#BEED54", fontSize: 12 }}>
-                Current Strategy: Permanent Portfolio
-              </text>
-            </div>
-            <div style={{ marginBottom: 10 }}>
-              <strong style={{ color: "white", fontSize: 26 }}>
-                TVL: ${netWorth.toFixed(2)}{" "}
-                <a
-                  href="https://debank.com/bundles/136612/portfolio"
-                  target="_blank"
-                >
-                  <LinkOutlined />
-                </a>
-              </strong>
-              <div style={{ color: "white" }}>Data updated 5mins ago</div>
-            </div>
-            <div
-              style={{ marginBottom: 10 }}
-              id="zapSection"
-            >
-              <strong style={{ color: "white", fontSize: 26 }}>
-                <text>
-                  Reward APR: {portfolioApr ? portfolioApr.toFixed(2) : 0}%{" "}
-                  <APRPopOver mode="percentage" />
-                </text>
-              </strong>
-            </div>
-            <UserBalanceInfo tvl={netWorth} />
-            <div style={{ marginBottom: 20 }}>
-              <text style={{ color: "white", fontSize: 12 }}>
-                Monthly Interest: ${(totalInterest / 12).toFixed(2)}
-              </text>
-            </div>
-            <div>
-              <ZapInButton />
-              <ZapOutButton />
-              <APRPopOver mode="price" />
-            </div>
+            <p>Current Strategy: Permanent Portfolio</p>
+            <p>
+              TVL: ${netWorth.toFixed(2)}{" "}
+              <a
+                href="https://debank.com/bundles/136612/portfolio"
+                target="_blank"
+              >
+                <LinkOutlined />
+              </a>
+            </p>
+            <p>Data updated 5mins ago</p>
+            <p>
+              Reward APR: {portfolioApr ? portfolioApr.toFixed(2) : 0}%{" "}
+              <APRPopOver mode="percentage" />
+            </p>
           </div>
-        </Col>
-      </Row>
+          <div>
+            <UserBalanceInfo tvl={netWorth} />
+            <p>Monthly Interest: ${(totalInterest / 12).toFixed(2)}</p>
+          </div>
+          <div>
+            <ZapInButton />
+            <ZapOutButton />
+            <APRPopOver mode="price" />
+          </div>
+        </div>
+      </div>
     </>
   );
 };

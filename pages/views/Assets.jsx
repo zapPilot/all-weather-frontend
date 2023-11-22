@@ -140,9 +140,9 @@ const Assets = () => {
   }, [WEB3_CONTEXT]);
   return (
     <>
-      <h2>Current Vaults</h2>
+      <p className="heading-subtitle">Current Vaults</p>
       <Table columns={columns} dataSource={aggregatedPositions} />
-      <h2>Historical Vaults</h2>
+      <p className="heading-subtitle">Historical Vaults</p>
       <Table columns={columns} dataSource={hardcodedShowCases} />
     </>
   );

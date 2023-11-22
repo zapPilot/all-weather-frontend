@@ -3,7 +3,10 @@ import { useState } from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
 import { useAccount } from "wagmi";
-import { Layout } from 'antd';
+import {
+  Layout,
+  Affix,
+} from 'antd';
 import styles from "../styles/Home.module.css";
 import NavBar from "./views/NavBar.jsx";
 import HeaderInner from "./views/Header";
@@ -11,7 +14,6 @@ import Web3DataProvider from "./views/Web3DataProvider";
 
 import {
   HomeFilled,
-  TwitterCircleFilled,
   AuditOutlined,
   MenuOutlined,
 } from "@ant-design/icons";
@@ -36,23 +38,26 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
         <link href="/favicon.ico" rel="icon" />
       </Head>
       <Layout>
-        <Header className={styles.header}>
-          <div className={styles.menuIcon}>
-            <MenuOutlined onClick={handleMenuShow}/>
-          </div>
-          <HeaderInner>
-            <div
-              className={
-                menuShow
-                ? styles.menuBarShow
-                : styles.menuBar
-              }
-            >
-              <NavBar />
+        <Affix offsetTop={0}>
+          <Header className={styles.header}>
+            <div className={styles.menuIcon}>
+              <MenuOutlined onClick={handleMenuShow}/>
             </div>
-          </HeaderInner>
-          <ConnectButton />
-        </Header>
+            <HeaderInner>
+              <div
+                className={
+                  menuShow
+                  ? styles.menuBarShow
+                  : styles.menuBar
+                }
+              >
+                <NavBar />
+              </div>
+            </HeaderInner>
+            <ConnectButton />
+          </Header>
+        </Affix>
+        
         <Content>
           <Web3DataProvider address={address}>
             <div>{children}</div>
@@ -63,32 +68,41 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
             href="https://all-weather-portfolio.webflow.io/"
             rel="noopener noreferrer"
             target="_blank"
-            >
-            <HomeFilled />
-            Landing Page
+          >
+            <img
+              src="../socialIcon/home.png"
+              alt="home"
+            />
           </a>
           <a
             href="https://all-weather.gitbook.io/all-weather-protocol/"
             rel="noopener noreferrer"
             target="_blank"
           >
-            <AuditOutlined />
-            Documentation
+            <img
+              src="../socialIcon/document.png"
+              alt="document"
+            />
           </a>
           <a
             href="https://twitter.com/all_weather_p"
             rel="noopener noreferrer"
             target="_blank"
           >
-            <TwitterCircleFilled />
-            Twitter
+            <img
+              src="../socialIcon/twitterx.png"
+              alt="twitter"
+            />
           </a>
           <a
             href="https://discord.gg/sNsMmtsCCV"
             rel="noopener noreferrer"
             target="_blank"
           >
-            Discord
+            <img
+              src="../socialIcon/discord.png"
+              alt="discord"
+            />
           </a>
         </Footer>
       </Layout>

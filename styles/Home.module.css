@@ -11,6 +11,11 @@
   background-color: #000000;
 }
 
+.bgStyle {
+  background-image: url('../public/images/bg.jpg');
+  box-shadow: 0 0 100px 100px #000000 inset;
+}
+
 .menuIcon {
   position: absolute;
   left: 16px;
@@ -18,14 +23,26 @@
   visibility: hidden
 }
 
+.divInstallment {
+  padding: 0 8px;
+  color: #ffffff;
+  background-color: #000000;
+}
+
+.btnInvest {
+  margin-top: 32px;
+  width: 200px;
+  height: 48px;
+  border: 1px solid #beed54;
+  font-weight: 500;
+}
+
 .footer {
   display: flex;
-  flex: 1;
-  padding: 2rem 0;
-  border-top: 1px solid #eaeaea;
+  padding: 10px;
   justify-content: center;
   align-items: center;
-  color: white;
+  border-top: 2px solid #333333;
   background-color: #000000;
 }
 
@@ -33,11 +50,12 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-grow: 1;
+  margin: 10px;
 }
 
-.footer a:hover {
-  color: #beed54;
+.footer a img {
+  width: 20px;
+  height: auto;
 }
 
 .title a {

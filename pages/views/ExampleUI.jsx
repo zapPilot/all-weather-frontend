@@ -7,11 +7,11 @@ import {
   Col,
   ConfigProvider,
   Button,
-  Image,
 } from "antd";
 import Link from "next/link";
 import { web3Context } from "./Web3DataProvider";
 import { useWindowHeight } from "../../utils/chartUtils";
+import styles from "../../styles/Home.module.css";
 
 export default function ExampleUI() {
   const windowHeight = useWindowHeight();
@@ -27,27 +27,6 @@ export default function ExampleUI() {
    const handleMouseLeave = () => {
       setIsHover(false);
    };
-  
-  const divInstallment = {
-    padding: "0 8px",
-    color: "white",
-    backgroundColor: '#000000',
-  };
-  
-  const btnInvest = {
-    marginTop: '32px',
-    width: '200px',
-    height: '48px',
-    backgroundColor: isHover ? '#beed54' : 'transparent',
-    color: isHover ? '#000000' : '#beed54',
-    border: '1px solid #beed54',
-    fontWeight: 500
-  }
-
-  const bgStyle = {
-    backgroundImage: "url('../images/bg.jpg')",
-    boxShadow: '0 0 100px 100px #000000 inset'
-  }
 
   useEffect(() => {
     async function fetchPortfolioMetadata() {
@@ -63,7 +42,7 @@ export default function ExampleUI() {
     fetchPortfolioMetadata();
   }, [WEB3_CONTEXT, portfolioApr]);
   return (
-    <div style={divInstallment}>
+    <div className={styles.divInstallment}>
       <Row 
         gutter={{ 
           xs: 8,
@@ -79,7 +58,7 @@ export default function ExampleUI() {
             span: 20,
             offset: 2,
           }}
-          style={bgStyle}
+          className={styles.bgStyle}
         >
           <div 
             style={{
@@ -100,7 +79,7 @@ export default function ExampleUI() {
               </h1>
               <h1 className="heading-subtitle">Biggest Liquidity Mining Index Fund</h1>
               <h2 className="heading-subtitle">Click Once, Retire Forever.</h2>
-              <h2>{portfolioApr}</h2>
+              <p>Reward APR {portfolioApr.toFixed(2)}%</p>
               <ConfigProvider
                 theme={{
                   token: {
@@ -113,7 +92,12 @@ export default function ExampleUI() {
                   <Button
                     type="primary"
                     loading={loadingState}
-                    style={btnInvest}
+                    className={styles.btnInvest}
+                    style={
+                      isHover
+                      ? {backgroundColor: '#beed54', color: '#000000'}
+                      : {backgroundColor: 'transparent', color: '#beed54'}
+                    }
                     onMouseEnter={handleMouseEnter}
                     onMouseLeave={handleMouseLeave}
                   >
@@ -137,6 +121,18 @@ export default function ExampleUI() {
           <center>
             <PortfolioMetaTab />
           </center>
+          
+        </Col>
+        <Col
+          xs={{
+            span: 24,
+            offset: 0,
+          }}
+          md={{
+            span: 10,
+            offset: 7,
+          }}
+        >
           <RebalancerWidget />
         </Col>
       </Row>
