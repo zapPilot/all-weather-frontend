@@ -1,8 +1,10 @@
 import { Select } from "antd";
 import tokens from "../pages/views/components/tokens.json";
 import { fetch1InchSwapData } from "./oneInch";
+import { portfolioVaults } from "./oneInch";
 
 const { Option } = Select;
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const selectBefore = (handleChange) => (
   <Select
@@ -64,4 +66,19 @@ export const getAggregatorData = async (
 
 export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function refreshTVLData(messageApi) {
+  await axios
+    .get(
+      `${API_URL}/addresses?addresses=${portfolioVaults.join(
+        "+",
+      )}&refresh=True`,
+    )
+    .catch((error) =>
+      messageApi.error({
+        content: `${error.shortMessage}. Please report this issue to our Discord.`,
+        duration: 5,
+      }),
+    );
 }

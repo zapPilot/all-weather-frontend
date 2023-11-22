@@ -7,8 +7,8 @@ import {
   selectBefore,
   getAggregatorData,
   sleep,
+  refreshTVLData,
 } from "../../utils/contractInteractions";
-import { portfolioVaults } from "../../utils/oneInch";
 import { DollarOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import {
@@ -37,7 +37,6 @@ const depositSchema = z
     `The deposit amount should be at most ${MAXIMUM_ZAP_IN_AMOUNT}`,
   );
 const fakeAllowanceAddressForBNB = "0x55d398326f99059fF775485246999027B3197955";
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const ZapInButton = () => {
   const { address } = useAccount();
@@ -257,7 +256,7 @@ const ZapInButton = () => {
     window.gtag("event", "deposit", {
       amount: parseFloat(amount.toString()),
     });
-    await _refreshTVLData();
+    await refreshTVLData(messageApi);
   };
 
   const _getDepositData = (
@@ -354,21 +353,6 @@ const ZapInButton = () => {
       </div>
     </Modal>
   );
-
-  async function _refreshTVLData() {
-    await axios
-      .get(
-        `${API_URL}/addresses?addresses=${portfolioVaults.join(
-          "+",
-        )}&refresh=True`,
-      )
-      .catch((error) =>
-        messageApi.error({
-          content: `${error.shortMessage}. Please report this issue to our Discord.`,
-          duration: 5,
-        }),
-      );
-  }
 
   return (
     <div>
