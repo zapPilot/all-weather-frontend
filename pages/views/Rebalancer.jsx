@@ -86,7 +86,7 @@ const RebalancerWidget = () => {
                 <div style={{ textAlign: "left", marginBottom: 10 }}>
                   <strong style={{ color: "white", fontSize: 26 }}>
                     {/* 7853 stands for ledger6's APX position */}
-                    TVL: ${(netWorth+7583).toFixed(2)}{" "}
+                    TVL: ${(netWorth + 7583).toFixed(2)}{" "}
                     <a
                       href="https://debank.com/bundles/136612/portfolio"
                       target="_blank"

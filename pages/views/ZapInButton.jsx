@@ -1,4 +1,4 @@
-import { Button, Space, Select, Modal, message } from "antd";
+import { Button, Space, Modal, message } from "antd";
 import { Spin } from "antd";
 import { z } from "zod";
 import { encodeFunctionData } from "viem";
@@ -8,6 +8,7 @@ import {
   getAggregatorData,
   sleep,
 } from "../../utils/contractInteractions";
+import { portfolioVaults } from "../../utils/oneInch";
 import { DollarOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import {
@@ -17,6 +18,7 @@ import {
   useAccount,
   useNetwork,
 } from "wagmi";
+import axios from "axios";
 
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import NumericInput from "./NumberInput";
@@ -35,6 +37,7 @@ const depositSchema = z
     `The deposit amount should be at most ${MAXIMUM_ZAP_IN_AMOUNT}`,
   );
 const fakeAllowanceAddressForBNB = "0x55d398326f99059fF775485246999027B3197955";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const ZapInButton = () => {
   const { address } = useAccount();
@@ -188,7 +191,7 @@ const ZapInButton = () => {
       return;
     }
     await _sendDepositTransaction();
-    _sendEvents();
+    await _sendEvents();
   };
 
   const _sendDepositTransaction = async () => {
@@ -250,10 +253,11 @@ const ZapInButton = () => {
     });
   };
 
-  const _sendEvents = () => {
+  const _sendEvents = async () => {
     window.gtag("event", "deposit", {
       amount: parseFloat(amount.toString()),
     });
+    await _refreshTVLData();
   };
 
   const _getDepositData = (
@@ -350,6 +354,21 @@ const ZapInButton = () => {
       </div>
     </Modal>
   );
+
+  async function _refreshTVLData() {
+    await axios
+      .get(
+        `${API_URL}/addresses?addresses=${portfolioVaults.join(
+          "+",
+        )}&refresh=True`,
+      )
+      .catch((error) =>
+        messageApi.error({
+          content: `${error.shortMessage}. Please report this issue to our Discord.`,
+          duration: 5,
+        }),
+      );
+  }
 
   return (
     <div>
