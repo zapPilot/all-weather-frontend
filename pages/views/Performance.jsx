@@ -136,9 +136,9 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
         </Row>
       </ConfigProvider>
       <p
+        className="heading-subtitle"
         style={{
           margin: '32px 0',
-          fontSize: '2rem',
         }}
       >
         Historical Reward APRs

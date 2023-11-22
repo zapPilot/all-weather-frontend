@@ -162,47 +162,46 @@ const ZapOutButton = () => {
   return (
     <div>
       {contextHolder}
-      <Space.Compact style={{ width: "90%" }}>
-        <NumericInput
-          // addonBefore={selectBefore((value) => {
-          //   setChosenToken(value);
-          // })}
-          placeholder={`Balance: ${userShares}`}
-          value={inputValue}
-          onChange={handleInputChange}
-        />
-        <ConfigProvider
-          theme={{
-            token: {
-              colorPrimary: '#beed54',
-              colorTextLightSolid: '#000000',
-            },
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: '#beed54',
+            colorTextLightSolid: '#000000',
+          },
+        }}
+      >
+        <Space.Compact
+          style={{
+            margin: '10px 0',
           }}
         >
+          <NumericInput
+            // addonBefore={selectBefore((value) => {
+            //   setChosenToken(value);
+            // })}
+            placeholder={`Balance: ${userShares}`}
+            value={inputValue}
+            onChange={handleInputChange}
+          />
           <Button 
             type="primary"
             onClick={handleOnClickMax}
           >
             Max
           </Button>
-        </ConfigProvider>
-      </Space.Compact>
-      <Button
-        loading={!apiDataReady}
-        onClick={handleZapOut} // Added onClick handler
-        style={{
-          color: "white",
-          borderColor: "white",
-          paddingInline: 10,
-          lineHeight: 1,
-          marginRight: 15,
-        }}
-        shape="round"
-        icon={<DollarOutlined />}
-        size="small"
-      >
-        {apiDataReady ? normalWording : loadingWording}
-      </Button>
+        </Space.Compact>
+        <Button
+          loading={!apiDataReady}
+          onClick={handleZapOut} // Added onClick handler
+          type="primary"
+          icon={<DollarOutlined />}
+          style={{
+            display: 'block',
+          }}
+        >
+          {apiDataReady ? normalWording : loadingWording}
+        </Button>
+      </ConfigProvider>
     </div>
   );
 };

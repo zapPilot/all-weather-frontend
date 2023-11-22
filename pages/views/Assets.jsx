@@ -171,11 +171,11 @@ const Assets = () => {
   }, [WEB3_CONTEXT]);
   return (
     <>
-      <h2>Current Protocols</h2>
+      <p className="heading-subtitle">Current Protocols</p>
       <Table columns={columns} dataSource={aggregatedPositions} />
-      <h2>Upcoming Protocols</h2>
+      <p className>Upcoming Protocols</p>
       <Table columns={columns} dataSource={upcomingProtocol} />
-      <h2>Historical Protocols</h2>
+      <p className="heading-subtitle">Historical Protocols</p>
       <Table columns={columns} dataSource={hardcodedShowCases} />
     </>
   );

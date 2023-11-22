@@ -44,17 +44,32 @@ const TokenDropdown = ({ handleChange }) => (
     onChange={handleChange}
     defaultValue={
       <Option key="USDT" value="0x55d398326f99059ff775485246999027b3197955">
-        <img
-          src="https://icons.llamao.fi/icons/agg_icons/binance?w=24&h=24"
-          width="20"
-          height="20"
-          alt="usdt"
-        />
-        USDT
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <img
+            src="https://icons.llamao.fi/icons/agg_icons/binance?w=24&h=24"
+            width="20"
+            height="20"
+            alt="usdt"
+          />
+          <span
+            style={{
+              marginLeft: 6
+            }}
+          >
+            USDT
+          </span>
+        </div>
       </Option>
     }
     theme="light"
-    style={{ backgroundColor: "white" }}
+    style={{
+      width: '100px',
+    }}
   >
     {tokens.props.pageProps.tokenList["56"].slice(0, 20).map((option) => (
       <Option key={option.address} value={option.address}>
