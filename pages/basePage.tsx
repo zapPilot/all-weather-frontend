@@ -37,7 +37,9 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
         <meta content="All Weather Protocol" name="description" />
         <link href="/favicon.ico" rel="icon" />
       </Head>
-      <Layout>
+      <Layout
+        style={{ background: '#000000' }}
+      >
         <Affix offsetTop={0}>
           <Header className={styles.header}>
             <div className={styles.menuIcon}>

@@ -37,7 +37,6 @@ export const selectBefore = (handleChange) => (
     theme="light"
     style={{
       width: 100,
-      backgroundColor: "white",
     }}
   >
     {tokens.props.pageProps.tokenList["56"].slice(0, 20).map((option) => (
