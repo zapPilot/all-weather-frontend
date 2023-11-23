@@ -27,16 +27,16 @@ const UserBalanceInfo = ({ tvl }) => {
   return (
     <div
       style={{
-        margin: '20px 0',
+        marginTop: 20,
         color: "white",
       }}
     >
-      <span style={{marginRight: 16 }}>
+      <h3>
         Your Deposit: ${userDeposit}
-      </span>
-      <span style={{ color: "white", fontSize: 12 }}>
+      </h3>
+      <b>
         Your Share: {userPercentage.times(100).toFixed(2)}%
-      </span>
+      </b>
     </div>
   );
 };

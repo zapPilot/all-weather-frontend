@@ -291,13 +291,13 @@ const APRPopOver = ({ mode }) => {
           margin: '20px 0'
         }}
       >
-        <p
+        <b
           style={{
             marginBottom: 10,
           }}
         >
           Claimable Rewards: ${sumOfRewardsDenominatedInUSD.toFixed(2)}
-        </p>
+        </b>
         <ConfigProvider
         theme={{
           token: {
@@ -315,7 +315,7 @@ const APRPopOver = ({ mode }) => {
             pagination={false}
           />
         ) : (
-          <ConnectButton />
+          ''
         )}
       </div>
     );

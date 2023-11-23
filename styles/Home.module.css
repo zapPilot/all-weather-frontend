@@ -12,7 +12,12 @@
 }
 
 .bgStyle {
-  background-image: url('../public/images/bg.jpg');
+  background-image: linear-gradient(
+    rgba(0, 0, 0, 0.1), 
+    rgba(0, 0, 0, 0.7)
+  ), url('../public/images/bg.jpg');
+  background-position: right top;
+  background-repeat: no-repeat;
   box-shadow: 0 0 100px 100px #000000 inset;
 }
 

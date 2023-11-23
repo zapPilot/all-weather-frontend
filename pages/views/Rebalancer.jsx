@@ -63,8 +63,7 @@ const RebalancerWidget = () => {
         />
         <div>
           <div>
-            <p>Current Strategy: Permanent Portfolio</p>
-            <p>
+            <h3>
               TVL: ${netWorth.toFixed(2)}{" "}
               <a
                 href="https://debank.com/bundles/136612/portfolio"
@@ -72,16 +71,15 @@ const RebalancerWidget = () => {
               >
                 <LinkOutlined />
               </a>
-            </p>
-            <p>Data updated 5mins ago</p>
-            <p>
+            </h3>
+            <h3>
               Reward APR: {portfolioApr ? portfolioApr.toFixed(2) : 0}%{" "}
               <APRPopOver mode="percentage" />
-            </p>
+            </h3>
           </div>
           <div>
             <UserBalanceInfo tvl={netWorth} />
-            <p>Monthly Interest: ${(totalInterest / 12).toFixed(2)}</p>
+            <b>Monthly Interest: ${(totalInterest / 12).toFixed(2)}</b>
           </div>
           <div>
             <ZapInButton />

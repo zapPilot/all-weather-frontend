@@ -375,10 +375,12 @@ const ZapInButton = () => {
             margin: '10px 0'
           }}
         >
-          <NumericInput
-            addonBefore={selectBefore((value) => {
+          {
+            selectBefore((value) => {
               setChosenToken(value);
-            })}
+            })
+          }
+          <NumericInput
             placeholder={`Balance: ${
               chosenTokenBalance ? chosenTokenBalance.formatted : 0
             }`}

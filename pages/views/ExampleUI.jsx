@@ -64,22 +64,31 @@ export default function ExampleUI() {
             style={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               minHeight: windowHeight
             }}
           >
             <center>
               <h1
                 style={{ 
-                  marginBottom: '32px',
-                  color: '#beed54' 
+                  marginBottom: 32,
+                  color: '#beed54'
                 }}
                 className="heading-title"
               >
                 All Weather Protocol
               </h1>
-              <h1 className="heading-subtitle">Biggest Liquidity Mining Index Fund</h1>
-              <h2 className="heading-subtitle">Click Once, Retire Forever.</h2>
-              <p>Reward APR {portfolioApr.toFixed(2)}%</p>
+              <h2 className="heading-subtitle">Biggest Liquidity Mining Index Fund</h2>
+              <p className="heading-subtitle">Click Once, Retire Forever.</p>
+              <p className="heading-subtitle">
+                Enjoy
+                <span
+                  style={{
+                    color: '#beed54'
+                  }}
+                  className="heading-title"> {portfolioApr.toFixed(2)}% </span>
+                APR
+              </p>
               <ConfigProvider
                 theme={{
                   token: {
