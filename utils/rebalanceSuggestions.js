@@ -27,8 +27,6 @@ export default function useRebalanceSuggestions() {
         setNetWorth(newNetWorth);
         const newRebalanceSuggestions = response.data.suggestions;
         setRebalanceSuggestions(newRebalanceSuggestions);
-        const totalInterest = response.data.total_interest;
-        setTotalInterest(totalInterest);
         const portfolioApr = response.data.portfolio_apr;
         setPortfolioApr(portfolioApr);
         const sharpeRatio = response.data.sharpe_ratio;

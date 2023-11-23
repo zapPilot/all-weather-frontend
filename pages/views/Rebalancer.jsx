@@ -108,11 +108,6 @@ const RebalancerWidget = () => {
                   </strong>
                 </div>
                 <UserBalanceInfo tvl={netWorth} />
-                <div style={{ textAlign: "left", marginBottom: 20 }}>
-                  <text style={{ color: "white", fontSize: 12 }}>
-                    Monthly Interest: ${(totalInterest / 12).toFixed(2)}
-                  </text>
-                </div>
                 <div style={{ textAlign: "left" }}>
                   <ZapInButton />
                   <ZapOutButton />
