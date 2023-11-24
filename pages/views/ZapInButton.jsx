@@ -18,7 +18,6 @@ import {
   useAccount,
   useNetwork,
 } from "wagmi";
-import axios from "axios";
 
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import NumericInput from "./NumberInput";
