@@ -45,7 +45,7 @@ export const getAggregatorData = async (
     chosenToken === "0x0000000000000000000000000000000000000000"
       ? "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
       : chosenToken;
-  if (chosenTokenFor1Inch === toToken) {
+  if (chosenTokenFor1Inch.toLowerCase() === toToken.toLowerCase()) {
     return {
       apolloxAggregatorData: "",
     };
