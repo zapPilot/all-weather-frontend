@@ -14,6 +14,7 @@ import {
   selectBefore,
   getAggregatorData,
   sleep,
+  refreshTVLData,
 } from "../../utils/contractInteractions";
 import { DollarOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
@@ -24,6 +25,7 @@ import {
   useAccount,
   useNetwork,
 } from "wagmi";
+import axios from "axios";
 
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import NumericInput from "./NumberInput";
@@ -195,7 +197,7 @@ const ZapInButton = () => {
       return;
     }
     await _sendDepositTransaction();
-    _sendEvents();
+    await _sendEvents();
   };
 
   const _sendDepositTransaction = async () => {
@@ -257,10 +259,11 @@ const ZapInButton = () => {
     });
   };
 
-  const _sendEvents = () => {
+  const _sendEvents = async () => {
     window.gtag("event", "deposit", {
       amount: parseFloat(amount.toString()),
     });
+    await refreshTVLData(messageApi);
   };
 
   const _getDepositData = (

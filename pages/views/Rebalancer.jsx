@@ -79,7 +79,6 @@ const RebalancerWidget = () => {
           </div>
           <div>
             <UserBalanceInfo tvl={netWorth} />
-            <b>Monthly Interest: ${(totalInterest / 12).toFixed(2)}</b>
           </div>
           <div>
             <ZapInButton />

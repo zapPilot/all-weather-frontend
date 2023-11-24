@@ -14,12 +14,13 @@ import {
   useAccount,
   useNetwork,
 } from "wagmi";
+import { refreshTVLData } from "../../utils/contractInteractions";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import { web3Context } from "./Web3DataProvider";
-import {
-  selectBefore,
-  getAggregatorData,
-} from "../../utils/contractInteractions";
+// import {
+//   selectBefore,
+//   getAggregatorData,
+// } from "../../utils/contractInteractions";
 const { ethers } = require("ethers");
 
 const ZapOutButton = () => {
@@ -49,8 +50,9 @@ const ZapOutButton = () => {
         duration: 5,
       });
     },
-    onSuccess() {
+    async onSuccess() {
       messageApi.info("Redeem succeeded");
+      await refreshTVLData(messageApi);
     },
   });
   const { write: approveWrite } = useContractWrite({

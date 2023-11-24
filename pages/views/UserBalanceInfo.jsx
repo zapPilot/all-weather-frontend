@@ -6,6 +6,7 @@ const UserBalanceInfo = ({ tvl }) => {
   const WEB3_CONTEXT = useContext(web3Context);
   const [userShares, setUserShares] = useState(0);
   const [totalSupply, setTotalSupply] = useState(1);
+  const [portfolioApr, setPortfolioApr] = useState(0);
 
   useEffect(() => {
     async function fetchSharesInfo() {
@@ -15,6 +16,11 @@ const UserBalanceInfo = ({ tvl }) => {
         );
         setTotalSupply(
           WEB3_CONTEXT.totalSupply === undefined ? 0 : WEB3_CONTEXT.totalSupply,
+        );
+        setPortfolioApr(
+          WEB3_CONTEXT.portfolioApr === undefined
+            ? 0
+            : WEB3_CONTEXT.portfolioApr,
         );
       }
     }
@@ -37,6 +43,10 @@ const UserBalanceInfo = ({ tvl }) => {
       <b>
         Your Share: {userPercentage.times(100).toFixed(2)}%
       </b>
+      <h3>
+        Monthly Interest: $
+        {((userDeposit * portfolioApr) / 100 / 12).toFixed(2)}
+      </h3>
     </div>
   );
 };
