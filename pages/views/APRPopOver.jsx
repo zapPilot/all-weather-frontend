@@ -52,7 +52,7 @@ const APRPopOver = ({ mode }) => {
     }
 
     async function fetchAprComposition() {
-      fetch(`${API_URL}/apr_composition`)
+      fetch(`${API_URL}/apr_composition?portfolio_name=stablecoin_vault`)
         .then((response) => response.json())
         .then((result) => setAprComposition(result))
         .catch((error) => console.error("Error of apr_composition:", error));
