@@ -2,8 +2,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const SDK_API_URL = process.env.NEXT_PUBLIC_SDK_API_URL;
 
 export const portfolioContractAddress =
-  "0x24D22cA076Dc055A6b0faD59678d91BA4C948000";
-export const apolloxVaultAddress = "0xd56d8Dfd3A3D6F6dafc0b7b6945F6E7AB138706e";
+  "0x24d22ca076dc055a6b0fad59678d91ba4c948000";
+export const apolloxVaultAddress = "0xd56d8dfd3a3d6f6dafc0b7b6945f6e7ab138706e";
 // "0xC6a58A8494E61fc4EF04F6075c4541C9664ADcC9";
 // export const equilibriaGLPVaultAddress =
 //   // "0x271E3409093f7ECffFB2a1C82e5E87B2ecB3E310";
@@ -19,11 +19,11 @@ export const apolloxVaultAddress = "0xd56d8Dfd3A3D6F6dafc0b7b6945F6E7AB138706e";
 // export const radiantDlpAddress = "0x99E9cE14C807e95329a2A35aDD52683528e53231";
 export const portfolioVaults = [apolloxVaultAddress];
 
-export const ALP = "0x4E47057f45adF24ba41375a175dA0357cB3480E5";
-export const ApolloX = "0x1b6F2d3844C6ae7D56ceb3C3643b9060ba28FEb0";
-export const USDC = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
-export const APX = "0x78F5d389F5CDCcFc41594aBaB4B0Ed02F31398b3";
-export const USDT = "0x55d398326f99059fF775485246999027B3197955";
+export const ALP = "0x4e47057f45adf24ba41375a175da0357cb3480e5";
+export const ApolloX = "0x1b6f2d3844c6ae7d56ceb3c3643b9060ba28feb0";
+export const USDC = "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d";
+export const APX = "0x78f5d389f5cdccfc41594abab4b0ed02f31398b3";
+export const USDT = "0x55d398326f99059ff775485246999027b3197955";
 // export const magicTokenAddress = "0x539bdE0d7Dbd336b79148AA742883198BBF60342";
 // export const gDAIMarketPoolAddress =
 //   "0xa0192f6567f8f5DC38C53323235FD08b318D2dcA";
