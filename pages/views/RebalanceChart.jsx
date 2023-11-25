@@ -215,8 +215,8 @@ export default function BasicSunburst(props) {
         getSize={(d) => d.value}
         getColor={(d) => d.hex}
         data={data}
-        height={props.windowWidth > 524 ? 500 : 315}
-        width={props.windowWidth > 524 ? 500 : 315}
+        height={props.windowWidth > 767 ? 500 : 300}
+        width={props.windowWidth > 767 ? 500 : 300}
       >
         {finalValue && (
           <LabelSeries

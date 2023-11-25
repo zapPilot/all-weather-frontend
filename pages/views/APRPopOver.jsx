@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Popover, Table, Tag, Spin } from "antd";
+import {
+  Popover,
+  Table,
+  Tag,
+  Spin,
+  ConfigProvider,
+} from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { web3Context } from "./Web3DataProvider";
 import ClaimButton from "./ClaimButton";
@@ -113,15 +119,20 @@ const APRPopOver = ({ mode }) => {
     const renderReward = () => {
       if (rewardKey === "Swap Fee" || rewardKey === "Underlying APY") {
         return (
-          <>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            }}
+          >
             <img
               src="https://icons-for-free.com/iconfiles/png/512/currency+dollar+money+icon-1320085755803367648.png"
               width="20"
               height="20"
               alt={rewardKey}
+              style={{marginRight: '5px'}}
             />
             {`${rewardKey}: ${(value["APR"] * 100).toFixed(2)}%`}
-          </>
+          </div>
         );
       } else if (WEB3_CONTEXT["debankContext"].hasOwnProperty(value["token"])) {
         return renderImageAndAPR(value["token"]);
@@ -265,7 +276,7 @@ const APRPopOver = ({ mode }) => {
   if (mode === "percentage") {
     return (
       <Popover
-        style={{ width: 500 }}
+        style={{ width: '500px' }}
         content={renderContent()}
         title="Projected APR"
         trigger="hover"
@@ -275,11 +286,28 @@ const APRPopOver = ({ mode }) => {
     );
   } else {
     return (
-      <div>
-        <h2 className="ant-table-title">
+      <div
+        style={{
+          margin: '20px 0'
+        }}
+      >
+        <b
+          style={{
+            marginBottom: 10,
+          }}
+        >
           Claimable Rewards: ${sumOfRewardsDenominatedInUSD.toFixed(2)}
-        </h2>
+        </b>
+        <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: '#beed54',
+            colorTextLightSolid: '#000000',
+          },
+        }}
+      >
         <ClaimButton />
+      </ConfigProvider>  
         {isConnected ? (
           <Table
             columns={getColumnsForSuggestionsTable}
@@ -287,7 +315,7 @@ const APRPopOver = ({ mode }) => {
             pagination={false}
           />
         ) : (
-          <ConnectButton />
+          ''
         )}
       </div>
     );

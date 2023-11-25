@@ -1,5 +1,11 @@
-import { Button, Space, Modal, message } from "antd";
-import { Spin } from "antd";
+import {
+  Button,
+  Space,
+  Modal,
+  message,
+  Spin,
+  ConfigProvider
+} from "antd";
 import { z } from "zod";
 import { encodeFunctionData } from "viem";
 import { portfolioContractAddress, USDT } from "../../utils/oneInch";
@@ -357,42 +363,54 @@ const ZapInButton = () => {
     <div>
       {contextHolder}
       {modalContent}
-      <Space.Compact style={{ width: "90%" }}>
-        <NumericInput
-          addonBefore={selectBefore((value) => {
-            setChosenToken(value);
-          })}
-          placeholder={`Balance: ${
-            chosenTokenBalance ? chosenTokenBalance.formatted : 0
-          }`}
-          value={inputValue}
-          onChange={(value) => {
-            handleInputChange(value);
-          }}
-        />
-        <Button type="primary" onClick={handleOnClickMax}>
-          Max
-        </Button>
-      </Space.Compact>
-      <div style={{ color: "white" }}>Max Slippage: 1%</div>
-
-      <Button
-        loading={!apiDataReady}
-        onClick={handleZapIn} // Added onClick handler
-        style={{
-          color: "white",
-          borderColor: "white",
-          paddingInline: 10,
-          lineHeight: 1,
-          marginRight: 15,
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: '#beed54',
+            colorTextLightSolid: '#000000',
+          },
         }}
-        shape="round"
-        icon={<DollarOutlined />}
-        size="small"
       >
-        {/* {!approveReady ? approvingWording : apiDataReady ? normalWording : loadingWording} */}
-        {apiDataReady ? normalWording : loadingWording}
-      </Button>
+        <Space.Compact 
+          style={{
+            margin: '10px 0'
+          }}
+        >
+          {
+            selectBefore((value) => {
+              setChosenToken(value);
+            })
+          }
+          <NumericInput
+            placeholder={`Balance: ${
+              chosenTokenBalance ? chosenTokenBalance.formatted : 0
+            }`}
+            value={inputValue}
+            onChange={(value) => {
+              handleInputChange(value);
+            }}
+          />
+          <Button 
+            type="primary"
+            onClick={handleOnClickMax}
+          >
+            Max
+          </Button>
+        </Space.Compact>
+        <p style={{ color: "white" }}>Max Slippage: 1%</p>
+        <Button
+          loading={!apiDataReady}
+          onClick={handleZapIn} // Added onClick handler
+          type="primary"
+          icon={<DollarOutlined />}
+          style={{
+            margin: '10px 0'
+          }}
+        >
+          {/* {!approveReady ? approvingWording : apiDataReady ? normalWording : loadingWording} */}
+          {apiDataReady ? normalWording : loadingWording}
+        </Button>
+      </ConfigProvider>
       {alert && (
         // make text color red, and state please enter an amount larger than 0.01
         <div style={{ color: "red" }}>

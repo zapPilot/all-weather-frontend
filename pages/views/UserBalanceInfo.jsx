@@ -31,22 +31,23 @@ const UserBalanceInfo = ({ tvl }) => {
   const userDeposit = userPercentage * parseFloat(tvl ? tvl.toFixed(2) : 0);
 
   return (
-    <>
-      <div style={{ textAlign: "left", marginBottom: 20 }}>
-        <span style={{ color: "white", fontSize: 12, marginRight: 15 }}>
-          Your Deposit: ${userDeposit}
-        </span>
-        <span style={{ color: "white", fontSize: 12 }}>
-          Your Share: {userPercentage.times(100).toFixed(2)}%
-        </span>
-      </div>
-      <div style={{ textAlign: "left", marginBottom: 20 }}>
-        <text style={{ color: "white", fontSize: 12 }}>
-          Monthly Interest: $
-          {((userDeposit * portfolioApr) / 100 / 12).toFixed(2)}
-        </text>
-      </div>
-    </>
+    <div
+      style={{
+        marginTop: 20,
+        color: "white",
+      }}
+    >
+      <h3>
+        Your Deposit: ${userDeposit}
+      </h3>
+      <b>
+        Your Share: {userPercentage.times(100).toFixed(2)}%
+      </b>
+      <h3>
+        Monthly Interest: $
+        {((userDeposit * portfolioApr) / 100 / 12).toFixed(2)}
+      </h3>
+    </div>
   );
 };
 

@@ -7,20 +7,60 @@
     align-items: center;
 } */
 
+.header {
+  background-color: #000000;
+}
+
+.bgStyle {
+  background-image: linear-gradient(
+    rgba(0, 0, 0, 0.1), 
+    rgba(0, 0, 0, 0.7)
+  ), url('../public/images/bg.jpg');
+  background-position: right top;
+  background-repeat: no-repeat;
+  box-shadow: 0 0 100px 100px #000000 inset;
+}
+
+.menuIcon {
+  position: absolute;
+  left: 16px;
+  color: #999999;
+  visibility: hidden
+}
+
+.divInstallment {
+  padding: 0 8px;
+  color: #ffffff;
+  background-color: #000000;
+}
+
+.btnInvest {
+  margin-top: 32px;
+  width: 200px;
+  height: 48px;
+  border: 1px solid #beed54;
+  font-weight: 500;
+}
+
 .footer {
   display: flex;
-  flex: 1;
-  padding: 2rem 0;
-  border-top: 1px solid #eaeaea;
+  padding: 10px;
   justify-content: center;
   align-items: center;
+  border-top: 2px solid #333333;
+  background-color: #000000;
 }
 
 .footer a {
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-grow: 1;
+  margin: 10px;
+}
+
+.footer a img {
+  width: 20px;
+  height: auto;
 }
 
 .title a {
@@ -91,9 +131,21 @@
   line-height: 1.5;
 }
 
-/* @media (max-width: 600px) {
-  .grid {
-    width: 100%;
-    flex-direction: column;
+@media (max-width: 767.98px) {
+  .header {
+    height: 104px;
   }
-} */
+  
+  .menuIcon {
+    visibility: visible;
+  }
+
+  .menuBar {
+    visibility: hidden;
+  }
+  
+  .menuBarShow {
+    margin-top: 40px;
+    visibility: visible;
+  }
+}

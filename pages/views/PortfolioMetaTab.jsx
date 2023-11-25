@@ -1,5 +1,8 @@
 import React, { useContext, useState, useEffect } from "react";
-import { Tabs } from "antd";
+import {
+  ConfigProvider,
+  Tabs
+} from "antd";
 import Fees from "./Fees.jsx";
 import Performance from "./Performance.jsx";
 import Assets from "./Assets.jsx";
@@ -57,12 +60,28 @@ const PortfolioMetaTab = () => {
   }));
 
   return (
-    <Tabs
-      defaultActiveKey="0" // Adjusted to start with the first tab
-      centered
-      style={{ color: "white", marginRight: 15 }}
-      items={tabs}
-    />
+    <ConfigProvider
+      theme={{
+        components: {
+          Tabs: {
+            inkBarColor	: '#beed54',
+            itemActiveColor: '#beed54',
+            itemHoverColor: '#beed54',
+            itemSelectedColor: '#beed54'
+          },
+        },
+        token: {
+          colorText: '#ffffff'
+        }
+      }}
+    >
+      <Tabs
+        defaultActiveKey="0" // Adjusted to start with the first tab
+        centered
+        items={tabs}
+      />
+    </ConfigProvider>
+    
   );
 };
 
