@@ -43,10 +43,10 @@ const UserBalanceInfo = ({ tvl }) => {
       <b>
         Your Share: {userPercentage.times(100).toFixed(2)}%
       </b>
-      <span>
+      <h3>
         Monthly Interest: $
         {((userDeposit * portfolioApr) / 100 / 12).toFixed(2)}
-      </span>
+      </h3>
     </div>
   );
 };
