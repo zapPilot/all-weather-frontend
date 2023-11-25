@@ -79,7 +79,7 @@ export default function ExampleUI() {
                 All Weather Protocol
               </h1>
               <h2 className="heading-subtitle">Biggest Liquidity Mining Index Fund</h2>
-              <p className="heading-subtitle">Click Once, Retire Forever.</p>
+              <p className="heading-subtitle">Click Once, Mine Forever.</p>
               <p className="heading-subtitle">
                 Enjoy
                 <span
