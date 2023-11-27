@@ -10,30 +10,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export const selectBefore = (handleChange) => (
   <Select
     onChange={handleChange}
-    defaultValue={
-      <Option key="USDT" value="0x55d398326f99059ff775485246999027b3197955">
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
-          <img
-            src="https://icons.llamao.fi/icons/agg_icons/binance?w=24&h=24"
-            width="20"
-            height="20"
-            alt="usdt"
-          />
-          <span
-            style={{
-              marginLeft: 6
-            }}
-          >
-            USDT
-          </span>
-        </div>
-      </Option>
-    }
+    defaultValue="0x55d398326f99059ff775485246999027b3197955"
     theme="light"
     style={{
       width: 100,

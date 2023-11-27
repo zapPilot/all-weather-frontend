@@ -115,9 +115,8 @@ const ClaimButton = () => {
       {contextHolder}
       <Space.Compact 
         style={{
-          display: 'block',
-          width: "90%",
-          }}
+          margin: '10px 0'
+        }}
       >
         <Button
           loading={!aggregatorDataReady}

@@ -1,5 +1,10 @@
 import React, { useContext, useState, useEffect } from "react";
-import { Table, Tag, Image } from "antd";
+import {
+  ConfigProvider,
+  Table,
+  Tag,
+  Image
+} from "antd";
 import { web3Context } from "./Web3DataProvider";
 const upcomingProtocol = [
   {
@@ -78,8 +83,8 @@ const columns = [
             : `chainPictures/${chain}.svg`
         }
         alt={chain}
-        height={24}
-        width={24}
+        height={20}
+        width={20}
       />
     ),
   },
@@ -88,31 +93,36 @@ const columns = [
     dataIndex: "protocol",
     key: "protocol",
     render: (protocol_logo_url) => (
-      <Image src={protocol_logo_url} height={28} width={28} />
+      <Image
+        src={protocol_logo_url}
+        height={20}
+        width={20}
+      />
     ),
   },
   {
     title: "Asset",
     dataIndex: "asset",
     key: "asset",
+    render: (asset) => <span style={{ color: "#ffffff" }}>{asset}</span>
   },
   {
     title: "Weight",
     dataIndex: "weight",
     key: "weight",
-    render: (weight) => <>{weight}%</>,
+    render: (weight) => <span style={{ color: "#ffffff" }}>{weight}%</span>,
   },
   {
     title: "Worth",
     dataIndex: "worth",
     key: "worth",
-    render: (worth) => <>${worth.toFixed(2)}</>,
+    render: (worth) => <span style={{ color: "#ffffff" }}>${worth.toFixed(2)}</span>,
   },
   {
     title: "APR",
     dataIndex: "apr",
     key: "apr",
-    render: (apr) => <>{(apr * 100).toFixed(2)}%</>,
+    render: (apr) => <span style={{ color: "#ffffff" }}>{(apr * 100).toFixed(2)}%</span>,
   },
   {
     title: "Categories",
@@ -171,12 +181,25 @@ const Assets = () => {
   }, [WEB3_CONTEXT]);
   return (
     <>
-      <p className="heading-subtitle">Current Protocols</p>
-      <Table columns={columns} dataSource={aggregatedPositions} />
-      <p className>Upcoming Protocols</p>
-      <Table columns={columns} dataSource={upcomingProtocol} />
-      <p className="heading-subtitle">Historical Protocols</p>
-      <Table columns={columns} dataSource={hardcodedShowCases} />
+      <ConfigProvider
+        theme={{
+          token: {
+            colorBgContainer: "#000000",
+            colorBorderSecondary: "#000000",
+            colorFillAlter: "#beed54",
+            colorText: "#000000",
+            colorPrimary: "#beed54",
+          },
+        }}
+      >
+        <p className="heading-subtitle">Current Protocols</p>
+        <Table columns={columns} dataSource={aggregatedPositions} />
+        <p className="heading-subtitle">Upcoming Protocols</p>
+        <Table columns={columns} dataSource={upcomingProtocol} />
+        <p className="heading-subtitle">Historical Protocols</p>
+        <Table columns={columns} dataSource={hardcodedShowCases} />
+      </ConfigProvider>
+      
     </>
   );
 };

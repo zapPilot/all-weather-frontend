@@ -195,14 +195,25 @@ const APRPopOver = ({ mode }) => {
       key: "token",
       width: 24,
       render: (tokenInfo) => (
-        <div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems : 'center',
+          }}
+        >
           <img
             src={tokenInfo.img}
             width="20"
             height="20"
             alt={tokenInfo.symbol}
           />
-          {tokenInfo.symbol}
+          <span
+            style={{
+              marginLeft: 10,
+            }}
+          >
+            {tokenInfo.symbol}
+          </span>
         </div>
       ),
     },
@@ -211,7 +222,7 @@ const APRPopOver = ({ mode }) => {
       dataIndex: "amount",
       key: "amount",
       width: 24,
-      render: (amount) => <Tag key={amount}>{amount}</Tag>,
+      render: (amount) => <span>{amount}</span>,
     },
     {
       title: "Value",
@@ -291,13 +302,13 @@ const APRPopOver = ({ mode }) => {
           margin: '20px 0'
         }}
       >
-        <b
+        <p
           style={{
-            marginBottom: 10,
+            fontWeight: 500,
           }}
         >
           Claimable Rewards: ${sumOfRewardsDenominatedInUSD.toFixed(2)}
-        </b>
+        </p>
         <ConfigProvider
         theme={{
           token: {
@@ -307,13 +318,19 @@ const APRPopOver = ({ mode }) => {
         }}
       >
         <ClaimButton />
-      </ConfigProvider>  
+      </ConfigProvider>
         {isConnected ? (
-          <Table
-            columns={getColumnsForSuggestionsTable}
-            dataSource={calculateClaimableRewards()}
-            pagination={false}
-          />
+          <div
+            style={{
+              marginTop: 10
+            }}
+          >
+            <Table
+              columns={getColumnsForSuggestionsTable}
+              dataSource={calculateClaimableRewards()}
+              pagination={false}
+            />
+          </div>
         ) : (
           ''
         )}

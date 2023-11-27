@@ -56,7 +56,9 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
                 <NavBar />
               </div>
             </HeaderInner>
-            <ConnectButton />
+            <div className="connect-button">
+              <ConnectButton/>
+            </div>
           </Header>
         </Affix>
         
