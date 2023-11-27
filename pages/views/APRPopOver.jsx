@@ -210,6 +210,7 @@ const APRPopOver = ({ mode }) => {
           <span
             style={{
               marginLeft: 10,
+              color: "#ffffff",
             }}
           >
             {tokenInfo.symbol}
@@ -222,14 +223,14 @@ const APRPopOver = ({ mode }) => {
       dataIndex: "amount",
       key: "amount",
       width: 24,
-      render: (amount) => <span>{amount}</span>,
+      render: (amount) => <span style={{ color: "#ffffff" }}>{amount}</span>,
     },
     {
       title: "Value",
       dataIndex: "value",
       key: "value",
       width: 24,
-      render: (price) => <Tag key={price}>${price.toFixed(2)}</Tag>,
+      render: (price) => <Tag color="geekblue" >${price.toFixed(2)}</Tag>
     },
   ];
   const turnReward2Price = (claimableReward) => {
@@ -325,11 +326,24 @@ const APRPopOver = ({ mode }) => {
               marginTop: 10
             }}
           >
-            <Table
-              columns={getColumnsForSuggestionsTable}
-              dataSource={calculateClaimableRewards()}
-              pagination={false}
-            />
+            <ConfigProvider
+              theme={{
+                token: {
+                  colorBgContainer: "#000000",
+                  colorBorderSecondary: "#000000",
+                  colorFillAlter: "#beed54",
+                  colorText: "#000000",
+                  colorPrimary: "#beed54",
+                },
+              }}
+            >
+              <Table
+                columns={getColumnsForSuggestionsTable}
+                dataSource={calculateClaimableRewards()}
+                pagination={false}
+              />
+            </ConfigProvider>
+            
           </div>
         ) : (
           ''

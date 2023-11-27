@@ -42,7 +42,7 @@ const items = [
 ];
 const Fees = () => (
   <Descriptions
-    title=""
+    title="Fees"
     items={items}
     contentStyle={{
       color: "white",
