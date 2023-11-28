@@ -19,11 +19,6 @@ body {
   border-top-right-radius: 10px;
 
   .ant-table {
-    // background-color: $dark-color;
-
-    .ant-table-thead > tr > th {
-      // background-color: $primary-color;
-    }
 
     .ant-table-tbody > tr > td {
       border-bottom: 1px solid $primary-color;
@@ -36,13 +31,10 @@ body {
 }
 
 .ant-tag {
-  // background-color: $primary-color;
-  // border-color: $primary-color;
   font-weight: bold;
 }
 
 .ant-table-title {
-  // color: white;
   margin-bottom: 15px;
 }
 

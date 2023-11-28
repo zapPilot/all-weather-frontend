@@ -1,5 +1,9 @@
 import React from "react";
-import { Descriptions, Button } from "antd";
+import {
+  ConfigProvider,
+  Button,
+} from "antd";
+
 const items = [
   {
     key: "1",
@@ -31,33 +35,61 @@ const items = [
     key: "6",
     label: "Tokenomics",
     children: (
-      <a href="https://all-weather.gitbook.io/all-weather-protocol/overview/tokenomics">
-        {" "}
-        <Button type="primary" style={{ color: "white" }}>
+      <ConfigProvider
+        theme={{
+          token: {
+            colorLink: "#beed54",
+          },
+        }}
+      >
+        <Button
+          type="link"
+          href="https://all-weather.gitbook.io/all-weather-protocol/overview/tokenomics"
+          target="_blank"
+        >
           Check the tokenomics for more details
         </Button>
-      </a>
+      </ConfigProvider>
+      
     ),
   },
 ];
-const Fees = () => (
-  <Descriptions
-    title="Fees"
-    items={items}
-    contentStyle={{
-      color: "white",
-      borderColor: "white",
-      paddingInline: 10,
-      lineHeight: 1,
-      marginRight: 15,
+
+const listDisplay = {
+  display: "grid",
+  gridTemplateColumns: "150px auto",
+  marginBottom: 10,
+}
+
+const labelStyle = {
+  display: "block",
+  marginRight: 10,
+  padding: 10,
+  backgroundColor: "#beed54",
+  color: "#000000",
+  fontWeight: 500,
+}
+
+const Fees = () => {
+  return (
+  <div
+    style={{
+      textAlign: "left"
     }}
-    labelStyle={{
-      color: "white",
-      borderColor: "white",
-      paddingInline: 10,
-      lineHeight: 1,
-      marginRight: 15,
-    }}
-  />
-);
+  >
+    {items.map((item, index) => (
+      <div style={listDisplay}>
+        <p style={labelStyle}>{item.label}</p>
+        <p
+          style={{
+            padding: 10,
+          }}
+        >
+          {item.children}
+        </p>
+      </div>
+    ))}
+  </div>
+  )
+};
 export default Fees;
