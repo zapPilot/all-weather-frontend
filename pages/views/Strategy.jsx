@@ -52,6 +52,7 @@ const columns = [
                 height={20}
                 width={20}
                 key={index}
+                alt={`${tokenSymbol}-token`}
               />
             </span>
           );

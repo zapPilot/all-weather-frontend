@@ -97,6 +97,7 @@ const columns = [
         src={protocol_logo_url}
         height={20}
         width={20}
+        alt="protocol"
       />
     ),
   },

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
+import Image from 'next/image'
 import {
   Popover,
   Table,
@@ -97,10 +98,10 @@ const APRPopOver = ({ mode }) => {
   const RewardItem = ({ protocol, rewardKey, value }) => {
     const renderImageAndAPR = (tokenAddr) => (
       <>
-        <img
+        <Image
           src={WEB3_CONTEXT["debankContext"][tokenAddr].img}
-          width="20"
-          height="20"
+          width={20}
+          height={20}
           alt={rewardKey}
         />
         {WEB3_CONTEXT["debankContext"][tokenAddr].symbol}:{" "}
@@ -124,10 +125,10 @@ const APRPopOver = ({ mode }) => {
             alignItems: 'center',
             }}
           >
-            <img
+            <Image
               src="https://icons-for-free.com/iconfiles/png/512/currency+dollar+money+icon-1320085755803367648.png"
-              width="20"
-              height="20"
+              width={20}
+              height={20}
               alt={rewardKey}
               style={{marginRight: '5px'}}
             />
@@ -201,10 +202,10 @@ const APRPopOver = ({ mode }) => {
             alignItems : 'center',
           }}
         >
-          <img
+          <Image
             src={tokenInfo.img}
-            width="20"
-            height="20"
+            width={20}
+            height={20}
             alt={tokenInfo.symbol}
           />
           <span

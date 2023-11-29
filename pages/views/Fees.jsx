@@ -78,7 +78,7 @@ const Fees = () => {
     }}
   >
     {items.map((item, index) => (
-      <div style={listDisplay}>
+      <div style={listDisplay} data={item.key}>
         <p style={labelStyle}>{item.label}</p>
         <p
           style={{

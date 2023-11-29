@@ -36,6 +36,7 @@
 // );
 // export default tokenDropdown;
 import { Select } from "antd";
+import Image from 'next/image'
 import tokens from "./tokens.json";
 const { Option } = Select;
 
@@ -54,7 +55,12 @@ const TokenDropdown = ({ handleChange }) => (
           display: 'flex',
           alignItems: 'center',
         }}>
-          <img src={option.logoURI2} width="20" height="20" alt={option.symbol} />
+          <Image
+            src={option.logoURI2}
+            width={20}
+            height={20}
+            alt={option.symbol}
+          />
           <span
             style={{
               marginLeft: 6
