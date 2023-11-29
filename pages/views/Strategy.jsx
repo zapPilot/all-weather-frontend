@@ -2,7 +2,11 @@ import React from "react";
 import { useContext, useState, useEffect } from "react";
 import { web3Context } from "./Web3DataProvider";
 import { Table } from "antd";
-import { Image, Button } from "antd";
+import {
+  ConfigProvider,
+  Image,
+  Button
+} from "antd";
 import RebalanceChart from "./RebalanceChart";
 import { useWindowWidth } from "../../utils/chartUtils";
 
@@ -11,7 +15,7 @@ const columns = [
     title: "Category",
     dataIndex: "category",
     key: "category",
-    render: (text) => <a>{text}</a>,
+    render: (text) => <span style={{ color: "#ffffff" }}>{text}</span>,
   },
   {
     title: "Target Weight",
@@ -19,7 +23,7 @@ const columns = [
     key: "weight",
     render: (weight) => {
       if (weight !== 0) {
-        return <>{weight}%</>;
+        return <span style={{ color: "#ffffff" }}>{weight}%</span>;
       }
     },
   },
@@ -27,24 +31,32 @@ const columns = [
     title: "Explanation",
     dataIndex: "explanation",
     key: "explanation",
+    render: (explanation) => <span style={{ color: "#ffffff" }}>{explanation}</span>
   },
   {
     title: "Examples",
     key: "examples",
     dataIndex: "examples",
     render: (_, { examples }) => (
-      <>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "auto auto auto",
+        }}
+      >
         {examples.map((tokenSymbol, index) => {
           return (
-            <Image
-              src={`tokenPictures/${tokenSymbol}.png`}
-              height={28}
-              width={28}
-              key={index}
-            />
+            <span key={index}>
+              <Image
+                src={`tokenPictures/${tokenSymbol}.png`}
+                height={20}
+                width={20}
+                alt={`${tokenSymbol}-token`}
+              />
+            </span>
           );
         })}
-      </>
+      </div>
     ),
   },
 ];
@@ -55,14 +67,22 @@ const data = [
     weight: 0,
     examples: [],
     explanation: (
-      <Button type="primary">
-        <a
+      <ConfigProvider
+        theme={{
+          token: {
+            colorLink: "#beed54",
+          },
+        }}
+      >
+        <Button
+          type="link"
           href="https://all-weather.gitbook.io/all-weather-protocol/investment-strategy/how-do-we-pick-cryptos"
           target="_blank"
         >
           Check GitBook for more Details
-        </a>
-      </Button>
+        </Button>
+      </ConfigProvider>
+      
     ),
   },
   {
@@ -145,10 +165,21 @@ const Strategy = () => {
   }, [WEB3_CONTEXT]);
   return (
     <>
-      <Table columns={columns} dataSource={data} />
-      Explanation: There are two layers in this pie chart because of the mapping
-      from assets to categories. Please note that each asset may belong to
-      multiple categories.
+      <ConfigProvider
+        theme={{
+          token: {
+            colorBgContainer: "#000000",
+            colorBorderSecondary: "#000000",
+            colorFillAlter: "#beed54",
+            colorText: "#000000",
+            colorPrimary: "#beed54",
+          },
+        }}
+      >
+        <Table columns={columns} dataSource={data} />
+      </ConfigProvider>
+      <p>Explanation: There are two layers in this pie chart because of the mapping from assets to categories. 
+        Please note that each asset may belong to multiple categories.</p>
       <RebalanceChart
         rebalanceSuggestions={rebalanceSuggestions}
         netWorth={netWorth}

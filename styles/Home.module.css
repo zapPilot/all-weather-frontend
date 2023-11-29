@@ -14,10 +14,11 @@
 .bgStyle {
   background-image: linear-gradient(
     rgba(0, 0, 0, 0.1), 
-    rgba(0, 0, 0, 0.7)
-  ), url('../public/images/bg.jpg');
+    rgba(0, 0, 0, 0.6)
+  ), url('../public/images/bg-8.jpg');
   background-position: right top;
   background-repeat: no-repeat;
+  background-size: cover;
   box-shadow: 0 0 100px 100px #000000 inset;
 }
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
+import Image from 'next/image'
 import {
   Popover,
   Table,
@@ -97,10 +98,10 @@ const APRPopOver = ({ mode }) => {
   const RewardItem = ({ protocol, rewardKey, value }) => {
     const renderImageAndAPR = (tokenAddr) => (
       <>
-        <img
+        <Image
           src={WEB3_CONTEXT["debankContext"][tokenAddr].img}
-          width="20"
-          height="20"
+          width={20}
+          height={20}
           alt={rewardKey}
         />
         {WEB3_CONTEXT["debankContext"][tokenAddr].symbol}:{" "}
@@ -124,10 +125,10 @@ const APRPopOver = ({ mode }) => {
             alignItems: 'center',
             }}
           >
-            <img
+            <Image
               src="https://icons-for-free.com/iconfiles/png/512/currency+dollar+money+icon-1320085755803367648.png"
-              width="20"
-              height="20"
+              width={20}
+              height={20}
               alt={rewardKey}
               style={{marginRight: '5px'}}
             />
@@ -195,14 +196,26 @@ const APRPopOver = ({ mode }) => {
       key: "token",
       width: 24,
       render: (tokenInfo) => (
-        <div>
-          <img
+        <div
+          style={{
+            display: 'flex',
+            alignItems : 'center',
+          }}
+        >
+          <Image
             src={tokenInfo.img}
-            width="20"
-            height="20"
+            width={20}
+            height={20}
             alt={tokenInfo.symbol}
           />
-          {tokenInfo.symbol}
+          <span
+            style={{
+              marginLeft: 10,
+              color: "#ffffff",
+            }}
+          >
+            {tokenInfo.symbol}
+          </span>
         </div>
       ),
     },
@@ -211,14 +224,14 @@ const APRPopOver = ({ mode }) => {
       dataIndex: "amount",
       key: "amount",
       width: 24,
-      render: (amount) => <Tag key={amount}>{amount}</Tag>,
+      render: (amount) => <span style={{ color: "#ffffff" }}>{amount}</span>,
     },
     {
       title: "Value",
       dataIndex: "value",
       key: "value",
       width: 24,
-      render: (price) => <Tag key={price}>${price.toFixed(2)}</Tag>,
+      render: (price) => <Tag color="geekblue" >${price.toFixed(2)}</Tag>
     },
   ];
   const turnReward2Price = (claimableReward) => {
@@ -291,13 +304,13 @@ const APRPopOver = ({ mode }) => {
           margin: '20px 0'
         }}
       >
-        <b
+        <p
           style={{
-            marginBottom: 10,
+            fontWeight: 500,
           }}
         >
           Claimable Rewards: ${sumOfRewardsDenominatedInUSD.toFixed(2)}
-        </b>
+        </p>
         <ConfigProvider
         theme={{
           token: {
@@ -307,13 +320,32 @@ const APRPopOver = ({ mode }) => {
         }}
       >
         <ClaimButton />
-      </ConfigProvider>  
+      </ConfigProvider>
         {isConnected ? (
-          <Table
-            columns={getColumnsForSuggestionsTable}
-            dataSource={calculateClaimableRewards()}
-            pagination={false}
-          />
+          <div
+            style={{
+              marginTop: 10
+            }}
+          >
+            <ConfigProvider
+              theme={{
+                token: {
+                  colorBgContainer: "#000000",
+                  colorBorderSecondary: "#000000",
+                  colorFillAlter: "#beed54",
+                  colorText: "#000000",
+                  colorPrimary: "#beed54",
+                },
+              }}
+            >
+              <Table
+                columns={getColumnsForSuggestionsTable}
+                dataSource={calculateClaimableRewards()}
+                pagination={false}
+              />
+            </ConfigProvider>
+            
+          </div>
         ) : (
           ''
         )}

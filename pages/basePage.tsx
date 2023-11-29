@@ -2,6 +2,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useState } from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
+import Image from 'next/image'
 import { useAccount } from "wagmi";
 import {
   Layout,
@@ -56,7 +57,9 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
                 <NavBar />
               </div>
             </HeaderInner>
-            <ConnectButton />
+            <div className="connect-button">
+              <ConnectButton/>
+            </div>
           </Header>
         </Affix>
         
@@ -71,9 +74,11 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
             rel="noopener noreferrer"
             target="_blank"
           >
-            <img
+            <Image
               src="../socialIcon/home.png"
               alt="home"
+              width={20}
+              height={20}
             />
           </a>
           <a
@@ -81,9 +86,11 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
             rel="noopener noreferrer"
             target="_blank"
           >
-            <img
+            <Image
               src="../socialIcon/document.png"
               alt="document"
+              width={20}
+              height={20}
             />
           </a>
           <a
@@ -91,9 +98,11 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
             rel="noopener noreferrer"
             target="_blank"
           >
-            <img
+            <Image
               src="../socialIcon/twitterx.png"
               alt="twitter"
+              width={20}
+              height={20}
             />
           </a>
           <a
@@ -101,9 +110,11 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
             rel="noopener noreferrer"
             target="_blank"
           >
-            <img
+            <Image
               src="../socialIcon/discord.png"
               alt="discord"
+              width={20}
+              height={20}
             />
           </a>
         </Footer>

@@ -36,36 +36,14 @@
 // );
 // export default tokenDropdown;
 import { Select } from "antd";
+import Image from 'next/image'
 import tokens from "./tokens.json";
 const { Option } = Select;
 
 const TokenDropdown = ({ handleChange }) => (
   <Select
     onChange={handleChange}
-    defaultValue={
-      <Option key="USDT" value="0x55d398326f99059ff775485246999027b3197955">
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
-          <img
-            src="https://icons.llamao.fi/icons/agg_icons/binance?w=24&h=24"
-            width="20"
-            height="20"
-            alt="usdt"
-          />
-          <span
-            style={{
-              marginLeft: 6
-            }}
-          >
-            USDT
-          </span>
-        </div>
-      </Option>
-    }
+    defaultValue="0x55d398326f99059ff775485246999027b3197955"
     theme="light"
     style={{
       width: '100px',
@@ -73,8 +51,24 @@ const TokenDropdown = ({ handleChange }) => (
   >
     {tokens.props.pageProps.tokenList["56"].slice(0, 20).map((option) => (
       <Option key={option.address} value={option.address}>
-        <img src={option.logoURI2} width="20" height="20" alt={option.symbol} />
-        {option.symbol}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+        }}>
+          <Image
+            src={option.logoURI2}
+            width={20}
+            height={20}
+            alt={option.symbol}
+          />
+          <span
+            style={{
+              marginLeft: 6
+            }}
+          >
+            {option.symbol}
+          </span>
+        </div>
       </Option>
     ))}
   </Select>

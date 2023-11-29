@@ -19,31 +19,22 @@ body {
   border-top-right-radius: 10px;
 
   .ant-table {
-    background-color: $dark-color;
-    color: white;
 
-    .ant-table-thead > tr > th {
-      background-color: $primary-color;
-    }
-
-    .ant-table-thead > tr > td {
-      background-color: $primary-color;
+    .ant-table-tbody > tr > td {
+      border-bottom: 1px solid $primary-color;
     }
 
     .ant-table-tbody > tr > td.ant-table-cell-row-hover {
-      background-color: #474747;
+      background-color: #333333;
     }
   }
 }
 
 .ant-tag {
-  background-color: $primary-color;
-  border-color: $primary-color;
   font-weight: bold;
 }
 
 .ant-table-title {
-  color: white;
   margin-bottom: 15px;
 }
 
@@ -98,7 +89,7 @@ body {
   box-shadow: transparent;
 }
 
-[data-rk] .ju367v1n {
+.connect-button {
   position: absolute;
   top: 12px;
   right: 0;
