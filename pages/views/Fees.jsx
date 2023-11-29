@@ -77,8 +77,8 @@ const Fees = () => {
       textAlign: "left"
     }}
   >
-    {items.map((item, index) => (
-      <div style={listDisplay} data={item.key}>
+    {items.map((item, key) => (
+      <div style={listDisplay} key={item.key}>
         <p style={labelStyle}>{item.label}</p>
         <p
           style={{

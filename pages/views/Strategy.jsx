@@ -46,12 +46,11 @@ const columns = [
       >
         {examples.map((tokenSymbol, index) => {
           return (
-            <span>
+            <span key={index}>
               <Image
                 src={`tokenPictures/${tokenSymbol}.png`}
                 height={20}
                 width={20}
-                key={index}
                 alt={`${tokenSymbol}-token`}
               />
             </span>
