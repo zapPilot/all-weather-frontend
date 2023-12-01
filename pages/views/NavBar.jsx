@@ -15,7 +15,7 @@ const items = [
       {
         label: (
           <a
-            href="https://debank.com/bundles/126382/portfolio"
+            href="https://debank.com/profile/0xd56d8dfd3a3d6f6dafc0b7b6945f6e7ab138706e"
             target="_blank"
             rel="noopener noreferrer"
           >
