@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  ConfigProvider,
-  Row,
-  Col,
-  Card,
-  Statistic
-} from "antd";
+import { ConfigProvider, Row, Col, Card, Statistic } from "antd";
 import HistoricalDataChart from "./HistoricalDataChart";
 
 const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
@@ -28,26 +22,26 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
         theme={{
           components: {
             Statistic: {
-              titleFontSize: 16
+              titleFontSize: 16,
             },
           },
           token: {
             colorBgContainer: "transparent",
             colorBorderSecondary: "#999999",
             colorTextDescription: "white",
-          }
+          },
         }}
       >
-        <Row 
-          gutter={[{ 
-            xs: 8,
-            md: 16
-          }, 8]}
+        <Row
+          gutter={[
+            {
+              xs: 8,
+              md: 16,
+            },
+            8,
+          ]}
         >
-          <Col
-            xs={12}
-            md={8}
-          >
+          <Col xs={12} md={8}>
             <Card>
               <Statistic
                 title="Reward APR"
@@ -58,10 +52,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
               />
             </Card>
           </Col>
-          <Col
-            xs={12}
-            md={8}
-          >
+          <Col xs={12} md={8}>
             <Card>
               <Statistic
                 title={`ROI (${ROI.days} days)`}
@@ -71,10 +62,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
               />
             </Card>
           </Col>
-          <Col
-            xs={12}
-            md={8}
-          >
+          <Col xs={12} md={8}>
             <Card>
               <Statistic
                 title={`Sharpe Ratio (${sharpeRatio.days} days)`}
@@ -85,10 +73,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
               />
             </Card>
           </Col>
-          <Col
-            xs={12}
-            md={8}
-          >
+          <Col xs={12} md={8}>
             <Card>
               <Statistic
                 title={`MAX Drawdown (${ROI.days} days)`}
@@ -98,10 +83,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
               />
             </Card>
           </Col>
-          <Col
-            xs={12}
-            md={8}
-          >
+          <Col xs={12} md={8}>
             <Card>
               <Statistic
                 title={
@@ -119,10 +101,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
               />
             </Card>
           </Col>
-          <Col 
-            xs={12}
-            md={8}
-          >
+          <Col xs={12} md={8}>
             <Card>
               <Statistic
                 title="Beta"
@@ -138,7 +117,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
       <p
         className="heading-subtitle"
         style={{
-          margin: '32px 0',
+          margin: "32px 0",
         }}
       >
         Historical Reward APRs

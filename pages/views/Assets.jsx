@@ -1,10 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
-import {
-  ConfigProvider,
-  Table,
-  Tag,
-  Image
-} from "antd";
+import { ConfigProvider, Table, Tag, Image } from "antd";
 import { web3Context } from "./Web3DataProvider";
 const upcomingProtocol = [
   {
@@ -93,19 +88,14 @@ const columns = [
     dataIndex: "protocol",
     key: "protocol",
     render: (protocol_logo_url) => (
-      <Image
-        src={protocol_logo_url}
-        height={20}
-        width={20}
-        alt="protocol"
-      />
+      <Image src={protocol_logo_url} height={20} width={20} alt="protocol" />
     ),
   },
   {
     title: "Asset",
     dataIndex: "asset",
     key: "asset",
-    render: (asset) => <span style={{ color: "#ffffff" }}>{asset}</span>
+    render: (asset) => <span style={{ color: "#ffffff" }}>{asset}</span>,
   },
   {
     title: "Weight",
@@ -117,13 +107,17 @@ const columns = [
     title: "Worth",
     dataIndex: "worth",
     key: "worth",
-    render: (worth) => <span style={{ color: "#ffffff" }}>${worth.toFixed(2)}</span>,
+    render: (worth) => (
+      <span style={{ color: "#ffffff" }}>${worth.toFixed(2)}</span>
+    ),
   },
   {
     title: "APR",
     dataIndex: "apr",
     key: "apr",
-    render: (apr) => <span style={{ color: "#ffffff" }}>{(apr * 100).toFixed(2)}%</span>,
+    render: (apr) => (
+      <span style={{ color: "#ffffff" }}>{(apr * 100).toFixed(2)}%</span>
+    ),
   },
   {
     title: "Categories",
@@ -200,7 +194,6 @@ const Assets = () => {
         <p className="heading-subtitle">Historical Protocols</p>
         <Table columns={columns} dataSource={hardcodedShowCases} />
       </ConfigProvider>
-      
     </>
   );
 };

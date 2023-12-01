@@ -2,12 +2,7 @@ import React from "react";
 import { useEffect, useState, useContext } from "react";
 import RebalancerWidget from "./Rebalancer";
 import PortfolioMetaTab from "./PortfolioMetaTab";
-import {
-  Row,
-  Col,
-  ConfigProvider,
-  Button,
-} from "antd";
+import { Row, Col, ConfigProvider, Button } from "antd";
 import Link from "next/link";
 import { web3Context } from "./Web3DataProvider";
 import { useWindowHeight } from "../../utils/chartUtils";
@@ -20,13 +15,13 @@ export default function ExampleUI() {
   const [portfolioApr, setPortfolioApr] = useState(0);
   const [isHover, setIsHover] = useState(false);
 
-   const handleMouseEnter = () => {
-      setIsHover(true);
-   };
+  const handleMouseEnter = () => {
+    setIsHover(true);
+  };
 
-   const handleMouseLeave = () => {
-      setIsHover(false);
-   };
+  const handleMouseLeave = () => {
+    setIsHover(false);
+  };
 
   useEffect(() => {
     async function fetchPortfolioMetadata() {
@@ -43,13 +38,13 @@ export default function ExampleUI() {
   }, [WEB3_CONTEXT, portfolioApr]);
   return (
     <div className={styles.divInstallment}>
-      <Row 
-        gutter={{ 
+      <Row
+        gutter={{
           xs: 8,
-          md: 16
+          md: 16,
         }}
       >
-        <Col 
+        <Col
           xs={{
             span: 24,
             offset: 0,
@@ -60,41 +55,47 @@ export default function ExampleUI() {
           }}
           className={styles.bgStyle}
         >
-          <div 
+          <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: windowHeight
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: windowHeight,
             }}
           >
             <center>
               <h1
-                style={{ 
+                style={{
                   marginBottom: 32,
-                  color: '#beed54'
+                  color: "#beed54",
                 }}
                 className="heading-title"
               >
                 All Weather Protocol
               </h1>
-              <h2 className="heading-subtitle">Biggest Liquidity Mining Index Fund</h2>
+              <h2 className="heading-subtitle">
+                Biggest Liquidity Mining Index Fund
+              </h2>
               <p className="heading-subtitle">Click Once, Mine Forever.</p>
               <p className="heading-subtitle">
                 Enjoy
                 <span
                   style={{
-                    color: '#beed54'
+                    color: "#beed54",
                   }}
-                  className="heading-title"> {portfolioApr.toFixed(2)}% </span>
+                  className="heading-title"
+                >
+                  {" "}
+                  {portfolioApr.toFixed(2)}%{" "}
+                </span>
                 APR
               </p>
               <ConfigProvider
                 theme={{
                   token: {
-                    colorPrimary: '#beed54',
-                    colorPrimaryBorder: '#beed54',
-                  }
+                    colorPrimary: "#beed54",
+                    colorPrimaryBorder: "#beed54",
+                  },
                 }}
               >
                 <Link href="#zapSection">
@@ -104,8 +105,8 @@ export default function ExampleUI() {
                     className={styles.btnInvest}
                     style={
                       isHover
-                      ? {backgroundColor: '#beed54', color: '#000000'}
-                      : {backgroundColor: 'transparent', color: '#beed54'}
+                        ? { backgroundColor: "#beed54", color: "#000000" }
+                        : { backgroundColor: "transparent", color: "#beed54" }
                     }
                     onMouseEnter={handleMouseEnter}
                     onMouseLeave={handleMouseLeave}
@@ -130,7 +131,6 @@ export default function ExampleUI() {
           <center>
             <PortfolioMetaTab />
           </center>
-          
         </Col>
         <Col
           xs={{

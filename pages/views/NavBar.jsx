@@ -1,10 +1,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { 
-  Menu,
-  ConfigProvider,
-} from "antd";
+import { Menu, ConfigProvider } from "antd";
 
 const items = [
   {
@@ -77,10 +74,10 @@ export default function NavBar() {
       theme={{
         components: {
           Menu: {
-            darkItemBg: 'transparent',
-            darkItemColor: '#999999',
-            darkItemHoverColor: '#ffffff',
-            darkSubMenuItemBg: '#222222',
+            darkItemBg: "transparent",
+            darkItemColor: "#999999",
+            darkItemHoverColor: "#ffffff",
+            darkSubMenuItemBg: "#222222",
           },
         },
       }}
@@ -93,6 +90,5 @@ export default function NavBar() {
         items={items}
       />
     </ConfigProvider>
-    
   );
 }

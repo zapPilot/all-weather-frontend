@@ -12,10 +12,8 @@
 }
 
 .bgStyle {
-  background-image: linear-gradient(
-    rgba(0, 0, 0, 0.1), 
-    rgba(0, 0, 0, 0.6)
-  ), url('../public/images/bg-8.jpg');
+  background-image: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.6)),
+    url("../public/images/bg-8.jpg");
   background-position: right top;
   background-repeat: no-repeat;
   background-size: cover;
@@ -26,7 +24,7 @@
   position: absolute;
   left: 16px;
   color: #999999;
-  visibility: hidden
+  visibility: hidden;
 }
 
 .divInstallment {
@@ -136,7 +134,7 @@
   .header {
     height: 104px;
   }
-  
+
   .menuIcon {
     visibility: visible;
   }
@@ -144,7 +142,7 @@
   .menuBar {
     visibility: hidden;
   }
-  
+
   .menuBarShow {
     margin-top: 40px;
     visibility: visible;

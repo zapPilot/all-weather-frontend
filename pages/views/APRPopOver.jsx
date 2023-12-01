@@ -1,12 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
-import Image from 'next/image'
-import {
-  Popover,
-  Table,
-  Tag,
-  Spin,
-  ConfigProvider,
-} from "antd";
+import Image from "next/image";
+import { Popover, Table, Tag, Spin, ConfigProvider } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { web3Context } from "./Web3DataProvider";
 import ClaimButton from "./ClaimButton";
@@ -120,9 +114,10 @@ const APRPopOver = ({ mode }) => {
     const renderReward = () => {
       if (rewardKey === "Swap Fee" || rewardKey === "Underlying APY") {
         return (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
             }}
           >
             <Image
@@ -130,7 +125,7 @@ const APRPopOver = ({ mode }) => {
               width={20}
               height={20}
               alt={rewardKey}
-              style={{marginRight: '5px'}}
+              style={{ marginRight: "5px" }}
             />
             {`${rewardKey}: ${(value["APR"] * 100).toFixed(2)}%`}
           </div>
@@ -198,8 +193,8 @@ const APRPopOver = ({ mode }) => {
       render: (tokenInfo) => (
         <div
           style={{
-            display: 'flex',
-            alignItems : 'center',
+            display: "flex",
+            alignItems: "center",
           }}
         >
           <Image
@@ -231,7 +226,7 @@ const APRPopOver = ({ mode }) => {
       dataIndex: "value",
       key: "value",
       width: 24,
-      render: (price) => <Tag color="geekblue" >${price.toFixed(2)}</Tag>
+      render: (price) => <Tag color="geekblue">${price.toFixed(2)}</Tag>,
     },
   ];
   const turnReward2Price = (claimableReward) => {
@@ -289,7 +284,7 @@ const APRPopOver = ({ mode }) => {
   if (mode === "percentage") {
     return (
       <Popover
-        style={{ width: '500px' }}
+        style={{ width: "500px" }}
         content={renderContent()}
         title="Projected APR"
         trigger="hover"
@@ -301,7 +296,7 @@ const APRPopOver = ({ mode }) => {
     return (
       <div
         style={{
-          margin: '20px 0'
+          margin: "20px 0",
         }}
       >
         <p
@@ -312,19 +307,19 @@ const APRPopOver = ({ mode }) => {
           Claimable Rewards: ${sumOfRewardsDenominatedInUSD.toFixed(2)}
         </p>
         <ConfigProvider
-        theme={{
-          token: {
-            colorPrimary: '#beed54',
-            colorTextLightSolid: '#000000',
-          },
-        }}
-      >
-        <ClaimButton />
-      </ConfigProvider>
+          theme={{
+            token: {
+              colorPrimary: "#beed54",
+              colorTextLightSolid: "#000000",
+            },
+          }}
+        >
+          <ClaimButton />
+        </ConfigProvider>
         {isConnected ? (
           <div
             style={{
-              marginTop: 10
+              marginTop: 10,
             }}
           >
             <ConfigProvider
@@ -344,10 +339,9 @@ const APRPopOver = ({ mode }) => {
                 pagination={false}
               />
             </ConfigProvider>
-            
           </div>
         ) : (
-          ''
+          ""
         )}
       </div>
     );

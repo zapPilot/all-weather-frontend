@@ -42,7 +42,7 @@ const RebalancerWidget = () => {
     justifyContent: "center",
     alignItems: "center",
     height: "15rem",
-  }
+  };
 
   if (isLoading) {
     return (
