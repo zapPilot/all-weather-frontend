@@ -147,4 +147,9 @@
     margin-top: 40px;
     visibility: visible;
   }
+
+  .bgStyle {
+    background-position: left top;
+    background-size: 500px;
+  }
 }

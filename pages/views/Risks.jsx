@@ -1,40 +1,56 @@
 import React from "react";
-import { Descriptions } from "antd";
+
 const items = [
   {
     key: "1",
-    label: <div style={{ color: "red" }}>Max Drawback</div>,
+    label: "Max Drawback",
     children: "~0%",
   },
   {
     key: "2",
-    label: <div style={{ color: "red" }}>Lock</div>,
+    label: "Lock",
     children: "2 days, due to ApolloX's constraint",
   },
   {
     key: "3",
-    label: <div style={{ color: "red" }}>Impermanent Loss</div>,
+    label: "Impermanent Loss",
     children: "~0%",
   },
 ];
+
+const listDisplay = {
+  display: "grid",
+  gridTemplateColumns: "150px auto",
+  marginBottom: 10,
+};
+
+const labelStyle = {
+  display: "block",
+  marginRight: 10,
+  padding: 10,
+  backgroundColor: "#e63a8b",
+  color: "#000000",
+  fontWeight: 500,
+};
+
 const Fees = () => (
-  <Descriptions
-    title=""
-    items={items}
-    contentStyle={{
-      color: "white",
-      borderColor: "white",
-      paddingInline: 10,
-      lineHeight: 1,
-      marginRight: 15,
+  <div
+    style={{
+      textAlign: "left",
     }}
-    labelStyle={{
-      color: "white",
-      borderColor: "white",
-      paddingInline: 10,
-      lineHeight: 1,
-      marginRight: 15,
-    }}
-  />
+  >
+    {items.map((item, key) => (
+      <div style={listDisplay} key={item.key}>
+        <p style={labelStyle}>{item.label}</p>
+        <p
+          style={{
+            padding: 10,
+          }}
+        >
+          {item.children}
+        </p>
+      </div>
+    ))}
+  </div>
 );
 export default Fees;
