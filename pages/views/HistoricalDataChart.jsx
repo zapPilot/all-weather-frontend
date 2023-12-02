@@ -31,8 +31,8 @@ const HistoricalDataChart = () => {
       tickCount: 5,
     },
     lineStyle: {
-      stroke: '#beed54',
-    }
+      stroke: "#beed54",
+    },
   };
 
   return <Line {...config} />;

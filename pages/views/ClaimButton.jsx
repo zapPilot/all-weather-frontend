@@ -1,8 +1,4 @@
-import {
-  Button,
-  message,
-  Space,
-} from "antd";
+import { Button, message, Space } from "antd";
 import {
   fetch1InchSwapData,
   portfolioContractAddress,
@@ -113,9 +109,9 @@ const ClaimButton = () => {
   return (
     <div>
       {contextHolder}
-      <Space.Compact 
+      <Space.Compact
         style={{
-          margin: '10px 0'
+          margin: "10px 0",
         }}
       >
         <Button

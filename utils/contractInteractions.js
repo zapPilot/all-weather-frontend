@@ -18,19 +18,25 @@ export const selectBefore = (handleChange) => (
   >
     {tokens.props.pageProps.tokenList["56"].slice(0, 20).map((option) => (
       <Option key={option.address} value={option.address}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-        }}>
-          <img src={option.logoURI2} width="20" height="20" alt={option.symbol} />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <img
+            src={option.logoURI2}
+            width="20"
+            height="20"
+            alt={option.symbol}
+          />
           <span
             style={{
-              marginLeft: 6
+              marginLeft: 6,
             }}
           >
             {option.symbol}
           </span>
-          
         </div>
       </Option>
     ))}

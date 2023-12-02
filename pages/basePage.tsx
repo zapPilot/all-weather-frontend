@@ -2,22 +2,15 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useState } from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
-import Image from 'next/image'
+import Image from "next/image";
 import { useAccount } from "wagmi";
-import {
-  Layout,
-  Affix,
-} from 'antd';
+import { Layout, Affix } from "antd";
 import styles from "../styles/Home.module.css";
 import NavBar from "./views/NavBar.jsx";
 import HeaderInner from "./views/Header";
 import Web3DataProvider from "./views/Web3DataProvider";
 
-import {
-  HomeFilled,
-  AuditOutlined,
-  MenuOutlined,
-} from "@ant-design/icons";
+import { HomeFilled, AuditOutlined, MenuOutlined } from "@ant-design/icons";
 
 const { Header, Footer, Content } = Layout;
 interface BasePageProps {
@@ -29,7 +22,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
   const [menuShow, setMenuShow] = useState(false);
   const handleMenuShow = () => {
     setMenuShow(!menuShow);
- };
+  };
 
   return (
     <div>
@@ -38,31 +31,23 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
         <meta content="All Weather Protocol" name="description" />
         <link href="/favicon.ico" rel="icon" />
       </Head>
-      <Layout
-        style={{ background: '#000000' }}
-      >
+      <Layout style={{ background: "#000000" }}>
         <Affix offsetTop={0}>
           <Header className={styles.header}>
             <div className={styles.menuIcon}>
-              <MenuOutlined onClick={handleMenuShow}/>
+              <MenuOutlined onClick={handleMenuShow} />
             </div>
             <HeaderInner>
-              <div
-                className={
-                  menuShow
-                  ? styles.menuBarShow
-                  : styles.menuBar
-                }
-              >
+              <div className={menuShow ? styles.menuBarShow : styles.menuBar}>
                 <NavBar />
               </div>
             </HeaderInner>
             <div className="connect-button">
-              <ConnectButton/>
+              <ConnectButton />
             </div>
           </Header>
         </Affix>
-        
+
         <Content>
           <Web3DataProvider address={address}>
             <div>{children}</div>

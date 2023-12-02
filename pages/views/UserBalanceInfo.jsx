@@ -37,12 +37,8 @@ const UserBalanceInfo = ({ tvl }) => {
         color: "white",
       }}
     >
-      <h3>
-        Your Deposit: ${userDeposit}
-      </h3>
-      <b>
-        Your Share: {userPercentage.times(100).toFixed(2)}%
-      </b>
+      <h3>Your Deposit: ${userDeposit}</h3>
+      <b>Your Share: {userPercentage.times(100).toFixed(2)}%</b>
       <h3>
         Monthly Interest: $
         {((userDeposit * portfolioApr) / 100 / 12).toFixed(2)}

@@ -1,11 +1,4 @@
-import {
-  Button,
-  Space,
-  Modal,
-  message,
-  Spin,
-  ConfigProvider
-} from "antd";
+import { Button, Space, Modal, message, Spin, ConfigProvider } from "antd";
 import { z } from "zod";
 import { encodeFunctionData } from "viem";
 import { portfolioContractAddress, USDT } from "../../utils/oneInch";
@@ -366,21 +359,19 @@ const ZapInButton = () => {
       <ConfigProvider
         theme={{
           token: {
-            colorPrimary: '#beed54',
-            colorTextLightSolid: '#000000',
+            colorPrimary: "#beed54",
+            colorTextLightSolid: "#000000",
           },
         }}
       >
-        <Space.Compact 
+        <Space.Compact
           style={{
-            margin: '10px 0'
+            margin: "10px 0",
           }}
         >
-          {
-            selectBefore((value) => {
-              setChosenToken(value);
-            })
-          }
+          {selectBefore((value) => {
+            setChosenToken(value);
+          })}
           <NumericInput
             placeholder={`Balance: ${
               chosenTokenBalance ? chosenTokenBalance.formatted : 0
@@ -390,10 +381,7 @@ const ZapInButton = () => {
               handleInputChange(value);
             }}
           />
-          <Button 
-            type="primary"
-            onClick={handleOnClickMax}
-          >
+          <Button type="primary" onClick={handleOnClickMax}>
             Max
           </Button>
         </Space.Compact>
@@ -404,7 +392,7 @@ const ZapInButton = () => {
           type="primary"
           icon={<DollarOutlined />}
           style={{
-            margin: '10px 0'
+            margin: "10px 0",
           }}
         >
           {/* {!approveReady ? approvingWording : apiDataReady ? normalWording : loadingWording} */}

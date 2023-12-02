@@ -1,10 +1,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { 
-  Menu,
-  ConfigProvider,
-} from "antd";
+import { Menu, ConfigProvider } from "antd";
 
 const items = [
   {
@@ -18,7 +15,7 @@ const items = [
       {
         label: (
           <a
-            href="https://debank.com/bundles/126382/portfolio"
+            href="https://debank.com/profile/0xd56d8dfd3a3d6f6dafc0b7b6945f6e7ab138706e"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -77,10 +74,10 @@ export default function NavBar() {
       theme={{
         components: {
           Menu: {
-            darkItemBg: 'transparent',
-            darkItemColor: '#999999',
-            darkItemHoverColor: '#ffffff',
-            darkSubMenuItemBg: '#222222',
+            darkItemBg: "transparent",
+            darkItemColor: "#999999",
+            darkItemHoverColor: "#ffffff",
+            darkSubMenuItemBg: "#222222",
           },
         },
       }}
@@ -93,6 +90,5 @@ export default function NavBar() {
         items={items}
       />
     </ConfigProvider>
-    
   );
 }

@@ -10,7 +10,14 @@ const DOMforCefi = ({ betterPoolsMetadata }) => {
   const dataSource = [
     {
       key: "1",
-      token: <Image src="../tokenPictures/ETH.png" height={28} width={28} alt="ETH-token" />,
+      token: (
+        <Image
+          src="../tokenPictures/ETH.png"
+          height={28}
+          width={28}
+          alt="ETH-token"
+        />
+      ),
       tvl: betterPoolsMetadata ? (
         "$" +
         betterPoolsMetadata.categorized_positions.long_term_bond.sum.toFixed(2)
@@ -32,10 +39,30 @@ const DOMforCefi = ({ betterPoolsMetadata }) => {
       key: "2",
       token: (
         <>
-          <Image src="../tokenPictures/USDT.png" height={28} width={28} alt="USDT-token" />
-          <Image src="../tokenPictures/USDC.png" height={28} width={28} alt="USDC-token" />
-          <Image src="../tokenPictures/DAI.png" height={28} width={28} alt="DAI-token" />
-          <Image src="../tokenPictures/FRAX.png" height={28} width={28} alt="FRAX-token" />
+          <Image
+            src="../tokenPictures/USDT.png"
+            height={28}
+            width={28}
+            alt="USDT-token"
+          />
+          <Image
+            src="../tokenPictures/USDC.png"
+            height={28}
+            width={28}
+            alt="USDC-token"
+          />
+          <Image
+            src="../tokenPictures/DAI.png"
+            height={28}
+            width={28}
+            alt="DAI-token"
+          />
+          <Image
+            src="../tokenPictures/FRAX.png"
+            height={28}
+            width={28}
+            alt="FRAX-token"
+          />
         </>
       ),
       tvl: betterPoolsMetadata ? (

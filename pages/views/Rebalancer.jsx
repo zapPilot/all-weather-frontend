@@ -42,7 +42,7 @@ const RebalancerWidget = () => {
     justifyContent: "center",
     alignItems: "center",
     height: "15rem",
-  }
+  };
 
   if (isLoading) {
     return (
@@ -66,7 +66,7 @@ const RebalancerWidget = () => {
             <h3>
               TVL: ${netWorth.toFixed(2)}{" "}
               <a
-                href="https://debank.com/bundles/136612/portfolio"
+                href="https://debank.com/profile/0xd56d8dfd3a3d6f6dafc0b7b6945f6e7ab138706e"
                 target="_blank"
               >
                 <LinkOutlined />
