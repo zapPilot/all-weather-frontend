@@ -44,7 +44,7 @@ const PortfolioMetaTab = () => {
     }
 
     const updateWindowWidth = () => {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         setWindowWidth(window.innerWidth);
       }
     };

@@ -81,8 +81,8 @@ export default function NavBar() {
           },
         },
         token: {
-          colorPrimary: "transparent"
-        }
+          colorPrimary: "transparent",
+        },
       }}
     >
       <Menu

@@ -34,12 +34,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
         <Affix offsetTop={0}>
           <Header className={styles.header}>
             <div className="div-logo">
-              <Image
-                src="../logo.png"
-                alt="logo"
-                width={40}
-                height={40}
-              />
+              <Image src="../logo.png" alt="logo" width={40} height={40} />
             </div>
             <div className={styles.menuIcon}>
               <MenuOutlined onClick={handleMenuShow} />

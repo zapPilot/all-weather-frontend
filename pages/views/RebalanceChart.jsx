@@ -175,8 +175,8 @@ export default function BasicSunburst(props) {
   const divSunBurst = {
     margin: "0 auto",
     height: props.windowWidth > 767 ? 500 : 300,
-    width: props.windowWidth > 767 ? 500 : 300
-  }
+    width: props.windowWidth > 767 ? 500 : 300,
+  };
 
   useEffect(() => {
     // set showCategory = true, to show its category. For instance, long_term_bond
