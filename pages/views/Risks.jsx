@@ -28,7 +28,7 @@ const labelStyle = {
   display: "block",
   marginRight: 10,
   padding: 10,
-  backgroundColor: "#e63a8b",
+  backgroundColor: "#FF6347",
   color: "#000000",
   fontWeight: 500,
 };

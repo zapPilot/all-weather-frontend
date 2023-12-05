@@ -291,8 +291,8 @@ const ZapInButton = () => {
           onClick={handleCancel}
           style={{
             color: "black",
-            backgroundColor: "#beed54",
-            borderColor: "#beed54",
+            backgroundColor: "#5DFDCB",
+            borderColor: "#5DFDCB",
           }}
         >
           Return
@@ -301,7 +301,7 @@ const ZapInButton = () => {
     >
       <div
         style={{
-          border: "2px solid #beed54",
+          border: "2px solid #5DFDCB",
           borderRadius: "1rem",
           padding: "10px", // This creates a margin-like effect for the border
           margin: "10px", // Adjust this value to set the distance of the border from the modal frame
@@ -359,7 +359,7 @@ const ZapInButton = () => {
       <ConfigProvider
         theme={{
           token: {
-            colorPrimary: "#beed54",
+            colorPrimary: "#5DFDCB",
             colorTextLightSolid: "#000000",
           },
         }}

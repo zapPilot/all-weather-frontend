@@ -23,6 +23,7 @@ const PortfolioMetaTab = () => {
   const [sharpeRatio, setSharpeRatio] = useState({ days: 0, value: 0 });
   const [ROI, setROI] = useState({ days: 0, total: 0 });
   const [maxDrawdown, setMaxDrawdown] = useState(0);
+  const [windowWidth, setWindowWidth] = useState(0);
 
   useEffect(() => {
     async function fetchPortfolioMetadata() {
@@ -41,6 +42,14 @@ const PortfolioMetaTab = () => {
         );
       }
     }
+
+    const updateWindowWidth = () => {
+      if (typeof window !== 'undefined') {
+        setWindowWidth(window.innerWidth);
+      }
+    };
+
+    updateWindowWidth();
     fetchPortfolioMetadata();
   }, [WEB3_CONTEXT, portfolioApr, sharpeRatio, ROI, maxDrawdown]);
 
@@ -61,10 +70,11 @@ const PortfolioMetaTab = () => {
       theme={{
         components: {
           Tabs: {
-            inkBarColor: "#beed54",
-            itemActiveColor: "#beed54",
-            itemHoverColor: "#beed54",
-            itemSelectedColor: "#beed54",
+            inkBarColor: "#5DFDCB",
+            itemActiveColor: "#5DFDCB",
+            itemHoverColor: "#5DFDCB",
+            itemSelectedColor: "#5DFDCB",
+            horizontalItemGutter: 40,
           },
         },
         token: {
@@ -74,7 +84,7 @@ const PortfolioMetaTab = () => {
     >
       <Tabs
         defaultActiveKey="0" // Adjusted to start with the first tab
-        centered
+        centered={windowWidth < 767 ? false : true}
         items={tabs}
       />
     </ConfigProvider>

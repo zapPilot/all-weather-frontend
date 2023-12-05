@@ -80,11 +80,15 @@ export default function NavBar() {
             darkSubMenuItemBg: "#222222",
           },
         },
+        token: {
+          colorPrimary: "transparent"
+        }
       }}
     >
       <Menu
         theme="dark"
         onClick={onClick}
+        selectable={false}
         selectedKeys={[current]}
         mode="horizontal"
         items={items}

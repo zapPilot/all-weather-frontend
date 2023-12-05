@@ -31,7 +31,7 @@ const HistoricalDataChart = () => {
       tickCount: 5,
     },
     lineStyle: {
-      stroke: "#beed54",
+      stroke: "#5DFDCB",
     },
   };
 

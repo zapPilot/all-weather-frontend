@@ -160,7 +160,7 @@ const ZapOutButton = () => {
       <ConfigProvider
         theme={{
           token: {
-            colorPrimary: "#beed54",
+            colorPrimary: "#5DFDCB",
             colorTextLightSolid: "#000000",
           },
         }}

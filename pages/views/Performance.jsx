@@ -6,14 +6,14 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
   const colorLogic = (value, notSharpe = true) => {
     if (notSharpe === false) {
       if (value < 2) {
-        return { color: "#e63a8b" };
+        return { color: "#FF6347" };
       } else if (value >= 2 && value < 3) {
         return { color: "yellow" };
       } else if (value >= 3) {
-        return { color: "#beed54" };
+        return { color: "#FF6347" };
       }
     } else {
-      return { color: value < 0 ? "#e63a8b" : "#beed54" };
+      return { color: value < 0 ? "#FF6347" : "#5DFDCB" };
     }
   };
   return ROI && ROI.days ? (
@@ -79,7 +79,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
                 title={`MAX Drawdown (${ROI.days} days)`}
                 value="WIP"
                 precision={2}
-                valueStyle={{ color: "#e63a8b" }}
+                valueStyle={{ color: "#FF6347" }}
               />
             </Card>
           </Col>

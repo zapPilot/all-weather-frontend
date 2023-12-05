@@ -9,8 +9,7 @@ import styles from "../styles/Home.module.css";
 import NavBar from "./views/NavBar.jsx";
 import HeaderInner from "./views/Header";
 import Web3DataProvider from "./views/Web3DataProvider";
-
-import { HomeFilled, AuditOutlined, MenuOutlined } from "@ant-design/icons";
+import { MenuOutlined } from "@ant-design/icons";
 
 const { Header, Footer, Content } = Layout;
 interface BasePageProps {
@@ -34,6 +33,14 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
       <Layout style={{ background: "#000000" }}>
         <Affix offsetTop={0}>
           <Header className={styles.header}>
+            <div className="div-logo">
+              <Image
+                src="../logo.png"
+                alt="logo"
+                width={40}
+                height={40}
+              />
+            </div>
             <div className={styles.menuIcon}>
               <MenuOutlined onClick={handleMenuShow} />
             </div>

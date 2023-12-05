@@ -48,7 +48,7 @@ const InstallmentCalculator = () => {
     marginBottom: "24px",
     padding: "8px",
     backgroundColor: "#333333",
-    color: "#beed54",
+    color: "#5DFDCB",
   };
 
   useEffect(() => {
@@ -96,16 +96,16 @@ const InstallmentCalculator = () => {
       theme={{
         components: {
           InputNumber: {
-            colorPrimaryHover: "#beed54",
+            colorPrimaryHover: "#5DFDCB",
             colorFillAlter: "white",
           },
           Select: {
-            colorPrimaryHover: "#beed54",
+            colorPrimaryHover: "#5DFDCB",
           },
           Button: {
-            colorPrimaryActive: "#beed54",
-            colorPrimaryHover: "#beed54",
-            colorText: "#beed54",
+            colorPrimaryActive: "#5DFDCB",
+            colorPrimaryHover: "#5DFDCB",
+            colorText: "#5DFDCB",
           },
           Modal: {
             contentBg: "#333333",
