@@ -68,7 +68,7 @@ const data = [
       <ConfigProvider
         theme={{
           token: {
-            colorLink: "#beed54",
+            colorLink: "#5DFDCB",
           },
         }}
       >
@@ -167,9 +167,9 @@ const Strategy = () => {
           token: {
             colorBgContainer: "#000000",
             colorBorderSecondary: "#000000",
-            colorFillAlter: "#beed54",
+            colorFillAlter: "#5DFDCB",
             colorText: "#000000",
-            colorPrimary: "#beed54",
+            colorPrimary: "#5DFDCB",
           },
         }}
       >

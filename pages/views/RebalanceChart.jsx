@@ -17,7 +17,6 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-import { Spin } from "antd";
 import React, { useState, useEffect } from "react";
 
 import { Sunburst, LabelSeries } from "react-vis";
@@ -173,6 +172,11 @@ export default function BasicSunburst(props) {
   const [data, setData] = useState(defaultData);
   const [finalValue, setFinalValue] = useState("Your Portfolio Chart");
   const [clicked, setClicked] = useState(false);
+  const divSunBurst = {
+    margin: "0 auto",
+    height: props.windowWidth > 767 ? 500 : 300,
+    width: props.windowWidth > 767 ? 500 : 300,
+  };
 
   useEffect(() => {
     // set showCategory = true, to show its category. For instance, long_term_bond
@@ -184,7 +188,7 @@ export default function BasicSunburst(props) {
     setData(chartData);
   }, [rebalanceSuggestions, netWorth]);
   return (
-    <div>
+    <div style={divSunBurst}>
       <Sunburst
         animation
         hideRootNode

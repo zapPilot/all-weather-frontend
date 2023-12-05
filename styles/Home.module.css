@@ -37,7 +37,7 @@
   margin-top: 32px;
   width: 200px;
   height: 48px;
-  border: 1px solid #beed54;
+  border: 1px solid #5dfdcb;
   font-weight: 500;
 }
 
@@ -146,5 +146,10 @@
   .menuBarShow {
     margin-top: 40px;
     visibility: visible;
+  }
+
+  .bgStyle {
+    background-position: left top;
+    background-size: 500px;
   }
 }

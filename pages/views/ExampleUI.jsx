@@ -4,6 +4,7 @@ import RebalancerWidget from "./Rebalancer";
 import PortfolioMetaTab from "./PortfolioMetaTab";
 import { Row, Col, ConfigProvider, Button } from "antd";
 import Link from "next/link";
+import Image from "next/image";
 import { web3Context } from "./Web3DataProvider";
 import { useWindowHeight } from "../../utils/chartUtils";
 import styles from "../../styles/Home.module.css";
@@ -64,17 +65,18 @@ export default function ExampleUI() {
             }}
           >
             <center>
+              <Image src="../logo.png" alt="logo" width={100} height={100} />
               <h1
                 style={{
                   marginBottom: 32,
-                  color: "#beed54",
+                  color: "#5DFDCB",
                 }}
                 className="heading-title"
               >
                 All Weather Protocol
               </h1>
               <h2 className="heading-subtitle">
-                Biggest Liquidity Mining Index Fund
+                Biggest Liquidity Mining Index Fund.
               </h2>
               <p className="heading-subtitle">
                 Click Once, Farm the Best Forever.
@@ -83,7 +85,7 @@ export default function ExampleUI() {
                 Enjoy
                 <span
                   style={{
-                    color: "#beed54",
+                    color: "#5DFDCB",
                   }}
                   className="heading-title"
                 >
@@ -95,8 +97,8 @@ export default function ExampleUI() {
               <ConfigProvider
                 theme={{
                   token: {
-                    colorPrimary: "#beed54",
-                    colorPrimaryBorder: "#beed54",
+                    colorPrimary: "#5DFDCB",
+                    colorPrimaryBorder: "#5DFDCB",
                   },
                 }}
               >
@@ -107,8 +109,8 @@ export default function ExampleUI() {
                     className={styles.btnInvest}
                     style={
                       isHover
-                        ? { backgroundColor: "#beed54", color: "#000000" }
-                        : { backgroundColor: "transparent", color: "#beed54" }
+                        ? { backgroundColor: "#5DFDCB", color: "#000000" }
+                        : { backgroundColor: "transparent", color: "#5DFDCB" }
                     }
                     onMouseEnter={handleMouseEnter}
                     onMouseLeave={handleMouseLeave}
