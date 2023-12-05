@@ -76,7 +76,9 @@ export default function ExampleUI() {
               <h2 className="heading-subtitle">
                 Biggest Liquidity Mining Index Fund
               </h2>
-              <p className="heading-subtitle">Click Once, Mine Forever.</p>
+              <p className="heading-subtitle">
+                Click Once, Farm the Best Forever.
+              </p>
               <p className="heading-subtitle">
                 Enjoy
                 <span
