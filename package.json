@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "export": "next export",
-    "format": "prettier --write . '!(node_modules|build)/**/*'",
-    "check-format": "prettier --check . '!(node_modules|build)/**/*'"
+    "format": "prettier --write . --ignore=node_modules,buildgi",
+    "check-format": "prettier --check . --ignore=node_modules,build"
   },
   "dependencies": {
     "@ant-design/charts": "^1.4.2",
