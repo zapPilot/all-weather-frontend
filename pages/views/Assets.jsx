@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect } from "react";
-import { ConfigProvider, Table, Tag, Image } from "antd";
+import { Tag, Image } from "antd";
 import { web3Context } from "./Web3DataProvider";
+import TokenTable from "./components/TokenTable.jsx";
 const upcomingProtocol = [
   {
     chain: "bsc",
@@ -176,24 +177,12 @@ const Assets = () => {
   }, [WEB3_CONTEXT]);
   return (
     <>
-      <ConfigProvider
-        theme={{
-          token: {
-            colorBgContainer: "#000000",
-            colorBorderSecondary: "#000000",
-            colorFillAlter: "#5DFDCB",
-            colorText: "#000000",
-            colorPrimary: "#5DFDCB",
-          },
-        }}
-      >
         <p className="heading-subtitle">Current Protocols</p>
-        <Table columns={columns} dataSource={aggregatedPositions} />
+        <TokenTable columns={columns} dataSource={aggregatedPositions}/>
         <p className="heading-subtitle">Upcoming Protocols</p>
-        <Table columns={columns} dataSource={upcomingProtocol} />
+        <TokenTable columns={columns} dataSource={upcomingProtocol} />
         <p className="heading-subtitle">Historical Protocols</p>
-        <Table columns={columns} dataSource={hardcodedShowCases} />
-      </ConfigProvider>
+        <TokenTable columns={columns} dataSource={hardcodedShowCases} />
     </>
   );
 };

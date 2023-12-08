@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useContext } from "react";
 import Image from "next/image";
-import { Popover, Table, Tag, Spin, ConfigProvider } from "antd";
+import { Popover, Tag, Spin, ConfigProvider } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { web3Context } from "./Web3DataProvider";
 import ClaimButton from "./ClaimButton";
 import { ethers } from "ethers";
 import { useAccount, useNetwork } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import TokenTable from "./components/TokenTable.jsx";
+
 const BigNumber = require("bignumber.js");
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -322,23 +324,11 @@ const APRPopOver = ({ mode }) => {
               marginTop: 10,
             }}
           >
-            <ConfigProvider
-              theme={{
-                token: {
-                  colorBgContainer: "#000000",
-                  colorBorderSecondary: "#000000",
-                  colorFillAlter: "#5DFDCB",
-                  colorText: "#000000",
-                  colorPrimary: "#5DFDCB",
-                },
-              }}
-            >
-              <Table
-                columns={getColumnsForSuggestionsTable}
-                dataSource={calculateClaimableRewards()}
-                pagination={false}
-              />
-            </ConfigProvider>
+            <TokenTable
+              columns={getColumnsForSuggestionsTable}
+              dataSource={calculateClaimableRewards()}
+              pagination={false}
+            />
           </div>
         ) : (
           ""
