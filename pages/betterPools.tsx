@@ -15,13 +15,18 @@ const BetterPools: NextPage = () => {
     topNStableCoins,
   } = useRebalanceSuggestions();
   const windowHeight = useWindowHeight();
+  const divBetterPools = {
+    padding: "0 8px",
+    minHeight: windowHeight,
+    color: "#ffffff",
+  }
 
   return (
     <BasePage>
-      <div style={{ padding: "3rem 1.5rem", minHeight: windowHeight }}>
+      <div style={divBetterPools}>
         <center>
-          <h1 className="ant-table-title">Analytics - Better Pools</h1>
-
+          <h1>Better Pools</h1>
+        </center>
           {topNLowestAprPools.length === 0 ? (
             <div
               style={{
@@ -34,36 +39,61 @@ const BetterPools: NextPage = () => {
               <Spin size="large" />
             </div>
           ) : (
-            <Col xl={14} md={24} xs={24}>
-              <Row gutter={[30, 20]}>
-                <Col xl={12} md={24} xs={24}>
-                  <TopNLowestAprPools
-                    wording="TopN Lowest APR Pools"
-                    topNData={topNLowestAprPools}
-                    portfolioApr={portfolioApr}
-                    windowHeight={300}
-                  />
-                </Col>
-                <Col xl={12} md={24} xs={24}>
-                  <SuggestionsForLPTokens
-                    wording="Better Pool for LP Tokens"
-                    topNData={topNPoolConsistOfSameLpToken}
-                    portfolioApr={portfolioApr}
-                    windowHeight={300}
-                  />
-                </Col>
-                <Col span={24}>
-                  <SuggestionsForBetterStableCoins
-                    wording="Better Stable Coin Pools"
-                    topNData={topNStableCoins}
-                    portfolioApr={portfolioApr}
-                    windowHeight={300}
-                  />
-                </Col>
-              </Row>
-            </Col>
+            <Row gutter={{ xs: 8, md: 16 }}>
+              <Col
+                xs={{
+                  span: 24,
+                  offset: 0,
+                }}
+                md={{
+                  span: 9,
+                  offset: 4,
+                }}  
+              >
+                <TopNLowestAprPools
+                  wording="TopN Lowest APR Pools"
+                  topNData={topNLowestAprPools}
+                  portfolioApr={portfolioApr}
+                  windowHeight={300}
+                />
+              </Col>
+              <Col
+                xs={{
+                  span: 24,
+                  offset: 0,
+                }}
+                md={{
+                  span: 9,
+                  offset: 0,
+                }}
+              >
+                <SuggestionsForLPTokens
+                  wording="Better Pool for LP Tokens"
+                  topNData={topNPoolConsistOfSameLpToken}
+                  portfolioApr={portfolioApr}
+                  windowHeight={300}
+                />
+              </Col>
+              <Col
+                xs={{
+                  span: 24,
+                  offset: 0,
+                }} 
+                md={{
+                  span: 18,
+                  offset: 4,
+                }}
+              >
+                <SuggestionsForBetterStableCoins
+                  wording="Better Stable Coin Pools"
+                  topNData={topNStableCoins}
+                  portfolioApr={portfolioApr}
+                  windowHeight={300}
+                />
+              </Col>
+            </Row>
           )}
-        </center>
+        
       </div>
     </BasePage>
   );

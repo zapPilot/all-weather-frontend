@@ -1,4 +1,4 @@
-import { Table, Button, Tag, Modal } from "antd";
+import { ConfigProvider, Table, Button, Tag, Modal } from "antd";
 import { DownOutlined, UpOutlined } from "@ant-design/icons";
 import { useState, useEffect } from "react";
 import { getColumnsForSuggestionsTable } from "../../utils/tableExpansionUtils";
@@ -147,18 +147,40 @@ const SuggestionsForLPTokens = (props) => {
   return (
     <>
       <h2 className="ant-table-title">{wording}</h2>
-      <Table
-        columns={columnsForParentRows}
-        // expandable={{
-        //     expandedRowRender: (record) => expandedRowRender(record),
-        //     defaultExpandedRowKeys: ["0"],
-        // }}
-        dataSource={data}
-        pagination={false}
-        scroll={{
-          y: props.windowHeight,
+      <ConfigProvider
+        theme={{
+          components: {
+            Tag: {
+              defaultBg: "#fafafa",
+            },
+          },
+          token: {
+            colorBgContainer: "#000000",
+            colorBorderSecondary: "#000000",
+            colorFillAlter: "#5DFDCB",
+            colorText: "#000000",
+            colorPrimary: "#5DFDCB",
+          },
         }}
-      />
+      >
+        <Table
+          columns={columnsForParentRows}
+          // expandable={{
+          //     expandedRowRender: (record) => expandedRowRender(record),
+          //     defaultExpandedRowKeys: ["0"],
+          // }}
+          dataSource={data}
+          pagination={false}
+          locale={{
+            emptyText: (
+              <span style={{ color: "#ffffff" }}>No data</span>
+            )
+          }}
+          scroll={{
+            y: props.windowHeight,
+          }}
+        />
+      </ConfigProvider>
     </>
   );
 };
