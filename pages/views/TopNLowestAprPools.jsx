@@ -1,4 +1,4 @@
-import { Table, Tag } from "antd";
+import { ConfigProvider, Table, Tag } from "antd";
 import { useState, useEffect } from "react";
 
 export default function TopNLowestAprPools(props) {
@@ -10,7 +10,7 @@ export default function TopNLowestAprPools(props) {
       dataIndex: "pool",
       key: "pool",
       width: 60,
-      // render: text => <button>{text}</button>,
+      render: (pool) => <span style={{ color: "#ffffff" }}>{pool}</span>,
     },
     {
       title: "APR",
@@ -42,14 +42,31 @@ export default function TopNLowestAprPools(props) {
   return (
     <>
       <h2 className="ant-table-title">{wording}:</h2>
-      <Table
-        columns={columns}
-        dataSource={data}
-        pagination={false}
-        scroll={{
-          y: props.windowHeight,
+      <ConfigProvider
+        theme={{
+          components: {
+            Tag: {
+              defaultBg: "#fafafa",
+            },
+          },
+          token: {
+            colorBgContainer: "#000000",
+            colorBorderSecondary: "#000000",
+            colorFillAlter: "#5DFDCB",
+            colorText: "#000000",
+            colorPrimary: "#5DFDCB",
+          },
         }}
-      />
+      >
+        <Table
+          columns={columns}
+          dataSource={data}
+          pagination={false}
+          scroll={{
+            y: props.windowHeight,
+          }}
+        />
+      </ConfigProvider>
     </>
   );
 }

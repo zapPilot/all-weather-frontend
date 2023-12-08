@@ -8,12 +8,13 @@
     "start": "next start",
     "lint": "next lint",
     "export": "next export",
-    "format": "prettier --write . '!(node_modules|build)/**/*'",
-    "check-format": "prettier --check . '!(node_modules|build)/**/*'"
+    "format": "prettier --write . --ignore=node_modules,buildgi",
+    "check-format": "prettier --check . --ignore=node_modules,build"
   },
   "dependencies": {
     "@ant-design/charts": "^1.4.2",
     "@ant-design/plots": "1.2.5",
+    "@flaticon/flaticon-uicons": "^3.0.0",
     "@rainbow-me/rainbowkit": "^1.0.7",
     "@sentry/nextjs": "^7.70.0",
     "antd": "5.8.2",

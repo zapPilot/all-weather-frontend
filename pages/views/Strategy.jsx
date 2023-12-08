@@ -1,10 +1,10 @@
 import React from "react";
 import { useContext, useState, useEffect } from "react";
 import { web3Context } from "./Web3DataProvider";
-import { Table } from "antd";
 import { ConfigProvider, Image, Button } from "antd";
 import RebalanceChart from "./RebalanceChart";
 import { useWindowWidth } from "../../utils/chartUtils";
+import TokenTable from "./components/TokenTable.jsx";
 
 const columns = [
   {
@@ -162,19 +162,7 @@ const Strategy = () => {
   }, [WEB3_CONTEXT]);
   return (
     <>
-      <ConfigProvider
-        theme={{
-          token: {
-            colorBgContainer: "#000000",
-            colorBorderSecondary: "#000000",
-            colorFillAlter: "#5DFDCB",
-            colorText: "#000000",
-            colorPrimary: "#5DFDCB",
-          },
-        }}
-      >
-        <Table columns={columns} dataSource={data} />
-      </ConfigProvider>
+      <TokenTable columns={columns} dataSource={data} />
       <p>
         Explanation: There are two layers in this pie chart because of the
         mapping from assets to categories. Please note that each asset may

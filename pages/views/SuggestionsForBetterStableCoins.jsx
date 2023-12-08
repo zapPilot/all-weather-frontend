@@ -1,4 +1,4 @@
-import { Table } from "antd";
+import { ConfigProvider, Table } from "antd";
 import { useState, useEffect } from "react";
 import { getColumnsForSuggestionsTable } from "../../utils/tableExpansionUtils";
 
@@ -23,7 +23,11 @@ export default function SuggestionsForBetterStableCoins(props) {
             key: 1,
             chain: "",
             pool: "",
-            coin: "Your Current Pool is the best one",
+            coin: (
+              <span style={{ color: "#ffffff" }}>
+                Your Current Pool is the best one
+              </span>
+            ),
             tvl: 0,
             apr: "",
           },
@@ -36,15 +40,27 @@ export default function SuggestionsForBetterStableCoins(props) {
   return (
     <div>
       <h2 className="ant-table-title">{wording}:</h2>
-      <Table
-        columns={commonColumns}
-        dataSource={data}
-        pagination={false}
-        scroll={{
-          x: 600,
-          y: props.windowHeight,
+      <ConfigProvider
+        theme={{
+          token: {
+            colorBgContainer: "#000000",
+            colorBorderSecondary: "#000000",
+            colorFillAlter: "#5DFDCB",
+            colorText: "#000000",
+            colorPrimary: "#5DFDCB",
+          },
         }}
-      />
+      >
+        <Table
+          columns={commonColumns}
+          dataSource={data}
+          pagination={false}
+          scroll={{
+            x: 600,
+            y: props.windowHeight,
+          }}
+        />
+      </ConfigProvider>
     </div>
   );
 }
