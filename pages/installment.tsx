@@ -4,14 +4,9 @@ import InstallmentCalculator from "./views/InstallmentCalculator.jsx";
 import styles from "../styles/Installment.module.css";
 
 const Installment: NextPage = () => {
-  const divInstallment = {
-    padding: "0 8px",
-    color: "white",
-  };
-
   return (
     <BasePage>
-      <div style={divInstallment}>
+      <div className={styles.divInstallment}>
         <center>
           <h1>Installment</h1>
         </center>
