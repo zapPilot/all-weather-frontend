@@ -23,7 +23,11 @@ export default function SuggestionsForBetterStableCoins(props) {
             key: 1,
             chain: "",
             pool: "",
-            coin: (<span style={{ color: "#ffffff" }}>Your Current Pool is the best one</span>),
+            coin: (
+              <span style={{ color: "#ffffff" }}>
+                Your Current Pool is the best one
+              </span>
+            ),
             tvl: 0,
             apr: "",
           },

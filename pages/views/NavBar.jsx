@@ -57,7 +57,7 @@ const items = [
       </a>
     ),
     key: "docs",
-  }
+  },
 ];
 export default function NavBar() {
   const router = useRouter();

@@ -172,9 +172,7 @@ const SuggestionsForLPTokens = (props) => {
           dataSource={data}
           pagination={false}
           locale={{
-            emptyText: (
-              <span style={{ color: "#ffffff" }}>No data</span>
-            )
+            emptyText: <span style={{ color: "#ffffff" }}>No data</span>,
           }}
           scroll={{
             y: props.windowHeight,

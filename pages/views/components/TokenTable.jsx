@@ -14,7 +14,6 @@ const TokenTable = ({ columns, dataSource, pagination }) => (
   >
     <Table columns={columns} dataSource={dataSource} pagination={pagination} />
   </ConfigProvider>
-    
 );
 
 export default TokenTable;
