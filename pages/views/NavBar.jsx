@@ -57,11 +57,7 @@ const items = [
       </a>
     ),
     key: "docs",
-  },
-  {
-    label: <Link href="/cefi">Cefi</Link>,
-    key: "cefi",
-  },
+  }
 ];
 export default function NavBar() {
   const router = useRouter();
