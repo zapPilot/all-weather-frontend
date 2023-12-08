@@ -10,6 +10,8 @@ import NavBar from "./views/NavBar.jsx";
 import HeaderInner from "./views/Header";
 import Web3DataProvider from "./views/Web3DataProvider";
 import { MenuOutlined } from "@ant-design/icons";
+import "@flaticon/flaticon-uicons/css/brands/all.css";
+import "@flaticon/flaticon-uicons/css/regular/all.css";
 
 const { Header, Footer, Content } = Layout;
 interface BasePageProps {
@@ -61,48 +63,28 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
             rel="noopener noreferrer"
             target="_blank"
           >
-            <Image
-              src="../socialIcon/home.png"
-              alt="home"
-              width={20}
-              height={20}
-            />
+            <span className="fi fi-rr-home"></span>
           </a>
           <a
             href="https://all-weather.gitbook.io/all-weather-protocol/"
             rel="noopener noreferrer"
             target="_blank"
           >
-            <Image
-              src="../socialIcon/document.png"
-              alt="document"
-              width={20}
-              height={20}
-            />
+            <span className="fi fi-rr-document"></span>
           </a>
           <a
             href="https://twitter.com/all_weather_p"
             rel="noopener noreferrer"
             target="_blank"
           >
-            <Image
-              src="../socialIcon/twitterx.png"
-              alt="twitter"
-              width={20}
-              height={20}
-            />
+            <span className="fi fi-brands-twitter-alt"></span>
           </a>
           <a
             href="https://discord.gg/sNsMmtsCCV"
             rel="noopener noreferrer"
             target="_blank"
           >
-            <Image
-              src="../socialIcon/discord.png"
-              alt="discord"
-              width={20}
-              height={20}
-            />
+            <span className="fi fi-brands-discord"></span>
           </a>
         </Footer>
       </Layout>
