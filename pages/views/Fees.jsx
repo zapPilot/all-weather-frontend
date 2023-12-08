@@ -43,6 +43,7 @@ const items = [
           type="link"
           href="https://all-weather.gitbook.io/all-weather-protocol/overview/tokenomics"
           target="_blank"
+          style={{ textWrap: "wrap" }}
         >
           Check the tokenomics for more details
         </Button>

@@ -27,10 +27,11 @@ body {
 
   .ant-table {
     .ant-table-tbody > tr > td {
+      background-color: #000000;
       border-bottom: 1px solid $primary-color;
     }
 
-    .ant-table-tbody > tr > td.ant-table-cell-row-hover {
+    .ant-table-tbody > tr:hover > td {
       background-color: #333333;
     }
   }
