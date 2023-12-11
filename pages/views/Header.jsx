@@ -5,9 +5,8 @@ export default function Header({ ...props }) {
   return (
     <div
       style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
+        margin: "0 auto",
+        width: 300,
       }}
     >
       {props.children}
