@@ -8,6 +8,9 @@
 } */
 
 .header {
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
   background-color: #000000;
 }
 
@@ -20,11 +23,13 @@
   box-shadow: 0 0 100px 100px #000000 inset;
 }
 
+.menuBar {
+  margin: 0 auto;
+}
+
 .menuIcon {
-  position: absolute;
-  left: 16px;
+  display: none;
   color: #999999;
-  visibility: hidden;
 }
 
 .divInstallment {
@@ -135,16 +140,16 @@
 }
 
 @media (max-width: 767.98px) {
-  .header {
-    height: 104px;
-  }
-
   .menuIcon {
-    visibility: visible;
+    display: contents;
   }
 
   .menuBar {
-    visibility: hidden;
+    margin: unset;
+  }
+
+  .menuPC {
+    display: none;
   }
 
   .menuBarShow {

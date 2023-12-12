@@ -20,10 +20,6 @@ interface BasePageProps {
 
 const BasePage: NextPage<BasePageProps> = ({ children }) => {
   const { address } = useAccount();
-  const [menuShow, setMenuShow] = useState(false);
-  const handleMenuShow = () => {
-    setMenuShow(!menuShow);
-  };
 
   return (
     <div>
@@ -38,14 +34,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
             <div className="div-logo">
               <Image src="../logo.png" alt="logo" width={40} height={40} />
             </div>
-            <div className={styles.menuIcon}>
-              <MenuOutlined onClick={handleMenuShow} />
-            </div>
-            <HeaderInner>
-              <div className={menuShow ? styles.menuBarShow : styles.menuBar}>
-                <NavBar />
-              </div>
-            </HeaderInner>
+            <HeaderInner />
             <div className="connect-button">
               <ConnectButton />
             </div>
