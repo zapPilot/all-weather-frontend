@@ -76,7 +76,7 @@ export default function ExampleUI() {
                 All Weather Protocol
               </h1>
               <h2 className="heading-subtitle">
-                Biggest Liquidity Mining Index Fund.
+                An Omnichain Yield Aggregator with the Highest Yield
               </h2>
               <p className="heading-subtitle">
                 Click Once, Farm the Best Forever.
