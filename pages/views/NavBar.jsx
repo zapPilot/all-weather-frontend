@@ -59,7 +59,7 @@ const items = [
     key: "docs",
   },
 ];
-export default function NavBar() {
+export default function NavBar({ mode }) {
   const router = useRouter();
   const [current, setCurrent] = useState(router.pathname);
   const onClick = (e) => {
@@ -86,8 +86,9 @@ export default function NavBar() {
         onClick={onClick}
         selectable={false}
         selectedKeys={[current]}
-        mode="horizontal"
+        mode={mode}
         items={items}
+        style={{ minWidth: 300, flex: "auto" }}
       />
     </ConfigProvider>
   );
