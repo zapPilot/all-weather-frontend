@@ -88,6 +88,7 @@ export default function NavBar({mode}) {
         selectedKeys={[current]}
         mode={mode}
         items={items}
+        style={{ minWidth: 300, flex: "auto" }}
       />
     </ConfigProvider>
   );
