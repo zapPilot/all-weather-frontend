@@ -10,7 +10,7 @@ export default function Header({ ...props }) {
   const showDrawer = () => {
     setVisible(true);
   };
-  
+
   const onClose = () => {
     setVisible(false);
   };
@@ -18,7 +18,7 @@ export default function Header({ ...props }) {
   return (
     <div className={styles.menuBar}>
       <div className={styles.menuPC}>
-        <NavBar mode={"horizontal"} />  
+        <NavBar mode={"horizontal"} />
       </div>
       <div className={styles.menuIcon}>
         <MenuOutlined onClick={showDrawer} />
@@ -31,18 +31,18 @@ export default function Header({ ...props }) {
         }}
       >
         <Drawer
-          title= {<Image src="../logo.png" alt="logo" width={40} height={40} />}
+          title={<Image src="../logo.png" alt="logo" width={40} height={40} />}
           placement="right"
           closable={false}
           onClose={onClose}
           visible={visible}
           extra={
-            <span style={{ color: "#999999"}}>
+            <span style={{ color: "#999999" }}>
               <CloseOutlined onClick={onClose} />
             </span>
           }
         >
-          <NavBar mode={"inline"}/>
+          <NavBar mode={"inline"} />
         </Drawer>
       </ConfigProvider>
     </div>

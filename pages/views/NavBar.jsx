@@ -59,7 +59,7 @@ const items = [
     key: "docs",
   },
 ];
-export default function NavBar({mode}) {
+export default function NavBar({ mode }) {
   const router = useRouter();
   const [current, setCurrent] = useState(router.pathname);
   const onClick = (e) => {
