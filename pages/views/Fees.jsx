@@ -26,7 +26,7 @@ const items = [
     key: "5",
     label: "Performance Fee",
     children:
-      "20% (In V2, the performance fee will go to 0% if they lock their dLP and join the governance)",
+      "9.7% (In V2, the performance fee will go to 0% if they lock their dLP and join the governance)",
   },
   {
     key: "6",
