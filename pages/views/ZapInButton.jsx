@@ -16,6 +16,7 @@ import {
   useContractRead,
   useAccount,
   useNetwork,
+  useWaitForTransaction,
 } from "wagmi";
 
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
@@ -51,7 +52,7 @@ const ZapInButton = () => {
   const [approveAmount, setApproveAmount] = useState(0);
   const [depositHash, setDepositHash] = useState(undefined);
   const [chosenToken, setChosenToken] = useState(
-    "0x55d398326f99059fF775485246999027B3197955",
+    "0xBD7a6689764B19EA2206b913712350193044349d",
   );
   const [messageApi, contextHolder] = message.useMessage();
   const { chain } = useNetwork();
@@ -120,7 +121,7 @@ const ZapInButton = () => {
       messageApi.info("Deposit succeeded");
     },
   });
-  const { write: approveWrite, isLoading: approveIsLoading } = useContractWrite(
+  const { data, write: approveWrite, isLoading: approveIsLoading } = useContractWrite(
     {
       address: chosenToken,
       abi: permanentPortfolioJson.abi,
@@ -137,6 +138,10 @@ const ZapInButton = () => {
       },
     },
   );
+
+  const { status } = useWaitForTransaction({
+    hash: data?.hash,
+  })
 
   const approveAmountContract = useContractRead({
     address:
@@ -315,6 +320,12 @@ const ZapInButton = () => {
           }}
         >
           {renderStatusCircle(approveIsLoading, approveReady)}
+          <p style={{ color: "red" }}>
+            {status === 'idle' ? "init..." : ""}
+            {status === 'error' ? "error..." : ""}
+            {status === 'loading' ? "Transaction is still pending..." : ""}
+            {status === 'success' ? "Transaction succeeded..." : ""}
+          </p>
           <span> Approve </span>
         </div>
         <div
