@@ -5,19 +5,21 @@ export const getColumnsForSuggestionsTable = (portfolioAPR) => [
     dataIndex: "chain",
     key: "chain",
     width: 24,
+    render: (pool) => <span style={{ color: "#ffffff" }}>{pool}</span>,
   },
   {
     title: "Pool",
     dataIndex: "pool",
     key: "pool",
     width: 24,
-    // render: text => <button>{text}</button>,
+    render: (pool) => <span style={{ color: "#ffffff" }}>{pool}</span>,
   },
   {
     title: "Coin",
     dataIndex: "coin",
     key: "coin",
     width: 24,
+    render: (pool) => <span style={{ color: "#ffffff" }}>{pool}</span>,
   },
   {
     title: "TVL",
