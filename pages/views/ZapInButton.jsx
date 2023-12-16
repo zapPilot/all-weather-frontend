@@ -107,6 +107,13 @@ const ZapInButton = () => {
     abi: permanentPortfolioJson.abi,
     functionName: "deposit",
     onError(error) {
+      if (
+        JSON.stringify(error)
+          .toLocaleLowerCase()
+          .includes("user rejected the request")
+      ) {
+        return;
+      }
       sendDiscordMessage(`${address} handleZapin failed!`);
       messageApi.error({
         content: `${error.shortMessage}. Amout: ${error.args[0].amount}. Increase the deposit amount and try again.`,
