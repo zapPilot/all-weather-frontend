@@ -46,7 +46,7 @@ const ClaimButton = () => {
       });
     },
     onSuccess(data) {
-      sendDiscordMessage(`${address} successfully claimed!`);
+      sendDiscordMessage(address, "successfully claimed!");
       messageApi.info(
         `Successfully claimed! https://bscscan.com/tx/${data.hash}`,
       );
@@ -54,7 +54,7 @@ const ClaimButton = () => {
   });
 
   const handleClaim = async () => {
-    await sendDiscordMessage(`${address} starts claim()`);
+    await sendDiscordMessage(address, "starts claim()");
     await _sendDepositTransaction();
   };
   const _sendDepositTransaction = async () => {
