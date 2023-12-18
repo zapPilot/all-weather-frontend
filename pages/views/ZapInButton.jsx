@@ -8,7 +8,12 @@ import {
   sleep,
   refreshTVLData,
 } from "../../utils/contractInteractions";
-import { DollarOutlined, CheckCircleOutlined, ExclamationCircleOutlined, LoadingOutlined } from "@ant-design/icons";
+import {
+  DollarOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+  LoadingOutlined,
+} from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import {
   useContractWrite,
@@ -99,27 +104,33 @@ const ZapInButton = () => {
       );
     }
   };
-  
-  const iconSize = { fontSize: '20px' };
+
+  const iconSize = { fontSize: "20px" };
   const defaultIcon = {
     width: 20,
     height: 20,
     border: "2px solid #555555",
     borderRadius: "100%",
-  }
+  };
 
   const statusIcon = (status) => {
     switch (status) {
-      case 'error':
-        return <ExclamationCircleOutlined style={{ ...iconSize, color: '#ff6347' }}/>
-      case 'loading':
-        return <LoadingOutlined style={{ ...iconSize, color: '#3498db' }}/>
-      case 'success':
-        return <CheckCircleOutlined style={{ ...iconSize, color: '#5dfdcb' }}/>
-      default: 
-        return <div style={defaultIcon}></div>
+      case "error":
+        return (
+          <ExclamationCircleOutlined
+            style={{ ...iconSize, color: "#ff6347" }}
+          />
+        );
+      case "loading":
+        return <LoadingOutlined style={{ ...iconSize, color: "#3498db" }} />;
+      case "success":
+        return (
+          <CheckCircleOutlined style={{ ...iconSize, color: "#5dfdcb" }} />
+        );
+      default:
+        return <div style={defaultIcon}></div>;
     }
-  }
+  };
 
   const {
     write,
@@ -144,7 +155,11 @@ const ZapInButton = () => {
     },
   });
 
-  const { data:approveData, write: approveWrite, isLoading: approveIsLoading } = useContractWrite({
+  const {
+    data: approveData,
+    write: approveWrite,
+    isLoading: approveIsLoading,
+  } = useContractWrite({
     address: chosenToken,
     abi: permanentPortfolioJson.abi,
     functionName: "approve",
@@ -160,9 +175,9 @@ const ZapInButton = () => {
     },
   });
 
-  const { status:approveStatus } = useWaitForTransaction({
+  const { status: approveStatus } = useWaitForTransaction({
     hash: approveData?.hash,
-  })
+  });
 
   const approveAmountContract = useContractRead({
     address:
