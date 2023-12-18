@@ -8,7 +8,12 @@ import {
   sleep,
   refreshTVLData,
 } from "../../utils/contractInteractions";
-import { DollarOutlined, CheckCircleOutlined } from "@ant-design/icons";
+import {
+  DollarOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+  LoadingOutlined,
+} from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import {
   useContractWrite,
@@ -16,6 +21,7 @@ import {
   useContractRead,
   useAccount,
   useNetwork,
+  useWaitForTransaction,
 } from "wagmi";
 
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
@@ -98,6 +104,34 @@ const ZapInButton = () => {
       );
     }
   };
+
+  const iconSize = { fontSize: "20px" };
+  const defaultIcon = {
+    width: 20,
+    height: 20,
+    border: "2px solid #555555",
+    borderRadius: "100%",
+  };
+
+  const statusIcon = (status) => {
+    switch (status) {
+      case "error":
+        return (
+          <ExclamationCircleOutlined
+            style={{ ...iconSize, color: "#ff6347" }}
+          />
+        );
+      case "loading":
+        return <LoadingOutlined style={{ ...iconSize, color: "#3498db" }} />;
+      case "success":
+        return (
+          <CheckCircleOutlined style={{ ...iconSize, color: "#5dfdcb" }} />
+        );
+      default:
+        return <div style={defaultIcon}></div>;
+    }
+  };
+
   const {
     write,
     isLoading: depositIsLoading,
@@ -127,23 +161,30 @@ const ZapInButton = () => {
       messageApi.info("Deposit succeeded");
     },
   });
-  const { write: approveWrite, isLoading: approveIsLoading } = useContractWrite(
-    {
-      address: chosenToken,
-      abi: permanentPortfolioJson.abi,
-      functionName: "approve",
-      onError(error) {
-        messageApi.error({
-          content: `${error.shortMessage}`,
-          duration: 5,
-        });
-      },
-      onSuccess: async (_) => {
-        await sleep(5000);
-        _callbackAfterApprove();
-      },
+
+  const {
+    data: approveData,
+    write: approveWrite,
+    isLoading: approveIsLoading,
+  } = useContractWrite({
+    address: chosenToken,
+    abi: permanentPortfolioJson.abi,
+    functionName: "approve",
+    onError(error) {
+      messageApi.error({
+        content: `${error.shortMessage}`,
+        duration: 5,
+      });
     },
-  );
+    onSuccess: async (_) => {
+      await sleep(5000);
+      _callbackAfterApprove();
+    },
+  });
+
+  const { status: approveStatus } = useWaitForTransaction({
+    hash: approveData?.hash,
+  });
 
   const approveAmountContract = useContractRead({
     address:
@@ -308,10 +349,9 @@ const ZapInButton = () => {
     >
       <div
         style={{
-          border: "2px solid #5DFDCB",
+          border: "2px solid #5dfdcb",
           borderRadius: "1rem",
           padding: "10px", // This creates a margin-like effect for the border
-          margin: "10px", // Adjust this value to set the distance of the border from the modal frame
         }}
       >
         <div
@@ -321,8 +361,8 @@ const ZapInButton = () => {
             marginBottom: "10px",
           }}
         >
-          {renderStatusCircle(approveIsLoading, approveReady)}
-          <span> Approve </span>
+          {statusIcon(approveStatus)}
+          <span style={{ marginLeft: 5 }}>Approve</span>
         </div>
         <div
           style={{
