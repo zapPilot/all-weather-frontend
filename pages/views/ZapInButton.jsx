@@ -52,7 +52,7 @@ const ZapInButton = () => {
   const [alert, setAlert] = useState(false);
 
   const [apiDataReady, setApiDataReady] = useState(true);
-  const [apiLoading, setApiLoading] = useState(false);
+  const [fetchingStatus, setFetchingStatus] = useState("");
   const [approveReady, setApproveReady] = useState(true);
   const [approveAmount, setApproveAmount] = useState(0);
   const [depositHash, setDepositHash] = useState(undefined);
@@ -82,29 +82,6 @@ const ZapInButton = () => {
     },
   });
 
-  const renderStatusCircle = (isLoading, isSuccess) => {
-    if (isLoading) {
-      return <Spin />;
-    } else if (isSuccess) {
-      return (
-        <CheckCircleOutlined style={{ color: "green", marginRight: "10px" }} />
-      );
-    } else {
-      return (
-        <div
-          style={{
-            border: "1px solid white",
-            borderRadius: "50%",
-            width: "20px",
-            height: "20px",
-            marginRight: "10px",
-            display: "inline-block",
-          }}
-        ></div>
-      );
-    }
-  };
-
   const iconSize = { fontSize: "20px" };
   const defaultIcon = {
     width: 20,
@@ -132,11 +109,30 @@ const ZapInButton = () => {
     }
   };
 
-  const {
-    write,
-    isLoading: depositIsLoading,
-    isSuccess: depositIsSuccess,
-  } = useContractWrite({
+  const useCustomContractWrite = (writeOptions) => {
+    const { data, write } = useContractWrite(writeOptions);
+    const { status } = useWaitForTransaction({ hash: data?.hash });
+
+    return { data, write, status };
+  };
+
+  const { data:approveData, write:approveWrite, status:approveStatus } = useCustomContractWrite({
+    address: chosenToken,
+    abi: permanentPortfolioJson.abi,
+    functionName: "approve",
+    onError(error) {
+      messageApi.error({
+        content: `${error.shortMessage}`,
+        duration: 5,
+      });
+    },
+    onSuccess: async (_) => {
+      await sleep(5000);
+      _callbackAfterApprove();
+    },
+  });
+
+  const { data:depositData, write, status:depositStatus } = useCustomContractWrite({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "deposit",
@@ -153,30 +149,6 @@ const ZapInButton = () => {
       setDepositHash(data.hash);
       messageApi.info("Deposit succeeded");
     },
-  });
-
-  const {
-    data: approveData,
-    write: approveWrite,
-    isLoading: approveIsLoading,
-  } = useContractWrite({
-    address: chosenToken,
-    abi: permanentPortfolioJson.abi,
-    functionName: "approve",
-    onError(error) {
-      messageApi.error({
-        content: `${error.shortMessage}`,
-        duration: 5,
-      });
-    },
-    onSuccess: async (_) => {
-      await sleep(5000);
-      _callbackAfterApprove();
-    },
-  });
-
-  const { status: approveStatus } = useWaitForTransaction({
-    hash: approveData?.hash,
   });
 
   const approveAmountContract = useContractRead({
@@ -261,7 +233,7 @@ const ZapInButton = () => {
 
   const _callbackAfterApprove = async () => {
     setApproveReady(true);
-    setApiLoading(true);
+    setFetchingStatus("loading");
     const aggregatorDatas = await getAggregatorData(
       chain.id,
       amount,
@@ -283,7 +255,7 @@ const ZapInButton = () => {
       functionName: "deposit",
       args: [preparedDepositData],
     });
-    setApiLoading(false);
+    setFetchingStatus("success");
     setApiDataReady(true);
     write({
       args: [preparedDepositData],
@@ -364,7 +336,7 @@ const ZapInButton = () => {
             marginBottom: "10px",
           }}
         >
-          {renderStatusCircle(apiLoading, apiDataReady)}
+          {statusIcon(fetchingStatus)}
           <span> Fetching the best route </span>
         </div>
         <div
@@ -374,7 +346,7 @@ const ZapInButton = () => {
             marginBottom: "10px",
           }}
         >
-          {renderStatusCircle(depositIsLoading, depositIsSuccess)}
+          {statusIcon(depositStatus)}
           <span> Deposit </span>
         </div>
         {typeof depositHash === "undefined" ? (
