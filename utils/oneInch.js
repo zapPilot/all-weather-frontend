@@ -3,7 +3,7 @@ const SDK_API_URL = process.env.NEXT_PUBLIC_SDK_API_URL;
 
 export const portfolioContractAddress =
   "0xD188492217F09D18f2B0ecE3F8948015981e961a";
-export const apolloxVaultAddress = "0xC66B6A382d325Da802a5C2Be2D6EC04E10e0873a";
+export const apolloxVaultAddress = "0x9Ad45D46e2A2ca19BBB5D5a50Df319225aD60e0d";
 // "0xC6a58A8494E61fc4EF04F6075c4541C9664ADcC9";
 // export const equilibriaGLPVaultAddress =
 //   // "0x271E3409093f7ECffFB2a1C82e5E87B2ecB3E310";
