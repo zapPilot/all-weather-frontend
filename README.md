@@ -23,17 +23,14 @@ To learn more about this stack, take a look at the following resources:
 
 You can check out [the RainbowKit GitHub repository](https://github.com/rainbow-me/rainbowkit) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out the [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
-
 ## CI/CD
 
 1. [./github/workflows/lint.yaml]: before committing to Github, run `yarn format`. Otherwise, `prettier` would raise an exception
 2. Fleek: Click this link
    ![fleek](docs/fleek.png)
+3. Deployment:
+   1. staging(branch `main`): <https://all-weather-protocol-staging.on.fleek.co/>
+   2. prod(prod `prod`): <https://all-weather-protocol.on.fleek.co/>
 
 ## TO-DO
 
