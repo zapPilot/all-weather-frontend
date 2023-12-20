@@ -28,7 +28,7 @@ const UserBalanceInfo = ({ tvl }) => {
   }, [WEB3_CONTEXT]);
 
   const userPercentage = new BigNumber(userShares).div(totalSupply);
-  const userDeposit = userPercentage * parseFloat(tvl ? tvl.toFixed(2) : 0);
+  const userDeposit = userPercentage * tvl;
 
   return (
     <div
@@ -37,13 +37,18 @@ const UserBalanceInfo = ({ tvl }) => {
         color: "white",
       }}
     >
-      <h3>Your Deposit: ${userDeposit}</h3>
+      <h3>
+        Your Deposit: $
+        {process.env.NEXT_PUBLIC_DAVID_PORTFOLIO !== "true" ? userDeposit : tvl}
+      </h3>
       <b style={{ color: "#555555" }}>
         Your Share: {userPercentage.times(100).toFixed(2)}%
       </b>
       <h3>
         Monthly Interest: $
-        {((userDeposit * portfolioApr) / 100 / 12).toFixed(2)}
+        {process.env.NEXT_PUBLIC_DAVID_PORTFOLIO !== "true"
+          ? ((userDeposit * portfolioApr) / 100 / 12).toFixed(2)
+          : ((tvl * portfolioApr) / 100 / 12).toFixed(2)}
       </h3>
     </div>
   );

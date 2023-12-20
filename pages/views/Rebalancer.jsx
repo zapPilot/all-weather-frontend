@@ -64,8 +64,7 @@ const RebalancerWidget = () => {
         <div>
           <div>
             <h3>
-              {/* $25866 stands for the TVL from this vault: https://debank.com/profile/0xd56d8dfd3a3d6f6dafc0b7b6945f6e7ab138706e */}
-              TVL: ${(netWorth + 25873).toFixed(2)}{" "}
+              TVL: ${netWorth}{" "}
               <a
                 href="https://debank.com/profile/0x9ad45d46e2a2ca19bbb5d5a50df319225ad60e0d"
                 target="_blank"
