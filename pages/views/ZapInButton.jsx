@@ -116,7 +116,11 @@ const ZapInButton = () => {
     return { data, write, status };
   };
 
-  const { data:approveData, write:approveWrite, status:approveStatus } = useCustomContractWrite({
+  const {
+    data: approveData,
+    write: approveWrite,
+    status: approveStatus,
+  } = useCustomContractWrite({
     address: chosenToken,
     abi: permanentPortfolioJson.abi,
     functionName: "approve",
@@ -132,7 +136,11 @@ const ZapInButton = () => {
     },
   });
 
-  const { data:depositData, write, status:depositStatus } = useCustomContractWrite({
+  const {
+    data: depositData,
+    write,
+    status: depositStatus,
+  } = useCustomContractWrite({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "deposit",
@@ -176,7 +184,11 @@ const ZapInButton = () => {
     if (approveAmountContract.loading === true) return; // Don't proceed if loading
     setApproveAmount(approveAmountContract.data);
     if (depositStatus === "success") messageApi.info("Deposit succeeded"); // untill deposit transaction status === "success", then send meessageApi
-  }, [approveAmountContract.loading, approveAmountContract.data, depositStatus]);
+  }, [
+    approveAmountContract.loading,
+    approveAmountContract.data,
+    depositStatus,
+  ]);
 
   const handleInputChange = async (eventValue) => {
     if (eventValue === "") {
