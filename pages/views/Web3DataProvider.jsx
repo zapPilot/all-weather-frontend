@@ -60,6 +60,7 @@ const Web3DataProvider = ({ children, address }) => {
       )
         return; // Don't proceed if loading
       // Fetch data from API
+
       fetch(`${API_URL}/debank`)
         .then((response) => response.json())
         .then((result) => {
@@ -68,7 +69,12 @@ const Web3DataProvider = ({ children, address }) => {
             dataOfGetClaimableRewards: dataOfGetClaimableRewards.data,
             userShares: userShares.data,
             totalSupply: totalSupply.data,
-            netWorth,
+            /* $25866 stands for the TVL from this vault: https://debank.com/profile/0xd56d8dfd3a3d6f6dafc0b7b6945f6e7ab138706e */
+            /* at the time of writing, $10789 stands for Eugene's ETH deposit */
+            netWorth:
+              process.env.NEXT_PUBLIC_DAVID_PORTFOLIO !== "true"
+                ? (netWorth + 25873).toFixed(2)
+                : (netWorth - 10789).toFixed(2),
             rebalanceSuggestions,
             totalInterest,
             portfolioApr,
