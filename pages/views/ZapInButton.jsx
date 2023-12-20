@@ -154,7 +154,6 @@ const ZapInButton = () => {
     onSuccess(data) {
       sendDiscordMessage(address, "handleZapin succeeded!");
       setDepositHash(data.hash);
-      messageApi.info("Deposit succeeded");
     },
   });
 
@@ -176,7 +175,8 @@ const ZapInButton = () => {
   useEffect(() => {
     if (approveAmountContract.loading === true) return; // Don't proceed if loading
     setApproveAmount(approveAmountContract.data);
-  }, [approveAmountContract.loading, approveAmountContract.data]);
+    if (depositStatus === "success") messageApi.info("Deposit succeeded"); // untill deposit transaction status === "success", then send meessageApi
+  }, [approveAmountContract.loading, approveAmountContract.data, depositStatus]);
 
   const handleInputChange = async (eventValue) => {
     if (eventValue === "") {
@@ -344,7 +344,7 @@ const ZapInButton = () => {
           }}
         >
           {statusIcon(fetchingStatus)}
-          <span> Fetching the best route </span>
+          <span style={{ marginLeft: 5 }}>Fetching the best route </span>
         </div>
         <div
           style={{
@@ -354,7 +354,7 @@ const ZapInButton = () => {
           }}
         >
           {statusIcon(depositStatus)}
-          <span> Deposit </span>
+          <span style={{ marginLeft: 5 }}>Deposit </span>
         </div>
         {typeof depositHash === "undefined" ? (
           <div></div>
