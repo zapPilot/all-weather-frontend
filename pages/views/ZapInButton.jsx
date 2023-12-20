@@ -137,7 +137,14 @@ const ZapInButton = () => {
     abi: permanentPortfolioJson.abi,
     functionName: "deposit",
     onError(error) {
-      sendDiscordMessage(`${address} handleZapin failed!`);
+      if (
+        JSON.stringify(error)
+          .toLocaleLowerCase()
+          .includes("user rejected the request")
+      ) {
+        return;
+      }
+      sendDiscordMessage(address, "handleZapin failed!");
       messageApi.error({
         content: `${error.shortMessage}. Amout: ${error.args[0].amount}. Increase the deposit amount and try again.`,
         duration: 5,
@@ -145,7 +152,7 @@ const ZapInButton = () => {
       throw error;
     },
     onSuccess(data) {
-      sendDiscordMessage(`${address} handleZapin succeeded!`);
+      sendDiscordMessage(address, "handleZapin succeeded!");
       setDepositHash(data.hash);
       messageApi.info("Deposit succeeded");
     },
@@ -194,7 +201,7 @@ const ZapInButton = () => {
   };
 
   const handleZapIn = async () => {
-    await sendDiscordMessage(`${address} starts handleZapin()`);
+    await sendDiscordMessage(address, "starts handleZapin()");
     const validationResult = depositSchema.safeParse(Number(inputValue));
     if (!validationResult.success) {
       setAlert(true);

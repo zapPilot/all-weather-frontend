@@ -6,7 +6,23 @@ import axios from "axios";
 
 const { Option } = Select;
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
+export const employerAddresses = [
+  "0xca35a10c9622febfa889410efb9b905b26221c37", // chris
+  // below belongs to David
+  "0x78000b0605e81ea9df54b33f72ebc61b5f5c8077",
+  "0x43f94eb42b50d52aa0dfd702dc4b914597fa57c7",
+  "0x7678107c4faa5e253b51f358c1be7c56df3d1014",
+  "0x6bee1be193dfd753e8e24e3a980c0287302aa9aa",
+  "0x692386195bd2cf22f40a54663517ac29946015a0",
+  "0x038919c63aff9c932c77a0c9c9d98eabc1a4dd08",
+  "0x3144b7e3a4518541aeb4cec7fc7a6dd82f05ae8b",
+  "0xe4bac3e44e8080e1491c11119197d33e396ea82b",
+  "0x43cd745bd5fbfc8cfd79ebc855f949abc79a1e0c",
+  "0x7ee54ab0f204bb3a83df90fdd824d8b4abe93222",
+  "0x13f42635a662848e2377a4a8d328610d12bb13df",
+  "0xa1761fc95e8b2a1e99dfdee816f6d8f4c47e26ae",
+  "0xe59473707108cd74cfcad6ed16c81e19cf680a46",
+];
 export const selectBefore = (handleChange) => (
   <Select
     onChange={handleChange}

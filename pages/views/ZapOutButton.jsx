@@ -12,10 +12,10 @@ import {
 import { refreshTVLData } from "../../utils/contractInteractions";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import { web3Context } from "./Web3DataProvider";
-// import {
-//   selectBefore,
-//   getAggregatorData,
-// } from "../../utils/contractInteractions";
+import {
+  selectBefore,
+  getAggregatorData,
+} from "../../utils/contractInteractions";
 const { ethers } = require("ethers");
 
 const ZapOutButton = () => {
@@ -142,7 +142,7 @@ const ZapOutButton = () => {
           amount: withdrawAmount,
           receiver: address,
           apolloXRedeemData: {
-            alpTokenOut: USDC,
+            alpTokenOut: chosenToken,
             minOut: withdrawAmount,
             tokenOut: chosenToken,
             aggregatorData: "",
@@ -170,10 +170,10 @@ const ZapOutButton = () => {
             margin: "10px 0",
           }}
         >
+          {selectBefore((value) => {
+            setChosenToken(value);
+          })}
           <NumericInput
-            // addonBefore={selectBefore((value) => {
-            //   setChosenToken(value);
-            // })}
             placeholder={`Balance: ${userShares}`}
             value={inputValue}
             onChange={handleInputChange}

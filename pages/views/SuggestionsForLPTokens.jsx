@@ -34,6 +34,7 @@ const SuggestionsForLPTokens = (props) => {
       dataIndex: "pool",
       key: "pool",
       width: 50,
+      render: (pool) => <span style={{ color: "#ffffff" }}>{pool}</span>,
     },
     {
       title: "APR",
