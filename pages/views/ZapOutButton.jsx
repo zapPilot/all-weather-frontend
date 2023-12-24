@@ -8,6 +8,7 @@ import {
   useContractRead,
   useAccount,
   useNetwork,
+  useWaitForTransaction,
 } from "wagmi";
 import { refreshTVLData } from "../../utils/contractInteractions";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
@@ -35,7 +36,18 @@ const ZapOutButton = () => {
   const [apiDataReady, setApiDataReady] = useState(true);
   const { chain } = useNetwork();
 
-  const { write } = useContractWrite({
+  const useCustomContractWrite = (writeOptions) => {
+    const { data, write } = useContractWrite(writeOptions);
+    const { status } = useWaitForTransaction({ hash: data?.hash });
+
+    return { data, write, status };
+  };
+
+  const {
+    data: redeemData,
+    write,
+    status: redeemStatus,
+  } = useCustomContractWrite({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "redeem",
@@ -46,10 +58,27 @@ const ZapOutButton = () => {
       });
     },
     async onSuccess() {
-      messageApi.info("Redeem succeeded");
       await refreshTVLData(messageApi);
     },
-  });
+  })
+
+  // const {
+  //   write
+  // } = useContractWrite({
+  //   address: portfolioContractAddress,
+  //   abi: permanentPortfolioJson.abi,
+  //   functionName: "redeem",
+  //   onError(error) {
+  //     messageApi.error({
+  //       content: error.shortMessage,
+  //       duration: 5,
+  //     });
+  //   },
+  //   async onSuccess() {
+  //     messageApi.info("Redeem succeeded");
+  //     await refreshTVLData(messageApi);
+  //   },
+  // });
   const { write: approveWrite } = useContractWrite({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
@@ -83,12 +112,15 @@ const ZapOutButton = () => {
     }
     if (approveAmountContract.loading === true) return; // Don't proceed if loading
     setApproveAmount(approveAmountContract.data);
+    redeemStatus === "loading" ? message.loading("Redeem loading")
+    : redeemStatus === "success" && message.success("Redeem success");
   }, [
     WEB3_CONTEXT,
     address,
     approveAmountContract.loading,
     approveAmountContract.data,
     approveReady,
+    redeemStatus,
   ]);
   const handleInputChange = async (eventValue) => {
     setInputValue(eventValue);

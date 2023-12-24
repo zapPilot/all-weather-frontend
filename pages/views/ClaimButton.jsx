@@ -5,7 +5,7 @@ import {
   APX,
 } from "../../utils/oneInch";
 import { DollarOutlined } from "@ant-design/icons";
-import { useContractWrite, useAccount } from "wagmi";
+import { useContractWrite, useAccount, useWaitForTransaction } from "wagmi";
 import { useState, useContext, useEffect } from "react";
 import { web3Context } from "./Web3DataProvider";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
@@ -31,11 +31,16 @@ const ClaimButton = () => {
       const claimableRewards = WEB3_CONTEXT.dataOfGetClaimableRewards;
       if (claimableRewards === undefined) return;
       setClaimableRewards(claimableRewards[0].claimableRewards[0].amount);
+      if (status === "success") {
+        messageApi.info(
+          `Successfully claimed! https://bscscan.com/tx/${data.hash}`,
+        );
+      }
     }
     fetchData();
   }, [WEB3_CONTEXT]);
 
-  const { write } = useContractWrite({
+  const { data, write } = useContractWrite({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "claim",
@@ -47,11 +52,13 @@ const ClaimButton = () => {
     },
     onSuccess(data) {
       sendDiscordMessage(address, "successfully claimed!");
-      messageApi.info(
-        `Successfully claimed! https://bscscan.com/tx/${data.hash}`,
-      );
+      // messageApi.info(
+      //   `Successfully claimed! https://bscscan.com/tx/${data.hash}`,
+      // );
     },
   });
+
+  const { status } = useWaitForTransaction({ hash: data?.hash });
 
   const handleClaim = async () => {
     await sendDiscordMessage(address, "starts claim()");
