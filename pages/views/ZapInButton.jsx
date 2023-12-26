@@ -1,4 +1,4 @@
-import { Button, Space, Modal, message, Spin, ConfigProvider } from "antd";
+import { Button, Space, Modal, message, Spin, ConfigProvider, Radio } from "antd";
 import { z } from "zod";
 import { encodeFunctionData } from "viem";
 import { portfolioContractAddress, USDT } from "../../utils/oneInch";
@@ -60,6 +60,7 @@ const ZapInButton = () => {
     "0x55d398326f99059fF775485246999027B3197955",
   );
   const [messageApi, contextHolder] = message.useMessage();
+  const [slippage, setSlippage] = useState(1);
   const { chain } = useNetwork();
 
   const showModal = () => {
@@ -183,11 +184,13 @@ const ZapInButton = () => {
   useEffect(() => {
     if (approveAmountContract.loading === true) return; // Don't proceed if loading
     setApproveAmount(approveAmountContract.data);
+
     if (depositStatus === "success") messageApi.info("Deposit succeeded"); // untill deposit transaction status === "success", then send meessageApi
   }, [
     approveAmountContract.loading,
     approveAmountContract.data,
     depositStatus,
+    slippage
   ]);
 
   const handleInputChange = async (eventValue) => {
@@ -416,7 +419,21 @@ const ZapInButton = () => {
             Max
           </Button>
         </Space.Compact>
-        <p style={{ color: "white" }}>Max Slippage: 1%</p>
+        <p
+          style={{
+            marginBottom: 10,
+            color: "white"
+          }}
+        >
+          Max Slippage: {slippage}%
+        </p>
+        <div>
+          <Radio.Group value={slippage} buttonStyle="solid" size="small" onChange={(e) => setSlippage(e.target.value)}>
+            <Radio.Button value={0.1}>0.1%</Radio.Button>
+            <Radio.Button value={0.5}>0.5%</Radio.Button>
+            <Radio.Button value={1}>1%</Radio.Button>
+          </Radio.Group>
+        </div>
         <Button
           loading={!apiDataReady}
           onClick={handleZapIn} // Added onClick handler
