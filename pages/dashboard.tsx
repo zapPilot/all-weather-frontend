@@ -1,6 +1,6 @@
 import type { NextPage } from "next";
 import BasePage from "./basePage.tsx";
-import { Row, Col, Spin, Table, Tag, Space } from "antd";
+import { Spin, Table } from "antd";
 import { Input } from "antd";
 const { Search } = Input;
 import useRebalanceSuggestions from "../utils/rebalanceSuggestions.js";
@@ -10,12 +10,7 @@ import { selectBefore } from "../utils/contractInteractions";
 import { useState, useEffect } from "react";
 
 const Dashboard: NextPage = () => {
-  const {
-    portfolioApr,
-    topNLowestAprPools,
-    topNPoolConsistOfSameLpToken,
-    topNStableCoins,
-  } = useRebalanceSuggestions();
+  const { topNLowestAprPools } = useRebalanceSuggestions();
   const windowHeight = useWindowHeight();
   const divBetterPools = {
     padding: "0 8px",
