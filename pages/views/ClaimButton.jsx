@@ -50,7 +50,7 @@ const ClaimButton = () => {
       setClaimableRewards(claimableRewards[0].claimableRewards[0].amount);
       if (status === "success") {
         messageApi.open({
-          type: 'success',
+          type: "success",
           content: `Successfully claimed! https://bscscan.com/tx/${data.hash}`,
         });
       }

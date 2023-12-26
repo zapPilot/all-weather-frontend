@@ -60,7 +60,7 @@ const ZapOutButton = () => {
     async onSuccess() {
       await refreshTVLData(messageApi);
     },
-  })
+  });
 
   const {
     data: approveData,
@@ -79,7 +79,7 @@ const ZapOutButton = () => {
     async onSuccess() {
       await _callbackAfterApprove();
     },
-  })
+  });
 
   const approveAmountContract = useContractRead({
     address: portfolioContractAddress,
@@ -102,17 +102,17 @@ const ZapOutButton = () => {
 
     // Approve feedback
     if (approveStatus === "loading") {
-      message.loading("Approved loading")
+      message.loading("Approved loading");
     } else if (approveStatus === "success") {
-      message.destroy()
+      message.destroy();
       message.success("Approved success");
     }
 
     // Withdraw feedback
     if (redeemStatus === "loading") {
-      message.loading("Withdraw loading")
+      message.loading("Withdraw loading");
     } else if (redeemStatus === "success") {
-      message.destroy()
+      message.destroy();
       message.success("Withdraw success");
     }
   }, [
