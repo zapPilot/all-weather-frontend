@@ -62,24 +62,11 @@ const ZapOutButton = () => {
     },
   })
 
-  // const {
-  //   write
-  // } = useContractWrite({
-  //   address: portfolioContractAddress,
-  //   abi: permanentPortfolioJson.abi,
-  //   functionName: "redeem",
-  //   onError(error) {
-  //     messageApi.error({
-  //       content: error.shortMessage,
-  //       duration: 5,
-  //     });
-  //   },
-  //   async onSuccess() {
-  //     messageApi.info("Redeem succeeded");
-  //     await refreshTVLData(messageApi);
-  //   },
-  // });
-  const { write: approveWrite } = useContractWrite({
+  const {
+    data: approveData,
+    write: approveWrite,
+    status: approveStatus,
+  } = useCustomContractWrite({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "approve",
@@ -90,10 +77,10 @@ const ZapOutButton = () => {
       });
     },
     async onSuccess() {
-      messageApi.info("Approved");
       await _callbackAfterApprove();
     },
-  });
+  })
+
   const approveAmountContract = useContractRead({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
@@ -112,8 +99,22 @@ const ZapOutButton = () => {
     }
     if (approveAmountContract.loading === true) return; // Don't proceed if loading
     setApproveAmount(approveAmountContract.data);
-    redeemStatus === "loading" ? message.loading("Redeem loading")
-    : redeemStatus === "success" && message.success("Redeem success");
+
+    // Approve feedback
+    if (approveStatus === "loading") {
+      message.loading("Approved loading")
+    } else if (approveStatus === "success") {
+      message.destroy()
+      message.success("Approved success");
+    }
+
+    // Withdraw feedback
+    if (redeemStatus === "loading") {
+      message.loading("Withdraw loading")
+    } else if (redeemStatus === "success") {
+      message.destroy()
+      message.success("Withdraw success");
+    }
   }, [
     WEB3_CONTEXT,
     address,
@@ -206,7 +207,7 @@ const ZapOutButton = () => {
             setChosenToken(value);
           })}
           <NumericInput
-            placeholder={`Balance: ${userShares}`}
+            placeholder={`Balance: ${userShares} SCLP`}
             value={inputValue}
             onChange={handleInputChange}
           />
