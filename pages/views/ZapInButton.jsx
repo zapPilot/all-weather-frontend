@@ -30,6 +30,7 @@ import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToke
 import NumericInput from "./NumberInput";
 import { ethers } from "ethers";
 import { sendDiscordMessage } from "../../utils/discord";
+import SlippageModal from "./components/SlippageModal"
 const MINIMUM_ZAP_IN_AMOUNT = 0.001;
 const MAXIMUM_ZAP_IN_AMOUNT = 1000000;
 const depositSchema = z
@@ -407,45 +408,16 @@ const ZapInButton = () => {
     </Modal>
   );
 
-  const slippageModal = (
-    <Modal
-      title="Slippage Settings"
-      centered
-      open={slippageModalOpen}
-      onCancel={() => setSlippageModalOpen(false)}
-      footer={null}
-    >
-      <p style={{ margin: "10px 0" }}>
-        Setting a high slippage tolerance can help transactions succeed, 
-        but you may not get such a good price. 
-        Use with caution.
-      </p>
-      <ConfigProvider
-        theme={{
-          token: {
-            colorPrimary: "#5DFDCB",
-            colorTextLightSolid: "#000000",
-          },
-        }}
-      >
-        <Radio.Group
-          value={slippage}
-          buttonStyle="solid"
-          onChange={(e) => setSlippage(e.target.value)}
-        >
-          <Radio.Button value={0.1}>0.1%</Radio.Button>
-          <Radio.Button value={0.5}>0.5%</Radio.Button>
-          <Radio.Button value={1}>1%</Radio.Button>
-        </Radio.Group>
-      </ConfigProvider>
-    </Modal>
-  );
-
   return (
     <div>
       {contextHolder}
       {modalContent}
-      {slippageModal}
+      <SlippageModal
+        slippage={slippage}
+        setSlippage={setSlippage}
+        slippageModalOpen={slippageModalOpen}
+        setSlippageModalOpen={setSlippageModalOpen}
+      />
       <ConfigProvider
         theme={{
           token: {
