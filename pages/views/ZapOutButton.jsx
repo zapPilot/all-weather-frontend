@@ -1,4 +1,6 @@
-import { Button, Space, message, ConfigProvider } from "antd";
+import { Button, Space, message, ConfigProvider, Modal, Radio } from "antd";
+import { EditOutlined } from "@ant-design/icons";
+import styles from "../../styles/zapInOut.module.scss";
 import { portfolioContractAddress, USDC } from "../../utils/oneInch";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
@@ -33,6 +35,8 @@ const ZapOutButton = () => {
     "0x55d398326f99059fF775485246999027B3197955",
   );
   const [apiDataReady, setApiDataReady] = useState(true);
+  const [slippage, setSlippage] = useState(1);
+  const [slippageModalOpen, setSlippageModalOpen] = useState(false);
   const { chain } = useNetwork();
 
   const { write } = useContractWrite({
@@ -154,9 +158,48 @@ const ZapOutButton = () => {
     setApiDataReady(true);
   };
 
+  const showSlippageModal = () => {
+    setSlippageModalOpen(true);
+  };
+
+  const slippageModal = (
+    <Modal
+      title="Slippage Settings"
+      centered
+      open={slippageModalOpen}
+      onCancel={() => setSlippageModalOpen(false)}
+      footer={null}
+    >
+      <p style={{ margin: "10px 0" }}>
+        Setting a high slippage tolerance can help transactions succeed, 
+        but you may not get such a good price. 
+        Use with caution.
+      </p>
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: "#5DFDCB",
+            colorTextLightSolid: "#000000",
+          },
+        }}
+      >
+        <Radio.Group
+          value={slippage}
+          buttonStyle="solid"
+          onChange={(e) => setSlippage(e.target.value)}
+        >
+          <Radio.Button value={0.1}>0.1%</Radio.Button>
+          <Radio.Button value={0.5}>0.5%</Radio.Button>
+          <Radio.Button value={1}>1%</Radio.Button>
+        </Radio.Group>
+      </ConfigProvider>
+    </Modal>
+  );
+
   return (
     <div>
       {contextHolder}
+      {slippageModal}
       <ConfigProvider
         theme={{
           token: {
@@ -182,12 +225,22 @@ const ZapOutButton = () => {
             Max
           </Button>
         </Space.Compact>
+        <div className={styles.divSlippage}>
+          <p>Max Slippage: {slippage}%</p>
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={showSlippageModal}
+            className={styles.slippageBtn}
+          />
+        </div>
         <Button
           loading={!apiDataReady}
           onClick={handleZapOut} // Added onClick handler
           type="primary"
           icon={<DollarOutlined />}
           style={{
+            marginTop: 10,
             display: "block",
           }}
         >
