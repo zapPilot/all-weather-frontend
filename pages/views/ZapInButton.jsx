@@ -1,4 +1,6 @@
 import { Button, Space, Modal, message, Spin, ConfigProvider, Radio } from "antd";
+import { EditOutlined } from "@ant-design/icons";
+import styles from "../../styles/zapInOut.module.scss";
 import { z } from "zod";
 import { encodeFunctionData } from "viem";
 import { portfolioContractAddress, USDT } from "../../utils/oneInch";
@@ -61,6 +63,7 @@ const ZapInButton = () => {
   );
   const [messageApi, contextHolder] = message.useMessage();
   const [slippage, setSlippage] = useState(1);
+  const [slippageModalOpen, setSlippageModalOpen] = useState(false);
   const { chain } = useNetwork();
 
   const showModal = () => {
@@ -69,6 +72,10 @@ const ZapInButton = () => {
 
   const handleCancel = () => {
     setOpen(false);
+  };
+
+  const showSlippageModal = () => {
+    setSlippageModalOpen(true);
   };
 
   const { data: chosenTokenBalance } = useBalance({
@@ -262,7 +269,7 @@ const ZapInButton = () => {
       chosenToken,
       USDT,
       portfolioContractAddress,
-      1,
+      slippage,
     );
     const preparedDepositData = _getDepositData(
       amount,
@@ -386,10 +393,45 @@ const ZapInButton = () => {
     </Modal>
   );
 
+  const slippageModal = (
+    <Modal
+      title="Slippage Settings"
+      centered
+      open={slippageModalOpen}
+      onCancel={() => setSlippageModalOpen(false)}
+      footer={null}
+    >
+      <p style={{ margin: "10px 0" }}>
+        Setting a high slippage tolerance can help transactions succeed, 
+        but you may not get such a good price. 
+        Use with caution.
+      </p>
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: "#5DFDCB",
+            colorTextLightSolid: "#000000",
+          },
+        }}
+      >
+        <Radio.Group
+          value={slippage}
+          buttonStyle="solid"
+          onChange={(e) => setSlippage(e.target.value)}
+        >
+          <Radio.Button value={0.1}>0.1%</Radio.Button>
+          <Radio.Button value={0.5}>0.5%</Radio.Button>
+          <Radio.Button value={1}>1%</Radio.Button>
+        </Radio.Group>
+      </ConfigProvider>
+    </Modal>
+  );
+
   return (
     <div>
       {contextHolder}
       {modalContent}
+      {slippageModal}
       <ConfigProvider
         theme={{
           token: {
@@ -419,20 +461,14 @@ const ZapInButton = () => {
             Max
           </Button>
         </Space.Compact>
-        <p
-          style={{
-            marginBottom: 10,
-            color: "white"
-          }}
-        >
-          Max Slippage: {slippage}%
-        </p>
-        <div>
-          <Radio.Group value={slippage} buttonStyle="solid" size="small" onChange={(e) => setSlippage(e.target.value)}>
-            <Radio.Button value={0.1}>0.1%</Radio.Button>
-            <Radio.Button value={0.5}>0.5%</Radio.Button>
-            <Radio.Button value={1}>1%</Radio.Button>
-          </Radio.Group>
+        <div className={styles.divSlippage}>
+          <p>Max Slippage: {slippage}%</p>
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={showSlippageModal}
+            className={styles.slippageBtn}
+          />
         </div>
         <Button
           loading={!apiDataReady}
