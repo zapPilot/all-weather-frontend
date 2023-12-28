@@ -1,4 +1,12 @@
-import { Button, Space, Modal, message, Spin, ConfigProvider, Radio } from "antd";
+import {
+  Button,
+  Space,
+  Modal,
+  message,
+  Spin,
+  ConfigProvider,
+  Radio,
+} from "antd";
 import { EditOutlined } from "@ant-design/icons";
 import styles from "../../styles/zapInOut.module.scss";
 import { z } from "zod";
@@ -30,7 +38,7 @@ import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToke
 import NumericInput from "./NumberInput";
 import { ethers } from "ethers";
 import { sendDiscordMessage } from "../../utils/discord";
-import SlippageModal from "./components/SlippageModal"
+import SlippageModal from "./components/SlippageModal";
 const MINIMUM_ZAP_IN_AMOUNT = 0.001;
 const MAXIMUM_ZAP_IN_AMOUNT = 1000000;
 const depositSchema = z
@@ -197,7 +205,7 @@ const ZapInButton = () => {
     approveAmountContract.loading,
     approveAmountContract.data,
     depositStatus,
-    slippage
+    slippage,
   ]);
 
   const handleInputChange = async (eventValue) => {

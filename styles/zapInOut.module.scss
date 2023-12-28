@@ -1,20 +1,20 @@
 .divSlippage {
-    display: flex;
-    align-items: center;
+  display: flex;
+  align-items: center;
 
-    p {
-        color: #ffffff;
-    }
+  p {
+    color: #ffffff;
+  }
 
-    .slippageBtn {
-        margin-left: 5px;
-        padding: 0;
-        width: unset;
-        height: unset;
-        color: #5DFDCB;
-    }
-    
-    .slippageBtn:hover {
-        color: #87ffd5 !important;
-    }
+  .slippageBtn {
+    margin-left: 5px;
+    padding: 0;
+    width: unset;
+    height: unset;
+    color: #5dfdcb;
+  }
+
+  .slippageBtn:hover {
+    color: #87ffd5 !important;
+  }
 }
