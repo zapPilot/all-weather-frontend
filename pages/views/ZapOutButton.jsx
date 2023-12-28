@@ -8,6 +8,7 @@ import {
   useContractRead,
   useAccount,
   useNetwork,
+  useWaitForTransaction,
 } from "wagmi";
 import { refreshTVLData } from "../../utils/contractInteractions";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
@@ -35,7 +36,18 @@ const ZapOutButton = () => {
   const [apiDataReady, setApiDataReady] = useState(true);
   const { chain } = useNetwork();
 
-  const { write } = useContractWrite({
+  const useCustomContractWrite = (writeOptions) => {
+    const { data, write } = useContractWrite(writeOptions);
+    const { status } = useWaitForTransaction({ hash: data?.hash });
+
+    return { data, write, status };
+  };
+
+  const {
+    data: redeemData,
+    write,
+    status: redeemStatus,
+  } = useCustomContractWrite({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "redeem",
@@ -46,11 +58,15 @@ const ZapOutButton = () => {
       });
     },
     async onSuccess() {
-      messageApi.info("Redeem succeeded");
       await refreshTVLData(messageApi);
     },
   });
-  const { write: approveWrite } = useContractWrite({
+
+  const {
+    data: approveData,
+    write: approveWrite,
+    status: approveStatus,
+  } = useCustomContractWrite({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "approve",
@@ -61,10 +77,10 @@ const ZapOutButton = () => {
       });
     },
     async onSuccess() {
-      messageApi.info("Approved");
       await _callbackAfterApprove();
     },
   });
+
   const approveAmountContract = useContractRead({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
@@ -83,12 +99,29 @@ const ZapOutButton = () => {
     }
     if (approveAmountContract.loading === true) return; // Don't proceed if loading
     setApproveAmount(approveAmountContract.data);
+
+    // Approve feedback
+    if (approveStatus === "loading") {
+      message.loading("Approved loading");
+    } else if (approveStatus === "success") {
+      message.destroy();
+      message.success("Approved success");
+    }
+
+    // Withdraw feedback
+    if (redeemStatus === "loading") {
+      message.loading("Withdraw loading");
+    } else if (redeemStatus === "success") {
+      message.destroy();
+      message.success("Withdraw success");
+    }
   }, [
     WEB3_CONTEXT,
     address,
     approveAmountContract.loading,
     approveAmountContract.data,
     approveReady,
+    redeemStatus,
   ]);
   const handleInputChange = async (eventValue) => {
     setInputValue(eventValue);
@@ -174,7 +207,7 @@ const ZapOutButton = () => {
             setChosenToken(value);
           })}
           <NumericInput
-            placeholder={`Balance: ${userShares}`}
+            placeholder={`Balance: ${userShares} SCLP`}
             value={inputValue}
             onChange={handleInputChange}
           />
