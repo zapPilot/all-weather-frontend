@@ -1,7 +1,11 @@
 import { ConfigProvider, Modal, Radio } from "antd";
 
-const SlippageModal = ({ slippage, setSlippage, slippageModalOpen, setSlippageModalOpen }) => {
-
+const SlippageModal = ({
+  slippage,
+  setSlippage,
+  slippageModalOpen,
+  setSlippageModalOpen,
+}) => {
   return (
     <Modal
       title="Slippage Settings"
@@ -11,9 +15,8 @@ const SlippageModal = ({ slippage, setSlippage, slippageModalOpen, setSlippageMo
       footer={null}
     >
       <p style={{ margin: "10px 0" }}>
-        Setting a high slippage tolerance can help transactions succeed, 
-        but you may not get such a good price. 
-        Use with caution.
+        Setting a high slippage tolerance can help transactions succeed, but you
+        may not get such a good price. Use with caution.
       </p>
       <ConfigProvider
         theme={{
@@ -34,7 +37,7 @@ const SlippageModal = ({ slippage, setSlippage, slippageModalOpen, setSlippageMo
         </Radio.Group>
       </ConfigProvider>
     </Modal>
-  )
+  );
 };
 
 export default SlippageModal;
