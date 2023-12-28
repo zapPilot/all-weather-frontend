@@ -18,7 +18,7 @@ const DOMforCefi = ({ betterPoolsMetadata }) => {
           alt="ETH-token"
         />
       ),
-      tvl: betterPoolsMetadata ? (
+      tvlUsd: betterPoolsMetadata ? (
         "$" +
         betterPoolsMetadata.categorized_positions.long_term_bond.sum.toFixed(2)
       ) : (
@@ -65,7 +65,7 @@ const DOMforCefi = ({ betterPoolsMetadata }) => {
           />
         </>
       ),
-      tvl: betterPoolsMetadata ? (
+      tvlUsd: betterPoolsMetadata ? (
         "$" +
         betterPoolsMetadata.categorized_positions.intermediate_term_bond.sum.toFixed(
           2,
@@ -94,8 +94,8 @@ const DOMforCefi = ({ betterPoolsMetadata }) => {
     },
     {
       title: "TVL",
-      dataIndex: "tvl",
-      key: "tvl",
+      dataIndex: "tvlUsd",
+      key: "tvlUsd",
     },
     {
       title: "Total Claimable Rewards",
