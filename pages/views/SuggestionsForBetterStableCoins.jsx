@@ -14,7 +14,7 @@ export default function SuggestionsForBetterStableCoins(props) {
         chain: metadata.chain,
         pool: metadata.project,
         coin: metadata.symbol,
-        tvl: metadata.tvlUsd / 1e6,
+        tvlUsd: metadata.tvlUsd,
         apr: ((metadata.apy / 100 + 1) ** (1 / 365) - 1) * 365,
       }));
       if (extractedData.length === 0) {
@@ -28,7 +28,7 @@ export default function SuggestionsForBetterStableCoins(props) {
                 Your Current Pool is the best one
               </span>
             ),
-            tvl: 0,
+            tvlUsd: 0,
             apr: "",
           },
         ];

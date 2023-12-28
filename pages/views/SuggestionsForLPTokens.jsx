@@ -125,7 +125,7 @@ const SuggestionsForLPTokens = (props) => {
           chain: metadata.pool_metadata.chain,
           pool: metadata.pool_metadata.project,
           coin: metadata.pool_metadata.symbol,
-          tvl: metadata.pool_metadata.tvlUsd / 1e6,
+          tvlUsd: metadata.pool_metadata.tvlUsd,
           apr: ((metadata.pool_metadata.apy / 100 + 1) ** (1 / 365) - 1) * 365,
         };
       });

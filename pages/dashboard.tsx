@@ -7,6 +7,7 @@ import useRebalanceSuggestions from "../utils/rebalanceSuggestions.js";
 import { useWindowHeight } from "../utils/chartUtils.js";
 import { getColumnsForSuggestionsTable } from "../utils/tableExpansionUtils";
 import { selectBefore } from "../utils/contractInteractions";
+import { useState, useEffect } from "react";
 
 const Dashboard: NextPage = () => {
   const {
@@ -22,6 +23,35 @@ const Dashboard: NextPage = () => {
     color: "#ffffff",
   };
   const commonColumns = getColumnsForSuggestionsTable(100);
+  const [poolData, setPoolData] = useState({ data: [] });
+
+  useEffect(() => {
+    const asyncFetch = () => {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/pools`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Add any other headers you need here
+        },
+        body: JSON.stringify({
+          user_api_key: "test",
+          tokens: [
+            { symbol: "USD", is_stablecoin: true },
+            { symbol: "ETH", is_stablecoin: false },
+          ],
+        }),
+      })
+        .then((response) => response.json())
+        .then((json) => {
+          setPoolData(json);
+          console.log("poolData", poolData);
+        })
+        .catch((error) => {
+          console.log("failed to fetch pool data", error);
+        });
+    };
+    asyncFetch();
+  }, []);
 
   return (
     <BasePage>
@@ -45,6 +75,12 @@ const Dashboard: NextPage = () => {
             <Search placeholder="input your wallet address" />
             {selectBefore()}
             {selectBefore()}
+            <h2 className="ant-table-title">Search Result:</h2>
+            <Table
+              columns={commonColumns}
+              dataSource={poolData.data}
+              pagination={false}
+            />
             <h2 className="ant-table-title">Better BTC-ETH Coin Pools:</h2>
             <Table
               columns={commonColumns}
@@ -76,7 +112,7 @@ const btcEthPair = [
     chain: "linea",
     pool: "Velocore",
     coin: ["BTC", "ETH"],
-    tvl: 0.7118,
+    tvlUsd: 0.7118,
     apr: 0.3765,
   },
   {
@@ -84,7 +120,7 @@ const btcEthPair = [
     chain: "arbitrum",
     pool: "uniswap-v3",
     coin: ["BTC", "ETH"],
-    tvl: 2.223,
+    tvlUsd: 2.223,
     apr: 0.2515,
   },
 ];
@@ -94,7 +130,7 @@ const ethData = [
     chain: "linea",
     pool: "Velocore",
     coin: ["WSTETH", "ETH"],
-    tvl: 0.61,
+    tvlUsd: 0.61,
     apr: 0.2581,
   },
 ];
@@ -104,7 +140,7 @@ const stableCoinData = [
     chain: "arbitrum",
     pool: "solv-funds",
     coin: ["USDT"],
-    tvl: 3.28,
+    tvlUsd: 3.28,
     apr: 0.8211,
   },
   {
@@ -112,7 +148,7 @@ const stableCoinData = [
     chain: "polygon",
     pool: "idle",
     coin: ["USDT"],
-    tvl: 0.6574,
+    tvlUsd: 657400,
     apr: 0.6574,
   },
   {
@@ -120,7 +156,7 @@ const stableCoinData = [
     chain: "ethereum",
     pool: "opyn-squeeth",
     coin: ["USDC"],
-    tvl: 0.6466,
+    tvlUsd: 646600,
     apr: 0.6466,
   },
 ];
