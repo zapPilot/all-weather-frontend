@@ -1,6 +1,4 @@
-import { Button, Space, message, ConfigProvider, Modal, Radio } from "antd";
-import { EditOutlined } from "@ant-design/icons";
-import styles from "../../styles/zapInOut.module.scss";
+import { Button, Space, message, ConfigProvider } from "antd";
 import { portfolioContractAddress, USDC } from "../../utils/oneInch";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
@@ -19,7 +17,7 @@ import {
   selectBefore,
   getAggregatorData,
 } from "../../utils/contractInteractions";
-import SlippageModal from "./components/SlippageModal"
+
 const { ethers } = require("ethers");
 
 const ZapOutButton = () => {
@@ -37,8 +35,6 @@ const ZapOutButton = () => {
     "0x55d398326f99059fF775485246999027B3197955",
   );
   const [apiDataReady, setApiDataReady] = useState(true);
-  const [slippage, setSlippage] = useState(1);
-  const [slippageModalOpen, setSlippageModalOpen] = useState(false);
   const { chain } = useNetwork();
 
   const useCustomContractWrite = (writeOptions) => {
@@ -192,19 +188,9 @@ const ZapOutButton = () => {
     setApiDataReady(true);
   };
 
-  const showSlippageModal = () => {
-    setSlippageModalOpen(true);
-  };
-
   return (
     <div>
       {contextHolder}
-      <SlippageModal
-        slippage={slippage}
-        setSlippage={setSlippage}
-        slippageModalOpen={slippageModalOpen}
-        setSlippageModalOpen={setSlippageModalOpen}
-      />
       <ConfigProvider
         theme={{
           token: {
@@ -230,15 +216,6 @@ const ZapOutButton = () => {
             Max
           </Button>
         </Space.Compact>
-        <div className={styles.divSlippage}>
-          <p>Max Slippage: {slippage}%</p>
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={showSlippageModal}
-            className={styles.slippageBtn}
-          />
-        </div>
         <Button
           loading={!apiDataReady}
           onClick={handleZapOut} // Added onClick handler
