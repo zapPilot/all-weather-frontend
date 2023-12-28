@@ -14,15 +14,15 @@ const RebalancerWidget = () => {
   const WEB3_CONTEXT = useContext(web3Context);
   const [portfolioApr, setPortfolioApr] = useState(0);
   const [netWorth, setNetWorth] = useState(0);
+  const [netWorthWithCustomLogic, setNetWorthWithCustomLogic] = useState(0);
   const [rebalanceSuggestions, setRebalanceSuggestions] = useState([]);
-  const [totalInterest, setTotalInterest] = useState(0);
   useEffect(() => {
     async function fetchPortfolioMetadata() {
       if (WEB3_CONTEXT !== undefined) {
         setPortfolioApr(WEB3_CONTEXT.portfolioApr);
         setNetWorth(WEB3_CONTEXT.netWorth);
+        setNetWorthWithCustomLogic(WEB3_CONTEXT.netWorthWithCustomLogic);
         setRebalanceSuggestions(WEB3_CONTEXT.rebalanceSuggestions);
-        setTotalInterest(WEB3_CONTEXT.totalInterest);
       }
     }
     fetchPortfolioMetadata();
@@ -57,14 +57,14 @@ const RebalancerWidget = () => {
       <div id="zapSection">
         <RebalanceChart
           rebalanceSuggestions={rebalanceSuggestions}
-          netWorth={netWorth}
+          netWorth={netWorthWithCustomLogic}
           windowWidth={windowWidth}
           showCategory={false}
         />
         <div>
           <div>
             <h3>
-              TVL: ${netWorth}{" "}
+              TVL: ${netWorthWithCustomLogic}{" "}
               <a
                 href="https://debank.com/profile/0x9ad45d46e2a2ca19bbb5d5a50df319225ad60e0d"
                 target="_blank"
@@ -78,7 +78,10 @@ const RebalancerWidget = () => {
             </h3>
           </div>
           <div>
-            <UserBalanceInfo tvl={netWorth} />
+            <UserBalanceInfo
+              netWorth={netWorth}
+              netWorthWithCustomLogic={netWorthWithCustomLogic}
+            />
           </div>
           <div>
             <ZapInButton />
