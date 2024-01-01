@@ -25,9 +25,10 @@ export const getColumnsForSuggestionsTable = (portfolioAPR) => [
     render: (chain) => (
       <Image
         src={
-          chain === "fvm"
-            ? `/chainPictures/fvm.png`
-            : `/chainPictures/${chain.toLowerCase()}.svg`
+          `/chainPicturesWebp/${chain.toLowerCase()}.webp`
+          // chain === "fvm"
+          //   ? `/chainPictures/fvm.png`
+          //   : `/chainPictures/${chain.toLowerCase()}.svg`
         }
         height={20}
         width={20}
