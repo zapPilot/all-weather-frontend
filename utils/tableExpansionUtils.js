@@ -24,12 +24,7 @@ export const getColumnsForSuggestionsTable = (portfolioAPR) => [
     width: 24,
     render: (chain) => (
       <Image
-        src={
-          `/chainPicturesWebp/${chain.toLowerCase()}.webp`
-          // chain === "fvm"
-          //   ? `/chainPictures/fvm.png`
-          //   : `/chainPictures/${chain.toLowerCase()}.svg`
-        }
+        src={`/chainPicturesWebp/${chain.toLowerCase()}.webp`}
         height={20}
         width={20}
       />
@@ -77,12 +72,13 @@ export const getColumnsForSuggestionsTable = (portfolioAPR) => [
           {newCoins.map((coin, index) => (
             <Image
               key={index}
-              src={`/tokenPictures/${coin}.png`}
+              src={`/tokenPictures/${coin}.webp`}
               alt={coin}
               height={20}
               width={20}
             />
           ))}
+          <span style={{ color: "#ffffff" }}> {coins.join("-")}</span>
         </div>
       );
     },
