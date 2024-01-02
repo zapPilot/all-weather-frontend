@@ -35,23 +35,19 @@ export const getColumnsForSuggestionsTable = (portfolioAPR) => [
     dataIndex: "pool",
     key: "pool",
     width: 24,
-    render: (project, record) => {
-      return record.key !== "1" ? (
+    render: (pool, record, index) => {
+      return index !== 0 ? (
         <>
           <Image
-            src={`/projectPictures/${project}.webp`}
-            alt={project}
+            src={`/projectPictures/${pool.name}.webp`}
+            alt={pool.name}
             height={20}
             width={20}
           />
-          <span style={{ color: "#ffffff" }}> {project}</span>
+          <span style={{ color: "#ffffff" }}> {pool.name}</span>
         </>
       ) : (
-        <Button
-          type="primary"
-          icon={<UnlockOutlined />}
-          onClick={() => showModal(record)}
-        >
+        <Button type="primary" icon={<UnlockOutlined />}>
           30 Days Free Trial
         </Button>
       );
