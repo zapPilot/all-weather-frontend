@@ -14,6 +14,8 @@ import { selectBefore } from "../utils/contractInteractions";
 import { useState, useEffect } from "react";
 interface Pool {
   apr: number;
+  tokens: string[];
+  data: object[];
   // ... include other relevant properties as needed
 }
 interface Query {
