@@ -131,12 +131,12 @@ const columnMapping = {
     },
   },
 };
-export const getColumnsForSuggestionsTable = () => [
+export const getExpandableColumnsForSuggestionsTable = () => [
   columnMapping["tokens"],
   columnMapping["outerAprColumn"],
 ];
 
-export const getExpandableColumnsForSuggestionsTable = () => [
+export const getBasicColumnsForSuggestionsTable = () => [
   columnMapping["chain"],
   columnMapping["pool"],
   columnMapping["tokens"],
@@ -163,5 +163,12 @@ export const expandedRowRender = (records) => {
       apr: records.data[index].apr,
     });
   }
-  return <Table columns={columns} dataSource={data} pagination={false} />;
+  return (
+    <Table
+      columns={columns}
+      dataSource={data}
+      pagination={false}
+      rowSelection={{}}
+    />
+  );
 };

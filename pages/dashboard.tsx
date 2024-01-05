@@ -2,11 +2,13 @@ import type { NextPage } from "next";
 import BasePage from "./basePage.tsx";
 import { Spin, Table } from "antd";
 import { Input, Image } from "antd";
+import type { ColumnsType } from "antd/es/table";
+
 const { Search } = Input;
 import useRebalanceSuggestions from "../utils/rebalanceSuggestions.js";
 import { useWindowHeight } from "../utils/chartUtils.js";
 import {
-  getColumnsForSuggestionsTable,
+  getBasicColumnsForSuggestionsTable,
   getExpandableColumnsForSuggestionsTable,
   expandedRowRender,
 } from "../utils/tableExpansionUtils";
@@ -14,8 +16,10 @@ import { selectBefore } from "../utils/contractInteractions";
 import { useState, useEffect } from "react";
 import { string } from "zod";
 import RebalanceChart from "./views/RebalanceChart";
+import exp from "constants";
 
 interface Pool {
+  key: string;
   apr: number;
   tokens: string[];
   data: object[];
@@ -40,7 +44,7 @@ const Dashboard: NextPage = () => {
     minHeight: windowHeight,
     color: "#ffffff",
   };
-  const commonColumns = getColumnsForSuggestionsTable();
+  const basicColumns = getBasicColumnsForSuggestionsTable();
   const expandableColumns = getExpandableColumnsForSuggestionsTable();
   const [poolData, setPoolData] = useState<Pool[] | null>(null);
   const [longTermBond, setLongTermBond] = useState<Pool[] | null>(null);
@@ -67,7 +71,7 @@ const Dashboard: NextPage = () => {
   const [chosenTokenA, setChosenTokenA] = useState("");
   const [chosenTokenB, setChosenTokenB] = useState("");
 
-  const topN = 5;
+  const topN = 3;
   const queriesForAllWeather: queriesObj[] = [
     {
       category: "ETH (Long Term Bond)",
@@ -257,7 +261,7 @@ const Dashboard: NextPage = () => {
           // Array to store the results from each fetch
           let combinedData: Pool[] = [];
           // Loop through each configuration and perform the fetch
-          for (const query of categoryMetaData.queries) {
+          for (const [index, query] of categoryMetaData.queries.entries()) {
             const response = await fetch(
               `${process.env.NEXT_PUBLIC_API_URL}/pools`,
               {
@@ -280,6 +284,7 @@ const Dashboard: NextPage = () => {
               combinedData = combinedData.concat(json.data);
             } else {
               combinedData.push({
+                key: index.toString(),
                 tokens: json.data[0].tokens,
                 apr: json.data[0].apr,
                 data: json.data,
@@ -290,7 +295,11 @@ const Dashboard: NextPage = () => {
           // Sort and update the state
           combinedData.sort((poolA, poolB) => poolB.apr - poolA.apr);
           if (unexpandableCategories.includes(categoryMetaData.category)) {
-            categoryMetaData.setStateMethod(combinedData.slice(0, topN));
+            const keyedCombineData = combinedData.map((item, index) => ({
+              ...item,
+              key: index.toString(), // Adds a new key with the index as its value
+            }));
+            categoryMetaData.setStateMethod(keyedCombineData.slice(0, topN));
           } else {
             categoryMetaData.setStateMethod(combinedData);
           }
@@ -351,6 +360,7 @@ const Dashboard: NextPage = () => {
       weight: 0.4,
     },
   ];
+
   return (
     <BasePage>
       <div style={divBetterPools}>
@@ -390,7 +400,7 @@ const Dashboard: NextPage = () => {
             })}
             <h2 className="ant-table-title">Search Result:</h2>
             <Table
-              columns={commonColumns}
+              columns={basicColumns}
               dataSource={poolData}
               pagination={false}
             /> */}
@@ -415,16 +425,20 @@ const Dashboard: NextPage = () => {
                     categoryMetaData.category,
                   ) ? (
                   <Table
-                    columns={expandableColumns}
+                    columns={basicColumns}
                     dataSource={categoryMetaData.state}
                     pagination={false}
+                    rowSelection={{
+                      onSelect: (record, selected, selectedRows) => {
+                        console.log(record, selected, selectedRows);
+                      },
+                    }}
                   />
                 ) : (
                   <Table
-                    columns={commonColumns}
+                    columns={expandableColumns}
                     expandable={{
                       expandedRowRender,
-                      defaultExpandedRowKeys: ["0"],
                     }}
                     dataSource={categoryMetaData.state}
                     pagination={false}
