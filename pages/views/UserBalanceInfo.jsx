@@ -27,25 +27,26 @@ const UserBalanceInfo = ({ netWorth, netWorthWithCustomLogic }) => {
     }
 
     async function fetchExchangeRate() {
-      fetch('https://api.exchangerate-api.com/v4/latest/USD', { // Replace with your API endpoint
-        method: 'GET',
+      fetch("https://api.exchangerate-api.com/v4/latest/USD", {
+        // Replace with your API endpoint
+        method: "GET",
       })
-      .then(response => {
-        if (response.ok) {
-          return response.json();
-        }
-        throw response;
-      })
-      .then(data => {
-        setExchangeRates(data.rates);
-      })
-      .catch(error => {
-        console.error("Error fetching data: ", error);
-        setError(error);
-      })
+        .then((response) => {
+          if (response.ok) {
+            return response.json();
+          }
+          throw response;
+        })
+        .then((data) => {
+          setExchangeRates(data.rates);
+        })
+        .catch((error) => {
+          console.error("Error fetching data: ", error);
+          setError(error);
+        });
     }
     fetchSharesInfo();
-    fetchExchangeRate( );
+    fetchExchangeRate();
   }, [WEB3_CONTEXT]);
 
   const userPercentage = new BigNumber(userShares).div(totalSupply);
@@ -69,9 +70,14 @@ const UserBalanceInfo = ({ netWorth, netWorthWithCustomLogic }) => {
         Monthly Interest: $
         {((userDeposit * portfolioApr) / 100 / 12).toFixed(2)}
         <b style={{ color: "#555555" }}>
-         &nbsp;(NTD: {(userDeposit * exchangeRates['TWD'] * portfolioApr / 100 / 12).toFixed(2)})
-      </b>
-
+          &nbsp;(NTD:{" "}
+          {(
+            (userDeposit * exchangeRates["TWD"] * portfolioApr) /
+            100 /
+            12
+          ).toFixed(2)}
+          )
+        </b>
       </h3>
     </div>
   );

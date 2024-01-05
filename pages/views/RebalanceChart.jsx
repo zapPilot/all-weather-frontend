@@ -21,6 +21,7 @@ import React, { useState, useEffect } from "react";
 
 import { Sunburst, LabelSeries } from "react-vis";
 import { EXTENDED_DISCRETE_COLOR_RANGE } from "react-vis/dist/theme";
+import { set } from "zod";
 
 const DefaultValue = {
   children: [
@@ -162,13 +163,13 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
 }
 
 function convertPortfolioCompositionToChartData(portfolioComposition) {
-  let result = {children: []};
+  let result = { children: [] };
   let idx = 0;
   for (const positionObj of portfolioComposition) {
     for (const category of positionObj.categories) {
       const payloadForSunburst = {
         name: `${positionObj.pool.name}`,
-        value: positionObj.weight/positionObj.categories.length,
+        value: positionObj.weight / positionObj.categories.length,
         hex: colorList[idx],
       };
       idx = (idx + 1) % colorList.length;
@@ -185,7 +186,15 @@ function convertPortfolioCompositionToChartData(portfolioComposition) {
       }
     }
   }
-  return result
+  return result;
+}
+
+function calculatePortfolioAPR(portfolioComposition) {
+  let result = 0;
+  for (const positionObj of portfolioComposition) {
+    result += positionObj.weight * positionObj.apr;
+  }
+  return result;
 }
 
 function getPercentage(value, total) {
@@ -193,7 +202,13 @@ function getPercentage(value, total) {
 }
 
 export default function BasicSunburst(props) {
-  const { rebalanceSuggestions, netWorth, showCategory, mode, portfolioComposition } = props;
+  const {
+    rebalanceSuggestions,
+    netWorth,
+    showCategory,
+    mode,
+    portfolioComposition,
+  } = props;
   const [data, setData] = useState(defaultData);
   const [apr, setAPR] = useState(0);
   const [finalValue, setFinalValue] = useState("Your Portfolio Chart");
@@ -206,9 +221,10 @@ export default function BasicSunburst(props) {
 
   useEffect(() => {
     if (mode === "portfolioComposer") {
-      const chartData = convertPortfolioCompositionToChartData(portfolioComposition);
+      const chartData =
+        convertPortfolioCompositionToChartData(portfolioComposition);
       setData(chartData);
-
+      setAPR(calculatePortfolioAPR(portfolioComposition));
     } else {
       // set showCategory = true, to show its category. For instance, long_term_bond
       const chartData = createChartData(
@@ -261,6 +277,7 @@ export default function BasicSunburst(props) {
           />
         )}
       </Sunburst>
+      <center>APR: {apr.toFixed(2)}%</center>
     </div>
   );
 }

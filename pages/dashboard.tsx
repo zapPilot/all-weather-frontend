@@ -327,36 +327,30 @@ const Dashboard: NextPage = () => {
   };
   const portfolioComposition = [
     {
-      "key": "0xa7f01b3b836d5028ab1f5ce930876e7e2dda1df8:metis_maiadao3",
-      "chain": "arbitrum",
-      "pool": {
-        "meta": "For LP | Maturity 28MAR2024",
-        "name": "pendle"
+      key: "0xa7f01b3b836d5028ab1f5ce930876e7e2dda1df8:metis_maiadao3",
+      chain: "arbitrum",
+      pool: {
+        meta: "For LP | Maturity 28MAR2024",
+        name: "pendle",
       },
-      "categories": ["long_term_bond", "intermediate_term_bond", "gold"],
-      "apr": 0.7,
-      "tokens": [
-        "axl.wsteth",
-        "wsteth"
-      ],
-      "weight": 0.6
+      categories: ["long_term_bond", "intermediate_term_bond", "gold"],
+      apr: 70,
+      tokens: ["axl.wsteth", "wsteth"],
+      weight: 0.6,
     },
     {
-      "key": "0x0f2743016ae7d9dc8b627b211cd0f5d98d5bb430:op_velodrome2",
-      "pool": {
-        "meta": "volatile - 0.05%",
-        "name": "velodrome-v2"
+      key: "0x0f2743016ae7d9dc8b627b211cd0f5d98d5bb430:op_velodrome2",
+      pool: {
+        meta: "volatile - 0.05%",
+        name: "velodrome-v2",
       },
-      "chain": "optimism",
-      "categories": ["long_term_bond", "small_cap_us_stocks"],
-      "apr": 1.2,
-      "tokens": [
-        "eth",
-        "op"
-      ],
-      "weight": 0.4
+      chain: "optimism",
+      categories: ["long_term_bond", "small_cap_us_stocks"],
+      apr: 120,
+      tokens: ["eth", "op"],
+      weight: 0.4,
     },
-  ]
+  ];
   return (
     <BasePage>
       <div style={divBetterPools}>
