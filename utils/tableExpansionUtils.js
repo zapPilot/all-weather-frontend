@@ -27,7 +27,6 @@ const columnMapping = {
     key: "pool",
     width: 24,
     render: (pool, _, index) => {
-      console.log("pool", pool);
       return index !== 0 ? (
         <>
           <Image
@@ -121,7 +120,6 @@ const columnMapping = {
     dataIndex: "apr",
     width: 14,
     render: (apr) => {
-      console.log("apr", apr);
       let color = "green";
       return (
         <>

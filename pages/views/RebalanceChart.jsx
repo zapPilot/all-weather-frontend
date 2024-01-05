@@ -79,41 +79,39 @@ function updateData(data, keyPath) {
 }
 
 const defaultData = updateData(DefaultValue, false);
-
+const colorList = [
+  "#12939A",
+  "#125C77",
+  "#4DC19C",
+  "#DDB27C",
+  "#88572C",
+  "#F15C17",
+  "#223F9A",
+  "#DA70BF",
+  "#FF5733",
+  "#C70039",
+  "#900C3F",
+  "#581845",
+  "#1C2833",
+  "#BFC9CA",
+  "#ABB2B9",
+  "#2E4053",
+  "#212F3C",
+  "#5D6D7E",
+  "#34495E",
+  "#16A085",
+  "#1ABC9C",
+  "#2ECC71",
+  "#27AE60",
+  "#2980B9",
+  "#8E44AD",
+  "#2C3E50",
+  "#F1C40F",
+  "#E67E22",
+  "#E74C3C",
+  "#ECF0F1",
+];
 function createChartData(rebalanceSuggestions, netWorth, showCategory) {
-  const colorList = [
-    "#12939A",
-    "#125C77",
-    "#4DC19C",
-    "#DDB27C",
-    "#88572C",
-    "#F15C17",
-    "#223F9A",
-    "#DA70BF",
-    "#FF5733",
-    "#C70039",
-    "#900C3F",
-    "#581845",
-    "#1C2833",
-    "#BFC9CA",
-    "#ABB2B9",
-    "#2E4053",
-    "#212F3C",
-    "#5D6D7E",
-    "#34495E",
-    "#16A085",
-    "#1ABC9C",
-    "#2ECC71",
-    "#27AE60",
-    "#2980B9",
-    "#8E44AD",
-    "#2C3E50",
-    "#F1C40F",
-    "#E67E22",
-    "#E74C3C",
-    "#ECF0F1",
-  ];
-
   let aggregatedDict = {};
 
   rebalanceSuggestions.forEach((item) => {
@@ -163,13 +161,41 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
   };
 }
 
+function convertPortfolioCompositionToChartData(portfolioComposition) {
+  let result = {children: []};
+  let idx = 0;
+  for (const positionObj of portfolioComposition) {
+    for (const category of positionObj.categories) {
+      const payloadForSunburst = {
+        name: `${positionObj.pool.name}`,
+        value: positionObj.weight/positionObj.categories.length,
+        hex: colorList[idx],
+      };
+      idx = (idx + 1) % colorList.length;
+      const categoryObj = result.children.find((obj) => obj.name === category);
+      if (categoryObj) {
+        categoryObj.children.push(payloadForSunburst);
+      } else {
+        result.children.push({
+          name: category,
+          children: [payloadForSunburst],
+          hex: colorList[idx],
+        });
+        idx = (idx + 1) % colorList.length;
+      }
+    }
+  }
+  return result
+}
+
 function getPercentage(value, total) {
   return Math.round((value / total) * 100);
 }
 
 export default function BasicSunburst(props) {
-  const { rebalanceSuggestions, netWorth, showCategory } = props;
+  const { rebalanceSuggestions, netWorth, showCategory, mode, portfolioComposition } = props;
   const [data, setData] = useState(defaultData);
+  const [apr, setAPR] = useState(0);
   const [finalValue, setFinalValue] = useState("Your Portfolio Chart");
   const [clicked, setClicked] = useState(false);
   const divSunBurst = {
@@ -179,13 +205,19 @@ export default function BasicSunburst(props) {
   };
 
   useEffect(() => {
-    // set showCategory = true, to show its category. For instance, long_term_bond
-    const chartData = createChartData(
-      rebalanceSuggestions,
-      netWorth,
-      showCategory,
-    );
-    setData(chartData);
+    if (mode === "portfolioComposer") {
+      const chartData = convertPortfolioCompositionToChartData(portfolioComposition);
+      setData(chartData);
+
+    } else {
+      // set showCategory = true, to show its category. For instance, long_term_bond
+      const chartData = createChartData(
+        rebalanceSuggestions,
+        netWorth,
+        showCategory,
+      );
+      setData(chartData);
+    }
   }, [rebalanceSuggestions, netWorth]);
   return (
     <div style={divSunBurst}>
@@ -210,6 +242,7 @@ export default function BasicSunburst(props) {
             setData(updateData(data, false));
           }
         }}
+        onValueClick={() => setClicked(!clicked)}
         style={{
           stroke: "#ddd",
           strokeOpacity: 0.3,
