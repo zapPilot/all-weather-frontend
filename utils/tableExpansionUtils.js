@@ -11,7 +11,7 @@ import {
 } from "antd";
 import { UnlockOutlined } from "@ant-design/icons";
 
-const columnMapping = {
+export const columnMapping = {
   chain: {
     title: "Chain",
     dataIndex: "chain",
@@ -35,11 +35,15 @@ const columnMapping = {
             height={20}
             width={20}
           />
-          <Tooltip title={"pool ID: "+pool.poolID}>
-          <span style={{ color: "#ffffff" }}> {pool.name}</span>
+          <Tooltip title={"pool ID: " + pool.poolID}>
+            <span style={{ color: "#ffffff" }}> {pool.name}</span>
             {pool.meta ? (
               <span
-                style={{ color: "#ffffff", fontSize: "smaller", opacity: "0.7" }}
+                style={{
+                  color: "#ffffff",
+                  fontSize: "smaller",
+                  opacity: "0.7",
+                }}
               >
                 ({pool.meta})
               </span>
@@ -145,32 +149,3 @@ export const getBasicColumnsForSuggestionsTable = () => [
   columnMapping["tvlUsd"],
   columnMapping["apr"],
 ];
-
-export const expandedRowRender = (records) => {
-  const columns = [
-    columnMapping["chain"],
-    columnMapping["pool"],
-    columnMapping["tokens"],
-    columnMapping["tvlUsd"],
-    columnMapping["apr"],
-  ];
-  const data = [];
-  for (let index = 0; index < records.data.length; index++) {
-    data.push({
-      key: index.toString(),
-      chain: records.data[index].chain,
-      pool: records.data[index].pool,
-      tokens: records.data[index].tokens,
-      tvlUsd: records.data[index].tvlUsd,
-      apr: records.data[index].apr,
-    });
-  }
-  return (
-    <Table
-      columns={columns}
-      dataSource={data}
-      pagination={false}
-      rowSelection={{}}
-    />
-  );
-};
