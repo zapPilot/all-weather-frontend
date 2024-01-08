@@ -4,7 +4,7 @@ import {
   Modal,
   Button,
   Table,
-  Badge,
+  Tooltip,
   Space,
   Dropdown,
   DownOutlined,
@@ -35,14 +35,16 @@ const columnMapping = {
             height={20}
             width={20}
           />
+          <Tooltip title={"pool ID: "+pool.poolID}>
           <span style={{ color: "#ffffff" }}> {pool.name}</span>
-          {pool.meta ? (
-            <span
-              style={{ color: "#ffffff", fontSize: "smaller", opacity: "0.7" }}
-            >
-              ({pool.meta})
-            </span>
-          ) : null}
+            {pool.meta ? (
+              <span
+                style={{ color: "#ffffff", fontSize: "smaller", opacity: "0.7" }}
+              >
+                ({pool.meta})
+              </span>
+            ) : null}
+          </Tooltip>
         </>
       ) : (
         <Button type="primary" icon={<UnlockOutlined />}>
