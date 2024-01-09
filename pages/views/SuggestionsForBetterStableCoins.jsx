@@ -1,11 +1,11 @@
 import { ConfigProvider, Table } from "antd";
 import { useState, useEffect } from "react";
-import { getColumnsForSuggestionsTable } from "../../utils/tableExpansionUtils";
+import { getBasicColumnsForSuggestionsTable } from "../../utils/tableExpansionUtils";
 
 export default function SuggestionsForBetterStableCoins(props) {
   const { wording, topNData } = props;
   const [data, setData] = useState([]);
-  const commonColumns = getColumnsForSuggestionsTable();
+  const commonColumns = getBasicColumnsForSuggestionsTable();
 
   useEffect(() => {
     if (topNData) {

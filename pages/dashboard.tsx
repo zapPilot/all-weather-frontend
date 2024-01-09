@@ -683,6 +683,24 @@ const Dashboard: NextPage = () => {
         console.log("failed to fetch pool data", error);
       });
   };
+
+  // Function to process data for different categories
+  const processTableDataSource = (
+    categoryMetaData: queriesObj,
+  ): Pool[] | Pools[] => {
+    if (categoryMetaData.state === null) return [];
+
+    if (unexpandableCategories.includes(categoryMetaData.category)) {
+      // Assuming categoryMetaData.state is of type Pool[] for unexpandableCategories
+      // @ts-ignore
+      return categoryMetaData.state as Pool[];
+    } else {
+      // Assuming a different structure for expandable categories, process it accordingly
+      // Example: If expandable categories use Pools[], return as is
+      return categoryMetaData.state as Pools[];
+    }
+  };
+
   const expandedRowRender = (records: Pools) => {
     const columns = [
       columnMapping["chain"],
@@ -693,6 +711,7 @@ const Dashboard: NextPage = () => {
     ];
     const data = [];
     for (let index = 0; index < records.data.length; index++) {
+      // @ts-ignore
       data.push({
         key: index.toString(),
         chain: records.data[index].chain,
@@ -722,6 +741,7 @@ const Dashboard: NextPage = () => {
       />
     );
   };
+
   return (
     <BasePage>
       <div style={divBetterPools}>
@@ -767,6 +787,7 @@ const Dashboard: NextPage = () => {
               pagination={false}
             /> */}
           {Object.values(queriesForAllWeather).map((categoryMetaData) => {
+            const dataSource = processTableDataSource(categoryMetaData);
             return (
               <div key={categoryMetaData.category}>
                 {" "}
@@ -786,9 +807,10 @@ const Dashboard: NextPage = () => {
                 ) : unexpandableCategories.includes(
                     categoryMetaData.category,
                   ) ? (
+                  // @ts-ignore
                   <Table
                     columns={basicColumns}
-                    dataSource={categoryMetaData.state}
+                    dataSource={dataSource as Pool[]}
                     pagination={false}
                     rowSelection={{
                       onSelect: (record: Pool, selected: boolean) => {
@@ -806,12 +828,13 @@ const Dashboard: NextPage = () => {
                     }}
                   />
                 ) : (
+                  // @ts-ignore
                   <Table
                     columns={expandableColumns}
                     expandable={{
                       expandedRowRender,
                     }}
-                    dataSource={categoryMetaData.state}
+                    dataSource={dataSource as Pools[]}
                     pagination={false}
                   />
                 )}
