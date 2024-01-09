@@ -1,7 +1,7 @@
 import { ConfigProvider, Table, Button, Tag, Modal } from "antd";
 import { DownOutlined, UpOutlined } from "@ant-design/icons";
 import { useState, useEffect } from "react";
-import { getColumnsForSuggestionsTable } from "../../utils/tableExpansionUtils";
+import { getBasicColumnsForSuggestionsTable } from "../../utils/tableExpansionUtils";
 
 const useModalState = () => {
   const [openModalId, setOpenModalId] = useState(null);
@@ -129,7 +129,7 @@ const SuggestionsForLPTokens = (props) => {
           apr: ((metadata.pool_metadata.apy / 100 + 1) ** (1 / 365) - 1) * 365,
         };
       });
-      const commonColumns = getColumnsForSuggestionsTable();
+      const commonColumns = getBasicColumnsForSuggestionsTable();
       const popoverContent = (
         <Table
           columns={[...commonColumns]}
