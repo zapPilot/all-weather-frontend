@@ -26,16 +26,11 @@ interface Pools {
   // ... include other relevant properties as needed
 }
 interface Pool {
-  poolID: string;
   [key: string]: any;
-}
-interface Query {
-  symbol: string;
-  is_stablecoin: boolean;
+  pool: { meta: string; name: string; poolID: string };
 }
 interface queriesObj {
   category: string;
-  queries: Query[][]; // Array of arrays of Query objects
   setStateMethod: (newValue: any) => void; // Assuming setStateMethod is a function that takes any type as an argument
   state: Pools[] | null;
 }
@@ -71,182 +66,52 @@ const Dashboard: NextPage = () => {
     [key: string]: any;
   }>({});
   const unexpandableCategories = [
-    "ETH (Long Term Bond)",
-    "Stablecoins (Intermediate Bond)",
-    "ETH-Stablecoin LP Tokens (Gold)",
+    "long_term_bond",
+    "intermediate_term_bond",
+    "gold",
   ];
   const [chosenTokenA, setChosenTokenA] = useState("");
   const [chosenTokenB, setChosenTokenB] = useState("");
 
-  const topN = 3;
+  const topN = 5;
   const queriesForAllWeather: queriesObj[] = [
     {
-      category: "ETH (Long Term Bond)",
-      queries: [
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "eth", is_stablecoin: false },
-        ],
-        [{ symbol: "eth", is_stablecoin: false }],
-      ],
+      category: "long_term_bond",
       setStateMethod: setLongTermBond,
       state: longTermBond,
     },
     {
-      category: "Stablecoins (Intermediate Bond)",
-      queries: [
-        [
-          { symbol: "usd", is_stablecoin: true },
-          { symbol: "usd", is_stablecoin: true },
-        ],
-        [{ symbol: "usd", is_stablecoin: true }],
-      ],
+      category: "intermediate_term_bond",
       setStateMethod: setIntermediateTermBond,
       state: intermediateTermBond,
     },
     {
-      category: "ETH-Stablecoin LP Tokens (Gold)",
-      queries: [
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "usd", is_stablecoin: true },
-        ],
-        [{ symbol: "alp", is_stablecoin: false }],
-        [{ symbol: "glp", is_stablecoin: false }],
-        [{ symbol: "hlp", is_stablecoin: false }],
-        [{ symbol: "vlp", is_stablecoin: false }],
-      ],
+      category: "gold",
       setStateMethod: setGoldData,
       state: goldData,
     },
     {
-      category: "Gas Tokens (Commodities)",
-      queries: [
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "op", is_stablecoin: false },
-        ],
-        [
-          { symbol: "usd", is_stablecoin: true },
-          { symbol: "op", is_stablecoin: false },
-        ],
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "fxs", is_stablecoin: false },
-        ],
-        [
-          { symbol: "usd", is_stablecoin: true },
-          { symbol: "fxs", is_stablecoin: false },
-        ],
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "sol", is_stablecoin: false },
-        ],
-        [
-          { symbol: "usd", is_stablecoin: true },
-          { symbol: "sol", is_stablecoin: false },
-        ],
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "render", is_stablecoin: false },
-        ],
-        [
-          { symbol: "usd", is_stablecoin: true },
-          { symbol: "render", is_stablecoin: false },
-        ],
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "tia", is_stablecoin: false },
-        ],
-        [
-          { symbol: "usd", is_stablecoin: true },
-          { symbol: "tia", is_stablecoin: false },
-        ],
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "link", is_stablecoin: false },
-        ],
-        [
-          { symbol: "usd", is_stablecoin: true },
-          { symbol: "link", is_stablecoin: false },
-        ],
-      ],
+      category: "commodities",
       setStateMethod: setCommodities,
       state: commodities,
     },
     {
-      category: "Large Cap Defi Tokens (Large Cap US Stocks)",
-      queries: [
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "cake", is_stablecoin: false },
-        ],
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "crv", is_stablecoin: false },
-        ],
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "pendle", is_stablecoin: false },
-        ],
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "rdnt", is_stablecoin: false },
-        ],
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "fxs", is_stablecoin: false },
-        ],
-      ],
+      category: "large_cap_us_stocks",
       setStateMethod: set_large_cap_us_stocks,
       state: large_cap_us_stocks,
     },
     {
-      category: "Small Cap Defi Tokens (Small Cap US Stocks)",
-      queries: [
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "velo", is_stablecoin: false },
-        ],
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "lyra", is_stablecoin: false },
-        ],
-      ],
+      category: "small_cap_us_stocks",
       setStateMethod: set_small_cap_us_stocks,
       state: small_cap_us_stocks,
     },
     {
-      category: "Cutting-Edges (Non US Emerging Market Stocks (3%)",
-      queries: [
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "ssv", is_stablecoin: false },
-        ],
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "tia", is_stablecoin: false },
-        ],
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "grt", is_stablecoin: false },
-        ],
-      ],
+      category: "non_us_emerging_market_stocks",
       setStateMethod: set_non_us_emerging_market_stocks,
       state: non_us_emerging_market_stocks,
     },
     {
-      category: "DePIN (Non US Developed Market Stocks)",
-      queries: [
-        [
-          { symbol: "sol", is_stablecoin: false },
-          { symbol: "render", is_stablecoin: false },
-        ],
-        [
-          { symbol: "sol", is_stablecoin: false },
-          { symbol: "hnt", is_stablecoin: false },
-        ],
-      ],
+      category: "non_us_developed_market_stocks",
       setStateMethod: set_non_us_developed_market_stocks,
       state: non_us_developed_market_stocks,
     },
@@ -583,68 +448,41 @@ const Dashboard: NextPage = () => {
   );
 
   const uniqueTokens = new Set();
-  queriesForAllWeather.forEach((item) => {
-    if (!unexpandableCategories.includes(item.category)) {
-      item.queries.forEach((queryGroup) => {
-        queryGroup.forEach((query) => {
-          if (!query.is_stablecoin) {
-            uniqueTokens.add(query.symbol);
-          }
-        });
-      });
-    }
-  });
+  // queriesForAllWeather.forEach((item) => {
+  //   if (!unexpandableCategories.includes(item.category)) {
+  //     item.queries.forEach((queryGroup) => {
+  //       queryGroup.forEach((query) => {
+  //         if (!query.is_stablecoin) {
+  //           uniqueTokens.add(query.symbol);
+  //         }
+  //       });
+  //     });
+  //   }
+  // });
 
   useEffect(() => {
     const fetchDefaultPools = async () => {
       try {
         for (const categoryMetaData of Object.values(queriesForAllWeather)) {
-          // Array to store the results from each fetch
-          let combinedData: Pools[] = [];
-          // Loop through each configuration and perform the fetch
-          for (const [index, query] of categoryMetaData.queries.entries()) {
-            const response = await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL}/pools`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  user_api_key: userApiKey,
-                  tokens: query,
-                  top_n: topN,
-                }),
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/all_weather_pools`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
               },
-            );
-            const json = await response.json();
-            if (json.data.length === 0) {
-              continue;
-            }
-            json.data = _transformData(json.data, categoryMetaData.category);
-            if (unexpandableCategories.includes(categoryMetaData.category)) {
-              combinedData = combinedData.concat(json.data);
-            } else {
-              combinedData.push({
-                key: index.toString(),
-                tokens: json.data[0].tokens,
-                apr: json.data[0].apr,
-                data: json.data,
-              });
-            }
+              body: JSON.stringify({
+                user_api_key: userApiKey,
+                category: categoryMetaData.category,
+                top_n: topN,
+              }),
+            },
+          );
+          const json = await response.json();
+          if (json.data.length === 0) {
+            continue;
           }
-
-          // Sort and update the state
-          combinedData.sort((poolA, poolB) => poolB.apr - poolA.apr);
-          if (unexpandableCategories.includes(categoryMetaData.category)) {
-            const keyedCombineData = combinedData.map((item, index) => ({
-              ...item,
-              key: index.toString(), // Adds a new key with the index as its value
-            }));
-            categoryMetaData.setStateMethod(keyedCombineData.slice(0, topN));
-          } else {
-            categoryMetaData.setStateMethod(combinedData);
-          }
+          categoryMetaData.setStateMethod(json.data);
         }
       } catch (error) {
         console.log("failed to fetch pool data", error);
@@ -684,23 +522,6 @@ const Dashboard: NextPage = () => {
       });
   };
 
-  // Function to process data for different categories
-  const processTableDataSource = (
-    categoryMetaData: queriesObj,
-  ): Pool[] | Pools[] => {
-    if (categoryMetaData.state === null) return [];
-
-    if (unexpandableCategories.includes(categoryMetaData.category)) {
-      // Assuming categoryMetaData.state is of type Pool[] for unexpandableCategories
-      // @ts-ignore
-      return categoryMetaData.state as Pool[];
-    } else {
-      // Assuming a different structure for expandable categories, process it accordingly
-      // Example: If expandable categories use Pools[], return as is
-      return categoryMetaData.state as Pools[];
-    }
-  };
-
   const expandedRowRender = (records: Pools) => {
     const columns = [
       columnMapping["chain"],
@@ -729,13 +550,13 @@ const Dashboard: NextPage = () => {
         pagination={false}
         rowSelection={{
           onSelect: (record: Pool, selected: boolean) => {
+            console.log(record.pool.poolID, "!!!!!!!!!!!!!!");
             if (selected === true) {
-              portfolioComposition[record.poolID] = record;
+              portfolioComposition[record.pool.poolID] = record;
             } else {
-              delete portfolioComposition[record.poolID];
+              delete portfolioComposition[record.pool.poolID];
             }
             setPortfolioComposition(portfolioComposition);
-            console.log(Object.values(portfolioComposition), "in selected");
           },
         }}
       />
@@ -765,8 +586,8 @@ const Dashboard: NextPage = () => {
             windowWidth={200}
             showCategory={false}
             mode="portfolioComposer"
-            // portfolioComposition={Object.values(portfolioComposition)}
-            portfolioComposition={currentBestPortfolio}
+            portfolioComposition={Object.values(portfolioComposition)}
+            // portfolioComposition={currentBestPortfolio}
           />
         </h2>
         <>
@@ -787,7 +608,6 @@ const Dashboard: NextPage = () => {
               pagination={false}
             /> */}
           {Object.values(queriesForAllWeather).map((categoryMetaData) => {
-            const dataSource = processTableDataSource(categoryMetaData);
             return (
               <div key={categoryMetaData.category}>
                 {" "}
@@ -807,34 +627,31 @@ const Dashboard: NextPage = () => {
                 ) : unexpandableCategories.includes(
                     categoryMetaData.category,
                   ) ? (
-                  // @ts-ignore
                   <Table
                     columns={basicColumns}
-                    dataSource={dataSource as Pool[]}
+                    // @ts-ignore
+                    dataSource={categoryMetaData.state}
                     pagination={false}
                     rowSelection={{
                       onSelect: (record: Pool, selected: boolean) => {
+                        console.log(record.pool.poolID, "!!!!!!!!!!!!!!");
                         if (selected === true) {
-                          portfolioComposition[record.poolID] = record;
+                          portfolioComposition[record.pool.poolID] = record;
                         } else {
-                          delete portfolioComposition[record.poolID];
+                          delete portfolioComposition[record.pool.poolID];
                         }
                         setPortfolioComposition(portfolioComposition);
-                        console.log(
-                          JSON.stringify(Object.values(portfolioComposition)),
-                          "in selected",
-                        );
                       },
                     }}
                   />
                 ) : (
-                  // @ts-ignore
                   <Table
                     columns={expandableColumns}
                     expandable={{
                       expandedRowRender,
                     }}
-                    dataSource={dataSource as Pools[]}
+                    // @ts-ignore
+                    dataSource={categoryMetaData.state}
                     pagination={false}
                   />
                 )}
