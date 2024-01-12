@@ -30,9 +30,11 @@ interface Pool {
   pool: { meta: string; name: string; poolID: string };
 }
 interface queriesObj {
+  wording: string;
   category: string;
   setStateMethod: (newValue: any) => void; // Assuming setStateMethod is a function that takes any type as an argument
   state: Pools[] | null;
+  weight: number;
 }
 const Dashboard: NextPage = () => {
   const userApiKey = "placeholder";
@@ -65,6 +67,10 @@ const Dashboard: NextPage = () => {
   const [portfolioComposition, setPortfolioComposition] = useState<{
     [key: string]: any;
   }>({});
+  const [portfolioCompositionForReRender, setPortfolioCompositionForReRender] =
+    useState<{
+      [key: string]: any;
+    }>({});
   const unexpandableCategories = [
     "long_term_bond",
     "intermediate_term_bond",
@@ -76,44 +82,60 @@ const Dashboard: NextPage = () => {
   const topN = 5;
   const queriesForAllWeather: queriesObj[] = [
     {
+      wording: "Long Term Bond (40%)",
       category: "long_term_bond",
       setStateMethod: setLongTermBond,
       state: longTermBond,
+      weight: 0.01,
     },
     {
+      wording: "Intermediate Term Bond (15%)",
       category: "intermediate_term_bond",
       setStateMethod: setIntermediateTermBond,
       state: intermediateTermBond,
+      weight: 0.15,
     },
     {
+      wording: "Gold (7.5%)",
       category: "gold",
       setStateMethod: setGoldData,
       state: goldData,
+      weight: 0.075,
     },
     {
+      wording: "Commodities (7.5%)",
       category: "commodities",
       setStateMethod: setCommodities,
       state: commodities,
+      weight: 0.075,
     },
     {
+      wording: "Large Cap US Stocks (18%)",
       category: "large_cap_us_stocks",
       setStateMethod: set_large_cap_us_stocks,
       state: large_cap_us_stocks,
+      weight: 0.18,
     },
     {
+      wording: "Small Cap US Stocks (3%)",
       category: "small_cap_us_stocks",
       setStateMethod: set_small_cap_us_stocks,
       state: small_cap_us_stocks,
+      weight: 0.03,
     },
     {
-      category: "non_us_emerging_market_stocks",
-      setStateMethod: set_non_us_emerging_market_stocks,
-      state: non_us_emerging_market_stocks,
-    },
-    {
+      wording: "Non US Developed Market Stocks (6%)",
       category: "non_us_developed_market_stocks",
       setStateMethod: set_non_us_developed_market_stocks,
       state: non_us_developed_market_stocks,
+      weight: 0.06,
+    },
+    {
+      wording: "Non US Emerging Market Stocks (3%)",
+      category: "non_us_emerging_market_stocks",
+      setStateMethod: set_non_us_emerging_market_stocks,
+      state: non_us_emerging_market_stocks,
+      weight: 0.03,
     },
   ];
   const currentBestPortfolio = [
@@ -492,13 +514,6 @@ const Dashboard: NextPage = () => {
     fetchDefaultPools();
   }, []);
 
-  const _transformData = (data: Pools[], category: string) => {
-    return data.map((item) => ({
-      ...item,
-      categories: [category],
-      weight: 0.3,
-    }));
-  };
   const searchBetterPools = () => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/pools`, {
       method: "POST",
@@ -530,27 +545,13 @@ const Dashboard: NextPage = () => {
       columnMapping["tvlUsd"],
       columnMapping["apr"],
     ];
-    const data = [];
-    for (let index = 0; index < records.data.length; index++) {
-      // @ts-ignore
-      data.push({
-        key: index.toString(),
-        chain: records.data[index].chain,
-        pool: records.data[index].pool,
-        tokens: records.data[index].tokens,
-        tvlUsd: records.data[index].tvlUsd,
-        apr: records.data[index].apr,
-        poolID: records.data[index].poolID,
-      });
-    }
     return (
       <Table
         columns={columns}
-        dataSource={data}
+        dataSource={records.data}
         pagination={false}
         rowSelection={{
           onSelect: (record: Pool, selected: boolean) => {
-            console.log(record.pool.poolID, "!!!!!!!!!!!!!!");
             if (selected === true) {
               portfolioComposition[record.pool.poolID] = record;
             } else {
@@ -586,9 +587,22 @@ const Dashboard: NextPage = () => {
             windowWidth={200}
             showCategory={false}
             mode="portfolioComposer"
-            portfolioComposition={Object.values(portfolioComposition)}
-            // portfolioComposition={currentBestPortfolio}
+            portfolioComposition={Object.values(
+              portfolioCompositionForReRender,
+            )}
           />
+          <button
+            onClick={() =>
+              requestAnimationFrame(() => {
+                // JSON.parse(JSON.stringify means deep copy
+                setPortfolioCompositionForReRender(
+                  JSON.parse(JSON.stringify(portfolioComposition)),
+                );
+              })
+            }
+          >
+            Visualize
+          </button>
         </h2>
         <>
           {/* <Search
@@ -612,7 +626,7 @@ const Dashboard: NextPage = () => {
               <div key={categoryMetaData.category}>
                 {" "}
                 {/* Make sure to provide a unique key for each item */}
-                <h2 className="ant-table-title">{categoryMetaData.category}</h2>
+                <h2 className="ant-table-title">{categoryMetaData.wording}</h2>
                 {categoryMetaData.state === null ? (
                   <div
                     style={{
@@ -634,7 +648,6 @@ const Dashboard: NextPage = () => {
                     pagination={false}
                     rowSelection={{
                       onSelect: (record: Pool, selected: boolean) => {
-                        console.log(record.pool.poolID, "!!!!!!!!!!!!!!");
                         if (selected === true) {
                           portfolioComposition[record.pool.poolID] = record;
                         } else {

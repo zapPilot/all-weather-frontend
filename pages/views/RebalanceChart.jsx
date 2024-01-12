@@ -171,11 +171,9 @@ function convertPortfolioCompositionToChartData(portfolioComposition) {
   let nameToColor = {};
   for (const positionObj of portfolioComposition) {
     totalWeight += positionObj.weight;
-    for (const category of positionObj.categories) {
-      const weightedValue = (
-        (positionObj.weight / positionObj.categories.length) *
-        100
-      ).toFixed(2);
+    console.log("totalWeight", totalWeight);
+    for (const [category, weight] of positionObj.categories) {
+      const weightedValue = weight * 100;
       const name = `${positionObj.pool.name}:${positionObj.tokens.join(
         "-",
       )}(${weightedValue}%)`;
@@ -240,6 +238,7 @@ export default function BasicSunburst(props) {
   };
 
   useEffect(() => {
+    console.log("useEffect in chart", portfolioComposition);
     if (mode === "portfolioComposer" && portfolioComposition.length > 0) {
       const sortedPortfolioComposition = portfolioComposition.sort(
         (a, b) => b.weight - a.weight,
@@ -259,7 +258,7 @@ export default function BasicSunburst(props) {
       );
       setData(chartData);
     }
-  }, [rebalanceSuggestions, netWorth, portfolioComposition]);
+  }, [portfolioComposition]);
   return (
     <div style={divSunBurst}>
       <Sunburst
