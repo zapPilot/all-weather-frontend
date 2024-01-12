@@ -1,6 +1,6 @@
 import type { NextPage } from "next";
 import BasePage from "./basePage.tsx";
-import { Spin, Table } from "antd";
+import { Spin, Table, Button } from "antd";
 import { Input, Image } from "antd";
 import type { ColumnsType } from "antd/es/table";
 
@@ -79,7 +79,7 @@ const Dashboard: NextPage = () => {
   const [chosenTokenA, setChosenTokenA] = useState("");
   const [chosenTokenB, setChosenTokenB] = useState("");
 
-  const topN = 5;
+  const topN = 3;
   const queriesForAllWeather: queriesObj[] = [
     {
       wording: "Long Term Bond (40%)",
@@ -138,336 +138,10 @@ const Dashboard: NextPage = () => {
       weight: 0.03,
     },
   ];
-  const currentBestPortfolio = [
-    {
-      apr: 46.10463719702651,
-      apyBase: 30.17605,
-      apyMean30d: 25.82988,
-      apyReward: 28.35106,
-      chain: "arbitrum",
-      count: 128,
-      exposure: "single",
-      mu: 9.09524,
-      outlier: false,
-      pool: {
-        meta: "Dolomite Balance",
-        name: "dolomite",
-      },
-      poolID: "d0e11625-79b9-40e3-b01f-a473af961995",
-      poolMeta: "Dolomite Balance",
-      predictions: {
-        binnedConfidence: 3,
-        predictedClass: "Down",
-        predictedProbability: 96,
-      },
-      rewardTokens: ["0x912CE59144191C1204E64559FE8253a0e49E6548"],
-      sigma: 0.64883,
-      stablecoin: true,
-      symbol: "usdc",
-      tokens: ["USDC"],
-      tvlUsd: 543196,
-      underlyingTokens: ["0xaf88d065e77c8cC2239327C5EDb3A432268e5831"],
-      volumeUsd7d: null,
-      categories: ["Stablecoins (Intermediate Bond)"],
-      weight: 0.07,
-      key: "1",
-    },
-    {
-      apr: 112.42539484323267,
-      apyBase: 47.1722,
-      apyMean30d: 266.35264,
-      apyReward: 160.08839,
-      chain: "metis",
-      count: 190,
-      exposure: "multi",
-      mu: 125.8543,
-      outlier: true,
-      pool: {
-        meta: "0.3%",
-        name: "maia-v3",
-      },
-      poolID: "c2870121-0a77-4480-9dc7-51289b1aae06",
-      poolMeta: "0.3%",
-      predictions: {
-        binnedConfidence: 3,
-        predictedClass: "Down",
-        predictedProbability: 98,
-      },
-      rewardTokens: ["0xdeaddeaddeaddeaddeaddeaddeaddeaddead0000"],
-      sigma: 1.61111,
-      stablecoin: false,
-      symbol: "weth-m.usdc",
-      tokens: ["WETH", "M.USDC"],
-      tvlUsd: 520334,
-      underlyingTokens: [
-        "0x420000000000000000000000000000000000000a",
-        "0xea32a96608495e54156ae48931a7c20f0dcc1a21",
-      ],
-      volumeUsd7d: 1691640.82207,
-      categories: [
-        "ETH-Stablecoin LP Tokens (Gold)",
-        "ETH (Long Term Bond)",
-        "Stablecoins (Intermediate Bond)",
-      ],
-      weight: 0.3,
-      key: "0",
-    },
-    {
-      key: "0",
-      chain: "optimism",
-      pool: {
-        meta: "0.3%",
-        name: "uniswap-v3",
-      },
-      tokens: ["OP", "USDC"],
-      tvlUsd: 1223255,
-      apr: 149.02417778193544,
-      poolID: "32defd51-75c3-44af-822e-292bd693e13b",
-      weight: 0.01,
-      categories: [
-        "Gas Tokens (Commodities)",
-        "Stablecoins (Intermediate Bond)",
-      ],
-    },
-    {
-      key: "0",
-      chain: "solana",
-      pool: {
-        meta: null,
-        name: "orca",
-      },
-      tokens: ["SOL", "USDC"],
-      tvlUsd: 505448,
-      apr: 114.73024159183376,
-      poolID: "a5c85bc8-eb41-45c0-a520-d18d7529c0d8",
-      weight: 0.04,
-      categories: [
-        "Gas Tokens (Commodities)",
-        "Stablecoins (Intermediate Bond)",
-        "DePIN (Non US Developed Market Stocks)",
-      ],
-    },
-    {
-      key: "0",
-      chain: "optimism",
-      pool: {
-        meta: "0.3%",
-        name: "uniswap-v3",
-      },
-      tokens: ["WETH", "OP"],
-      tvlUsd: 9661557,
-      apr: 102.88906331302871,
-      poolID: "b023d35a-f511-4650-9518-03a4728cda76",
-      weight: 0.01,
-      categories: ["Gas Tokens (Commodities)", "ETH (Long Term Bond)"],
-    },
-    {
-      key: "0",
-      chain: "osmosis",
-      pool: {
-        meta: "14day",
-        name: "osmosis-dex",
-      },
-      tokens: ["USDC", "TIA"],
-      tvlUsd: 382815,
-      apr: 86.77451372192213,
-      poolID: "4d0e0b7c-eac9-4374-bbd5-94bba240c2e6",
-      weight: 0.01,
-      categories: [
-        "Gas Tokens (Commodities)",
-        "Stablecoins (Intermediate Bond)",
-      ],
-    },
-    {
-      key: "0",
-      chain: "arbitrum",
-      pool: {
-        meta: "1%",
-        name: "uniswap-v3",
-      },
-      tokens: ["WETH", "FXS"],
-      tvlUsd: 251186,
-      apr: 84.58496481527055,
-      poolID: "ae8bfa0a-143a-4741-b878-1aebd628d287",
-      weight: 0.01,
-      categories: [
-        "Gas Tokens (Commodities)",
-        "ETH (Long Term Bond)",
-        "Large Cap Defi Tokens (Large Cap US Stocks)",
-      ],
-    },
-    {
-      key: "0",
-      chain: "arbitrum",
-      pool: {
-        meta: null,
-        name: "joe-v2.1",
-      },
-      tokens: ["LINK", "WETH"],
-      tvlUsd: 556963,
-      apr: 62.98064385184799,
-      poolID: "30379464-6318-400b-925a-0226d6a690cf",
-      weight: 0.01,
-      categories: ["Gas Tokens (Commodities)", "ETH (Long Term Bond)"],
-    },
-    {
-      key: "0",
-      chain: "solana",
-      pool: {
-        meta: null,
-        name: "orca",
-      },
-      tokens: ["SOL", "WHETH"],
-      tvlUsd: 662065,
-      apr: 55.23105820533081,
-      poolID: "69c64232-ef1a-45f2-b49b-daeb2a906873",
-      weight: 0.01,
-      categories: [
-        "Gas Tokens (Commodities)",
-        "ETH (Long Term Bond)",
-        "DePIN (Non US Developed Market Stocks)",
-      ],
-    },
-    {
-      key: "0",
-      chain: "arbitrum",
-      pool: {
-        meta: "0.3%",
-        name: "uniswap-v3",
-      },
-      tokens: ["RDNT", "WETH"],
-      tvlUsd: 1488866,
-      apr: 170.36080359071605,
-      poolID: "04a3e057-4cca-4928-bd52-6e1e8ae45b12",
-      weight: 0.045,
-      categories: [
-        "ETH (Long Term Bond)",
-        "Large Cap Defi Tokens (Large Cap US Stocks)",
-      ],
-    },
-    {
-      key: "0",
-      chain: "arbitrum",
-      pool: {
-        meta: null,
-        name: "camelot-v3",
-      },
-      tokens: ["PENDLE", "WETH"],
-      tvlUsd: 739509,
-      apr: 152.4797211038773,
-      poolID: "ad4fc370-78de-4203-9146-d7545a3f895f",
-      weight: 0.21,
-      categories: [
-        "ETH (Long Term Bond)",
-        "Large Cap Defi Tokens (Large Cap US Stocks)",
-      ],
-    },
-    {
-      key: "0",
-      chain: "bsc",
-      pool: {
-        meta: "0.25%",
-        name: "pancakeswap-amm-v3",
-      },
-      tokens: ["CAKE", "ETH"],
-      tvlUsd: 428668,
-      apr: 68.15004448462636,
-      poolID: "66c6f3f2-124c-4929-b0f8-27122fb725fd",
-      weight: 0.045,
-      categories: [
-        "ETH (Long Term Bond)",
-        "Large Cap Defi Tokens (Large Cap US Stocks)",
-      ],
-    },
-    {
-      key: "0",
-      chain: "optimism",
-      pool: {
-        meta: "volatile - 1%",
-        name: "velodrome-v2",
-      },
-      tokens: ["WETH", "VELO"],
-      tvlUsd: 316891,
-      apr: 48.24551738796823,
-      poolID: "09921e93-8c35-46fb-94ba-9fe0580a2a88",
-      weight: 0.01,
-      categories: [
-        "ETH (Long Term Bond)",
-        "Small Cap Defi Tokens (Small Cap US Stocks)",
-      ],
-    },
-    {
-      key: "0",
-      chain: "solana",
-      pool: {
-        meta: null,
-        name: "kamino-liquidity",
-      },
-      tokens: ["SOL", "HNT"],
-      tvlUsd: 208896,
-      apr: 121.13482832483568,
-      poolID: "889816db-0dee-43bd-be0c-ef84c5d220e7",
-      categories: [
-        "Gas Tokens (Commodities)",
-        "DePIN (Non US Developed Market Stocks)",
-      ],
-      weight: 0.01,
-    },
-    {
-      key: "0",
-      chain: "solana",
-      pool: {
-        meta: null,
-        name: "orca",
-      },
-      tokens: ["SOL", "RENDER"],
-      tvlUsd: 709150,
-      apr: 104.72346059442495,
-      poolID: "4376015c-0cde-4a59-b7cc-ed2ee92277c1",
-      categories: [
-        "Gas Tokens (Commodities)",
-        "DePIN (Non US Developed Market Stocks)",
-      ],
-      weight: 0.01,
-    },
-    {
-      apr: 17.110941540709355,
-      apyBase: 1.26655,
-      apyMean30d: 17.75688,
-      apyReward: 17.39074,
-      chain: "arbitrum",
-      count: 223,
-      exposure: "single",
-      mu: 3.14901,
-      outlier: false,
-      pool: {
-        meta: "Dolomite Balance",
-        name: "dolomite",
-      },
-      poolID: "655ca962-e0ac-424c-84f9-2fe4fbb0fef4",
-      poolMeta: "Dolomite Balance",
-      predictions: {
-        binnedConfidence: 3,
-        predictedClass: "Down",
-        predictedProbability: 91,
-      },
-      rewardTokens: ["0x912CE59144191C1204E64559FE8253a0e49E6548"],
-      sigma: 0.35038,
-      stablecoin: false,
-      symbol: "weth",
-      tokens: ["WETH"],
-      tvlUsd: 4266341,
-      underlyingTokens: ["0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"],
-      volumeUsd7d: null,
-      categories: ["ETH (Long Term Bond)"],
-      weight: 0.2,
-      key: "1",
-    },
-  ];
-  const totalWeight = Object.values(currentBestPortfolio).reduce(
-    (acc, item) => acc + item.weight,
-    0,
-  );
+  // const totalWeight = Object.values(currentBestPortfolio).reduce(
+  //   (acc, item) => acc + item.weight,
+  //   0,
+  // );
 
   const uniqueTokens = new Set();
   // queriesForAllWeather.forEach((item) => {
@@ -591,7 +265,8 @@ const Dashboard: NextPage = () => {
               portfolioCompositionForReRender,
             )}
           />
-          <button
+          <Button
+            type="primary"
             onClick={() =>
               requestAnimationFrame(() => {
                 // JSON.parse(JSON.stringify means deep copy
@@ -602,7 +277,7 @@ const Dashboard: NextPage = () => {
             }
           >
             Visualize
-          </button>
+          </Button>
         </h2>
         <>
           {/* <Search
