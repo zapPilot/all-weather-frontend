@@ -237,16 +237,22 @@ const Dashboard: NextPage = () => {
             )) {
               for (
                 let index = 0;
+                // @ts-ignore
                 index < pool_record.categories.length;
                 index++
               ) {
                 if (poolID === record.pool.poolID) {
+                  // @ts-ignore
                   pool_record.categories[index][1].value =
+                    // @ts-ignore
+
                     (pool_record.categories[index][1].value *
                       record.category_weight) /
                     (originalPoolsCount + 1);
                 } else {
+                  // @ts-ignore
                   pool_record.categories[index][1].value =
+                    // @ts-ignore
                     (pool_record.categories[index][1].value *
                       originalPoolsCount) /
                     (originalPoolsCount + 1);
@@ -261,12 +267,13 @@ const Dashboard: NextPage = () => {
       />
     );
   };
-  function _getOrCreate(obj, key) {
+  function _getOrCreate(obj: { [key: string]: any }, key: string) {
     if (!obj[key]) {
       obj[key] = {};
     }
     return obj[key];
   }
+
   return (
     <BasePage>
       <div style={divBetterPools}>
@@ -379,16 +386,21 @@ const Dashboard: NextPage = () => {
                         )) {
                           for (
                             let index = 0;
+                            // @ts-ignore
                             index < pool_record.categories.length;
                             index++
                           ) {
                             if (poolID === record.pool.poolID) {
+                              // @ts-ignore
                               pool_record.categories[index][1].value =
+                                // @ts-ignore
                                 (pool_record.categories[index][1].value *
                                   record.category_weight) /
                                 (originalPoolsCount + 1);
                             } else {
+                              // @ts-ignore
                               pool_record.categories[index][1].value =
+                                // @ts-ignore
                                 (pool_record.categories[index][1].value *
                                   originalPoolsCount) /
                                 (originalPoolsCount + 1);
