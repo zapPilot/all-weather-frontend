@@ -34,7 +34,6 @@ interface queriesObj {
   category: string;
   setStateMethod: (newValue: any) => void; // Assuming setStateMethod is a function that takes any type as an argument
   state: Pools[] | null;
-  weight: number;
 }
 const Dashboard: NextPage = () => {
   const userApiKey = "placeholder";
@@ -86,62 +85,50 @@ const Dashboard: NextPage = () => {
       category: "long_term_bond",
       setStateMethod: setLongTermBond,
       state: longTermBond,
-      weight: 0.01,
     },
     {
       wording: "Intermediate Term Bond (15%)",
       category: "intermediate_term_bond",
       setStateMethod: setIntermediateTermBond,
       state: intermediateTermBond,
-      weight: 0.15,
     },
     {
       wording: "Gold (7.5%)",
       category: "gold",
       setStateMethod: setGoldData,
       state: goldData,
-      weight: 0.075,
     },
     {
       wording: "Commodities (7.5%)",
       category: "commodities",
       setStateMethod: setCommodities,
       state: commodities,
-      weight: 0.075,
     },
     {
       wording: "Large Cap US Stocks (18%)",
       category: "large_cap_us_stocks",
       setStateMethod: set_large_cap_us_stocks,
       state: large_cap_us_stocks,
-      weight: 0.18,
     },
     {
       wording: "Small Cap US Stocks (3%)",
       category: "small_cap_us_stocks",
       setStateMethod: set_small_cap_us_stocks,
       state: small_cap_us_stocks,
-      weight: 0.03,
     },
     {
       wording: "Non US Developed Market Stocks (6%)",
       category: "non_us_developed_market_stocks",
       setStateMethod: set_non_us_developed_market_stocks,
       state: non_us_developed_market_stocks,
-      weight: 0.06,
     },
     {
       wording: "Non US Emerging Market Stocks (3%)",
       category: "non_us_emerging_market_stocks",
       setStateMethod: set_non_us_emerging_market_stocks,
       state: non_us_emerging_market_stocks,
-      weight: 0.03,
     },
   ];
-  // const totalWeight = Object.values(currentBestPortfolio).reduce(
-  //   (acc, item) => acc + item.weight,
-  //   0,
-  // );
 
   const uniqueTokens = new Set();
   // queriesForAllWeather.forEach((item) => {
@@ -226,10 +213,47 @@ const Dashboard: NextPage = () => {
         pagination={false}
         rowSelection={{
           onSelect: (record: Pool, selected: boolean) => {
+            const originalPoolsCount =
+              portfolioComposition[record.category_from_request] === undefined
+                ? 0
+                : Object.values(
+                    portfolioComposition[record.category_from_request],
+                  ).length;
             if (selected === true) {
-              portfolioComposition[record.pool.poolID] = record;
+              const categoryPools = _getOrCreate(
+                portfolioComposition,
+                record.category_from_request,
+              );
+              categoryPools[record.pool.poolID] = record;
+              portfolioComposition[record.category_from_request] =
+                categoryPools;
             } else {
-              delete portfolioComposition[record.pool.poolID];
+              delete portfolioComposition[record.category_from_request][
+                record.pool.poolID
+              ];
+            }
+            for (const [poolID, pool_record] of Object.entries(
+              portfolioComposition[record.category_from_request],
+            )) {
+              for (
+                let index = 0;
+                index < pool_record.categories.length;
+                index++
+              ) {
+                if (poolID === record.pool.poolID) {
+                  pool_record.categories[index][1].value =
+                    (pool_record.categories[index][1].value *
+                      record.category_weight) /
+                    (originalPoolsCount + 1);
+                } else {
+                  pool_record.categories[index][1].value =
+                    (pool_record.categories[index][1].value *
+                      originalPoolsCount) /
+                    (originalPoolsCount + 1);
+                }
+              }
+              portfolioComposition[record.category_from_request][poolID] =
+                pool_record;
             }
             setPortfolioComposition(portfolioComposition);
           },
@@ -237,7 +261,12 @@ const Dashboard: NextPage = () => {
       />
     );
   };
-
+  function _getOrCreate(obj, key) {
+    if (!obj[key]) {
+      obj[key] = {};
+    }
+    return obj[key];
+  }
   return (
     <BasePage>
       <div style={divBetterPools}>
@@ -323,10 +352,51 @@ const Dashboard: NextPage = () => {
                     pagination={false}
                     rowSelection={{
                       onSelect: (record: Pool, selected: boolean) => {
+                        const originalPoolsCount =
+                          portfolioComposition[record.category_from_request] ===
+                          undefined
+                            ? 0
+                            : Object.values(
+                                portfolioComposition[
+                                  record.category_from_request
+                                ],
+                              ).length;
                         if (selected === true) {
-                          portfolioComposition[record.pool.poolID] = record;
+                          const categoryPools = _getOrCreate(
+                            portfolioComposition,
+                            record.category_from_request,
+                          );
+                          categoryPools[record.pool.poolID] = record;
+                          portfolioComposition[record.category_from_request] =
+                            categoryPools;
                         } else {
-                          delete portfolioComposition[record.pool.poolID];
+                          delete portfolioComposition[
+                            record.category_from_request
+                          ][record.pool.poolID];
+                        }
+                        for (const [poolID, pool_record] of Object.entries(
+                          portfolioComposition[record.category_from_request],
+                        )) {
+                          for (
+                            let index = 0;
+                            index < pool_record.categories.length;
+                            index++
+                          ) {
+                            if (poolID === record.pool.poolID) {
+                              pool_record.categories[index][1].value =
+                                (pool_record.categories[index][1].value *
+                                  record.category_weight) /
+                                (originalPoolsCount + 1);
+                            } else {
+                              pool_record.categories[index][1].value =
+                                (pool_record.categories[index][1].value *
+                                  originalPoolsCount) /
+                                (originalPoolsCount + 1);
+                            }
+                          }
+                          portfolioComposition[record.category_from_request][
+                            poolID
+                          ] = pool_record;
                         }
                         setPortfolioComposition(portfolioComposition);
                       },

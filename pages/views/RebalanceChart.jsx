@@ -167,49 +167,57 @@ function convertPortfolioCompositionToChartData(portfolioComposition) {
   let idx = 0;
 
   // need to refactor
-  let totalWeight = 0;
   let nameToColor = {};
-  for (const positionObj of portfolioComposition) {
-    totalWeight += positionObj.weight;
-    console.log("totalWeight", totalWeight);
-    for (const [category, weight] of positionObj.categories) {
-      const weightedValue = weight * 100;
-      const name = `${positionObj.pool.name}:${positionObj.tokens.join(
-        "-",
-      )}(${weightedValue}%)`;
-      let colorForThisName;
-      if (nameToColor[name]) {
-        colorForThisName = nameToColor[name];
-      } else {
-        colorForThisName = colorList[idx];
-        nameToColor[name] = colorForThisName;
-        idx = (idx + 1) % colorList.length;
-      }
-      const payloadForSunburst = {
-        name,
-        value: weightedValue,
-        hex: colorForThisName,
-      };
-      const categoryObj = result.children.find((obj) => obj.name === category);
-      if (categoryObj) {
-        categoryObj.children.push(payloadForSunburst);
-      } else {
-        result.children.push({
-          name: category,
-          children: [payloadForSunburst],
-          hex: colorList[idx],
-        });
-        idx = (idx + 1) % colorList.length;
+  for (const positionObjsInThisCategory of portfolioComposition) {
+    for (const positionObj of Object.values(positionObjsInThisCategory)) {
+      for (const [category, weight] of positionObj.categories) {
+        const weightedValue = weight.value * 100;
+        const name = `${positionObj.pool.name}:${positionObj.tokens.join(
+          "-",
+        )}(${weightedValue}%)`;
+        let colorForThisName;
+        if (nameToColor[name]) {
+          colorForThisName = nameToColor[name];
+        } else {
+          colorForThisName = colorList[idx];
+          nameToColor[name] = colorForThisName;
+          idx = (idx + 1) % colorList.length;
+        }
+        const payloadForSunburst = {
+          name,
+          value: weightedValue,
+          hex: colorForThisName,
+        };
+        const categoryObj = result.children.find(
+          (obj) => obj.name === category,
+        );
+        if (categoryObj) {
+          categoryObj.children.push(payloadForSunburst);
+        } else {
+          result.children.push({
+            name: category,
+            children: [payloadForSunburst],
+            hex: colorList[idx],
+          });
+          idx = (idx + 1) % colorList.length;
+        }
       }
     }
   }
-  return [result, totalWeight];
+  return result;
 }
 
 function calculatePortfolioAPR(portfolioComposition) {
   let result = 0;
-  for (const positionObj of portfolioComposition) {
-    result += positionObj.weight * positionObj.apr;
+  for (const positionObjsInThisCategory of portfolioComposition) {
+    for (const positionObj of Object.values(positionObjsInThisCategory)) {
+      for (const [_, weight] of positionObj.categories) {
+        if (weight.only_for_sunburst_chart === true) {
+          continue;
+        }
+        result += weight.value * positionObj.apr;
+      }
+    }
   }
   return result;
 }
@@ -228,7 +236,6 @@ export default function BasicSunburst(props) {
   } = props;
   const [data, setData] = useState(defaultData);
   const [apr, setAPR] = useState(0);
-  const [totalWeight, setTotalWeight] = useState(0);
   const [finalValue, setFinalValue] = useState("Your Portfolio Chart");
   const [clicked, setClicked] = useState(false);
   const divSunBurst = {
@@ -238,17 +245,15 @@ export default function BasicSunburst(props) {
   };
 
   useEffect(() => {
-    console.log("useEffect in chart", portfolioComposition);
     if (mode === "portfolioComposer" && portfolioComposition.length > 0) {
       const sortedPortfolioComposition = portfolioComposition.sort(
         (a, b) => b.weight - a.weight,
       );
-      const [chartData, totalWeight] = convertPortfolioCompositionToChartData(
+      const chartData = convertPortfolioCompositionToChartData(
         sortedPortfolioComposition,
       );
       setData(chartData);
       setAPR(calculatePortfolioAPR(sortedPortfolioComposition));
-      setTotalWeight(totalWeight);
     } else {
       // set showCategory = true, to show its category. For instance, long_term_bond
       const chartData = createChartData(
@@ -302,7 +307,6 @@ export default function BasicSunburst(props) {
         )}
       </Sunburst>
       <center>APR: {apr.toFixed(2)}%</center>
-      <center>Weight: {(totalWeight * 100).toFixed(2)}%</center>
     </div>
   );
 }
