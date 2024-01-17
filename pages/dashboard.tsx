@@ -29,7 +29,7 @@ interface queriesObj {
   setStateMethod: (newValue: any) => void; // Assuming setStateMethod is a function that takes any type as an argument
   state: Pools[] | null;
   setUniqueQueryTokens: (newValue: any) => void;
-  uniqueQueryTokens: { [key: string]: any };
+  uniqueQueryTokens: Array<string>;
 }
 const Dashboard: NextPage = () => {
   const userApiKey = "placeholder";
@@ -60,23 +60,23 @@ const Dashboard: NextPage = () => {
   const [non_us_emerging_market_stocks, set_non_us_emerging_market_stocks] =
     useState<Pools[] | null>(null);
 
-  const [longTermBondFilterDict, setLongTermBondFilterDict] = useState<{}>({});
+  const [longTermBondFilterDict, setLongTermBondFilterDict] = useState([]);
   const [intermediateTermBondFilterDict, setIntermediateTermBondFilterDict] =
-    useState<{}>({});
-  const [goldDataFilterDict, setGoldDataFilterDict] = useState<{}>({});
-  const [commoditiesFilterDict, setCommoditiesFilterDict] = useState<{}>({});
+    useState([]);
+  const [goldDataFilterDict, setGoldDataFilterDict] = useState([]);
+  const [commoditiesFilterDict, setCommoditiesFilterDict] = useState([]);
   const [large_cap_us_stocksFilterDict, setLarge_cap_us_stocksFilterDict] =
-    useState<{}>({});
+    useState([]);
   const [small_cap_us_stocksFilterDict, setSmall_cap_us_stocksFilterDict] =
-    useState<{}>({});
+    useState([]);
   const [
     non_us_developed_market_stocksFilterDict,
     setNon_us_developed_market_stocksFilterDict,
-  ] = useState<{}>({});
+  ] = useState([]);
   const [
     non_us_emerging_market_stocksFilterDict,
     setNon_us_emerging_market_stocksFilterDict,
-  ] = useState<{}>({});
+  ] = useState([]);
 
   const [portfolioComposition, setPortfolioComposition] = useState<{
     [key: string]: any;
