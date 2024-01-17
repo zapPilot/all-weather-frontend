@@ -1,10 +1,7 @@
 import type { NextPage } from "next";
 import BasePage from "./basePage.tsx";
 import { Spin, Table, Button } from "antd";
-import { Input, Image } from "antd";
-import type { ColumnsType } from "antd/es/table";
-
-const { Search } = Input;
+import { Image } from "antd";
 import useRebalanceSuggestions from "../utils/rebalanceSuggestions.js";
 import { useWindowHeight } from "../utils/chartUtils.js";
 import {
@@ -12,11 +9,8 @@ import {
   getExpandableColumnsForSuggestionsTable,
   columnMapping,
 } from "../utils/tableExpansionUtils";
-import { selectBefore } from "../utils/contractInteractions";
 import { useState, useEffect } from "react";
-import { string } from "zod";
 import RebalanceChart from "./views/RebalanceChart";
-import exp from "constants";
 
 interface Pools {
   key: string;
@@ -175,29 +169,6 @@ const Dashboard: NextPage = () => {
     fetchDefaultPools();
   }, []);
 
-  const searchBetterPools = () => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/pools`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        user_api_key: "test",
-        tokens: [
-          { symbol: chosenTokenA, is_stablecoin: false },
-          { symbol: chosenTokenB, is_stablecoin: false },
-        ],
-      }),
-    })
-      .then((response) => response.json())
-      .then((json) => {
-        setPoolData(json.data);
-      })
-      .catch((error) => {
-        console.log("failed to fetch pool data", error);
-      });
-  };
-
   const expandedRowRender = (records: Pools) => {
     const columns = [
       columnMapping["chain"],
@@ -212,61 +183,57 @@ const Dashboard: NextPage = () => {
         dataSource={records.data}
         pagination={false}
         rowSelection={{
-          onSelect: (record: Pool, selected: boolean) => {
-            const originalPoolsCount =
-              portfolioComposition[record.category_from_request] === undefined
-                ? 0
-                : Object.values(
-                    portfolioComposition[record.category_from_request],
-                  ).length;
-            if (selected === true) {
-              const categoryPools = _getOrCreate(
-                portfolioComposition,
-                record.category_from_request,
-              );
-              categoryPools[record.pool.poolID] = record;
-              portfolioComposition[record.category_from_request] =
-                categoryPools;
-            } else {
-              delete portfolioComposition[record.category_from_request][
-                record.pool.poolID
-              ];
-            }
-            for (const [poolID, pool_record] of Object.entries(
-              portfolioComposition[record.category_from_request],
-            )) {
-              for (
-                let index = 0;
-                // @ts-ignore
-                index < pool_record.categories.length;
-                index++
-              ) {
-                if (poolID === record.pool.poolID) {
-                  // @ts-ignore
-                  pool_record.categories[index][1].value =
-                    // @ts-ignore
-
-                    (pool_record.categories[index][1].value *
-                      record.category_weight) /
-                    (originalPoolsCount + 1);
-                } else {
-                  // @ts-ignore
-                  pool_record.categories[index][1].value =
-                    // @ts-ignore
-                    (pool_record.categories[index][1].value *
-                      originalPoolsCount) /
-                    (originalPoolsCount + 1);
-                }
-              }
-              portfolioComposition[record.category_from_request][poolID] =
-                pool_record;
-            }
-            setPortfolioComposition(portfolioComposition);
-          },
+          onSelect: onSelectCallback,
         }}
       />
     );
   };
+  const onSelectCallback = (record: Pool, selected: boolean) => {
+    const originalPoolsCount =
+      portfolioComposition[record.category_from_request] === undefined
+        ? 0
+        : Object.values(portfolioComposition[record.category_from_request])
+            .length;
+    if (selected === true) {
+      const categoryPools = _getOrCreate(
+        portfolioComposition,
+        record.category_from_request,
+      );
+      categoryPools[record.pool.poolID] = record;
+      portfolioComposition[record.category_from_request] = categoryPools;
+    } else {
+      delete portfolioComposition[record.category_from_request][
+        record.pool.poolID
+      ];
+    }
+    for (const [poolID, pool_record] of Object.entries(
+      portfolioComposition[record.category_from_request],
+    )) {
+      for (
+        let index = 0;
+        // @ts-ignore
+        index < pool_record.categories.length;
+        index++
+      ) {
+        if (poolID === record.pool.poolID) {
+          // @ts-ignore
+          pool_record.categories[index][1].value =
+            // @ts-ignore
+            (pool_record.categories[index][1].value * record.category_weight) /
+            (originalPoolsCount + 1);
+        } else {
+          // @ts-ignore
+          pool_record.categories[index][1].value =
+            // @ts-ignore
+            (pool_record.categories[index][1].value * originalPoolsCount) /
+            (originalPoolsCount + 1);
+        }
+      }
+      portfolioComposition[record.category_from_request][poolID] = pool_record;
+    }
+    setPortfolioComposition(portfolioComposition);
+  };
+
   function _getOrCreate(obj: { [key: string]: any }, key: string) {
     if (!obj[key]) {
       obj[key] = {};
@@ -316,22 +283,6 @@ const Dashboard: NextPage = () => {
           </Button>
         </h2>
         <>
-          {/* <Search
-              placeholder="input your wallet address"
-              onSearch={searchBetterPools}
-            />
-            {selectBefore((value: string) => {
-              setChosenTokenA(value);
-            })}
-            {selectBefore((value: string) => {
-              setChosenTokenB(value);
-            })}
-            <h2 className="ant-table-title">Search Result:</h2>
-            <Table
-              columns={basicColumns}
-              dataSource={poolData}
-              pagination={false}
-            /> */}
           {Object.values(queriesForAllWeather).map((categoryMetaData) => {
             return (
               <div key={categoryMetaData.category}>
@@ -358,60 +309,8 @@ const Dashboard: NextPage = () => {
                     dataSource={categoryMetaData.state}
                     pagination={false}
                     rowSelection={{
-                      onSelect: (record: Pool, selected: boolean) => {
-                        const originalPoolsCount =
-                          portfolioComposition[record.category_from_request] ===
-                          undefined
-                            ? 0
-                            : Object.values(
-                                portfolioComposition[
-                                  record.category_from_request
-                                ],
-                              ).length;
-                        if (selected === true) {
-                          const categoryPools = _getOrCreate(
-                            portfolioComposition,
-                            record.category_from_request,
-                          );
-                          categoryPools[record.pool.poolID] = record;
-                          portfolioComposition[record.category_from_request] =
-                            categoryPools;
-                        } else {
-                          delete portfolioComposition[
-                            record.category_from_request
-                          ][record.pool.poolID];
-                        }
-                        for (const [poolID, pool_record] of Object.entries(
-                          portfolioComposition[record.category_from_request],
-                        )) {
-                          for (
-                            let index = 0;
-                            // @ts-ignore
-                            index < pool_record.categories.length;
-                            index++
-                          ) {
-                            if (poolID === record.pool.poolID) {
-                              // @ts-ignore
-                              pool_record.categories[index][1].value =
-                                // @ts-ignore
-                                (pool_record.categories[index][1].value *
-                                  record.category_weight) /
-                                (originalPoolsCount + 1);
-                            } else {
-                              // @ts-ignore
-                              pool_record.categories[index][1].value =
-                                // @ts-ignore
-                                (pool_record.categories[index][1].value *
-                                  originalPoolsCount) /
-                                (originalPoolsCount + 1);
-                            }
-                          }
-                          portfolioComposition[record.category_from_request][
-                            poolID
-                          ] = pool_record;
-                        }
-                        setPortfolioComposition(portfolioComposition);
-                      },
+                      // @ts-ignore
+                      onSelect: onSelectCallback,
                     }}
                   />
                 ) : (
