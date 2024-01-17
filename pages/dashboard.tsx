@@ -28,6 +28,8 @@ interface queriesObj {
   category: string;
   setStateMethod: (newValue: any) => void; // Assuming setStateMethod is a function that takes any type as an argument
   state: Pools[] | null;
+  setUniqueQueryTokens: (newValue: any) => void;
+  uniqueQueryTokens: { [key: string]: any };
 }
 const Dashboard: NextPage = () => {
   const userApiKey = "placeholder";
@@ -57,6 +59,25 @@ const Dashboard: NextPage = () => {
     useState<Pools[] | null>(null);
   const [non_us_emerging_market_stocks, set_non_us_emerging_market_stocks] =
     useState<Pools[] | null>(null);
+
+  const [longTermBondFilterDict, setLongTermBondFilterDict] = useState<{}>({});
+  const [intermediateTermBondFilterDict, setIntermediateTermBondFilterDict] =
+    useState<{}>({});
+  const [goldDataFilterDict, setGoldDataFilterDict] = useState<{}>({});
+  const [commoditiesFilterDict, setCommoditiesFilterDict] = useState<{}>({});
+  const [large_cap_us_stocksFilterDict, setLarge_cap_us_stocksFilterDict] =
+    useState<{}>({});
+  const [small_cap_us_stocksFilterDict, setSmall_cap_us_stocksFilterDict] =
+    useState<{}>({});
+  const [
+    non_us_developed_market_stocksFilterDict,
+    setNon_us_developed_market_stocksFilterDict,
+  ] = useState<{}>({});
+  const [
+    non_us_emerging_market_stocksFilterDict,
+    setNon_us_emerging_market_stocksFilterDict,
+  ] = useState<{}>({});
+
   const [portfolioComposition, setPortfolioComposition] = useState<{
     [key: string]: any;
   }>({});
@@ -69,8 +90,6 @@ const Dashboard: NextPage = () => {
     "intermediate_term_bond",
     "gold",
   ];
-  const [chosenTokenA, setChosenTokenA] = useState("");
-  const [chosenTokenB, setChosenTokenB] = useState("");
 
   const topN = 3;
   const queriesForAllWeather: queriesObj[] = [
@@ -79,63 +98,74 @@ const Dashboard: NextPage = () => {
       category: "long_term_bond",
       setStateMethod: setLongTermBond,
       state: longTermBond,
+      setUniqueQueryTokens: setLongTermBondFilterDict,
+      uniqueQueryTokens: longTermBondFilterDict,
     },
     {
       wording: "Intermediate Term Bond (15%)",
       category: "intermediate_term_bond",
       setStateMethod: setIntermediateTermBond,
       state: intermediateTermBond,
+      setUniqueQueryTokens: setIntermediateTermBondFilterDict,
+      uniqueQueryTokens: intermediateTermBondFilterDict,
     },
     {
       wording: "Gold (7.5%)",
       category: "gold",
       setStateMethod: setGoldData,
       state: goldData,
+      setUniqueQueryTokens: setGoldDataFilterDict,
+      uniqueQueryTokens: goldDataFilterDict,
     },
     {
       wording: "Commodities (7.5%)",
       category: "commodities",
       setStateMethod: setCommodities,
       state: commodities,
+      setUniqueQueryTokens: setCommoditiesFilterDict,
+      uniqueQueryTokens: commoditiesFilterDict,
     },
     {
       wording: "Large Cap US Stocks (18%)",
       category: "large_cap_us_stocks",
       setStateMethod: set_large_cap_us_stocks,
       state: large_cap_us_stocks,
+      setUniqueQueryTokens: setLarge_cap_us_stocksFilterDict,
+      uniqueQueryTokens: large_cap_us_stocksFilterDict,
     },
     {
       wording: "Small Cap US Stocks (3%)",
       category: "small_cap_us_stocks",
       setStateMethod: set_small_cap_us_stocks,
       state: small_cap_us_stocks,
+      setUniqueQueryTokens: setSmall_cap_us_stocksFilterDict,
+      uniqueQueryTokens: small_cap_us_stocksFilterDict,
     },
     {
       wording: "Non US Developed Market Stocks (6%)",
       category: "non_us_developed_market_stocks",
       setStateMethod: set_non_us_developed_market_stocks,
       state: non_us_developed_market_stocks,
+      setUniqueQueryTokens: setNon_us_developed_market_stocksFilterDict,
+      uniqueQueryTokens: non_us_developed_market_stocksFilterDict,
     },
     {
       wording: "Non US Emerging Market Stocks (3%)",
       category: "non_us_emerging_market_stocks",
       setStateMethod: set_non_us_emerging_market_stocks,
       state: non_us_emerging_market_stocks,
+      setUniqueQueryTokens: setNon_us_emerging_market_stocksFilterDict,
+      uniqueQueryTokens: non_us_emerging_market_stocksFilterDict,
     },
   ];
 
   const uniqueTokens = new Set();
-  // queriesForAllWeather.forEach((item) => {
-  //   if (!unexpandableCategories.includes(item.category)) {
-  //     item.queries.forEach((queryGroup) => {
-  //       queryGroup.forEach((query) => {
-  //         if (!query.is_stablecoin) {
-  //           uniqueTokens.add(query.symbol);
-  //         }
-  //       });
-  //     });
-  //   }
-  // });
+  queriesForAllWeather.forEach((item) => {
+    // @ts-ignore
+    item.uniqueQueryTokens.forEach((query: string) => {
+      uniqueTokens.add(query);
+    });
+  });
 
   useEffect(() => {
     const fetchDefaultPools = async () => {
@@ -160,6 +190,7 @@ const Dashboard: NextPage = () => {
             continue;
           }
           categoryMetaData.setStateMethod(json.data);
+          categoryMetaData.setUniqueQueryTokens(json.unique_query_tokens);
         }
       } catch (error) {
         console.log("failed to fetch pool data", error);
