@@ -3,13 +3,17 @@ import {
   Image,
   Modal,
   Button,
-  Table,
+  Badge,
   Tooltip,
   Space,
   Dropdown,
   DownOutlined,
 } from "antd";
-import { UnlockOutlined } from "@ant-design/icons";
+import {
+  UnlockOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+} from "@ant-design/icons";
 
 export const columnMapping = {
   chain: {
@@ -113,9 +117,19 @@ export const columnMapping = {
       let color = "green";
       return (
         <>
-          <Tag color={color} key={apr}>
-            {apr.toFixed(2)}%
-          </Tag>
+          <Badge
+            count={
+              apr.predictions.predictedClass === "Down" ? (
+                <ArrowDownOutlined style={{ color: "red" }} />
+              ) : (
+                <ArrowUpOutlined style={{ color: "green" }} />
+              )
+            }
+          >
+            <Tag color={color} key={apr.value}>
+              {apr.value.toFixed(2)}%
+            </Tag>
+          </Badge>
         </>
       );
     },
@@ -129,8 +143,8 @@ export const columnMapping = {
       let color = "green";
       return (
         <>
-          <Tag color={color} key={apr}>
-            {apr.toFixed(2)}%
+          <Tag color={color} key={apr.value}>
+            {apr.value.toFixed(2)}%
           </Tag>
         </>
       );
