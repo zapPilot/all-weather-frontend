@@ -49,6 +49,7 @@ const Web3DataProvider = ({ children, address }) => {
     sharpeRatio,
     ROI,
     maxDrawdown,
+    claimableRewards,
   } = useRebalanceSuggestions();
 
   useEffect(() => {
@@ -86,6 +87,7 @@ const Web3DataProvider = ({ children, address }) => {
             sharpeRatio,
             ROI,
             maxDrawdown,
+            claimableRewards,
           });
         })
         .catch((error) => console.error("Error:", error));

@@ -45,6 +45,8 @@ export default function useRebalanceSuggestions() {
         setAggregatedPosisions(aggregatedPositions);
         const max_drawdown = response.data.max_drawdown;
         setMaxDrawdown(max_drawdown);
+
+        setClaimableRewards(response.data.claimable_rewards);
       })
       .catch((error) => console.log(error));
   };
