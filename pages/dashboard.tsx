@@ -204,11 +204,11 @@ const Dashboard: NextPage = () => {
 
   const expandedRowRender = (records: Pools) => {
     const columns = [
-      columnMapping["chain"],
-      columnMapping["pool"],
-      columnMapping["tokens"],
-      columnMapping["tvlUsd"],
-      columnMapping["apr"],
+      columnMapping("")["chain"],
+      columnMapping(walletAddress)["pool"],
+      columnMapping("")["tokens"],
+      columnMapping("")["tvlUsd"],
+      columnMapping("")["apr"],
     ];
     return (
       <Table
