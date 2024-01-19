@@ -7,6 +7,7 @@ const UserBalanceInfo = ({ netWorth, netWorthWithCustomLogic }) => {
   const [userShares, setUserShares] = useState(0);
   const [totalSupply, setTotalSupply] = useState(1);
   const [portfolioApr, setPortfolioApr] = useState(0);
+  const [claimableRewards, setClaimableRewards] = useState(0);
   const [exchangeRates, setExchangeRates] = useState({});
 
   useEffect(() => {
@@ -22,6 +23,11 @@ const UserBalanceInfo = ({ netWorth, netWorthWithCustomLogic }) => {
           WEB3_CONTEXT.portfolioApr === undefined
             ? 0
             : WEB3_CONTEXT.portfolioApr,
+        );
+        setClaimableRewards(
+          WEB3_CONTEXT.claimableRewards === undefined
+            ? 0
+            : WEB3_CONTEXT.claimableRewards,
         );
       }
     }
@@ -77,6 +83,12 @@ const UserBalanceInfo = ({ netWorth, netWorthWithCustomLogic }) => {
             12
           ).toFixed(2)}
           )
+        </b>
+      </h3>
+      <h3>
+        <b style={{ color: "#555555" }}>
+          Claimable Rewards in the Portfolio: ${claimableRewards.toFixed(2)}
+          &nbsp;(NTD: {(claimableRewards * exchangeRates["TWD"]).toFixed(2)})
         </b>
       </h3>
     </div>
