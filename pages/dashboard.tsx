@@ -11,6 +11,7 @@ import {
 } from "../utils/tableExpansionUtils";
 import { useState, useEffect } from "react";
 import RebalanceChart from "./views/RebalanceChart";
+import { useAccount } from "wagmi";
 
 interface Pools {
   key: string;
@@ -33,14 +34,15 @@ interface queriesObj {
 }
 const Dashboard: NextPage = () => {
   const userApiKey = "placeholder";
-  const { topNLowestAprPools } = useRebalanceSuggestions();
+  const { address: walletAddress } = useAccount();
+
   const windowHeight = useWindowHeight();
   const divBetterPools = {
     padding: "0 8px",
     minHeight: windowHeight,
     color: "#ffffff",
   };
-  const basicColumns = getBasicColumnsForSuggestionsTable();
+  const basicColumns = getBasicColumnsForSuggestionsTable(walletAddress);
   const expandableColumns = getExpandableColumnsForSuggestionsTable();
   const [poolData, setPoolData] = useState<Pools[] | null>(null);
   const [longTermBond, setLongTermBond] = useState<Pools[] | null>(null);
