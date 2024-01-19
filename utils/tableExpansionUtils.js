@@ -1,21 +1,17 @@
-import {
-  Tag,
-  Image,
-  Modal,
-  Button,
-  Badge,
-  Tooltip,
-  Space,
-  Dropdown,
-  DownOutlined,
-} from "antd";
+import { Tag, Image, Button, Badge, Tooltip } from "antd";
 import {
   UnlockOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
 } from "@ant-design/icons";
 
-export const columnMapping = {
+// TODO: need to implement the paid button
+const paidUserWallets = [
+  "0x78000b0605E81ea9df54b33f72ebC61B5F5c8077",
+  "0x3144b7E3a4518541AEB4ceC7fC7A6Dd82f05Ae8B",
+  "0xca35a10c9622febfa889410efb9b905b26221c37", // Chris
+];
+export const columnMapping = (walletAddress) => ({
   chain: {
     title: "Chain",
     dataIndex: "chain",
@@ -31,7 +27,11 @@ export const columnMapping = {
     key: "pool",
     width: 24,
     render: (pool, _, index) => {
-      return index !== 0 ? (
+      return index === 0 && !paidUserWallets.includes(walletAddress) ? (
+        <Button type="primary" icon={<UnlockOutlined />}>
+          30 Days Free Trial
+        </Button>
+      ) : (
         <>
           <Image
             src={`/projectPictures/${pool.name}.webp`}
@@ -54,10 +54,6 @@ export const columnMapping = {
             ) : null}
           </Tooltip>
         </>
-      ) : (
-        <Button type="primary" icon={<UnlockOutlined />}>
-          30 Days Free Trial
-        </Button>
       );
     },
   },
@@ -150,16 +146,16 @@ export const columnMapping = {
       );
     },
   },
-};
+});
 export const getExpandableColumnsForSuggestionsTable = () => [
-  columnMapping["tokens"],
-  columnMapping["outerAprColumn"],
+  columnMapping("")["tokens"],
+  columnMapping("")["outerAprColumn"],
 ];
 
-export const getBasicColumnsForSuggestionsTable = () => [
-  columnMapping["chain"],
-  columnMapping["pool"],
-  columnMapping["tokens"],
-  columnMapping["tvlUsd"],
-  columnMapping["apr"],
+export const getBasicColumnsForSuggestionsTable = (walletAddress) => [
+  columnMapping("")["chain"],
+  columnMapping(walletAddress)["pool"],
+  columnMapping("")["tokens"],
+  columnMapping("")["tvlUsd"],
+  columnMapping("")["apr"],
 ];
