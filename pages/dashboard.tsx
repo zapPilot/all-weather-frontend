@@ -11,7 +11,7 @@ import {
   getBasicColumnsForSuggestionsTable,
   getExpandableColumnsForSuggestionsTable,
   columnMapping,
-} from "../utils/tableExpansionUtils";
+} from "../utils/tableExpansionUtils.jsx";
 import { selectBefore } from "../utils/contractInteractions";
 import { useState, useEffect } from "react";
 import { string } from "zod";
