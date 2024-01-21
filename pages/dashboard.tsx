@@ -8,8 +8,9 @@ import {
   getBasicColumnsForSuggestionsTable,
   getExpandableColumnsForSuggestionsTable,
   columnMapping,
-} from "../utils/tableExpansionUtils";
-import { useState, useEffect } from "react";
+} from "../utils/tableExpansionUtils.jsx";
+import { selectBefore } from "../utils/contractInteractions";
+import { useState, useEffect, useMemo } from "react";
 import RebalanceChart from "./views/RebalanceChart";
 import { useAccount } from "wagmi";
 
@@ -32,7 +33,16 @@ interface queriesObj {
   setUniqueQueryTokens: (newValue: any) => void;
   uniqueQueryTokens: Array<string>;
 }
+
 const Dashboard: NextPage = () => {
+  return (
+    <BasePage>
+      <InnerDashboard />
+    </BasePage>
+  );
+};
+
+const InnerDashboard: NextPage = () => {
   const userApiKey = "placeholder";
   const { address: walletAddress } = useAccount();
 
@@ -94,72 +104,91 @@ const Dashboard: NextPage = () => {
   ];
 
   const topN = 3;
-  const queriesForAllWeather: queriesObj[] = [
-    {
-      wording: "Long Term Bond (40%)",
-      category: "long_term_bond",
-      setStateMethod: setLongTermBond,
-      state: longTermBond,
-      setUniqueQueryTokens: setLongTermBondFilterDict,
-      uniqueQueryTokens: longTermBondFilterDict,
-    },
-    {
-      wording: "Intermediate Term Bond (15%)",
-      category: "intermediate_term_bond",
-      setStateMethod: setIntermediateTermBond,
-      state: intermediateTermBond,
-      setUniqueQueryTokens: setIntermediateTermBondFilterDict,
-      uniqueQueryTokens: intermediateTermBondFilterDict,
-    },
-    {
-      wording: "Gold (7.5%)",
-      category: "gold",
-      setStateMethod: setGoldData,
-      state: goldData,
-      setUniqueQueryTokens: setGoldDataFilterDict,
-      uniqueQueryTokens: goldDataFilterDict,
-    },
-    {
-      wording: "Commodities (7.5%)",
-      category: "commodities",
-      setStateMethod: setCommodities,
-      state: commodities,
-      setUniqueQueryTokens: setCommoditiesFilterDict,
-      uniqueQueryTokens: commoditiesFilterDict,
-    },
-    {
-      wording: "Large Cap US Stocks (18%)",
-      category: "large_cap_us_stocks",
-      setStateMethod: set_large_cap_us_stocks,
-      state: large_cap_us_stocks,
-      setUniqueQueryTokens: setLarge_cap_us_stocksFilterDict,
-      uniqueQueryTokens: large_cap_us_stocksFilterDict,
-    },
-    {
-      wording: "Small Cap US Stocks (3%)",
-      category: "small_cap_us_stocks",
-      setStateMethod: set_small_cap_us_stocks,
-      state: small_cap_us_stocks,
-      setUniqueQueryTokens: setSmall_cap_us_stocksFilterDict,
-      uniqueQueryTokens: small_cap_us_stocksFilterDict,
-    },
-    {
-      wording: "Non US Developed Market Stocks (6%)",
-      category: "non_us_developed_market_stocks",
-      setStateMethod: set_non_us_developed_market_stocks,
-      state: non_us_developed_market_stocks,
-      setUniqueQueryTokens: setNon_us_developed_market_stocksFilterDict,
-      uniqueQueryTokens: non_us_developed_market_stocksFilterDict,
-    },
-    {
-      wording: "Non US Emerging Market Stocks (3%)",
-      category: "non_us_emerging_market_stocks",
-      setStateMethod: set_non_us_emerging_market_stocks,
-      state: non_us_emerging_market_stocks,
-      setUniqueQueryTokens: setNon_us_emerging_market_stocksFilterDict,
-      uniqueQueryTokens: non_us_emerging_market_stocksFilterDict,
-    },
-  ];
+  const queriesForAllWeather: queriesObj[] = useMemo(() => {
+    return [
+      {
+        wording: "Long Term Bond (40%)",
+        category: "long_term_bond",
+        setStateMethod: setLongTermBond,
+        state: longTermBond,
+        setUniqueQueryTokens: setLongTermBondFilterDict,
+        uniqueQueryTokens: longTermBondFilterDict,
+      },
+      {
+        wording: "Intermediate Term Bond (15%)",
+        category: "intermediate_term_bond",
+        setStateMethod: setIntermediateTermBond,
+        state: intermediateTermBond,
+        setUniqueQueryTokens: setIntermediateTermBondFilterDict,
+        uniqueQueryTokens: intermediateTermBondFilterDict,
+      },
+      {
+        wording: "Gold (7.5%)",
+        category: "gold",
+        setStateMethod: setGoldData,
+        state: goldData,
+        setUniqueQueryTokens: setGoldDataFilterDict,
+        uniqueQueryTokens: goldDataFilterDict,
+      },
+      {
+        wording: "Commodities (7.5%)",
+        category: "commodities",
+        setStateMethod: setCommodities,
+        state: commodities,
+        setUniqueQueryTokens: setCommoditiesFilterDict,
+        uniqueQueryTokens: commoditiesFilterDict,
+      },
+      {
+        wording: "Large Cap US Stocks (18%)",
+        category: "large_cap_us_stocks",
+        setStateMethod: set_large_cap_us_stocks,
+        state: large_cap_us_stocks,
+        setUniqueQueryTokens: setLarge_cap_us_stocksFilterDict,
+        uniqueQueryTokens: large_cap_us_stocksFilterDict,
+      },
+      {
+        wording: "Small Cap US Stocks (3%)",
+        category: "small_cap_us_stocks",
+        setStateMethod: set_small_cap_us_stocks,
+        state: small_cap_us_stocks,
+        setUniqueQueryTokens: setSmall_cap_us_stocksFilterDict,
+        uniqueQueryTokens: small_cap_us_stocksFilterDict,
+      },
+      {
+        wording: "Non US Developed Market Stocks (6%)",
+        category: "non_us_developed_market_stocks",
+        setStateMethod: set_non_us_developed_market_stocks,
+        state: non_us_developed_market_stocks,
+        setUniqueQueryTokens: setNon_us_developed_market_stocksFilterDict,
+        uniqueQueryTokens: non_us_developed_market_stocksFilterDict,
+      },
+      {
+        wording: "Non US Emerging Market Stocks (3%)",
+        category: "non_us_emerging_market_stocks",
+        setStateMethod: set_non_us_emerging_market_stocks,
+        state: non_us_emerging_market_stocks,
+        setUniqueQueryTokens: setNon_us_emerging_market_stocksFilterDict,
+        uniqueQueryTokens: non_us_emerging_market_stocksFilterDict,
+      },
+    ];
+  }, [
+    commodities,
+    commoditiesFilterDict,
+    goldData,
+    goldDataFilterDict,
+    intermediateTermBond,
+    intermediateTermBondFilterDict,
+    large_cap_us_stocks,
+    large_cap_us_stocksFilterDict,
+    longTermBond,
+    longTermBondFilterDict,
+    non_us_developed_market_stocks,
+    non_us_developed_market_stocksFilterDict,
+    non_us_emerging_market_stocks,
+    non_us_emerging_market_stocksFilterDict,
+    small_cap_us_stocks,
+    small_cap_us_stocksFilterDict,
+  ]);
 
   const uniqueTokens = new Set();
   queriesForAllWeather.forEach((item) => {
@@ -200,7 +229,7 @@ const Dashboard: NextPage = () => {
     };
 
     fetchDefaultPools();
-  }, []);
+  }, [queriesForAllWeather]);
 
   const expandedRowRender = (records: Pools) => {
     const columns = [
@@ -275,94 +304,88 @@ const Dashboard: NextPage = () => {
   }
 
   return (
-    <BasePage>
-      <div style={divBetterPools}>
-        <center>
-          <h1>Better Pools Search Engine</h1>
-        </center>
-        <h2 className="ant-table-title">
-          Tokens in Current Portfolio: {uniqueTokens.size}
-          {Array.from(uniqueTokens).map((token: unknown, index) => (
-            <Image
-              key={index}
-              src={`/tokenPictures/${token}.webp`}
-              alt={token as string}
-              height={20}
-              width={20}
-            />
-          ))}
-          <RebalanceChart
-            rebalanceSuggestions={[]}
-            netWorth={100}
-            windowWidth={200}
-            showCategory={false}
-            mode="portfolioComposer"
-            portfolioComposition={Object.values(
-              portfolioCompositionForReRender,
-            )}
+    <div style={divBetterPools}>
+      <center>
+        <h1>Better Pools Search Engine</h1>
+      </center>
+      <h2 className="ant-table-title">
+        Tokens in Current Portfolio: {uniqueTokens.size}
+        {Array.from(uniqueTokens).map((token: unknown, index) => (
+          <Image
+            key={index}
+            src={`/tokenPictures/${token}.webp`}
+            alt={token as string}
+            height={20}
+            width={20}
           />
-          <Button
-            type="primary"
-            onClick={() =>
-              requestAnimationFrame(() => {
-                // JSON.parse(JSON.stringify means deep copy
-                setPortfolioCompositionForReRender(
-                  JSON.parse(JSON.stringify(portfolioComposition)),
-                );
-              })
-            }
-          >
-            Visualize
-          </Button>
-        </h2>
-        <>
-          {Object.values(queriesForAllWeather).map((categoryMetaData) => {
-            return (
-              <div key={categoryMetaData.category}>
-                {" "}
-                {/* Make sure to provide a unique key for each item */}
-                <h2 className="ant-table-title">{categoryMetaData.wording}</h2>
-                {categoryMetaData.state === null ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      height: "15rem",
-                    }}
-                  >
-                    <Spin size="large" />
-                  </div>
-                ) : unexpandableCategories.includes(
-                    categoryMetaData.category,
-                  ) ? (
-                  <Table
-                    columns={basicColumns}
+        ))}
+        <RebalanceChart
+          rebalanceSuggestions={[]}
+          netWorth={100}
+          windowWidth={200}
+          showCategory={false}
+          mode="portfolioComposer"
+          portfolioComposition={Object.values(portfolioCompositionForReRender)}
+        />
+        <Button
+          type="primary"
+          onClick={() =>
+            requestAnimationFrame(() => {
+              // JSON.parse(JSON.stringify means deep copy
+              setPortfolioCompositionForReRender(
+                JSON.parse(JSON.stringify(portfolioComposition)),
+              );
+            })
+          }
+        >
+          Visualize
+        </Button>
+      </h2>
+      <>
+        {Object.values(queriesForAllWeather).map((categoryMetaData) => {
+          return (
+            <div key={categoryMetaData.category}>
+              {" "}
+              {/* Make sure to provide a unique key for each item */}
+              <h2 className="ant-table-title">{categoryMetaData.wording}</h2>
+              {categoryMetaData.state === null ? (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "15rem",
+                  }}
+                >
+                  <Spin size="large" />
+                </div>
+              ) : unexpandableCategories.includes(categoryMetaData.category) ? (
+                <Table
+                  columns={basicColumns}
+                  // @ts-ignore
+                  dataSource={categoryMetaData.state}
+                  pagination={false}
+                  rowSelection={{
                     // @ts-ignore
-                    dataSource={categoryMetaData.state}
-                    pagination={false}
-                    rowSelection={{
-                      // @ts-ignore
-                      onSelect: onSelectCallback,
-                    }}
-                  />
-                ) : (
-                  <Table
-                    columns={expandableColumns}
-                    expandable={{
-                      expandedRowRender,
-                    }}
-                    // @ts-ignore
-                    dataSource={categoryMetaData.state}
-                    pagination={false}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </>
-      </div>
-    </BasePage>
+                    onSelect: onSelectCallback,
+                  }}
+                />
+              ) : (
+                <Table
+                  columns={expandableColumns}
+                  expandable={{
+                    expandedRowRender,
+                  }}
+                  // @ts-ignore
+                  dataSource={categoryMetaData.state}
+                  pagination={false}
+                />
+              )}
+            </div>
+          );
+        })}
+      </>
+    </div>
   );
 };
 

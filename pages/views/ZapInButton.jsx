@@ -206,6 +206,7 @@ const ZapInButton = () => {
     approveAmountContract.data,
     depositStatus,
     slippage,
+    messageApi,
   ]);
 
   const handleInputChange = async (eventValue) => {

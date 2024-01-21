@@ -1,9 +1,15 @@
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import {
+  getDefaultWallets,
+  RainbowKitProvider,
+  ConnectButton,
+} from "@rainbow-me/rainbowkit";
 import { useState } from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
-import { useAccount } from "wagmi";
+import { WagmiConfig, configureChains, createConfig, useAccount } from "wagmi";
+import { bsc, bscTestnet } from "wagmi/chains";
+import { publicProvider } from "wagmi/providers/public";
 import { Layout, Affix } from "antd";
 import styles from "../styles/Home.module.css";
 import NavBar from "./views/NavBar.jsx";
@@ -18,9 +24,35 @@ interface BasePageProps {
   children: React.ReactNode;
 }
 
-const BasePage: NextPage<BasePageProps> = ({ children }) => {
-  const { address } = useAccount();
+const { chains, publicClient } = configureChains(
+  [bsc, bscTestnet],
+  [publicProvider()],
+);
 
+const { connectors } = getDefaultWallets({
+  appName: "My RainbowKit App",
+  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID ?? "",
+  chains,
+});
+
+const wagmiConfig = createConfig({
+  autoConnect: true,
+  connectors,
+  publicClient,
+});
+
+const BasePage: NextPage<BasePageProps> = ({ children }) => {
+  return (
+    <WagmiConfig config={wagmiConfig}>
+      <RainbowKitProvider chains={chains}>
+        <InnerBasePage>{children}</InnerBasePage>
+      </RainbowKitProvider>
+    </WagmiConfig>
+  );
+};
+
+const InnerBasePage: NextPage<BasePageProps> = ({ children }) => {
+  const { address } = useAccount();
   return (
     <div>
       <Head>
@@ -35,7 +67,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
         <Affix offsetTop={0}>
           <Header className={styles.header}>
             <div className="div-logo">
-              <Image src="../logo.png" alt="logo" width={40} height={40} />
+              <Image src="/../logo.png" alt="logo" width={40} height={40} />
             </div>
             <HeaderInner />
             <div className="connect-button">

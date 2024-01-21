@@ -101,6 +101,17 @@ const Web3DataProvider = ({ children, address }) => {
     totalSupply.loading,
     totalSupply.data,
     portfolioApr,
+    ROI,
+    aggregatedPositions,
+    claimableRewards,
+    maxDrawdown,
+    netWorth,
+    rebalanceSuggestions,
+    sharpeRatio,
+    topNLowestAprPools,
+    topNPoolConsistOfSameLpToken,
+    topNStableCoins,
+    totalInterest,
   ]);
 
   return <web3Context.Provider value={data}>{children}</web3Context.Provider>;
