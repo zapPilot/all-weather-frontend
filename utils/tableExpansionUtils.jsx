@@ -9,6 +9,7 @@ import {
 const paidUserWallets = [
   "0x78000b0605E81ea9df54b33f72ebC61B5F5c8077",
   "0x3144b7E3a4518541AEB4ceC7fC7A6Dd82f05Ae8B",
+  "0xa1761fc95E8B2A1E99dfdEE816F6D8F4c47e26AE",
   "0xca35a10c9622febfa889410efb9b905b26221c37", // Chris
 ];
 export const columnMapping = (walletAddress) => ({
@@ -111,7 +112,7 @@ export const columnMapping = (walletAddress) => ({
     width: 14,
     render: (apr) => {
       let color = "green";
-      return (
+      return apr.value ? (
         <>
           <Badge
             count={
@@ -127,6 +128,9 @@ export const columnMapping = (walletAddress) => ({
             </Tag>
           </Badge>
         </>
+      ) : (
+        // for backward compatibility
+        <Tag color={color}>{apr}</Tag>
       );
     },
   },
