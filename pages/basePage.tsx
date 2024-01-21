@@ -41,7 +41,9 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
   return (
     <WagmiConfig config={wagmiConfig}>
       <RainbowKitProvider chains={chains}>
-        <InnerBasePage children={children} />
+        <InnerBasePage>
+          {children}
+        </InnerBasePage>
       </RainbowKitProvider>
     </WagmiConfig>
   );

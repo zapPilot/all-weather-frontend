@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useCallback } from "react";
 import Image from "next/image";
 import { Popover, Tag, Spin, ConfigProvider } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
@@ -63,7 +63,11 @@ const APRPopOver = ({ mode }) => {
     if (!WEB3_CONTEXT) return;
     fetchData();
     fetchAprComposition();
-  }, [WEB3_CONTEXT]);
+  }, [
+    WEB3_CONTEXT,
+    chain.network,
+    turnReward2Price,
+  ]);
 
   function renderContent() {
     if (!WEB3_CONTEXT || Object.keys(aprComposition).length === 0)
@@ -231,57 +235,64 @@ const APRPopOver = ({ mode }) => {
       render: (price) => <Tag color="geekblue">${price.toFixed(2)}</Tag>,
     },
   ];
-  const turnReward2Price = (claimableReward) => {
-    const tokenInLowerCase = claimableReward.token.toLowerCase();
-    const priceAsFloat =
-      WEB3_CONTEXT["debankContext"][tokenInLowerCase] !== undefined
-        ? WEB3_CONTEXT["debankContext"][tokenInLowerCase].price
-        : 0;
+  const turnReward2Price = useCallback(
+    (claimableReward) => {
+      return (claimableReward) => {
+        const tokenInLowerCase = claimableReward.token.toLowerCase();
+        const priceAsFloat =
+          WEB3_CONTEXT["debankContext"][tokenInLowerCase] !== undefined
+            ? WEB3_CONTEXT["debankContext"][tokenInLowerCase].price
+            : 0;
+    
+        // Use BigNumber from 'bignumber.js' to multiply the price by 10^18
+        const priceBigNumber = new BigNumber(priceAsFloat).times(
+          new BigNumber(10).pow(18),
+        );
+        // Convert the result to a string
+        const priceAsString = priceBigNumber.toFixed();
+    
+        // Convert to an ethers BigNumber
+        const priceInBigNumber = ethers.BigNumber.from(priceAsString);
+    
+        // Multiply price with amount (both as ethers BigNumbers)
+        const resultInBigNumber = priceInBigNumber.mul(claimableReward.amount);
+        // Divide by 10^18 to get the final result
+        const finalResult = ethers.utils.formatEther(resultInBigNumber);
+        if (finalResult > 0) {
+          return parseFloat(
+            new BigNumber(Math.floor(finalResult)).div(
+              BigInt(10 ** _getDecimalPerToken(tokenInLowerCase)),
+            ),
+          );
+        }
+        return 0;
+      };
+    },
+    [WEB3_CONTEXT, _getDecimalPerToken]
+  );
 
-    // Use BigNumber from 'bignumber.js' to multiply the price by 10^18
-    const priceBigNumber = new BigNumber(priceAsFloat).times(
-      new BigNumber(10).pow(18),
-    );
-    // Convert the result to a string
-    const priceAsString = priceBigNumber.toFixed();
-
-    // Convert to an ethers BigNumber
-    const priceInBigNumber = ethers.BigNumber.from(priceAsString);
-
-    // Multiply price with amount (both as ethers BigNumbers)
-    const resultInBigNumber = priceInBigNumber.mul(claimableReward.amount);
-    // Divide by 10^18 to get the final result
-    const finalResult = ethers.utils.formatEther(resultInBigNumber);
-    if (finalResult > 0) {
-      return parseFloat(
-        new BigNumber(Math.floor(finalResult)).div(
-          BigInt(10 ** _getDecimalPerToken(tokenInLowerCase)),
-        ),
-      );
-    }
-    return 0;
-  };
-
-  const _getDecimalPerToken = (token) => {
-    if (
-      [
-        "arb:0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
-        "arb:0xd69d402d1bdb9a2b8c3d88d98b9ceaf9e4cd72d9",
-        "arb:0xff970a61a04b1ca14834a43f5de4533ebddb5cc8",
-        "arb:0x48a29e756cc1c097388f3b2f3b570ed270423b3d",
-      ].includes(token)
-    ) {
-      return 6;
-    } else if (
-      [
-        "arb:0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f",
-        "arb:0x727354712bdfcd8596a3852fd2065b3c34f4f770",
-      ].includes(token)
-    ) {
-      return 8;
-    }
-    return 18;
-  };
+  const _getDecimalPerToken = useCallback(()=> {
+    (token) => {
+      if (
+        [
+          "arb:0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
+          "arb:0xd69d402d1bdb9a2b8c3d88d98b9ceaf9e4cd72d9",
+          "arb:0xff970a61a04b1ca14834a43f5de4533ebddb5cc8",
+          "arb:0x48a29e756cc1c097388f3b2f3b570ed270423b3d",
+        ].includes(token)
+      ) {
+        return 6;
+      } else if (
+        [
+          "arb:0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f",
+          "arb:0x727354712bdfcd8596a3852fd2065b3c34f4f770",
+        ].includes(token)
+      ) {
+        return 8;
+      }
+      return 18;
+    };
+  }, []);
 
   if (mode === "percentage") {
     return (

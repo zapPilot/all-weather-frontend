@@ -18,7 +18,11 @@ const InstallmentInput = ({ planData }) => {
       interestRate,
       installment,
     });
-  }, [interestRate, installment]);
+  }, [
+    interestRate,
+    installment,
+    planData,
+  ]);
 
   const divInput = {
     display: "flex",

@@ -62,7 +62,11 @@ const DOMforCefiUsers = ({ betterPoolsMetadata }) => {
           .claimable_rewards - nonSharableRewards,
       );
     }
-  }, [betterPoolsMetadata]);
+  }, [
+    betterPoolsMetadata,
+    cefiLedger,
+    tokenPriceMapping,
+  ]);
 
   const dataSource = cefiLedger.map((row, idx) => ({
     key: idx,

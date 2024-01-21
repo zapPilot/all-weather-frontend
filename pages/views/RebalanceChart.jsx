@@ -263,7 +263,13 @@ export default function BasicSunburst(props) {
       );
       setData(chartData);
     }
-  }, [portfolioComposition]);
+  }, [
+    portfolioComposition,
+    mode,
+    netWorth,
+    rebalanceSuggestions,
+    showCategory,
+  ]);
   return (
     <div style={divSunBurst}>
       <Sunburst
