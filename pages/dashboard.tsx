@@ -33,7 +33,16 @@ interface queriesObj {
   setUniqueQueryTokens: (newValue: any) => void;
   uniqueQueryTokens: Array<string>;
 }
+
 const Dashboard: NextPage = () => {
+  return (
+    <BasePage>
+      <InnerDashboard />
+    </BasePage>
+  )
+}
+
+const InnerDashboard: NextPage = () => {
   const userApiKey = "placeholder";
   const { address: walletAddress } = useAccount();
 
@@ -276,7 +285,6 @@ const Dashboard: NextPage = () => {
   }
 
   return (
-    <BasePage>
       <div style={divBetterPools}>
         <center>
           <h1>Better Pools Search Engine</h1>
@@ -363,7 +371,6 @@ const Dashboard: NextPage = () => {
           })}
         </>
       </div>
-    </BasePage>
   );
 };
 
