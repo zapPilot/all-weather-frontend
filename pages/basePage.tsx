@@ -1,4 +1,8 @@
-import { getDefaultWallets, RainbowKitProvider, ConnectButton } from "@rainbow-me/rainbowkit";
+import {
+  getDefaultWallets,
+  RainbowKitProvider,
+  ConnectButton,
+} from "@rainbow-me/rainbowkit";
 import { useState } from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
@@ -21,29 +25,27 @@ interface BasePageProps {
 }
 
 const { chains, publicClient } = configureChains(
-  [bsc, bscTestnet,],
-  [publicProvider()]
+  [bsc, bscTestnet],
+  [publicProvider()],
 );
 
 const { connectors } = getDefaultWallets({
-  appName: 'My RainbowKit App',
+  appName: "My RainbowKit App",
   projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID ?? "",
-  chains
+  chains,
 });
 
 const wagmiConfig = createConfig({
   autoConnect: true,
   connectors,
-  publicClient
-})
+  publicClient,
+});
 
 const BasePage: NextPage<BasePageProps> = ({ children }) => {
   return (
     <WagmiConfig config={wagmiConfig}>
       <RainbowKitProvider chains={chains}>
-        <InnerBasePage>
-          {children}
-        </InnerBasePage>
+        <InnerBasePage>{children}</InnerBasePage>
       </RainbowKitProvider>
     </WagmiConfig>
   );

@@ -39,8 +39,8 @@ const Dashboard: NextPage = () => {
     <BasePage>
       <InnerDashboard />
     </BasePage>
-  )
-}
+  );
+};
 
 const InnerDashboard: NextPage = () => {
   const userApiKey = "placeholder";
@@ -104,7 +104,7 @@ const InnerDashboard: NextPage = () => {
   ];
 
   const topN = 3;
-  const queriesForAllWeather: queriesObj[] = useMemo(()=>{
+  const queriesForAllWeather: queriesObj[] = useMemo(() => {
     return [
       {
         wording: "Long Term Bond (40%)",
@@ -304,92 +304,88 @@ const InnerDashboard: NextPage = () => {
   }
 
   return (
-      <div style={divBetterPools}>
-        <center>
-          <h1>Better Pools Search Engine</h1>
-        </center>
-        <h2 className="ant-table-title">
-          Tokens in Current Portfolio: {uniqueTokens.size}
-          {Array.from(uniqueTokens).map((token: unknown, index) => (
-            <Image
-              key={index}
-              src={`/tokenPictures/${token}.webp`}
-              alt={token as string}
-              height={20}
-              width={20}
-            />
-          ))}
-          <RebalanceChart
-            rebalanceSuggestions={[]}
-            netWorth={100}
-            windowWidth={200}
-            showCategory={false}
-            mode="portfolioComposer"
-            portfolioComposition={Object.values(
-              portfolioCompositionForReRender,
-            )}
+    <div style={divBetterPools}>
+      <center>
+        <h1>Better Pools Search Engine</h1>
+      </center>
+      <h2 className="ant-table-title">
+        Tokens in Current Portfolio: {uniqueTokens.size}
+        {Array.from(uniqueTokens).map((token: unknown, index) => (
+          <Image
+            key={index}
+            src={`/tokenPictures/${token}.webp`}
+            alt={token as string}
+            height={20}
+            width={20}
           />
-          <Button
-            type="primary"
-            onClick={() =>
-              requestAnimationFrame(() => {
-                // JSON.parse(JSON.stringify means deep copy
-                setPortfolioCompositionForReRender(
-                  JSON.parse(JSON.stringify(portfolioComposition)),
-                );
-              })
-            }
-          >
-            Visualize
-          </Button>
-        </h2>
-        <>
-          {Object.values(queriesForAllWeather).map((categoryMetaData) => {
-            return (
-              <div key={categoryMetaData.category}>
-                {" "}
-                {/* Make sure to provide a unique key for each item */}
-                <h2 className="ant-table-title">{categoryMetaData.wording}</h2>
-                {categoryMetaData.state === null ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      height: "15rem",
-                    }}
-                  >
-                    <Spin size="large" />
-                  </div>
-                ) : unexpandableCategories.includes(
-                    categoryMetaData.category,
-                  ) ? (
-                  <Table
-                    columns={basicColumns}
+        ))}
+        <RebalanceChart
+          rebalanceSuggestions={[]}
+          netWorth={100}
+          windowWidth={200}
+          showCategory={false}
+          mode="portfolioComposer"
+          portfolioComposition={Object.values(portfolioCompositionForReRender)}
+        />
+        <Button
+          type="primary"
+          onClick={() =>
+            requestAnimationFrame(() => {
+              // JSON.parse(JSON.stringify means deep copy
+              setPortfolioCompositionForReRender(
+                JSON.parse(JSON.stringify(portfolioComposition)),
+              );
+            })
+          }
+        >
+          Visualize
+        </Button>
+      </h2>
+      <>
+        {Object.values(queriesForAllWeather).map((categoryMetaData) => {
+          return (
+            <div key={categoryMetaData.category}>
+              {" "}
+              {/* Make sure to provide a unique key for each item */}
+              <h2 className="ant-table-title">{categoryMetaData.wording}</h2>
+              {categoryMetaData.state === null ? (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "15rem",
+                  }}
+                >
+                  <Spin size="large" />
+                </div>
+              ) : unexpandableCategories.includes(categoryMetaData.category) ? (
+                <Table
+                  columns={basicColumns}
+                  // @ts-ignore
+                  dataSource={categoryMetaData.state}
+                  pagination={false}
+                  rowSelection={{
                     // @ts-ignore
-                    dataSource={categoryMetaData.state}
-                    pagination={false}
-                    rowSelection={{
-                      // @ts-ignore
-                      onSelect: onSelectCallback,
-                    }}
-                  />
-                ) : (
-                  <Table
-                    columns={expandableColumns}
-                    expandable={{
-                      expandedRowRender,
-                    }}
-                    // @ts-ignore
-                    dataSource={categoryMetaData.state}
-                    pagination={false}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </>
-      </div>
+                    onSelect: onSelectCallback,
+                  }}
+                />
+              ) : (
+                <Table
+                  columns={expandableColumns}
+                  expandable={{
+                    expandedRowRender,
+                  }}
+                  // @ts-ignore
+                  dataSource={categoryMetaData.state}
+                  pagination={false}
+                />
+              )}
+            </div>
+          );
+        })}
+      </>
+    </div>
   );
 };
 

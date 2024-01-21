@@ -63,11 +63,7 @@ const APRPopOver = ({ mode }) => {
     if (!WEB3_CONTEXT) return;
     fetchData();
     fetchAprComposition();
-  }, [
-    WEB3_CONTEXT,
-    chain.network,
-    turnReward2Price,
-  ]);
+  }, [WEB3_CONTEXT, chain.network, turnReward2Price]);
 
   function renderContent() {
     if (!WEB3_CONTEXT || Object.keys(aprComposition).length === 0)
@@ -243,17 +239,17 @@ const APRPopOver = ({ mode }) => {
           WEB3_CONTEXT["debankContext"][tokenInLowerCase] !== undefined
             ? WEB3_CONTEXT["debankContext"][tokenInLowerCase].price
             : 0;
-    
+
         // Use BigNumber from 'bignumber.js' to multiply the price by 10^18
         const priceBigNumber = new BigNumber(priceAsFloat).times(
           new BigNumber(10).pow(18),
         );
         // Convert the result to a string
         const priceAsString = priceBigNumber.toFixed();
-    
+
         // Convert to an ethers BigNumber
         const priceInBigNumber = ethers.BigNumber.from(priceAsString);
-    
+
         // Multiply price with amount (both as ethers BigNumbers)
         const resultInBigNumber = priceInBigNumber.mul(claimableReward.amount);
         // Divide by 10^18 to get the final result
@@ -268,10 +264,10 @@ const APRPopOver = ({ mode }) => {
         return 0;
       };
     },
-    [WEB3_CONTEXT, _getDecimalPerToken]
+    [WEB3_CONTEXT, _getDecimalPerToken],
   );
 
-  const _getDecimalPerToken = useCallback(()=> {
+  const _getDecimalPerToken = useCallback(() => {
     (token) => {
       if (
         [
