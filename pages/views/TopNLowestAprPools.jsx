@@ -18,7 +18,6 @@ export default function TopNLowestAprPools(props) {
       dataIndex: "apr",
       width: 40,
       render: (apr) => {
-        let color = apr < portfolioAPR / 100 ? "volcano" : "green";
         return (
           <>
             <Tag key={apr}>{(apr * 100).toFixed(2)}%</Tag>
