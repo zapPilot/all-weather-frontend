@@ -123,7 +123,6 @@ const ZapOutButton = () => {
     approveAmountContract.data,
     approveReady,
     redeemStatus,
-    approveStatus,
   ]);
   const handleInputChange = async (eventValue) => {
     setInputValue(eventValue);

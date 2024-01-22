@@ -56,7 +56,7 @@ const ClaimButton = () => {
       }
     }
     fetchData();
-  }, [WEB3_CONTEXT, status, data.hash, messageApi]);
+  }, [WEB3_CONTEXT, status]);
 
   const handleClaim = async () => {
     await sendDiscordMessage(address, "starts claim()");
