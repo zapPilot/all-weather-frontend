@@ -45,6 +45,14 @@ const items = [
         key: "setting:4",
       },
       {
+        label: (
+          <Link href="/liquidityPoolRangeMonitoring">
+            Liquidity Pool Range Monitoring
+          </Link>
+        ),
+        key: "setting:5",
+      },
+      {
         label: <Link href="/installment">Installment</Link>,
         key: "installment",
       },

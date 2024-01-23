@@ -2,7 +2,6 @@ import type { NextPage } from "next";
 import BasePage from "./basePage.tsx";
 import { Spin, Table, Button } from "antd";
 import { Image } from "antd";
-import useRebalanceSuggestions from "../utils/rebalanceSuggestions.js";
 import { useWindowHeight } from "../utils/chartUtils.js";
 import {
   getBasicColumnsForSuggestionsTable,
