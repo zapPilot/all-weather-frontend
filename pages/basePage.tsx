@@ -1,10 +1,14 @@
-import { RainbowKitProvider, ConnectButton, darkTheme } from "@rainbow-me/rainbowkit";
+import {
+  RainbowKitProvider,
+  ConnectButton,
+  darkTheme,
+} from "@rainbow-me/rainbowkit";
 import { useState } from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { configureChains, createConfig, WagmiConfig, useAccount } from "wagmi";
-import { publicProvider } from 'wagmi/providers/public'
+import { publicProvider } from "wagmi/providers/public";
 import { bsc, bscTestnet } from "wagmi/chains";
 import { Layout, Affix } from "antd";
 import styles from "../styles/Home.module.css";
@@ -28,14 +32,13 @@ const { chains, publicClient, webSocketPublicClient } = configureChains(
 const config = createConfig({
   publicClient,
   webSocketPublicClient,
-})
+});
 
 const App: NextPage<BasePageProps> = ({ children }) => {
-
   return (
     <WagmiConfig config={config}>
       <RainbowKitProvider chains={chains} theme={darkTheme()}>
-        <BasePage> {children} </BasePage >
+        <BasePage> {children} </BasePage>
       </RainbowKitProvider>
     </WagmiConfig>
   );
