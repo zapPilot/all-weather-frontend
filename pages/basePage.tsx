@@ -1,9 +1,11 @@
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { RainbowKitProvider, ConnectButton, darkTheme } from "@rainbow-me/rainbowkit";
 import { useState } from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
-import { useAccount } from "wagmi";
+import { configureChains, createConfig, WagmiConfig, useAccount } from "wagmi";
+import { publicProvider } from 'wagmi/providers/public'
+import { bsc, bscTestnet } from "wagmi/chains";
 import { Layout, Affix } from "antd";
 import styles from "../styles/Home.module.css";
 import NavBar from "./views/NavBar.jsx";
@@ -17,6 +19,27 @@ const { Header, Footer, Content } = Layout;
 interface BasePageProps {
   children: React.ReactNode;
 }
+
+const { chains, publicClient, webSocketPublicClient } = configureChains(
+  [bsc, bscTestnet],
+  [publicProvider()],
+);
+
+const config = createConfig({
+  publicClient,
+  webSocketPublicClient,
+})
+
+const App: NextPage<BasePageProps> = ({ children }) => {
+
+  return (
+    <WagmiConfig config={config}>
+      <RainbowKitProvider chains={chains} theme={darkTheme()}>
+        <BasePage> {children} </BasePage >
+      </RainbowKitProvider>
+    </WagmiConfig>
+  );
+};
 
 const BasePage: NextPage<BasePageProps> = ({ children }) => {
   const { address } = useAccount();
@@ -35,7 +58,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
         <Affix offsetTop={0}>
           <Header className={styles.header}>
             <div className="div-logo">
-              <Image src="../logo.png" alt="logo" width={40} height={40} />
+              <Image src="/../logo.png" alt="logo" width={40} height={40} />
             </div>
             <HeaderInner />
             <div className="connect-button">
@@ -84,4 +107,4 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
   );
 };
 
-export default BasePage;
+export default App;
