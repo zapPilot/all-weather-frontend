@@ -16,7 +16,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
       return { color: value < 0 ? "#FF6347" : "#5DFDCB" };
     }
   };
-  return ROI && ROI.days ? (
+  return (
     <>
       <ConfigProvider
         theme={{
@@ -124,8 +124,6 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
       </p>
       <HistoricalDataChart />
     </>
-  ) : (
-    <></>
   );
 };
 export default Performance;
