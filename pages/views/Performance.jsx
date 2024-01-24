@@ -55,7 +55,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
           <Col xs={12} md={8}>
             <Card>
               <Statistic
-                title={`ROI (${ROI.days} days)`}
+                title={`ROI (365 days)`}
                 value="WIP"
                 precision={2}
                 valueStyle={colorLogic(ROI.total)}
@@ -65,7 +65,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
           <Col xs={12} md={8}>
             <Card>
               <Statistic
-                title={`Sharpe Ratio (${sharpeRatio.days} days)`}
+                title={`Sharpe Ratio (365 days)`}
                 value="WIP"
                 precision={2}
                 valueStyle={colorLogic(sharpeRatio.value)}
@@ -73,10 +73,10 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
               />
             </Card>
           </Col>
-          <Col xs={12} md={8}>
+          {/* <Col xs={12} md={8}>
             <Card>
               <Statistic
-                title={`MAX Drawdown (${ROI.days} days)`}
+                title={`MAX Drawdown (365 days)`}
                 value="WIP"
                 precision={2}
                 valueStyle={{ color: "#FF6347" }}
@@ -91,7 +91,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
                     <a href="https://www.pm-research.com/content/iijpormgmt/32/1/108">
                       SDR Sharpe Ratio
                     </a>{" "}
-                    ({sharpeRatio.days} days)
+                    365 days
                   </>
                 }
                 value="WIP"
@@ -111,7 +111,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
                 suffix=""
               />
             </Card>
-          </Col>
+          </Col> */}
         </Row>
       </ConfigProvider>
       <p
