@@ -58,7 +58,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
                 title={`ROI (365 days)`}
                 value="WIP"
                 precision={2}
-                valueStyle={colorLogic(ROI.total)}
+                valueStyle={colorLogic(0)}
               />
             </Card>
           </Col>
