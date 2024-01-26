@@ -1,4 +1,5 @@
 import {
+  getDefaultWallets,
   RainbowKitProvider,
   ConnectButton,
   darkTheme,
@@ -29,7 +30,14 @@ const { chains, publicClient, webSocketPublicClient } = configureChains(
   [publicProvider()],
 );
 
+const { connectors } = getDefaultWallets({
+  appName: "RainbowKit App",
+  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID ?? "",
+  chains,
+});
+
 const config = createConfig({
+  connectors,
   publicClient,
   webSocketPublicClient,
 });
