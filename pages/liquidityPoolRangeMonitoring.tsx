@@ -120,8 +120,9 @@ const LiquidityPoolRangeMonitoring: NextPage = () => {
               <Badge.Ribbon
                 text={pool.in_range === true ? "In Range" : "Out of Range"}
                 color={pool.in_range === true ? "green" : "red"}
+                key={index}
               >
-                <Card title={renderCardTitle(pool)} size="small">
+                <Card title={renderCardTitle(pool)} size="small" key={index}>
                   <p>
                     Price Range: {pool.min_price.toFixed(5)}-
                     {pool.max_price.toFixed(5)}, Current Price:{" "}
