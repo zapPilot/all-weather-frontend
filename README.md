@@ -22,6 +22,7 @@ You can start editing the page by modifying `pages/index.tsx`. The page auto-upd
 1. Configuring Vitest: `Vitest` will read your root `vite.config.js` to match with the plugins and setup as your app.
 
 `./vite.config.js`
+
 ```
 import { defineConfig } from "vitest/config";
 ...
@@ -33,9 +34,11 @@ export default defineConfig({
   ...
 });
 ```
+
 2. Add Vitest Unit Test: Create `__tests__` folder in root. Create `basepage.test.jsx` for example.
 
 `./__tests__/basepage.test.jsx`
+
 ```
 import { test, vi, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
@@ -74,12 +77,13 @@ test('Connect Wallet', async () => {
   expect(metaMaskButton).not.toBeNull();
 });
 ```
+
 3. Running your tests: run `yarn test`.
 
 ## CI/CD
 
 1. [./github/workflows/lint.yaml]: before committing to Github, run `yarn format`. Otherwise, `prettier` would raise an exception
-2. [./github/workflows/vitest.yaml]: before committing to Github, run `yarn test`. 
+2. [./github/workflows/vitest.yaml]: before committing to Github, run `yarn test`.
 3. Fleek: Click this link
    ![fleek](docs/fleek.png)
 4. Deployment:

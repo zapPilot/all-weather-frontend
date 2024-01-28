@@ -18,10 +18,10 @@ jobs:
         node-version: [18.16.0]
 
     steps:
-    - uses: actions/checkout@master
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-    - run: yarn install --immutable --immutable-cache --check-cache
-    - run: yarn test
+      - uses: actions/checkout@master
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: yarn install --immutable --immutable-cache --check-cache
+      - run: yarn test
