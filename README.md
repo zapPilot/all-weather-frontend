@@ -17,12 +17,72 @@ You can start editing the page by modifying `pages/index.tsx`. The page auto-upd
 
 1. How do we update Chains/Protocols/Tokens's Pictures? Refer to [public/README.md](public/README.md) please
 
+## Vitest
+
+1. Configuring Vitest: `Vitest` will read your root `vite.config.js` to match with the plugins and setup as your app.
+
+`./vite.config.js`
+```
+import { defineConfig } from "vitest/config";
+...
+
+// If your page have environment variable, please add this line.
+process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID = "..."
+
+export default defineConfig({
+  ...
+});
+```
+2. Add Vitest Unit Test: Create `__tests__` folder in root. Create `basepage.test.jsx` for example.
+
+`./__tests__/basepage.test.jsx`
+```
+import { test, vi, expect } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
+import BasePage from '../pages/basePage'
+/**
+ * @vitest-environment jsdom
+ */
+
+const { useRouter, mockedRouterPush } = vi.hoisted(() => {
+  const mockedRouterPush = vi.fn();
+  return {
+      useRouter: () => ({ push: mockedRouterPush }),
+      mockedRouterPush,
+  };
+});
+
+vi.mock('next/navigation', async () => {
+  const actual = await vi.importActual('next/navigation');
+  return {
+      ...actual,
+      useRouter,
+  };
+});
+
+test('BasePage', () => {
+  render(<BasePage />)
+})
+
+test('Connect Wallet', async () => {
+  render(<BasePage />)
+  const button = screen.getAllByRole('button', { name: 'Connect Wallet' })
+  fireEvent.click(button[0])
+  const modal = screen.queryByRole('dialog');
+  expect(modal).not.toBeNull();
+  const metaMaskButton = screen.getAllByRole('button', { name: 'MetaMask' })
+  expect(metaMaskButton).not.toBeNull();
+});
+```
+3. Running your tests: run `yarn test`.
+
 ## CI/CD
 
 1. [./github/workflows/lint.yaml]: before committing to Github, run `yarn format`. Otherwise, `prettier` would raise an exception
-2. Fleek: Click this link
+2. [./github/workflows/vitest.yaml]: before committing to Github, run `yarn test`. 
+3. Fleek: Click this link
    ![fleek](docs/fleek.png)
-3. Deployment:
+4. Deployment:
    1. staging(branch `main`): <https://all-weather-protocol-staging.on.fleek.co/>
    2. prod(prod `prod`): <https://all-weather-protocol.on.fleek.co/>
 
