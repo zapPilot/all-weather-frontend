@@ -113,31 +113,45 @@ const colorList = [
   "#ECF0F1",
 ];
 function createChartData(rebalanceSuggestions, netWorth, showCategory) {
-  let aggregatedDict = {};
-
+  let aggregatedBalanceDict = {};
+  let uniqueIdToMetaDataMapping = {};
+  console.log("rebalanceSuggestions", rebalanceSuggestions);
   rebalanceSuggestions.forEach((item) => {
-    item.suggestions_for_positions.forEach(({ symbol, balanceUSD }) => {
-      aggregatedDict[symbol] = (aggregatedDict[symbol] || 0) + balanceUSD;
-    });
+    item.suggestions_for_positions.forEach(
+      ({ symbol: uniqueId, balanceUSD, metadata }) => {
+        aggregatedBalanceDict[uniqueId] =
+          (aggregatedBalanceDict[uniqueId] || 0) + balanceUSD;
+        uniqueIdToMetaDataMapping[uniqueId] = metadata;
+      },
+    );
   });
 
-  aggregatedDict = Object.fromEntries(
-    Object.entries(aggregatedDict).map(([key, value]) => [
-      `${key} ${((value / netWorth) * 100).toFixed(2)}%`,
-      value,
+  aggregatedBalanceDict = Object.fromEntries(
+    Object.entries(aggregatedBalanceDict).map(([key, value]) => [
+      key,
+      ((value / netWorth) * 100).toFixed(2),
     ]),
   );
+  // console.log("uniqueIdToMetaDataMapping", uniqueIdToMetaDataMapping['0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:49661'].symbol)
 
   if (!showCategory) {
-    const aggregatedArray = Object.entries(aggregatedDict).sort(
+    const aggregatedArray = Object.entries(aggregatedBalanceDict).sort(
       (a, b) => b[1] - a[1],
     );
     return {
-      children: aggregatedArray.map(([name, value], idx) => ({
-        name,
-        hex: colorList[idx],
-        value,
-      })),
+      children: aggregatedArray.map(([uniqueId, value], idx) => {
+        return {
+          name:
+            uniqueId.split(":")[1] +
+            " " +
+            uniqueIdToMetaDataMapping[uniqueId].symbol +
+            " " +
+            value +
+            "%",
+          hex: colorList[idx],
+          value,
+        };
+      }),
     };
   }
 
