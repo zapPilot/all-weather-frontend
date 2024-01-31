@@ -216,6 +216,7 @@ const Dashboard: NextPage = () => {
         pagination={false}
         rowSelection={{
           onSelect: onSelectCallback,
+          hideSelectAll: true,
         }}
       />
     );
@@ -343,6 +344,7 @@ const Dashboard: NextPage = () => {
                     rowSelection={{
                       // @ts-ignore
                       onSelect: onSelectCallback,
+                      hideSelectAll: true,
                     }}
                   />
                 ) : (
