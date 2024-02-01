@@ -62,7 +62,7 @@ const Web3DataProvider = ({ children, address }) => {
         return; // Don't proceed if loading
       // Fetch data from API
 
-      fetch(`${API_URL}/debank`)
+      fetch(`${API_URL}/debank?worksheet=bsc_contract`)
         .then((response) => response.json())
         .then((result) => {
           setData({
