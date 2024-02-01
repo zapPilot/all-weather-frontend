@@ -3,6 +3,7 @@ import BasePage from "./basePage.tsx";
 import { Badge, Card, Image, Spin } from "antd";
 import { useEffect, useState } from "react";
 import { useWindowHeight } from "../utils/chartUtils";
+import { useAccount } from "wagmi";
 
 interface Pool {
   data: {
@@ -36,6 +37,7 @@ const LiquidityPoolRangeMonitoring: NextPage = () => {
   const [statusesOfLiquidityPools, setstatusesOfLiquidityPools] = useState({
     data: [],
   });
+  const { address } = useAccount();
 
   const renderCardTitle = (pool: Pool) => {
     return (
@@ -75,7 +77,7 @@ const LiquidityPoolRangeMonitoring: NextPage = () => {
     const userApiKey = "placeholder";
     async function getPositions() {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/liquidity_pool_ranges`,
+        `${process.env.NEXT_PUBLIC_API_URL}/liquidity_pool_ranges?worksheet=${address}`,
         {
           method: "POST",
           headers: {
