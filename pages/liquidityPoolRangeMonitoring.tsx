@@ -77,7 +77,7 @@ const LiquidityPoolRangeMonitoring: NextPage = () => {
     const userApiKey = "placeholder";
     async function getPositions() {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/liquidity_pool_ranges?worksheet=${address}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/liquidity_pool_ranges?worksheet=${address}&refresh=True`,
         {
           method: "POST",
           headers: {
