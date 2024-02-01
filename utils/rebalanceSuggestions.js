@@ -21,7 +21,11 @@ export default function useRebalanceSuggestions() {
   // Function to load suggestions from the API
   const loadSuggestions = async () => {
     await axios
-      .get(`${API_URL}/addresses?addresses=${portfolioVaults.join("+")}`)
+      .get(
+        `${API_URL}/addresses?addresses=${portfolioVaults.join(
+          "+",
+        )}&worksheet=bsc_contract`,
+      )
       .then((response) => {
         const newNetWorth = response.data.net_worth;
         setNetWorth(newNetWorth);

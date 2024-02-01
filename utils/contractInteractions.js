@@ -104,7 +104,7 @@ export async function refreshTVLData(messageApi) {
     .get(
       `${API_URL}/addresses?addresses=${portfolioVaults.join(
         "+",
-      )}&refresh=True`,
+      )}&refresh=True&worksheet=bsc_contract`,
     )
     .catch((error) =>
       messageApi.error({
