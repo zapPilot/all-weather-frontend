@@ -43,16 +43,6 @@ const config = createConfig({
   webSocketPublicClient,
 });
 
-const App: NextPage<BasePageProps> = ({ children }) => {
-  return (
-    <WagmiConfig config={config}>
-      <RainbowKitProvider chains={chains} theme={darkTheme()}>
-        <BasePage> {children} </BasePage>
-      </RainbowKitProvider>
-    </WagmiConfig>
-  );
-};
-
 const BasePage: NextPage<BasePageProps> = ({ children }) => {
   const { address } = useAccount();
 
@@ -119,4 +109,4 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
   );
 };
 
-export default App;
+export default BasePage;
