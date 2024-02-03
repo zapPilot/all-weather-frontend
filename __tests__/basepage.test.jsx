@@ -1,5 +1,5 @@
 import { test, vi, expect } from "vitest";
-import { render } from './test-utils.tsx';
+import { render } from "./test-utils.tsx";
 import { screen, fireEvent } from "@testing-library/react";
 import BasePage from "../pages/basePage";
 /**
