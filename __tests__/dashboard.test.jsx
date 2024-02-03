@@ -1,7 +1,7 @@
 import { test, vi, expect } from "vitest";
 import { render } from "./test-utils.tsx";
 import { screen, fireEvent } from "@testing-library/react";
-import BasePage from "../pages/basePage";
+import Dashboard from "../pages/dashboard";
 /**
  * @vitest-environment jsdom
  */
@@ -22,12 +22,12 @@ vi.mock("next/navigation", async () => {
   };
 });
 
-test("BasePage", () => {
-  render(<BasePage />);
+test("Dashboard", () => {
+  render(<Dashboard />);
 });
 
 test("Connect Wallet", async () => {
-  render(<BasePage />);
+  render(<Dashboard />);
   const button = screen.getAllByRole("button", { name: "Connect Wallet" });
   fireEvent.click(button[0]);
   const modal = screen.queryByRole("dialog");

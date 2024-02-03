@@ -18,6 +18,8 @@
     "@flaticon/flaticon-uicons": "^3.0.0",
     "@rainbow-me/rainbowkit": "^1.0.7",
     "@sentry/nextjs": "^7.70.0",
+    "@walletconnect/ethereum-provider": "^2.11.0",
+    "@walletconnect/modal": "^2.6.2",
     "antd": "5.8.2",
     "axios": "^1.4.0",
     "bignumber.js": "^9.1.1",
