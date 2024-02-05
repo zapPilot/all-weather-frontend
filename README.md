@@ -20,65 +20,13 @@ You can start editing the page by modifying `pages/index.tsx`. The page auto-upd
 ## Vitest
 
 1. Configuring Vitest: `Vitest` will read your root `vite.config.js` to match with the plugins and setup as your app.
-
-`./vite.config.js`
-
-```
-import { defineConfig } from "vitest/config";
-...
-
-// If your page have environment variable, please add this line.
-process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID = "..."
-
-export default defineConfig({
-  ...
-});
-```
-
 2. Add Vitest Unit Test: Create `__tests__` folder in root. Create `basepage.test.jsx` for example.
-
-`./__tests__/basepage.test.jsx`
-
-```
-import { test, vi, expect } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import BasePage from '../pages/basePage'
-/**
- * @vitest-environment jsdom
- */
-
-const { useRouter, mockedRouterPush } = vi.hoisted(() => {
-  const mockedRouterPush = vi.fn();
-  return {
-      useRouter: () => ({ push: mockedRouterPush }),
-      mockedRouterPush,
-  };
-});
-
-vi.mock('next/navigation', async () => {
-  const actual = await vi.importActual('next/navigation');
-  return {
-      ...actual,
-      useRouter,
-  };
-});
-
-test('BasePage', () => {
-  render(<BasePage />)
-})
-
-test('Connect Wallet', async () => {
-  render(<BasePage />)
-  const button = screen.getAllByRole('button', { name: 'Connect Wallet' })
-  fireEvent.click(button[0])
-  const modal = screen.queryByRole('dialog');
-  expect(modal).not.toBeNull();
-  const metaMaskButton = screen.getAllByRole('button', { name: 'MetaMask' })
-  expect(metaMaskButton).not.toBeNull();
-});
-```
-
 3. Running your tests: run `yarn test`.
+
+### Vitest Coverage
+
+1. install @vitest/coverage-v8 `yarn add @vitest/coverage-v8 --dev`
+2. Showing your Vitest Coverage : run `yarn coverage`.
 
 ## CI/CD
 
