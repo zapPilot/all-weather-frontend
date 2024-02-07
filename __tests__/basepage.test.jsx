@@ -30,6 +30,8 @@ test("Connect Wallet", async () => {
   render(<BasePage />);
   const button = screen.getAllByRole("button", { name: "Connect Wallet" });
   fireEvent.click(button[0]);
+
+  // Wait for any asynchronous updates
   const modal = screen.queryByRole("dialog");
   expect(modal).not.toBeNull();
   const metaMaskButton = screen.getAllByRole("button", { name: "MetaMask" });
