@@ -89,6 +89,7 @@ const Dashboard: NextPage = () => {
   const unexpandableCategories = [
     "long_term_bond",
     "intermediate_term_bond",
+    "cash",
     "gold",
   ];
 
@@ -187,9 +188,6 @@ const Dashboard: NextPage = () => {
             },
           );
           const json = await response.json();
-          if (json.data.length === 0) {
-            continue;
-          }
           categoryMetaData.setStateMethod(json.data);
           categoryMetaData.setUniqueQueryTokens(json.unique_query_tokens);
         }
