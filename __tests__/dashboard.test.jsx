@@ -2,7 +2,6 @@ import { test, vi, expect } from "vitest";
 import { render } from "./test-utils.tsx";
 import { screen, fireEvent } from "@testing-library/react";
 import Dashboard from "../pages/dashboard";
-import { waitFor } from "@testing-library/dom";
 
 /**
  * @vitest-environment jsdom
@@ -28,13 +27,15 @@ test("Dashboard", () => {
 });
 
 test("Connect Wallet", async () => {
-  await waitFor(() => {
-    render(<Dashboard />);
+  render(<Dashboard />);
+  const button = await screen.getAllByRole("button", {
+    name: "Connect Wallet",
   });
-  const button = screen.getAllByRole("button", { name: "Connect Wallet" });
   fireEvent.click(button[0]);
   const modal = screen.queryByRole("dialog");
   expect(modal).not.toBeNull();
-  // const metaMaskButton = screen.getAllByRole("button", { name: "Rainbow" });
-  // expect(metaMaskButton).not.toBeNull();
+  const metaMaskButton = await screen.getAllByRole("button", {
+    name: "Rainbow",
+  });
+  expect(metaMaskButton).not.toBeNull();
 });
