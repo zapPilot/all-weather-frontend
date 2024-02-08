@@ -1,7 +1,7 @@
 import React from "react";
 import { useContext, useState, useEffect } from "react";
 import { web3Context } from "./Web3DataProvider";
-import { ConfigProvider, Image, Button } from "antd";
+import { ConfigProvider, Image, Button, Spin } from "antd";
 import RebalanceChart from "./RebalanceChart";
 import { useWindowWidth } from "../../utils/chartUtils";
 import TokenTable from "./components/TokenTable.jsx";
@@ -151,15 +151,23 @@ const Strategy = () => {
   const WEB3_CONTEXT = useContext(web3Context);
   const [netWorth, setNetWorth] = useState(0);
   const [rebalanceSuggestions, setRebalanceSuggestions] = useState([]);
+
   useEffect(() => {
     async function fetchPortfolioMetadata() {
-      if (WEB3_CONTEXT !== undefined) {
+      if (
+        WEB3_CONTEXT !== undefined &&
+        WEB3_CONTEXT.rebalanceSuggestions.length !== 0
+      ) {
         setNetWorth(WEB3_CONTEXT.netWorth);
         setRebalanceSuggestions(WEB3_CONTEXT.rebalanceSuggestions);
       }
     }
     fetchPortfolioMetadata();
   }, [WEB3_CONTEXT]);
+
+  if (rebalanceSuggestions.length === 0) {
+    return <Spin size="large" />;
+  }
   return (
     <>
       <TokenTable columns={columns} dataSource={data} />
@@ -169,6 +177,7 @@ const Strategy = () => {
         belong to multiple categories.
       </p>
       <RebalanceChart
+        key="double_layer_pie_chart"
         rebalanceSuggestions={rebalanceSuggestions}
         netWorth={netWorth}
         windowWidth={windowWidth}

@@ -115,7 +115,6 @@ const colorList = [
 function createChartData(rebalanceSuggestions, netWorth, showCategory) {
   let aggregatedBalanceDict = {};
   let uniqueIdToMetaDataMapping = {};
-  console.log("rebalanceSuggestions", rebalanceSuggestions);
   rebalanceSuggestions.forEach((item) => {
     item.suggestions_for_positions.forEach(
       ({ symbol: uniqueId, balanceUSD, metadata }) => {
@@ -132,7 +131,6 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
       ((value / netWorth) * 100).toFixed(2),
     ]),
   );
-  // console.log("uniqueIdToMetaDataMapping", uniqueIdToMetaDataMapping['0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:49661'].symbol)
 
   if (!showCategory) {
     const aggregatedArray = Object.entries(aggregatedBalanceDict).sort(
@@ -154,7 +152,6 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
       }),
     };
   }
-
   return {
     children: rebalanceSuggestions.map((categoryObj, idx) => ({
       name: `${categoryObj.category}: ${getPercentage(
@@ -164,14 +161,19 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
       hex: colorList[idx],
       children: categoryObj.suggestions_for_positions
         .sort((a, b) => b.balanceUSD - a.balanceUSD)
-        .map((subCategoryObj) => ({
-          name: `${subCategoryObj.symbol}: ${getPercentage(
-            subCategoryObj.balanceUSD,
-            netWorth,
-          )}%`,
-          value: subCategoryObj.balanceUSD,
-          hex: colorList[idx],
-        })),
+        .map((subCategoryObj) => {
+          return {
+            name:
+              subCategoryObj.symbol.split(":")[1] +
+              " " +
+              uniqueIdToMetaDataMapping[subCategoryObj.symbol].symbol +
+              " " +
+              getPercentage(subCategoryObj.balanceUSD, netWorth) +
+              "%",
+            value: subCategoryObj.balanceUSD,
+            hex: colorList[idx],
+          };
+        }),
     })),
   };
 }
