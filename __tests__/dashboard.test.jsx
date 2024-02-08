@@ -23,18 +23,15 @@ vi.mock("next/navigation", async () => {
     useRouter,
   };
 });
-test("Dashboard", () => {
-  render(<Dashboard />);
-});
 
 test("Connect Wallet", async () => {
   render(<Dashboard />);
-  // const button = await screen.getAllByRole("button", {
-  //   name: "Connect Wallet",
-  // });
-  // fireEvent.click(button[0]);
-  // const modal = await screen.queryByRole("dialog");
-  // expect(modal).not.toBeNull();
-  // const metaMaskButton = screen.getAllByRole("button", { name: "Rainbow" });
-  // expect(metaMaskButton).not.toBeNull();
+  const button = await screen.getAllByRole("button", {
+    name: "Connect Wallet",
+  });
+  fireEvent.click(button[0]);
+  const modal = await screen.queryByRole("dialog");
+  expect(modal).not.toBeNull();
+  const metaMaskButton = screen.getAllByRole("button", { name: "Rainbow" });
+  expect(metaMaskButton).not.toBeNull();
 });
