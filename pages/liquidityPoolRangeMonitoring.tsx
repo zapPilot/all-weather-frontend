@@ -35,7 +35,7 @@ const LiquidityPoolRangeMonitoring: NextPage = () => {
     color: "#ffffff",
   };
   const [statusesOfLiquidityPools, setstatusesOfLiquidityPools] = useState({
-    data: [],
+    data: ["placeholder"],
   });
   const { address } = useAccount();
 
@@ -105,7 +105,7 @@ const LiquidityPoolRangeMonitoring: NextPage = () => {
           <h1>Liquidity Pool Range Monitoring Service</h1>
         </center>
 
-        {statusesOfLiquidityPools.data.length === 0 ? (
+        {statusesOfLiquidityPools.data[0] === "placeholder" ? (
           <div
             style={{
               display: "flex",
@@ -116,6 +116,10 @@ const LiquidityPoolRangeMonitoring: NextPage = () => {
           >
             <Spin size="large" />
           </div>
+        ) : statusesOfLiquidityPools.data.length === 0 ? (
+          <center>
+            <p>You don't have any Uniswap V3, Camelot positions</p>
+          </center>
         ) : (
           statusesOfLiquidityPools.data.map((pool: Pool, index) => {
             return (

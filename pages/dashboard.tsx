@@ -93,7 +93,7 @@ const Dashboard: NextPage = () => {
     "gold",
   ];
 
-  const topN = 3;
+  const topN = 5;
   const queriesForAllWeather: queriesObj[] = [
     {
       wording: "Long Term Bond (40%)",
