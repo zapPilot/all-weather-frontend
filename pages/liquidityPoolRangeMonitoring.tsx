@@ -118,7 +118,7 @@ const LiquidityPoolRangeMonitoring: NextPage = () => {
           </div>
         ) : statusesOfLiquidityPools.data.length === 0 ? (
           <center>
-            <p>You don't have any Uniswap V3, Camelot positions</p>
+            <p>You do not have any Uniswap V3, Camelot positions</p>
           </center>
         ) : (
           statusesOfLiquidityPools.data.map((pool: Pool, index) => {
