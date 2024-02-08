@@ -28,12 +28,12 @@ test("Dashboard", () => {
 });
 
 test("Connect Wallet", async () => {
-  await waitFor(() => {
-    render(<Dashboard />);
+  render(<Dashboard />);
+  const button = await screen.getAllByRole("button", {
+    name: "Connect Wallet",
   });
-  const button = screen.getAllByRole("button", { name: "Connect Wallet" });
   fireEvent.click(button[0]);
-  const modal = screen.queryByRole("dialog");
+  const modal = await screen.queryByRole("dialog");
   expect(modal).not.toBeNull();
   // const metaMaskButton = screen.getAllByRole("button", { name: "Rainbow" });
   // expect(metaMaskButton).not.toBeNull();
