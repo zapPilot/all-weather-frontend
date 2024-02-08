@@ -24,7 +24,6 @@ vi.mock("next/navigation", async () => {
   };
 });
 
-
 test("Connect Wallet", async () => {
   render(<BasePage />);
 
