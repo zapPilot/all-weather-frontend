@@ -121,6 +121,7 @@ const LiquidityPoolRangeMonitoring: NextPage = () => {
             <p>You do not have any Uniswap V3, Camelot positions</p>
           </center>
         ) : (
+          // @ts-ignore
           statusesOfLiquidityPools.data.map((pool: Pool, index) => {
             return (
               <Badge.Ribbon
