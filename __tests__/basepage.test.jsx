@@ -16,13 +16,13 @@ const { useRouter, mockedRouterPush } = vi.hoisted(() => {
   };
 });
 
-vi.mock("next/navigation", async () => {
-  const actual = await vi.importActual("next/navigation");
-  return {
-    ...actual,
-    useRouter,
-  };
-});
+// vi.mock("next/navigation", async () => {
+//   const actual = await vi.importActual("next/navigation");
+//   return {
+//     ...actual,
+//     useRouter,
+//   };
+// });
 
 test("Connect Wallet", async () => {
   // render(<BasePage />);
