@@ -1,6 +1,5 @@
 import { test, vi, expect } from "vitest";
-import { render } from "./test-utils.tsx";
-import { screen, fireEvent } from "@testing-library/react";
+import { render, fireEvent, screen } from './test-utils';
 import Dashboard from "../pages/dashboard";
 import { waitFor } from "@testing-library/dom";
 
@@ -26,12 +25,6 @@ vi.mock("next/navigation", async () => {
 
 test("Connect Wallet", async () => {
   // render(<Dashboard />);
-  // const button = await screen.getAllByRole("button", {
-  //   name: "Connect Wallet",
-  // });
-  // fireEvent.click(button[0]);
-  // const modal = await screen.queryByRole("dialog");
-  // expect(modal).not.toBeNull();
-  // const metaMaskButton = screen.getAllByRole("button", { name: "Rainbow" });
-  // expect(metaMaskButton).not.toBeNull();
+  // const ethTokenImgs = await screen.findAllByAltText("eth");
+  // expect(ethTokenImgs.length).toBeGreaterThan(0);
 });

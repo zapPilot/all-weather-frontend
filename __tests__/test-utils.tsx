@@ -1,4 +1,5 @@
-import { render } from "@testing-library/react";
+import React, {ReactElement} from 'react'
+import {render, RenderOptions} from '@testing-library/react'
 import "@rainbow-me/rainbowkit/styles.css";
 import "../styles/index.scss";
 import {
@@ -9,6 +10,9 @@ import {
 import { configureChains, createConfig, WagmiConfig } from "wagmi";
 import { arbitrum, bsc, bscTestnet, goerli } from "wagmi/chains";
 import { publicProvider } from "wagmi/providers/public";
+import type { AppProps } from "next/app";
+
+import ThirdPartyPlugin from "../pages/thirdPartyPlugin.jsx";
 
 const { chains, publicClient, webSocketPublicClient } = configureChains(
   [bsc, bscTestnet, arbitrum],
@@ -28,18 +32,21 @@ const wagmiConfig = createConfig({
   webSocketPublicClient,
 });
 
-const MyApp = ({ children }) => (
-  <WagmiConfig config={wagmiConfig}>
+const AllTheProviders = ({children}: {children: React.ReactNode}) => {
+  return (
+    <WagmiConfig config={wagmiConfig}>
     <RainbowKitProvider chains={chains} theme={darkTheme()}>
-      {children}
+      {process.env.NODE_ENV !== 'test' && <ThirdPartyPlugin />}
+        {children}
     </RainbowKitProvider>
   </WagmiConfig>
-);
+  )
+}
 
-// 一个辅助函数来渲染组件并提供必要的上下文
-const customRender = (ui, options) =>
-  render(ui, { wrapper: MyApp, ...options });
+const customRender = (
+  ui: ReactElement,
+  options?: Omit<RenderOptions, 'wrapper'>,
+) => render(ui, {wrapper: AllTheProviders, ...options})
 
-// 导出 customRender 以便在测试中使用
-export * from "@testing-library/react";
-export { customRender as render };
+export * from '@testing-library/react'
+export {customRender as render}

@@ -10,7 +10,7 @@ import type { AppProps } from "next/app";
 import { configureChains, createConfig, WagmiConfig } from "wagmi";
 import { arbitrum, bsc, bscTestnet, goerli } from "wagmi/chains";
 import { publicProvider } from "wagmi/providers/public";
-import ThirdPartyPlugin from "./thirdPartyPlugin.js";
+import ThirdPartyPlugin from "./thirdPartyPlugin.jsx";
 
 const { chains, publicClient, webSocketPublicClient } = configureChains(
   [
