@@ -11,6 +11,7 @@ const paidUserWallets = [
   "0x3144b7E3a4518541AEB4ceC7fC7A6Dd82f05Ae8B",
   "0xa1761fc95E8B2A1E99dfdEE816F6D8F4c47e26AE",
   "0xca35a10c9622febfa889410efb9b905b26221c37", // Chris
+  "0xA1abE1Ee3Bd158CF4468434485c6a0E21A7eE83D", // Adrian
 ];
 export const columnMapping = (walletAddress) => ({
   chain: {
