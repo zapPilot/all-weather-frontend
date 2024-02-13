@@ -1,5 +1,5 @@
-import React, {ReactElement} from 'react'
-import {render, RenderOptions} from '@testing-library/react'
+import React, { ReactElement } from "react";
+import { render, RenderOptions } from "@testing-library/react";
 import "@rainbow-me/rainbowkit/styles.css";
 import "../styles/index.scss";
 import {
@@ -32,21 +32,21 @@ const wagmiConfig = createConfig({
   webSocketPublicClient,
 });
 
-const AllTheProviders = ({children}: {children: React.ReactNode}) => {
+const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
   return (
     <WagmiConfig config={wagmiConfig}>
-    <RainbowKitProvider chains={chains} theme={darkTheme()}>
-      {process.env.NODE_ENV !== 'test' && <ThirdPartyPlugin />}
+      <RainbowKitProvider chains={chains} theme={darkTheme()}>
+        {process.env.NODE_ENV !== "test" && <ThirdPartyPlugin />}
         {children}
-    </RainbowKitProvider>
-  </WagmiConfig>
-  )
-}
+      </RainbowKitProvider>
+    </WagmiConfig>
+  );
+};
 
 const customRender = (
   ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>,
-) => render(ui, {wrapper: AllTheProviders, ...options})
+  options?: Omit<RenderOptions, "wrapper">,
+) => render(ui, { wrapper: AllTheProviders, ...options });
 
-export * from '@testing-library/react'
-export {customRender as render}
+export * from "@testing-library/react";
+export { customRender as render };

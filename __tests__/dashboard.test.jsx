@@ -1,5 +1,5 @@
 import { test, vi, expect } from "vitest";
-import { render, fireEvent, screen } from './test-utils';
+import { render, fireEvent, screen } from "./test-utils";
 import Dashboard from "../pages/dashboard";
 import { waitFor } from "@testing-library/dom";
 
