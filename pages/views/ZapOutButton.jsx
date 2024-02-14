@@ -7,7 +7,6 @@ import {
   useContractWrite,
   useContractRead,
   useAccount,
-  useNetwork,
   useWaitForTransaction,
 } from "wagmi";
 import { refreshTVLData } from "../../utils/contractInteractions";
@@ -35,7 +34,6 @@ const ZapOutButton = () => {
     "0x55d398326f99059fF775485246999027B3197955",
   );
   const [apiDataReady, setApiDataReady] = useState(true);
-  const { chain } = useNetwork();
 
   const useCustomContractWrite = (writeOptions) => {
     const { data, write } = useContractWrite(writeOptions);

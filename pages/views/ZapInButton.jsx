@@ -30,7 +30,6 @@ import {
   useBalance,
   useContractRead,
   useAccount,
-  useNetwork,
   useWaitForTransaction,
 } from "wagmi";
 
@@ -73,7 +72,7 @@ const ZapInButton = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const [slippage, setSlippage] = useState(1);
   const [slippageModalOpen, setSlippageModalOpen] = useState(false);
-  const { chain } = useNetwork();
+  const { chain } = useAccount();
 
   const showModal = () => {
     setOpen(true);
