@@ -3,8 +3,15 @@ import "../styles/index.scss";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider, http } from "wagmi";
 import { bscTestnet, bsc, arbitrum } from "wagmi/chains";
-import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import { getDefaultConfig, connectorsForWallets } from "@rainbow-me/rainbowkit";
+import {
+  rainbowWallet,
+  metaMaskWallet,
+  coinbaseWallet,
+  walletConnectWallet,
+  rabbyWallet,
+} from '@rainbow-me/rainbowkit/wallets';
 
 import type { AppProps } from "next/app";
 import ThirdPartyPlugin from "./thirdPartyPlugin.js";
@@ -17,6 +24,18 @@ const config = getDefaultConfig({
   transports: {
     [bsc.id]: http(),
   },
+  wallets: [
+    {
+      groupName: 'Suggested',
+      wallets: [
+        rainbowWallet,
+        metaMaskWallet,
+        coinbaseWallet,
+        walletConnectWallet,
+        rabbyWallet,
+      ],
+    },
+  ],
 });
 
 const queryClient = new QueryClient();
@@ -25,7 +44,7 @@ const App = ({ Component, pageProps }: AppProps) => {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>
+        <RainbowKitProvider theme={darkTheme()}>
           <ThirdPartyPlugin />
           <Component {...pageProps} />
         </RainbowKitProvider>
