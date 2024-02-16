@@ -8,7 +8,6 @@ import { getDefaultConfig, connectorsForWallets } from "@rainbow-me/rainbowkit";
 import {
   rainbowWallet,
   metaMaskWallet,
-  coinbaseWallet,
   walletConnectWallet,
   rabbyWallet,
 } from '@rainbow-me/rainbowkit/wallets';
@@ -23,6 +22,8 @@ const config = getDefaultConfig({
   chains: [bsc, arbitrum, bscTestnet],
   transports: {
     [bsc.id]: http(),
+    [arbitrum.id]: http(),
+    [bscTestnet.id]: http(),
   },
   wallets: [
     {
@@ -30,7 +31,6 @@ const config = getDefaultConfig({
       wallets: [
         rainbowWallet,
         metaMaskWallet,
-        coinbaseWallet,
         walletConnectWallet,
         rabbyWallet,
       ],

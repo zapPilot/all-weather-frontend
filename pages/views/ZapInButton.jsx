@@ -132,55 +132,65 @@ const ZapInButton = () => {
 
     return { data, writeContract, status };
   };
-
-  const {
+  const { 
     data: approveData,
     writeContract: approveWrite,
-    status: approveStatus,
-  } = useCustomContractWrite({
-    address: chosenToken,
-    abi: permanentPortfolioJson.abi,
-    functionName: "approve",
-    // onError(error) {
-    //   messageApi.error({
-    //     content: `${error.shortMessage}`,
-    //     duration: 5,
-    //   });
-    // },
-    // onSuccess: async (_) => {
-    //   await sleep(5000);
-    //   _callbackAfterApprove();
-    // },
-  });
+  } = useWriteContract();
+  const { status: approveStatus } = useWaitForTransactionReceipt({ hash: approveData?.hash });
+  // const {
+  //   data: approveData,
+  //   writeContract: approveWrite,
+  //   status: approveStatus,
+  // } = useCustomContractWrite({
+  //   address: chosenToken,
+  //   abi: permanentPortfolioJson.abi,
+  //   functionName: "approve",
+  //   onError(error) {
+  //     messageApi.error({
+  //       content: `${error.shortMessage}`,
+  //       duration: 5,
+  //     });
+  //   },
+  //   onSuccess: async (_) => {
+  //     await sleep(5000);
+  //     _callbackAfterApprove();
+  //   },
+  // });
 
-  const {
+  const { 
     data: depositData,
     writeContract,
-    status: depositStatus,
-  } = useCustomContractWrite({
-    address: portfolioContractAddress,
-    abi: permanentPortfolioJson.abi,
-    functionName: "deposit",
-    onError(error) {
-      if (
-        JSON.stringify(error)
-          .toLocaleLowerCase()
-          .includes("user rejected the request")
-      ) {
-        return;
-      }
-      sendDiscordMessage(address, "handleZapin failed!");
-      messageApi.error({
-        content: `${error.shortMessage}. Amout: ${error.args[0].amount}. Increase the deposit amount and try again.`,
-        duration: 5,
-      });
-      throw error;
-    },
-    onSuccess(data) {
-      sendDiscordMessage(address, "handleZapin succeeded!");
-      setDepositHash(data.hash);
-    },
-  });
+  } = useWriteContract();
+  const { status: depositStatus } = useWaitForTransactionReceipt({ hash: depositData?.hash });
+
+  // const {
+  //   data: depositData,
+  //   writeContract,
+  //   status: depositStatus,
+  // } = useCustomContractWrite({
+  //   address: portfolioContractAddress,
+  //   abi: permanentPortfolioJson.abi,
+  //   functionName: "deposit",
+  //   onError(error) {
+  //     if (
+  //       JSON.stringify(error)
+  //         .toLocaleLowerCase()
+  //         .includes("user rejected the request")
+  //     ) {
+  //       return;
+  //     }
+  //     sendDiscordMessage(address, "handleZapin failed!");
+  //     messageApi.error({
+  //       content: `${error.shortMessage}. Amout: ${error.args[0].amount}. Increase the deposit amount and try again.`,
+  //       duration: 5,
+  //     });
+  //     throw error;
+  //   },
+  //   onSuccess(data) {
+  //     sendDiscordMessage(address, "handleZapin succeeded!");
+  //     setDepositHash(data.hash);
+  //   },
+  // });
 
   const { 
     data: approveAmountData,
@@ -262,8 +272,10 @@ const ZapInButton = () => {
         chosenToken != "0x0000000000000000000000000000000000000000"
       ) {
         approveWrite({
+          abi: permanentPortfolioJson.abi,
+          address: chosenToken,
+          functionName: "approve",
           args: [portfolioContractAddress, amount.toString()],
-          
         });
       }
     } else {
@@ -298,8 +310,10 @@ const ZapInButton = () => {
     setFetchingStatus("success");
     setApiDataReady(true);
     writeContract({
+      abi: permanentPortfolioJson.abi,
+      address: portfolioContractAddress,
+      functionName: "deposit",
       args: [preparedDepositData],
-      from: address,
     });
   };
 
