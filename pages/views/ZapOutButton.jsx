@@ -7,7 +7,7 @@ import {
   useContractWrite,
   useContractRead,
   useAccount,
-  useWaitForTransaction,
+  useWaitForTransactionReceipt,
 } from "wagmi";
 import { refreshTVLData } from "../../utils/contractInteractions";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
@@ -37,7 +37,7 @@ const ZapOutButton = () => {
 
   const useCustomContractWrite = (writeOptions) => {
     const { data, write } = useContractWrite(writeOptions);
-    const { status } = useWaitForTransaction({ hash: data?.hash });
+    const { status } = useWaitForTransactionReceipt({ hash: data?.hash });
 
     return { data, write, status };
   };
