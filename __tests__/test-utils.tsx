@@ -1,39 +1,49 @@
 import { render } from "@testing-library/react";
 import "@rainbow-me/rainbowkit/styles.css";
 import "../styles/index.scss";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { getDefaultConfig, RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import { WagmiProvider, http } from "wagmi";
+import { bscTestnet, bsc, arbitrum } from "wagmi/chains";
 import {
-  getDefaultWallets,
-  RainbowKitProvider,
-  darkTheme,
-} from "@rainbow-me/rainbowkit";
-import { configureChains, createConfig, WagmiConfig } from "wagmi";
-import { arbitrum, bsc, bscTestnet, goerli } from "wagmi/chains";
-import { publicProvider } from "wagmi/providers/public";
+  rainbowWallet,
+  metaMaskWallet,
+  walletConnectWallet,
+  rabbyWallet,
+} from '@rainbow-me/rainbowkit/wallets';
 
-const { chains, publicClient, webSocketPublicClient } = configureChains(
-  [bsc, bscTestnet, arbitrum],
-  [publicProvider()],
-);
-
-const { connectors } = getDefaultWallets({
-  appName: "RainbowKit App",
+const config = getDefaultConfig({
+  appName: "RainbowKit demo",
   projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID ?? "",
-  chains,
+  chains: [bsc, arbitrum, bscTestnet],
+  transports: {
+    [bsc.id]: http(),
+    [arbitrum.id]: http(),
+    [bscTestnet.id]: http(),
+  },
+  wallets: [
+    {
+      groupName: 'Suggested',
+      wallets: [
+        rainbowWallet,
+        metaMaskWallet,
+        walletConnectWallet,
+        rabbyWallet,
+      ],
+    },
+  ],
 });
 
-const wagmiConfig = createConfig({
-  autoConnect: true,
-  connectors,
-  publicClient,
-  webSocketPublicClient,
-});
+const queryClient = new QueryClient();
 
 const MyApp = ({ children }) => (
-  <WagmiConfig config={wagmiConfig}>
-    <RainbowKitProvider chains={chains} theme={darkTheme()}>
+  <WagmiProvider config={config}>
+  <QueryClientProvider client={queryClient}>
+    <RainbowKitProvider theme={darkTheme()}>
       {children}
     </RainbowKitProvider>
-  </WagmiConfig>
+  </QueryClientProvider>
+</WagmiProvider>
 );
 
 // 一个辅助函数来渲染组件并提供必要的上下文
