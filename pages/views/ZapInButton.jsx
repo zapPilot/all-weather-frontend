@@ -136,26 +136,6 @@ const ZapInButton = () => {
     isSuccess: approveIsSuccess,
     isError: approveIsError,
   } = useWaitForTransactionReceipt({ hash: approveData });
-  
-  // const {
-  //   data: approveData,
-  //   writeContract: approveWrite,
-  //   status: approveStatus,
-  // } = useCustomContractWrite({
-  //   address: chosenToken,
-  //   abi: permanentPortfolioJson.abi,
-  //   functionName: "approve",
-  //   onError(error) {
-  //     messageApi.error({
-  //       content: `${error.shortMessage}`,
-  //       duration: 5,
-  //     });
-  //   },
-  //   onSuccess: async (_) => {
-  //     await sleep(5000);
-  //     _callbackAfterApprove();
-  //   },
-  // });
 
   const { 
     data: depositData,
