@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from "react";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
-import { useContractRead } from "wagmi";
+import { useReadContract } from "wagmi";
 import { portfolioContractAddress } from "../../utils/oneInch";
 import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
 
@@ -10,16 +10,23 @@ export const web3Context = createContext();
 
 const Web3DataProvider = ({ children, address }) => {
   const [data, setData] = useState({});
-  const dataOfGetClaimableRewards = useContractRead({
-    address: portfolioContractAddress,
-    abi: permanentPortfolioJson.abi,
-    functionName: "getClaimableRewards",
-    args: [address],
-    onError(error) {
-      console.log("getClaimableRewards Error", error);
-    },
-  });
-  const userShares = useContractRead({
+  const {
+    data: dataOfGetClaimableRewards,
+    error: dataOfGetClaimableRewardsError,
+    isLoading: dataOfGetClaimableRewardsIsLoading,
+  } = useReadContract({
+      address: portfolioContractAddress,
+      abi: permanentPortfolioJson.abi,
+      functionName: "getClaimableRewards",
+      args: [address],
+    });
+
+  if (dataOfGetClaimableRewardsError) console.log("getClaimableRewards Error", dataOfGetClaimableRewardsError.message);
+
+  const {
+    data: userShares,
+    isLoading: userSharesIsLoading,
+  } = useReadContract({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "balanceOf",
@@ -28,7 +35,10 @@ const Web3DataProvider = ({ children, address }) => {
       console.log("userShares Error", error);
     },
   });
-  const totalSupply = useContractRead({
+  const {
+    data: totalSupply,
+    isPending: totalSupplyIsPending,
+  } = useReadContract({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "totalSupply",
@@ -55,9 +65,9 @@ const Web3DataProvider = ({ children, address }) => {
   useEffect(() => {
     async function fetchData() {
       if (
-        dataOfGetClaimableRewards.loading === true ||
-        userShares.loading === true ||
-        totalSupply.loading === true
+        dataOfGetClaimableRewardsIsLoading ||
+        userSharesIsLoading ||
+        totalSupplyIsPending
       )
         return; // Don't proceed if loading
       // Fetch data from API
@@ -67,9 +77,9 @@ const Web3DataProvider = ({ children, address }) => {
         .then((result) => {
           setData({
             debankContext: result,
-            dataOfGetClaimableRewards: dataOfGetClaimableRewards.data,
-            userShares: userShares.data,
-            totalSupply: totalSupply.data,
+            dataOfGetClaimableRewards: dataOfGetClaimableRewards,
+            userShares: userShares,
+            totalSupply: totalSupply,
             /* $25866 stands for the TVL from this vault: https://debank.com/profile/0xd56d8dfd3a3d6f6dafc0b7b6945f6e7ab138706e */
             netWorthWithCustomLogic:
               process.env.NEXT_PUBLIC_DAVID_PORTFOLIO !== "true"
@@ -94,12 +104,12 @@ const Web3DataProvider = ({ children, address }) => {
     fetchData();
   }, [
     address,
-    dataOfGetClaimableRewards.loading,
-    dataOfGetClaimableRewards.data,
-    userShares.loading,
-    userShares.data,
-    totalSupply.loading,
-    totalSupply.data,
+    dataOfGetClaimableRewardsIsLoading,
+    dataOfGetClaimableRewards,
+    userSharesIsLoading,
+    userShares,
+    totalSupplyIsPending,
+    totalSupply,
     portfolioApr,
   ]);
 

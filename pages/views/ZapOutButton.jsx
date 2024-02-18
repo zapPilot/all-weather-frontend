@@ -4,8 +4,8 @@ import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
 import { useEffect, useState, useContext } from "react";
 import {
-  useContractWrite,
-  useContractRead,
+  useWriteContract,
+  useReadContract,
   useAccount,
   useWaitForTransactionReceipt,
 } from "wagmi";
@@ -36,7 +36,7 @@ const ZapOutButton = () => {
   const [apiDataReady, setApiDataReady] = useState(true);
 
   const useCustomContractWrite = (writeOptions) => {
-    const { data, write } = useContractWrite(writeOptions);
+    const { data, write } = useWriteContract(writeOptions);
     const { status } = useWaitForTransactionReceipt({ hash: data?.hash });
 
     return { data, write, status };
@@ -44,63 +44,41 @@ const ZapOutButton = () => {
 
   const {
     data: redeemData,
-    write,
-    status: redeemStatus,
-  } = useCustomContractWrite({
-    address: portfolioContractAddress,
-    abi: permanentPortfolioJson.abi,
-    functionName: "redeem",
-    onError(error) {
-      messageApi.error({
-        content: error.shortMessage,
-        duration: 5,
-      });
-    },
-    async onSuccess() {
-      await refreshTVLData(messageApi);
-    },
-  });
+    writeContract,
+    isPending: redeemDataIsPending,
+    status: redeemDataStatus,
+  } = useWriteContract();
 
   const {
     data: approveData,
-    write: approveWrite,
+    writeContract: approveWrite,
+    isPending: approveIsPending,
     status: approveStatus,
-  } = useCustomContractWrite({
-    address: portfolioContractAddress,
-    abi: permanentPortfolioJson.abi,
-    functionName: "approve",
-    onError(error) {
-      messageApi.error({
-        content: error.shortMessage,
-        duration: 5,
-      });
-    },
-    async onSuccess() {
-      await _callbackAfterApprove();
-    },
-  });
+  } = useWriteContract();
 
-  const approveAmountContract = useContractRead({
+  const {
+    data: approveAmountContract,
+    error: approveAmountError,
+    isPending: approveAmountContractIsPending,
+  } = useReadContract({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "allowance",
     args: [address, portfolioContractAddress],
     // args: ["0x43cd745Bd5FbFc8CfD79ebC855f949abc79a1E0C", "0x78000b0605E81ea9df54b33f72ebC61B5F5c8077"],
     watch: true,
-    onError(error) {
-      console.log("allowance Error", error);
-    },
   });
 
   useEffect(() => {
     if (WEB3_CONTEXT) {
       setUserShares(WEB3_CONTEXT.userShares);
     }
-    if (approveAmountContract.loading === true) return; // Don't proceed if loading
-    setApproveAmount(approveAmountContract.data);
+    if (approveAmountContractIsPending) return; // Don't proceed if loading
+    if (approveAmountError) console.log("allowance Error", approveAmountError.message);
+    setApproveAmount(approveAmountContract);
 
     // Approve feedback
-    if (approveStatus === "loading") {
+    if (approveStatus === "pending") {
       message.loading("Approved loading");
     } else if (approveStatus === "success") {
       message.destroy();
@@ -108,19 +86,21 @@ const ZapOutButton = () => {
     }
 
     // Withdraw feedback
-    if (redeemStatus === "loading") {
+    if (redeemDataStatus === "pending") {
       message.loading("Withdraw loading");
-    } else if (redeemStatus === "success") {
+    } else if (redeemDataStatus === "success") {
       message.destroy();
       message.success("Withdraw success");
     }
   }, [
     WEB3_CONTEXT,
     address,
-    approveAmountContract.loading,
-    approveAmountContract.data,
+    approveAmountContractIsPending,
+    approveAmountContract,
     approveReady,
-    redeemStatus,
+    redeemDataIsPending,
+    approveStatus,
+    redeemDataStatus,
   ]);
   const handleInputChange = async (eventValue) => {
     setInputValue(eventValue);
@@ -148,10 +128,26 @@ const ZapOutButton = () => {
   const handleZapOut = async () => {
     setApiDataReady(false);
     if (approveAmount < inputValue) {
-      approveWrite({
-        args: [portfolioContractAddress, ethers.BigNumber.from(inputValue)],
-        from: address,
-      });
+      approveWrite(
+        {
+          address: portfolioContractAddress,
+          abi: permanentPortfolioJson.abi,
+          functionName: "approve",
+          args: [portfolioContractAddress, ethers.BigNumber.from(inputValue)],
+          from: address,
+        },
+        {
+          onError(error) {
+            messageApi.error({
+              content: error.shortMessage,
+              duration: 5,
+            });
+          },
+          async onSuccess() {
+            await _callbackAfterApprove();
+          },
+        }
+      );
     } else {
       await _callbackAfterApprove();
     }
@@ -168,21 +164,37 @@ const ZapOutButton = () => {
     //   portfolioContractAddress,
     //   1,
     // );
-    write({
-      args: [
-        {
-          amount: withdrawAmount,
-          receiver: address,
-          apolloXRedeemData: {
-            alpTokenOut: chosenToken,
-            minOut: withdrawAmount,
-            tokenOut: chosenToken,
-            aggregatorData: "",
+    writeContract(
+      {
+        address: portfolioContractAddress,
+        abi: permanentPortfolioJson.abi,
+        functionName: "redeem",
+        args: [
+          {
+            amount: withdrawAmount,
+            receiver: address,
+            apolloXRedeemData: {
+              alpTokenOut: chosenToken,
+              minOut: withdrawAmount,
+              tokenOut: chosenToken,
+              aggregatorData: "",
+            },
           },
+        ],
+        from: address,
+      },
+      {
+        onError(error) {
+          messageApi.error({
+            content: error.shortMessage,
+            duration: 5,
+          });
         },
-      ],
-      from: address,
-    });
+        async onSuccess() {
+          await refreshTVLData(messageApi);
+        },
+      }
+    )
     setApiDataReady(true);
   };
 
