@@ -12,7 +12,7 @@ import {
   rabbyWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import type { AppProps } from "next/app";
-import ThirdPartyPlugin from "./thirdPartyPlugin.js";
+import ThirdPartyPlugin from "./thirdPartyPlugin.jsx";
 
 /* New API that includes Wagmi's createConfig and replaces getDefaultWallets and connectorsForWallets */
 const config = getDefaultConfig({
