@@ -1,4 +1,5 @@
-import { render } from "@testing-library/react";
+import React, { ReactElement } from "react";
+import { render, RenderOptions } from "@testing-library/react";
 import "@rainbow-me/rainbowkit/styles.css";
 import "../styles/index.scss";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -10,7 +11,7 @@ import {
   metaMaskWallet,
   walletConnectWallet,
   rabbyWallet,
-} from '@rainbow-me/rainbowkit/wallets';
+} from "@rainbow-me/rainbowkit/wallets";
 
 const config = getDefaultConfig({
   appName: "RainbowKit demo",
@@ -46,10 +47,11 @@ const MyApp = ({ children }) => (
 </WagmiProvider>
 );
 
-// 一个辅助函数来渲染组件并提供必要的上下文
-const customRender = (ui, options) =>
-  render(ui, { wrapper: MyApp, ...options });
 
-// 导出 customRender 以便在测试中使用
+const customRender = (
+  ui: ReactElement,
+  options?: Omit<RenderOptions, "wrapper">,
+) => render(ui, { wrapper: AllTheProviders, ...options });
+
 export * from "@testing-library/react";
 export { customRender as render };

@@ -11,7 +11,6 @@ import {
   walletConnectWallet,
   rabbyWallet,
 } from '@rainbow-me/rainbowkit/wallets';
-
 import type { AppProps } from "next/app";
 import ThirdPartyPlugin from "./thirdPartyPlugin.js";
 
