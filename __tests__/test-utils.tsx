@@ -3,7 +3,11 @@ import { render, RenderOptions } from "@testing-library/react";
 import "@rainbow-me/rainbowkit/styles.css";
 import "../styles/index.scss";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { getDefaultConfig, RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import {
+  getDefaultConfig,
+  RainbowKitProvider,
+  darkTheme,
+} from "@rainbow-me/rainbowkit";
 import { WagmiProvider, http } from "wagmi";
 import { bscTestnet, bsc, arbitrum } from "wagmi/chains";
 import {
@@ -24,7 +28,7 @@ const config = getDefaultConfig({
   },
   wallets: [
     {
-      groupName: 'Suggested',
+      groupName: "Suggested",
       wallets: [
         rainbowWallet,
         metaMaskWallet,
@@ -39,14 +43,11 @@ const queryClient = new QueryClient();
 
 const MyApp = ({ children }) => (
   <WagmiProvider config={config}>
-  <QueryClientProvider client={queryClient}>
-    <RainbowKitProvider theme={darkTheme()}>
-      {children}
-    </RainbowKitProvider>
-  </QueryClientProvider>
-</WagmiProvider>
+    <QueryClientProvider client={queryClient}>
+      <RainbowKitProvider theme={darkTheme()}>{children}</RainbowKitProvider>
+    </QueryClientProvider>
+  </WagmiProvider>
 );
-
 
 const customRender = (
   ui: ReactElement,

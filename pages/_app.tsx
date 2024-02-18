@@ -10,7 +10,7 @@ import {
   metaMaskWallet,
   walletConnectWallet,
   rabbyWallet,
-} from '@rainbow-me/rainbowkit/wallets';
+} from "@rainbow-me/rainbowkit/wallets";
 import type { AppProps } from "next/app";
 import ThirdPartyPlugin from "./thirdPartyPlugin.js";
 
@@ -26,7 +26,7 @@ const config = getDefaultConfig({
   },
   wallets: [
     {
-      groupName: 'Suggested',
+      groupName: "Suggested",
       wallets: [
         rainbowWallet,
         metaMaskWallet,

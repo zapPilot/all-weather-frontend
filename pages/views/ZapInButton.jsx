@@ -125,7 +125,7 @@ const ZapInButton = () => {
     }
   };
 
-  const { 
+  const {
     data: approveData,
     writeContract: approveWrite,
     isPending: approveIsPending,
@@ -137,11 +137,10 @@ const ZapInButton = () => {
     isError: approveIsError,
   } = useWaitForTransactionReceipt({ hash: approveData });
 
-  const { 
-    data: depositData,
-    writeContract,
-  } = useWriteContract();
-  const { status: depositStatus } = useWaitForTransactionReceipt({ hash: depositData?.hash });
+  const { data: depositData, writeContract } = useWriteContract();
+  const { status: depositStatus } = useWaitForTransactionReceipt({
+    hash: depositData?.hash,
+  });
 
   // const {
   //   data: depositData,
@@ -172,9 +171,9 @@ const ZapInButton = () => {
   //   },
   // });
 
-  const { 
+  const {
     data: approveAmountData,
-    error: approveAmountError, 
+    error: approveAmountError,
     isPending: approveAmounIsPending,
   } = useReadContract({
     address:
@@ -185,7 +184,7 @@ const ZapInButton = () => {
     functionName: "allowance",
     args: [address, portfolioContractAddress],
   });
-  
+
   useEffect(() => {
     if (approveAmounIsPending) return; // Don't proceed if loading
     if (approveAmountError) {
@@ -194,12 +193,7 @@ const ZapInButton = () => {
     }
     setApproveAmount(approveAmountData);
     if (depositStatus === "success") messageApi.info("Deposit succeeded"); // untill deposit transaction status === "success", then send meessageApi
-  }, [
-    approveAmounIsPending,
-    approveAmountData,
-    depositStatus,
-    slippage,
-  ]);
+  }, [approveAmounIsPending, approveAmountData, depositStatus, slippage]);
 
   const handleInputChange = async (eventValue) => {
     if (eventValue === "") {
@@ -251,23 +245,26 @@ const ZapInButton = () => {
         approveWrite &&
         chosenToken != "0x0000000000000000000000000000000000000000"
       ) {
-        approveWrite({
-          abi: permanentPortfolioJson.abi,
-          address: chosenToken,
-          functionName: "approve",
-          args: [portfolioContractAddress, amount.toString()],
-        }, {
-          onError(error) {
-            messageApi.error({
-              content: `${error}`,
-              duration: 5,
-            });
+        approveWrite(
+          {
+            abi: permanentPortfolioJson.abi,
+            address: chosenToken,
+            functionName: "approve",
+            args: [portfolioContractAddress, amount.toString()],
           },
-          onSuccess: async (_) => {
-            await sleep(5000);
-            _callbackAfterApprove();
+          {
+            onError(error) {
+              messageApi.error({
+                content: `${error}`,
+                duration: 5,
+              });
+            },
+            onSuccess: async (_) => {
+              await sleep(5000);
+              _callbackAfterApprove();
+            },
           },
-        });
+        );
       }
     } else {
       _callbackAfterApprove();
@@ -371,7 +368,15 @@ const ZapInButton = () => {
             marginBottom: "10px",
           }}
         >
-          {statusIcon(approveIsPending || approveIsLoading ? "loading" : approveIsSuccess ? "success" : approveIsError ? "error" : "")}
+          {statusIcon(
+            approveIsPending || approveIsLoading
+              ? "loading"
+              : approveIsSuccess
+              ? "success"
+              : approveIsError
+              ? "error"
+              : "",
+          )}
           <span style={{ marginLeft: 5 }}>Approve</span>
         </div>
         <div
