@@ -35,13 +35,6 @@ const ZapOutButton = () => {
   );
   const [apiDataReady, setApiDataReady] = useState(true);
 
-  const useCustomContractWrite = (writeOptions) => {
-    const { data, write } = useWriteContract(writeOptions);
-    const { status } = useWaitForTransactionReceipt({ hash: data?.hash });
-
-    return { data, write, status };
-  };
-
   const {
     data: redeemData,
     writeContract,

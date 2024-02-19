@@ -231,7 +231,7 @@ const ZapInButton = () => {
           {
             onError(error) {
               messageApi.error({
-                content: `${error}`,
+                content: error.shortMessage,
                 duration: 5,
               });
             },

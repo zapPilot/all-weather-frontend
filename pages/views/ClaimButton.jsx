@@ -6,9 +6,8 @@ import {
 } from "../../utils/oneInch";
 import { DollarOutlined } from "@ant-design/icons";
 import {
-  useContractWrite,
+  useWriteContract,
   useAccount,
-  useWaitForTransactionReceipt,
 } from "wagmi";
 import { useState, useContext, useEffect } from "react";
 import { web3Context } from "./Web3DataProvider";
@@ -30,22 +29,11 @@ const ClaimButton = () => {
   const loadingWording = "Fetching the best route to dump these rewards...";
   const useDump = true;
 
-  const { data, write } = useContractWrite({
-    address: portfolioContractAddress,
-    abi: permanentPortfolioJson.abi,
-    functionName: "claim",
-    onError(error) {
-      messageApi.error({
-        content: error.shortMessage,
-        duration: 5,
-      });
-    },
-    onSuccess(data) {
-      sendDiscordMessage(address, "successfully claimed!");
-    },
-  });
-
-  const { status } = useWaitForTransactionReceipt({ hash: data?.hash });
+  const {
+    data,
+    writeContract,
+    status,
+  } = useWriteContract();
 
   useEffect(() => {
     async function fetchData() {
@@ -76,10 +64,26 @@ const ClaimButton = () => {
     );
     setAggregatorDataReady(true);
     const claimData = _getClaimData(useDump, aggregatorDatas);
-    write({
-      args: claimData,
-      from: address,
-    });
+    writeContract(
+      {
+        address: portfolioContractAddress,
+        abi: permanentPortfolioJson.abi,
+        functionName: "claim",
+        args: claimData,
+        from: address,
+      },
+      {
+        onError(error) {
+          messageApi.error({
+            content: error.shortMessage,
+            duration: 5,
+          });
+        },
+        onSuccess(data) {
+          sendDiscordMessage(address, "successfully claimed!");
+        },
+      }
+    );
   };
 
   const _getAggregatorData = async (
