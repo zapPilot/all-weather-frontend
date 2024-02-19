@@ -301,7 +301,7 @@ const ZapInButton = () => {
           setDepositHash(data.hash);
           messageApi.info("Deposit succeeded");
         },
-      }
+      },
     );
   };
 
@@ -398,12 +398,12 @@ const ZapInButton = () => {
         >
           {statusIcon(
             depositIsPending || depositIsLoading
-            ? "loading"
-            : depositIsSuccess
-            ? "success"
-            : depositIsError
-            ? "error"
-            : "",
+              ? "loading"
+              : depositIsSuccess
+              ? "success"
+              : depositIsError
+              ? "error"
+              : "",
           )}
           <span style={{ marginLeft: 5 }}>Deposit </span>
         </div>

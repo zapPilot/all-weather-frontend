@@ -67,7 +67,8 @@ const ZapOutButton = () => {
       setUserShares(WEB3_CONTEXT.userShares);
     }
     if (approveAmountContractIsPending) return; // Don't proceed if loading
-    if (approveAmountError) console.log("allowance Error", approveAmountError.message);
+    if (approveAmountError)
+      console.log("allowance Error", approveAmountError.message);
     setApproveAmount(approveAmountContract);
 
     // Approve feedback
@@ -139,7 +140,7 @@ const ZapOutButton = () => {
           async onSuccess() {
             await _callbackAfterApprove();
           },
-        }
+        },
       );
     } else {
       await _callbackAfterApprove();
@@ -186,8 +187,8 @@ const ZapOutButton = () => {
         async onSuccess() {
           await refreshTVLData(messageApi);
         },
-      }
-    )
+      },
+    );
     setApiDataReady(true);
   };
 

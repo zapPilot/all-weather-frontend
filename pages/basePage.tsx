@@ -43,12 +43,13 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
         </Affix>
 
         <Content>
-          {isConnected
-            ? <Web3DataProvider address={address}>
-                <div>{children}</div>
-              </Web3DataProvider>
-            : <div>{children}</div>
-          }
+          {isConnected ? (
+            <Web3DataProvider address={address}>
+              <div>{children}</div>
+            </Web3DataProvider>
+          ) : (
+            <div>{children}</div>
+          )}
         </Content>
         <Footer className={styles.footer}>
           <a

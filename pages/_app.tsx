@@ -26,11 +26,7 @@ const config = getDefaultConfig({
   wallets: [
     {
       groupName: "Suggested",
-      wallets: [
-        rainbowWallet,
-        metaMaskWallet,
-        rabbyWallet,
-      ],
+      wallets: [rainbowWallet, metaMaskWallet, rabbyWallet],
     },
   ],
 });

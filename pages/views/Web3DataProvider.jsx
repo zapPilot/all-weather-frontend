@@ -15,18 +15,19 @@ const Web3DataProvider = ({ children, address }) => {
     error: dataOfGetClaimableRewardsError,
     isLoading: dataOfGetClaimableRewardsIsLoading,
   } = useReadContract({
-      address: portfolioContractAddress,
-      abi: permanentPortfolioJson.abi,
-      functionName: "getClaimableRewards",
-      args: [address],
-    });
+    address: portfolioContractAddress,
+    abi: permanentPortfolioJson.abi,
+    functionName: "getClaimableRewards",
+    args: [address],
+  });
 
-  if (dataOfGetClaimableRewardsError) console.log("getClaimableRewards Error", dataOfGetClaimableRewardsError.message);
+  if (dataOfGetClaimableRewardsError)
+    console.log(
+      "getClaimableRewards Error",
+      dataOfGetClaimableRewardsError.message,
+    );
 
-  const {
-    data: userShares,
-    isLoading: userSharesIsLoading,
-  } = useReadContract({
+  const { data: userShares, isLoading: userSharesIsLoading } = useReadContract({
     address: portfolioContractAddress,
     abi: permanentPortfolioJson.abi,
     functionName: "balanceOf",
@@ -35,17 +36,15 @@ const Web3DataProvider = ({ children, address }) => {
       console.log("userShares Error", error);
     },
   });
-  const {
-    data: totalSupply,
-    isPending: totalSupplyIsPending,
-  } = useReadContract({
-    address: portfolioContractAddress,
-    abi: permanentPortfolioJson.abi,
-    functionName: "totalSupply",
-    onError(error) {
-      console.log("totalSupply Error", error);
-    },
-  });
+  const { data: totalSupply, isPending: totalSupplyIsPending } =
+    useReadContract({
+      address: portfolioContractAddress,
+      abi: permanentPortfolioJson.abi,
+      functionName: "totalSupply",
+      onError(error) {
+        console.log("totalSupply Error", error);
+      },
+    });
 
   const {
     netWorth,

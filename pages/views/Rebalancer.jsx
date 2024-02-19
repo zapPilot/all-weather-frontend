@@ -50,7 +50,9 @@ const RebalancerWidget = () => {
         <div style={divSpin}>
           <Spin size="large" />
         </div>
-        <p style={{textAlign: "center"}}>Please click the "Connect Wallet" button to connect your wallet.</p>
+        <p style={{ textAlign: "center" }}>
+          Please click the "Connect Wallet" button to connect your wallet.
+        </p>
       </>
     );
   }

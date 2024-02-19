@@ -5,10 +5,7 @@ import {
   APX,
 } from "../../utils/oneInch";
 import { DollarOutlined } from "@ant-design/icons";
-import {
-  useWriteContract,
-  useAccount,
-} from "wagmi";
+import { useWriteContract, useAccount } from "wagmi";
 import { useState, useContext, useEffect } from "react";
 import { web3Context } from "./Web3DataProvider";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
@@ -29,11 +26,7 @@ const ClaimButton = () => {
   const loadingWording = "Fetching the best route to dump these rewards...";
   const useDump = true;
 
-  const {
-    data,
-    writeContract,
-    status,
-  } = useWriteContract();
+  const { data, writeContract, status } = useWriteContract();
 
   useEffect(() => {
     async function fetchData() {
@@ -82,7 +75,7 @@ const ClaimButton = () => {
         onSuccess(data) {
           sendDiscordMessage(address, "successfully claimed!");
         },
-      }
+      },
     );
   };
 
