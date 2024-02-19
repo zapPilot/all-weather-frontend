@@ -17,7 +17,7 @@ interface BasePageProps {
 }
 
 const BasePage: NextPage<BasePageProps> = ({ children }) => {
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
 
   return (
     <div>
@@ -43,9 +43,12 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
         </Affix>
 
         <Content>
-          <Web3DataProvider address={address}>
-            <div>{children}</div>
-          </Web3DataProvider>
+          {isConnected
+            ? <Web3DataProvider address={address}>
+                <div>{children}</div>
+              </Web3DataProvider>
+            : <div>{children}</div>
+          }
         </Content>
         <Footer className={styles.footer}>
           <a
