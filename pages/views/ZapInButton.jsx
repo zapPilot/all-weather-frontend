@@ -137,39 +137,16 @@ const ZapInButton = () => {
     isError: approveIsError,
   } = useWaitForTransactionReceipt({ hash: approveData });
 
-  const { data: depositData, writeContract } = useWriteContract();
-  const { status: depositStatus } = useWaitForTransactionReceipt({
-    hash: depositData?.hash,
-  });
-
-  // const {
-  //   data: depositData,
-  //   writeContract,
-  //   status: depositStatus,
-  // } = useCustomContractWrite({
-  //   address: portfolioContractAddress,
-  //   abi: permanentPortfolioJson.abi,
-  //   functionName: "deposit",
-  //   onError(error) {
-  //     if (
-  //       JSON.stringify(error)
-  //         .toLocaleLowerCase()
-  //         .includes("user rejected the request")
-  //     ) {
-  //       return;
-  //     }
-  //     sendDiscordMessage(address, "handleZapin failed!");
-  //     messageApi.error({
-  //       content: `${error.shortMessage}. Amout: ${error.args[0].amount}. Increase the deposit amount and try again.`,
-  //       duration: 5,
-  //     });
-  //     throw error;
-  //   },
-  //   onSuccess(data) {
-  //     sendDiscordMessage(address, "handleZapin succeeded!");
-  //     setDepositHash(data.hash);
-  //   },
-  // });
+  const {
+    data: depositData,
+    writeContract,
+    isPending: depositIsPending,
+  } = useWriteContract();
+  const {
+    isLoading: depositIsLoading,
+    isSuccess: depositIsSuccess,
+    isError: depositIsError,
+  } = useWaitForTransactionReceipt({ hash: depositData });
 
   const {
     data: approveAmountData,
@@ -192,8 +169,7 @@ const ZapInButton = () => {
       throw approveAmountError;
     }
     setApproveAmount(approveAmountData);
-    if (depositStatus === "success") messageApi.info("Deposit succeeded"); // untill deposit transaction status === "success", then send meessageApi
-  }, [approveAmounIsPending, approveAmountData, depositStatus, slippage]);
+  }, [approveAmounIsPending, approveAmountData, slippage]);
 
   const handleInputChange = async (eventValue) => {
     if (eventValue === "") {
@@ -255,7 +231,7 @@ const ZapInButton = () => {
           {
             onError(error) {
               messageApi.error({
-                content: `${error}`,
+                content: error.shortMessage,
                 duration: 5,
               });
             },
@@ -297,12 +273,36 @@ const ZapInButton = () => {
     });
     setFetchingStatus("success");
     setApiDataReady(true);
-    writeContract({
-      abi: permanentPortfolioJson.abi,
-      address: portfolioContractAddress,
-      functionName: "deposit",
-      args: [preparedDepositData],
-    });
+    writeContract(
+      {
+        abi: permanentPortfolioJson.abi,
+        address: portfolioContractAddress,
+        functionName: "deposit",
+        args: [preparedDepositData],
+      },
+      {
+        onError(error) {
+          if (
+            JSON.stringify(error)
+              .toLocaleLowerCase()
+              .includes("user rejected the request")
+          ) {
+            return;
+          }
+          sendDiscordMessage(address, "handleZapin failed!");
+          messageApi.error({
+            content: `${error.shortMessage}. Amout: ${error.args[0].amount}. Increase the deposit amount and try again.`,
+            duration: 5,
+          });
+          throw error;
+        },
+        onSuccess(data) {
+          sendDiscordMessage(address, "handleZapin succeeded!");
+          setDepositHash(data.hash);
+          messageApi.info("Deposit succeeded");
+        },
+      },
+    );
   };
 
   const _sendEvents = async () => {
@@ -396,7 +396,15 @@ const ZapInButton = () => {
             marginBottom: "10px",
           }}
         >
-          {statusIcon(depositStatus)}
+          {statusIcon(
+            depositIsPending || depositIsLoading
+              ? "loading"
+              : depositIsSuccess
+              ? "success"
+              : depositIsError
+              ? "error"
+              : "",
+          )}
           <span style={{ marginLeft: 5 }}>Deposit </span>
         </div>
         {typeof depositHash === "undefined" ? (

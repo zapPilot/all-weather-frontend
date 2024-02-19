@@ -8,7 +8,6 @@ import { getDefaultConfig, connectorsForWallets } from "@rainbow-me/rainbowkit";
 import {
   rainbowWallet,
   metaMaskWallet,
-  walletConnectWallet,
   rabbyWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import type { AppProps } from "next/app";
@@ -27,12 +26,7 @@ const config = getDefaultConfig({
   wallets: [
     {
       groupName: "Suggested",
-      wallets: [
-        rainbowWallet,
-        metaMaskWallet,
-        walletConnectWallet,
-        rabbyWallet,
-      ],
+      wallets: [rainbowWallet, metaMaskWallet, rabbyWallet],
     },
   ],
 });

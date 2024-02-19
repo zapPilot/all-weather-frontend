@@ -35,7 +35,7 @@ export default function Header({ ...props }) {
           placement="right"
           closable={false}
           onClose={onClose}
-          visible={visible}
+          open={visible}
           extra={
             <span style={{ color: "#999999" }}>
               <CloseOutlined onClick={onClose} />
