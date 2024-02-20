@@ -3,6 +3,7 @@ import BasePage from "./basePage.tsx";
 import { Spin, Table, Button } from "antd";
 import { Image } from "antd";
 import { useWindowHeight } from "../utils/chartUtils.js";
+import { investByAAWallet } from "../utils/etherspot.js";
 import {
   getBasicColumnsForSuggestionsTable,
   getExpandableColumnsForSuggestionsTable,
@@ -345,6 +346,9 @@ const Dashboard: NextPage = () => {
             }
           >
             Visualize
+          </Button>
+          <Button type="primary" onClick={async () => await investByAAWallet()}>
+            Invest
           </Button>
         </h2>
         <>
