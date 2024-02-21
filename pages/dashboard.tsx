@@ -17,6 +17,7 @@ interface Pools {
   apr: number;
   tokens: string[];
   data: Pool[];
+  unexpandable: boolean;
   // ... include other relevant properties as needed
 }
 interface Pool {
@@ -30,6 +31,8 @@ interface queriesObj {
   state: Pools[] | null;
   setUniqueQueryTokens: (newValue: any) => void;
   uniqueQueryTokens: Array<string>;
+  unexpandable: boolean | undefined;
+  setUnexpandable: (key: string, value: boolean) => void;
 }
 const Dashboard: NextPage = () => {
   const userApiKey = "placeholder";
@@ -43,7 +46,6 @@ const Dashboard: NextPage = () => {
   };
   const basicColumns = getBasicColumnsForSuggestionsTable(walletAddress);
   const expandableColumns = getExpandableColumnsForSuggestionsTable();
-  const [poolData, setPoolData] = useState<Pools[] | null>(null);
   const [longTermBond, setLongTermBond] = useState<Pools[] | null>(null);
   const [intermediateTermBond, setIntermediateTermBond] = useState<
     Pools[] | null
@@ -79,6 +81,24 @@ const Dashboard: NextPage = () => {
     setNon_us_emerging_market_stocksFilterDict,
   ] = useState([]);
 
+  // states for unexpandable
+  const [unexpandable, setUnexpandable] = useState({
+    long_term_bond: true,
+    intermediate_term_bond: true,
+    commodities: true,
+    gold: true,
+    large_cap_us_stocks: true,
+    small_cap_us_stocks: true,
+    non_us_developed_market_stocks: true,
+    non_us_emerging_market_stocks: true,
+  });
+  const updateState = (key: string, value: boolean) => {
+    setUnexpandable((prevState) => ({
+      ...prevState,
+      [key]: value,
+    }));
+  };
+
   const [portfolioComposition, setPortfolioComposition] = useState<{
     [key: string]: any;
   }>({});
@@ -86,12 +106,6 @@ const Dashboard: NextPage = () => {
     useState<{
       [key: string]: any;
     }>({});
-  const unexpandableCategories = [
-    "long_term_bond",
-    "intermediate_term_bond",
-    "cash",
-    "gold",
-  ];
 
   const topN = 5;
   const queriesForAllWeather: queriesObj[] = [
@@ -102,6 +116,8 @@ const Dashboard: NextPage = () => {
       state: longTermBond,
       setUniqueQueryTokens: setLongTermBondFilterDict,
       uniqueQueryTokens: longTermBondFilterDict,
+      unexpandable: unexpandable.long_term_bond,
+      setUnexpandable: updateState,
     },
     {
       wording: "Intermediate Term Bond (15%)",
@@ -110,14 +126,8 @@ const Dashboard: NextPage = () => {
       state: intermediateTermBond,
       setUniqueQueryTokens: setIntermediateTermBondFilterDict,
       uniqueQueryTokens: intermediateTermBondFilterDict,
-    },
-    {
-      wording: "Gold (7.5%)",
-      category: "gold",
-      setStateMethod: setGoldData,
-      state: goldData,
-      setUniqueQueryTokens: setGoldDataFilterDict,
-      uniqueQueryTokens: goldDataFilterDict,
+      unexpandable: unexpandable.intermediate_term_bond,
+      setUnexpandable: updateState,
     },
     {
       wording: "Commodities (7.5%)",
@@ -126,6 +136,18 @@ const Dashboard: NextPage = () => {
       state: commodities,
       setUniqueQueryTokens: setCommoditiesFilterDict,
       uniqueQueryTokens: commoditiesFilterDict,
+      unexpandable: unexpandable.commodities,
+      setUnexpandable: updateState,
+    },
+    {
+      wording: "Gold (7.5%)",
+      category: "gold",
+      setStateMethod: setGoldData,
+      state: goldData,
+      setUniqueQueryTokens: setGoldDataFilterDict,
+      uniqueQueryTokens: goldDataFilterDict,
+      unexpandable: unexpandable.gold,
+      setUnexpandable: updateState,
     },
     {
       wording: "Large Cap US Stocks (18%)",
@@ -134,6 +156,8 @@ const Dashboard: NextPage = () => {
       state: large_cap_us_stocks,
       setUniqueQueryTokens: setLarge_cap_us_stocksFilterDict,
       uniqueQueryTokens: large_cap_us_stocksFilterDict,
+      unexpandable: unexpandable.large_cap_us_stocks,
+      setUnexpandable: updateState,
     },
     {
       wording: "Small Cap US Stocks (3%)",
@@ -142,6 +166,8 @@ const Dashboard: NextPage = () => {
       state: small_cap_us_stocks,
       setUniqueQueryTokens: setSmall_cap_us_stocksFilterDict,
       uniqueQueryTokens: small_cap_us_stocksFilterDict,
+      unexpandable: unexpandable.small_cap_us_stocks,
+      setUnexpandable: updateState,
     },
     {
       wording: "Non US Developed Market Stocks (6%)",
@@ -150,6 +176,8 @@ const Dashboard: NextPage = () => {
       state: non_us_developed_market_stocks,
       setUniqueQueryTokens: setNon_us_developed_market_stocksFilterDict,
       uniqueQueryTokens: non_us_developed_market_stocksFilterDict,
+      unexpandable: unexpandable.non_us_developed_market_stocks,
+      setUnexpandable: updateState,
     },
     {
       wording: "Non US Emerging Market Stocks (3%)",
@@ -158,6 +186,8 @@ const Dashboard: NextPage = () => {
       state: non_us_emerging_market_stocks,
       setUniqueQueryTokens: setNon_us_emerging_market_stocksFilterDict,
       uniqueQueryTokens: non_us_emerging_market_stocksFilterDict,
+      unexpandable: unexpandable.non_us_emerging_market_stocks,
+      setUnexpandable: updateState,
     },
   ];
 
@@ -190,6 +220,10 @@ const Dashboard: NextPage = () => {
           const json = await response.json();
           categoryMetaData.setStateMethod(json.data);
           categoryMetaData.setUniqueQueryTokens(json.unique_query_tokens);
+          categoryMetaData.setUnexpandable(
+            categoryMetaData.category,
+            json.unexpandable,
+          );
         }
       } catch (error) {
         console.log("failed to fetch pool data", error);
@@ -331,9 +365,7 @@ const Dashboard: NextPage = () => {
                   >
                     <Spin size="large" />
                   </div>
-                ) : unexpandableCategories.includes(
-                    categoryMetaData.category,
-                  ) ? (
+                ) : unexpandable[categoryMetaData.category] === true ? (
                   <Table
                     columns={basicColumns}
                     // @ts-ignore
@@ -361,6 +393,9 @@ const Dashboard: NextPage = () => {
           })}
         </>
       </div>
+      <Button type="primary" onClick={async () => await investByAAWallet()}>
+        Invest
+      </Button>
     </BasePage>
   );
 };
