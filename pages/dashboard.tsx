@@ -82,7 +82,7 @@ const Dashboard: NextPage = () => {
   ] = useState([]);
 
   // states for unexpandable
-  const [unexpandable, setUnexpandable] = useState({
+  const [unexpandable, setUnexpandable] = useState<{ [key: string]: boolean }>({
     long_term_bond: true,
     intermediate_term_bond: true,
     commodities: true,
@@ -393,9 +393,9 @@ const Dashboard: NextPage = () => {
           })}
         </>
       </div>
-      <Button type="primary" onClick={async () => await investByAAWallet()}>
+      {/* <Button type="primary" onClick={async () => await investByAAWallet()}>
         Invest
-      </Button>
+      </Button> */}
     </BasePage>
   );
 };
