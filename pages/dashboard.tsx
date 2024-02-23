@@ -1,7 +1,6 @@
 import type { NextPage } from "next";
 import BasePage from "./basePage.tsx";
-import { Spin, Table, Button } from "antd";
-import { Image } from "antd";
+import { Spin, Table, Button, Space, InputNumber, Image } from "antd";
 import { useWindowHeight } from "../utils/chartUtils.js";
 import { investByAAWallet } from "../utils/etherspot.js";
 import {
@@ -12,6 +11,7 @@ import {
 import { useState, useEffect } from "react";
 import RebalanceChart from "./views/RebalanceChart";
 import { useAccount } from "wagmi";
+import TokenDropdown from "./views/components/TokenDropdowns.jsx";
 
 interface Pools {
   key: string;
@@ -107,6 +107,9 @@ const Dashboard: NextPage = () => {
     useState<{
       [key: string]: any;
     }>({});
+  const [investmentAmount, setInvestmentAmount] = useState<
+    string | number | null
+  >("");
 
   const topN = 5;
   const queriesForAllWeather: queriesObj[] = [
@@ -394,9 +397,20 @@ const Dashboard: NextPage = () => {
           })}
         </>
       </div>
-      <Button type="primary" onClick={async () => await investByAAWallet()}>
-        Invest
-      </Button>
+      <Space>
+        <InputNumber
+          min={1}
+          value={investmentAmount}
+          onChange={setInvestmentAmount}
+        />
+        <Button
+          type="primary"
+          // onClick={async () => await investByAAWallet(String(investmentAmount))}
+          onClick={async () => await investByAAWallet(0.1)}
+        >
+          Invest
+        </Button>
+      </Space>
     </BasePage>
   );
 };

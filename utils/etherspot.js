@@ -28,9 +28,9 @@ const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 const CamelotNFTPositionManagerAddress =
   "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15";
-export async function investByAAWallet() {
+export async function investByAAWallet(investmentAmount) {
   const portfolioHelper = await getPortfolioHelper("AllWeatherPortfolio");
-  const transactionHash = portfolioHelper.diversify();
+  const transactionHash = portfolioHelper.diversify(investmentAmount);
   // const dataService = new DataUtils(
   //     "public-prime-testnet-key",
   //     graphqlEndpoints.QA,
@@ -68,7 +68,7 @@ class AllWeatherPortfolio {
         ),
       },
     ); // Testnets dont need apiKey on bundlerProvider
-    console.log("EOAAddress: ", this.primeSdk.state.EOAAddress);
+    this.EOAAddress = this.primeSdk.state.EOAAddress;
   }
   async initialize() {
     // get address of EtherspotWallet...
@@ -98,15 +98,15 @@ class AllWeatherPortfolio {
     };
   }
 
-  async diversify() {
+  async diversify(investmentAmount) {
     // clear the transaction batch
     await this.primeSdk.clearUserOpsFromBatch();
-    await this._diversify();
+    await this._diversify(investmentAmount);
     const uoHash = this._signTransaction();
     return uoHash;
   }
 
-  async _diversify() {
+  async _diversify(investmentAmount) {
     for (const [category, protocolsInThisCategory] of Object.entries(
       this.strategy,
     )) {
@@ -114,11 +114,12 @@ class AllWeatherPortfolio {
         protocolsInThisCategory,
       )) {
         for (const protocol of protocols) {
-          await protocol.interface.invest();
+          await protocol.interface.invest(investmentAmount * protocol.weight);
         }
       }
     }
     // estimate transactions added to the batch and get the fee data for the UserOp
+    console.log("Estimating UserOp...");
     const op = await this.primeSdk.estimate();
     console.log(`Estimate UserOp: ${await printOp(op)}`);
   }
@@ -151,7 +152,7 @@ class CamelotV3 {
     this.aaWalletAddress = aaWalletAddress;
   }
 
-  async invest() {
+  async invest(investmentAmountInThisPosition) {
     // get erc20 Contract Interface
     const erc20Instance = new ethers.Contract(
       usdcAddress,
@@ -161,30 +162,49 @@ class CamelotV3 {
 
     // get decimals from erc20 contract
     const decimals = await erc20Instance.functions.decimals();
-
     await this.primeSdk.addUserOpsToBatch({
       to: usdtAddress,
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
         functionName: "approve",
-        args: [oneInchAddress, ethers.utils.parseUnits("100", decimals)],
+        args: [
+          oneInchAddress,
+          ethers.utils.parseUnits(
+            String(investmentAmountInThisPosition),
+            decimals,
+          ),
+        ],
       }),
     });
 
     const token0Amount = await this._swap(
       usdtAddress,
       pendleAddress,
-      ethers.utils.parseUnits("0.1", decimals),
+      ethers.utils.parseUnits(
+        String(investmentAmountInThisPosition / 2),
+        decimals,
+      ),
       0.1,
     );
     const token1Amount = await this._swap(
       usdtAddress,
       wethAddress,
-      ethers.utils.parseUnits("0.1", decimals),
+      ethers.utils.parseUnits(
+        String(investmentAmountInThisPosition / 2),
+        decimals,
+      ),
       0.1,
     );
-    await this._approve(pendleAddress, CamelotNFTPositionManagerAddress, "100");
-    await this._approve(wethAddress, CamelotNFTPositionManagerAddress, "100");
+    await this._approve(
+      pendleAddress,
+      CamelotNFTPositionManagerAddress,
+      token0Amount,
+    );
+    await this._approve(
+      wethAddress,
+      CamelotNFTPositionManagerAddress,
+      token1Amount,
+    );
     await this._deposit(token0Amount, token1Amount);
   }
   async withdraw() {
@@ -194,22 +214,7 @@ class CamelotV3 {
     throw new Error("This function is not implemented yet.");
   }
   async _swap(fromTokenAddress, toTokenAddress, amount, slippage) {
-    // if (toTokenAddress === wethAddress) {
-    //   await this.primeSdk.addUserOpsToBatch({
-    //     to: wethAddress,
-    //     data: encodeFunctionData({
-    //       abi: Weth,
-    //       functionName: "deposit",
-    //       // value: ethers.utils.parseUnits(amount, 18),
-    //       value: amount,
-    //     }),
-    //   });
-    //   return amount;
-    // }
-    console.log("aaWalletAddress", this.aaWalletAddress);
-    console.log("aaWalletAddress", this.aaWalletAddress);
-    console.log("aaWalletAddress", this.aaWalletAddress);
-    const pendle1inchCallData = await fetch1InchSwapData(
+    const swapCallDataFrom1inch = await fetch1InchSwapData(
       this.chainId,
       fromTokenAddress,
       toTokenAddress,
@@ -219,9 +224,9 @@ class CamelotV3 {
     );
     await this.primeSdk.addUserOpsToBatch({
       to: oneInchAddress,
-      data: pendle1inchCallData["tx"]["data"],
+      data: swapCallDataFrom1inch["tx"]["data"],
     });
-    return pendle1inchCallData["toAmount"];
+    return swapCallDataFrom1inch["toAmount"];
   }
   async _approve(tokenAddress, spenderAddress, amount) {
     await this.primeSdk.addUserOpsToBatch({
@@ -229,8 +234,8 @@ class CamelotV3 {
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
         functionName: "approve",
-        // args: [CamelotNFTPositionManagerAddress, ethers.BigNumber.from(pendle1inchCallData['toAmount'])],
-        args: [spenderAddress, ethers.utils.parseUnits(amount, 18)],
+        args: [spenderAddress, ethers.BigNumber.from(amount)],
+        // args: [spenderAddress, ethers.utils.parseUnits(amount, 18)],
       }),
     });
   }
@@ -254,7 +259,6 @@ class CamelotV3 {
         },
       ],
     });
-    console.log("camelotCallData", camelotCallData);
     await this.primeSdk.addUserOpsToBatch({
       to: CamelotNFTPositionManagerAddress,
       data: camelotCallData,
