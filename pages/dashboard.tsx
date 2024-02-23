@@ -83,11 +83,7 @@ const Dashboard: NextPage = () => {
   ] = useState([]);
 
   // states for unexpandable
-<<<<<<< HEAD
   const [unexpandable, setUnexpandable] = useState<{ [key: string]: boolean }>({
-=======
-  const [unexpandable, setUnexpandable] = useState({
->>>>>>> ecde9f5 ([refactor](categories): use unexpandable this column to handle the category changes down the road)
     long_term_bond: true,
     intermediate_term_bond: true,
     commodities: true,
