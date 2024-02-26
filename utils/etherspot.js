@@ -13,7 +13,6 @@ import { encodeFunctionData } from "viem";
 import permanentPortfolioJson from "../lib/contracts/PermanentPortfolioLPToken.json" assert { type: "json" };
 import EntryPointJson from "../lib/contracts/EntryPoint.json" assert { type: "json" };
 import CamelotNFTPositionManager from "../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
-import Weth from "../lib/contracts/Weth.json" assert { type: "json" };
 import { fetch1InchSwapData } from "./oneInch";
 
 // import { PrimeSdk, DataUtils, BatchUserOpsRequest } from '@etherspot/prime-sdk';
@@ -23,6 +22,7 @@ const recipient = "0x3144b7E3a4518541AEB4ceC7fC7A6Dd82f05Ae8B"; // recipient wal
 const pendleAddress = "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8";
 const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
+const linkAddress = "0xf97f4df75117a78c1A5a0DBb814Af92458539FB4";
 const CamelotNFTPositionManagerAddress =
   "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15";
 export async function investByAAWallet(investmentAmount, chosenToken) {
@@ -88,13 +88,26 @@ class AllWeatherPortfolio {
               this.primeSdk,
               this.aaWalletAddress,
             ),
-            weight: 0.18,
+            weight: 0.15,
           },
         ],
       },
       commodities: {},
       gold: {},
-      large_cap_us_stocks: {},
+      large_cap_us_stocks: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              wethAddress,
+              linkAddress,
+              this.primeSdk,
+              this.aaWalletAddress,
+            ),
+            weight: 0.18,
+          },
+        ],
+      },
       small_cap_us_stocks: {},
       non_us_developed_market_stocks: {},
       non_us_emerging_market_stocks: {},
@@ -186,7 +199,7 @@ class CamelotV3 {
 
     const token0Amount = await this._swap(
       chosenToken,
-      pendleAddress,
+      this.token0,
       ethers.utils.parseUnits(
         String(investmentAmountInThisPosition / 2),
         decimals,
@@ -195,7 +208,7 @@ class CamelotV3 {
     );
     const token1Amount = await this._swap(
       chosenToken,
-      wethAddress,
+      this.token1,
       ethers.utils.parseUnits(
         String(investmentAmountInThisPosition / 2),
         decimals,
@@ -203,12 +216,12 @@ class CamelotV3 {
       0.1,
     );
     await this._approve(
-      pendleAddress,
+      this.token0,
       CamelotNFTPositionManagerAddress,
       token0Amount,
     );
     await this._approve(
-      wethAddress,
+      this.token1,
       CamelotNFTPositionManagerAddress,
       token1Amount,
     );
@@ -242,33 +255,32 @@ class CamelotV3 {
         abi: permanentPortfolioJson.abi,
         functionName: "approve",
         args: [spenderAddress, ethers.BigNumber.from(amount)],
-        // args: [spenderAddress, ethers.utils.parseUnits(amount, 18)],
       }),
     });
   }
   async _deposit(token0Amount, token1Amount) {
     const slippageOfLP = 0.5;
-    // const camelotCallData = encodeFunctionData({
-    //   abi: CamelotNFTPositionManager,
-    //   functionName: "mint",
-    //   args: [
-    //     {
-    //       token0: pendleAddress,
-    //       token1: wethAddress,
-    //       tickLower: -887220,
-    //       tickUpper: 887220,
-    //       amount0Desired: token0Amount,
-    //       amount1Desired: token1Amount,
-    //       amount0Min: Math.floor(token0Amount * slippageOfLP),
-    //       amount1Min: Math.floor(token1Amount * slippageOfLP),
-    //       recipient: this.aaWalletAddress,
-    //       deadline: Math.floor(Date.now() / 1000) + 300,
-    //     },
-    //   ],
-    // });
-    // await this.primeSdk.addUserOpsToBatch({
-    //   to: CamelotNFTPositionManagerAddress,
-    //   data: camelotCallData,
-    // });
+    const camelotCallData = encodeFunctionData({
+      abi: CamelotNFTPositionManager,
+      functionName: "mint",
+      args: [
+        {
+          token0: this.token0,
+          token1: this.token1,
+          tickLower: -887220,
+          tickUpper: 887220,
+          amount0Desired: token0Amount,
+          amount1Desired: token1Amount,
+          amount0Min: Math.floor(token0Amount * slippageOfLP),
+          amount1Min: Math.floor(token1Amount * slippageOfLP),
+          recipient: this.aaWalletAddress,
+          deadline: Math.floor(Date.now() / 1000) + 300,
+        },
+      ],
+    });
+    await this.primeSdk.addUserOpsToBatch({
+      to: CamelotNFTPositionManagerAddress,
+      data: camelotCallData,
+    });
   }
 }
