@@ -1,7 +1,6 @@
 import { Button, Space } from "antd";
-import { ethers } from "ethers";
-import { useAccount, useBalance } from "wagmi";
-import { useState, useEffect } from "react";
+import { useBalance } from "wagmi";
+import { useState } from "react";
 import { selectBefore } from "../../utils/contractInteractions";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
@@ -33,9 +32,7 @@ const TokenDropdownInput = ({
       return;
     }
     setInputValue(eventValue);
-    let amount_;
-    amount_ = ethers.utils.parseEther(eventValue);
-    setAmount(amount_);
+    setAmount(eventValue);
   };
 
   const handleOnClickMax = async () => {

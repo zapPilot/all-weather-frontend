@@ -20,9 +20,6 @@ import { fetch1InchSwapData } from "./oneInch";
 
 // add/change these values
 const recipient = "0x3144b7E3a4518541AEB4ceC7fC7A6Dd82f05Ae8B"; // recipient wallet address
-const value = "0.5"; // transfer value
-const usdcAddress = "0xaf88d065e77c8cc2239327c5edb3a432268e5831";
-const usdtAddress = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9";
 const pendleAddress = "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8";
 const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
@@ -120,7 +117,6 @@ class AllWeatherPortfolio {
         protocolsInThisCategory,
       )) {
         for (const protocol of protocols) {
-          console.log(`Investing in ${category}...`);
           await protocol.interface.invest(
             investmentAmount * protocol.weight,
             chosenToken,
