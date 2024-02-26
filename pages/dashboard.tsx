@@ -3,6 +3,8 @@ import BasePage from "./basePage.tsx";
 import { Spin, Table, Button, Space, InputNumber, Image } from "antd";
 import { useWindowHeight } from "../utils/chartUtils.js";
 import { investByAAWallet } from "../utils/etherspot.js";
+import { DollarOutlined } from "@ant-design/icons";
+
 import {
   getBasicColumnsForSuggestionsTable,
   getExpandableColumnsForSuggestionsTable,
@@ -10,8 +12,10 @@ import {
 } from "../utils/tableExpansionUtils";
 import { useState, useEffect } from "react";
 import RebalanceChart from "./views/RebalanceChart";
-import { useAccount } from "wagmi";
-import TokenDropdown from "./views/components/TokenDropdowns.jsx";
+import NumericInput from "./views/NumberInput";
+import { useAccount, useBalance } from "wagmi";
+import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
+import { selectBefore } from "../utils/contractInteractions";
 
 interface Pools {
   key: string;
@@ -110,6 +114,23 @@ const Dashboard: NextPage = () => {
   const [investmentAmount, setInvestmentAmount] = useState<
     string | number | null
   >("");
+  const [chosenToken, setChosenToken] = useState(
+    "0x55d398326f99059fF775485246999027B3197955",
+  );
+  const addressPlaceholder = "0x43cd745Bd5FbFc8CfD79ebC855f949abc79a1E0C";
+  const { data: chosenTokenBalance } = useBalance({
+    addressPlaceholder,
+    ...(chosenToken === "0x0000000000000000000000000000000000000000"
+      ? {}
+      : { token: chosenToken }), // Include token only if chosenToken is truthy
+    // token: chosenToken,
+    onError(error) {
+      console.log(`cannot read ${chosenToken} Balance:`, error);
+      throw error;
+    },
+  });
+  const [apiDataReady, setApiDataReady] = useState(true);
+  const [inputValue, setInputValue] = useState("");
 
   const topN = 5;
   const queriesForAllWeather: queriesObj[] = [
@@ -309,6 +330,28 @@ const Dashboard: NextPage = () => {
     }
     return obj[key];
   }
+  const handleInputChange = async (eventValue) => {
+    if (eventValue === "") {
+      return;
+    }
+    setInputValue(eventValue);
+    let amount_;
+    amount_ = ethers.utils.parseEther(eventValue);
+    setAmount(amount_);
+  };
+
+  const handleOnClickMax = async () => {
+    setAmount(chosenTokenBalance.formatted);
+    setInputValue(chosenTokenBalance.formatted);
+    handleInputChange(chosenTokenBalance.formatted);
+
+    // TODO(david): find a better way to implement.
+    // Since `setAmount` need some time to propagate, the `amount` would be 0 at the first click.
+    // then be updated to the correct value at the second click.
+    if (approveAmount < amount || amount === 0) {
+      setApproveReady(false);
+    }
+  };
 
   return (
     <BasePage>
@@ -398,7 +441,48 @@ const Dashboard: NextPage = () => {
         </>
       </div>
       <Space>
-        <InputNumber
+        <TokenDropdownInput
+          address={walletAddress}
+          onClickCallback={async (
+            investmentAmount: number,
+            chosenToken: string,
+          ) => await investByAAWallet(String(investmentAmount), chosenToken)}
+          normalWording="Invest"
+          loadingWording="Fetching the best route to deposit"
+        />
+        {/* <Space.Compact
+          style={{
+            margin: "10px 0",
+          }}
+        >
+          {selectBefore((value) => {
+            setChosenToken(value);
+          })}
+          <NumericInput
+            placeholder={`Balance: ${
+              chosenTokenBalance ? chosenTokenBalance.formatted : 0
+            }`}
+            value={inputValue}
+            onChange={(value) => {
+              handleInputChange(value);
+            }}
+          />
+          <Button type="primary" onClick={handleOnClickMax}>
+            Max
+          </Button>
+        </Space.Compact>
+        <Button
+          // loading={!apiDataReady}
+          onClick={async () => await investByAAWallet(String(investmentAmount))}
+          type="primary"
+          icon={<DollarOutlined />}
+          style={{
+            margin: "10px 0",
+          }}
+        >
+          {apiDataReady ? "Invest" : "Fetching the best route to deposit"}
+        </Button> */}
+        {/* <InputNumber
           min={1}
           value={investmentAmount}
           onChange={setInvestmentAmount}
@@ -409,7 +493,7 @@ const Dashboard: NextPage = () => {
           onClick={async () => await investByAAWallet(0.1)}
         >
           Invest
-        </Button>
+        </Button> */}
       </Space>
     </BasePage>
   );

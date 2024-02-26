@@ -28,9 +28,14 @@ const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 const CamelotNFTPositionManagerAddress =
   "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15";
-export async function investByAAWallet(investmentAmount) {
+export async function investByAAWallet(investmentAmount, chosenToken) {
+  console.log("Investing by AA Wallet...");
+  console.log("chosenToken", chosenToken);
   const portfolioHelper = await getPortfolioHelper("AllWeatherPortfolio");
-  const transactionHash = portfolioHelper.diversify(investmentAmount);
+  const transactionHash = portfolioHelper.diversify(
+    investmentAmount,
+    chosenToken,
+  );
   // const dataService = new DataUtils(
   //     "public-prime-testnet-key",
   //     graphqlEndpoints.QA,
@@ -73,6 +78,7 @@ class AllWeatherPortfolio {
   async initialize() {
     // get address of EtherspotWallet...
     this.aaWalletAddress = await this.primeSdk.getCounterFactualAddress();
+    console.log("aaWalletAddress", this.aaWalletAddress);
     this.strategy = {
       long_term_bond: {},
       intermediate_term_bond: {
@@ -98,15 +104,15 @@ class AllWeatherPortfolio {
     };
   }
 
-  async diversify(investmentAmount) {
+  async diversify(investmentAmount, chosenToken) {
     // clear the transaction batch
     await this.primeSdk.clearUserOpsFromBatch();
-    await this._diversify(investmentAmount);
+    await this._diversify(investmentAmount, chosenToken);
     const uoHash = this._signTransaction();
     return uoHash;
   }
 
-  async _diversify(investmentAmount) {
+  async _diversify(investmentAmount, chosenToken) {
     for (const [category, protocolsInThisCategory] of Object.entries(
       this.strategy,
     )) {
@@ -114,7 +120,12 @@ class AllWeatherPortfolio {
         protocolsInThisCategory,
       )) {
         for (const protocol of protocols) {
-          await protocol.interface.invest(investmentAmount * protocol.weight);
+          console.log(`Investing in ${category}...`);
+          await protocol.interface.invest(
+            investmentAmount * protocol.weight,
+            chosenToken,
+          );
+          console.log(`Investment in ${category} completed...`);
         }
       }
     }
@@ -152,10 +163,10 @@ class CamelotV3 {
     this.aaWalletAddress = aaWalletAddress;
   }
 
-  async invest(investmentAmountInThisPosition) {
+  async invest(investmentAmountInThisPosition, chosenToken) {
     // get erc20 Contract Interface
     const erc20Instance = new ethers.Contract(
-      usdcAddress,
+      chosenToken,
       ERC20_ABI,
       this.provider,
     );
@@ -163,7 +174,7 @@ class CamelotV3 {
     // get decimals from erc20 contract
     const decimals = await erc20Instance.functions.decimals();
     await this.primeSdk.addUserOpsToBatch({
-      to: usdtAddress,
+      to: chosenToken,
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
         functionName: "approve",
@@ -178,7 +189,7 @@ class CamelotV3 {
     });
 
     const token0Amount = await this._swap(
-      usdtAddress,
+      chosenToken,
       pendleAddress,
       ethers.utils.parseUnits(
         String(investmentAmountInThisPosition / 2),
@@ -187,7 +198,7 @@ class CamelotV3 {
       0.1,
     );
     const token1Amount = await this._swap(
-      usdtAddress,
+      chosenToken,
       wethAddress,
       ethers.utils.parseUnits(
         String(investmentAmountInThisPosition / 2),
@@ -241,27 +252,27 @@ class CamelotV3 {
   }
   async _deposit(token0Amount, token1Amount) {
     const slippageOfLP = 0.5;
-    const camelotCallData = encodeFunctionData({
-      abi: CamelotNFTPositionManager,
-      functionName: "mint",
-      args: [
-        {
-          token0: pendleAddress,
-          token1: wethAddress,
-          tickLower: -887220,
-          tickUpper: 887220,
-          amount0Desired: token0Amount,
-          amount1Desired: token1Amount,
-          amount0Min: Math.floor(token0Amount * slippageOfLP),
-          amount1Min: Math.floor(token1Amount * slippageOfLP),
-          recipient: this.aaWalletAddress,
-          deadline: Math.floor(Date.now() / 1000) + 300,
-        },
-      ],
-    });
-    await this.primeSdk.addUserOpsToBatch({
-      to: CamelotNFTPositionManagerAddress,
-      data: camelotCallData,
-    });
+    // const camelotCallData = encodeFunctionData({
+    //   abi: CamelotNFTPositionManager,
+    //   functionName: "mint",
+    //   args: [
+    //     {
+    //       token0: pendleAddress,
+    //       token1: wethAddress,
+    //       tickLower: -887220,
+    //       tickUpper: 887220,
+    //       amount0Desired: token0Amount,
+    //       amount1Desired: token1Amount,
+    //       amount0Min: Math.floor(token0Amount * slippageOfLP),
+    //       amount1Min: Math.floor(token1Amount * slippageOfLP),
+    //       recipient: this.aaWalletAddress,
+    //       deadline: Math.floor(Date.now() / 1000) + 300,
+    //     },
+    //   ],
+    // });
+    // await this.primeSdk.addUserOpsToBatch({
+    //   to: CamelotNFTPositionManagerAddress,
+    //   data: camelotCallData,
+    // });
   }
 }
