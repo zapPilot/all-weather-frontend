@@ -15,7 +15,6 @@ import RebalanceChart from "./views/RebalanceChart";
 import NumericInput from "./views/NumberInput";
 import { useAccount, useBalance } from "wagmi";
 import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
-import { selectBefore } from "../utils/contractInteractions";
 
 interface Pools {
   key: string;

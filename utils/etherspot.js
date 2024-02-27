@@ -18,13 +18,22 @@ import { fetch1InchSwapData } from "./oneInch";
 // import { PrimeSdk, DataUtils, BatchUserOpsRequest } from '@etherspot/prime-sdk';
 
 // add/change these values
+const precisionOfInvestAmount = 4;
 const recipient = "0x3144b7E3a4518541AEB4ceC7fC7A6Dd82f05Ae8B"; // recipient wallet address
 const pendleAddress = "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8";
 const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 const linkAddress = "0xf97f4df75117a78c1A5a0DBb814Af92458539FB4";
+const axlAddress = "0x23ee2343B892b1BB63503a4FAbc840E0e2C6810f";
+const usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
+const gmxAddress = "0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a";
+const wsolAddress = "0x2bcC6D6CdBbDC0a4071e48bb3B969b06B3330c07";
+const rdntAddress = "0x3082CC23568eA640225c2467653dB90e9250AaA0";
+const magicAddress = "0x539bdE0d7Dbd336b79148AA742883198BBF60342";
+const wstEthAddress = "0x5979D7b546E38E414F7E9822514be443A4800529";
 const CamelotNFTPositionManagerAddress =
   "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15";
+
 export async function investByAAWallet(investmentAmount, chosenToken) {
   console.log("Investing by AA Wallet...");
   console.log("chosenToken", chosenToken);
@@ -77,7 +86,20 @@ class AllWeatherPortfolio {
     this.aaWalletAddress = await this.primeSdk.getCounterFactualAddress();
     console.log("aaWalletAddress", this.aaWalletAddress);
     this.strategy = {
-      long_term_bond: {},
+      long_term_bond: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              wstEthAddress,
+              wethAddress,
+              this.primeSdk,
+              this.aaWalletAddress,
+            ),
+            weight: 0.13,
+          },
+        ],
+      },
       intermediate_term_bond: {
         42161: [
           {
@@ -88,12 +110,25 @@ class AllWeatherPortfolio {
               this.primeSdk,
               this.aaWalletAddress,
             ),
-            weight: 0.15,
+            weight: 0.15 * 2,
           },
         ],
       },
       commodities: {},
-      gold: {},
+      gold: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              wethAddress,
+              gmxAddress,
+              this.primeSdk,
+              this.aaWalletAddress,
+            ),
+            weight: 0.075 * 2,
+          },
+        ],
+      },
       large_cap_us_stocks: {
         42161: [
           {
@@ -104,16 +139,81 @@ class AllWeatherPortfolio {
               this.primeSdk,
               this.aaWalletAddress,
             ),
-            weight: 0.18,
+            weight: (0.09 * 2) / 2,
+          },
+          {
+            interface: new CamelotV3(
+              42161,
+              axlAddress,
+              usdcAddress,
+              this.primeSdk,
+              this.aaWalletAddress,
+            ),
+            weight: (0.09 * 2) / 2,
           },
         ],
       },
-      small_cap_us_stocks: {},
-      non_us_developed_market_stocks: {},
-      non_us_emerging_market_stocks: {},
+      small_cap_us_stocks: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              rdntAddress,
+              wethAddress,
+              this.primeSdk,
+              this.aaWalletAddress,
+            ),
+            weight: 0.03 * 2,
+          },
+        ],
+      },
+      non_us_developed_market_stocks: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              wsolAddress,
+              usdcAddress,
+              this.primeSdk,
+              this.aaWalletAddress,
+            ),
+            weight: 0.06 * 2,
+          },
+        ],
+      },
+      non_us_emerging_market_stocks: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              magicAddress,
+              wethAddress,
+              this.primeSdk,
+              this.aaWalletAddress,
+            ),
+            weight: 0.03 * 2,
+          },
+        ],
+      },
     };
+    this._checkTotalWeight(this.strategy);
   }
-
+  _checkTotalWeight(strategyObject) {
+    let totalWeight = 0;
+    for (const strategyKey in strategyObject) {
+      const strategy = strategyObject[strategyKey]; // Access each strategy object
+      for (const bondKey in strategy) {
+        const bonds = strategy[bondKey]; // Access bond array within each strategy
+        for (const bond of bonds) {
+          totalWeight += bond.weight; // Access weight property and add to total
+        }
+      }
+    }
+    console.log("Total Weight: ", totalWeight);
+    if (Math.abs(totalWeight - 1) > 0.0001) {
+      throw new Error("Total weight of all protocols must be 1");
+    }
+  }
   async diversify(investmentAmount, chosenToken) {
     // clear the transaction batch
     await this.primeSdk.clearUserOpsFromBatch();
@@ -131,7 +231,9 @@ class AllWeatherPortfolio {
       )) {
         for (const protocol of protocols) {
           await protocol.interface.invest(
-            investmentAmount * protocol.weight,
+            (investmentAmount * protocol.weight).toFixed(
+              precisionOfInvestAmount,
+            ),
             chosenToken,
           );
           console.log(`Investment in ${category} completed...`);

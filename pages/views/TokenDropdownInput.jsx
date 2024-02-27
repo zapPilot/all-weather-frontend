@@ -56,9 +56,13 @@ const TokenDropdownInput = ({
           margin: "10px 0",
         }}
       >
-        {selectBefore((value) => {
-          setChosenToken(value);
-        })}
+        {selectBefore(
+          (value) => {
+            setChosenToken(value);
+          },
+          "address",
+          42161,
+        )}
         <NumericInput
           placeholder={`Balance: ${
             chosenTokenBalance ? chosenTokenBalance.formatted : 0
@@ -74,9 +78,7 @@ const TokenDropdownInput = ({
       </Space.Compact>
       <Button
         loading={!apiDataReady}
-        onClick={() =>
-          onClickCallback(amount, "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9")
-        }
+        onClick={() => onClickCallback(amount, chosenToken)}
         type="primary"
         icon={<DollarOutlined />}
         style={{
