@@ -120,7 +120,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
           margin: "32px 0",
         }}
       >
-        Historical Reward APRs
+        Historical Reward
       </p>
       <HistoricalDataChart />
     </>

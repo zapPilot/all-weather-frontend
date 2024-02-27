@@ -96,6 +96,7 @@ const Web3DataProvider = ({ children, address }) => {
             ROI,
             maxDrawdown,
             claimableRewards,
+            address,
           });
         })
         .catch((error) => console.error("Error:", error));
