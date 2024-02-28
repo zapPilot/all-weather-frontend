@@ -18,8 +18,8 @@ import { fetch1InchSwapData } from "./oneInch";
 
 // add/change these values
 const precisionOfInvestAmount = 4;
-// const approvalBufferParam = 1.1;
-const approvalBufferParam = 10;
+// const approvalBufferParam = 1.2;
+const approvalBufferParam = 100;
 
 //  `Error: execution reverted: STF` means there's no enough tokens to safe transfer from
 const slippage = [0.1, 0.5, 1, 10, 50];
@@ -209,9 +209,9 @@ class AllWeatherPortfolio {
       }
     }
     console.log("Total Weight: ", totalWeight);
-    // if (Math.abs(totalWeight - 1) > 0.0001) {
-    //   throw new Error("Total weight of all protocols must be 1");
-    // }
+    if (Math.abs(totalWeight - 1) > 0.0001) {
+      throw new Error("Total weight of all protocols must be 1");
+    }
   }
   async diversify(investmentAmount, chosenToken) {
     const transactionHashes = await this._diversify(
@@ -258,14 +258,13 @@ class AllWeatherPortfolio {
       concurrentRequests.push(investPromise);
     }
     await Promise.all(concurrentRequests);
-    console.log(`Investment in ${category} completed...`);
-    return await this._signTransaction();
+    return await this._signTransaction(category);
   }
-
-  async _signTransaction() {
+  
+  async _signTransaction(category) {
     // estimate transactions added to the batch and get the fee data for the UserOp
-    console.log("Estimating UserOp...");
     const op = await this.primeSdk.estimate();
+    console.log(`Investment in ${category} completed...`);
     // console.log(`Estimate UserOp: ${await printOp(op)}`);
     //   // sign the UserOp and sending to the bundler...
     //   const uoHash = await primeSdk.send(op);
@@ -290,14 +289,13 @@ class AllWeatherPortfolio {
         return result; // Exit on successful execution
       } catch (error) {
         console.error(
-          `Attempt ${attempt}/${retries}: Error occurred, retrying...`,
+          `Attempt ${params.category} ${attempt}/${retries}: Error occurred, retrying...`,
           error,
         );
         await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retry
       }
     }
-    console.log("Function failed after all retries");
-    // throw new Error(`Function failed after ${retries} retries`); // Throw error if all retries fail
+    throw new Error(`Function failed after ${retries} retries`); // Throw error if all retries fail
   }
 }
 
@@ -322,7 +320,7 @@ class CamelotV3 {
     );
 
     // get decimals from erc20 contract
-    const decimals = await erc20Instance.functions.decimals();
+    const decimals = (await erc20Instance.functions.decimals())[0];
     await this.primeSdk.addUserOpsToBatch({
       to: chosenToken,
       data: encodeFunctionData({
@@ -331,8 +329,9 @@ class CamelotV3 {
         args: [
           oneInchAddress,
           ethers.utils.parseUnits(
-            String(investmentAmountInThisPosition * approvalBufferParam),
+            String((investmentAmountInThisPosition * approvalBufferParam).toFixed(decimals)),
             decimals,
+            // 6
           ),
         ],
       }),
@@ -390,7 +389,6 @@ class CamelotV3 {
     throw new Error("This function is not implemented yet.");
   }
   async _swap(fromTokenAddress, toTokenAddress, amount, slippage) {
-    console.log("Swapping... with slippage: ", slippage);
     const swapCallDataFrom1inch = await fetch1InchSwapData(
       this.chainId,
       fromTokenAddress,
@@ -411,12 +409,11 @@ class CamelotV3 {
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
         functionName: "approve",
-        args: [spenderAddress, ethers.BigNumber.from(amount)],
+        args: [spenderAddress, ethers.BigNumber.from(amount).mul(approvalBufferParam)],
       }),
     });
   }
   async _deposit(token0Amount, token1Amount, retryIndex) {
-    console.log("Depositing... with slippage: ", slippageOfLP[retryIndex]);
     const camelotCallData = encodeFunctionData({
       abi: CamelotNFTPositionManager,
       functionName: "mint",
