@@ -447,7 +447,7 @@ const ZapInButton = () => {
         >
           {selectBefore((value) => {
             setChosenToken(value);
-          })}
+          }, "address")}
           <NumericInput
             placeholder={`Balance: ${
               chosenTokenBalance ? chosenTokenBalance.formatted : 0
