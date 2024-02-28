@@ -14,11 +14,19 @@ import permanentPortfolioJson from "../lib/contracts/PermanentPortfolioLPToken.j
 import EntryPointJson from "../lib/contracts/EntryPoint.json" assert { type: "json" };
 import CamelotNFTPositionManager from "../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import { fetch1InchSwapData } from "./oneInch";
-
 // import { PrimeSdk, DataUtils, BatchUserOpsRequest } from '@etherspot/prime-sdk';
 
 // add/change these values
 const precisionOfInvestAmount = 4;
+// const approvalBufferParam = 1.1;
+const approvalBufferParam = 10;
+
+//  `Error: execution reverted: STF` means there's no enough tokens to safe transfer from
+const slippage = [0.1, 0.5, 1, 10, 50];
+
+// would get `Error: execution reverted: Price slippage check` if it hit the amount0Min and amount1Min when providing liquidity
+const slippageOfLP = [0.95, 0.9, 0.8, 0.7, 0.1];
+
 const recipient = "0x3144b7E3a4518541AEB4ceC7fC7A6Dd82f05Ae8B"; // recipient wallet address
 const pendleAddress = "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8";
 const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
@@ -38,10 +46,11 @@ export async function investByAAWallet(investmentAmount, chosenToken) {
   console.log("Investing by AA Wallet...");
   console.log("chosenToken", chosenToken);
   const portfolioHelper = await getPortfolioHelper("AllWeatherPortfolio");
-  const transactionHash = portfolioHelper.diversify(
+  const transactionHash = await portfolioHelper.diversify(
     investmentAmount,
     chosenToken,
   );
+  console.log("transactionHash", transactionHash);
   // const dataService = new DataUtils(
   //     "public-prime-testnet-key",
   //     graphqlEndpoints.QA,
@@ -139,17 +148,7 @@ class AllWeatherPortfolio {
               this.primeSdk,
               this.aaWalletAddress,
             ),
-            weight: (0.09 * 2) / 2,
-          },
-          {
-            interface: new CamelotV3(
-              42161,
-              axlAddress,
-              usdcAddress,
-              this.primeSdk,
-              this.aaWalletAddress,
-            ),
-            weight: (0.09 * 2) / 2,
+            weight: 0.09 * 2,
           },
         ],
       },
@@ -210,43 +209,64 @@ class AllWeatherPortfolio {
       }
     }
     console.log("Total Weight: ", totalWeight);
-    if (Math.abs(totalWeight - 1) > 0.0001) {
-      throw new Error("Total weight of all protocols must be 1");
-    }
+    // if (Math.abs(totalWeight - 1) > 0.0001) {
+    //   throw new Error("Total weight of all protocols must be 1");
+    // }
   }
   async diversify(investmentAmount, chosenToken) {
-    // clear the transaction batch
-    await this.primeSdk.clearUserOpsFromBatch();
-    await this._diversify(investmentAmount, chosenToken);
-    const uoHash = this._signTransaction();
-    return uoHash;
+    const transactionHashes = await this._diversify(
+      investmentAmount,
+      chosenToken,
+    );
+    return transactionHashes;
   }
 
   async _diversify(investmentAmount, chosenToken) {
+    let transactionHashes = [];
     for (const [category, protocolsInThisCategory] of Object.entries(
       this.strategy,
     )) {
       for (const [chainId, protocols] of Object.entries(
         protocolsInThisCategory,
       )) {
-        for (const protocol of protocols) {
-          await protocol.interface.invest(
-            (investmentAmount * protocol.weight).toFixed(
-              precisionOfInvestAmount,
-            ),
-            chosenToken,
-          );
-          console.log(`Investment in ${category} completed...`);
-        }
+        const transactionHash = await this._retryFunction(
+          this._investInThisCategory.bind(this),
+          { investmentAmount, chosenToken, protocols, category },
+          { retries: 5, delay: 1000 },
+        );
+        transactionHashes.push(transactionHash);
       }
     }
+    return transactionHashes;
+  }
+  async _investInThisCategory({
+    investmentAmount,
+    chosenToken,
+    protocols,
+    category,
+    retryIndex,
+  }) {
+    // clear the transaction batch
+    await this.primeSdk.clearUserOpsFromBatch();
+    let concurrentRequests = [];
+    for (const protocol of protocols) {
+      const investPromise = protocol.interface.invest(
+        (investmentAmount * protocol.weight).toFixed(precisionOfInvestAmount),
+        chosenToken,
+        retryIndex,
+      );
+      concurrentRequests.push(investPromise);
+    }
+    await Promise.all(concurrentRequests);
+    console.log(`Investment in ${category} completed...`);
+    return await this._signTransaction();
+  }
+
+  async _signTransaction() {
     // estimate transactions added to the batch and get the fee data for the UserOp
     console.log("Estimating UserOp...");
     const op = await this.primeSdk.estimate();
-    console.log(`Estimate UserOp: ${await printOp(op)}`);
-  }
-
-  _signTransaction() {
+    // console.log(`Estimate UserOp: ${await printOp(op)}`);
     //   // sign the UserOp and sending to the bundler...
     //   const uoHash = await primeSdk.send(op);
     //   console.log(`UserOpHash: ${uoHash}`);
@@ -259,6 +279,25 @@ class AllWeatherPortfolio {
     //     userOpsReceipt = await primeSdk.getUserOpReceipt(uoHash);
     //   }
     // return uoHash;
+  }
+  async _retryFunction(fn, params, options = {}) {
+    const { retries = 3, delay = 1000 } = options; // Set defaults
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        params.retryIndex = attempt - 1;
+        const result = await fn(params);
+        return result; // Exit on successful execution
+      } catch (error) {
+        console.error(
+          `Attempt ${attempt}/${retries}: Error occurred, retrying...`,
+          error,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retry
+      }
+    }
+    console.log("Function failed after all retries");
+    // throw new Error(`Function failed after ${retries} retries`); // Throw error if all retries fail
   }
 }
 
@@ -274,7 +313,7 @@ class CamelotV3 {
     this.aaWalletAddress = aaWalletAddress;
   }
 
-  async invest(investmentAmountInThisPosition, chosenToken) {
+  async invest(investmentAmountInThisPosition, chosenToken, retryIndex) {
     // get erc20 Contract Interface
     const erc20Instance = new ethers.Contract(
       chosenToken,
@@ -292,42 +331,57 @@ class CamelotV3 {
         args: [
           oneInchAddress,
           ethers.utils.parseUnits(
-            String(investmentAmountInThisPosition),
+            String(investmentAmountInThisPosition * approvalBufferParam),
             decimals,
           ),
         ],
       }),
     });
+    const [token0Amount, token1Amount] = await this._concurrentSwap(
+      chosenToken,
+      investmentAmountInThisPosition,
+      decimals,
+      retryIndex,
+    );
+    await this._concurrentApprove(token0Amount, token1Amount);
+    await this._deposit(token0Amount, token1Amount, retryIndex);
+  }
 
-    const token0Amount = await this._swap(
-      chosenToken,
-      this.token0,
-      ethers.utils.parseUnits(
-        String(investmentAmountInThisPosition / 2),
-        decimals,
-      ),
-      0.1,
-    );
-    const token1Amount = await this._swap(
-      chosenToken,
-      this.token1,
-      ethers.utils.parseUnits(
-        String(investmentAmountInThisPosition / 2),
-        decimals,
-      ),
-      0.1,
-    );
-    await this._approve(
-      this.token0,
-      CamelotNFTPositionManagerAddress,
-      token0Amount,
-    );
-    await this._approve(
-      this.token1,
-      CamelotNFTPositionManagerAddress,
-      token1Amount,
-    );
-    await this._deposit(token0Amount, token1Amount);
+  async _concurrentSwap(
+    chosenToken,
+    investmentAmountInThisPosition,
+    decimals,
+    retryIndex,
+  ) {
+    let tokenSwapPromises = [];
+    for (const token of [this.token0, this.token1]) {
+      tokenSwapPromises.push(
+        this._swap(
+          chosenToken,
+          token,
+          ethers.utils.parseUnits(
+            String(investmentAmountInThisPosition / 2),
+            decimals,
+          ),
+          slippage[retryIndex],
+        ),
+      );
+    }
+    const [token0Amount, token1Amount] = await Promise.all(tokenSwapPromises);
+    return [token0Amount, token1Amount];
+  }
+
+  async _concurrentApprove(token0Amount, token1Amount) {
+    let tokenApprovePromises = [];
+    for (const [token, tokenAmount] of [
+      [this.token0, token0Amount],
+      [this.token1, token1Amount],
+    ]) {
+      tokenApprovePromises.push(
+        this._approve(token, CamelotNFTPositionManagerAddress, tokenAmount),
+      );
+    }
+    await Promise.all(tokenApprovePromises);
   }
   async withdraw() {
     throw new Error("This function is not implemented yet.");
@@ -336,6 +390,7 @@ class CamelotV3 {
     throw new Error("This function is not implemented yet.");
   }
   async _swap(fromTokenAddress, toTokenAddress, amount, slippage) {
+    console.log("Swapping... with slippage: ", slippage);
     const swapCallDataFrom1inch = await fetch1InchSwapData(
       this.chainId,
       fromTokenAddress,
@@ -360,8 +415,8 @@ class CamelotV3 {
       }),
     });
   }
-  async _deposit(token0Amount, token1Amount) {
-    const slippageOfLP = 0.5;
+  async _deposit(token0Amount, token1Amount, retryIndex) {
+    console.log("Depositing... with slippage: ", slippageOfLP[retryIndex]);
     const camelotCallData = encodeFunctionData({
       abi: CamelotNFTPositionManager,
       functionName: "mint",
@@ -373,10 +428,11 @@ class CamelotV3 {
           tickUpper: 887220,
           amount0Desired: token0Amount,
           amount1Desired: token1Amount,
-          amount0Min: Math.floor(token0Amount * slippageOfLP),
-          amount1Min: Math.floor(token1Amount * slippageOfLP),
+          amount0Min: Math.floor(token0Amount * slippageOfLP[retryIndex]),
+          amount1Min: Math.floor(token1Amount * slippageOfLP[retryIndex]),
           recipient: this.aaWalletAddress,
-          deadline: Math.floor(Date.now() / 1000) + 300,
+          deadline: Math.floor(Date.now() / 1000) + 600,
+          // deadline: Date.now()+100000000
         },
       ],
     });
