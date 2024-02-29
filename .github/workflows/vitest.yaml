@@ -16,7 +16,6 @@ jobs:
       NEXT_PUBLIC_CHAIN_ID: ${{ secrets.NEXT_PUBLIC_CHAIN_ID }}
       NEXT_PUBLIC_BUNDLER_URL: ${{ secrets.NEXT_PUBLIC_BUNDLER_URL }}
       NEXT_PUBLIC_ETHERSPOT_PROJECT_KEY: ${{ secrets.NEXT_PUBLIC_ETHERSPOT_PROJECT_KEY }}
-
     strategy:
       matrix:
         os: [ubuntu-latest]
