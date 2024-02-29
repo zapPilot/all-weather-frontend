@@ -71,7 +71,7 @@ async function getPortfolioHelper(portfolioName) {
   return portfolioHelper;
 }
 
-class AllWeatherPortfolio {
+export class AllWeatherPortfolio {
   constructor() {
     this.name = name;
     // initializating sdk...
@@ -260,7 +260,7 @@ class AllWeatherPortfolio {
     await Promise.all(concurrentRequests);
     return await this._signTransaction(category);
   }
-  
+
   async _signTransaction(category) {
     // estimate transactions added to the batch and get the fee data for the UserOp
     const op = await this.primeSdk.estimate();
@@ -329,7 +329,11 @@ class CamelotV3 {
         args: [
           oneInchAddress,
           ethers.utils.parseUnits(
-            String((investmentAmountInThisPosition * approvalBufferParam).toFixed(decimals)),
+            String(
+              (investmentAmountInThisPosition * approvalBufferParam).toFixed(
+                decimals,
+              ),
+            ),
             decimals,
             // 6
           ),
@@ -409,7 +413,10 @@ class CamelotV3 {
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
         functionName: "approve",
-        args: [spenderAddress, ethers.BigNumber.from(amount).mul(approvalBufferParam)],
+        args: [
+          spenderAddress,
+          ethers.BigNumber.from(amount).mul(approvalBufferParam),
+        ],
       }),
     });
   }

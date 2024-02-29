@@ -446,7 +446,7 @@ const Dashboard: NextPage = () => {
             investmentAmount: number,
             chosenToken: string,
           ) => await investByAAWallet(String(investmentAmount), chosenToken)}
-          normalWording="Invest"
+          normalWording="Etherspots"
           loadingWording="Fetching the best route to deposit"
         />
         {/* <Space.Compact
