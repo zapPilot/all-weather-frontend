@@ -73,7 +73,6 @@ async function getPortfolioHelper(portfolioName) {
 
 export class AllWeatherPortfolio {
   constructor() {
-    this.name = name;
     // initializating sdk...
     const customBundlerUrl = "";
     this.primeSdk = new PrimeSdk(
