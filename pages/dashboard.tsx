@@ -1,8 +1,9 @@
 import type { NextPage } from "next";
 import BasePage from "./basePage.tsx";
-import { Spin, Table, Button } from "antd";
-import { Image } from "antd";
+import { Spin, Table, Button, Space, Image } from "antd";
 import { useWindowHeight } from "../utils/chartUtils.js";
+import { investByAAWallet } from "../utils/etherspot.js";
+
 import {
   getBasicColumnsForSuggestionsTable,
   getExpandableColumnsForSuggestionsTable,
@@ -11,6 +12,7 @@ import {
 import { useState, useEffect } from "react";
 import RebalanceChart from "./views/RebalanceChart";
 import { useAccount } from "wagmi";
+import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
 
 interface Pools {
   key: string;
@@ -393,9 +395,17 @@ const Dashboard: NextPage = () => {
           })}
         </>
       </div>
-      {/* <Button type="primary" onClick={async () => await investByAAWallet()}>
-        Invest
-      </Button> */}
+      <Space>
+        <TokenDropdownInput
+          address={walletAddress}
+          onClickCallback={async (
+            investmentAmount: number,
+            chosenToken: string,
+          ) => await investByAAWallet(String(investmentAmount), chosenToken)}
+          normalWording="Etherspots"
+          loadingWording="Fetching the best route to deposit"
+        />
+      </Space>
     </BasePage>
   );
 };
