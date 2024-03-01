@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import axios from "axios";
-import { web3Context } from "./Web3DataProvider";
+import { useAccount } from "wagmi";
 
 const Line = dynamic(
   () => import("@ant-design/plots").then((item) => item.Line),
@@ -11,15 +11,17 @@ const Line = dynamic(
 );
 const HistoricalDataChart = () => {
   const [data, setData] = useState([]);
-  const WEB3_CONTEXT = useContext(web3Context);
-  const userAddress = WEB3_CONTEXT?.address;
+  const [userAddress, setUserAddress] = useState("");
+  const { isConnected, address } = useAccount();
   useEffect(() => {
-    if (userAddress == "0x038919c63aff9c932c77a0c9c9d98eabc1a4dd08") {
-      fetchClaimableReward();
-    } else {
-      asyncFetch();
+    if (isConnected) {
+      setUserAddress(address.toLowerCase());
+      // if user is vip, fetch claimable reward
+      userAddress == "0x038919c63aff9c932c77a0c9c9d98eabc1a4dd08"
+        ? fetchClaimableReward()
+        : asyncFetch();
     }
-  }, []);
+  }, [userAddress]);
 
   const asyncFetch = () => {
     fetch(`${process.env.NEXT_PUBLIC_SDK_API_URL}/apr/historical-data`)
@@ -31,13 +33,11 @@ const HistoricalDataChart = () => {
   };
   const fetchClaimableReward = () => {
     axios
-      .get(
-        `${process.env.NEXT_PUBLIC_SDK_API_URL}/rewards/historical-data?claimableUser=${userAddress}`,
-      )
-      .then((response) => {
-        setData(response.data);
-      })
-      .catch((error) => console.log("fetchClaimableReward", error));
+    .get(`${process.env.NEXT_PUBLIC_SDK_API_URL}/rewards/historical-data?claimableUser=${userAddress}`)
+    .then((response) => {
+      setData(response.data);
+    })
+    .catch((error) => console.log("fetchClaimableReward", error));
   };
 
   const config = {
