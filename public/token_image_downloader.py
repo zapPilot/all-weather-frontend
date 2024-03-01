@@ -31,8 +31,9 @@ if script_tag:
             if "/" in symbol:
                 symbol = symbol.replace("/", "-")
             address = token_dict["address"]
-            if symbol in saved_tokens and token_dict.get("logoURI2") == None:
-                # or token_dict['volume24h'] == 0:
+            if (
+                symbol in saved_tokens and token_dict.get("logoURI2") == None
+            ) or token_dict["volume24h"] == 0:
                 print("skipping", symbol)
                 continue
             saved_tokens.add(symbol)

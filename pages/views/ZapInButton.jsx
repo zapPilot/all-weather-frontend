@@ -251,7 +251,7 @@ const ZapInButton = () => {
     setApproveReady(true);
     setFetchingStatus("loading");
     const aggregatorDatas = await getAggregatorData(
-      chain.id,
+      chain?.id,
       amount,
       chosenToken,
       USDT,
@@ -445,9 +445,14 @@ const ZapInButton = () => {
             margin: "10px 0",
           }}
         >
-          {selectBefore((value) => {
-            setChosenToken(value);
-          }, "address")}
+          {selectBefore(
+            (value) => {
+              setChosenToken(value);
+            },
+            "address",
+            // @ts-ignore
+            chain?.id,
+          )}
           <NumericInput
             placeholder={`Balance: ${
               chosenTokenBalance ? chosenTokenBalance.formatted : 0
