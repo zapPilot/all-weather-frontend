@@ -33,7 +33,7 @@ export const selectBefore = (handleChange, addressOrSymbol, chainID) => (
     }}
   >
     {tokens.props.pageProps.tokenList[String(chainID)]
-      .slice(0, 30)
+      ?.slice(0, 30)
       .map((option) => {
         const keyAndValue =
           addressOrSymbol === "address" ? option.address : option.symbol;

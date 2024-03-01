@@ -214,7 +214,7 @@ const ZapOutButton = () => {
               setChosenToken(value);
             },
             "address",
-            chain.id,
+            chain?.id,
           )}
           <NumericInput
             placeholder={`Balance: ${userShares} SCLP`}
