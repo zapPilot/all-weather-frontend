@@ -23,7 +23,7 @@ export const employerAddresses = [
   "0xa1761fc95e8b2a1e99dfdee816f6d8f4c47e26ae",
   "0xe59473707108cd74cfcad6ed16c81e19cf680a46",
 ];
-export const selectBefore = (handleChange, addressOrSymbol) => (
+export const selectBefore = (handleChange, addressOrSymbol, chainID) => (
   <Select
     onChange={handleChange}
     defaultValue="0x55d398326f99059ff775485246999027b3197955"
@@ -32,34 +32,36 @@ export const selectBefore = (handleChange, addressOrSymbol) => (
       width: 100,
     }}
   >
-    {tokens.props.pageProps.tokenList["56"].slice(0, 20).map((option) => {
-      const keyAndValue =
-        addressOrSymbol === "address" ? option.address : option.symbol;
-      return (
-        <Option key={keyAndValue} value={keyAndValue}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <img
-              src={option.logoURI2}
-              width="20"
-              height="20"
-              alt={option.symbol}
-            />
-            <span
+    {tokens.props.pageProps.tokenList[String(chainID)]
+      ?.slice(0, 30)
+      .map((option) => {
+        const keyAndValue =
+          addressOrSymbol === "address" ? option.address : option.symbol;
+        return (
+          <Option key={keyAndValue} value={keyAndValue}>
+            <div
               style={{
-                marginLeft: 6,
+                display: "flex",
+                alignItems: "center",
               }}
             >
-              {option.symbol}
-            </span>
-          </div>
-        </Option>
-      );
-    })}
+              <img
+                src={option.logoURI2}
+                width="20"
+                height="20"
+                alt={option.symbol}
+              />
+              <span
+                style={{
+                  marginLeft: 6,
+                }}
+              >
+                {option.symbol}
+              </span>
+            </div>
+          </Option>
+        );
+      })}
   </Select>
 );
 

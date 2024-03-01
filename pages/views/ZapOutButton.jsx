@@ -61,6 +61,7 @@ const ZapOutButton = () => {
     // args: ["0x43cd745Bd5FbFc8CfD79ebC855f949abc79a1E0C", "0x78000b0605E81ea9df54b33f72ebC61B5F5c8077"],
     watch: true,
   });
+  const { chain } = useAccount();
 
   useEffect(() => {
     if (WEB3_CONTEXT) {
@@ -208,9 +209,13 @@ const ZapOutButton = () => {
             margin: "10px 0",
           }}
         >
-          {selectBefore((value) => {
-            setChosenToken(value);
-          }, "address")}
+          {selectBefore(
+            (value) => {
+              setChosenToken(value);
+            },
+            "address",
+            chain?.id,
+          )}
           <NumericInput
             placeholder={`Balance: ${userShares} SCLP`}
             value={inputValue}
