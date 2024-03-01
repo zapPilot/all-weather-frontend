@@ -33,11 +33,13 @@ const HistoricalDataChart = () => {
   };
   const fetchClaimableReward = () => {
     axios
-    .get(`${process.env.NEXT_PUBLIC_SDK_API_URL}/rewards/historical-data?claimableUser=${userAddress}`)
-    .then((response) => {
-      setData(response.data);
-    })
-    .catch((error) => console.log("fetchClaimableReward", error));
+      .get(
+        `${process.env.NEXT_PUBLIC_SDK_API_URL}/rewards/historical-data?claimableUser=${userAddress}`,
+      )
+      .then((response) => {
+        setData(response.data);
+      })
+      .catch((error) => console.log("fetchClaimableReward", error));
   };
 
   const config = {
