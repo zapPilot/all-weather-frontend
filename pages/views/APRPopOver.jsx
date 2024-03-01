@@ -7,7 +7,7 @@ import ClaimButton from "./ClaimButton";
 import { ethers } from "ethers";
 import { useAccount } from "wagmi";
 import TokenTable from "./components/TokenTable.jsx";
-
+import { chainIDToName } from "../../utils/contractInteractions.jsx";
 const BigNumber = require("bignumber.js");
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -45,8 +45,10 @@ const APRPopOver = ({ mode }) => {
       if (claimableRewards === undefined) return;
       for (const reward of claimableRewards) {
         for (const claimableReward of reward.claimableRewards) {
-          if (!claimableReward.token.startsWith(chain.network)) {
-            claimableReward.token = `${chain.network}:${claimableReward.token}`;
+          if (!claimableReward.token.startsWith(chainIDToName(chain.id))) {
+            claimableReward.token = `${chainIDToName(chain.id)}:${
+              claimableReward.token
+            }`;
           }
         }
       }
