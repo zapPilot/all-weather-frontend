@@ -115,3 +115,16 @@ export async function refreshTVLData(messageApi) {
       }),
     );
 }
+
+export const chainIDToName = (chainID) => {
+  switch (chainID) {
+    case 56:
+      return "bsc";
+    case 42161:
+      return "arb";
+    case 1:
+      return "eth";
+    default:
+      throw new Error("Unsupported Chain");
+  }
+};
