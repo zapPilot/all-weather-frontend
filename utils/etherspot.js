@@ -15,7 +15,9 @@ import EntryPointJson from "../lib/contracts/EntryPoint.json" assert { type: "js
 import CamelotNFTPositionManager from "../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import { fetch1InchSwapData } from "./oneInch";
 // import { PrimeSdk, DataUtils, BatchUserOpsRequest } from '@etherspot/prime-sdk';
-
+import { createWalletClient, custom } from "viem";
+import { bsc } from "viem/chains";
+import { SmartAccount } from "@particle-network/aa";
 // add/change these values
 const precisionOfInvestAmount = 4;
 // const approvalBufferParam = 1.2;
@@ -42,15 +44,48 @@ const wstEthAddress = "0x5979D7b546E38E414F7E9822514be443A4800529";
 const CamelotNFTPositionManagerAddress =
   "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15";
 
-export async function investByAAWallet(investmentAmount, chosenToken) {
-  console.log("Investing by AA Wallet...");
-  console.log("chosenToken", chosenToken);
-  const portfolioHelper = await getPortfolioHelper("AllWeatherPortfolio");
-  const transactionHash = await portfolioHelper.diversify(
-    investmentAmount,
-    chosenToken,
+export async function investByAAWallet(
+  investmentAmount,
+  chosenToken,
+  walletClient,
+  chain,
+) {
+  const smartAccount = new SmartAccount(walletClient, {
+    projectId: "b46bf180-cc72-4691-8530-8366006d7468",
+    clientKey: "c1S1QbbckW5nwUV9EQFszan25oJCFwfVr7LPTqDd",
+    appId: "particle app id",
+    aaOptions: {
+      accountContracts: {
+        // 'BICONOMY', 'CYBERCONNECT', 'SIMPLE' is supported now.
+        SIMPLE: [
+          {
+            version: "1.0.0",
+            chainIds: [chain.id],
+          },
+        ],
+      },
+      // paymasterApiKeys: [{
+      //     chainId: chain.id,
+      //     apiKey: 'paymaster api key',
+      // }]
+    },
+  });
+  console.log(
+    "smartAccount",
+    await smartAccount.getAddress(),
+    await smartAccount.getOwner(),
+    await smartAccount.getAccount(),
   );
-  console.log("transactionHash", transactionHash);
+  console.log("Investing by AA Wallet...");
+  const portfolioHelper = await getPortfolioHelper(
+    "AllWeatherPortfolio",
+    walletClient,
+  );
+  // const transactionHash = await portfolioHelper.diversify(
+  //   investmentAmount,
+  //   chosenToken,
+  // );
+  // console.log("transactionHash", transactionHash);
   // const dataService = new DataUtils(
   //     "public-prime-testnet-key",
   //     graphqlEndpoints.QA,
@@ -62,21 +97,23 @@ export async function investByAAWallet(investmentAmount, chosenToken) {
   // console.log("\x1b[33m%s\x1b[0m", `EtherspotWallet balances:`, balances);
 }
 
-async function getPortfolioHelper(portfolioName) {
+async function getPortfolioHelper(portfolioName, provider) {
+  console.log("provider", provider);
   let portfolioHelper;
   if (portfolioName === "AllWeatherPortfolio") {
-    portfolioHelper = new AllWeatherPortfolio();
+    portfolioHelper = new AllWeatherPortfolio(provider);
   }
   await portfolioHelper.initialize();
   return portfolioHelper;
 }
 
 export class AllWeatherPortfolio {
-  constructor() {
+  constructor(provider) {
     // initializating sdk...
     const customBundlerUrl = "";
     this.primeSdk = new PrimeSdk(
-      { privateKey: process.env.NEXT_PUBLIC_WALLET_PRIVATE_KEY },
+      provider,
+      // { privateKey: process.env.NEXT_PUBLIC_WALLET_PRIVATE_KEY },
       {
         chainId: Number(process.env.NEXT_PUBLIC_CHAIN_ID),
         projectKey: "all-weather-dev",
