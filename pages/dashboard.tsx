@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 import RebalanceChart from "./views/RebalanceChart";
 import { useAccount } from "wagmi";
 import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
+import axios from "axios";
 
 interface Pools {
   key: string;
@@ -46,7 +47,8 @@ const Dashboard: NextPage = () => {
     minHeight: windowHeight,
     color: "#ffffff",
   };
-  const basicColumns = getBasicColumnsForSuggestionsTable(walletAddress);
+  const [protocolList, setProtocolList] = useState([]);
+  const basicColumns = getBasicColumnsForSuggestionsTable(walletAddress, protocolList);
   const expandableColumns = getExpandableColumnsForSuggestionsTable();
   const [longTermBond, setLongTermBond] = useState<Pools[] | null>(null);
   const [intermediateTermBond, setIntermediateTermBond] = useState<
@@ -235,10 +237,26 @@ const Dashboard: NextPage = () => {
     fetchDefaultPools();
   }, []);
 
+  useEffect(() => {
+    const fetchProtocolList = async () => {
+      try {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_SDK_API_URL}/protocols`);
+        const data = JSON.parse(response.data);
+
+        setProtocolList(data);
+      } catch (error) {
+        console.error("An error occurred while fetching protocol link:", error);
+        throw error;
+      }
+    };
+
+    fetchProtocolList();
+  }, [protocolList]);
+
   const expandedRowRender = (records: Pools) => {
     const columns = [
       columnMapping("")["chain"],
-      columnMapping(walletAddress)["pool"],
+      columnMapping(walletAddress, protocolList)["pool"],
       columnMapping("")["tokens"],
       columnMapping("")["tvlUsd"],
       columnMapping("")["apr"],
