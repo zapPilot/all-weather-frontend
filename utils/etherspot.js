@@ -55,7 +55,7 @@ export async function investByAAWallet(
   const portfolioHelper = await getPortfolioHelper(
     "AllWeatherPortfolio",
     walletClient,
-    chain
+    chain,
   );
   const transactionHash = await portfolioHelper.diversify(
     investmentAmount,
@@ -115,12 +115,12 @@ export class AllWeatherPortfolio {
       small_cap_us_stocks: [],
       non_us_developed_market_stocks: [],
       non_us_emerging_market_stocks: [],
-    }
+    };
   }
   async initialize() {
     // get address of EtherspotWallet...
     this.aaWalletAddress = await this.AAWallet.getAddress();
-    console.log("aaWalletAddress", this.aaWalletAddress)
+    console.log("aaWalletAddress", this.aaWalletAddress);
     this.strategy = {
       long_term_bond: {
         42161: [
@@ -285,7 +285,7 @@ export class AllWeatherPortfolio {
         (investmentAmount * protocol.weight).toFixed(precisionOfInvestAmount),
         chosenToken,
         retryIndex,
-        category
+        category,
       );
       concurrentRequests.push(investPromise);
     }
@@ -295,9 +295,13 @@ export class AllWeatherPortfolio {
 
   async _signTransaction(category) {
     // estimate transactions added to the batch and get the fee data for the UserOp
-    console.log(`${category} txs`, this.txs)
-    const feeQuotesResult = await this.AAWallet.getFeeQuotes(this.txs[category]);
-    console.log(`Investment in ${category} completed...`, feeQuotesResult);
+    console.log(`${category} txs`, this.txs);
+    const userOpBundle = await this.AAWallet.buildUserOperation({ tx: this.txs })
+    console.log("userOpBundle", userOpBundle)
+    // const feeQuotesResult = await this.AAWallet.getFeeQuotes(
+    //   this.txs[category],
+    // );
+    // console.log(`Investment in ${category} completed...`, feeQuotesResult);
     // console.log(`Estimate UserOp: ${await printOp(op)}`);
     //   // sign the UserOp and sending to the bundler...
     //   const uoHash = await AAWallet.send(op);
@@ -344,7 +348,12 @@ class CamelotV3 {
     this.aaWalletAddress = aaWalletAddress;
   }
 
-  async invest(investmentAmountInThisPosition, chosenToken, retryIndex, category) {
+  async invest(
+    investmentAmountInThisPosition,
+    chosenToken,
+    retryIndex,
+    category,
+  ) {
     // get erc20 Contract Interface
     const erc20Instance = new ethers.Contract(
       chosenToken,
@@ -354,6 +363,9 @@ class CamelotV3 {
 
     // get decimals from erc20 contract
     const decimals = (await erc20Instance.functions.decimals())[0];
+    console.log("!!!!!!!!!!!!!!!")
+    console.log("!!!!!!!!!!!!!!!")
+    console.log("!!!!!!!!!!!!!!!")
     this.txs[category].push({
       to: usdtAddress,
       data: encodeFunctionData({
@@ -369,26 +381,23 @@ class CamelotV3 {
             // ),
             // decimals,
             "10000000",
-            6
+            6,
           ),
         ],
       }),
     });
-    const swapCallDataFrom1inch = await fetch1InchSwapData(
-      42161,
-      usdtAddress,
-      pendleAddress,
-      ethers.utils.parseUnits(
-        "1",
-        6
-      ),
-      this.aaWalletAddress,
-      50,
-    );
-    this.txs[category].push({
-      to: oneInchAddress,
-      data: swapCallDataFrom1inch["tx"]["data"],
-    });
+    // const swapCallDataFrom1inch = await fetch1InchSwapData(
+    //   42161,
+    //   usdtAddress,
+    //   pendleAddress,
+    //   ethers.utils.parseUnits("1", 6),
+    //   this.aaWalletAddress,
+    //   50,
+    // );
+    // this.txs[category].push({
+    //   to: oneInchAddress,
+    //   data: swapCallDataFrom1inch["tx"]["data"],
+    // });
 
     // const [token0Amount, token1Amount] = await this._concurrentSwap(
     //   chosenToken,
@@ -406,33 +415,33 @@ class CamelotV3 {
     investmentAmountInThisPosition,
     decimals,
     retryIndex,
-    category
+    category,
   ) {
     // let tokenSwapPromises = [];
     // for (const token of [this.token0, this.token1]) {
-      // tokenSwapPromises.push(
-      console.log(          ethers.utils.parseUnits(
+    // tokenSwapPromises.push(
+    console.log(
+      ethers.utils.parseUnits(
         String(investmentAmountInThisPosition / 2),
         decimals,
-      ), "Amount")
-        await this._swap(
-          usdtAddress,
-          pendleAddress,
-          // ethers.utils.parseUnits(
-          //   String(investmentAmountInThisPosition / 2),
-          //   decimals,
-          // ),
-          ethers.utils.parseUnits(
-            String(0.0001),
-            6,
-          ),
-          50,
-          // slippage[retryIndex],
-          category
-        )
-      // );
+      ),
+      "Amount",
+    );
+    await this._swap(
+      usdtAddress,
+      pendleAddress,
+      ethers.utils.parseUnits(
+        String(investmentAmountInThisPosition / 2),
+        decimals,
+      ),
+      // ethers.utils.parseUnits(String(0.0001), 6),
+      50,
+      // slippage[retryIndex],
+      category,
+    );
+    // );
     // }
-    return [1, 2]
+    return [1, 2];
     // const [token0Amount, token1Amount] = await Promise.all(tokenSwapPromises);
     return [token0Amount, token1Amount];
   }
@@ -444,7 +453,12 @@ class CamelotV3 {
       [this.token1, token1Amount],
     ]) {
       tokenApprovePromises.push(
-        this._approve(token, CamelotNFTPositionManagerAddress, tokenAmount, category),
+        this._approve(
+          token,
+          CamelotNFTPositionManagerAddress,
+          tokenAmount,
+          category,
+        ),
       );
     }
     await Promise.all(tokenApprovePromises);
@@ -456,7 +470,7 @@ class CamelotV3 {
     throw new Error("This function is not implemented yet.");
   }
   async _swap(fromTokenAddress, toTokenAddress, amount, slippage, category) {
-    console.log("chain id", this.chainId, this.aaWalletAddress)
+    console.log("chain id", this.chainId, this.aaWalletAddress);
     const swapCallDataFrom1inch = await fetch1InchSwapData(
       this.chainId,
       fromTokenAddress,
