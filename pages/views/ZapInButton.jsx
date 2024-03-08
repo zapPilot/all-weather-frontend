@@ -476,6 +476,7 @@ const ZapInButton = () => {
           />
         </div>
         <Button
+          disabled
           loading={!apiDataReady}
           onClick={handleZapIn} // Added onClick handler
           type="primary"
