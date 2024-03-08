@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 import RebalanceChart from "./views/RebalanceChart";
 import { useAccount } from "wagmi";
 import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
+import LinkModal from "./views/components/LinkModal";
 import axios from "axios";
 
 interface Pools {
@@ -48,7 +49,15 @@ const Dashboard: NextPage = () => {
     color: "#ffffff",
   };
   const [protocolList, setProtocolList] = useState([]);
-  const basicColumns = getBasicColumnsForSuggestionsTable(walletAddress, protocolList);
+  const [protocolLink, setProtocolLink] = useState("");
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+
+  const handleLinkButton = (url: string) => {
+    setProtocolLink(url);
+    console.log("URL clicked:", protocolLink);
+  };
+
+  const basicColumns = getBasicColumnsForSuggestionsTable(walletAddress, protocolList, handleLinkButton, setLinkModalOpen);
   const expandableColumns = getExpandableColumnsForSuggestionsTable();
   const [longTermBond, setLongTermBond] = useState<Pools[] | null>(null);
   const [intermediateTermBond, setIntermediateTermBond] = useState<
@@ -256,7 +265,7 @@ const Dashboard: NextPage = () => {
   const expandedRowRender = (records: Pools) => {
     const columns = [
       columnMapping("")["chain"],
-      columnMapping(walletAddress, protocolList)["pool"],
+      columnMapping(walletAddress, protocolList, handleLinkButton, setLinkModalOpen)["pool"],
       columnMapping("")["tokens"],
       columnMapping("")["tvlUsd"],
       columnMapping("")["apr"],
@@ -424,6 +433,12 @@ const Dashboard: NextPage = () => {
           loadingWording="Fetching the best route to deposit"
         />
       </Space>
+      <LinkModal
+        protocolLink={protocolLink}
+        setProtocolLink={setProtocolLink}
+        linkModalOpen={linkModalOpen}
+        setLinkModalOpen={setLinkModalOpen}
+      />
     </BasePage>
   );
 };
