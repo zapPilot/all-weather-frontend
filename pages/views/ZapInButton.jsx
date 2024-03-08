@@ -476,7 +476,8 @@ const ZapInButton = () => {
           />
         </div>
         <Button
-          loading={!apiDataReady}
+          loading={true}
+          // loading={!apiDataReady}
           onClick={handleZapIn} // Added onClick handler
           type="primary"
           icon={<DollarOutlined />}
