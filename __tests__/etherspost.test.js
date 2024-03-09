@@ -1,6 +1,6 @@
 // sum.test.js
 import { expect, test } from "vitest";
-import { AllWeatherPortfolio } from "../utils/etherspot";
+import { AllWeatherPortfolio } from "../classes/AllWeatherPortfolio.js";
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
