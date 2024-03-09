@@ -21,7 +21,6 @@ import React, { useState, useEffect } from "react";
 
 import { Sunburst, LabelSeries } from "react-vis";
 import { EXTENDED_DISCRETE_COLOR_RANGE } from "react-vis/dist/theme";
-import { set } from "zod";
 
 const DefaultValue = {
   children: [
@@ -191,36 +190,80 @@ function convertPortfolioCompositionToChartData(portfolioComposition) {
         const name = `${positionObj.pool.name}:${positionObj.tokens.join(
           "-",
         )}(${weightedValue}%)`;
-        let colorForThisName;
-        if (nameToColor[name]) {
-          colorForThisName = nameToColor[name];
-        } else {
-          colorForThisName = colorList[idx];
-          nameToColor[name] = colorForThisName;
-          idx = (idx + 1) % colorList.length;
-        }
-        const payloadForSunburst = {
+        [nameToColor, idx] = _prepareSunburstData(
+          result,
+          nameToColor,
           name,
-          value: weightedValue,
-          hex: colorForThisName,
-        };
-        const categoryObj = result.children.find(
-          (obj) => obj.name === category,
+          idx,
+          category,
+          weightedValue,
         );
-        if (categoryObj) {
-          categoryObj.children.push(payloadForSunburst);
-        } else {
-          result.children.push({
-            name: category,
-            children: [payloadForSunburst],
-            hex: colorList[idx],
-          });
-          idx = (idx + 1) % colorList.length;
-        }
       }
     }
   }
   return result;
+}
+
+function convertPortfolioStrategyToChartData(strategy) {
+  let result = { children: [] };
+  let idx = 0;
+
+  // need to refactor
+  let nameToColor = {};
+  for (const [category, positionObjsInThisCategory] of strategy) {
+    for (const positionObjs of Object.values(positionObjsInThisCategory)) {
+      for (const positionObj of positionObjs) {
+        const weightedValue = positionObj.weight * 100;
+        const name = `${positionObj.interface.poolName()}:${positionObj.tokens.join(
+          "-",
+        )}(${weightedValue}%)`;
+        [nameToColor, idx] = _prepareSunburstData(
+          result,
+          nameToColor,
+          name,
+          idx,
+          category,
+          weightedValue,
+        );
+      }
+    }
+  }
+  return result;
+}
+
+export function _prepareSunburstData(
+  result,
+  nameToColor,
+  name,
+  idx,
+  category,
+  weightedValue,
+) {
+  let colorForThisName;
+  if (nameToColor[name]) {
+    colorForThisName = nameToColor[name];
+  } else {
+    colorForThisName = colorList[idx];
+    nameToColor[name] = colorForThisName;
+    idx = (idx + 1) % colorList.length;
+  }
+  const payloadForSunburst = {
+    name,
+    value: weightedValue,
+    hex: colorForThisName,
+  };
+  const categoryObj = result.children.find((obj) => obj.name === category);
+  if (categoryObj) {
+    categoryObj.children.push(payloadForSunburst);
+  } else {
+    result.children.push({
+      name: category,
+      children: [payloadForSunburst],
+      hex: colorList[idx],
+    });
+    idx = (idx + 1) % colorList.length;
+  }
+  return [nameToColor, idx];
 }
 
 function calculatePortfolioAPR(portfolioComposition) {
@@ -270,6 +313,23 @@ export default function BasicSunburst(props) {
       );
       setData(chartData);
       setAPR(calculatePortfolioAPR(sortedPortfolioComposition));
+    } else if (
+      mode === "portfolioStrategy" &&
+      portfolioComposition.length > 0
+    ) {
+      const sortedStrategy = portfolioComposition
+        .map(([category, entries]) => {
+          const sumOfWeights = Object.values(entries).reduce(
+            (sum, entry) => sum + entry[0].weight,
+            0,
+          );
+          return [category, entries, sumOfWeights];
+          // a[2] and b[2] stands for sumOfWeights
+        })
+        .sort((a, b) => b[2] - a[2]);
+      const chartData = convertPortfolioStrategyToChartData(sortedStrategy);
+      setData(chartData);
+      // setAPR(calculatePortfolioAPR(portfolioComposition));
     } else {
       // set showCategory = true, to show its category. For instance, long_term_bond
       const chartData = createChartData(
