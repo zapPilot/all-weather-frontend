@@ -21,7 +21,6 @@ import React, { useState, useEffect } from "react";
 
 import { Sunburst, LabelSeries } from "react-vis";
 import { EXTENDED_DISCRETE_COLOR_RANGE } from "react-vis/dist/theme";
-import { set } from "zod";
 
 const DefaultValue = {
   children: [
@@ -232,7 +231,7 @@ function convertPortfolioStrategyToChartData(strategy) {
   return result;
 }
 
-function _prepareSunburstData(
+export function _prepareSunburstData(
   result,
   nameToColor,
   name,

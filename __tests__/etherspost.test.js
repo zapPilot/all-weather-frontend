@@ -18,7 +18,7 @@ test("AllWeatherPortfolio initialize", async () => {
   const portfolioHelper = new AllWeatherPortfolio();
   await portfolioHelper.initialize();
   for (const [categoryName, sectorObject] of Object.entries(
-    portfolioHelper.strategy,
+    AllWeatherPortfolio.strategy,
   )) {
     expect(categoryNames.includes(categoryName)).toBeTruthy();
     if (Object.keys(sectorObject).length !== 0) {
