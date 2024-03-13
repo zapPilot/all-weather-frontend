@@ -25,7 +25,7 @@ export class AllWeatherPortfolio {
             this.aaWalletAddress,
           ),
           weight: 0.13,
-          tokens: ["wstEth", "eth"],
+          poolID: "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:wstETH"
         },
       ],
     },
@@ -40,7 +40,7 @@ export class AllWeatherPortfolio {
             this.aaWalletAddress,
           ),
           weight: 0.15 * 2,
-          tokens: ["pendle", "eth"],
+          poolID: "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:49661"
         },
       ],
     },
@@ -56,7 +56,7 @@ export class AllWeatherPortfolio {
             this.aaWalletAddress,
           ),
           weight: 0.075 * 2,
-          tokens: ["eth", "gmx"],
+          poolID: "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:gmx"
         },
       ],
     },
@@ -71,7 +71,7 @@ export class AllWeatherPortfolio {
             this.aaWalletAddress,
           ),
           weight: 0.09 * 2,
-          tokens: ["eth", "link"],
+          poolID: "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:53459"
         },
       ],
     },
@@ -86,7 +86,7 @@ export class AllWeatherPortfolio {
             this.aaWalletAddress,
           ),
           weight: 0.03 * 2,
-          tokens: ["rdnt", "eth"],
+          poolID: "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:rdnt"
         },
       ],
     },
@@ -101,7 +101,7 @@ export class AllWeatherPortfolio {
             this.aaWalletAddress,
           ),
           weight: 0.06 * 2,
-          tokens: ["sol", "usdc"],
+          poolID: "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:sol"
         },
       ],
     },
@@ -116,7 +116,7 @@ export class AllWeatherPortfolio {
             this.aaWalletAddress,
           ),
           weight: 0.03 * 2,
-          tokens: ["magic", "eth"],
+          poolID: "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:magic"
         },
       ],
     },
