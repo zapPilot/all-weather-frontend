@@ -13,7 +13,6 @@ import { useState, useEffect } from "react";
 import RebalanceChart from "./views/RebalanceChart";
 import { useAccount } from "wagmi";
 import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
-import { AllWeatherPortfolio } from "../classes/AllWeatherPortfolio.js";
 
 interface Pools {
   key: string;
@@ -408,25 +407,22 @@ const Dashboard: NextPage = () => {
           })}
         </>
       </div>
-      <Space>
-        <RebalanceChart
-          rebalanceSuggestions={[]}
-          netWorth={100}
-          windowWidth={200}
-          showCategory={true}
-          mode="portfolioStrategy"
-          portfolioComposition={Object.entries(AllWeatherPortfolio.strategy)}
-        />
-        <TokenDropdownInput
-          address={walletAddress}
-          onClickCallback={async (
-            investmentAmount: number,
-            chosenToken: string,
-          ) => await investByAAWallet(String(investmentAmount), chosenToken)}
-          normalWording="Etherspots"
-          loadingWording="Fetching the best route to deposit"
-        />
-      </Space>
+      <RebalanceChart
+        rebalanceSuggestions={[]}
+        netWorth={100}
+        windowWidth={200}
+        showCategory={true}
+        mode="portfolioStrategy"
+      />
+      <TokenDropdownInput
+        address={walletAddress}
+        onClickCallback={async (
+          investmentAmount: number,
+          chosenToken: string,
+        ) => await investByAAWallet(String(investmentAmount), chosenToken)}
+        normalWording="Etherspots"
+        loadingWording="Fetching the best route to deposit"
+      />
     </BasePage>
   );
 };
