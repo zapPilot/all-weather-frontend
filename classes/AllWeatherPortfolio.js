@@ -1,5 +1,6 @@
 import { PrimeSdk, EtherspotBundler } from "@etherspot/prime-sdk";
 import { CamelotV3 } from "./camelot/Camelotv3";
+import React from "react";
 
 // add/change these values
 const precisionOfInvestAmount = 4;
@@ -12,7 +13,7 @@ const wsolAddress = "0x2bcC6D6CdBbDC0a4071e48bb3B969b06B3330c07";
 const rdntAddress = "0x3082CC23568eA640225c2467653dB90e9250AaA0";
 const magicAddress = "0x539bdE0d7Dbd336b79148AA742883198BBF60342";
 const wstEthAddress = "0x5979D7b546E38E414F7E9822514be443A4800529";
-export class AllWeatherPortfolio {
+export class AllWeatherPortfolio extends React.Component {
   static strategy = {
     long_term_bond: {
       42161: [
@@ -25,7 +26,8 @@ export class AllWeatherPortfolio {
             this.aaWalletAddress,
           ),
           weight: 0.13,
-          tokens: ["wstEth", "eth"],
+          poolID:
+            "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:wstETH",
         },
       ],
     },
@@ -40,7 +42,8 @@ export class AllWeatherPortfolio {
             this.aaWalletAddress,
           ),
           weight: 0.15 * 2,
-          tokens: ["pendle", "eth"],
+          poolID:
+            "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:49661",
         },
       ],
     },
@@ -56,7 +59,7 @@ export class AllWeatherPortfolio {
             this.aaWalletAddress,
           ),
           weight: 0.075 * 2,
-          tokens: ["eth", "gmx"],
+          poolID: "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:gmx",
         },
       ],
     },
@@ -71,7 +74,8 @@ export class AllWeatherPortfolio {
             this.aaWalletAddress,
           ),
           weight: 0.09 * 2,
-          tokens: ["eth", "link"],
+          poolID:
+            "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:53459",
         },
       ],
     },
@@ -86,7 +90,8 @@ export class AllWeatherPortfolio {
             this.aaWalletAddress,
           ),
           weight: 0.03 * 2,
-          tokens: ["rdnt", "eth"],
+          poolID:
+            "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:rdnt",
         },
       ],
     },
@@ -101,7 +106,7 @@ export class AllWeatherPortfolio {
             this.aaWalletAddress,
           ),
           weight: 0.06 * 2,
-          tokens: ["sol", "usdc"],
+          poolID: "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:sol",
         },
       ],
     },
@@ -116,12 +121,14 @@ export class AllWeatherPortfolio {
             this.aaWalletAddress,
           ),
           weight: 0.03 * 2,
-          tokens: ["magic", "eth"],
+          poolID:
+            "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:magic",
         },
       ],
     },
   };
   constructor() {
+    super();
     // initializating sdk...
     const customBundlerUrl = "";
     this.primeSdk = new PrimeSdk(
@@ -137,13 +144,26 @@ export class AllWeatherPortfolio {
       },
     ); // Testnets dont need apiKey on bundlerProvider
     this.EOAAddress = this.primeSdk.state.EOAAddress;
+    this.concatenatedString = Object.values(AllWeatherPortfolio.strategy)
+      .flatMap(Object.values)
+      .flatMap((arr) => arr)
+      .map((obj) => obj.poolID)
+      .join("/");
   }
   async initialize() {
     // get address of EtherspotWallet...
+    await fetch(`http://0.0.0.0:3001/pools/${this.concatenatedString}`)
+      .then((response) => response.json())
+      .then((data) => {
+        this.poolsMetadata = data;
+      })
+      .catch((error) => this.setState({ error }));
+
     this.aaWalletAddress = await this.primeSdk.getCounterFactualAddress();
-    console.log("aaWalletAddress", this.aaWalletAddress);
     this._checkTotalWeight(AllWeatherPortfolio.strategy);
   }
+  componentDidMount() {}
+
   _checkTotalWeight(strategyObject) {
     let totalWeight = 0;
     for (const strategyKey in strategyObject) {
