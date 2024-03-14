@@ -16,6 +16,7 @@ jobs:
       NEXT_PUBLIC_CHAIN_ID: ${{ secrets.NEXT_PUBLIC_CHAIN_ID }}
       NEXT_PUBLIC_BUNDLER_URL: ${{ secrets.NEXT_PUBLIC_BUNDLER_URL }}
       NEXT_PUBLIC_ETHERSPOT_PROJECT_KEY: ${{ secrets.NEXT_PUBLIC_ETHERSPOT_PROJECT_KEY }}
+      NEXT_PUBLIC_API_URL: https://portfolio-backend-e3gk6w67ba-uc.a.run.app
     strategy:
       matrix:
         os: [ubuntu-latest]
