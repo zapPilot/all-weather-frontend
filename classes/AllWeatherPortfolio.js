@@ -152,7 +152,9 @@ export class AllWeatherPortfolio extends React.Component {
   }
   async initialize() {
     // get address of EtherspotWallet...
-    await fetch(`http://0.0.0.0:3001/pools/${this.concatenatedString}`)
+    await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/pools/${this.concatenatedString}`,
+    )
       .then((response) => response.json())
       .then((data) => {
         this.poolsMetadata = data;
