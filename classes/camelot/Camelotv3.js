@@ -19,8 +19,6 @@ const CamelotNFTPositionManagerAddress =
   "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15";
 
 export class CamelotV3 {
-  static poolName = "camelot-v3";
-
   constructor(chaindId, token0, token1, primeSdk, aaWalletAddress) {
     this.chainId = chaindId;
     this.token0 = token0;
@@ -30,9 +28,6 @@ export class CamelotV3 {
       process.env.NEXT_PUBLIC_BUNDLER_URL,
     );
     this.aaWalletAddress = aaWalletAddress;
-  }
-  poolName() {
-    return CamelotV3.poolName;
   }
   async invest(investmentAmountInThisPosition, chosenToken, retryIndex) {
     // get erc20 Contract Interface

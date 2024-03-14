@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 import React, { useState, useEffect } from "react";
+import { AllWeatherPortfolio } from "../../classes/AllWeatherPortfolio.js";
 
 import { Sunburst, LabelSeries } from "react-vis";
 import { EXTENDED_DISCRETE_COLOR_RANGE } from "react-vis/dist/theme";
@@ -36,6 +37,7 @@ const LABEL_STYLE = {
   textAnchor: "middle",
   fill: "white",
   whiteSpace: "pre-wrap",
+  color: "white",
 };
 
 /**
@@ -204,7 +206,11 @@ function convertPortfolioCompositionToChartData(portfolioComposition) {
   return result;
 }
 
-function convertPortfolioStrategyToChartData(strategy) {
+function convertPortfolioStrategyToChartData(
+  strategy,
+  mode = "",
+  poolsMetadata = {},
+) {
   let result = { children: [] };
   let idx = 0;
 
@@ -214,9 +220,17 @@ function convertPortfolioStrategyToChartData(strategy) {
     for (const positionObjs of Object.values(positionObjsInThisCategory)) {
       for (const positionObj of positionObjs) {
         const weightedValue = positionObj.weight * 100;
-        const name = `${positionObj.interface.poolName()}:${positionObj.tokens.join(
-          "-",
-        )}(${weightedValue}%)`;
+        const poolName = positionObj.poolID.split(":")[1];
+        let name;
+        if (mode === "portfolioStrategy") {
+          const poolID = positionObj.poolID;
+          const positionObjMetadata = poolsMetadata[poolID];
+          name = `${poolName}:${positionObjMetadata.metadata.symbol}(${weightedValue}%)`;
+        } else {
+          name = `${poolName}:${positionObj.tokens.join(
+            "-",
+          )}(${weightedValue}%)`;
+        }
         [nameToColor, idx] = _prepareSunburstData(
           result,
           nameToColor,
@@ -280,6 +294,22 @@ function calculatePortfolioAPR(portfolioComposition) {
   }
   return result;
 }
+function calculatePortfolioAPRForAAWallet(portfolioComposition, poolsMetadata) {
+  let result = 0;
+  for (const positionObjsInThisCategory of portfolioComposition) {
+    for (const positionObjs of Object.values(positionObjsInThisCategory)) {
+      for (const positionObj of positionObjs) {
+        // TODO(david): currently, `only_for_sunburst_chart` this field is missing in `portfolio_config` on the backend side
+        // we need to figure out a way to consolidate `pool_optimier` and `portfolio_config`
+        // if (weight.only_for_sunburst_chart === true) {
+        //   continue;
+        // }
+        result += positionObj.weight * poolsMetadata[positionObj.poolID].apr;
+      }
+    }
+  }
+  return result * 100;
+}
 
 function getPercentage(value, total) {
   return Math.round((value / total) * 100);
@@ -304,41 +334,42 @@ export default function BasicSunburst(props) {
   };
 
   useEffect(() => {
-    if (mode === "portfolioComposer" && portfolioComposition.length > 0) {
-      const sortedPortfolioComposition = portfolioComposition.sort(
-        (a, b) => b.weight - a.weight,
-      );
-      const chartData = convertPortfolioCompositionToChartData(
-        sortedPortfolioComposition,
-      );
-      setData(chartData);
-      setAPR(calculatePortfolioAPR(sortedPortfolioComposition));
-    } else if (
-      mode === "portfolioStrategy" &&
-      portfolioComposition.length > 0
-    ) {
-      const sortedStrategy = portfolioComposition
-        .map(([category, entries]) => {
-          const sumOfWeights = Object.values(entries).reduce(
-            (sum, entry) => sum + entry[0].weight,
-            0,
-          );
-          return [category, entries, sumOfWeights];
-          // a[2] and b[2] stands for sumOfWeights
-        })
-        .sort((a, b) => b[2] - a[2]);
-      const chartData = convertPortfolioStrategyToChartData(sortedStrategy);
-      setData(chartData);
-      // setAPR(calculatePortfolioAPR(portfolioComposition));
-    } else {
-      // set showCategory = true, to show its category. For instance, long_term_bond
-      const chartData = createChartData(
-        rebalanceSuggestions,
-        netWorth,
-        showCategory,
-      );
-      setData(chartData);
+    async function fetchData() {
+      if (mode === "portfolioComposer" && portfolioComposition.length > 0) {
+        const sortedPortfolioComposition = portfolioComposition.sort(
+          (a, b) => b.weight - a.weight,
+        );
+        const chartData = convertPortfolioCompositionToChartData(
+          sortedPortfolioComposition,
+        );
+        setData(chartData);
+        setAPR(calculatePortfolioAPR(sortedPortfolioComposition));
+      } else if (mode === "portfolioStrategy") {
+        const portfolioHelper = new AllWeatherPortfolio();
+        await portfolioHelper.initialize();
+        const chartData = convertPortfolioStrategyToChartData(
+          Object.entries(AllWeatherPortfolio.strategy),
+          mode,
+          portfolioHelper.poolsMetadata,
+        );
+        setData(chartData);
+        setAPR(
+          calculatePortfolioAPRForAAWallet(
+            Object.values(AllWeatherPortfolio.strategy),
+            portfolioHelper.poolsMetadata,
+          ),
+        );
+      } else {
+        // set showCategory = true, to show its category. For instance, long_term_bond
+        const chartData = createChartData(
+          rebalanceSuggestions,
+          netWorth,
+          showCategory,
+        );
+        setData(chartData);
+      }
     }
+    fetchData();
   }, [portfolioComposition]);
   return (
     <div style={divSunBurst}>
@@ -382,7 +413,7 @@ export default function BasicSunburst(props) {
           />
         )}
       </Sunburst>
-      <center>APR: {apr.toFixed(2)}%</center>
+      <center style={LABEL_STYLE}>APR: {apr.toFixed(2)}%</center>
     </div>
   );
 }
