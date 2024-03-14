@@ -251,6 +251,6 @@ for idx, chain in enumerate(chainsUnique):
     img_data = requests.get(
         f"https://icons.llamao.fi/icons/chains/rsz_{chain}?w=48&h=48"
     ).content
-    img_name = os.path.join("./", f"{chain}.webp")
+    img_name = os.path.join("./", f"./chainPicturesWebp/{chain}.webp")
     with open(img_name, "wb") as file:
         file.write(img_data)
