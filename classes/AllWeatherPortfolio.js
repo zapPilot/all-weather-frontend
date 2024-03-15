@@ -152,6 +152,10 @@ export class AllWeatherPortfolio extends React.Component {
   }
   async initialize() {
     // get address of EtherspotWallet...
+    console.log(
+      "initialize: ",
+      `${process.env.NEXT_PUBLIC_API_URL}/pools/${this.concatenatedString}`,
+    );
     await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/pools/${this.concatenatedString}`,
     )
@@ -161,7 +165,7 @@ export class AllWeatherPortfolio extends React.Component {
       })
       .catch((error) => this.setState({ error }));
 
-    this.aaWalletAddress = await this.primeSdk.getCounterFactualAddress();
+    // this.aaWalletAddress = await this.primeSdk.getCounterFactualAddress();
     this._checkTotalWeight(AllWeatherPortfolio.strategy);
   }
   componentDidMount() {}
