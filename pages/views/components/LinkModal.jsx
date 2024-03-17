@@ -12,7 +12,9 @@ const LinkModal = ({
       <Modal
         title="Open Link"
         open={linkModalOpen}
-        onOk={() => window.open(protocolLink, "_blank")}
+        onOk={() => {
+          if (protocolLink) window.open(protocolLink, "_blank");
+        }}
         onCancel={() => setLinkModalOpen(false)}
       >
         <p>
