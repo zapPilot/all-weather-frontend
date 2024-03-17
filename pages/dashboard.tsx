@@ -59,6 +59,7 @@ const Dashboard: NextPage = () => {
 
   const basicColumns = getBasicColumnsForSuggestionsTable(walletAddress, protocolList, handleLinkButton, setLinkModalOpen);
   const expandableColumns = getExpandableColumnsForSuggestionsTable();
+  const [btc, setBTC] = useState<Pools[] | null>(null);
   const [longTermBond, setLongTermBond] = useState<Pools[] | null>(null);
   const [intermediateTermBond, setIntermediateTermBond] = useState<
     Pools[] | null
@@ -76,6 +77,7 @@ const Dashboard: NextPage = () => {
   const [non_us_emerging_market_stocks, set_non_us_emerging_market_stocks] =
     useState<Pools[] | null>(null);
 
+  const [BTCFilterDict, setBTCFilterDict] = useState([]);
   const [longTermBondFilterDict, setLongTermBondFilterDict] = useState([]);
   const [intermediateTermBondFilterDict, setIntermediateTermBondFilterDict] =
     useState([]);
@@ -122,6 +124,16 @@ const Dashboard: NextPage = () => {
 
   const topN = 5;
   const queriesForAllWeather: queriesObj[] = [
+    {
+      wording: "BTC",
+      category: "btc",
+      setStateMethod: setBTC,
+      state: btc,
+      setUniqueQueryTokens: setBTCFilterDict,
+      uniqueQueryTokens: BTCFilterDict,
+      unexpandable: unexpandable.btc,
+      setUnexpandable: updateState,
+    },
     {
       wording: "Long Term Bond (40%)",
       category: "long_term_bond",
@@ -422,17 +434,22 @@ const Dashboard: NextPage = () => {
           })}
         </>
       </div>
-      <Space>
-        <TokenDropdownInput
-          address={walletAddress}
-          onClickCallback={async (
-            investmentAmount: number,
-            chosenToken: string,
-          ) => await investByAAWallet(String(investmentAmount), chosenToken)}
-          normalWording="Etherspots"
-          loadingWording="Fetching the best route to deposit"
-        />
-      </Space>
+      <RebalanceChart
+        rebalanceSuggestions={[]}
+        netWorth={100}
+        windowWidth={200}
+        showCategory={true}
+        mode="portfolioStrategy"
+      />
+      <TokenDropdownInput
+        address={walletAddress}
+        onClickCallback={async (
+          investmentAmount: number,
+          chosenToken: string,
+        ) => await investByAAWallet(String(investmentAmount), chosenToken)}
+        normalWording="Etherspots"
+        loadingWording="Fetching the best route to deposit"
+      />
       <LinkModal
         protocolLink={protocolLink}
         setProtocolLink={setProtocolLink}
