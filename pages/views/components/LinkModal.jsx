@@ -1,10 +1,10 @@
-import { Modal } from 'antd';
+import { Modal } from "antd";
 
 const LinkModal = ({
   protocolLink,
   setProtocolLink,
   linkModalOpen,
-  setLinkModalOpen
+  setLinkModalOpen,
 }) => {
   setProtocolLink(protocolLink);
   return (
@@ -12,15 +12,12 @@ const LinkModal = ({
       <Modal
         title="Open Link"
         open={linkModalOpen}
-        onOk={() => window.open(protocolLink, '_blank')}
+        onOk={() => window.open(protocolLink, "_blank")}
         onCancel={() => setLinkModalOpen(false)}
       >
         <p>
           Do you want to open "
-          <a 
-            href={protocolLink}
-            target='_blank'
-          >
+          <a href={protocolLink} target="_blank">
             {protocolLink}
           </a>
           " ?

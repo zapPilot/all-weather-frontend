@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { Tag, Image, Button, Badge, Tooltip } from "antd";
 import {
   UnlockOutlined,
@@ -17,7 +17,12 @@ const paidUserWallets = [
   "0xA1abE1Ee3Bd158CF4468434485c6a0E21A7eE83D", // Adrian
 ];
 
-export const columnMapping = (walletAddress, protocolList, handleLinkButton, setLinkModalOpen) => ({
+export const columnMapping = (
+  walletAddress,
+  protocolList,
+  handleLinkButton,
+  setLinkModalOpen,
+) => ({
   chain: {
     title: "Chain",
     dataIndex: "chain",
@@ -59,21 +64,19 @@ export const columnMapping = (walletAddress, protocolList, handleLinkButton, set
               </span>
             ) : null}
           </Tooltip>
-            {protocolList.map(
-              (protocol) => protocol.slug === pool.name ?
-                <Button
-                  type="link"
-                  onClick={
-                    () => {
-                      handleLinkButton(protocol.url)
-                      setLinkModalOpen(true)
-                    }
-                  }
-                >
-                  <ExportOutlined />
-                </Button>
-                : null
-            )}
+          {protocolList.map((protocol) =>
+            protocol.slug === pool.name ? (
+              <Button
+                type="link"
+                onClick={() => {
+                  handleLinkButton(protocol.url);
+                  setLinkModalOpen(true);
+                }}
+              >
+                <ExportOutlined />
+              </Button>
+            ) : null,
+          )}
         </>
       );
     },
@@ -176,9 +179,19 @@ export const getExpandableColumnsForSuggestionsTable = () => [
   columnMapping("")["outerAprColumn"],
 ];
 
-export const getBasicColumnsForSuggestionsTable = (walletAddress, protocolList, handleLinkButton, setLinkModalOpen) => [
+export const getBasicColumnsForSuggestionsTable = (
+  walletAddress,
+  protocolList,
+  handleLinkButton,
+  setLinkModalOpen,
+) => [
   columnMapping("")["chain"],
-  columnMapping(walletAddress, protocolList, handleLinkButton, setLinkModalOpen)["pool"],
+  columnMapping(
+    walletAddress,
+    protocolList,
+    handleLinkButton,
+    setLinkModalOpen,
+  )["pool"],
   columnMapping("")["tokens"],
   columnMapping("")["tvlUsd"],
   columnMapping("")["apr"],

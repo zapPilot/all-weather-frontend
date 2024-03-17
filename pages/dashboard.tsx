@@ -57,7 +57,12 @@ const Dashboard: NextPage = () => {
     console.log("URL clicked:", protocolLink);
   };
 
-  const basicColumns = getBasicColumnsForSuggestionsTable(walletAddress, protocolList, handleLinkButton, setLinkModalOpen);
+  const basicColumns = getBasicColumnsForSuggestionsTable(
+    walletAddress,
+    protocolList,
+    handleLinkButton,
+    setLinkModalOpen,
+  );
   const expandableColumns = getExpandableColumnsForSuggestionsTable();
   const [btc, setBTC] = useState<Pools[] | null>(null);
   const [longTermBond, setLongTermBond] = useState<Pools[] | null>(null);
@@ -261,7 +266,9 @@ const Dashboard: NextPage = () => {
   useEffect(() => {
     const fetchProtocolList = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_SDK_API_URL}/protocols`);
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_SDK_API_URL}/protocols`,
+        );
         const data = JSON.parse(response.data);
 
         setProtocolList(data);
@@ -277,7 +284,12 @@ const Dashboard: NextPage = () => {
   const expandedRowRender = (records: Pools) => {
     const columns = [
       columnMapping("")["chain"],
-      columnMapping(walletAddress, protocolList, handleLinkButton, setLinkModalOpen)["pool"],
+      columnMapping(
+        walletAddress,
+        protocolList,
+        handleLinkButton,
+        setLinkModalOpen,
+      )["pool"],
       columnMapping("")["tokens"],
       columnMapping("")["tvlUsd"],
       columnMapping("")["apr"],
