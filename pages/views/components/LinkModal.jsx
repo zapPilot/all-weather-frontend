@@ -16,11 +16,11 @@ const LinkModal = ({
         onCancel={() => setLinkModalOpen(false)}
       >
         <p>
-          Do you want to open "
+          Do you want to open &apos;
           <a href={protocolLink} target="_blank">
             {protocolLink}
           </a>
-          " ?
+          &apos; ?
         </p>
       </Modal>
     </>
