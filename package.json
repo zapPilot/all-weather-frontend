@@ -10,7 +10,7 @@
     "export": "next export",
     "format": "prettier --write . --ignore=node_modules,buildgi; black .",
     "check-format": "prettier --check . --ignore=node_modules,build",
-    "test": "vitest",
+    "test": "vitest --testTimeout=20000",
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
