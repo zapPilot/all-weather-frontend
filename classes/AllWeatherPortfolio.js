@@ -160,7 +160,6 @@ export class AllWeatherPortfolio extends React.Component {
         this.poolsMetadata = data;
       })
       .catch((error) => this.setState({ error }));
-
     this.aaWalletAddress = await this.primeSdk.getCounterFactualAddress();
     this._checkTotalWeight(AllWeatherPortfolio.strategy);
   }
