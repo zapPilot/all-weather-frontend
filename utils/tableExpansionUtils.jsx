@@ -75,7 +75,7 @@ export const columnMapping = (walletAddress) => ({
           {newCoins.map((token, index) => (
             <Image
               key={index}
-              src={`/tokenPictures/${token}.webp`}
+              src={`/tokenPictures/${token.replace(/[()]/g, "")}.webp`}
               alt={token}
               height={20}
               width={20}
