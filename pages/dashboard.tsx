@@ -369,7 +369,8 @@ const Dashboard: NextPage = () => {
           {Array.from(uniqueTokens).map((token: unknown, index) => (
             <Image
               key={index}
-              src={`/tokenPictures/${token}.webp`}
+              // @ts-ignore
+              src={`/tokenPictures/${token.replace(/[()]/g, "")}.webp`}
               alt={token as string}
               height={20}
               width={20}
