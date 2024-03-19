@@ -1,16 +1,14 @@
 import { Modal } from "antd";
 
-const LinkModal = ({
-  protocolLink,
-  linkModalOpen,
-  setLinkModalOpen,
-}) => {
+const LinkModal = ({ protocolLink, linkModalOpen, setLinkModalOpen }) => {
   return (
     <>
       <Modal
         title="Open Link"
         open={linkModalOpen}
-        onOk={() => { protocolLink ? window.open(protocolLink, "_blank") : null;}}
+        onOk={() => {
+          protocolLink ? window.open(protocolLink, "_blank") : null;
+        }}
         onCancel={() => setLinkModalOpen(false)}
       >
         <p>
