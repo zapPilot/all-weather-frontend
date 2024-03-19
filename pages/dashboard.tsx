@@ -54,7 +54,6 @@ const Dashboard: NextPage = () => {
 
   const handleLinkButton = (url: string) => {
     setProtocolLink(url);
-    console.log("URL clicked:", protocolLink);
   };
 
   const basicColumns = getBasicColumnsForSuggestionsTable(
@@ -464,7 +463,6 @@ const Dashboard: NextPage = () => {
       />
       <LinkModal
         protocolLink={protocolLink}
-        setProtocolLink={setProtocolLink}
         linkModalOpen={linkModalOpen}
         setLinkModalOpen={setLinkModalOpen}
       />
