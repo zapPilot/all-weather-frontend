@@ -14,7 +14,6 @@ import RebalanceChart from "./views/RebalanceChart";
 import { useAccount } from "wagmi";
 import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
 import LinkModal from "./views/components/LinkModal";
-import axios from "axios";
 
 interface Pools {
   key: string;
@@ -262,33 +261,10 @@ const Dashboard: NextPage = () => {
     fetchDefaultPools();
   }, []);
 
-  useEffect(() => {
-    const fetchProtocolList = async () => {
-      try {
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_SDK_API_URL}/protocols`,
-        );
-        const data = JSON.parse(response.data);
-
-        setProtocolList(data);
-      } catch (error) {
-        console.error("An error occurred while fetching protocol link:", error);
-        throw error;
-      }
-    };
-
-    fetchProtocolList();
-  }, [protocolList]);
-
   const expandedRowRender = (records: Pools) => {
     const columns = [
       columnMapping("")["chain"],
-      columnMapping(
-        walletAddress,
-        protocolList,
-        handleLinkButton,
-        setLinkModalOpen,
-      )["pool"],
+      columnMapping(walletAddress)["pool"],
       columnMapping("")["tokens"],
       columnMapping("")["tvlUsd"],
       columnMapping("")["apr"],
