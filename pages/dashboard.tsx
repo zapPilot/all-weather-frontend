@@ -54,9 +54,7 @@ const Dashboard: NextPage = () => {
     setProtocolLink(url);
   };
 
-  const basicColumns = getBasicColumnsForSuggestionsTable(
-    walletAddress,
-  );
+  const basicColumns = getBasicColumnsForSuggestionsTable(walletAddress);
   const expandableColumns = getExpandableColumnsForSuggestionsTable();
   const [btc, setBTC] = useState<Pools[] | null>(null);
   const [longTermBond, setLongTermBond] = useState<Pools[] | null>(null);
