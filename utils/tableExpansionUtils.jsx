@@ -3,7 +3,6 @@ import {
   UnlockOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
-  ExportOutlined,
 } from "@ant-design/icons";
 
 // TODO: need to implement the paid button
@@ -15,12 +14,7 @@ const paidUserWallets = [
   "0xCa35a10C9622fEBfA889410Efb9B905B26221c37", // Chris
   "0xA1abE1Ee3Bd158CF4468434485c6a0E21A7eE83D", // Adrian
 ];
-export const columnMapping = (
-  walletAddress,
-  protocolList,
-  handleLinkButton,
-  setLinkModalOpen,
-) => ({
+export const columnMapping = (walletAddress) => ({
   chain: {
     title: "Chain",
     dataIndex: "chain",
@@ -62,20 +56,6 @@ export const columnMapping = (
               </span>
             ) : null}
           </Tooltip>
-          {protocolList.map((protocol) =>
-            protocol.slug === pool.name ? (
-              <Button
-                type="link"
-                style={{ color: "#ffffff" }}
-                onClick={() => {
-                  handleLinkButton(protocol.url);
-                  setLinkModalOpen(true);
-                }}
-              >
-                <ExportOutlined />
-              </Button>
-            ) : null,
-          )}
         </>
       );
     },
@@ -178,19 +158,9 @@ export const getExpandableColumnsForSuggestionsTable = () => [
   columnMapping("")["outerAprColumn"],
 ];
 
-export const getBasicColumnsForSuggestionsTable = (
-  walletAddress,
-  protocolList,
-  handleLinkButton,
-  setLinkModalOpen,
-) => [
+export const getBasicColumnsForSuggestionsTable = (walletAddress) => [
   columnMapping("")["chain"],
-  columnMapping(
-    walletAddress,
-    protocolList,
-    handleLinkButton,
-    setLinkModalOpen,
-  )["pool"],
+  columnMapping(walletAddress)["pool"],
   columnMapping("")["tokens"],
   columnMapping("")["tvlUsd"],
   columnMapping("")["apr"],
