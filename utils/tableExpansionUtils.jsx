@@ -15,17 +15,7 @@ const paidUserWallets = [
   "0xCa35a10C9622fEBfA889410Efb9B905B26221c37", // Chris
   "0xA1abE1Ee3Bd158CF4468434485c6a0E21A7eE83D", // Adrian
 ];
-<<<<<<< HEAD
-
-export const columnMapping = (
-  walletAddress,
-  protocolList,
-  handleLinkButton,
-  setLinkModalOpen,
-) => ({
-=======
 export const columnMapping = (walletAddress) => ({
->>>>>>> f49e44be18fa57e20ec352a7c47ccca6a70bd190
   chain: {
     title: "Chain",
     dataIndex: "chain",
