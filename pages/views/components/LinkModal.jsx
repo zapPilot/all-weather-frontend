@@ -1,12 +1,6 @@
 import { Modal } from "antd";
 
-const LinkModal = ({
-  protocolLink,
-  setProtocolLink,
-  linkModalOpen,
-  setLinkModalOpen,
-}) => {
-  setProtocolLink(protocolLink);
+const LinkModal = ({ protocolLink, linkModalOpen, setLinkModalOpen }) => {
   return (
     <>
       <Modal
