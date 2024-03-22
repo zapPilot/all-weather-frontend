@@ -2,11 +2,9 @@ import { Modal } from "antd";
 
 const LinkModal = ({
   protocolLink,
-  setProtocolLink,
   linkModalOpen,
   setLinkModalOpen,
 }) => {
-  setProtocolLink(protocolLink);
   return (
     <>
       <Modal
