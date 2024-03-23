@@ -46,14 +46,6 @@ const Dashboard: NextPage = () => {
     minHeight: windowHeight,
     color: "#ffffff",
   };
-  const [protocolList, setProtocolList] = useState([]);
-  const [protocolLink, setProtocolLink] = useState("");
-  const [linkModalOpen, setLinkModalOpen] = useState(false);
-
-  const handleLinkButton = (url: string) => {
-    setProtocolLink(url);
-  };
-
   const basicColumns = getBasicColumnsForSuggestionsTable(walletAddress);
   const expandableColumns = getExpandableColumnsForSuggestionsTable();
   const [btc, setBTC] = useState<Pools[] | null>(null);
