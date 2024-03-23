@@ -13,6 +13,8 @@ import { useState, useEffect } from "react";
 import RebalanceChart from "./views/RebalanceChart";
 import { useAccount } from "wagmi";
 import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
+import LinkModal from "./views/components/LinkModal";
+import axios from "axios";
 
 interface Pools {
   key: string;
@@ -54,7 +56,12 @@ const Dashboard: NextPage = () => {
     setProtocolLink(url);
   };
 
-  const basicColumns = getBasicColumnsForSuggestionsTable(walletAddress);
+  const basicColumns = getBasicColumnsForSuggestionsTable(
+    walletAddress,
+    protocolList,
+    handleLinkButton,
+    setLinkModalOpen,
+  );
   const expandableColumns = getExpandableColumnsForSuggestionsTable();
   const [btc, setBTC] = useState<Pools[] | null>(null);
   const [longTermBond, setLongTermBond] = useState<Pools[] | null>(null);
@@ -255,10 +262,33 @@ const Dashboard: NextPage = () => {
     fetchDefaultPools();
   }, []);
 
+  useEffect(() => {
+    const fetchProtocolList = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_SDK_API_URL}/protocols`,
+        );
+        const data = JSON.parse(response.data);
+
+        setProtocolList(data);
+      } catch (error) {
+        console.error("An error occurred while fetching protocol link:", error);
+        throw error;
+      }
+    };
+
+    fetchProtocolList();
+  }, []);
+
   const expandedRowRender = (records: Pools) => {
     const columns = [
       columnMapping("")["chain"],
-      columnMapping(walletAddress)["pool"],
+      columnMapping(
+        walletAddress,
+        protocolList,
+        handleLinkButton,
+        setLinkModalOpen,
+      )["pool"],
       columnMapping("")["tokens"],
       columnMapping("")["tvlUsd"],
       columnMapping("")["apr"],
@@ -431,6 +461,11 @@ const Dashboard: NextPage = () => {
         ) => await investByAAWallet(String(investmentAmount), chosenToken)}
         normalWording="Etherspots"
         loadingWording="Fetching the best route to deposit"
+      />
+      <LinkModal
+        protocolLink={protocolLink}
+        linkModalOpen={linkModalOpen}
+        setLinkModalOpen={setLinkModalOpen}
       />
     </BasePage>
   );

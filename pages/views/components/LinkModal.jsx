@@ -6,7 +6,9 @@ const LinkModal = ({ protocolLink, linkModalOpen, setLinkModalOpen }) => {
       <Modal
         title="Open Link"
         open={linkModalOpen}
-        onOk={() => window.open(protocolLink, "_blank")}
+        onOk={() => {
+          protocolLink ? window.open(protocolLink, "_blank") : null;
+        }}
         onCancel={() => setLinkModalOpen(false)}
       >
         <p>
