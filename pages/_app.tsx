@@ -12,11 +12,6 @@ import {
 } from "@rainbow-me/rainbowkit/wallets";
 import type { AppProps } from "next/app";
 import ThirdPartyPlugin from "./thirdPartyPlugin.jsx";
-import {
-  ThirdwebProvider,
-  smartWallet,
-  embeddedWallet,
-} from "@thirdweb-dev/react";
 
 /* New API that includes Wagmi's createConfig and replaces getDefaultWallets and connectorsForWallets */
 const config = getDefaultConfig({
@@ -37,31 +32,26 @@ const config = getDefaultConfig({
 });
 
 const queryClient = new QueryClient();
-const activeChain = "optimism";
-export const factoryAddress = "0xA4a0b37823a19541D0d2e049cC935E6398b5AB9F";
 
 const App = ({ Component, pageProps }: AppProps) => {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={darkTheme()}>
-          <ThirdwebProvider
-            clientId={process.env.NEXT_PUBLIC_TEMPLATE_CLIENT_ID}
-            activeChain={activeChain}
-            supportedWallets={[
-              smartWallet(embeddedWallet(), {
-                factoryAddress: factoryAddress,
-                gasless: true,
-              }),
-            ]}
-          >
-            <ThirdPartyPlugin />
-            <Component {...pageProps} />
-          </ThirdwebProvider>
+          <ThirdPartyPlugin />
+          <Component {...pageProps} />
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );
 };
+// function MyApp({ Component, pageProps }: AppProps) {
+//   return (
+//     <WagmiConfig config={wagmiConfig}>
+//       <RainbowKitProvider chains={chains} theme={darkTheme()}>
+//       </RainbowKitProvider>
+//     </WagmiConfig>
+//   );
+// }
 
 export default App;
