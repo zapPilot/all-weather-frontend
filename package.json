@@ -52,7 +52,10 @@
     "tslib": "^2.6.2",
     "viem": "2.x",
     "wagmi": "2",
-    "zod": "^3.22.2"
+    "zod": "^3.22.2",
+    "@thirdweb-dev/auth": "^4.1.35",
+    "@thirdweb-dev/react": "^4.4.11",
+    "@thirdweb-dev/sdk": "^4.0.38"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.2",

@@ -10,6 +10,7 @@ import HeaderInner from "./views/Header";
 import Web3DataProvider from "./views/Web3DataProvider";
 import "@flaticon/flaticon-uicons/css/brands/all.css";
 import "@flaticon/flaticon-uicons/css/regular/all.css";
+import { ConnectEmbed, ConnectWallet } from "@thirdweb-dev/react";
 
 const { Header, Footer, Content } = Layout;
 interface BasePageProps {
@@ -37,7 +38,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
             </div>
             <HeaderInner />
             <div className="connect-button">
-              <ConnectButton />
+              <ConnectWallet theme={"light"} modalSize={"compact"} />
             </div>
           </Header>
         </Affix>
