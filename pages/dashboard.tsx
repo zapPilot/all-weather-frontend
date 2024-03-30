@@ -1,7 +1,7 @@
 import type { NextPage } from "next";
 import Image from "next/image";
 import BasePage from "./basePage.tsx";
-import { Spin, Button } from "antd";
+import { Spin, Button, Table, Image } from "antd";
 import {
   UnlockOutlined,
   ArrowUpOutlined,
@@ -11,6 +11,7 @@ import {
 } from "@ant-design/icons";
 import { useWindowHeight } from "../utils/chartUtils.js";
 import { investByAAWallet } from "../utils/etherspot.js";
+import { useAddress } from "@thirdweb-dev/react";
 
 import {
   getBasicColumnsForSuggestionsTable,
@@ -19,7 +20,6 @@ import {
 } from "../utils/tableExpansionUtils";
 import { useState, useEffect, ChangeEventHandler } from "react";
 import RebalanceChart from "./views/RebalanceChart";
-import { useAccount } from "wagmi";
 import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
 import LinkModal from "./views/components/LinkModal";
 import axios from "axios";
@@ -51,7 +51,7 @@ interface queriesObj {
 
 const Dashboard: NextPage = () => {
   const userApiKey = "placeholder";
-  const { address: walletAddress } = useAccount();
+  const walletAddress = useAddress();
 
   const windowHeight = useWindowHeight();
   const divBetterPools = {

@@ -1,9 +1,9 @@
 import { Button, Space } from "antd";
-import { useBalance } from "wagmi";
 import { useState } from "react";
 import { selectBefore } from "../../utils/contractInteractions";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
+import { useContract, useContractRead } from "@thirdweb-dev/react";
 
 const TokenDropdownInput = ({
   address,
@@ -14,17 +14,23 @@ const TokenDropdownInput = ({
   const [chosenToken, setChosenToken] = useState(
     "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
   );
-  const { data: chosenTokenBalance } = useBalance({
+  const { contract } = useContract(chosenToken);
+  const { data: chosenTokenBalance } = useContractRead(
+    contract,
+    "balanceOf",
     address,
-    ...(chosenToken === "0x0000000000000000000000000000000000000000"
-      ? {}
-      : { token: chosenToken }), // Include token only if chosenToken is truthy
-    // token: chosenToken,
-    onError(error) {
-      console.log(`cannot read ${chosenToken} Balance:`, error);
-      throw error;
-    },
-  });
+  );
+  // const { data: chosenTokenBalance } = useBalance({
+  //   address,
+  //   ...(chosenToken === "0x0000000000000000000000000000000000000000"
+  //     ? {}
+  //     : { token: chosenToken }), // Include token only if chosenToken is truthy
+  //   // token: chosenToken,
+  //   onError(error) {
+  //     console.log(`cannot read ${chosenToken} Balance:`, error);
+  //     throw error;
+  //   },
+  // });
   const [amount, setAmount] = useState(0);
   const [inputValue, setInputValue] = useState("");
   const handleInputChange = async (eventValue) => {

@@ -55,7 +55,6 @@ const App = ({ Component, pageProps }: AppProps) => {
               rabbyWallet(),
               rainbowWallet(),
               metamaskWallet(),
-              coinbaseWallet(),
               walletConnect(),
             ]}
           >
