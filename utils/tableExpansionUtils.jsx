@@ -1,4 +1,5 @@
 import { Tag, Image, Button, Badge, Tooltip } from "antd";
+import Link from "next/link";
 import {
   UnlockOutlined,
   ArrowUpOutlined,
@@ -37,9 +38,11 @@ export const columnMapping = (
     width: 24,
     render: (pool, _, index) => {
       return index === 0 && !paidUserWallets.includes(walletAddress) ? (
-        <Button type="primary" icon={<UnlockOutlined />}>
-          30 Days Free Trial
-        </Button>
+        <Link href="/subscription" passHref>
+          <Button type="primary" icon={<UnlockOutlined />}>
+            30 Days Free Trial
+          </Button>
+        </Link>
       ) : (
         <>
           <Image
