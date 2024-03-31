@@ -52,10 +52,6 @@ const items = [
         ),
         key: "setting:5",
       },
-      {
-        label: <Link href="/installment">Installment</Link>,
-        key: "installment",
-      },
     ],
   },
   {
