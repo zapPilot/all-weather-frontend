@@ -37,6 +37,8 @@ interface queriesObj {
   uniqueQueryTokens: Array<string>;
   unexpandable: boolean | undefined;
   setUnexpandable: (key: string, value: boolean) => void;
+  chain_blacklist?: string[];
+  chain_whitelist?: string[];
 }
 const Dashboard: NextPage = () => {
   const userApiKey = "placeholder";
@@ -80,6 +82,7 @@ const Dashboard: NextPage = () => {
     useState<Pools[] | null>(null);
   const [non_us_emerging_market_stocks, set_non_us_emerging_market_stocks] =
     useState<Pools[] | null>(null);
+  const [airdrop, set_airdrop] = useState<Pools[] | null>(null);
 
   const [BTCFilterDict, setBTCFilterDict] = useState([]);
   const [longTermBondFilterDict, setLongTermBondFilterDict] = useState([]);
@@ -99,6 +102,7 @@ const Dashboard: NextPage = () => {
     non_us_emerging_market_stocksFilterDict,
     setNon_us_emerging_market_stocksFilterDict,
   ] = useState([]);
+  const [airdropFilterDict, setAirdropFilterDict] = useState([]);
 
   // states for unexpandable
   const [unexpandable, setUnexpandable] = useState<{ [key: string]: boolean }>({
@@ -110,6 +114,7 @@ const Dashboard: NextPage = () => {
     small_cap_us_stocks: true,
     non_us_developed_market_stocks: true,
     non_us_emerging_market_stocks: true,
+    airdrop: true,
   });
   const updateState = (key: string, value: boolean) => {
     setUnexpandable((prevState) => ({
@@ -197,6 +202,7 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: small_cap_us_stocksFilterDict,
       unexpandable: unexpandable.small_cap_us_stocks,
       setUnexpandable: updateState,
+      chain_blacklist: ["cardano", "fantom"],
     },
     {
       wording: "Non US Developed Market Stocks (6%)",
@@ -217,6 +223,24 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: non_us_emerging_market_stocksFilterDict,
       unexpandable: unexpandable.non_us_emerging_market_stocks,
       setUnexpandable: updateState,
+    },
+    {
+      wording: "Airdrop",
+      category: "airdrop",
+      setStateMethod: set_airdrop,
+      state: airdrop,
+      setUniqueQueryTokens: setAirdropFilterDict,
+      uniqueQueryTokens: airdropFilterDict,
+      unexpandable: unexpandable.airdrop,
+      setUnexpandable: updateState,
+      chain_whitelist: [
+        "blast",
+        "mode",
+        "zksync era",
+        "linea",
+        "scroll",
+        "taiko",
+      ],
     },
   ];
 
@@ -243,6 +267,12 @@ const Dashboard: NextPage = () => {
                 user_api_key: userApiKey,
                 category: categoryMetaData.category,
                 top_n: topN,
+                ...(categoryMetaData.chain_blacklist && {
+                  chain_blacklist: categoryMetaData.chain_blacklist,
+                }),
+                ...(categoryMetaData.chain_whitelist && {
+                  chain_whitelist: categoryMetaData.chain_whitelist,
+                }),
               }),
             },
           );
