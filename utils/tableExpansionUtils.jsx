@@ -119,11 +119,14 @@ export const columnMapping = (
     dataIndex: "tvlUsd",
     width: 14,
     render: (tvlUsd) => {
-      let color = tvlUsd < 500000 ? "volcano" : "green";
+      const color = tvlUsd < 500000 ?
+        "bg-red-400/10 text-red-400 ring-red-400/20"
+        : "bg-green-500/10 text-green-400 ring-green-500/20";
       return (
-        <Tag color={color} key={tvlUsd}>
+        <span
+          className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${color}`}>
           {(tvlUsd / 1e6).toFixed(2)}M
-        </Tag>
+        </span>
       );
     },
   },
@@ -135,24 +138,23 @@ export const columnMapping = (
     render: (apr) => {
       let color = "green";
       return apr.value ? (
-        <>
-          <Badge
-            count={
-              apr.predictions.predictedClass === "Down" ? (
-                <ArrowDownOutlined style={{ color: "red" }} />
-              ) : (
-                <ArrowUpOutlined style={{ color: "green" }} />
-              )
-            }
-          >
-            <Tag color={color} key={apr.value}>
-              {apr.value.toFixed(2)}%
-            </Tag>
-          </Badge>
-        </>
+        <div className="flex">
+          <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+            {apr.value.toFixed(2)}%
+          </span>
+          {
+            apr.predictions.predictedClass === "Down" ? (
+              <ArrowDownOutlined className="text-red-400 px-2"/>
+            ) : (
+              <ArrowUpOutlined className="text-green-400 px-2" />
+            )
+          }
+        </div>
       ) : (
         // for backward compatibility
-        <Tag color={color}>{apr}</Tag>
+        <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+          {apr}
+        </span>
       );
     },
   },

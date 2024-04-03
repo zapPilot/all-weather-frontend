@@ -1,5 +1,6 @@
 import "@rainbow-me/rainbowkit/styles.css";
 import "../styles/index.scss";
+import "../styles/globals.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider, http } from "wagmi";
 import { bscTestnet, bsc, arbitrum } from "wagmi/chains";

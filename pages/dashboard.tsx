@@ -252,6 +252,14 @@ const Dashboard: NextPage = () => {
     });
   });
 
+  const tailwindCssList = [
+    'inline-flex',
+    'items-center',
+    'rounded-md',
+    'text-xs',
+    'font-medium',
+  ];
+
   useEffect(() => {
     const fetchDefaultPools = async () => {
       try {
@@ -392,9 +400,9 @@ const Dashboard: NextPage = () => {
     <BasePage>
       <div style={divBetterPools}>
         <center>
-          <h1>Better Pools Search Engine</h1>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">Better Pools Search Engine</h1>
         </center>
-        <h2 className="ant-table-title">
+        <p className="mt-6 text-lg leading-8 text-gray-300">
           Tokens in Current Portfolio: {uniqueTokens.size}
           {Array.from(uniqueTokens).map((token: unknown, index) => (
             <Image
@@ -406,7 +414,8 @@ const Dashboard: NextPage = () => {
               width={20}
             />
           ))}
-          <RebalanceChart
+        </p>
+        <RebalanceChart
             rebalanceSuggestions={[]}
             netWorth={100}
             windowWidth={200}
@@ -429,7 +438,6 @@ const Dashboard: NextPage = () => {
           >
             Visualize
           </Button>
-        </h2>
         <>
           {Object.values(queriesForAllWeather).map((categoryMetaData) => {
             return (
