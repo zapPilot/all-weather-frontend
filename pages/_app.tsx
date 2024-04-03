@@ -1,5 +1,6 @@
 import "@rainbow-me/rainbowkit/styles.css";
 import "../styles/index.scss";
+import "../styles/globals.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider, http } from "wagmi";
 import { bscTestnet, bsc, arbitrum } from "wagmi/chains";
@@ -12,7 +13,6 @@ import {
 } from "@rainbow-me/rainbowkit/wallets";
 import type { AppProps } from "next/app";
 import ThirdPartyPlugin from "./thirdPartyPlugin.jsx";
-
 /* New API that includes Wagmi's createConfig and replaces getDefaultWallets and connectorsForWallets */
 const config = getDefaultConfig({
   appName: "RainbowKit demo",
@@ -32,7 +32,6 @@ const config = getDefaultConfig({
 });
 
 const queryClient = new QueryClient();
-
 const App = ({ Component, pageProps }: AppProps) => {
   return (
     <WagmiProvider config={config}>
@@ -45,13 +44,4 @@ const App = ({ Component, pageProps }: AppProps) => {
     </WagmiProvider>
   );
 };
-// function MyApp({ Component, pageProps }: AppProps) {
-//   return (
-//     <WagmiConfig config={wagmiConfig}>
-//       <RainbowKitProvider chains={chains} theme={darkTheme()}>
-//       </RainbowKitProvider>
-//     </WagmiConfig>
-//   );
-// }
-
 export default App;
