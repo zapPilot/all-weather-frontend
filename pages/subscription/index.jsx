@@ -5,7 +5,7 @@ const tiers = [
   {
     name: "Basic",
     id: "tier-basic",
-    href: "#",
+    href: "/emailsubscription",
     priceMonthly: "Free",
     description: "Quis suspendisse ut fermentum neque vivamus non tellus.",
     mostPopular: false,
@@ -142,9 +142,9 @@ export default function Example() {
                 )}
               >
                 {tier.priceMonthly === "Free" ? (
-                  <div>give email</div>
+                  <div>Input Email!</div>
                 ) : (
-                  <div>Buy plan</div>
+                  <div>Upcoming</div>
                 )}
               </a>
               <ul
@@ -249,9 +249,9 @@ export default function Example() {
                         )}
                       >
                         {tier.priceMonthly === "Free" ? (
-                          <div>give email</div>
+                          <div>Input Email!</div>
                         ) : (
-                          <div>Buy plan</div>
+                          <div>Upcoming</div>
                         )}
                       </a>
                     </td>
