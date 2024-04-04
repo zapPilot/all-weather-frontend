@@ -52,6 +52,10 @@ const items = [
         ),
         key: "setting:5",
       },
+      {
+        label: <Link href="/subscription">Subscription</Link>,
+        key: "subscription",
+      },
     ],
   },
   {

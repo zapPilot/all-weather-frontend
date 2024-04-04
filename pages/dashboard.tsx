@@ -53,16 +53,17 @@ const Dashboard: NextPage = () => {
   const [protocolList, setProtocolList] = useState([]);
   const [protocolLink, setProtocolLink] = useState("");
   const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<Boolean>(false);
 
   const handleLinkButton = (url: string) => {
     setProtocolLink(url);
   };
 
   const basicColumns = getBasicColumnsForSuggestionsTable(
-    walletAddress,
     protocolList,
     handleLinkButton,
     setLinkModalOpen,
+    subscriptionStatus,
   );
   const expandableColumns = getExpandableColumnsForSuggestionsTable();
   const [btc, setBTC] = useState<Pools[] | null>(null);
@@ -306,18 +307,33 @@ const Dashboard: NextPage = () => {
         throw error;
       }
     };
+    const fetchSubscriptionStatus = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_SDK_API_URL}/subscriptions?address=${walletAddress}`,
+        );
+        setSubscriptionStatus(response.data.subscriptionStatus);
+      } catch (error) {
+        console.error(
+          "An error occurred while fetching subscription status:",
+          error,
+        );
+        throw error;
+      }
+    };
 
     fetchProtocolList();
+    fetchSubscriptionStatus();
   }, []);
 
   const expandedRowRender = (records: Pools) => {
     const columns = [
       columnMapping("")["chain"],
       columnMapping(
-        walletAddress,
         protocolList,
         handleLinkButton,
         setLinkModalOpen,
+        subscriptionStatus,
       )["pool"],
       columnMapping("")["tokens"],
       columnMapping("")["tvlUsd"],
