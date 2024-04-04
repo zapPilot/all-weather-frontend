@@ -14,7 +14,7 @@ const tiers = [
     name: "Essential",
     id: "tier-essential",
     href: "#",
-    priceMonthly: "$29",
+    priceMonthly: "$?",
     description: "Quis eleifend a tincidunt pellentesque. A tempor in sed.",
     mostPopular: true,
   },
@@ -22,7 +22,7 @@ const tiers = [
     name: "Premium",
     id: "tier-premium",
     href: "#",
-    priceMonthly: "$59",
+    priceMonthly: "$?",
     description:
       "Orci volutpat ut sed sed neque, dui eget. Quis tristique non.",
     mostPopular: false,
@@ -99,8 +99,7 @@ export default function Example() {
           </p>
         </div>
         <p className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-gray-300">
-          Distinctio et nulla eum soluta et neque labore quibusdam. Saepe et
-          quasi iusto modi velit ut non voluptas in. Explicabo id ut laborum.
+          Click Once, Diversify Forever!
         </p>
 
         {/* xs to lg */}
@@ -142,7 +141,7 @@ export default function Example() {
                 )}
               >
                 {tier.priceMonthly === "Free" ? (
-                  <div>Input Email!</div>
+                  <div>Input Your Email</div>
                 ) : (
                   <div>Upcoming</div>
                 )}
@@ -249,7 +248,7 @@ export default function Example() {
                         )}
                       >
                         {tier.priceMonthly === "Free" ? (
-                          <div>Input Email!</div>
+                          <div>Input Your Email</div>
                         ) : (
                           <div>Upcoming</div>
                         )}
