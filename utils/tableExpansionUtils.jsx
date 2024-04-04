@@ -41,7 +41,7 @@ export const columnMapping = (
           30 Days Free Trial
         </Button>
       ) : (
-        <>
+        <div className="flex">
           <Image
             src={`/projectPictures/${pool.name}.webp`}
             alt={pool.name}
@@ -49,34 +49,28 @@ export const columnMapping = (
             width={20}
           />
           <Tooltip title={"pool ID: " + pool.poolID}>
-            <span style={{ color: "#ffffff" }}> {pool.name}</span>
+            <span className="text-white px-2"> {pool.name}</span>
             {pool.meta ? (
-              <span
-                style={{
-                  color: "#ffffff",
-                  fontSize: "smaller",
-                  opacity: "0.7",
-                }}
-              >
+              <span className="text-gray-400 text-xs pe-2">
                 ({pool.meta})
               </span>
             ) : null}
           </Tooltip>
           {protocolList.map((protocol) =>
             protocol.slug === pool.name ? (
-              <Button
-                type="link"
-                style={{ color: "#ffffff" }}
+              <button
+                type="button"
+                className="rounded bg-white/10 text-sm font-semibold text-white shadow-sm hover:bg-white/20"
                 onClick={() => {
                   handleLinkButton(protocol.url);
                   setLinkModalOpen(true);
                 }}
               >
                 <ExportOutlined />
-              </Button>
+              </button>
             ) : null,
           )}
-        </>
+        </div>
       );
     },
   },
@@ -91,7 +85,7 @@ export const columnMapping = (
         newCoins = tokens.split("-");
       }
       return (
-        <div>
+        <div className="flex">
           {newCoins.map((token, index) => (
             <Image
               key={index}
@@ -101,14 +95,14 @@ export const columnMapping = (
               width={20}
             />
           ))}
+          <span className="text-white px-2">
           {
             // backward compatibility
-            Array.isArray(tokens) ? (
-              <span style={{ color: "#ffffff" }}> {tokens.join("-")}</span>
-            ) : (
-              <span style={{ color: "#ffffff" }}> {tokens}</span>
-            )
+            Array.isArray(tokens) ? 
+            tokens.join("-")
+            :tokens
           }
+          </span>
         </div>
       );
     },
@@ -146,7 +140,7 @@ export const columnMapping = (
             apr.predictions.predictedClass === "Down" ? (
               <ArrowDownOutlined className="text-red-400 px-2"/>
             ) : (
-              <ArrowUpOutlined className="text-green-400 px-2" />
+              <ArrowUpOutlined className="text-green-400 px2" />
             )
           }
         </div>
