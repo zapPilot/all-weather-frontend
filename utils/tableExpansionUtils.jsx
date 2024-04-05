@@ -1,4 +1,5 @@
-import { Tag, Image, Button, Badge, Tooltip } from "antd";
+import { Tooltip } from "antd";
+import Image from 'next/image';
 import {
   UnlockOutlined,
   ArrowUpOutlined,
@@ -27,7 +28,11 @@ export const columnMapping = (
     key: "chain",
     width: 24,
     render: (chain) => (
-      <Image src={`/chainPicturesWebp/${chain}.webp`} height={20} width={20} />
+      <Image
+        src={`/chainPicturesWebp/${chain}.webp`}
+        height={20}
+        width={20}
+      />
     ),
   },
   pool: {
@@ -37,19 +42,24 @@ export const columnMapping = (
     width: 24,
     render: (pool, _, index) => {
       return index === 0 && !paidUserWallets.includes(walletAddress) ? (
-        <Button type="primary" icon={<UnlockOutlined />}>
+        <button
+          type="button"
+          className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm hover:bg-white"
+        >
+          <UnlockOutlined className="-ml-0.5 h-5 w-5" />
           30 Days Free Trial
-        </Button>
+        </button>
       ) : (
-        <div className="flex">
+        <div className="flex items-center">
           <Image
             src={`/projectPictures/${pool.name}.webp`}
             alt={pool.name}
+            className="me-2"
             height={20}
             width={20}
           />
           <Tooltip title={"pool ID: " + pool.poolID}>
-            <span className="text-white px-2"> {pool.name}</span>
+            <span className="text-white pe-2"> {pool.name}</span>
             {pool.meta ? (
               <span className="text-gray-400 text-xs pe-2">
                 ({pool.meta})
@@ -60,7 +70,7 @@ export const columnMapping = (
             protocol.slug === pool.name ? (
               <button
                 type="button"
-                className="rounded bg-white/10 text-sm font-semibold text-white shadow-sm hover:bg-white/20"
+                className="text-sm text-gray-400 shadow-sm hover:text-white"
                 onClick={() => {
                   handleLinkButton(protocol.url);
                   setLinkModalOpen(true);
@@ -85,10 +95,9 @@ export const columnMapping = (
         newCoins = tokens.split("-");
       }
       return (
-        <div className="flex">
+        <div className="flex items-center">
           {newCoins.map((token, index) => (
             <Image
-              key={index}
               src={`/tokenPictures/${token.replace(/[()]/g, "")}.webp`}
               alt={token}
               height={20}
@@ -113,12 +122,10 @@ export const columnMapping = (
     dataIndex: "tvlUsd",
     width: 14,
     render: (tvlUsd) => {
-      const color = tvlUsd < 500000 ?
-        "bg-red-400/10 text-red-400 ring-red-400/20"
-        : "bg-green-500/10 text-green-400 ring-green-500/20";
+      const danger = tvlUsd < 500000 ? true : false;
       return (
         <span
-          className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${color}`}>
+          className={ danger ? "px-2 text-red-400" : "px-2 text-white"}>
           {(tvlUsd / 1e6).toFixed(2)}M
         </span>
       );
@@ -158,13 +165,10 @@ export const columnMapping = (
     dataIndex: "apr",
     width: 14,
     render: (apr) => {
-      let color = "green";
       return (
-        <>
-          <Tag color={color} key={apr.value}>
-            {apr.value.toFixed(2)}%
-          </Tag>
-        </>
+        <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+          {apr.value.toFixed(2)}%
+        </span>
       );
     },
   },

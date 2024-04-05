@@ -256,9 +256,9 @@ const Dashboard: NextPage = () => {
     'inline-flex',
     'items-center',
     'rounded-md',
-    'text-xs',
-    'font-medium',
-    'rounded'
+    'gap-x-1.5',
+    'hover:text-white',
+    'hover:bg-white',
   ];
 
   useEffect(() => {

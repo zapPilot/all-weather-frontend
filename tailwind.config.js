@@ -13,9 +13,12 @@ module.exports = {
   },
   plugins: [],
   safelist: [
-    {pattern: /^p(x|y|e)-\d+$/},
+    {pattern: /^(m|p)(x|y|s|e)-\d+(\.\d+)?$/},
     {pattern: /^ring-(\d+|\w+)$/},
     {pattern: /^text-(red|green)-(400|700)$/},
-    {pattern: /^(bg|ring)-(red|green|white)-(50|400|500|600)(\/\d{1,2})?$/},
+    {pattern: /^text-\w+$/},
+    {pattern: /^(bg|ring)-(red|green|white|gray)-(50|400|500|600)(\/\d{1,2})?$/},
+    {pattern: /^bg-(white)(\/\d{1,2})$/},
+    {pattern: /^font-\w+$/}
   ],
 };
