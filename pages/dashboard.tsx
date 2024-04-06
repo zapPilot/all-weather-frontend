@@ -415,7 +415,7 @@ const Dashboard: NextPage = () => {
         <center>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">Better Pools Search Engine</h1>
         </center>
-        <p className="mt-6 text-lg leading-8 text-gray-400">
+        <p className="mt-2 text-xl text-gray-400">
           Tokens in Current Portfolio: {uniqueTokens.size}
           {Array.from(uniqueTokens).map((token: unknown, index) => (
             <Image
@@ -457,7 +457,7 @@ const Dashboard: NextPage = () => {
               <div key={categoryMetaData.category}>
                 {" "}
                 {/* Make sure to provide a unique key for each item */}
-                <h2 className="ant-table-title">{categoryMetaData.wording}</h2>
+                <h2 className="my-2 text-xl font-bold">{categoryMetaData.wording}</h2>
                 {categoryMetaData.state === null ? (
                   <div
                     style={{
