@@ -17,8 +17,10 @@ module.exports = {
     {pattern: /^ring-(\d+|\w+)$/},
     {pattern: /^text-(red|green)-(400|700)$/},
     {pattern: /^text-\w+$/},
-    {pattern: /^(bg|ring)-(red|green|white|gray)-(50|400|500|600)(\/\d{1,2})?$/},
-    {pattern: /^bg-(white)(\/\d{1,2})$/},
-    {pattern: /^font-\w+$/}
+    {pattern: /^bg-(white|black)$/},
+    {pattern: /^(bg|ring)-(red|green|white|gray)-(50|400|500|600|900)(\/\d{1,2})?$/},
+    {pattern: /^font-\w+$/},
+    {pattern: /^inline-\w+$/},
+    {pattern: /^rounded-\w+$/},
   ],
 };

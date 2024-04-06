@@ -253,12 +253,24 @@ const Dashboard: NextPage = () => {
   });
 
   const tailwindCssList = [
-    'inline-flex',
-    'items-center',
-    'rounded-md',
-    'gap-x-1.5',
-    'hover:text-white',
-    'hover:bg-white',
+    "items-center",
+    "gap-x-1.5",
+    "hover:text-white",
+    "hover:bg-white",
+    "dark:bg-gray-700",
+    "absolute",
+    "relative",
+    "invisible",
+    "hidden",
+    "transition-opacity",
+    "duration-300",
+    "shadow-sm",
+    "opacity-0",
+    "group-hover:inline-block",
+    "bottom-full",
+    "left-1/2",
+    "transform",
+    "-translate-x-1/2",
   ];
 
   useEffect(() => {
