@@ -470,6 +470,7 @@ const Dashboard: NextPage = () => {
                     <Spin size="large" />
                   </div>
                 ) : unexpandable[categoryMetaData.category] === true ? (
+                  <>
                   <Table
                     columns={basicColumns}
                     // @ts-ignore
@@ -481,6 +482,27 @@ const Dashboard: NextPage = () => {
                       hideSelectAll: true,
                     }}
                   />
+                  <table className="min-w-full divide-y divide-gray-700">
+                    <thead>
+                      <tr className="bg-emerald-400">
+                        {basicColumns.map((column, index) => (
+                          <th key={index} className="px-3 py-3.5 text-left text-sm font-semibold text-black">{column.title}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800">
+                      {categoryMetaData.state.map((item, rowIndex) => (
+                        <tr key={rowIndex} className="hover:bg-black-900">
+                          {basicColumns.map((column, colIndex) => (
+                            <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                              {column.render ? column.render(item[column.dataIndex]) : item[column.dataIndex]}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  </>
                 ) : (
                   <Table
                     columns={expandableColumns}

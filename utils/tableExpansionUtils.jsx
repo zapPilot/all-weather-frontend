@@ -59,7 +59,7 @@ export const columnMapping = (
           />
           <div className="relative group">
             <span className="text-white pe-2"> {pool.name}</span>
-            <span class="hidden group-hover:inline-block bg-black px-2 py-2 text-sm text-white rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">{"pool ID: " + pool.poolID}</span>
+            <span class="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">{"pool ID: " + pool.poolID}</span>
             {pool.meta ? (
               <span className="text-gray-400 text-xs pe-2">
                 ({pool.meta})
