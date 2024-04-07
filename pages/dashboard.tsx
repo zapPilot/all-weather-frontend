@@ -345,15 +345,36 @@ const Dashboard: NextPage = () => {
       columnMapping("")["apr"],
     ];
     return (
-      <Table
-        columns={columns}
-        dataSource={records.data}
-        pagination={false}
-        rowSelection={{
-          onSelect: onSelectCallback,
-          hideSelectAll: true,
-        }}
-      />
+      <>
+        <table className="min-w-full divide-y divide-gray-700">
+          <thead>
+            <tr className="bg-emerald-400">
+              <th scope="col" className="relative px-7 sm:w-12 sm:px-6"></th>
+              {columns.map((column, index) => (
+                <th key={index} className="px-3 py-3.5 text-left text-sm font-semibold text-black">{column.title}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-800">
+            {records.data.map((item, rowIndex) => (
+              <tr key={rowIndex} className="hover:bg-black-900">
+                <td className="relative px-7 sm:w-12 sm:px-6">
+                  <input
+                    type="checkbox"
+                    className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                    onChange={onSelectCallback}
+                  />
+                </td>
+                {columns.map((column, colIndex) => (
+                  <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                    {column.render ? column.render(item[column.dataIndex]) : item[column.dataIndex]}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </>
     );
   };
   const onSelectCallback = (record: Pool, selected: boolean) => {
@@ -471,37 +492,39 @@ const Dashboard: NextPage = () => {
                   </div>
                 ) : unexpandable[categoryMetaData.category] === true ? (
                   <>
-                  <Table
-                    columns={basicColumns}
-                    // @ts-ignore
-                    dataSource={categoryMetaData.state}
-                    pagination={false}
-                    rowSelection={{
-                      // @ts-ignore
-                      onSelect: onSelectCallback,
-                      hideSelectAll: true,
-                    }}
-                  />
-                  <table className="min-w-full divide-y divide-gray-700">
-                    <thead>
-                      <tr className="bg-emerald-400">
-                        {basicColumns.map((column, index) => (
-                          <th key={index} className="px-3 py-3.5 text-left text-sm font-semibold text-black">{column.title}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-800">
-                      {categoryMetaData.state.map((item, rowIndex) => (
-                        <tr key={rowIndex} className="hover:bg-black-900">
-                          {basicColumns.map((column, colIndex) => (
-                            <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
-                              {column.render ? column.render(item[column.dataIndex]) : item[column.dataIndex]}
-                            </td>
+                    <table className="min-w-full divide-y divide-gray-700">
+                      <thead>
+                        <tr className="bg-emerald-400">
+                          <th scope="col" className="relative px-7 sm:w-12 sm:px-6"></th>
+                          {basicColumns.map((column, index) => (
+                            <th key={index} className="px-3 py-3.5 text-left text-sm font-semibold text-black">{column.title}</th>
                           ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-gray-800">
+                        {categoryMetaData.state.map((item, rowIndex) => (
+                          <tr key={rowIndex} className="hover:bg-black-900">
+                            <td className="relative px-7 sm:w-12 sm:px-6">
+                              <input
+                                type="checkbox"
+                                className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                                onChange={
+                                  (e) =>
+                                  e.target.checked ? 
+                                  onSelectCallback(item, true)
+                                  : null
+                                }
+                              />
+                            </td>
+                            {basicColumns.map((column, colIndex) => (
+                              <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                                {column.render ? column.render(item[column.dataIndex]) : item[column.dataIndex]}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </>
                 ) : (
                   <Table
