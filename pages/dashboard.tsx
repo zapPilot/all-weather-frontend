@@ -1,6 +1,6 @@
 import type { NextPage } from "next";
 import BasePage from "./basePage.tsx";
-import { Spin, Table, Button, Space, Image } from "antd";
+import { Spin, Button, Image } from "antd";
 import { useWindowHeight } from "../utils/chartUtils.js";
 import { investByAAWallet } from "../utils/etherspot.js";
 
@@ -121,6 +121,17 @@ const Dashboard: NextPage = () => {
       ...prevState,
       [key]: value,
     }));
+  };
+  const [expandedRows, setExpandedRows] = useState({});
+
+  const toggleExpand = (rowKey) => {
+    setExpandedRows((prevExpandedRows) => {
+      const isExpanded = prevExpandedRows[rowKey];
+      return {
+        ...prevExpandedRows,
+        [rowKey]: !isExpanded,
+      };
+    });
   };
 
   const [portfolioComposition, setPortfolioComposition] = useState<{
@@ -527,15 +538,41 @@ const Dashboard: NextPage = () => {
                     </table>
                   </>
                 ) : (
-                  <Table
-                    columns={expandableColumns}
-                    expandable={{
-                      expandedRowRender,
-                    }}
-                    // @ts-ignore
-                    dataSource={categoryMetaData.state}
-                    pagination={false}
-                  />
+                  <>
+                    <table className="min-w-full divide-y divide-gray-700">
+                      <thead>
+                        <tr className="bg-emerald-400">
+                          {expandableColumns.map((column, index) => (
+                            <th key={index} className="px-3 py-3.5 text-left text-sm font-semibold text-black">
+                              {column.title}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {categoryMetaData.state.map((item, rowIndex) => (
+                          <>
+                            <tr 
+                              key={rowIndex}
+                              className="hover:bg-black-900"
+                              onClick={() => toggleExpand(item.tokens)}
+                            >
+                              {expandableColumns.map((column, colIndex) => (
+                                <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                                  {column.render ? column.render(item[column.dataIndex]) : item[column.dataIndex]}
+                                </td>
+                              ))}
+                            </tr>
+                            {expandedRows[item.tokens] && (
+                              <div className="p-4 border-t">
+                                <div>{expandedRowRender(item)}</div>
+                              </div>
+                            )}
+                          </>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
                 )}
               </div>
             );

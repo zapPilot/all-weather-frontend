@@ -147,7 +147,7 @@ export const columnMapping = (
             apr.predictions.predictedClass === "Down" ? (
               <ArrowDownOutlined className="text-red-400 px-2"/>
             ) : (
-              <ArrowUpOutlined className="text-green-400 px2" />
+              <ArrowUpOutlined className="text-green-400 px-2" />
             )
           }
         </div>
