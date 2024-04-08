@@ -360,9 +360,9 @@ const Dashboard: NextPage = () => {
         <table className="min-w-full divide-y divide-gray-700">
           <thead>
             <tr className="bg-emerald-400">
-              <th scope="col" className="relative px-7 sm:w-12 sm:px-6"></th>
+              <th scope="col" className="relative px-7 hidden sm:w-12 sm:px-6 sm:table-cell"></th>
               {columns.map((column, index) => (
-                <th key={index} className="px-3 py-3.5 text-left text-sm font-semibold text-black">{column.title}</th>
+                <th key={index} className="px-3 py-3.5 text-left text-sm font-semibold text-black hidden sm:table-cell">{column.title}</th>
               ))}
             </tr>
           </thead>
@@ -377,8 +377,22 @@ const Dashboard: NextPage = () => {
                   />
                 </td>
                 {columns.map((column, colIndex) => (
-                  <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
-                    {column.render ? column.render(item[column.dataIndex]) : item[column.dataIndex]}
+                  <td
+                    key={colIndex}
+                    className={`whitespace-nowrap px-3 py-4 text-sm text-gray-300 ${colIndex === 0 ? "" : "hidden "}sm:table-cell`}
+                  >
+                    {colIndex === 0 && (
+                      <div className="sm:hidden">
+                        {columns.map((col, index) => (
+                          <div key={index}>
+                            {col.render ? col.render(item[col.dataIndex]) : item[col.dataIndex]}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="hidden sm:block">
+                      {column.render ? column.render(item[column.dataIndex]) : item[column.dataIndex]}
+                    </div>
                   </td>
                 ))}
               </tr>
@@ -508,7 +522,7 @@ const Dashboard: NextPage = () => {
                         <tr className="bg-emerald-400">
                           <th scope="col" className="relative px-7 sm:w-12 sm:px-6"></th>
                           {basicColumns.map((column, index) => (
-                            <th key={index} className="px-3 py-3.5 text-left text-sm font-semibold text-black">{column.title}</th>
+                            <th key={index} className="px-3 py-3.5 text-left text-sm font-semibold text-black hidden sm:table-cell">{column.title}</th>
                           ))}
                         </tr>
                       </thead>
@@ -528,8 +542,19 @@ const Dashboard: NextPage = () => {
                               />
                             </td>
                             {basicColumns.map((column, colIndex) => (
-                              <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
-                                {column.render ? column.render(item[column.dataIndex]) : item[column.dataIndex]}
+                              <td key={colIndex} className={`whitespace-nowrap px-3 py-4 text-sm text-gray-300 ${colIndex === 0 ? "" : "hidden "}sm:table-cell`}>
+                                {colIndex === 0 && (
+                                  <div className="sm:hidden">
+                                    {basicColumns.map((col, index) => (
+                                      <div key={index}>
+                                        {col.render ? col.render(item[col.dataIndex]) : item[col.dataIndex]}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                <div className="hidden sm:block">
+                                  {column.render ? column.render(item[column.dataIndex]) : item[column.dataIndex]}
+                                </div>
                               </td>
                             ))}
                           </tr>
