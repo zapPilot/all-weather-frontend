@@ -33,6 +33,7 @@ export const columnMapping = (
         width={20}
       />
     ),
+    content: (chain) => chain,
   },
   pool: {
     title: "Pool",
@@ -83,6 +84,15 @@ export const columnMapping = (
         </div>
       );
     },
+    content: (pool, _, index) => {
+      const paidUser = paidUserWallets.includes(walletAddress);
+      const protocolLink = protocolList.find(protocol => protocol.slug === pool.name);
+      return {
+        paidUser: paidUser,
+        pool: pool,
+        protocolLink: protocolLink ? protocolLink.url : null
+      };
+    }
   },
   tokens: {
     title: "Tokens",
@@ -115,6 +125,13 @@ export const columnMapping = (
         </div>
       );
     },
+    content: (tokens) => {
+      let newCoins = tokens;
+      if (typeof tokens === "string") {
+        newCoins = tokens.split("-");
+      }
+      return tokens
+    }
   },
   tvlUsd: {
     title: "TVL",
@@ -129,6 +146,14 @@ export const columnMapping = (
           {(tvlUsd / 1e6).toFixed(2)}M
         </span>
       );
+    },
+    content: (tvlUsd) => {
+      const danger = tvlUsd < 500000 ? 1 : 0;
+      const tvlUsdCount = (tvlUsd / 1e6).toFixed(2);
+      return {
+        danger: danger,
+        tvlUsdCount: tvlUsdCount,
+      }
     },
   },
   apr: {
@@ -157,6 +182,14 @@ export const columnMapping = (
           {apr}
         </span>
       );
+    },
+    content: (apr) => {
+      const aprVal = apr.value.toFixed(2);
+      const aprPredicted = apr.predictions.predictedClass;
+      return {
+        aprVal: aprVal,
+        aprPredicted: aprPredicted,
+      }
     },
   },
   outerAprColumn: {
