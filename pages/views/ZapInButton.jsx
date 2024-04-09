@@ -27,10 +27,10 @@ import {
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import {
-  useWriteContract,
-  useReadContract,
-  useWaitForTransactionReceipt,
-} from "wagmi";
+  useContractWrite,
+  useContractRead,
+  useContract,
+} from "@thirdweb-dev/react";
 
 import { useBalance } from "@thirdweb-dev/react";
 import { useAddress } from "@thirdweb-dev/react";
@@ -125,38 +125,28 @@ const ZapInButton = () => {
     data: approveData,
     writeContract: approveWrite,
     isPending: approveIsPending,
-  } = useWriteContract();
-
-  const {
-    isLoading: approveIsLoading,
-    isSuccess: approveIsSuccess,
-    isError: approveIsError,
-  } = useWaitForTransactionReceipt({ hash: approveData });
+  } = useContractWrite();
 
   const {
     data: depositData,
     writeContract,
     isPending: depositIsPending,
-  } = useWriteContract();
-  const {
-    isLoading: depositIsLoading,
-    isSuccess: depositIsSuccess,
-    isError: depositIsError,
-  } = useWaitForTransactionReceipt({ hash: depositData });
+  } = useContractWrite();
 
+  const { contract } = useContract(
+    chosenToken === "0x0000000000000000000000000000000000000000"
+      ? fakeAllowanceAddressForBNB
+      : chosenToken,
+    permanentPortfolioJson.abi,
+  );
   const {
     data: approveAmountData,
     error: approveAmountError,
     isPending: approveAmounIsPending,
-  } = useReadContract({
-    address:
-      chosenToken === "0x0000000000000000000000000000000000000000"
-        ? fakeAllowanceAddressForBNB
-        : chosenToken,
-    abi: permanentPortfolioJson.abi,
-    functionName: "allowance",
-    args: [address, portfolioContractAddress],
-  });
+  } = useContractRead(contract, "allowance", [
+    address,
+    portfolioContractAddress,
+  ]);
 
   useEffect(() => {
     if (approveAmounIsPending) return; // Don't proceed if loading
@@ -364,15 +354,16 @@ const ZapInButton = () => {
             marginBottom: "10px",
           }}
         >
-          {statusIcon(
-            approveIsPending || approveIsLoading
+          {/* haven't found the equivilent hook in Thirdweb to implment approveIsSuccess, so we're missing approveIsSuccess and approveIsError */}
+          {/* {statusIcon(
+            approveIsPending
               ? "loading"
               : approveIsSuccess
               ? "success"
               : approveIsError
               ? "error"
               : "",
-          )}
+          )} */}
           <span style={{ marginLeft: 5 }}>Approve</span>
         </div>
         <div
@@ -392,7 +383,8 @@ const ZapInButton = () => {
             marginBottom: "10px",
           }}
         >
-          {statusIcon(
+          {/* haven't found the equivilent hook in Thirdweb to implment approveIsSuccess, so we're missing approveIsSuccess and approveIsError */}
+          {/* {statusIcon(
             depositIsPending || depositIsLoading
               ? "loading"
               : depositIsSuccess
@@ -400,7 +392,7 @@ const ZapInButton = () => {
               : depositIsError
               ? "error"
               : "",
-          )}
+          )} */}
           <span style={{ marginLeft: 5 }}>Deposit </span>
         </div>
         {typeof depositHash === "undefined" ? (

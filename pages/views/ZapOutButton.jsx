@@ -3,7 +3,11 @@ import { portfolioContractAddress } from "../../utils/oneInch";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
-import { useWriteContract, useReadContract } from "wagmi";
+import {
+  useContractWrite,
+  useContractRead,
+  useContract,
+} from "@thirdweb-dev/react";
 import { useChainId, useAddress } from "@thirdweb-dev/react";
 import { refreshTVLData } from "../../utils/contractInteractions";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
@@ -31,27 +35,29 @@ const ZapOutButton = () => {
     writeContract,
     isPending: redeemDataIsPending,
     status: redeemDataStatus,
-  } = useWriteContract();
+  } = useContractWrite();
 
   const {
     data: approveData,
     writeContract: approveWrite,
     isPending: approveIsPending,
     status: approveStatus,
-  } = useWriteContract();
+  } = useContractWrite();
 
+  const { contract } = useContract(
+    portfolioContractAddress,
+    permanentPortfolioJson.abi,
+  );
   const {
     data: approveAmountContract,
     error: approveAmountError,
     isPending: approveAmountContractIsPending,
-  } = useReadContract({
-    address: portfolioContractAddress,
-    abi: permanentPortfolioJson.abi,
-    functionName: "allowance",
-    args: [address, portfolioContractAddress],
+  } = useContractRead(
+    contract,
+    "allowance",
+    [address, portfolioContractAddress],
     // args: ["0x43cd745Bd5FbFc8CfD79ebC855f949abc79a1E0C", "0x78000b0605E81ea9df54b33f72ebC61B5F5c8077"],
-    watch: true,
-  });
+  );
   const chainId = useChainId();
 
   useEffect(() => {

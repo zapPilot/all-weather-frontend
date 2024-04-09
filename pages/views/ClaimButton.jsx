@@ -7,9 +7,8 @@ import {
 import { DollarOutlined } from "@ant-design/icons";
 import { useAddress } from "@thirdweb-dev/react";
 
-import { useWriteContract } from "wagmi";
 import { useState, useContext, useEffect } from "react";
-// import { web3Context } from "./Web3DataProvider";
+import { useContractWrite } from "@thirdweb-dev/react";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import { sendDiscordMessage } from "../../utils/discord";
 import TokenDropdown from "./components/TokenDropdowns.jsx";
@@ -28,7 +27,7 @@ const ClaimButton = () => {
   const loadingWording = "Fetching the best route to dump these rewards...";
   const useDump = true;
 
-  const { data, writeContract, status } = useWriteContract();
+  const { data, writeContract, status } = useContractWrite();
 
   useEffect(() => {
     async function fetchData() {
