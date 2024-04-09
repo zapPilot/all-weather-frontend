@@ -5,6 +5,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function useRebalanceSuggestions() {
   const [netWorth, setNetWorth] = useState(0);
+  const [netWorthWithCustomLogic, setNetWorthWithCustomLogic] = useState(0);
   const [rebalanceSuggestions, setRebalanceSuggestions] = useState([]);
   const [totalInterest, setTotalInterest] = useState(0);
   const [portfolioApr, setPortfolioApr] = useState(0);
@@ -29,6 +30,12 @@ export default function useRebalanceSuggestions() {
       .then((response) => {
         const newNetWorth = response.data.net_worth;
         setNetWorth(newNetWorth);
+        /* $25866 stands for the TVL from this vault: https://debank.com/profile/0xd56d8dfd3a3d6f6dafc0b7b6945f6e7ab138706e */
+        setNetWorthWithCustomLogic(
+          process.env.NEXT_PUBLIC_DAVID_PORTFOLIO !== "true"
+            ? (response.data.net_worth + 25873).toFixed(2)
+            : response.data.net_worth.toFixed(2),
+        );
         const newRebalanceSuggestions = response.data.suggestions;
         setRebalanceSuggestions(newRebalanceSuggestions);
         const portfolioApr = response.data.portfolio_apr;
@@ -62,6 +69,7 @@ export default function useRebalanceSuggestions() {
 
   return {
     netWorth,
+    netWorthWithCustomLogic,
     rebalanceSuggestions,
     totalInterest,
     portfolioApr,

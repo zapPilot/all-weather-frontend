@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Popover, Tag, Spin, ConfigProvider } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
-import { web3Context } from "./Web3DataProvider";
 import ClaimButton from "./ClaimButton";
 import { ethers } from "ethers";
 import { useAccount } from "wagmi";
 import TokenTable from "./components/TokenTable.jsx";
 import { chainIDToName } from "../../utils/contractInteractions.jsx";
+import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
 const BigNumber = require("bignumber.js");
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -16,15 +16,27 @@ const APRPopOver = ({ mode }) => {
   const { connector: isConnected } = useAccount();
   const { chain } = useAccount();
 
-  const [claimableRewards, setClaimableRewards] = useState([]);
   const [aprComposition, setAprComposition] = useState({});
   const [sumOfRewardsDenominatedInUSD, setSumOfRewardsDenominatedInUSD] =
     useState(0);
-  const WEB3_CONTEXT = useContext(web3Context);
+  const {
+    netWorth,
+    netWorthWithCustomLogic,
+    rebalanceSuggestions,
+    totalInterest,
+    portfolioApr,
+    sharpeRatio,
+    topNLowestAprPools,
+    topNPoolConsistOfSameLpToken,
+    topNStableCoins,
+    aggregatedPositions,
+    ROI,
+    maxDrawdown,
+    claimableRewards,
+  } = useRebalanceSuggestions();
 
   useEffect(() => {
     async function fetchData() {
-      const claimableRewards = WEB3_CONTEXT.dataOfGetClaimableRewards;
       const claimableRewardsWithChainInfo =
         addChainInfoToToken(claimableRewards);
       setClaimableRewards(claimableRewardsWithChainInfo);
@@ -63,10 +75,9 @@ const APRPopOver = ({ mode }) => {
         .then((result) => setAprComposition(result))
         .catch((error) => console.error("Error of apr_composition:", error));
     }
-    if (!WEB3_CONTEXT) return;
     fetchData();
     fetchAprComposition();
-  }, [WEB3_CONTEXT]);
+  }, [claimableRewards]);
 
   function renderContent() {
     if (!WEB3_CONTEXT || Object.keys(aprComposition).length === 0)

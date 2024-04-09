@@ -2,7 +2,7 @@ import { Button, Space, message, ConfigProvider } from "antd";
 import { portfolioContractAddress, USDC } from "../../utils/oneInch";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState } from "react";
 import {
   useWriteContract,
   useReadContract,
@@ -11,7 +11,6 @@ import {
 } from "wagmi";
 import { refreshTVLData } from "../../utils/contractInteractions";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
-import { web3Context } from "./Web3DataProvider";
 import {
   selectBefore,
   getAggregatorData,
@@ -21,7 +20,6 @@ const { ethers } = require("ethers");
 
 const ZapOutButton = () => {
   const { address } = useAccount();
-  const WEB3_CONTEXT = useContext(web3Context);
   const normalWording = "Withdraw";
   const loadingWording = "Fetching the best route to withdraw";
   const [withdrawAmount, setWithdrawAmount] = useState(0);
@@ -64,9 +62,6 @@ const ZapOutButton = () => {
   const { chain } = useAccount();
 
   useEffect(() => {
-    if (WEB3_CONTEXT) {
-      setUserShares(WEB3_CONTEXT.userShares);
-    }
     if (approveAmountContractIsPending) return; // Don't proceed if loading
     if (approveAmountError)
       console.log("allowance Error", approveAmountError.message);
@@ -88,7 +83,6 @@ const ZapOutButton = () => {
       message.success("Withdraw success");
     }
   }, [
-    WEB3_CONTEXT,
     address,
     approveAmountContractIsPending,
     approveAmountContract,

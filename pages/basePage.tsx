@@ -10,7 +10,6 @@ import {
 import { Layout, Affix } from "antd";
 import styles from "../styles/Home.module.css";
 import HeaderInner from "./views/Header";
-import Web3DataProvider from "./views/Web3DataProvider";
 import "@flaticon/flaticon-uicons/css/brands/all.css";
 import "@flaticon/flaticon-uicons/css/regular/all.css";
 import { ConnectWallet } from "@thirdweb-dev/react";
@@ -49,13 +48,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
         </Affix>
 
         <Content>
-          {connectionStatus === "unknown" || isAutoConnecting ? (
-            <Web3DataProvider address={address}>
-              <div>{children}</div>
-            </Web3DataProvider>
-          ) : (
-            <div>{children}</div>
-          )}
+          <div>{children}</div>
         </Content>
         <Footer className={styles.footer}>
           <a

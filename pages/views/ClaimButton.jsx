@@ -7,7 +7,7 @@ import {
 import { DollarOutlined } from "@ant-design/icons";
 import { useWriteContract, useAccount } from "wagmi";
 import { useState, useContext, useEffect } from "react";
-import { web3Context } from "./Web3DataProvider";
+// import { web3Context } from "./Web3DataProvider";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import { sendDiscordMessage } from "../../utils/discord";
 import TokenDropdown from "./components/TokenDropdowns.jsx";
