@@ -3,7 +3,8 @@ import { useState } from "react";
 import { selectBefore } from "../../utils/contractInteractions";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
-import { useContract, useContractRead } from "@thirdweb-dev/react";
+import { useBalance } from "@thirdweb-dev/react";
+import { useChainId } from "@thirdweb-dev/react";
 
 const TokenDropdownInput = ({
   address,
@@ -11,28 +12,15 @@ const TokenDropdownInput = ({
   normalWording,
   loadingWording,
 }) => {
-  const [chosenToken, setChosenToken] = useState(
-    "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
-  );
-  const { contract } = useContract(chosenToken);
-  const { data: chosenTokenBalance } = useContractRead(
-    contract,
-    "balanceOf",
-    address,
-  );
-  // const { data: chosenTokenBalance } = useBalance({
-  //   address,
-  //   ...(chosenToken === "0x0000000000000000000000000000000000000000"
-  //     ? {}
-  //     : { token: chosenToken }), // Include token only if chosenToken is truthy
-  //   // token: chosenToken,
-  //   onError(error) {
-  //     console.log(`cannot read ${chosenToken} Balance:`, error);
-  //     throw error;
-  //   },
-  // });
+  const [chosenToken, setChosenToken] = useState("");
+  const { data: chosenTokenBalance } =
+    chosenToken === "0x0000000000000000000000000000000000000000" ||
+    chosenToken === ""
+      ? useBalance()
+      : useBalance(chosenToken);
   const [amount, setAmount] = useState(0);
   const [inputValue, setInputValue] = useState("");
+  const chainId = useChainId();
   const handleInputChange = async (eventValue) => {
     if (eventValue === "") {
       return;
@@ -42,9 +30,9 @@ const TokenDropdownInput = ({
   };
 
   const handleOnClickMax = async () => {
-    setAmount(chosenTokenBalance.formatted);
-    setInputValue(chosenTokenBalance.formatted);
-    handleInputChange(chosenTokenBalance.formatted);
+    setAmount(chosenTokenBalance.displayValue);
+    setInputValue(chosenTokenBalance.displayValue);
+    handleInputChange(chosenTokenBalance.displayValue);
 
     // TODO(david): find a better way to implement.
     // Since `setAmount` need some time to propagate, the `amount` would be 0 at the first click.
@@ -65,13 +53,14 @@ const TokenDropdownInput = ({
         {selectBefore(
           (value) => {
             setChosenToken(value);
+            console.log("value", value);
           },
           "address",
-          42161,
+          chainId,
         )}
         <NumericInput
           placeholder={`Balance: ${
-            chosenTokenBalance ? chosenTokenBalance.formatted : 0
+            chosenTokenBalance ? chosenTokenBalance.displayValue : 0
           }`}
           value={inputValue}
           onChange={(value) => {

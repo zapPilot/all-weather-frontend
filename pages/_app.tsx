@@ -45,7 +45,7 @@ const App = ({ Component, pageProps }: AppProps) => {
         <RainbowKitProvider theme={darkTheme()}>
           <ThirdwebProvider
             clientId={process.env.NEXT_PUBLIC_TEMPLATE_CLIENT_ID}
-            activeChain={"optimism"}
+            activeChain={"binance"}
             supportedWallets={[
               embeddedWallet({
                 auth: {

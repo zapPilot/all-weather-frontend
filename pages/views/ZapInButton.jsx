@@ -27,11 +27,11 @@ import {
 import { useEffect, useState } from "react";
 import {
   useWriteContract,
-  useBalance,
   useReadContract,
   useAccount,
   useWaitForTransactionReceipt,
 } from "wagmi";
+import { useBalance } from "@thirdweb-dev/react";
 
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import NumericInput from "./NumberInput";
@@ -86,17 +86,11 @@ const ZapInButton = () => {
     setSlippageModalOpen(true);
   };
 
-  const { data: chosenTokenBalance } = useBalance({
-    address,
-    ...(chosenToken === "0x0000000000000000000000000000000000000000"
-      ? {}
-      : { token: chosenToken }), // Include token only if chosenToken is truthy
-    // token: chosenToken,
-    onError(error) {
-      console.log(`cannot read ${chosenToken} Balance:`, error);
-      throw error;
-    },
-  });
+  const { data: chosenTokenBalance } =
+    chosenToken === "0x0000000000000000000000000000000000000000" ||
+    chosenToken === ""
+      ? useBalance()
+      : useBalance(chosenToken);
 
   const iconSize = { fontSize: "20px" };
   const defaultIcon = {
