@@ -10,6 +10,7 @@ import {
 import { EditOutlined } from "@ant-design/icons";
 import styles from "../../styles/zapInOut.module.scss";
 import { z } from "zod";
+import { useChainId } from "@thirdweb-dev/react";
 import { encodeFunctionData } from "viem";
 import { portfolioContractAddress, USDT } from "../../utils/oneInch";
 import {
@@ -28,10 +29,11 @@ import { useEffect, useState } from "react";
 import {
   useWriteContract,
   useReadContract,
-  useAccount,
   useWaitForTransactionReceipt,
 } from "wagmi";
+
 import { useBalance } from "@thirdweb-dev/react";
+import { useAddress } from "@thirdweb-dev/react";
 
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import NumericInput from "./NumberInput";
@@ -53,7 +55,7 @@ const depositSchema = z
 const fakeAllowanceAddressForBNB = "0x55d398326f99059fF775485246999027B3197955";
 
 const ZapInButton = () => {
-  const { address } = useAccount();
+  const address = useAddress();
   const [open, setOpen] = useState(false);
   const normalWording = "Deposit";
   const loadingWording = "Fetching the best route to deposit";
@@ -72,7 +74,7 @@ const ZapInButton = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const [slippage, setSlippage] = useState(1);
   const [slippageModalOpen, setSlippageModalOpen] = useState(false);
-  const { chain } = useAccount();
+  const chainId = useChainId();
 
   const showModal = () => {
     setOpen(true);
@@ -245,7 +247,7 @@ const ZapInButton = () => {
     setApproveReady(true);
     setFetchingStatus("loading");
     const aggregatorDatas = await getAggregatorData(
-      chain?.id,
+      chainId,
       amount,
       chosenToken,
       USDT,
@@ -445,7 +447,7 @@ const ZapInButton = () => {
             },
             "address",
             // @ts-ignore
-            chain?.id,
+            chainId,
           )}
           <NumericInput
             placeholder={`Balance: ${

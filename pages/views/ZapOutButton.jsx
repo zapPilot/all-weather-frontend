@@ -1,25 +1,18 @@
 import { Button, Space, message, ConfigProvider } from "antd";
-import { portfolioContractAddress, USDC } from "../../utils/oneInch";
+import { portfolioContractAddress } from "../../utils/oneInch";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
-import {
-  useWriteContract,
-  useReadContract,
-  useAccount,
-  useWaitForTransactionReceipt,
-} from "wagmi";
+import { useWriteContract, useReadContract } from "wagmi";
+import { useChainId, useAddress } from "@thirdweb-dev/react";
 import { refreshTVLData } from "../../utils/contractInteractions";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
-import {
-  selectBefore,
-  getAggregatorData,
-} from "../../utils/contractInteractions";
+import { selectBefore } from "../../utils/contractInteractions";
 
 const { ethers } = require("ethers");
 
 const ZapOutButton = () => {
-  const { address } = useAccount();
+  const address = useAddress();
   const normalWording = "Withdraw";
   const loadingWording = "Fetching the best route to withdraw";
   const [withdrawAmount, setWithdrawAmount] = useState(0);
@@ -59,7 +52,7 @@ const ZapOutButton = () => {
     // args: ["0x43cd745Bd5FbFc8CfD79ebC855f949abc79a1E0C", "0x78000b0605E81ea9df54b33f72ebC61B5F5c8077"],
     watch: true,
   });
-  const { chain } = useAccount();
+  const chainId = useChainId();
 
   useEffect(() => {
     if (approveAmountContractIsPending) return; // Don't proceed if loading
@@ -208,7 +201,7 @@ const ZapOutButton = () => {
               setChosenToken(value);
             },
             "address",
-            chain?.id,
+            chainId,
           )}
           <NumericInput
             placeholder={`Balance: ${userShares} SCLP`}

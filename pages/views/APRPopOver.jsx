@@ -4,17 +4,19 @@ import { Popover, Tag, Spin, ConfigProvider } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import ClaimButton from "./ClaimButton";
 import { ethers } from "ethers";
-import { useAccount } from "wagmi";
 import TokenTable from "./components/TokenTable.jsx";
 import { chainIDToName } from "../../utils/contractInteractions.jsx";
 import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
+import { useChainId } from "@thirdweb-dev/react";
+import { useAddress } from "@thirdweb-dev/react";
+
 const BigNumber = require("bignumber.js");
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const APRPopOver = ({ mode }) => {
-  const { connector: isConnected } = useAccount();
-  const { chain } = useAccount();
+  const address = useAddress();
+  const chainId = useChainId();
 
   const [aprComposition, setAprComposition] = useState({});
   const [sumOfRewardsDenominatedInUSD, setSumOfRewardsDenominatedInUSD] =
@@ -57,8 +59,8 @@ const APRPopOver = ({ mode }) => {
       if (claimableRewards === undefined) return;
       for (const reward of claimableRewards) {
         for (const claimableReward of reward.claimableRewards) {
-          if (!claimableReward.token.startsWith(chainIDToName(chain.id))) {
-            claimableReward.token = `${chainIDToName(chain.id)}:${
+          if (!claimableReward.token.startsWith(chainIDToName(chainId))) {
+            claimableReward.token = `${chainIDToName(chainId)}:${
               claimableReward.token
             }`;
           }
@@ -332,7 +334,7 @@ const APRPopOver = ({ mode }) => {
         >
           <ClaimButton />
         </ConfigProvider>
-        {isConnected ? (
+        {address !== undefined ? (
           <div
             style={{
               marginTop: 10,
