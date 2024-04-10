@@ -410,6 +410,9 @@ const Dashboard: NextPage = () => {
                             src={`/chainPicturesWebp/${column.content(
                               item[column.dataIndex],
                             )}.webp`}
+                            alt={column.content(
+                              item[column.dataIndex],
+                            )}
                             height={20}
                             width={20}
                           />
@@ -502,6 +505,9 @@ const Dashboard: NextPage = () => {
                                       src={`/chainPicturesWebp/${column.content(
                                         item[column.dataIndex],
                                       )}.webp`}
+                                      alt={column.content(
+                                        item[column.dataIndex],
+                                      )}
                                       height={20}
                                       width={20}
                                     />
