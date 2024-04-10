@@ -430,6 +430,7 @@ const Dashboard: NextPage = () => {
                                               /[()]/g,
                                               "",
                                             )}.webp`}
+                                            key={item}
                                             alt={item}
                                             height={20}
                                             width={20}
@@ -669,6 +670,7 @@ const Dashboard: NextPage = () => {
                                   /[()]/g,
                                   "",
                                 )}.webp`}
+                                key={item}
                                 alt={item}
                                 height={20}
                                 width={20}
@@ -921,6 +923,7 @@ const Dashboard: NextPage = () => {
                                                           /[()]/g,
                                                           "",
                                                         )}.webp`}
+                                                        key={item}
                                                         alt={item}
                                                         height={20}
                                                         width={20}
@@ -1193,6 +1196,7 @@ const Dashboard: NextPage = () => {
                                               /[()]/g,
                                               "",
                                             )}.webp`}
+                                            key={item}
                                             alt={item}
                                             height={20}
                                             width={20}
@@ -1302,6 +1306,7 @@ const Dashboard: NextPage = () => {
                                                 /[()]/g,
                                                 "",
                                               )}.webp`}
+                                              key={item}
                                               alt={item}
                                               height={20}
                                               width={20}
