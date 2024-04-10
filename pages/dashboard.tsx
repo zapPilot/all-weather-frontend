@@ -428,7 +428,7 @@ const Dashboard: NextPage = () => {
                                     <div className="flex items-center">
                                       {column
                                         .content(item[column.dataIndex])
-                                        .map((item, index) => (
+                                        .map((item: any[], index) => (
                                           <Image
                                             src={`/tokenPictures/${item.replace(
                                               /[()]/g,
@@ -671,7 +671,7 @@ const Dashboard: NextPage = () => {
                         <div className="flex items-center">
                           {column
                             .content(item[column.dataIndex])
-                            .map((item, index) => (
+                            .map((item: any[], index) => (
                               <Image
                                 src={`/tokenPictures/${item.replace(
                                   /[()]/g,
@@ -1310,7 +1310,7 @@ const Dashboard: NextPage = () => {
                                       <div className="flex items-center">
                                         {column
                                           .content(item[column.dataIndex])
-                                          .map((item, index) => (
+                                          .map((item: any[], index) => (
                                             <Image
                                               src={`/tokenPictures/${item.replace(
                                                 /[()]/g,
