@@ -7,6 +7,7 @@ import {
   ArrowUpOutlined,
   ArrowDownOutlined,
   ExportOutlined,
+  PlusCircleOutlined,
 } from "@ant-design/icons";
 import { useWindowHeight } from "../utils/chartUtils.js";
 import { investByAAWallet } from "../utils/etherspot.js";
@@ -270,23 +271,7 @@ const Dashboard: NextPage = () => {
     });
   });
 
-  const tailwindCssList = [
-    "hover:text-white",
-    "dark:bg-gray-700",
-    "absolute",
-    "relative",
-    "invisible",
-    "hidden",
-    "transition-opacity",
-    "duration-300",
-    "shadow-sm",
-    "opacity-0",
-    "group-hover:inline-block",
-    "bottom-full",
-    "left-1/2",
-    "transform",
-    "-translate-x-1/2",
-  ];
+  const tableRowMobile = ["Tokens", "Chain", "Pool", "TVL", "APR"];
 
   useEffect(() => {
     const fetchDefaultPools = async () => {
@@ -363,10 +348,12 @@ const Dashboard: NextPage = () => {
       <>
         <table className="min-w-full divide-y divide-gray-700">
           <thead>
-            <tr className="bg-emerald-400">
+            <tr className="bg-white">
               <th scope="col" className="relative px-7 hidden sm:w-12 sm:px-6 sm:table-cell"></th>
               {columns.map((column, index) => (
-                <th key={index} className="px-3 py-3.5 text-left text-sm font-semibold text-black hidden sm:table-cell">{column.title}</th>
+                <th key={index} className={`px-3 py-3.5 text-left text-sm font-semibold text-black ${index > 1 ? "hidden " : ""}sm:table-cell`}>                  
+                  {index == 1 ? <span className="sm:hidden">Pool</span> : <span className="hidden sm:block">{column.title}</span>}
+                </th>
               ))}
             </tr>
           </thead>
@@ -381,23 +368,212 @@ const Dashboard: NextPage = () => {
                   />
                 </td>
                 {columns.map((column, colIndex) => (
-                  <td
-                    key={colIndex}
-                    className={`whitespace-nowrap px-3 py-4 text-sm text-gray-300 ${colIndex === 0 ? "" : "hidden "}sm:table-cell`}
-                  >
-                    {colIndex === 0 && (
-                      <div className="sm:hidden">
-                        {columns.map((col, index) => (
-                          <div key={index}>
-                            {col.render ? col.render(item[col.dataIndex]) : item[col.dataIndex]}
-                          </div>
-                        ))}
-                      </div>
+                  <>
+                    {column.title === "Chain" && (
+                      <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 sm:table-cell">
+                        <div className="hidden sm:block">
+                          <Image
+                            src={`/chainPicturesWebp/${column.content(item[column.dataIndex])}.webp`}
+                            height={20}
+                            width={20}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 sm:hidden">
+                          {tableRowMobile.map((title, index) => {
+                            const column = basicColumns.find(column => column.title === title);
+                            if (!column) return null;
+                            return (
+                              <>
+                                {column.title === "Tokens" &&(
+                                  <div className="col-span-2">
+                                    <div className="flex items-center">
+                                      {column.content(item[column.dataIndex]).map((item, index)=>(
+                                        <Image
+                                          src={`/tokenPictures/${item.replace(/[()]/g, "")}.webp`}
+                                          alt={item}
+                                          height={20}
+                                          width={20}
+                                        />
+                                      ))}
+                                      <p className="text-white text-xl font-medium px-2">
+                                        {column.content(item[column.dataIndex]).length > 1 ?
+                                        column.content(item[column.dataIndex]).join("-")
+                                        : column.content(item[column.dataIndex])}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  
+                                )}
+                                {column.title === "TVL" &&(
+                                  <div className="col-span-1">
+                                    <p className="text-gray-400 text-sm font-medium">TVL</p>
+                                    <span
+                                      className={column.content(item[column.dataIndex]).danger == 1 ? "block px-2 text-red-400" : "block px-2 text-white"}>
+                                      {column.content(item[column.dataIndex]).tvlUsdCount}M
+                                    </span>
+                                  </div>
+                                )}
+                                {column.title === "APR" &&(
+                                  <div className="col-span-1">
+                                    <p className="text-gray-400 text-sm font-medium">APR</p>
+                                    <span
+                                      className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20"
+                                    >
+                                      {column.content(item[column.dataIndex]).aprVal}%
+                                    </span>
+                                    {column.content(item[column.dataIndex]).aprPredicted === "Down" ? (
+                                      <ArrowDownOutlined className="text-red-400 px-2"/>
+                                    ) : (
+                                      <ArrowUpOutlined className="text-green-400 px-2" />
+                                    )}
+                                  </div>
+                                )}
+                                {column.title === "Chain" &&(
+                                  <div className="col-span-1">
+                                    <p className="text-gray-400 text-sm font-medium">Chain</p>
+                                    <Image
+                                      src={`/chainPicturesWebp/${column.content(item[column.dataIndex])}.webp`}
+                                      height={20}
+                                      width={20}
+                                    />
+                                  </div>
+                                )}
+                                {column.title === "Pool" &&(
+                                  <div className="col-span-1">
+                                    <p className="text-gray-400 text-sm font-medium">DEX</p>
+                                    {column.content(item[column.dataIndex]).paidUser || rowIndex > 0 ? (
+                                      <div className="flex items-center">    
+                                        <button
+                                          type="button"
+                                          className="text-sm text-gray-400 shadow-sm hover:text-white"
+                                          onClick={() => {
+                                            handleLinkButton(column.content(item[column.dataIndex]).protocolLink);
+                                            setLinkModalOpen(true);
+                                          }}
+                                        >
+                                          <Image
+                                            src={`/projectPictures/${column.content(item[column.dataIndex]).pool.name}.webp`}
+                                            alt={column.content(item[column.dataIndex]).pool.name}
+                                            className="me-2"
+                                            height={20}
+                                            width={20}
+                                          />
+                                        </button>
+                                        <div className="relative group">
+                                          <span className="text-white pe-2"> {column.content(item[column.dataIndex]).pool.name}</span>
+                                          <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
+                                            {"pool ID: " + column.content(item[column.dataIndex]).pool.poolID}
+                                          </span>
+                                          {column.content(item[column.dataIndex]).pool.meta ? (
+                                            <p className="text-gray-400 text-xs pe-2">
+                                              ({column.content(item[column.dataIndex]).pool.meta})
+                                            </p>
+                                          ) : null}
+                                        </div>
+                                        
+                                      </div>
+                                    ):(
+                                      <button
+                                        type="button"
+                                        className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm"
+                                      >
+                                        <UnlockOutlined className="-ml-0.5 h-5 w-5" />
+                                        30 Days Free Trial
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </>
+                            )})}
+                        </div>
+                      </td>
                     )}
-                    <div className="hidden sm:block">
-                      {column.render ? column.render(item[column.dataIndex]) : item[column.dataIndex]}
-                    </div>
-                  </td>
+                    {column.title === "Pool" && (
+                      <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
+                        {column.content(item[column.dataIndex]).paidUser || rowIndex > 0 ? (
+                          <div className="flex items-center">
+                            <Image
+                              src={`/projectPictures/${column.content(item[column.dataIndex]).pool.name}.webp`}
+                              alt={column.content(item[column.dataIndex]).pool.name}
+                              className="me-2"
+                              height={20}
+                              width={20}
+                            />
+                            <div className="relative group">
+                              <span className="text-white pe-2"> {column.content(item[column.dataIndex]).pool.name}</span>
+                              <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
+                                {"pool ID: " + column.content(item[column.dataIndex]).pool.poolID}
+                              </span>
+                              {column.content(item[column.dataIndex]).pool.meta ? (
+                                <span className="text-gray-400 text-xs pe-2">
+                                  ({column.content(item[column.dataIndex]).pool.meta})
+                                </span>
+                              ) : null}
+                            </div>
+                            <button
+                              type="button"
+                              className="text-sm text-gray-400 shadow-sm hover:text-white"
+                              onClick={() => {
+                                handleLinkButton(column.content(item[column.dataIndex]).protocolLink);
+                                setLinkModalOpen(true);
+                              }}
+                            >
+                              <ExportOutlined />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm"
+                          >
+                            <UnlockOutlined className="-ml-0.5 h-5 w-5" />
+                            30 Days Free Trial
+                          </button>
+                        )}
+                      </td>
+                    )}
+                    {column.title === "Tokens" && (
+                      <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
+                        <div className="flex items-center">
+                          {column.content(item[column.dataIndex]).map((item, index)=>(
+                            <Image
+                              src={`/tokenPictures/${item.replace(/[()]/g, "")}.webp`}
+                              alt={item}
+                              height={20}
+                              width={20}
+                            />
+                          ))}
+                          <span className="text-white px-2">
+                            {column.content(item[column.dataIndex]).length > 1 ?
+                            column.content(item[column.dataIndex]).join("-")
+                            : column.content(item[column.dataIndex])}
+                          </span>
+                        </div>
+                      </td>
+                    )}
+                    {column.title === "TVL" && (
+                      <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
+                        <span
+                          className={column.content(item[column.dataIndex]).danger == 1 ? "px-2 text-red-400" : "px-2 text-white"}>
+                          {column.content(item[column.dataIndex]).tvlUsdCount}M
+                        </span>
+                      </td>
+                    )}
+                    {column.title === "APR" && (
+                      <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
+                        <span
+                          className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20"
+                        >
+                          {column.content(item[column.dataIndex]).aprVal}%
+                        </span>
+                        {column.content(item[column.dataIndex]).aprPredicted === "Down" ? (
+                          <ArrowDownOutlined className="text-red-400 px-2"/>
+                        ) : (
+                          <ArrowUpOutlined className="text-green-400 px-2" />
+                        )}
+                      </td>
+                    )}
+                  </>
                 ))}
               </tr>
             ))}
@@ -465,19 +641,24 @@ const Dashboard: NextPage = () => {
         <center>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">Better Pools Search Engine</h1>
         </center>
-        <p className="mt-2 text-xl text-gray-400">
-          Tokens in Current Portfolio: {uniqueTokens.size}
-          {Array.from(uniqueTokens).map((token: unknown, index) => (
-            <Image
-              key={index}
-              // @ts-ignore
-              src={`/tokenPictures/${token.replace(/[()]/g, "")}.webp`}
-              alt={token as string}
-              height={20}
-              width={20}
-            />
-          ))}
-        </p>
+        <div className="mt-2">
+          <p className="text-xl text-gray-400">
+            Tokens in Current Portfolio: {uniqueTokens.size}
+          </p>
+          <div>
+            {Array.from(uniqueTokens).map((token: unknown, index) => (
+              <Image
+                key={index}
+                // @ts-ignore
+                src={`/tokenPictures/${token.replace(/[()]/g, "")}.webp`}
+                alt={token as string}
+                className="inline-block"
+                height={20}
+                width={20}
+              />
+            ))}
+          </div>
+        </div>
         <RebalanceChart
             rebalanceSuggestions={[]}
             netWorth={100}
@@ -526,7 +707,9 @@ const Dashboard: NextPage = () => {
                         <tr className="bg-emerald-400">
                           <th scope="col" className="relative px-7 sm:w-12 sm:px-6"></th>
                           {basicColumns.map((column, index) => (
-                            <th key={index} className="px-3 py-3.5 text-left text-sm font-semibold text-black hidden sm:table-cell">{column.title}</th>
+                            <th key={index} className={`px-3 py-3.5 text-left text-sm font-semibold text-black ${index > 0 ? "hidden " : ""}sm:table-cell`}>
+                              {index == 0 ? <span className="sm:hidden">Pool</span> : <span className="hidden sm:block">{column.title}</span>}
+                            </th>
                           ))}
                         </tr>
                       </thead>
@@ -557,7 +740,7 @@ const Dashboard: NextPage = () => {
                                       />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4 sm:hidden">
-                                      {["Tokens", "TVL", "APR", "Chain", "Pool"].map((title, index) => {
+                                      {tableRowMobile.map((title, index) => {
                                         const column = basicColumns.find(column => column.title === title);
                                         if (!column) return null;
                                         return (
@@ -620,7 +803,7 @@ const Dashboard: NextPage = () => {
                                               <div className="col-span-1">
                                                 <p className="text-gray-400 text-sm font-medium">DEX</p>
                                                 {column.content(item[column.dataIndex]).paidUser || rowIndex > 0 ? (
-                                                  <div className="flex items-center">    
+                                                  <div>    
                                                     <button
                                                       type="button"
                                                       className="text-sm text-gray-400 shadow-sm hover:text-white"
@@ -648,7 +831,6 @@ const Dashboard: NextPage = () => {
                                                         </p>
                                                       ) : null}
                                                     </div>
-                                                    
                                                   </div>
                                                 ):(
                                                   <button
@@ -763,6 +945,7 @@ const Dashboard: NextPage = () => {
                     <table className="min-w-full divide-y divide-gray-700">
                       <thead>
                         <tr className="bg-emerald-400">
+                          <th></th>
                           {expandableColumns.map((column, index) => (
                             <th key={index} className="px-3 py-3.5 text-left text-sm font-semibold text-black">
                               {column.title}
@@ -775,20 +958,48 @@ const Dashboard: NextPage = () => {
                           <>
                             <tr 
                               key={rowIndex}
-                              className="hover:bg-black-900"
+                              className="hover:bg-black-900 cursor-pointer"
                               onClick={() => toggleExpand(item.tokens)}
                             >
+                              <td><PlusCircleOutlined /></td>
                               {expandableColumns.map((column, colIndex) => (
-                                <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
-                                  {column.render ? column.render(item[column.dataIndex]) : item[column.dataIndex]}
-                                </td>
+                                <>
+                                  {column.title === "Tokens" && (
+                                    <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                                      <div className="flex items-center">
+                                        {column.content(item[column.dataIndex]).map((item, index)=>(
+                                          <Image
+                                            src={`/tokenPictures/${item.replace(/[()]/g, "")}.webp`}
+                                            alt={item}
+                                            height={20}
+                                            width={20}
+                                          />
+                                        ))}
+                                        <span className="text-white px-2">
+                                          {column.content(item[column.dataIndex]).length > 1 ?
+                                          column.content(item[column.dataIndex]).join("-")
+                                          : column.content(item[column.dataIndex])}
+                                        </span>  
+                                      </div>               
+                                    </td>
+                                  )}
+                                  {column.title === "Highest APR" && (
+                                    <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                                      <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                        {column.content ? column.content(item[column.dataIndex]) : item[column.dataIndex]}%
+                                      </span>                                    
+                                    </td>
+                                  )}
+                                </>
                               ))}
                             </tr>
-                            {expandedRows[item.tokens] && (
-                              <div className="p-4 border-t">
-                                <div>{expandedRowRender(item)}</div>
-                              </div>
-                            )}
+                            <tr>
+                              {expandedRows[item.tokens] && (
+                                <td colSpan="3">
+                                  {expandedRowRender(item)}
+                                </td>
+                              )}
+                            </tr>
                           </>
                         ))}
                       </tbody>

@@ -204,6 +204,7 @@ export const columnMapping = (
         </span>
       );
     },
+    content: (apr) => apr.value.toFixed(2),
   },
 });
 export const getExpandableColumnsForSuggestionsTable = () => [
