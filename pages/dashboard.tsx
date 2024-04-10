@@ -17,7 +17,7 @@ import {
   getExpandableColumnsForSuggestionsTable,
   columnMapping,
 } from "../utils/tableExpansionUtils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEventHandler } from "react";
 import RebalanceChart from "./views/RebalanceChart";
 import { useAccount } from "wagmi";
 import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
@@ -48,6 +48,9 @@ interface queriesObj {
   chain_blacklist?: string[];
   chain_whitelist?: string[];
 }
+
+type OnSelectCallbackType = ChangeEventHandler<HTMLInputElement>;
+
 const Dashboard: NextPage = () => {
   const userApiKey = "placeholder";
   const { address: walletAddress } = useAccount();
@@ -725,7 +728,7 @@ const Dashboard: NextPage = () => {
       </>
     );
   };
-  const onSelectCallback = (record: Pool, selected: boolean) => {
+  const onSelectCallback: OnSelectCallbackType = (record: Pool, selected: boolean) => {
     const originalPoolsCount =
       portfolioComposition[record.category_from_request] === undefined
         ? 0
