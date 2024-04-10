@@ -728,7 +728,10 @@ const Dashboard: NextPage = () => {
       </>
     );
   };
-  const onSelectCallback: OnSelectCallbackType = (record: Pool, selected: boolean) => {
+  const onSelectCallback: OnSelectCallbackType = (
+    record: Pool,
+    selected: boolean,
+  ) => {
     const originalPoolsCount =
       portfolioComposition[record.category_from_request] === undefined
         ? 0
