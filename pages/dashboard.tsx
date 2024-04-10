@@ -133,7 +133,7 @@ const Dashboard: NextPage = () => {
   };
   const [expandedRows, setExpandedRows] = useState({});
 
-  const toggleExpand = (rowKey) => {
+  const toggleExpand = (rowKey: string) => {
     setExpandedRows((prevExpandedRows) => {
       const isExpanded = prevExpandedRows[rowKey];
       return {
