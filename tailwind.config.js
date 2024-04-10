@@ -11,7 +11,7 @@ module.exports = {
   theme: {
     extend: {},
   },
-  plugins: [],
+  plugins: [require("@tailwindcss/forms")],
   safelist: [
     {pattern: /^(m|p)(x|y|s|e)-\d+(\.\d+)?$/},
     {pattern: /^ring-(\d+|\w+)$/},

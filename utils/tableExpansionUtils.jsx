@@ -6,20 +6,11 @@ import {
   ExportOutlined,
 } from "@ant-design/icons";
 
-// TODO: need to implement the paid button
-const paidUserWallets = [
-  "0x78000b0605E81ea9df54b33f72ebC61B5F5c8077",
-  "0x3144b7E3a4518541AEB4ceC7fC7A6Dd82f05Ae8B",
-  "0xa1761fc95E8B2A1E99dfdEE816F6D8F4c47e26AE",
-  "0x43cd745Bd5FbFc8CfD79ebC855f949abc79a1E0C",
-  "0xCa35a10C9622fEBfA889410Efb9B905B26221c37", // Chris
-  "0xA1abE1Ee3Bd158CF4468434485c6a0E21A7eE83D", // Adrian
-];
 export const columnMapping = (
-  walletAddress,
   protocolList,
   handleLinkButton,
   setLinkModalOpen,
+  subscriptionStatus,
 ) => ({
   chain: {
     title: "Chain",
@@ -41,14 +32,12 @@ export const columnMapping = (
     key: "pool",
     width: 24,
     render: (pool, _, index) => {
-      return index === 0 && !paidUserWallets.includes(walletAddress) ? (
-        <button
-          type="button"
-          className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm hover:bg-white"
-        >
-          <UnlockOutlined className="-ml-0.5 h-5 w-5" />
-          30 Days Free Trial
-        </button>
+      return index === 0 && subscriptionStatus === false ? (
+        <Link href="/subscription" passHref>
+          <Button type="primary" icon={<UnlockOutlined />}>
+            Unlock
+          </Button>
+        </Link>
       ) : (
         <div className="flex items-center">
           <Image
@@ -85,7 +74,7 @@ export const columnMapping = (
       );
     },
     content: (pool, _, index) => {
-      const paidUser = paidUserWallets.includes(walletAddress);
+      const paidUser = subscriptionStatus;
       const protocolLink = protocolList.find(protocol => protocol.slug === pool.name);
       return {
         paidUser: paidUser,
@@ -213,17 +202,17 @@ export const getExpandableColumnsForSuggestionsTable = () => [
 ];
 
 export const getBasicColumnsForSuggestionsTable = (
-  walletAddress,
   protocolList,
   handleLinkButton,
   setLinkModalOpen,
+  subscriptionStatus,
 ) => [
   columnMapping("")["chain"],
   columnMapping(
-    walletAddress,
     protocolList,
     handleLinkButton,
     setLinkModalOpen,
+    subscriptionStatus,
   )["pool"],
   columnMapping("")["tokens"],
   columnMapping("")["tvlUsd"],
