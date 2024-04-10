@@ -1,5 +1,5 @@
 import type { NextPage } from "next";
-import Image from 'next/image';
+import Image from "next/image";
 import BasePage from "./basePage.tsx";
 import { Spin, Button } from "antd";
 import {
@@ -365,10 +365,22 @@ const Dashboard: NextPage = () => {
         <table className="min-w-full divide-y divide-gray-700">
           <thead>
             <tr className="bg-white">
-              <th scope="col" className="relative px-7 hidden sm:w-12 sm:px-6 sm:table-cell"></th>
+              <th
+                scope="col"
+                className="relative px-7 hidden sm:w-12 sm:px-6 sm:table-cell"
+              ></th>
               {columns.map((column, index) => (
-                <th key={index} className={`px-3 py-3.5 text-left text-sm font-semibold text-black ${index > 1 ? "hidden " : ""}sm:table-cell`}>                  
-                  {index == 1 ? <span className="sm:hidden">Pool</span> : <span className="hidden sm:block">{column.title}</span>}
+                <th
+                  key={index}
+                  className={`px-3 py-3.5 text-left text-sm font-semibold text-black ${
+                    index > 1 ? "hidden " : ""
+                  }sm:table-cell`}
+                >
+                  {index == 1 ? (
+                    <span className="sm:hidden">Pool</span>
+                  ) : (
+                    <span className="hidden sm:block">{column.title}</span>
+                  )}
                 </th>
               ))}
             </tr>
@@ -386,109 +398,178 @@ const Dashboard: NextPage = () => {
                 {columns.map((column, colIndex) => (
                   <>
                     {column.title === "Chain" && (
-                      <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 sm:table-cell">
+                      <td
+                        key={colIndex}
+                        className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 sm:table-cell"
+                      >
                         <div className="hidden sm:block">
                           <Image
-                            src={`/chainPicturesWebp/${column.content(item[column.dataIndex])}.webp`}
+                            src={`/chainPicturesWebp/${column.content(
+                              item[column.dataIndex],
+                            )}.webp`}
                             height={20}
                             width={20}
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-4 sm:hidden">
                           {tableRowMobile.map((title, index) => {
-                            const column = basicColumns.find(column => column.title === title);
+                            const column = basicColumns.find(
+                              (column) => column.title === title,
+                            );
                             if (!column) return null;
                             return (
                               <>
-                                {column.title === "Tokens" &&(
+                                {column.title === "Tokens" && (
                                   <div className="col-span-2">
                                     <div className="flex items-center">
-                                      {column.content(item[column.dataIndex]).map((item, index)=>(
-                                        <Image
-                                          src={`/tokenPictures/${item.replace(/[()]/g, "")}.webp`}
-                                          alt={item}
-                                          height={20}
-                                          width={20}
-                                        />
-                                      ))}
+                                      {column
+                                        .content(item[column.dataIndex])
+                                        .map((item, index) => (
+                                          <Image
+                                            src={`/tokenPictures/${item.replace(
+                                              /[()]/g,
+                                              "",
+                                            )}.webp`}
+                                            alt={item}
+                                            height={20}
+                                            width={20}
+                                          />
+                                        ))}
                                       <p className="text-white text-xl font-medium px-2">
-                                        {column.content(item[column.dataIndex]).length > 1 ?
-                                        column.content(item[column.dataIndex]).join("-")
-                                        : column.content(item[column.dataIndex])}
+                                        {column.content(item[column.dataIndex])
+                                          .length > 1
+                                          ? column
+                                              .content(item[column.dataIndex])
+                                              .join("-")
+                                          : column.content(
+                                              item[column.dataIndex],
+                                            )}
                                       </p>
                                     </div>
                                   </div>
-                                  
                                 )}
-                                {column.title === "TVL" &&(
+                                {column.title === "TVL" && (
                                   <div className="col-span-1">
-                                    <p className="text-gray-400 text-sm font-medium">TVL</p>
+                                    <p className="text-gray-400 text-sm font-medium">
+                                      TVL
+                                    </p>
                                     <span
-                                      className={column.content(item[column.dataIndex]).danger == 1 ? "block px-2 text-red-400" : "block px-2 text-white"}>
-                                      {column.content(item[column.dataIndex]).tvlUsdCount}M
+                                      className={
+                                        column.content(item[column.dataIndex])
+                                          .danger == 1
+                                          ? "block px-2 text-red-400"
+                                          : "block px-2 text-white"
+                                      }
+                                    >
+                                      {
+                                        column.content(item[column.dataIndex])
+                                          .tvlUsdCount
+                                      }
+                                      M
                                     </span>
                                   </div>
                                 )}
-                                {column.title === "APR" &&(
+                                {column.title === "APR" && (
                                   <div className="col-span-1">
-                                    <p className="text-gray-400 text-sm font-medium">APR</p>
-                                    <span
-                                      className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20"
-                                    >
-                                      {column.content(item[column.dataIndex]).aprVal}%
+                                    <p className="text-gray-400 text-sm font-medium">
+                                      APR
+                                    </p>
+                                    <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                      {
+                                        column.content(item[column.dataIndex])
+                                          .aprVal
+                                      }
+                                      %
                                     </span>
-                                    {column.content(item[column.dataIndex]).aprPredicted === "Down" ? (
-                                      <ArrowDownOutlined className="text-red-400 px-2"/>
+                                    {column.content(item[column.dataIndex])
+                                      .aprPredicted === "Down" ? (
+                                      <ArrowDownOutlined className="text-red-400 px-2" />
                                     ) : (
                                       <ArrowUpOutlined className="text-green-400 px-2" />
                                     )}
                                   </div>
                                 )}
-                                {column.title === "Chain" &&(
+                                {column.title === "Chain" && (
                                   <div className="col-span-1">
-                                    <p className="text-gray-400 text-sm font-medium">Chain</p>
+                                    <p className="text-gray-400 text-sm font-medium">
+                                      Chain
+                                    </p>
                                     <Image
-                                      src={`/chainPicturesWebp/${column.content(item[column.dataIndex])}.webp`}
+                                      src={`/chainPicturesWebp/${column.content(
+                                        item[column.dataIndex],
+                                      )}.webp`}
                                       height={20}
                                       width={20}
                                     />
                                   </div>
                                 )}
-                                {column.title === "Pool" &&(
+                                {column.title === "Pool" && (
                                   <div className="col-span-1">
-                                    <p className="text-gray-400 text-sm font-medium">DEX</p>
-                                    {column.content(item[column.dataIndex]).paidUser || rowIndex > 0 ? (
-                                      <div className="flex items-center">    
+                                    <p className="text-gray-400 text-sm font-medium">
+                                      DEX
+                                    </p>
+                                    {column.content(item[column.dataIndex])
+                                      .paidUser || rowIndex > 0 ? (
+                                      <div className="flex items-center">
                                         <button
                                           type="button"
                                           className="text-sm text-gray-400 shadow-sm hover:text-white"
                                           onClick={() => {
-                                            handleLinkButton(column.content(item[column.dataIndex]).protocolLink);
+                                            handleLinkButton(
+                                              column.content(
+                                                item[column.dataIndex],
+                                              ).protocolLink,
+                                            );
                                             setLinkModalOpen(true);
                                           }}
                                         >
                                           <Image
-                                            src={`/projectPictures/${column.content(item[column.dataIndex]).pool.name}.webp`}
-                                            alt={column.content(item[column.dataIndex]).pool.name}
+                                            src={`/projectPictures/${
+                                              column.content(
+                                                item[column.dataIndex],
+                                              ).pool.name
+                                            }.webp`}
+                                            alt={
+                                              column.content(
+                                                item[column.dataIndex],
+                                              ).pool.name
+                                            }
                                             className="me-2"
                                             height={20}
                                             width={20}
                                           />
                                         </button>
                                         <div className="relative group">
-                                          <span className="text-white pe-2"> {column.content(item[column.dataIndex]).pool.name}</span>
-                                          <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
-                                            {"pool ID: " + column.content(item[column.dataIndex]).pool.poolID}
+                                          <span className="text-white pe-2">
+                                            {" "}
+                                            {
+                                              column.content(
+                                                item[column.dataIndex],
+                                              ).pool.name
+                                            }
                                           </span>
-                                          {column.content(item[column.dataIndex]).pool.meta ? (
+                                          <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
+                                            {"pool ID: " +
+                                              column.content(
+                                                item[column.dataIndex],
+                                              ).pool.poolID}
+                                          </span>
+                                          {column.content(
+                                            item[column.dataIndex],
+                                          ).pool.meta ? (
                                             <p className="text-gray-400 text-xs pe-2">
-                                              ({column.content(item[column.dataIndex]).pool.meta})
+                                              (
+                                              {
+                                                column.content(
+                                                  item[column.dataIndex],
+                                                ).pool.meta
+                                              }
+                                              )
                                             </p>
                                           ) : null}
                                         </div>
-                                        
                                       </div>
-                                    ):(
+                                    ) : (
                                       <button
                                         type="button"
                                         className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm"
@@ -500,29 +581,52 @@ const Dashboard: NextPage = () => {
                                   </div>
                                 )}
                               </>
-                            )})}
+                            );
+                          })}
                         </div>
                       </td>
                     )}
                     {column.title === "Pool" && (
-                      <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
-                        {column.content(item[column.dataIndex]).paidUser || rowIndex > 0 ? (
+                      <td
+                        key={colIndex}
+                        className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell"
+                      >
+                        {column.content(item[column.dataIndex]).paidUser ||
+                        rowIndex > 0 ? (
                           <div className="flex items-center">
                             <Image
-                              src={`/projectPictures/${column.content(item[column.dataIndex]).pool.name}.webp`}
-                              alt={column.content(item[column.dataIndex]).pool.name}
+                              src={`/projectPictures/${
+                                column.content(item[column.dataIndex]).pool.name
+                              }.webp`}
+                              alt={
+                                column.content(item[column.dataIndex]).pool.name
+                              }
                               className="me-2"
                               height={20}
                               width={20}
                             />
                             <div className="relative group">
-                              <span className="text-white pe-2"> {column.content(item[column.dataIndex]).pool.name}</span>
-                              <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
-                                {"pool ID: " + column.content(item[column.dataIndex]).pool.poolID}
+                              <span className="text-white pe-2">
+                                {" "}
+                                {
+                                  column.content(item[column.dataIndex]).pool
+                                    .name
+                                }
                               </span>
-                              {column.content(item[column.dataIndex]).pool.meta ? (
+                              <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
+                                {"pool ID: " +
+                                  column.content(item[column.dataIndex]).pool
+                                    .poolID}
+                              </span>
+                              {column.content(item[column.dataIndex]).pool
+                                .meta ? (
                                 <span className="text-gray-400 text-xs pe-2">
-                                  ({column.content(item[column.dataIndex]).pool.meta})
+                                  (
+                                  {
+                                    column.content(item[column.dataIndex]).pool
+                                      .meta
+                                  }
+                                  )
                                 </span>
                               ) : null}
                             </div>
@@ -530,7 +634,10 @@ const Dashboard: NextPage = () => {
                               type="button"
                               className="text-sm text-gray-400 shadow-sm hover:text-white"
                               onClick={() => {
-                                handleLinkButton(column.content(item[column.dataIndex]).protocolLink);
+                                handleLinkButton(
+                                  column.content(item[column.dataIndex])
+                                    .protocolLink,
+                                );
                                 setLinkModalOpen(true);
                               }}
                             >
@@ -549,41 +656,59 @@ const Dashboard: NextPage = () => {
                       </td>
                     )}
                     {column.title === "Tokens" && (
-                      <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
+                      <td
+                        key={colIndex}
+                        className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell"
+                      >
                         <div className="flex items-center">
-                          {column.content(item[column.dataIndex]).map((item, index)=>(
-                            <Image
-                              src={`/tokenPictures/${item.replace(/[()]/g, "")}.webp`}
-                              alt={item}
-                              height={20}
-                              width={20}
-                            />
-                          ))}
+                          {column
+                            .content(item[column.dataIndex])
+                            .map((item, index) => (
+                              <Image
+                                src={`/tokenPictures/${item.replace(
+                                  /[()]/g,
+                                  "",
+                                )}.webp`}
+                                alt={item}
+                                height={20}
+                                width={20}
+                              />
+                            ))}
                           <span className="text-white px-2">
-                            {column.content(item[column.dataIndex]).length > 1 ?
-                            column.content(item[column.dataIndex]).join("-")
-                            : column.content(item[column.dataIndex])}
+                            {column.content(item[column.dataIndex]).length > 1
+                              ? column.content(item[column.dataIndex]).join("-")
+                              : column.content(item[column.dataIndex])}
                           </span>
                         </div>
                       </td>
                     )}
                     {column.title === "TVL" && (
-                      <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
+                      <td
+                        key={colIndex}
+                        className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell"
+                      >
                         <span
-                          className={column.content(item[column.dataIndex]).danger == 1 ? "px-2 text-red-400" : "px-2 text-white"}>
+                          className={
+                            column.content(item[column.dataIndex]).danger == 1
+                              ? "px-2 text-red-400"
+                              : "px-2 text-white"
+                          }
+                        >
                           {column.content(item[column.dataIndex]).tvlUsdCount}M
                         </span>
                       </td>
                     )}
                     {column.title === "APR" && (
-                      <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
-                        <span
-                          className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20"
-                        >
+                      <td
+                        key={colIndex}
+                        className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell"
+                      >
+                        <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
                           {column.content(item[column.dataIndex]).aprVal}%
                         </span>
-                        {column.content(item[column.dataIndex]).aprPredicted === "Down" ? (
-                          <ArrowDownOutlined className="text-red-400 px-2"/>
+                        {column.content(item[column.dataIndex]).aprPredicted ===
+                        "Down" ? (
+                          <ArrowDownOutlined className="text-red-400 px-2" />
                         ) : (
                           <ArrowUpOutlined className="text-green-400 px-2" />
                         )}
@@ -655,7 +780,9 @@ const Dashboard: NextPage = () => {
     <BasePage>
       <div style={divBetterPools}>
         <center>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">Better Pools Search Engine</h1>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            Better Pools Search Engine
+          </h1>
         </center>
         <div className="mt-2">
           <p className="text-xl text-gray-400">
@@ -676,35 +803,35 @@ const Dashboard: NextPage = () => {
           </div>
         </div>
         <RebalanceChart
-            rebalanceSuggestions={[]}
-            netWorth={100}
-            windowWidth={200}
-            showCategory={false}
-            mode="portfolioComposer"
-            portfolioComposition={Object.values(
-              portfolioCompositionForReRender,
-            )}
-          />
-          <Button
-            type="primary"
-            onClick={() =>
-              requestAnimationFrame(() => {
-                // JSON.parse(JSON.stringify means deep copy
-                setPortfolioCompositionForReRender(
-                  JSON.parse(JSON.stringify(portfolioComposition)),
-                );
-              })
-            }
-          >
-            Visualize
-          </Button>
+          rebalanceSuggestions={[]}
+          netWorth={100}
+          windowWidth={200}
+          showCategory={false}
+          mode="portfolioComposer"
+          portfolioComposition={Object.values(portfolioCompositionForReRender)}
+        />
+        <Button
+          type="primary"
+          onClick={() =>
+            requestAnimationFrame(() => {
+              // JSON.parse(JSON.stringify means deep copy
+              setPortfolioCompositionForReRender(
+                JSON.parse(JSON.stringify(portfolioComposition)),
+              );
+            })
+          }
+        >
+          Visualize
+        </Button>
         <>
           {Object.values(queriesForAllWeather).map((categoryMetaData) => {
             return (
               <div key={categoryMetaData.category}>
                 {" "}
                 {/* Make sure to provide a unique key for each item */}
-                <h2 className="my-2 text-xl font-bold">{categoryMetaData.wording}</h2>
+                <h2 className="my-2 text-xl font-bold">
+                  {categoryMetaData.wording}
+                </h2>
                 {categoryMetaData.state === null ? (
                   <div
                     style={{
@@ -721,10 +848,24 @@ const Dashboard: NextPage = () => {
                     <table className="min-w-full divide-y divide-gray-700">
                       <thead>
                         <tr className="bg-emerald-400">
-                          <th scope="col" className="relative px-7 sm:w-12 sm:px-6"></th>
+                          <th
+                            scope="col"
+                            className="relative px-7 sm:w-12 sm:px-6"
+                          ></th>
                           {basicColumns.map((column, index) => (
-                            <th key={index} className={`px-3 py-3.5 text-left text-sm font-semibold text-black ${index > 0 ? "hidden " : ""}sm:table-cell`}>
-                              {index == 0 ? <span className="sm:hidden">Pool</span> : <span className="hidden sm:block">{column.title}</span>}
+                            <th
+                              key={index}
+                              className={`px-3 py-3.5 text-left text-sm font-semibold text-black ${
+                                index > 0 ? "hidden " : ""
+                              }sm:table-cell`}
+                            >
+                              {index == 0 ? (
+                                <span className="sm:hidden">Pool</span>
+                              ) : (
+                                <span className="hidden sm:block">
+                                  {column.title}
+                                </span>
+                              )}
                             </th>
                           ))}
                         </tr>
@@ -736,119 +877,214 @@ const Dashboard: NextPage = () => {
                               <input
                                 type="checkbox"
                                 className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                                onChange={
-                                  (e) =>
-                                  e.target.checked ? 
-                                  onSelectCallback(item, true)
-                                  : null
+                                onChange={(e) =>
+                                  e.target.checked
+                                    ? onSelectCallback(item, true)
+                                    : null
                                 }
                               />
                             </td>
                             {basicColumns.map((column, colIndex) => (
                               <>
                                 {column.title === "Chain" && (
-                                  <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 sm:table-cell">
+                                  <td
+                                    key={colIndex}
+                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 sm:table-cell"
+                                  >
                                     <div className="hidden sm:block">
                                       <Image
-                                        src={`/chainPicturesWebp/${column.content(item[column.dataIndex])}.webp`}
+                                        src={`/chainPicturesWebp/${column.content(
+                                          item[column.dataIndex],
+                                        )}.webp`}
                                         height={20}
                                         width={20}
                                       />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4 sm:hidden">
                                       {tableRowMobile.map((title, index) => {
-                                        const column = basicColumns.find(column => column.title === title);
+                                        const column = basicColumns.find(
+                                          (column) => column.title === title,
+                                        );
                                         if (!column) return null;
                                         return (
                                           <>
-                                            {column.title === "Tokens" &&(
+                                            {column.title === "Tokens" && (
                                               <div className="col-span-2">
                                                 <div className="flex items-center">
-                                                  {column.content(item[column.dataIndex]).map((item, index)=>(
-                                                    <Image
-                                                      src={`/tokenPictures/${item.replace(/[()]/g, "")}.webp`}
-                                                      alt={item}
-                                                      height={20}
-                                                      width={20}
-                                                    />
-                                                  ))}
+                                                  {column
+                                                    .content(
+                                                      item[column.dataIndex],
+                                                    )
+                                                    .map((item, index) => (
+                                                      <Image
+                                                        src={`/tokenPictures/${item.replace(
+                                                          /[()]/g,
+                                                          "",
+                                                        )}.webp`}
+                                                        alt={item}
+                                                        height={20}
+                                                        width={20}
+                                                      />
+                                                    ))}
                                                   <p className="text-white text-xl font-medium px-2">
-                                                    {column.content(item[column.dataIndex]).length > 1 ?
-                                                    column.content(item[column.dataIndex]).join("-")
-                                                    : column.content(item[column.dataIndex])}
+                                                    {column.content(
+                                                      item[column.dataIndex],
+                                                    ).length > 1
+                                                      ? column
+                                                          .content(
+                                                            item[
+                                                              column.dataIndex
+                                                            ],
+                                                          )
+                                                          .join("-")
+                                                      : column.content(
+                                                          item[
+                                                            column.dataIndex
+                                                          ],
+                                                        )}
                                                   </p>
                                                 </div>
                                               </div>
-                                              
                                             )}
-                                            {column.title === "TVL" &&(
+                                            {column.title === "TVL" && (
                                               <div className="col-span-1">
-                                                <p className="text-gray-400 text-sm font-medium">TVL</p>
+                                                <p className="text-gray-400 text-sm font-medium">
+                                                  TVL
+                                                </p>
                                                 <span
-                                                  className={column.content(item[column.dataIndex]).danger == 1 ? "block px-2 text-red-400" : "block px-2 text-white"}>
-                                                  {column.content(item[column.dataIndex]).tvlUsdCount}M
+                                                  className={
+                                                    column.content(
+                                                      item[column.dataIndex],
+                                                    ).danger == 1
+                                                      ? "block px-2 text-red-400"
+                                                      : "block px-2 text-white"
+                                                  }
+                                                >
+                                                  {
+                                                    column.content(
+                                                      item[column.dataIndex],
+                                                    ).tvlUsdCount
+                                                  }
+                                                  M
                                                 </span>
                                               </div>
                                             )}
-                                            {column.title === "APR" &&(
+                                            {column.title === "APR" && (
                                               <div className="col-span-1">
-                                                <p className="text-gray-400 text-sm font-medium">APR</p>
-                                                <span
-                                                  className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20"
-                                                >
-                                                  {column.content(item[column.dataIndex]).aprVal}%
+                                                <p className="text-gray-400 text-sm font-medium">
+                                                  APR
+                                                </p>
+                                                <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                                  {
+                                                    column.content(
+                                                      item[column.dataIndex],
+                                                    ).aprVal
+                                                  }
+                                                  %
                                                 </span>
-                                                {column.content(item[column.dataIndex]).aprPredicted === "Down" ? (
-                                                  <ArrowDownOutlined className="text-red-400 px-2"/>
+                                                {column.content(
+                                                  item[column.dataIndex],
+                                                ).aprPredicted === "Down" ? (
+                                                  <ArrowDownOutlined className="text-red-400 px-2" />
                                                 ) : (
                                                   <ArrowUpOutlined className="text-green-400 px-2" />
                                                 )}
                                               </div>
                                             )}
-                                            {column.title === "Chain" &&(
+                                            {column.title === "Chain" && (
                                               <div className="col-span-1">
-                                                <p className="text-gray-400 text-sm font-medium">Chain</p>
+                                                <p className="text-gray-400 text-sm font-medium">
+                                                  Chain
+                                                </p>
                                                 <Image
-                                                  src={`/chainPicturesWebp/${column.content(item[column.dataIndex])}.webp`}
+                                                  src={`/chainPicturesWebp/${column.content(
+                                                    item[column.dataIndex],
+                                                  )}.webp`}
                                                   height={20}
                                                   width={20}
                                                 />
                                               </div>
                                             )}
-                                            {column.title === "Pool" &&(
+                                            {column.title === "Pool" && (
                                               <div className="col-span-1">
-                                                <p className="text-gray-400 text-sm font-medium">DEX</p>
-                                                {column.content(item[column.dataIndex]).paidUser || rowIndex > 0 ? (
-                                                  <div>    
+                                                <p className="text-gray-400 text-sm font-medium">
+                                                  DEX
+                                                </p>
+                                                {column.content(
+                                                  item[column.dataIndex],
+                                                ).paidUser || rowIndex > 0 ? (
+                                                  <div>
                                                     <button
                                                       type="button"
                                                       className="text-sm text-gray-400 shadow-sm hover:text-white"
                                                       onClick={() => {
-                                                        handleLinkButton(column.content(item[column.dataIndex]).protocolLink);
+                                                        handleLinkButton(
+                                                          column.content(
+                                                            item[
+                                                              column.dataIndex
+                                                            ],
+                                                          ).protocolLink,
+                                                        );
                                                         setLinkModalOpen(true);
                                                       }}
                                                     >
                                                       <Image
-                                                        src={`/projectPictures/${column.content(item[column.dataIndex]).pool.name}.webp`}
-                                                        alt={column.content(item[column.dataIndex]).pool.name}
+                                                        src={`/projectPictures/${
+                                                          column.content(
+                                                            item[
+                                                              column.dataIndex
+                                                            ],
+                                                          ).pool.name
+                                                        }.webp`}
+                                                        alt={
+                                                          column.content(
+                                                            item[
+                                                              column.dataIndex
+                                                            ],
+                                                          ).pool.name
+                                                        }
                                                         className="me-2"
                                                         height={20}
                                                         width={20}
                                                       />
                                                     </button>
                                                     <div className="relative group">
-                                                      <span className="text-white pe-2"> {column.content(item[column.dataIndex]).pool.name}</span>
-                                                      <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
-                                                        {"pool ID: " + column.content(item[column.dataIndex]).pool.poolID}
+                                                      <span className="text-white pe-2">
+                                                        {" "}
+                                                        {
+                                                          column.content(
+                                                            item[
+                                                              column.dataIndex
+                                                            ],
+                                                          ).pool.name
+                                                        }
                                                       </span>
-                                                      {column.content(item[column.dataIndex]).pool.meta ? (
+                                                      <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
+                                                        {"pool ID: " +
+                                                          column.content(
+                                                            item[
+                                                              column.dataIndex
+                                                            ],
+                                                          ).pool.poolID}
+                                                      </span>
+                                                      {column.content(
+                                                        item[column.dataIndex],
+                                                      ).pool.meta ? (
                                                         <p className="text-gray-400 text-xs pe-2">
-                                                          ({column.content(item[column.dataIndex]).pool.meta})
+                                                          (
+                                                          {
+                                                            column.content(
+                                                              item[
+                                                                column.dataIndex
+                                                              ],
+                                                            ).pool.meta
+                                                          }
+                                                          )
                                                         </p>
                                                       ) : null}
                                                     </div>
                                                   </div>
-                                                ):(
+                                                ) : (
                                                   <button
                                                     type="button"
                                                     className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm"
@@ -860,29 +1096,60 @@ const Dashboard: NextPage = () => {
                                               </div>
                                             )}
                                           </>
-                                        )})}
+                                        );
+                                      })}
                                     </div>
                                   </td>
                                 )}
                                 {column.title === "Pool" && (
-                                  <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
-                                    {column.content(item[column.dataIndex]).paidUser || rowIndex > 0 ? (
+                                  <td
+                                    key={colIndex}
+                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell"
+                                  >
+                                    {column.content(item[column.dataIndex])
+                                      .paidUser || rowIndex > 0 ? (
                                       <div className="flex items-center">
                                         <Image
-                                          src={`/projectPictures/${column.content(item[column.dataIndex]).pool.name}.webp`}
-                                          alt={column.content(item[column.dataIndex]).pool.name}
+                                          src={`/projectPictures/${
+                                            column.content(
+                                              item[column.dataIndex],
+                                            ).pool.name
+                                          }.webp`}
+                                          alt={
+                                            column.content(
+                                              item[column.dataIndex],
+                                            ).pool.name
+                                          }
                                           className="me-2"
                                           height={20}
                                           width={20}
                                         />
                                         <div className="relative group">
-                                          <span className="text-white pe-2"> {column.content(item[column.dataIndex]).pool.name}</span>
-                                          <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
-                                            {"pool ID: " + column.content(item[column.dataIndex]).pool.poolID}
+                                          <span className="text-white pe-2">
+                                            {" "}
+                                            {
+                                              column.content(
+                                                item[column.dataIndex],
+                                              ).pool.name
+                                            }
                                           </span>
-                                          {column.content(item[column.dataIndex]).pool.meta ? (
+                                          <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
+                                            {"pool ID: " +
+                                              column.content(
+                                                item[column.dataIndex],
+                                              ).pool.poolID}
+                                          </span>
+                                          {column.content(
+                                            item[column.dataIndex],
+                                          ).pool.meta ? (
                                             <span className="text-gray-400 text-xs pe-2">
-                                              ({column.content(item[column.dataIndex]).pool.meta})
+                                              (
+                                              {
+                                                column.content(
+                                                  item[column.dataIndex],
+                                                ).pool.meta
+                                              }
+                                              )
                                             </span>
                                           ) : null}
                                         </div>
@@ -890,7 +1157,11 @@ const Dashboard: NextPage = () => {
                                           type="button"
                                           className="text-sm text-gray-400 shadow-sm hover:text-white"
                                           onClick={() => {
-                                            handleLinkButton(column.content(item[column.dataIndex]).protocolLink);
+                                            handleLinkButton(
+                                              column.content(
+                                                item[column.dataIndex],
+                                              ).protocolLink,
+                                            );
                                             setLinkModalOpen(true);
                                           }}
                                         >
@@ -909,41 +1180,73 @@ const Dashboard: NextPage = () => {
                                   </td>
                                 )}
                                 {column.title === "Tokens" && (
-                                  <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
+                                  <td
+                                    key={colIndex}
+                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell"
+                                  >
                                     <div className="flex items-center">
-                                      {column.content(item[column.dataIndex]).map((item, index)=>(
-                                        <Image
-                                          src={`/tokenPictures/${item.replace(/[()]/g, "")}.webp`}
-                                          alt={item}
-                                          height={20}
-                                          width={20}
-                                        />
-                                      ))}
+                                      {column
+                                        .content(item[column.dataIndex])
+                                        .map((item, index) => (
+                                          <Image
+                                            src={`/tokenPictures/${item.replace(
+                                              /[()]/g,
+                                              "",
+                                            )}.webp`}
+                                            alt={item}
+                                            height={20}
+                                            width={20}
+                                          />
+                                        ))}
                                       <span className="text-white px-2">
-                                        {column.content(item[column.dataIndex]).length > 1 ?
-                                        column.content(item[column.dataIndex]).join("-")
-                                        : column.content(item[column.dataIndex])}
+                                        {column.content(item[column.dataIndex])
+                                          .length > 1
+                                          ? column
+                                              .content(item[column.dataIndex])
+                                              .join("-")
+                                          : column.content(
+                                              item[column.dataIndex],
+                                            )}
                                       </span>
                                     </div>
                                   </td>
                                 )}
                                 {column.title === "TVL" && (
-                                  <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
+                                  <td
+                                    key={colIndex}
+                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell"
+                                  >
                                     <span
-                                      className={column.content(item[column.dataIndex]).danger == 1 ? "px-2 text-red-400" : "px-2 text-white"}>
-                                      {column.content(item[column.dataIndex]).tvlUsdCount}M
+                                      className={
+                                        column.content(item[column.dataIndex])
+                                          .danger == 1
+                                          ? "px-2 text-red-400"
+                                          : "px-2 text-white"
+                                      }
+                                    >
+                                      {
+                                        column.content(item[column.dataIndex])
+                                          .tvlUsdCount
+                                      }
+                                      M
                                     </span>
                                   </td>
                                 )}
                                 {column.title === "APR" && (
-                                  <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
-                                    <span
-                                      className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20"
-                                    >
-                                      {column.content(item[column.dataIndex]).aprVal}%
+                                  <td
+                                    key={colIndex}
+                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell"
+                                  >
+                                    <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                      {
+                                        column.content(item[column.dataIndex])
+                                          .aprVal
+                                      }
+                                      %
                                     </span>
-                                    {column.content(item[column.dataIndex]).aprPredicted === "Down" ? (
-                                      <ArrowDownOutlined className="text-red-400 px-2"/>
+                                    {column.content(item[column.dataIndex])
+                                      .aprPredicted === "Down" ? (
+                                      <ArrowDownOutlined className="text-red-400 px-2" />
                                     ) : (
                                       <ArrowUpOutlined className="text-green-400 px-2" />
                                     )}
@@ -963,7 +1266,10 @@ const Dashboard: NextPage = () => {
                         <tr className="bg-emerald-400">
                           <th></th>
                           {expandableColumns.map((column, index) => (
-                            <th key={index} className="px-3 py-3.5 text-left text-sm font-semibold text-black">
+                            <th
+                              key={index}
+                              className="px-3 py-3.5 text-left text-sm font-semibold text-black"
+                            >
                               {column.title}
                             </th>
                           ))}
@@ -972,38 +1278,62 @@ const Dashboard: NextPage = () => {
                       <tbody>
                         {categoryMetaData.state.map((item, rowIndex) => (
                           <>
-                            <tr 
+                            <tr
                               key={rowIndex}
                               className="hover:bg-black-900 cursor-pointer"
                               onClick={() => toggleExpand(item.tokens)}
                             >
-                              <td><PlusCircleOutlined /></td>
+                              <td>
+                                <PlusCircleOutlined />
+                              </td>
                               {expandableColumns.map((column, colIndex) => (
                                 <>
                                   {column.title === "Tokens" && (
-                                    <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                                    <td
+                                      key={colIndex}
+                                      className="whitespace-nowrap px-3 py-4 text-sm text-gray-300"
+                                    >
                                       <div className="flex items-center">
-                                        {column.content(item[column.dataIndex]).map((item, index)=>(
-                                          <Image
-                                            src={`/tokenPictures/${item.replace(/[()]/g, "")}.webp`}
-                                            alt={item}
-                                            height={20}
-                                            width={20}
-                                          />
-                                        ))}
+                                        {column
+                                          .content(item[column.dataIndex])
+                                          .map((item, index) => (
+                                            <Image
+                                              src={`/tokenPictures/${item.replace(
+                                                /[()]/g,
+                                                "",
+                                              )}.webp`}
+                                              alt={item}
+                                              height={20}
+                                              width={20}
+                                            />
+                                          ))}
                                         <span className="text-white px-2">
-                                          {column.content(item[column.dataIndex]).length > 1 ?
-                                          column.content(item[column.dataIndex]).join("-")
-                                          : column.content(item[column.dataIndex])}
-                                        </span>  
-                                      </div>               
+                                          {column.content(
+                                            item[column.dataIndex],
+                                          ).length > 1
+                                            ? column
+                                                .content(item[column.dataIndex])
+                                                .join("-")
+                                            : column.content(
+                                                item[column.dataIndex],
+                                              )}
+                                        </span>
+                                      </div>
                                     </td>
                                   )}
                                   {column.title === "Highest APR" && (
-                                    <td key={colIndex} className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                                    <td
+                                      key={colIndex}
+                                      className="whitespace-nowrap px-3 py-4 text-sm text-gray-300"
+                                    >
                                       <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                                        {column.content ? column.content(item[column.dataIndex]) : item[column.dataIndex]}%
-                                      </span>                                    
+                                        {column.content
+                                          ? column.content(
+                                              item[column.dataIndex],
+                                            )
+                                          : item[column.dataIndex]}
+                                        %
+                                      </span>
                                     </td>
                                   )}
                                 </>
@@ -1011,9 +1341,7 @@ const Dashboard: NextPage = () => {
                             </tr>
                             <tr>
                               {expandedRows[item.tokens] && (
-                                <td colSpan="3">
-                                  {expandedRowRender(item)}
-                                </td>
+                                <td colSpan="3">{expandedRowRender(item)}</td>
                               )}
                             </tr>
                           </>
