@@ -131,7 +131,7 @@ const Dashboard: NextPage = () => {
       [key]: value,
     }));
   };
-  const [expandedRows, setExpandedRows] = useState({});
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
   const toggleExpand = (rowKey: string) => {
     setExpandedRows((prevExpandedRows) => {
