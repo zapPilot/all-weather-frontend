@@ -20,7 +20,13 @@ export const columnMapping = (
     render: (chain) => (
       <Image src={`/chainPicturesWebp/${chain}.webp`} height={20} width={20} />
     ),
-    content: (chain) => chain,
+    content: (chain) => {
+      const chainImg = `/chainPicturesWebp/${chain}.webp`
+      return {
+        chainAlt: chain,
+        chainImg: chainImg,
+      }
+    },
   },
   pool: {
     title: "Pool",
@@ -71,8 +77,9 @@ export const columnMapping = (
     },
     content: (pool, _, index) => {
       const paidUser = subscriptionStatus;
+      const poolName = pool && pool.name;
       const protocolLink = protocolList.find(
-        (protocol) => protocol.slug === pool.name,
+        (protocol) => protocol.slug === poolName,
       );
       return {
         paidUser: paidUser,
@@ -111,11 +118,13 @@ export const columnMapping = (
       );
     },
     content: (tokens) => {
-      let newCoins = tokens;
       if (typeof tokens === "string") {
-        newCoins = tokens.split("-");
+        return tokens.split("-");
+      } else if (Array.isArray(tokens)) {
+        return tokens;
+      } else {
+        return []; // Return an empty array if tokens is not a string or an array
       }
-      return tokens;
     },
   },
   tvlUsd: {
@@ -166,12 +175,19 @@ export const columnMapping = (
       );
     },
     content: (apr) => {
-      const aprVal = apr.value.toFixed(2);
-      const aprPredicted = apr.predictions.predictedClass;
-      return {
-        aprVal: aprVal,
-        aprPredicted: aprPredicted,
-      };
+      if (typeof apr === 'undefined') {
+        return {
+          aprVal: "",
+          aprPredicted: "",
+        };
+      } else {
+        const aprVal = apr.value ? apr.value.toFixed(2) : apr;
+        const aprPredicted = apr.predictions.predictedClass;
+        return {
+          aprVal: aprVal,
+          aprPredicted: aprPredicted,
+        };
+      }
     },
   },
   outerAprColumn: {
