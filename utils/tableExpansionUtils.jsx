@@ -1,5 +1,4 @@
-import { Tag, Image, Button, Badge, Tooltip } from "antd";
-import Link from "next/link";
+import Image from "next/image";
 import {
   UnlockOutlined,
   ArrowUpOutlined,
@@ -21,6 +20,13 @@ export const columnMapping = (
     render: (chain) => (
       <Image src={`/chainPicturesWebp/${chain}.webp`} height={20} width={20} />
     ),
+    content: (chain) => {
+      const chainImg = `/chainPicturesWebp/${chain}.webp`
+      return {
+        chainAlt: chain,
+        chainImg: chainImg,
+      }
+    },
   },
   pool: {
     title: "Pool",
@@ -35,43 +41,51 @@ export const columnMapping = (
           </Button>
         </Link>
       ) : (
-        <>
+        <div className="flex items-center">
           <Image
             src={`/projectPictures/${pool.name}.webp`}
             alt={pool.name}
+            className="me-2"
             height={20}
             width={20}
           />
-          <Tooltip title={"pool ID: " + pool.poolID}>
-            <span style={{ color: "#ffffff" }}> {pool.name}</span>
+          <div className="relative group">
+            <span className="text-white pe-2"> {pool.name}</span>
+            <span class="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
+              {"pool ID: " + pool.poolID}
+            </span>
             {pool.meta ? (
-              <span
-                style={{
-                  color: "#ffffff",
-                  fontSize: "smaller",
-                  opacity: "0.7",
-                }}
-              >
-                ({pool.meta})
-              </span>
+              <span className="text-gray-400 text-xs pe-2">({pool.meta})</span>
             ) : null}
-          </Tooltip>
+          </div>
           {protocolList.map((protocol) =>
             protocol.slug === pool.name ? (
-              <Button
-                type="link"
-                style={{ color: "#ffffff" }}
+              <button
+                type="button"
+                className="text-sm text-gray-400 shadow-sm hover:text-white"
                 onClick={() => {
                   handleLinkButton(protocol.url);
                   setLinkModalOpen(true);
                 }}
               >
                 <ExportOutlined />
-              </Button>
+              </button>
             ) : null,
           )}
-        </>
+        </div>
       );
+    },
+    content: (pool, _, index) => {
+      const paidUser = subscriptionStatus;
+      const poolName = pool && pool.name;
+      const protocolLink = protocolList.find(
+        (protocol) => protocol.slug === poolName,
+      );
+      return {
+        paidUser: paidUser,
+        pool: pool,
+        protocolLink: protocolLink ? protocolLink.url : null,
+      };
     },
   },
   tokens: {
@@ -85,26 +99,32 @@ export const columnMapping = (
         newCoins = tokens.split("-");
       }
       return (
-        <div>
+        <div className="flex items-center">
           {newCoins.map((token, index) => (
             <Image
-              key={index}
               src={`/tokenPictures/${token.replace(/[()]/g, "")}.webp`}
               alt={token}
               height={20}
               width={20}
             />
           ))}
-          {
-            // backward compatibility
-            Array.isArray(tokens) ? (
-              <span style={{ color: "#ffffff" }}> {tokens.join("-")}</span>
-            ) : (
-              <span style={{ color: "#ffffff" }}> {tokens}</span>
-            )
-          }
+          <span className="text-white px-2">
+            {
+              // backward compatibility
+              Array.isArray(tokens) ? tokens.join("-") : tokens
+            }
+          </span>
         </div>
       );
+    },
+    content: (tokens) => {
+      if (typeof tokens === "string") {
+        return tokens.split("-");
+      } else if (Array.isArray(tokens)) {
+        return tokens;
+      } else {
+        return []; // Return an empty array if tokens is not a string or an array
+      }
     },
   },
   tvlUsd: {
@@ -113,12 +133,20 @@ export const columnMapping = (
     dataIndex: "tvlUsd",
     width: 14,
     render: (tvlUsd) => {
-      let color = tvlUsd < 500000 ? "volcano" : "green";
+      const danger = tvlUsd < 500000 ? true : false;
       return (
-        <Tag color={color} key={tvlUsd}>
+        <span className={danger ? "px-2 text-red-400" : "px-2 text-white"}>
           {(tvlUsd / 1e6).toFixed(2)}M
-        </Tag>
+        </span>
       );
+    },
+    content: (tvlUsd) => {
+      const danger = tvlUsd < 500000 ? 1 : 0;
+      const tvlUsdCount = (tvlUsd / 1e6).toFixed(2);
+      return {
+        danger: danger,
+        tvlUsdCount: tvlUsdCount,
+      };
     },
   },
   apr: {
@@ -129,25 +157,37 @@ export const columnMapping = (
     render: (apr) => {
       let color = "green";
       return apr.value ? (
-        <>
-          <Badge
-            count={
-              apr.predictions.predictedClass === "Down" ? (
-                <ArrowDownOutlined style={{ color: "red" }} />
-              ) : (
-                <ArrowUpOutlined style={{ color: "green" }} />
-              )
-            }
-          >
-            <Tag color={color} key={apr.value}>
-              {apr.value.toFixed(2)}%
-            </Tag>
-          </Badge>
-        </>
+        <div className="flex">
+          <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+            {apr.value.toFixed(2)}%
+          </span>
+          {apr.predictions.predictedClass === "Down" ? (
+            <ArrowDownOutlined className="text-red-400 px-2" />
+          ) : (
+            <ArrowUpOutlined className="text-green-400 px-2" />
+          )}
+        </div>
       ) : (
         // for backward compatibility
-        <Tag color={color}>{apr}</Tag>
+        <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+          {apr}
+        </span>
       );
+    },
+    content: (apr) => {
+      if (typeof apr === 'undefined') {
+        return {
+          aprVal: "",
+          aprPredicted: "",
+        };
+      } else {
+        const aprVal = apr.value ? apr.value.toFixed(2) : apr;
+        const aprPredicted = apr.predictions.predictedClass;
+        return {
+          aprVal: aprVal,
+          aprPredicted: aprPredicted,
+        };
+      }
     },
   },
   outerAprColumn: {
@@ -156,15 +196,13 @@ export const columnMapping = (
     dataIndex: "apr",
     width: 14,
     render: (apr) => {
-      let color = "green";
       return (
-        <>
-          <Tag color={color} key={apr.value}>
-            {apr.value.toFixed(2)}%
-          </Tag>
-        </>
+        <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+          {apr.value.toFixed(2)}%
+        </span>
       );
     },
+    content: (apr) => apr.value.toFixed(2),
   },
 });
 export const getExpandableColumnsForSuggestionsTable = () => [
