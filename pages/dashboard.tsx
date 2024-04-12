@@ -898,11 +898,15 @@ const Dashboard: NextPage = () => {
                                       <Image
                                         src={
                                           // @ts-ignore
-                                          column.content(item[column.key]).chainImg
+                                          column.content(item[column.key])
+                                          // @ts-ignore
+                                            .chainImg
                                         }
                                         alt={
                                           // @ts-ignore
-                                          column.content(item[column.key]).chainAlt
+                                          column.content(item[column.key])
+                                          // @ts-ignore
+                                            .chainAlt
                                         }
                                         height={20}
                                         width={20}
@@ -919,28 +923,48 @@ const Dashboard: NextPage = () => {
                                             {column.title === "Tokens" && (
                                               <div className="col-span-2">
                                                 <div className="flex items-center">
-                                                  {// @ts-ignore
-                                                    column.content(item[column.key])
-                                                    // @ts-ignore 
-                                                    .map((item, index) => (
-                                                      <Image
-                                                        src={`/tokenPictures/${item.replace(
-                                                          /[()]/g,
-                                                          "",
-                                                        )}.webp`}
-                                                        key={item}
-                                                        alt={item}
-                                                        height={20}
-                                                        width={20}
-                                                      />
-                                                    ))}
+                                                  {
+                                                    // @ts-ignore
+                                                    column
+                                          // @ts-ignore
+                                                      .content(item[column.key])
+                                                      // @ts-ignore
+                                                      .map((item, index) => (
+                                                        <Image
+                                                          src={`/tokenPictures/${item.replace(
+                                                            /[()]/g,
+                                                            "",
+                                                          )}.webp`}
+                                                          key={item}
+                                                          alt={item}
+                                                          height={20}
+                                                          width={20}
+                                                        />
+                                                      ))
+                                                  }
                                                   <p className="text-white text-xl font-medium px-2">
-                                                    {// @ts-ignore
+                                                    {
+                                                    // @ts-ignore
                                                       column.content(item[column.key]).length > 1 ?
                                                       // @ts-ignore
-                                                      column.content(item[column.key]).join("-")
+                                                      column.content(
                                                       // @ts-ignore
-                                                      : column.content(item[column.key])
+                                                        item[column.key],
+                                                      // @ts-ignore
+                                                      ).length > 1
+                                                        ? // @ts-ignore
+                                                          column
+                                                            .content(
+                                                            // @ts-ignore
+                                                              item[column.key],
+                                                            )
+                                                            // @ts-ignore
+                                                            .join("-")
+                                                        : // @ts-ignore
+                                                          column.content(
+                                                            // @ts-ignore
+                                                            item[column.key],
+                                                          )
                                                     }
                                                   </p>
                                                 </div>
@@ -954,14 +978,24 @@ const Dashboard: NextPage = () => {
                                                 <span
                                                   className={
                                                     // @ts-ignore
-                                                    column.content(item[column.key]).danger == 1 ?
-                                                      "block px-2 text-red-400"
+                                                    column.content(
+                                                      // @ts-ignore
+                                                      item[column.key],
+                                                    // @ts-ignore
+                                                    ).danger == 1
+                                                      ? "block px-2 text-red-400"
                                                       : "block px-2 text-white"
                                                   }
                                                 >
-                                                  {// @ts-ignore
-                                                    column.content(item[column.key]).tvlUsdCount
-                                                  }M
+                                                  {
+                                                    // @ts-ignore
+                                                    column.content(
+                                                      // @ts-ignore
+                                                      item[column.key],
+                                                    // @ts-ignore
+                                                    ).tvlUsdCount
+                                                  }
+                                                  M
                                                 </span>
                                               </div>
                                             )}
@@ -971,14 +1005,27 @@ const Dashboard: NextPage = () => {
                                                   APR
                                                 </p>
                                                 <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                                                  {// @ts-ignore
-                                                    column.content(item[column.key]).aprVal
-                                                  }%
+                                                  {
+                                                    // @ts-ignore
+                                                    column.content(
+                                                    // @ts-ignore
+                                                      item[column.key],
+                                                    // @ts-ignore
+                                                    ).aprVal
+                                                  }
+                                                  %
                                                 </span>
-                                                {// @ts-ignore
-                                                  column.content(item[column.key]).aprPredicted === "Down" ?
-                                                  <ArrowDownOutlined className="text-red-400 px-2" />
-                                                  : <ArrowUpOutlined className="text-green-400 px-2" />
+                                                {
+                                                  // @ts-ignore
+                                                  column.content(
+                                                  // @ts-ignore
+                                                    item[column.key],
+                                                  // @ts-ignore
+                                                  ).aprPredicted === "Down" ? (
+                                                    <ArrowDownOutlined className="text-red-400 px-2" />
+                                                  ) : (
+                                                    <ArrowUpOutlined className="text-green-400 px-2" />
+                                                  )
                                                 }
                                               </div>
                                             )}
@@ -988,11 +1035,21 @@ const Dashboard: NextPage = () => {
                                                   Chain
                                                 </p>
                                                 <Image
-                                                  src={// @ts-ignore
-                                                    column.content(item[column.key]).chainImg
+                                                  src={
+                                                    // @ts-ignore
+                                                    column.content(
+                                                    // @ts-ignore
+                                                      item[column.key],
+                                                    // @ts-ignore
+                                                    ).chainImg
                                                   }
-                                                  alt={// @ts-ignore
-                                                    column.content(item[column.key]).chainAlt
+                                                  alt={
+                                                    // @ts-ignore
+                                                    column.content(
+                                                    // @ts-ignore
+                                                      item[column.key],
+                                                    // @ts-ignore
+                                                    ).chainAlt
                                                   }
                                                   height={20}
                                                   width={20}
@@ -1141,26 +1198,40 @@ const Dashboard: NextPage = () => {
                                     className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell"
                                   >
                                     <div className="flex items-center">
-                                      {// @ts-ignore
-                                        column.content(item[column.key]).map((item, index) => (
-                                          <Image
-                                            src={`/tokenPictures/${item.replace(
-                                              /[()]/g,
-                                              "",
-                                            )}.webp`}
-                                            key={item}
-                                            alt={item}
-                                            height={20}
-                                            width={20}
-                                          />
-                                        ))}
+                                      {
+                                        // @ts-ignore
+                                        column
+                                        // @ts-ignore
+                                          .content(item[column.key])
+                                          // @ts-ignore
+                                          .map((item, index) => (
+                                            <Image
+                                              src={`/tokenPictures/${item.replace(
+                                                /[()]/g,
+                                                "",
+                                              )}.webp`}
+                                              key={item}
+                                              alt={item}
+                                              height={20}
+                                              width={20}
+                                            />
+                                          ))
+                                      }
                                       <span className="text-white px-2">
                                         {// @ts-ignore
                                           column.content(item[column.key]).length > 1 ?
                                           // @ts-ignore
-                                          column.content(item[column.key]).join("-")
+                                          column.content(item[column.key])
                                           // @ts-ignore
-                                          : column.content(item[column.key])
+                                            .length > 1
+                                            ? // @ts-ignore
+                                              column
+                                              // @ts-ignore
+                                                .content(item[column.key])
+                                                // @ts-ignore
+                                                .join("-")
+                                            : // @ts-ignore
+                                              column.content(item[column.key])
                                         }
                                       </span>
                                     </div>
@@ -1174,14 +1245,20 @@ const Dashboard: NextPage = () => {
                                     <span
                                       className={
                                         // @ts-ignore
-                                        column.content(item[column.key]).danger == 1 ?
-                                          "px-2 text-red-400"
+                                        column.content(item[column.key])
+                                        // @ts-ignore
+                                          .danger == 1
+                                          ? "px-2 text-red-400"
                                           : "px-2 text-white"
                                       }
                                     >
-                                      {// @ts-ignore
-                                        column.content(item[column.key]).tvlUsdCount
-                                      }M
+                                      {
+                                        // @ts-ignore
+                                        column.content(item[column.key])
+                                        // @ts-ignore
+                                          .tvlUsdCount
+                                      }
+                                      M
                                     </span>
                                   </td>
                                 )}
@@ -1195,10 +1272,15 @@ const Dashboard: NextPage = () => {
                                         column.content(item[column.key]).aprVal
                                       }%
                                     </span>
-                                    {// @ts-ignore
-                                      column.content(item[column.key]).aprPredicted === "Down" ?
-                                      <ArrowDownOutlined className="text-red-400 px-2" />
-                                      : <ArrowUpOutlined className="text-green-400 px-2" />
+                                    {
+                                      // @ts-ignore
+                                      column.content(item[column.key])
+                                    // @ts-ignore
+                                        .aprPredicted === "Down" ? (
+                                        <ArrowDownOutlined className="text-red-400 px-2" />
+                                      ) : (
+                                        <ArrowUpOutlined className="text-green-400 px-2" />
+                                      )
                                     }
                                   </td>
                                 )}
@@ -1247,30 +1329,38 @@ const Dashboard: NextPage = () => {
                                       className="whitespace-nowrap px-3 py-4 text-sm text-gray-300"
                                     >
                                       <div className="flex items-center">
-                                        {// @ts-ignore
-                                          column.content(item[column.key])
-                                          .map(
-                                            (item: string, index: number) => (
-                                              <Image
-                                                src={`/tokenPictures/${item.replace(
-                                                  /[()]/g,
-                                                  "",
-                                                )}.webp`}
-                                                key={item}
-                                                alt={item}
-                                                height={20}
-                                                width={20}
-                                              />
-                                            ),
-                                          )}
+                                        {
+                                          // @ts-ignore
+                                          column
+                                          // @ts-ignore
+                                            .content(item[column.key])
+                                            .map(
+                                              (item: string, index: number) => (
+                                                <Image
+                                                  src={`/tokenPictures/${item.replace(
+                                                    /[()]/g,
+                                                    "",
+                                                  )}.webp`}
+                                                  key={item}
+                                                  alt={item}
+                                                  height={20}
+                                                  width={20}
+                                                />
+                                              ),
+                                            )
+                                        }
                                         <span className="text-white px-2">
                                           {
                                             // @ts-ignore
-                                            column.content(item[column.ket]).length > 1 ?
-                                            // @ts-ignore
-                                            column.content(item[column.key]).join("-")
-                                            // @ts-ignore
-                                            : column.content(item[column.key])
+                                            column.content(item[column.ket])
+                                              .length > 1
+                                              ? // @ts-ignore
+                                                column
+                                                // @ts-ignore
+                                                  .content(item[column.key])
+                                                  .join("-")
+                                              : // @ts-ignore
+                                                column.content(item[column.key])
                                           }
                                         </span>
                                       </div>
