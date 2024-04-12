@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
 import { Tag, Image } from "antd";
-// import { web3Context } from "./Web3DataProvider";
+import { web3Context } from "./Web3DataProvider";
 import TokenTable from "./components/TokenTable.jsx";
 const upcomingProtocol = [
   {

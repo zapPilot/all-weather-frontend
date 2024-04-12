@@ -21,11 +21,11 @@ export const columnMapping = (
       <Image src={`/chainPicturesWebp/${chain}.webp`} height={20} width={20} />
     ),
     content: (chain) => {
-      const chainImg = `/chainPicturesWebp/${chain}.webp`;
+      const chainImg = `/chainPicturesWebp/${chain}.webp`
       return {
         chainAlt: chain,
         chainImg: chainImg,
-      };
+      }
     },
   },
   pool: {
@@ -175,7 +175,7 @@ export const columnMapping = (
       );
     },
     content: (apr) => {
-      if (typeof apr === "undefined") {
+      if (typeof apr === 'undefined') {
         return {
           aprVal: "",
           aprPredicted: "",

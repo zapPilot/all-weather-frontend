@@ -1,44 +1,30 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import Image from "next/image";
 import { Popover, Tag, Spin, ConfigProvider } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
+import { web3Context } from "./Web3DataProvider";
 import ClaimButton from "./ClaimButton";
 import { ethers } from "ethers";
+import { useAccount } from "wagmi";
 import TokenTable from "./components/TokenTable.jsx";
 import { chainIDToName } from "../../utils/contractInteractions.jsx";
-import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
-import { useChainId } from "@thirdweb-dev/react";
-import { useAddress } from "@thirdweb-dev/react";
-
 const BigNumber = require("bignumber.js");
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const APRPopOver = ({ mode }) => {
-  const address = useAddress();
-  const chainId = useChainId();
+  const { connector: isConnected } = useAccount();
+  const { chain } = useAccount();
 
+  const [claimableRewards, setClaimableRewards] = useState([]);
   const [aprComposition, setAprComposition] = useState({});
   const [sumOfRewardsDenominatedInUSD, setSumOfRewardsDenominatedInUSD] =
     useState(0);
-  const {
-    netWorth,
-    netWorthWithCustomLogic,
-    rebalanceSuggestions,
-    totalInterest,
-    portfolioApr,
-    sharpeRatio,
-    topNLowestAprPools,
-    topNPoolConsistOfSameLpToken,
-    topNStableCoins,
-    aggregatedPositions,
-    ROI,
-    maxDrawdown,
-    claimableRewards,
-  } = useRebalanceSuggestions();
+  const WEB3_CONTEXT = useContext(web3Context);
 
   useEffect(() => {
     async function fetchData() {
+      const claimableRewards = WEB3_CONTEXT.dataOfGetClaimableRewards;
       const claimableRewardsWithChainInfo =
         addChainInfoToToken(claimableRewards);
       setClaimableRewards(claimableRewardsWithChainInfo);
@@ -59,8 +45,8 @@ const APRPopOver = ({ mode }) => {
       if (claimableRewards === undefined) return;
       for (const reward of claimableRewards) {
         for (const claimableReward of reward.claimableRewards) {
-          if (!claimableReward.token.startsWith(chainIDToName(chainId))) {
-            claimableReward.token = `${chainIDToName(chainId)}:${
+          if (!claimableReward.token.startsWith(chainIDToName(chain.id))) {
+            claimableReward.token = `${chainIDToName(chain.id)}:${
               claimableReward.token
             }`;
           }
@@ -77,9 +63,10 @@ const APRPopOver = ({ mode }) => {
         .then((result) => setAprComposition(result))
         .catch((error) => console.error("Error of apr_composition:", error));
     }
+    if (!WEB3_CONTEXT) return;
     fetchData();
     fetchAprComposition();
-  }, [claimableRewards]);
+  }, [WEB3_CONTEXT]);
 
   function renderContent() {
     if (!WEB3_CONTEXT || Object.keys(aprComposition).length === 0)
@@ -334,7 +321,7 @@ const APRPopOver = ({ mode }) => {
         >
           <ClaimButton />
         </ConfigProvider>
-        {address !== undefined ? (
+        {isConnected ? (
           <div
             style={{
               marginTop: 10,

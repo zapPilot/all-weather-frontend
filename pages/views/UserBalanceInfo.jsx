@@ -1,17 +1,37 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
+import { web3Context } from "./Web3DataProvider";
 const BigNumber = require("bignumber.js");
 
-const UserBalanceInfo = ({
-  netWorth,
-  netWorthWithCustomLogic,
-  portfolioApr,
-  claimableRewards,
-}) => {
+const UserBalanceInfo = ({ netWorth, netWorthWithCustomLogic }) => {
+  const WEB3_CONTEXT = useContext(web3Context);
   const [userShares, setUserShares] = useState(0);
   const [totalSupply, setTotalSupply] = useState(1);
+  const [portfolioApr, setPortfolioApr] = useState(0);
+  const [claimableRewards, setClaimableRewards] = useState(0);
   const [exchangeRates, setExchangeRates] = useState({});
 
   useEffect(() => {
+    async function fetchSharesInfo() {
+      if (WEB3_CONTEXT) {
+        setUserShares(
+          WEB3_CONTEXT.userShares === undefined ? 0 : WEB3_CONTEXT.userShares,
+        );
+        setTotalSupply(
+          WEB3_CONTEXT.totalSupply === undefined ? 0 : WEB3_CONTEXT.totalSupply,
+        );
+        setPortfolioApr(
+          WEB3_CONTEXT.portfolioApr === undefined
+            ? 0
+            : WEB3_CONTEXT.portfolioApr,
+        );
+        setClaimableRewards(
+          WEB3_CONTEXT.claimableRewards === undefined
+            ? 0
+            : WEB3_CONTEXT.claimableRewards,
+        );
+      }
+    }
+
     async function fetchExchangeRate() {
       fetch("https://api.exchangerate-api.com/v4/latest/USD", {
         // Replace with your API endpoint
@@ -31,8 +51,9 @@ const UserBalanceInfo = ({
           setError(error);
         });
     }
+    fetchSharesInfo();
     fetchExchangeRate();
-  }, []);
+  }, [WEB3_CONTEXT]);
 
   const userPercentage = new BigNumber(userShares).div(totalSupply);
   const userDeposit =

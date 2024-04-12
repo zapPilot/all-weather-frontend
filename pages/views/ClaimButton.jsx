@@ -5,16 +5,15 @@ import {
   APX,
 } from "../../utils/oneInch";
 import { DollarOutlined } from "@ant-design/icons";
-import { useAddress } from "@thirdweb-dev/react";
-
+import { useWriteContract, useAccount } from "wagmi";
 import { useState, useContext, useEffect } from "react";
-import { useContractWrite } from "@thirdweb-dev/react";
+import { web3Context } from "./Web3DataProvider";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import { sendDiscordMessage } from "../../utils/discord";
 import TokenDropdown from "./components/TokenDropdowns.jsx";
 
 const ClaimButton = () => {
-  const address = useAddress();
+  const { address } = useAccount();
   const [messageApi, contextHolder] = message.useMessage();
   const [aggregatorDataReady, setAggregatorDataReady] = useState(true);
   const WEB3_CONTEXT = useContext(web3Context);
@@ -27,7 +26,7 @@ const ClaimButton = () => {
   const loadingWording = "Fetching the best route to dump these rewards...";
   const useDump = true;
 
-  const { data, writeContract, status } = useContractWrite();
+  const { data, writeContract, status } = useWriteContract();
 
   useEffect(() => {
     async function fetchData() {
