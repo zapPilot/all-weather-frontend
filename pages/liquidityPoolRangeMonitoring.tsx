@@ -3,7 +3,7 @@ import BasePage from "./basePage.tsx";
 import { Badge, Card, Image, Spin } from "antd";
 import { useEffect, useState } from "react";
 import { useWindowHeight } from "../utils/chartUtils";
-import { useAccount } from "wagmi";
+import { useAddress } from "@thirdweb-dev/react";
 
 interface Pool {
   data: {
@@ -37,7 +37,7 @@ const LiquidityPoolRangeMonitoring: NextPage = () => {
   const [statusesOfLiquidityPools, setstatusesOfLiquidityPools] = useState({
     data: ["placeholder"],
   });
-  const { address } = useAccount();
+  const address = useAddress();
 
   const renderCardTitle = (pool: Pool) => {
     return (

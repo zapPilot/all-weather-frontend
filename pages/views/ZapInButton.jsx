@@ -10,6 +10,7 @@ import {
 import { EditOutlined } from "@ant-design/icons";
 import styles from "../../styles/zapInOut.module.scss";
 import { z } from "zod";
+import { useChainId } from "@thirdweb-dev/react";
 import { encodeFunctionData } from "viem";
 import { portfolioContractAddress, USDT } from "../../utils/oneInch";
 import {
@@ -26,12 +27,13 @@ import {
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import {
-  useWriteContract,
-  useBalance,
-  useReadContract,
-  useAccount,
-  useWaitForTransactionReceipt,
-} from "wagmi";
+  useContractWrite,
+  useContractRead,
+  useContract,
+} from "@thirdweb-dev/react";
+
+import { useBalance } from "@thirdweb-dev/react";
+import { useAddress } from "@thirdweb-dev/react";
 
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import NumericInput from "./NumberInput";
@@ -53,7 +55,7 @@ const depositSchema = z
 const fakeAllowanceAddressForBNB = "0x55d398326f99059fF775485246999027B3197955";
 
 const ZapInButton = () => {
-  const { address } = useAccount();
+  const address = useAddress();
   const [open, setOpen] = useState(false);
   const normalWording = "Deposit";
   const loadingWording = "Fetching the best route to deposit";
@@ -72,7 +74,7 @@ const ZapInButton = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const [slippage, setSlippage] = useState(1);
   const [slippageModalOpen, setSlippageModalOpen] = useState(false);
-  const { chain } = useAccount();
+  const chainId = useChainId();
 
   const showModal = () => {
     setOpen(true);
@@ -85,18 +87,12 @@ const ZapInButton = () => {
   const showSlippageModal = () => {
     setSlippageModalOpen(true);
   };
-
-  const { data: chosenTokenBalance } = useBalance({
-    address,
-    ...(chosenToken === "0x0000000000000000000000000000000000000000"
-      ? {}
-      : { token: chosenToken }), // Include token only if chosenToken is truthy
-    // token: chosenToken,
-    onError(error) {
-      console.log(`cannot read ${chosenToken} Balance:`, error);
-      throw error;
-    },
-  });
+  const { data: chosenTokenBalance } = useBalance(
+    chosenToken === "0x0000000000000000000000000000000000000000" ||
+      chosenToken === ""
+      ? undefined
+      : chosenToken,
+  );
 
   const iconSize = { fontSize: "20px" };
   const defaultIcon = {
@@ -129,38 +125,28 @@ const ZapInButton = () => {
     data: approveData,
     writeContract: approveWrite,
     isPending: approveIsPending,
-  } = useWriteContract();
-
-  const {
-    isLoading: approveIsLoading,
-    isSuccess: approveIsSuccess,
-    isError: approveIsError,
-  } = useWaitForTransactionReceipt({ hash: approveData });
+  } = useContractWrite();
 
   const {
     data: depositData,
     writeContract,
     isPending: depositIsPending,
-  } = useWriteContract();
-  const {
-    isLoading: depositIsLoading,
-    isSuccess: depositIsSuccess,
-    isError: depositIsError,
-  } = useWaitForTransactionReceipt({ hash: depositData });
+  } = useContractWrite();
 
+  const { contract } = useContract(
+    chosenToken === "0x0000000000000000000000000000000000000000"
+      ? fakeAllowanceAddressForBNB
+      : chosenToken,
+    permanentPortfolioJson.abi,
+  );
   const {
     data: approveAmountData,
     error: approveAmountError,
     isPending: approveAmounIsPending,
-  } = useReadContract({
-    address:
-      chosenToken === "0x0000000000000000000000000000000000000000"
-        ? fakeAllowanceAddressForBNB
-        : chosenToken,
-    abi: permanentPortfolioJson.abi,
-    functionName: "allowance",
-    args: [address, portfolioContractAddress],
-  });
+  } = useContractRead(contract, "allowance", [
+    address,
+    portfolioContractAddress,
+  ]);
 
   useEffect(() => {
     if (approveAmounIsPending) return; // Don't proceed if loading
@@ -251,7 +237,7 @@ const ZapInButton = () => {
     setApproveReady(true);
     setFetchingStatus("loading");
     const aggregatorDatas = await getAggregatorData(
-      chain?.id,
+      chainId,
       amount,
       chosenToken,
       USDT,
@@ -368,15 +354,16 @@ const ZapInButton = () => {
             marginBottom: "10px",
           }}
         >
-          {statusIcon(
-            approveIsPending || approveIsLoading
+          {/* haven't found the equivilent hook in Thirdweb to implment approveIsSuccess, so we're missing approveIsSuccess and approveIsError */}
+          {/* {statusIcon(
+            approveIsPending
               ? "loading"
               : approveIsSuccess
               ? "success"
               : approveIsError
               ? "error"
               : "",
-          )}
+          )} */}
           <span style={{ marginLeft: 5 }}>Approve</span>
         </div>
         <div
@@ -396,7 +383,8 @@ const ZapInButton = () => {
             marginBottom: "10px",
           }}
         >
-          {statusIcon(
+          {/* haven't found the equivilent hook in Thirdweb to implment approveIsSuccess, so we're missing approveIsSuccess and approveIsError */}
+          {/* {statusIcon(
             depositIsPending || depositIsLoading
               ? "loading"
               : depositIsSuccess
@@ -404,7 +392,7 @@ const ZapInButton = () => {
               : depositIsError
               ? "error"
               : "",
-          )}
+          )} */}
           <span style={{ marginLeft: 5 }}>Deposit </span>
         </div>
         {typeof depositHash === "undefined" ? (
@@ -451,7 +439,7 @@ const ZapInButton = () => {
             },
             "address",
             // @ts-ignore
-            chain?.id,
+            chainId,
           )}
           <NumericInput
             placeholder={`Balance: ${

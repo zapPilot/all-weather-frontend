@@ -5,17 +5,29 @@ import PortfolioMetaTab from "./PortfolioMetaTab";
 import { Row, Col, ConfigProvider, Button } from "antd";
 import Link from "next/link";
 import Image from "next/image";
-import { web3Context } from "./Web3DataProvider";
+// import { web3Context } from "./Web3DataProvider";
 import { useWindowHeight } from "../../utils/chartUtils";
 import styles from "../../styles/Home.module.css";
+import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
 
 export default function ExampleUI() {
   const windowHeight = useWindowHeight();
-  const WEB3_CONTEXT = useContext(web3Context);
-  const [loadingState, setLoadingState] = useState(true);
-  const [portfolioApr, setPortfolioApr] = useState(0);
   const [isHover, setIsHover] = useState(false);
-
+  const {
+    netWorth,
+    netWorthWithCustomLogic,
+    rebalanceSuggestions,
+    totalInterest,
+    portfolioApr,
+    sharpeRatio,
+    topNLowestAprPools,
+    topNPoolConsistOfSameLpToken,
+    topNStableCoins,
+    aggregatedPositions,
+    ROI,
+    maxDrawdown,
+    claimableRewards,
+  } = useRebalanceSuggestions();
   const handleMouseEnter = () => {
     setIsHover(true);
   };
@@ -24,19 +36,6 @@ export default function ExampleUI() {
     setIsHover(false);
   };
 
-  useEffect(() => {
-    async function fetchPortfolioMetadata() {
-      if (WEB3_CONTEXT !== undefined) {
-        setLoadingState(false);
-        setPortfolioApr(
-          WEB3_CONTEXT.portfolioApr === undefined
-            ? 0
-            : WEB3_CONTEXT.portfolioApr,
-        );
-      }
-    }
-    fetchPortfolioMetadata();
-  }, [WEB3_CONTEXT, portfolioApr]);
   return (
     <div className={styles.divInstallment}>
       <Row
@@ -105,7 +104,7 @@ export default function ExampleUI() {
                 <Link href="#zapSection">
                   <Button
                     type="primary"
-                    loading={loadingState}
+                    loading={portfolioApr === 0 ? true : false}
                     className={styles.btnInvest}
                     style={
                       isHover

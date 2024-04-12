@@ -11,6 +11,7 @@ import {
 } from "@ant-design/icons";
 import { useWindowHeight } from "../utils/chartUtils.js";
 import { investByAAWallet } from "../utils/etherspot.js";
+import { useAddress } from "@thirdweb-dev/react";
 
 import {
   getBasicColumnsForSuggestionsTable,
@@ -19,7 +20,6 @@ import {
 } from "../utils/tableExpansionUtils";
 import { useState, useEffect, ChangeEventHandler } from "react";
 import RebalanceChart from "./views/RebalanceChart";
-import { useAccount } from "wagmi";
 import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
 import LinkModal from "./views/components/LinkModal";
 import axios from "axios";
@@ -51,7 +51,7 @@ interface queriesObj {
 
 const Dashboard: NextPage = () => {
   const userApiKey = "placeholder";
-  const { address: walletAddress } = useAccount();
+  const walletAddress = useAddress();
 
   const windowHeight = useWindowHeight();
   const divBetterPools = {
@@ -400,268 +400,297 @@ const Dashboard: NextPage = () => {
                 </td>
                 {columns.map((column, index) => (
                   <>
-                    {
-                    column.key === "chain" ?
-                      (
+                    {column.key === "chain" ? (
+                      // @ts-ignore
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                        <Image
                           // @ts-ignore
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
-                          <Image
-                            // @ts-ignore
-                            src={column.content(item[column.key]).chainImg}
-                            // @ts-ignore
-                            alt={column.content(item[column.key]).chainAlt}
-                            className="hidden sm:block"
-                            height={20}
-                            width={20}
-                          />
-                          <div className="grid grid-cols-2 gap-4 sm:hidden">
-                            {tableRowMobile.map((title, index) => {
-                              const column = basicColumns.find(
-                                (column) => column.title === title,
-                              );
-                              if (!column) return null;
-                              return (
-                                <>
-                                  {
-                                    column.title === "Tokens" &&
-                                    (
-                                    <div className="col-span-2">
-                                      <div className="flex items-center">
+                          src={column.content(item[column.key]).chainImg}
+                          // @ts-ignore
+                          alt={column.content(item[column.key]).chainAlt}
+                          className="hidden sm:block"
+                          height={20}
+                          width={20}
+                        />
+                        <div className="grid grid-cols-2 gap-4 sm:hidden">
+                          {tableRowMobile.map((title, index) => {
+                            const column = basicColumns.find(
+                              (column) => column.title === title,
+                            );
+                            if (!column) return null;
+                            return (
+                              <>
+                                {column.title === "Tokens" && (
+                                  <div className="col-span-2">
+                                    <div className="flex items-center">
+                                      {column
+                                        .content(item[column.key])
+                                        // @ts-ignore
+                                        .map((item, index) => (
+                                          <Image
+                                            src={`/tokenPictures/${item.replace(
+                                              /[()]/g,
+                                              "",
+                                            )}.webp`}
+                                            key={item}
+                                            alt={item}
+                                            height={20}
+                                            width={20}
+                                          />
+                                        ))}
+                                      <p className="text-white text-xl font-medium px-2">
                                         {
-                                          column.content(item[column.key])
                                           // @ts-ignore
-                                          .map((item, index) => (
+                                          column.content(item[column.key])
+                                            .length > 1
+                                            ? // @ts-ignore
+                                              column
+                                                .content(item[column.key])
+                                                .join("-")
+                                            : column.content(item[column.key])
+                                        }
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                                {column.title === "TVL" && (
+                                  <div className="col-span-1">
+                                    <p className="text-gray-400 text-sm font-medium">
+                                      TVL
+                                    </p>
+                                    <span
+                                      className={
+                                        // @ts-ignore
+                                        column.content(item[column.key])
+                                          .danger == 1
+                                          ? "block px-2 text-red-400"
+                                          : "block px-2 text-white"
+                                      }
+                                    >
+                                      {
+                                        // @ts-ignore
+                                        column.content(item[column.key])
+                                          .tvlUsdCount
+                                      }
+                                      M
+                                    </span>
+                                  </div>
+                                )}
+                                {column.title === "APR" && (
+                                  <div className="col-span-1">
+                                    <p className="text-gray-400 text-sm font-medium">
+                                      APR
+                                    </p>
+                                    <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                      {
+                                        // @ts-ignore
+                                        column.content(item[column.key]).aprVal
+                                      }
+                                      %
+                                    </span>
+                                    {
+                                      // @ts-ignore
+                                      column.content(item[column.key])
+                                        .aprPredicted === "Down" ? (
+                                        <ArrowDownOutlined className="text-red-400 px-2" />
+                                      ) : (
+                                        <ArrowUpOutlined className="text-green-400 px-2" />
+                                      )
+                                    }
+                                  </div>
+                                )}
+                                {column.title === "Chain" && (
+                                  <div className="col-span-1">
+                                    <p className="text-gray-400 text-sm font-medium">
+                                      Chain
+                                    </p>
+                                    <Image
+                                      src={
+                                        // @ts-ignore
+                                        column.content(item[column.key])
+                                          .chainImg
+                                      }
+                                      alt={
+                                        // @ts-ignore
+                                        column.content(item[column.key])
+                                          .chainAlt
+                                      }
+                                      height={20}
+                                      width={20}
+                                    />
+                                  </div>
+                                )}
+                                {column.title === "Pool" && (
+                                  <div className="col-span-1">
+                                    <p className="text-gray-400 text-sm font-medium">
+                                      DEX
+                                    </p>
+                                    {
+                                      // @ts-ignore
+                                      column.content(item[column.key])
+                                        .paidUser || rowIndex > 0 ? (
+                                        <div>
+                                          <button
+                                            type="button"
+                                            className="text-sm text-gray-400 shadow-sm hover:text-white"
+                                            onClick={() => {
+                                              // @ts-ignore
+                                              handleLinkButton(
+                                                column.content(item[column.key])
+                                                  .protocolLink,
+                                              );
+                                              setLinkModalOpen(true);
+                                            }}
+                                          >
                                             <Image
-                                              src={`/tokenPictures/${item.replace(
-                                                /[()]/g,
-                                                "",
-                                              )}.webp`}
-                                              key={item}
-                                              alt={item}
+                                              src={`/projectPictures/${
+                                                // @ts-ignore
+                                                column.content(item[column.key])
+                                                  .pool.name
+                                              }.webp`}
+                                              alt={
+                                                // @ts-ignore
+                                                column.content(item[column.key])
+                                                  .pool.name
+                                              }
+                                              className="me-2"
                                               height={20}
                                               width={20}
                                             />
-                                          ))}
-                                        <p className="text-white text-xl font-medium px-2">
-                                          {
-                                            // @ts-ignore
-                                            column.content(item[column.key]).length > 1 ?
-                                            // @ts-ignore
-                                            column.content(item[column.key]).join("-")
-                                            : column.content(item[column.key])
-                                          }
-                                        </p>
-                                      </div>
-                                    </div>
-                                    )
-                                  }
-                                  {column.title === "TVL" &&
-                                    (
-                                      <div className="col-span-1">
-                                        <p className="text-gray-400 text-sm font-medium">
-                                          TVL
-                                        </p>
-                                        <span
-                                          className={
-                                            // @ts-ignore
-                                            column.content(item[column.key]).danger == 1 ?
-                                            "block px-2 text-red-400"
-                                            : "block px-2 text-white"
-                                          }
-                                        >
-                                          {// @ts-ignore
-                                            column.content(item[column.key]).tvlUsdCount
-                                          }M
-                                        </span>
-                                      </div>
-                                    )
-                                  }
-                                  {
-                                    column.title === "APR" &&
-                                    (
-                                      <div className="col-span-1">
-                                        <p className="text-gray-400 text-sm font-medium">
-                                          APR
-                                        </p>
-                                        <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                                          {// @ts-ignore
-                                            column.content(item[column.key]).aprVal
-                                          }
-                                          %
-                                        </span>
-                                        {// @ts-ignore
-                                          column.content(item[column.key]).aprPredicted === "Down" ?
-                                          <ArrowDownOutlined className="text-red-400 px-2" />
-                                          :<ArrowUpOutlined className="text-green-400 px-2" />
-                                        }
-                                      </div>
-                                    )
-                                  }
-                                  {
-                                    column.title === "Chain" &&
-                                    (
-                                      <div className="col-span-1">
-                                        <p className="text-gray-400 text-sm font-medium">
-                                          Chain
-                                        </p>
-                                        <Image
-                                          src={
-                                            // @ts-ignore
-                                            column.content(item[column.key]).chainImg
-                                          }
-                                          alt={
-                                            // @ts-ignore
-                                            column.content(item[column.key]).chainAlt
-                                          }
-                                          height={20}
-                                          width={20}
-                                        />
-                                      </div>
-                                    )
-                                  }
-                                  {
-                                    column.title === "Pool" &&
-                                    (
-                                      <div className="col-span-1">
-                                        <p className="text-gray-400 text-sm font-medium">DEX</p>
-                                        {// @ts-ignore
-                                          column.content(item[column.key]).paidUser || rowIndex > 0 ?
-                                            <div>
-                                              <button
-                                                type="button"
-                                                className="text-sm text-gray-400 shadow-sm hover:text-white"
-                                                onClick={() => {
-                                                  // @ts-ignore
-                                                  handleLinkButton(column.content(item[column.key]).protocolLink);
-                                                  setLinkModalOpen(true);
-                                                }}
-                                              >
-                                                <Image
-                                                  src={`/projectPictures/${
-                                                    // @ts-ignore
-                                                    column.content(item[column.key]).pool.name
-                                                  }.webp`}
-                                                  alt={
-                                                    // @ts-ignore
-                                                    column.content( item[column.key]).pool.name
-                                                  }
-                                                  className="me-2"
-                                                  height={20}
-                                                  width={20}
-                                                />
-                                              </button>
-                                              <div className="relative group">
-                                                <span className="text-white pe-2">
-                                                  {// @ts-ignore
-                                                    column.content(item[column.key]).pool.name
-                                                  }
-                                                </span>
-                                                <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
+                                          </button>
+                                          <div className="relative group">
+                                            <span className="text-white pe-2">
+                                              {
+                                                // @ts-ignore
+                                                column.content(item[column.key])
+                                                  .pool.name
+                                              }
+                                            </span>
+                                            <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
+                                              {"pool ID: " +
+                                                // @ts-ignore
+                                                column.content(item[column.key])
+                                                  .pool.poolID}
+                                            </span>
+                                            {
+                                              // @ts-ignore
+                                              column.content(item[column.key])
+                                                .pool.meta ? (
+                                                <p className="text-gray-400 text-xs pe-2">
                                                   {
-                                                  "pool ID: " +
-                                                  // @ts-ignore
-                                                  column.content(item[column.key]).pool.poolID
+                                                    // @ts-ignore
+                                                    column.content(
+                                                      item[column.key],
+                                                    ).pool.meta
                                                   }
-                                                </span>
-                                                {
-                                                  // @ts-ignore
-                                                  column.content(item[column.key]).pool.meta ?
-                                                  (
-                                                    <p className="text-gray-400 text-xs pe-2">
-                                                      {// @ts-ignore
-                                                        column.content(item[column.key]).pool.meta
-                                                      }
-                                                    </p>
-                                                  ) : ""
-                                                }
-                                              </div>
-                                            </div>
-                                          : (
-                                              <button
-                                                type="button"
-                                                className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm"
-                                              >
-                                                <UnlockOutlined className="-ml-0.5 h-5 w-5" />
-                                                30 Days Free Trial
-                                              </button>
-                                          )
-                                        }
-                                      </div>
-                                    )
-                                  }
-                                </>
-                              );
-                            })}
-                          </div>
-                        </td>
-                      )
-                      : column.key === "pool" ?
-                      (
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
-                          {// @ts-ignore
-                            column.content(item[column.key]).paidUser || rowIndex > 0 ?
-                              <div className="flex items-center">
-                                <Image
-                                  src={`/projectPictures/${
+                                                </p>
+                                              ) : (
+                                                ""
+                                              )
+                                            }
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm"
+                                        >
+                                          <UnlockOutlined className="-ml-0.5 h-5 w-5" />
+                                          30 Days Free Trial
+                                        </button>
+                                      )
+                                    }
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })}
+                        </div>
+                      </td>
+                    ) : column.key === "pool" ? (
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
+                        {
+                          // @ts-ignore
+                          column.content(item[column.key]).paidUser ||
+                          rowIndex > 0 ? (
+                            <div className="flex items-center">
+                              <Image
+                                src={`/projectPictures/${
+                                  // @ts-ignore
+                                  column.content(item[column.key]).pool.name
+                                }.webp`}
+                                alt={
+                                  // @ts-ignore
+                                  column.content(item[column.key]).pool.name
+                                }
+                                className="me-2"
+                                height={20}
+                                width={20}
+                              />
+                              <div className="relative group">
+                                <span className="text-white pe-2">
+                                  {
                                     // @ts-ignore
                                     column.content(item[column.key]).pool.name
-                                  }.webp`}
-                                  alt={
-                                    // @ts-ignore
-                                    column.content(item[column.key]).pool.name
                                   }
-                                  className="me-2"
-                                  height={20}
-                                  width={20}
-                                />
-                                <div className="relative group">
-                                  <span className="text-white pe-2">
-                                    {// @ts-ignore
-                                      column.content(item[column.key]).pool.name
-                                    }
-                                  </span>
-                                  <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
-                                    {// @ts-ignore
-                                      "pool ID: " + column.content(item[column.key]).pool.poolID
-                                    }
-                                  </span>
-                                  {// @ts-ignore
-                                    column.content(item[column.key]).pool.meta ? (
-                                      <span className="text-gray-400 text-xs pe-2">
-                                      {// @ts-ignore
-                                        column.content(item[column.key]).pool.meta
+                                </span>
+                                <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
+                                  {
+                                    // @ts-ignore
+                                    "pool ID: " +
+                                      column.content(item[column.key]).pool
+                                        .poolID
+                                  }
+                                </span>
+                                {
+                                  // @ts-ignore
+                                  column.content(item[column.key]).pool.meta ? (
+                                    <span className="text-gray-400 text-xs pe-2">
+                                      {
+                                        // @ts-ignore
+                                        column.content(item[column.key]).pool
+                                          .meta
                                       }
-                                      </span>
-                                    ) : ""}
-                                </div>
-                                <button
-                                  type="button"
-                                  className="text-sm text-gray-400 shadow-sm hover:text-white"
-                                  onClick={() => {
-                                    // @ts-ignore
-                                    handleLinkButton(column.content(item[column.key]).protocolLink);
-                                    setLinkModalOpen(true);
-                                  }}
-                                >
-                                  <ExportOutlined />
-                                </button>
+                                    </span>
+                                  ) : (
+                                    ""
+                                  )
+                                }
                               </div>
-                            : <button
+                              <button
                                 type="button"
-                                className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm text-black"
+                                className="text-sm text-gray-400 shadow-sm hover:text-white"
+                                onClick={() => {
+                                  // @ts-ignore
+                                  handleLinkButton(
+                                    column.content(item[column.key])
+                                      .protocolLink,
+                                  );
+                                  setLinkModalOpen(true);
+                                }}
                               >
-                                <UnlockOutlined className="-ml-0.5 h-5 w-5" />
-                                30 Days Free Trial
+                                <ExportOutlined />
                               </button>
-                          }
-                        </td>
-                      )
-                      : column.key === "tokens" ?
-                      (
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
-                          <div className="flex items-center">
-                            {// @ts-ignore
-                              column.content(item[column.key]).map((item: string, index: number) => (
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm text-black"
+                            >
+                              <UnlockOutlined className="-ml-0.5 h-5 w-5" />
+                              30 Days Free Trial
+                            </button>
+                          )
+                        }
+                      </td>
+                    ) : column.key === "tokens" ? (
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
+                        <div className="flex items-center">
+                          {
+                            // @ts-ignore
+                            column
+                              .content(item[column.key])
+                              .map((item: string, index: number) => (
                                 <Image
                                   src={`/tokenPictures/${item.replace(
                                     /[()]/g,
@@ -672,51 +701,58 @@ const Dashboard: NextPage = () => {
                                   height={20}
                                   width={20}
                                 />
-                            ))}
-                            <span className="text-white px-2">
-                              {// @ts-ignore
-                                column.content(item[column.key]).length > 1
-                                // @ts-ignore
-                                ? column.content(item[column.key]).join("-")
-                                : column.content(item[column.key])}
-                            </span>
-                          </div>
-                        </td>
-                      )
-                      : column.key === "tvlUsd" ?
-                      (
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
-                          <span
-                            className={
-                              // @ts-ignore
-                              column.content(item[column.key]).danger == 1
-                                ? "px-2 text-red-400"
-                                : "px-2 text-white"
-                            }
-                          >
-                            {// @ts-ignore
-                            column.content(item[column.key]).tvlUsdCount
-                            }M
-                          </span>
-                        </td>
-                      )
-                      : column.key === "apr" ?
-                      (
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
-                          <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                            {// @ts-ignore
-                              column.content(item[column.key]).aprVal
-                            }%
-                          </span>
-                          {// @ts-ignore
-                            column.content(item[column.key]).aprPredicted === "Down" ?
-                            <ArrowDownOutlined className="text-red-400 px-2" />
-                            :<ArrowUpOutlined className="text-green-400 px-2" />
+                              ))
                           }
-                        </td>
-                      )
-                      : (<td></td>)
-                    }
+                          <span className="text-white px-2">
+                            {
+                              // @ts-ignore
+                              column.content(item[column.key]).length > 1
+                                ? // @ts-ignore
+                                  column.content(item[column.key]).join("-")
+                                : column.content(item[column.key])
+                            }
+                          </span>
+                        </div>
+                      </td>
+                    ) : column.key === "tvlUsd" ? (
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
+                        <span
+                          className={
+                            // @ts-ignore
+                            column.content(item[column.key]).danger == 1
+                              ? "px-2 text-red-400"
+                              : "px-2 text-white"
+                          }
+                        >
+                          {
+                            // @ts-ignore
+                            column.content(item[column.key]).tvlUsdCount
+                          }
+                          M
+                        </span>
+                      </td>
+                    ) : column.key === "apr" ? (
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
+                        <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                          {
+                            // @ts-ignore
+                            column.content(item[column.key]).aprVal
+                          }
+                          %
+                        </span>
+                        {
+                          // @ts-ignore
+                          column.content(item[column.key]).aprPredicted ===
+                          "Down" ? (
+                            <ArrowDownOutlined className="text-red-400 px-2" />
+                          ) : (
+                            <ArrowUpOutlined className="text-green-400 px-2" />
+                          )
+                        }
+                      </td>
+                    ) : (
+                      <td></td>
+                    )}
                   </>
                 ))}
               </tr>
@@ -882,7 +918,10 @@ const Dashboard: NextPage = () => {
                                 className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
                                 onChange={(e) =>
                                   e.target.checked
-                                    ? onSelectCallback(item.data[rowIndex], true)
+                                    ? onSelectCallback(
+                                        item.data[rowIndex],
+                                        true,
+                                      )
                                     : null
                                 }
                               />
@@ -898,11 +937,13 @@ const Dashboard: NextPage = () => {
                                       <Image
                                         src={
                                           // @ts-ignore
-                                          column.content(item[column.key]).chainImg
+                                          column.content(item[column.key])
+                                            .chainImg
                                         }
                                         alt={
                                           // @ts-ignore
-                                          column.content(item[column.key]).chainAlt
+                                          column.content(item[column.key])
+                                            .chainAlt
                                         }
                                         height={20}
                                         width={20}
@@ -919,28 +960,40 @@ const Dashboard: NextPage = () => {
                                             {column.title === "Tokens" && (
                                               <div className="col-span-2">
                                                 <div className="flex items-center">
-                                                  {// @ts-ignore
-                                                    column.content(item[column.key])
-                                                    // @ts-ignore 
-                                                    .map((item, index) => (
-                                                      <Image
-                                                        src={`/tokenPictures/${item.replace(
-                                                          /[()]/g,
-                                                          "",
-                                                        )}.webp`}
-                                                        key={item}
-                                                        alt={item}
-                                                        height={20}
-                                                        width={20}
-                                                      />
-                                                    ))}
+                                                  {
+                                                    // @ts-ignore
+                                                    column
+                                                      .content(item[column.key])
+                                                      // @ts-ignore
+                                                      .map((item, index) => (
+                                                        <Image
+                                                          src={`/tokenPictures/${item.replace(
+                                                            /[()]/g,
+                                                            "",
+                                                          )}.webp`}
+                                                          key={item}
+                                                          alt={item}
+                                                          height={20}
+                                                          width={20}
+                                                        />
+                                                      ))
+                                                  }
                                                   <p className="text-white text-xl font-medium px-2">
-                                                    {// @ts-ignore
-                                                      column.content(item[column.key]).length > 1 ?
+                                                    {
                                                       // @ts-ignore
-                                                      column.content(item[column.key]).join("-")
-                                                      // @ts-ignore
-                                                      : column.content(item[column.key])
+                                                      column.content(
+                                                        item[column.key],
+                                                      ).length > 1
+                                                        ? // @ts-ignore
+                                                          column
+                                                            .content(
+                                                              item[column.key],
+                                                            )
+                                                            .join("-")
+                                                        : // @ts-ignore
+                                                          column.content(
+                                                            item[column.key],
+                                                          )
                                                     }
                                                   </p>
                                                 </div>
@@ -954,14 +1007,20 @@ const Dashboard: NextPage = () => {
                                                 <span
                                                   className={
                                                     // @ts-ignore
-                                                    column.content(item[column.key]).danger == 1 ?
-                                                      "block px-2 text-red-400"
+                                                    column.content(
+                                                      item[column.key],
+                                                    ).danger == 1
+                                                      ? "block px-2 text-red-400"
                                                       : "block px-2 text-white"
                                                   }
                                                 >
-                                                  {// @ts-ignore
-                                                    column.content(item[column.key]).tvlUsdCount
-                                                  }M
+                                                  {
+                                                    // @ts-ignore
+                                                    column.content(
+                                                      item[column.key],
+                                                    ).tvlUsdCount
+                                                  }
+                                                  M
                                                 </span>
                                               </div>
                                             )}
@@ -971,14 +1030,23 @@ const Dashboard: NextPage = () => {
                                                   APR
                                                 </p>
                                                 <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                                                  {// @ts-ignore
-                                                    column.content(item[column.key]).aprVal
-                                                  }%
+                                                  {
+                                                    // @ts-ignore
+                                                    column.content(
+                                                      item[column.key],
+                                                    ).aprVal
+                                                  }
+                                                  %
                                                 </span>
-                                                {// @ts-ignore
-                                                  column.content(item[column.key]).aprPredicted === "Down" ?
-                                                  <ArrowDownOutlined className="text-red-400 px-2" />
-                                                  : <ArrowUpOutlined className="text-green-400 px-2" />
+                                                {
+                                                  // @ts-ignore
+                                                  column.content(
+                                                    item[column.key],
+                                                  ).aprPredicted === "Down" ? (
+                                                    <ArrowDownOutlined className="text-red-400 px-2" />
+                                                  ) : (
+                                                    <ArrowUpOutlined className="text-green-400 px-2" />
+                                                  )
                                                 }
                                               </div>
                                             )}
@@ -988,11 +1056,17 @@ const Dashboard: NextPage = () => {
                                                   Chain
                                                 </p>
                                                 <Image
-                                                  src={// @ts-ignore
-                                                    column.content(item[column.key]).chainImg
+                                                  src={
+                                                    // @ts-ignore
+                                                    column.content(
+                                                      item[column.key],
+                                                    ).chainImg
                                                   }
-                                                  alt={// @ts-ignore
-                                                    column.content(item[column.key]).chainAlt
+                                                  alt={
+                                                    // @ts-ignore
+                                                    column.content(
+                                                      item[column.key],
+                                                    ).chainAlt
                                                   }
                                                   height={20}
                                                   width={20}
@@ -1004,62 +1078,98 @@ const Dashboard: NextPage = () => {
                                                 <p className="text-gray-400 text-sm font-medium">
                                                   DEX
                                                 </p>
-                                                {// @ts-ignore
-                                                  column.content(item[column.key]).paidUser || rowIndex > 0 ? (
-                                                  <div>
+                                                {
+                                                  // @ts-ignore
+                                                  column.content(
+                                                    item[column.key],
+                                                  ).paidUser || rowIndex > 0 ? (
+                                                    <div>
+                                                      <button
+                                                        type="button"
+                                                        className="text-sm text-gray-400 shadow-sm hover:text-white"
+                                                        onClick={() => {
+                                                          handleLinkButton(
+                                                            // @ts-ignore
+                                                            column.content(
+                                                              item[column.key],
+                                                            ).protocolLink,
+                                                          );
+                                                          setLinkModalOpen(
+                                                            true,
+                                                          );
+                                                        }}
+                                                      >
+                                                        <Image
+                                                          src={
+                                                            // @ts-ignore
+                                                            `/projectPictures/${
+                                                              column.content(
+                                                                item[
+                                                                  column.key
+                                                                ],
+                                                              ).pool.name
+                                                            }.webp`
+                                                          }
+                                                          alt={
+                                                            // @ts-ignore
+                                                            column.content(
+                                                              item[column.key],
+                                                            ).pool.name
+                                                          }
+                                                          className="me-2"
+                                                          height={20}
+                                                          width={20}
+                                                        />
+                                                      </button>
+                                                      <div className="relative group">
+                                                        <span className="text-white pe-2">
+                                                          {
+                                                            // @ts-ignore
+                                                            column.content(
+                                                              item[column.key],
+                                                            ).pool.name
+                                                          }
+                                                        </span>
+                                                        <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
+                                                          {
+                                                            // @ts-ignore
+                                                            "pool ID: " +
+                                                              column.content(
+                                                                item[
+                                                                  column.key
+                                                                ],
+                                                              ).pool.poolID
+                                                          }
+                                                        </span>
+                                                        {
+                                                          // @ts-ignore
+                                                          column.content(
+                                                            item[column.key],
+                                                          ).pool.meta ? (
+                                                            <p className="text-gray-400 text-xs pe-2">
+                                                              {
+                                                                // @ts-ignore
+                                                                column.content(
+                                                                  item[
+                                                                    column.key
+                                                                  ],
+                                                                ).pool.meta
+                                                              }
+                                                            </p>
+                                                          ) : null
+                                                        }
+                                                      </div>
+                                                    </div>
+                                                  ) : (
                                                     <button
                                                       type="button"
-                                                      className="text-sm text-gray-400 shadow-sm hover:text-white"
-                                                      onClick={() => {
-                                                        handleLinkButton(
-                                                          // @ts-ignore
-                                                          column.content(item[column.key]).protocolLink
-                                                        );
-                                                        setLinkModalOpen(true);
-                                                      }}
+                                                      className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm"
                                                     >
-                                                      <Image
-                                                        src={// @ts-ignore
-                                                          `/projectPictures/${column.content(item[column.key]).pool.name}.webp`
-                                                        }
-                                                        alt={// @ts-ignore
-                                                          column.content(item[column.key]).pool.name
-                                                        }
-                                                        className="me-2"
-                                                        height={20}
-                                                        width={20}
-                                                      />
+                                                      <UnlockOutlined className="-ml-0.5 h-5 w-5" />
+                                                      30 Days Free Trial
                                                     </button>
-                                                    <div className="relative group">
-                                                      <span className="text-white pe-2">
-                                                        {// @ts-ignore
-                                                          column.content(item[column.key]).pool.name
-                                                        }
-                                                      </span>
-                                                      <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
-                                                        {// @ts-ignore
-                                                          "pool ID: " + column.content(item[column.key]).pool.poolID
-                                                        }
-                                                      </span>
-                                                      {// @ts-ignore
-                                                        column.content(item[column.key]).pool.meta ? (
-                                                        <p className="text-gray-400 text-xs pe-2">
-                                                          {// @ts-ignore
-                                                            column.content(item[column.key]).pool.meta
-                                                          }
-                                                        </p>
-                                                      ) : null}
-                                                    </div>
-                                                  </div>
-                                                ) : (
-                                                  <button
-                                                    type="button"
-                                                    className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm"
-                                                  >
-                                                    <UnlockOutlined className="-ml-0.5 h-5 w-5" />
-                                                    30 Days Free Trial
-                                                  </button>
-                                                )}
+                                                  )
+                                                }
                                               </div>
                                             )}
                                           </>
@@ -1073,66 +1183,87 @@ const Dashboard: NextPage = () => {
                                     key={colIndex}
                                     className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell"
                                   >
-                                    {// @ts-ignore
-                                      column.content(item[column.key]).paidUser || rowIndex > 0 ? (
-                                      <div className="flex items-center">
-                                        <Image
-                                          src={// @ts-ignore
-                                            `/projectPictures/${column.content(item[column.key]).pool.name}.webp`
-                                          }
-                                          alt={// @ts-ignore
-                                            column.content(item[column.key]).pool.name
-                                          }
-                                          className="me-2"
-                                          height={20}
-                                          width={20}
-                                        />
-                                        <div className="relative group">
-                                          <span className="text-white pe-2">
-                                            {// @ts-ignore
-                                              column.content(item[column.key]).pool.name
+                                    {
+                                      // @ts-ignore
+                                      column.content(item[column.key])
+                                        .paidUser || rowIndex > 0 ? (
+                                        <div className="flex items-center">
+                                          <Image
+                                            src={
+                                              // @ts-ignore
+                                              `/projectPictures/${
+                                                column.content(item[column.key])
+                                                  .pool.name
+                                              }.webp`
                                             }
-                                          </span>
-                                          <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
-                                            {// @ts-ignore
-                                              "pool ID: " + column.content(item[column.key]).pool.poolID
+                                            alt={
+                                              // @ts-ignore
+                                              column.content(item[column.key])
+                                                .pool.name
                                             }
-                                          </span>
-                                          {// @ts-ignore
-                                            column.content(item[column.key]).pool.meta ?
-                                            (
-                                              <span className="text-gray-400 text-xs pe-2">
-                                                {// @ts-ignore
-                                                  column.content(item[column.key]).pool.meta
-                                                }
-                                              </span>
-                                            ) 
-                                            : ""
-                                          }
+                                            className="me-2"
+                                            height={20}
+                                            width={20}
+                                          />
+                                          <div className="relative group">
+                                            <span className="text-white pe-2">
+                                              {
+                                                // @ts-ignore
+                                                column.content(item[column.key])
+                                                  .pool.name
+                                              }
+                                            </span>
+                                            <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
+                                              {
+                                                // @ts-ignore
+                                                "pool ID: " +
+                                                  column.content(
+                                                    item[column.key],
+                                                  ).pool.poolID
+                                              }
+                                            </span>
+                                            {
+                                              // @ts-ignore
+                                              column.content(item[column.key])
+                                                .pool.meta ? (
+                                                <span className="text-gray-400 text-xs pe-2">
+                                                  {
+                                                    // @ts-ignore
+                                                    column.content(
+                                                      item[column.key],
+                                                    ).pool.meta
+                                                  }
+                                                </span>
+                                              ) : (
+                                                ""
+                                              )
+                                            }
+                                          </div>
+                                          <button
+                                            type="button"
+                                            className="text-sm text-gray-400 shadow-sm hover:text-white"
+                                            onClick={() => {
+                                              handleLinkButton(
+                                                // @ts-ignore
+                                                column.content(item[column.key])
+                                                  .protocolLink,
+                                              );
+                                              setLinkModalOpen(true);
+                                            }}
+                                          >
+                                            <ExportOutlined />
+                                          </button>
                                         </div>
+                                      ) : (
                                         <button
                                           type="button"
-                                          className="text-sm text-gray-400 shadow-sm hover:text-white"
-                                          onClick={() => {
-                                            handleLinkButton(
-                                              // @ts-ignore
-                                              column.content(item[column.key]).protocolLink
-                                            );
-                                            setLinkModalOpen(true);
-                                          }}
+                                          className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm"
                                         >
-                                          <ExportOutlined />
+                                          <UnlockOutlined className="-ml-0.5 h-5 w-5" />
+                                          30 Days Free Trial
                                         </button>
-                                      </div>
-                                    ) : (
-                                      <button
-                                        type="button"
-                                        className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm"
-                                      >
-                                        <UnlockOutlined className="-ml-0.5 h-5 w-5" />
-                                        30 Days Free Trial
-                                      </button>
-                                    )}
+                                      )
+                                    }
                                   </td>
                                 )}
                                 {column.title === "Tokens" && (
@@ -1141,26 +1272,34 @@ const Dashboard: NextPage = () => {
                                     className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell"
                                   >
                                     <div className="flex items-center">
-                                      {// @ts-ignore
-                                        column.content(item[column.key]).map((item, index) => (
-                                          <Image
-                                            src={`/tokenPictures/${item.replace(
-                                              /[()]/g,
-                                              "",
-                                            )}.webp`}
-                                            key={item}
-                                            alt={item}
-                                            height={20}
-                                            width={20}
-                                          />
-                                        ))}
+                                      {
+                                        // @ts-ignore
+                                        column
+                                          .content(item[column.key])
+                                          .map((item, index) => (
+                                            <Image
+                                              src={`/tokenPictures/${item.replace(
+                                                /[()]/g,
+                                                "",
+                                              )}.webp`}
+                                              key={item}
+                                              alt={item}
+                                              height={20}
+                                              width={20}
+                                            />
+                                          ))
+                                      }
                                       <span className="text-white px-2">
-                                        {// @ts-ignore
-                                          column.content(item[column.key]).length > 1 ?
+                                        {
                                           // @ts-ignore
-                                          column.content(item[column.key]).join("-")
-                                          // @ts-ignore
-                                          : column.content(item[column.key])
+                                          column.content(item[column.key])
+                                            .length > 1
+                                            ? // @ts-ignore
+                                              column
+                                                .content(item[column.key])
+                                                .join("-")
+                                            : // @ts-ignore
+                                              column.content(item[column.key])
                                         }
                                       </span>
                                     </div>
@@ -1174,14 +1313,18 @@ const Dashboard: NextPage = () => {
                                     <span
                                       className={
                                         // @ts-ignore
-                                        column.content(item[column.key]).danger == 1 ?
-                                          "px-2 text-red-400"
+                                        column.content(item[column.key])
+                                          .danger == 1
+                                          ? "px-2 text-red-400"
                                           : "px-2 text-white"
                                       }
                                     >
-                                      {// @ts-ignore
-                                        column.content(item[column.key]).tvlUsdCount
-                                      }M
+                                      {
+                                        // @ts-ignore
+                                        column.content(item[column.key])
+                                          .tvlUsdCount
+                                      }
+                                      M
                                     </span>
                                   </td>
                                 )}
@@ -1191,14 +1334,20 @@ const Dashboard: NextPage = () => {
                                     className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell"
                                   >
                                     <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                                      {// @ts-ignore
+                                      {
+                                        // @ts-ignore
                                         column.content(item[column.key]).aprVal
-                                      }%
+                                      }
+                                      %
                                     </span>
-                                    {// @ts-ignore
-                                      column.content(item[column.key]).aprPredicted === "Down" ?
-                                      <ArrowDownOutlined className="text-red-400 px-2" />
-                                      : <ArrowUpOutlined className="text-green-400 px-2" />
+                                    {
+                                      // @ts-ignore
+                                      column.content(item[column.key])
+                                        .aprPredicted === "Down" ? (
+                                        <ArrowDownOutlined className="text-red-400 px-2" />
+                                      ) : (
+                                        <ArrowUpOutlined className="text-green-400 px-2" />
+                                      )
                                     }
                                   </td>
                                 )}
@@ -1247,30 +1396,36 @@ const Dashboard: NextPage = () => {
                                       className="whitespace-nowrap px-3 py-4 text-sm text-gray-300"
                                     >
                                       <div className="flex items-center">
-                                        {// @ts-ignore
-                                          column.content(item[column.key])
-                                          .map(
-                                            (item: string, index: number) => (
-                                              <Image
-                                                src={`/tokenPictures/${item.replace(
-                                                  /[()]/g,
-                                                  "",
-                                                )}.webp`}
-                                                key={item}
-                                                alt={item}
-                                                height={20}
-                                                width={20}
-                                              />
-                                            ),
-                                          )}
+                                        {
+                                          // @ts-ignore
+                                          column
+                                            .content(item[column.key])
+                                            .map(
+                                              (item: string, index: number) => (
+                                                <Image
+                                                  src={`/tokenPictures/${item.replace(
+                                                    /[()]/g,
+                                                    "",
+                                                  )}.webp`}
+                                                  key={item}
+                                                  alt={item}
+                                                  height={20}
+                                                  width={20}
+                                                />
+                                              ),
+                                            )
+                                        }
                                         <span className="text-white px-2">
                                           {
                                             // @ts-ignore
-                                            column.content(item[column.ket]).length > 1 ?
-                                            // @ts-ignore
-                                            column.content(item[column.key]).join("-")
-                                            // @ts-ignore
-                                            : column.content(item[column.key])
+                                            column.content(item[column.ket])
+                                              .length > 1
+                                              ? // @ts-ignore
+                                                column
+                                                  .content(item[column.key])
+                                                  .join("-")
+                                              : // @ts-ignore
+                                                column.content(item[column.key])
                                           }
                                         </span>
                                       </div>
@@ -1282,13 +1437,12 @@ const Dashboard: NextPage = () => {
                                       className="whitespace-nowrap px-3 py-4 text-sm text-gray-300"
                                     >
                                       <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                                        {
-                                          column.content ?
-                                          // @ts-ignore
-                                          column.content(item[column.key])
-                                          // @ts-ignore
-                                          : item[column.key]
-                                        }%
+                                        {column.content
+                                          ? // @ts-ignore
+                                            column.content(item[column.key])
+                                          : // @ts-ignore
+                                            item[column.key]}
+                                        %
                                       </span>
                                     </td>
                                   )}
@@ -1296,7 +1450,8 @@ const Dashboard: NextPage = () => {
                               ))}
                             </tr>
                             <tr>
-                              { // @ts-ignore
+                              {
+                                // @ts-ignore
                                 expandedRows[item.tokens] && (
                                   // @ts-ignore
                                   <td colSpan="3">{expandedRowRender(item)}</td>

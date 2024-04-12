@@ -1,15 +1,18 @@
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import type { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
-import { useAccount } from "wagmi";
+import {
+  useConnectionStatus,
+  useWalletContext,
+  useAddress,
+} from "@thirdweb-dev/react";
 
 import { Layout, Affix } from "antd";
 import styles from "../styles/Home.module.css";
 import HeaderInner from "./views/Header";
-import Web3DataProvider from "./views/Web3DataProvider";
 import "@flaticon/flaticon-uicons/css/brands/all.css";
 import "@flaticon/flaticon-uicons/css/regular/all.css";
+import { ConnectWallet } from "@thirdweb-dev/react";
 
 const { Header, Footer, Content } = Layout;
 interface BasePageProps {
@@ -17,7 +20,9 @@ interface BasePageProps {
 }
 
 const BasePage: NextPage<BasePageProps> = ({ children }) => {
-  const { address, isConnected } = useAccount();
+  const connectionStatus = useConnectionStatus();
+  const { isAutoConnecting } = useWalletContext();
+  const address = useAddress();
 
   return (
     <div>
@@ -37,19 +42,13 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
             </div>
             <HeaderInner />
             <div className="connect-button">
-              <ConnectButton />
+              <ConnectWallet theme={"light"} modalSize={"compact"} />
             </div>
           </Header>
         </Affix>
 
         <Content>
-          {isConnected ? (
-            <Web3DataProvider address={address}>
-              <div>{children}</div>
-            </Web3DataProvider>
-          ) : (
-            <div>{children}</div>
-          )}
+          <div>{children}</div>
         </Content>
         <Footer className={styles.footer}>
           <a

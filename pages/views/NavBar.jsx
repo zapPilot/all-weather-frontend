@@ -15,18 +15,6 @@ const items = [
       {
         label: (
           <a
-            href="https://debank.com/profile/0x9ad45d46e2a2ca19bbb5d5a50df319225ad60e0d"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Vault - DeBank
-          </a>
-        ),
-        key: "setting:1",
-      },
-      {
-        label: (
-          <a
             href="https://dune.com/davidtnfsh/all-weather-protocol"
             target="_blank"
             rel="noopener noreferrer"
@@ -35,10 +23,6 @@ const items = [
           </a>
         ),
         key: "setting:2",
-      },
-      {
-        label: <Link href="/betterPools">Better Pools</Link>,
-        key: "setting:3",
       },
       {
         label: <Link href="/dashboard">Dashboard</Link>,
