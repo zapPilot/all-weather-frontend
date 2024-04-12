@@ -440,14 +440,16 @@ const Dashboard: NextPage = () => {
                                         ))}
                                       <p className="text-white text-xl font-medium px-2">
                                         {
-                                          // @ts-ignore
+                                          /* @ts-ignore */
                                           column.content(item[column.key])
+                                          /* @ts-ignore */
                                             .length > 1
-                                            ? // @ts-ignore
-                                              column
+                                            ? column
                                                 .content(item[column.key])
+                                                /* @ts-ignore */
                                                 .join("-")
                                             : column.content(item[column.key])
+                                          /* */
                                         }
                                       </p>
                                     </div>
@@ -462,15 +464,17 @@ const Dashboard: NextPage = () => {
                                       className={
                                         // @ts-ignore
                                         column.content(item[column.key])
-                                          .danger == 1
-                                          ? "block px-2 text-red-400"
-                                          : "block px-2 text-white"
+                                        // @ts-ignore
+                                        .danger == 1
+                                        ? "block px-2 text-red-400"
+                                        : "block px-2 text-white"
                                       }
                                     >
                                       {
                                         // @ts-ignore
                                         column.content(item[column.key])
-                                          .tvlUsdCount
+                                        // @ts-ignore
+                                        .tvlUsdCount
                                       }
                                       M
                                     </span>
@@ -491,6 +495,7 @@ const Dashboard: NextPage = () => {
                                     {
                                       // @ts-ignore
                                       column.content(item[column.key])
+                                      // @ts-ignore
                                         .aprPredicted === "Down" ? (
                                         <ArrowDownOutlined className="text-red-400 px-2" />
                                       ) : (
@@ -508,11 +513,13 @@ const Dashboard: NextPage = () => {
                                       src={
                                         // @ts-ignore
                                         column.content(item[column.key])
+                                      // @ts-ignore
                                           .chainImg
                                       }
                                       alt={
                                         // @ts-ignore
                                         column.content(item[column.key])
+                                      // @ts-ignore
                                           .chainAlt
                                       }
                                       height={20}
@@ -528,6 +535,7 @@ const Dashboard: NextPage = () => {
                                     {
                                       // @ts-ignore
                                       column.content(item[column.key])
+                                      // @ts-ignore
                                         .paidUser || rowIndex > 0 ? (
                                         <div>
                                           <button
@@ -536,7 +544,9 @@ const Dashboard: NextPage = () => {
                                             onClick={() => {
                                               // @ts-ignore
                                               handleLinkButton(
+                                              // @ts-ignore
                                                 column.content(item[column.key])
+                                                // @ts-ignore
                                                   .protocolLink,
                                               );
                                               setLinkModalOpen(true);
@@ -546,11 +556,13 @@ const Dashboard: NextPage = () => {
                                               src={`/projectPictures/${
                                                 // @ts-ignore
                                                 column.content(item[column.key])
+                                                // @ts-ignore
                                                   .pool.name
                                               }.webp`}
                                               alt={
                                                 // @ts-ignore
                                                 column.content(item[column.key])
+                                                // @ts-ignore
                                                   .pool.name
                                               }
                                               className="me-2"
@@ -563,6 +575,7 @@ const Dashboard: NextPage = () => {
                                               {
                                                 // @ts-ignore
                                                 column.content(item[column.key])
+                                                // @ts-ignore
                                                   .pool.name
                                               }
                                             </span>
@@ -570,17 +583,20 @@ const Dashboard: NextPage = () => {
                                               {"pool ID: " +
                                                 // @ts-ignore
                                                 column.content(item[column.key])
+                                                // @ts-ignore
                                                   .pool.poolID}
                                             </span>
                                             {
                                               // @ts-ignore
                                               column.content(item[column.key])
+                                              // @ts-ignore
                                                 .pool.meta ? (
                                                 <p className="text-gray-400 text-xs pe-2">
                                                   {
                                                     // @ts-ignore
                                                     column.content(
                                                       item[column.key],
+                                                    // @ts-ignore
                                                     ).pool.meta
                                                   }
                                                 </p>
@@ -638,6 +654,7 @@ const Dashboard: NextPage = () => {
                                   {
                                     // @ts-ignore
                                     "pool ID: " +
+                                    // @ts-ignore
                                       column.content(item[column.key]).pool
                                         .poolID
                                   }
@@ -664,6 +681,7 @@ const Dashboard: NextPage = () => {
                                   // @ts-ignore
                                   handleLinkButton(
                                     column.content(item[column.key])
+                                    // @ts-ignore
                                       .protocolLink,
                                   );
                                   setLinkModalOpen(true);
@@ -690,6 +708,7 @@ const Dashboard: NextPage = () => {
                             // @ts-ignore
                             column
                               .content(item[column.key])
+                              // @ts-ignore
                               .map((item: string, index: number) => (
                                 <Image
                                   src={`/tokenPictures/${item.replace(
@@ -938,11 +957,13 @@ const Dashboard: NextPage = () => {
                                         src={
                                           // @ts-ignore
                                           column.content(item[column.key])
+                                          // @ts-ignore
                                             .chainImg
                                         }
                                         alt={
                                           // @ts-ignore
                                           column.content(item[column.key])
+                                          // @ts-ignore
                                             .chainAlt
                                         }
                                         height={20}
@@ -963,6 +984,7 @@ const Dashboard: NextPage = () => {
                                                   {
                                                     // @ts-ignore
                                                     column
+                                                    // @ts-ignore
                                                       .content(item[column.key])
                                                       // @ts-ignore
                                                       .map((item, index) => (
@@ -982,16 +1004,21 @@ const Dashboard: NextPage = () => {
                                                     {
                                                       // @ts-ignore
                                                       column.content(
+                                                        // @ts-ignore
                                                         item[column.key],
+                                                        // @ts-ignore
                                                       ).length > 1
                                                         ? // @ts-ignore
                                                           column
                                                             .content(
+                                                              // @ts-ignore
                                                               item[column.key],
                                                             )
+                                                            // @ts-ignore
                                                             .join("-")
                                                         : // @ts-ignore
                                                           column.content(
+                                                            // @ts-ignore
                                                             item[column.key],
                                                           )
                                                     }
@@ -1008,7 +1035,9 @@ const Dashboard: NextPage = () => {
                                                   className={
                                                     // @ts-ignore
                                                     column.content(
+                                                      // @ts-ignore
                                                       item[column.key],
+                                                      // @ts-ignore
                                                     ).danger == 1
                                                       ? "block px-2 text-red-400"
                                                       : "block px-2 text-white"
@@ -1017,7 +1046,9 @@ const Dashboard: NextPage = () => {
                                                   {
                                                     // @ts-ignore
                                                     column.content(
+                                                      // @ts-ignore
                                                       item[column.key],
+                                                      // @ts-ignore
                                                     ).tvlUsdCount
                                                   }
                                                   M
@@ -1033,7 +1064,9 @@ const Dashboard: NextPage = () => {
                                                   {
                                                     // @ts-ignore
                                                     column.content(
+                                                      // @ts-ignore
                                                       item[column.key],
+                                                      // @ts-ignore
                                                     ).aprVal
                                                   }
                                                   %
@@ -1041,7 +1074,9 @@ const Dashboard: NextPage = () => {
                                                 {
                                                   // @ts-ignore
                                                   column.content(
+                                                    // @ts-ignore
                                                     item[column.key],
+                                                    // @ts-ignore
                                                   ).aprPredicted === "Down" ? (
                                                     <ArrowDownOutlined className="text-red-400 px-2" />
                                                   ) : (
@@ -1059,13 +1094,17 @@ const Dashboard: NextPage = () => {
                                                   src={
                                                     // @ts-ignore
                                                     column.content(
+                                                      // @ts-ignore
                                                       item[column.key],
+                                                      // @ts-ignore
                                                     ).chainImg
                                                   }
                                                   alt={
                                                     // @ts-ignore
                                                     column.content(
+                                                      // @ts-ignore
                                                       item[column.key],
+                                                      // @ts-ignore
                                                     ).chainAlt
                                                   }
                                                   height={20}
@@ -1081,7 +1120,9 @@ const Dashboard: NextPage = () => {
                                                 {
                                                   // @ts-ignore
                                                   column.content(
+                                                    // @ts-ignore
                                                     item[column.key],
+                                                    // @ts-ignore
                                                   ).paidUser || rowIndex > 0 ? (
                                                     <div>
                                                       <button
@@ -1091,7 +1132,9 @@ const Dashboard: NextPage = () => {
                                                           handleLinkButton(
                                                             // @ts-ignore
                                                             column.content(
+                                                              // @ts-ignore
                                                               item[column.key],
+                                                              // @ts-ignore
                                                             ).protocolLink,
                                                           );
                                                           setLinkModalOpen(
@@ -1103,17 +1146,23 @@ const Dashboard: NextPage = () => {
                                                           src={
                                                             // @ts-ignore
                                                             `/projectPictures/${
+                                                              // @ts-ignore
                                                               column.content(
+                                                                // @ts-ignore
                                                                 item[
+                                                                  // @ts-ignore
                                                                   column.key
                                                                 ],
+                                                                // @ts-ignore
                                                               ).pool.name
                                                             }.webp`
                                                           }
                                                           alt={
                                                             // @ts-ignore
                                                             column.content(
+                                                              // @ts-ignore
                                                               item[column.key],
+                                                              // @ts-ignore
                                                             ).pool.name
                                                           }
                                                           className="me-2"
@@ -1126,7 +1175,9 @@ const Dashboard: NextPage = () => {
                                                           {
                                                             // @ts-ignore
                                                             column.content(
+                                                              // @ts-ignore
                                                               item[column.key],
+                                                              // @ts-ignore
                                                             ).pool.name
                                                           }
                                                         </span>
@@ -1134,25 +1185,34 @@ const Dashboard: NextPage = () => {
                                                           {
                                                             // @ts-ignore
                                                             "pool ID: " +
+                                                            // @ts-ignore
                                                               column.content(
+                                                                // @ts-ignore
                                                                 item[
+                                                                  // @ts-ignore
                                                                   column.key
                                                                 ],
+                                                                // @ts-ignore
                                                               ).pool.poolID
                                                           }
                                                         </span>
                                                         {
                                                           // @ts-ignore
                                                           column.content(
+                                                            // @ts-ignore
                                                             item[column.key],
+                                                            // @ts-ignore
                                                           ).pool.meta ? (
                                                             <p className="text-gray-400 text-xs pe-2">
                                                               {
                                                                 // @ts-ignore
                                                                 column.content(
+                                                                  // @ts-ignore
                                                                   item[
+                                                                    // @ts-ignore
                                                                     column.key
                                                                   ],
+                                                                  // @ts-ignore
                                                                 ).pool.meta
                                                               }
                                                             </p>
@@ -1186,19 +1246,23 @@ const Dashboard: NextPage = () => {
                                     {
                                       // @ts-ignore
                                       column.content(item[column.key])
+                                      // @ts-ignore
                                         .paidUser || rowIndex > 0 ? (
                                         <div className="flex items-center">
                                           <Image
                                             src={
                                               // @ts-ignore
                                               `/projectPictures/${
+                                                // @ts-ignore
                                                 column.content(item[column.key])
+                                                // @ts-ignore
                                                   .pool.name
                                               }.webp`
                                             }
                                             alt={
                                               // @ts-ignore
                                               column.content(item[column.key])
+                                              // @ts-ignore
                                                 .pool.name
                                             }
                                             className="me-2"
@@ -1210,6 +1274,7 @@ const Dashboard: NextPage = () => {
                                               {
                                                 // @ts-ignore
                                                 column.content(item[column.key])
+                                                // @ts-ignore
                                                   .pool.name
                                               }
                                             </span>
@@ -1218,19 +1283,24 @@ const Dashboard: NextPage = () => {
                                                 // @ts-ignore
                                                 "pool ID: " +
                                                   column.content(
+                                                    // @ts-ignore
                                                     item[column.key],
+                                                    // @ts-ignore
                                                   ).pool.poolID
                                               }
                                             </span>
                                             {
                                               // @ts-ignore
                                               column.content(item[column.key])
+                                              // @ts-ignore
                                                 .pool.meta ? (
                                                 <span className="text-gray-400 text-xs pe-2">
                                                   {
                                                     // @ts-ignore
                                                     column.content(
+                                                      // @ts-ignore
                                                       item[column.key],
+                                                      // @ts-ignore
                                                     ).pool.meta
                                                   }
                                                 </span>
@@ -1246,6 +1316,7 @@ const Dashboard: NextPage = () => {
                                               handleLinkButton(
                                                 // @ts-ignore
                                                 column.content(item[column.key])
+                                                // @ts-ignore
                                                   .protocolLink,
                                               );
                                               setLinkModalOpen(true);
@@ -1275,7 +1346,9 @@ const Dashboard: NextPage = () => {
                                       {
                                         // @ts-ignore
                                         column
+                                        // @ts-ignore
                                           .content(item[column.key])
+                                          // @ts-ignore
                                           .map((item, index) => (
                                             <Image
                                               src={`/tokenPictures/${item.replace(
@@ -1293,10 +1366,13 @@ const Dashboard: NextPage = () => {
                                         {
                                           // @ts-ignore
                                           column.content(item[column.key])
+                                          // @ts-ignore
                                             .length > 1
                                             ? // @ts-ignore
                                               column
+                                              // @ts-ignore
                                                 .content(item[column.key])
+                                                // @ts-ignore
                                                 .join("-")
                                             : // @ts-ignore
                                               column.content(item[column.key])
@@ -1314,6 +1390,7 @@ const Dashboard: NextPage = () => {
                                       className={
                                         // @ts-ignore
                                         column.content(item[column.key])
+                                        // @ts-ignore
                                           .danger == 1
                                           ? "px-2 text-red-400"
                                           : "px-2 text-white"
@@ -1322,6 +1399,7 @@ const Dashboard: NextPage = () => {
                                       {
                                         // @ts-ignore
                                         column.content(item[column.key])
+                                        // @ts-ignore
                                           .tvlUsdCount
                                       }
                                       M
@@ -1343,6 +1421,7 @@ const Dashboard: NextPage = () => {
                                     {
                                       // @ts-ignore
                                       column.content(item[column.key])
+                                      // @ts-ignore
                                         .aprPredicted === "Down" ? (
                                         <ArrowDownOutlined className="text-red-400 px-2" />
                                       ) : (
@@ -1399,6 +1478,7 @@ const Dashboard: NextPage = () => {
                                         {
                                           // @ts-ignore
                                           column
+                                          // @ts-ignore
                                             .content(item[column.key])
                                             .map(
                                               (item: string, index: number) => (
@@ -1422,6 +1502,7 @@ const Dashboard: NextPage = () => {
                                               .length > 1
                                               ? // @ts-ignore
                                                 column
+                                                // @ts-ignore
                                                   .content(item[column.key])
                                                   .join("-")
                                               : // @ts-ignore

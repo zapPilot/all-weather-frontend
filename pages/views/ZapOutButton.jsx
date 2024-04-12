@@ -85,6 +85,7 @@ const ZapOutButton = () => {
     address,
     approveAmountContractIsPending,
     approveAmountContract,
+    approveAmountError,
     approveReady,
     redeemDataIsPending,
     approveStatus,
