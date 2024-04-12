@@ -6,7 +6,7 @@ import Assets from "./Assets.jsx";
 import Strategy from "./Strategy.jsx";
 import Risks from "./Risks.jsx";
 import Maintenance from "./Maintenance.jsx";
-import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
+import { web3Context } from "./Web3DataProvider";
 
 const TabWordings = [
   "Performance",
@@ -18,24 +18,31 @@ const TabWordings = [
 ];
 
 const PortfolioMetaTab = () => {
+  const WEB3_CONTEXT = useContext(web3Context);
+  const [portfolioApr, setPortfolioApr] = useState(0);
+  const [sharpeRatio, setSharpeRatio] = useState({ days: 0, value: 0 });
+  const [ROI, setROI] = useState({ days: 0, total: 0 });
+  const [maxDrawdown, setMaxDrawdown] = useState(0);
   const [windowWidth, setWindowWidth] = useState(0);
-  const {
-    netWorth,
-    netWorthWithCustomLogic,
-    rebalanceSuggestions,
-    totalInterest,
-    portfolioApr,
-    sharpeRatio,
-    topNLowestAprPools,
-    topNPoolConsistOfSameLpToken,
-    topNStableCoins,
-    aggregatedPositions,
-    ROI,
-    maxDrawdown,
-    claimableRewards,
-  } = useRebalanceSuggestions();
 
   useEffect(() => {
+    async function fetchPortfolioMetadata() {
+      if (WEB3_CONTEXT) {
+        setPortfolioApr(
+          WEB3_CONTEXT.portfolioApr === undefined
+            ? 0
+            : WEB3_CONTEXT.portfolioApr,
+        );
+        setSharpeRatio(
+          WEB3_CONTEXT.sharpeRatio === undefined ? 0 : WEB3_CONTEXT.sharpeRatio,
+        );
+        setROI(WEB3_CONTEXT.ROI === undefined ? 0 : WEB3_CONTEXT.ROI);
+        setMaxDrawdown(
+          WEB3_CONTEXT.maxDrawdown === undefined ? 0 : WEB3_CONTEXT.maxDrawdown,
+        );
+      }
+    }
+
     const updateWindowWidth = () => {
       if (typeof window !== "undefined") {
         setWindowWidth(window.innerWidth);
@@ -43,7 +50,8 @@ const PortfolioMetaTab = () => {
     };
 
     updateWindowWidth();
-  }, []);
+    fetchPortfolioMetadata();
+  }, [WEB3_CONTEXT, portfolioApr, sharpeRatio, ROI, maxDrawdown]);
 
   const tabs = TabWordings.map((wording, index) => ({
     label: wording,

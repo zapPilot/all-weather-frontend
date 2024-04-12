@@ -1,5 +1,6 @@
 import React from "react";
 import { useContext, useState, useEffect } from "react";
+import { web3Context } from "./Web3DataProvider";
 import { ConfigProvider, Image, Button, Spin } from "antd";
 import RebalanceChart from "./RebalanceChart";
 import { useWindowWidth } from "../../utils/chartUtils";

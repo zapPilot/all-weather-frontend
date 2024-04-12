@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import axios from "axios";
-import { useAddress } from "@thirdweb-dev/react";
+import { useAccount } from "wagmi";
 
 const Line = dynamic(
   () => import("@ant-design/plots").then((item) => item.Line),
@@ -12,9 +12,9 @@ const Line = dynamic(
 const HistoricalDataChart = () => {
   const [data, setData] = useState([]);
   const [userAddress, setUserAddress] = useState("");
-  const address = useAddress();
+  const { isConnected, address } = useAccount();
   useEffect(() => {
-    if (address) {
+    if (isConnected) {
       setUserAddress(address.toLowerCase());
       // if user is vip, fetch claimable reward
       userAddress == "0x038919c63aff9c932c77a0c9c9d98eabc1a4dd08"

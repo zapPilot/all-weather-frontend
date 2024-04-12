@@ -1,22 +1,27 @@
 import { Button, Space, message, ConfigProvider } from "antd";
-import { portfolioContractAddress } from "../../utils/oneInch";
+import { portfolioContractAddress, USDC } from "../../utils/oneInch";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import {
-  useContractWrite,
-  useContractRead,
-  useContract,
-} from "@thirdweb-dev/react";
-import { useChainId, useAddress } from "@thirdweb-dev/react";
+  useWriteContract,
+  useReadContract,
+  useAccount,
+  useWaitForTransactionReceipt,
+} from "wagmi";
 import { refreshTVLData } from "../../utils/contractInteractions";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
-import { selectBefore } from "../../utils/contractInteractions";
+import { web3Context } from "./Web3DataProvider";
+import {
+  selectBefore,
+  getAggregatorData,
+} from "../../utils/contractInteractions";
 
 const { ethers } = require("ethers");
 
 const ZapOutButton = () => {
-  const address = useAddress();
+  const { address } = useAccount();
+  const WEB3_CONTEXT = useContext(web3Context);
   const normalWording = "Withdraw";
   const loadingWording = "Fetching the best route to withdraw";
   const [withdrawAmount, setWithdrawAmount] = useState(0);
@@ -35,32 +40,33 @@ const ZapOutButton = () => {
     writeContract,
     isPending: redeemDataIsPending,
     status: redeemDataStatus,
-  } = useContractWrite();
+  } = useWriteContract();
 
   const {
     data: approveData,
     writeContract: approveWrite,
     isPending: approveIsPending,
     status: approveStatus,
-  } = useContractWrite();
+  } = useWriteContract();
 
-  const { contract } = useContract(
-    portfolioContractAddress,
-    permanentPortfolioJson.abi,
-  );
   const {
     data: approveAmountContract,
     error: approveAmountError,
     isPending: approveAmountContractIsPending,
-  } = useContractRead(
-    contract,
-    "allowance",
-    [address, portfolioContractAddress],
+  } = useReadContract({
+    address: portfolioContractAddress,
+    abi: permanentPortfolioJson.abi,
+    functionName: "allowance",
+    args: [address, portfolioContractAddress],
     // args: ["0x43cd745Bd5FbFc8CfD79ebC855f949abc79a1E0C", "0x78000b0605E81ea9df54b33f72ebC61B5F5c8077"],
-  );
-  const chainId = useChainId();
+    watch: true,
+  });
+  const { chain } = useAccount();
 
   useEffect(() => {
+    if (WEB3_CONTEXT) {
+      setUserShares(WEB3_CONTEXT.userShares);
+    }
     if (approveAmountContractIsPending) return; // Don't proceed if loading
     if (approveAmountError)
       console.log("allowance Error", approveAmountError.message);
@@ -82,6 +88,7 @@ const ZapOutButton = () => {
       message.success("Withdraw success");
     }
   }, [
+    WEB3_CONTEXT,
     address,
     approveAmountContractIsPending,
     approveAmountContract,
@@ -207,7 +214,7 @@ const ZapOutButton = () => {
               setChosenToken(value);
             },
             "address",
-            chainId,
+            chain?.id,
           )}
           <NumericInput
             placeholder={`Balance: ${userShares} SCLP`}

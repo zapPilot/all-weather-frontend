@@ -1,10 +1,9 @@
 import { Button, Space } from "antd";
+import { useBalance } from "wagmi";
 import { useState } from "react";
 import { selectBefore } from "../../utils/contractInteractions";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
-import { useBalance } from "@thirdweb-dev/react";
-import { useChainId } from "@thirdweb-dev/react";
 
 const TokenDropdownInput = ({
   address,
@@ -12,17 +11,22 @@ const TokenDropdownInput = ({
   normalWording,
   loadingWording,
 }) => {
-  const [chosenToken, setChosenToken] = useState("");
-  const { data: chosenTokenBalance } = useBalance(
-    chosenToken === "0x0000000000000000000000000000000000000000" ||
-      chosenToken === ""
-      ? undefined
-      : chosenToken,
+  const [chosenToken, setChosenToken] = useState(
+    "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
   );
-  console.log("chosenTokenBalance", chosenTokenBalance, chosenToken, address);
+  const { data: chosenTokenBalance } = useBalance({
+    address,
+    ...(chosenToken === "0x0000000000000000000000000000000000000000"
+      ? {}
+      : { token: chosenToken }), // Include token only if chosenToken is truthy
+    // token: chosenToken,
+    onError(error) {
+      console.log(`cannot read ${chosenToken} Balance:`, error);
+      throw error;
+    },
+  });
   const [amount, setAmount] = useState(0);
   const [inputValue, setInputValue] = useState("");
-  const chainId = useChainId();
   const handleInputChange = async (eventValue) => {
     if (eventValue === "") {
       return;
@@ -32,9 +36,9 @@ const TokenDropdownInput = ({
   };
 
   const handleOnClickMax = async () => {
-    setAmount(chosenTokenBalance.displayValue);
-    setInputValue(chosenTokenBalance.displayValue);
-    handleInputChange(chosenTokenBalance.displayValue);
+    setAmount(chosenTokenBalance.formatted);
+    setInputValue(chosenTokenBalance.formatted);
+    handleInputChange(chosenTokenBalance.formatted);
 
     // TODO(david): find a better way to implement.
     // Since `setAmount` need some time to propagate, the `amount` would be 0 at the first click.
@@ -55,14 +59,13 @@ const TokenDropdownInput = ({
         {selectBefore(
           (value) => {
             setChosenToken(value);
-            console.log("value", value);
           },
           "address",
-          chainId,
+          42161,
         )}
         <NumericInput
           placeholder={`Balance: ${
-            chosenTokenBalance ? chosenTokenBalance.displayValue : 0
+            chosenTokenBalance ? chosenTokenBalance.formatted : 0
           }`}
           value={inputValue}
           onChange={(value) => {
