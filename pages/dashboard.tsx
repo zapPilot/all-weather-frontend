@@ -943,28 +943,12 @@ const Dashboard: NextPage = () => {
                                                       ))
                                                   }
                                                   <p className="text-white text-xl font-medium px-2">
-                                                    {
-                                                    // @ts-ignore
+                                                    {// @ts-ignore
                                                       column.content(item[column.key]).length > 1 ?
                                                       // @ts-ignore
-                                                      column.content(
+                                                      column.content(item[column.key]).join("-")
                                                       // @ts-ignore
-                                                        item[column.key],
-                                                      // @ts-ignore
-                                                      ).length > 1
-                                                        ? // @ts-ignore
-                                                          column
-                                                            .content(
-                                                            // @ts-ignore
-                                                              item[column.key],
-                                                            )
-                                                            // @ts-ignore
-                                                            .join("-")
-                                                        : // @ts-ignore
-                                                          column.content(
-                                                            // @ts-ignore
-                                                            item[column.key],
-                                                          )
+                                                      : column.content(item[column.key])
                                                     }
                                                   </p>
                                                 </div>
@@ -1221,17 +1205,9 @@ const Dashboard: NextPage = () => {
                                         {// @ts-ignore
                                           column.content(item[column.key]).length > 1 ?
                                           // @ts-ignore
-                                          column.content(item[column.key])
+                                          column.content(item[column.key]).join("-")
                                           // @ts-ignore
-                                            .length > 1
-                                            ? // @ts-ignore
-                                              column
-                                              // @ts-ignore
-                                                .content(item[column.key])
-                                                // @ts-ignore
-                                                .join("-")
-                                            : // @ts-ignore
-                                              column.content(item[column.key])
+                                          : column.content(item[column.key])
                                         }
                                       </span>
                                     </div>
