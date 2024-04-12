@@ -87,12 +87,12 @@ const ZapInButton = () => {
   const showSlippageModal = () => {
     setSlippageModalOpen(true);
   };
-
-  const { data: chosenTokenBalance } =
+  const { data: chosenTokenBalance } = useBalance(
     chosenToken === "0x0000000000000000000000000000000000000000" ||
-    chosenToken === ""
-      ? useBalance()
-      : useBalance(chosenToken);
+      chosenToken === ""
+      ? undefined
+      : chosenToken,
+  );
 
   const iconSize = { fontSize: "20px" };
   const defaultIcon = {

@@ -13,11 +13,13 @@ const TokenDropdownInput = ({
   loadingWording,
 }) => {
   const [chosenToken, setChosenToken] = useState("");
-  const { data: chosenTokenBalance } =
+  const { data: chosenTokenBalance } = useBalance(
     chosenToken === "0x0000000000000000000000000000000000000000" ||
-    chosenToken === ""
-      ? useBalance()
-      : useBalance(chosenToken);
+      chosenToken === ""
+      ? undefined
+      : chosenToken,
+  );
+  console.log("chosenTokenBalance", chosenTokenBalance, chosenToken, address);
   const [amount, setAmount] = useState(0);
   const [inputValue, setInputValue] = useState("");
   const chainId = useChainId();
