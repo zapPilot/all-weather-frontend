@@ -2,6 +2,7 @@
 // All code in this file will be ignored by the TypeScript compiler
 import type { NextPage } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import BasePage from "./basePage.tsx";
 import { Spin, Button } from "antd";
 import {
@@ -365,7 +366,7 @@ const Dashboard: NextPage = () => {
     ];
     return (
       <>
-        <table className="min-w-full divide-y divide-gray-700">
+        <table className="min-w-full">
           <thead>
             <tr className="bg-white">
               <th
@@ -388,13 +389,13 @@ const Dashboard: NextPage = () => {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-800">
+          <tbody className="divide-y divide-gray-400">
             {records.data.map((item, rowIndex) => (
               <tr key={rowIndex} className="hover:bg-black-900">
                 <td className="relative px-7 sm:w-12 sm:px-6">
                   <input
                     type="checkbox"
-                    className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                    className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-400 text-indigo-600 focus:ring-indigo-600"
                     onChange={(e) =>
                       e.target.checked ? onSelectCallback(item, true) : null
                     }
@@ -404,7 +405,7 @@ const Dashboard: NextPage = () => {
                   <>
                     {column.key === "chain" ? (
                       // @ts-ignore
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400">
                         <Image
                           // @ts-ignore
                           src={column.content(item[column.key]).chainImg}
@@ -595,13 +596,13 @@ const Dashboard: NextPage = () => {
                                           </div>
                                         </div>
                                       ) : (
-                                        <button
-                                          type="button"
-                                          className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm"
+                                        <Link
+                                          href="/subscription"
+                                          className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm text-black"
                                         >
                                           <UnlockOutlined className="-ml-0.5 h-5 w-5" />
-                                          30 Days Free Trial
-                                        </button>
+                                          Unlock
+                                        </Link>
                                       )
                                     }
                                   </div>
@@ -612,7 +613,7 @@ const Dashboard: NextPage = () => {
                         </div>
                       </td>
                     ) : column.key === "pool" ? (
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 hidden sm:table-cell">
                         {
                           // @ts-ignore
                           column.content(item[column.key]).paidUser ||
@@ -677,18 +678,18 @@ const Dashboard: NextPage = () => {
                               </button>
                             </div>
                           ) : (
-                            <button
-                              type="button"
+                            <Link
+                              href="/subscription"
                               className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm text-black"
                             >
                               <UnlockOutlined className="-ml-0.5 h-5 w-5" />
-                              30 Days Free Trial
-                            </button>
+                              Unlock
+                            </Link>
                           )
                         }
                       </td>
                     ) : column.key === "tokens" ? (
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 hidden sm:table-cell">
                         <div className="flex items-center">
                           {
                             // @ts-ignore
@@ -719,7 +720,7 @@ const Dashboard: NextPage = () => {
                         </div>
                       </td>
                     ) : column.key === "tvlUsd" ? (
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 hidden sm:table-cell">
                         <span
                           className={
                             // @ts-ignore
@@ -736,7 +737,7 @@ const Dashboard: NextPage = () => {
                         </span>
                       </td>
                     ) : column.key === "apr" ? (
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell">
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 hidden sm:table-cell">
                         <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
                           {
                             // @ts-ignore
@@ -888,7 +889,7 @@ const Dashboard: NextPage = () => {
                   </div>
                 ) : unexpandable[categoryMetaData.category] === true ? (
                   <>
-                    <table className="min-w-full divide-y divide-gray-700">
+                    <table className="min-w-full">
                       <thead>
                         <tr className="bg-emerald-400">
                           <th
@@ -913,13 +914,13 @@ const Dashboard: NextPage = () => {
                           ))}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-800">
+                      <tbody className="divide-y divide-gray-400">
                         {categoryMetaData.state.map((item, rowIndex) => (
                           <tr key={rowIndex} className="hover:bg-black-900">
                             <td className="relative px-7 sm:w-12 sm:px-6">
                               <input
                                 type="checkbox"
-                                className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                                className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-400 text-indigo-600 focus:ring-indigo-600"
                                 onChange={(e) =>
                                   e.target.checked
                                     ? onSelectCallback(
@@ -935,7 +936,7 @@ const Dashboard: NextPage = () => {
                                 {column.title === "Chain" && (
                                   <td
                                     key={colIndex}
-                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 sm:table-cell"
+                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 sm:table-cell"
                                   >
                                     <div className="hidden sm:block">
                                       <Image
@@ -1165,13 +1166,13 @@ const Dashboard: NextPage = () => {
                                                       </div>
                                                     </div>
                                                   ) : (
-                                                    <button
-                                                      type="button"
-                                                      className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm"
+                                                    <Link
+                                                      href="/subscription"
+                                                      className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm text-black"
                                                     >
                                                       <UnlockOutlined className="-ml-0.5 h-5 w-5" />
-                                                      30 Days Free Trial
-                                                    </button>
+                                                      Unlock
+                                                    </Link>
                                                   )
                                                 }
                                               </div>
@@ -1185,7 +1186,7 @@ const Dashboard: NextPage = () => {
                                 {column.title === "Pool" && (
                                   <td
                                     key={colIndex}
-                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell"
+                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 hidden sm:table-cell"
                                   >
                                     {
                                       // @ts-ignore
@@ -1259,13 +1260,13 @@ const Dashboard: NextPage = () => {
                                           </button>
                                         </div>
                                       ) : (
-                                        <button
-                                          type="button"
-                                          className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm"
+                                        <Link
+                                          href="/subscription"
+                                          className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm text-black"
                                         >
                                           <UnlockOutlined className="-ml-0.5 h-5 w-5" />
-                                          30 Days Free Trial
-                                        </button>
+                                          Unlock
+                                        </Link>
                                       )
                                     }
                                   </td>
@@ -1273,7 +1274,7 @@ const Dashboard: NextPage = () => {
                                 {column.title === "Tokens" && (
                                   <td
                                     key={colIndex}
-                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell"
+                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 hidden sm:table-cell"
                                   >
                                     <div className="flex items-center">
                                       {
@@ -1312,7 +1313,7 @@ const Dashboard: NextPage = () => {
                                 {column.title === "TVL" && (
                                   <td
                                     key={colIndex}
-                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell"
+                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 hidden sm:table-cell"
                                   >
                                     <span
                                       className={
@@ -1335,7 +1336,7 @@ const Dashboard: NextPage = () => {
                                 {column.title === "APR" && (
                                   <td
                                     key={colIndex}
-                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 hidden sm:table-cell"
+                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 hidden sm:table-cell"
                                   >
                                     <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
                                       {
@@ -1364,7 +1365,7 @@ const Dashboard: NextPage = () => {
                   </>
                 ) : (
                   <>
-                    <table className="min-w-full divide-y divide-gray-700">
+                    <table className="min-w-full">
                       <thead>
                         <tr className="bg-emerald-400">
                           <th></th>
@@ -1378,7 +1379,7 @@ const Dashboard: NextPage = () => {
                           ))}
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-gray-400">
                         {categoryMetaData.state.map((item, rowIndex) => (
                           <>
                             <tr
@@ -1397,7 +1398,7 @@ const Dashboard: NextPage = () => {
                                   {column.title === "Tokens" && (
                                     <td
                                       key={colIndex}
-                                      className="whitespace-nowrap px-3 py-4 text-sm text-gray-300"
+                                      className="whitespace-nowrap px-3 py-4 text-sm text-gray-400"
                                     >
                                       <div className="flex items-center">
                                         {
@@ -1438,7 +1439,7 @@ const Dashboard: NextPage = () => {
                                   {column.title === "Highest APR" && (
                                     <td
                                       key={colIndex}
-                                      className="whitespace-nowrap px-3 py-4 text-sm text-gray-300"
+                                      className="whitespace-nowrap px-3 py-4 text-sm text-gray-400"
                                     >
                                       <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
                                         {column.content
