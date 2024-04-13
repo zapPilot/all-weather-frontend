@@ -141,21 +141,25 @@ const _getChildrenTab = (
   } else if (wording === "Fees") {
     return <Fees />;
   } else if (wording === "Strategy") {
-    return <Strategy  web3Context={{
-      netWorth,
-      netWorthWithCustomLogic,
-      rebalanceSuggestions,
-      totalInterest,
-      portfolioApr,
-      sharpeRatio,
-      topNLowestAprPools,
-      topNPoolConsistOfSameLpToken,
-      topNStableCoins,
-      aggregatedPositions,
-      ROI,
-      maxDrawdown,
-      claimableRewards,
-    }}/>;
+    return (
+      <Strategy
+        web3Context={{
+          netWorth,
+          netWorthWithCustomLogic,
+          rebalanceSuggestions,
+          totalInterest,
+          portfolioApr,
+          sharpeRatio,
+          topNLowestAprPools,
+          topNPoolConsistOfSameLpToken,
+          topNStableCoins,
+          aggregatedPositions,
+          ROI,
+          maxDrawdown,
+          claimableRewards,
+        }}
+      />
+    );
   } else if (wording === "Risks") {
     return <Risks />;
   } else if (wording === "Maintenance") {

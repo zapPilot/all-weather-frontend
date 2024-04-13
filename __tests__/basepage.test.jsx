@@ -1,8 +1,4 @@
-import { test, vi, expect } from "vitest";
-import { render } from "./test-utils.tsx";
-import { screen, fireEvent } from "@testing-library/react";
-import BasePage from "../pages/basePage";
-import { waitFor } from "@testing-library/dom";
+import { test, vi } from "vitest";
 
 /**
  * @vitest-environment jsdom

@@ -30,7 +30,9 @@ const ClaimButton = () => {
 
   const { data, writeContract, status } = useContractWrite();
   // Mocked data
-  const WEB3_CONTEXT = {"dataOfGetClaimableRewards": [{"claimableRewards": [{"amount": 0}]}]};
+  const WEB3_CONTEXT = {
+    dataOfGetClaimableRewards: [{ claimableRewards: [{ amount: 0 }] }],
+  };
   useEffect(() => {
     async function fetchData() {
       const claimableRewards = WEB3_CONTEXT.dataOfGetClaimableRewards;

@@ -39,7 +39,7 @@ const APRPopOver = ({ mode }) => {
     claimableRewards,
   } = useRebalanceSuggestions();
   // web3_context is just a placeholder for now, will be deprecated soon
-  const WEB3_CONTEXT = {"debankContext": {}};
+  const WEB3_CONTEXT = { debankContext: {} };
   useEffect(() => {
     async function fetchData() {
       const claimableRewardsWithChainInfo =
