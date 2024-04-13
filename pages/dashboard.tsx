@@ -375,8 +375,9 @@ const Dashboard: NextPage = () => {
               {columns.map((column, index) => (
                 <th
                   key={index}
-                  className={`px-3 py-3.5 text-left text-sm font-semibold text-black ${index > 1 ? "hidden " : ""
-                    }sm:table-cell`}
+                  className={`px-3 py-3.5 text-left text-sm font-semibold text-black ${
+                    index > 1 ? "hidden " : ""
+                  }sm:table-cell`}
                 >
                   {index == 1 ? (
                     <span className="sm:hidden">Pool</span>
@@ -442,14 +443,14 @@ const Dashboard: NextPage = () => {
                                       <p className="text-white text-xl font-medium px-2">
                                         {
                                           // @ts-ignore
+                                          // @ts-ignore
                                           column.content(item[column.key])
-                                            // @ts-ignore
                                             .length > 1
                                             ? // @ts-ignore
-                                            column
-                                              .content(item[column.key])
-                                              // @ts-ignore
-                                              .join("-")
+                                              column
+                                                .content(item[column.key])
+                                                // @ts-ignore
+                                                .join("-")
                                             : column.content(item[column.key])
                                         }
                                       </p>
@@ -550,7 +551,7 @@ const Dashboard: NextPage = () => {
                                                 // @ts-ignore
                                                 column.content(item[column.key])
                                                   .pool.name
-                                                }.webp`}
+                                              }.webp`}
                                               alt={
                                                 // @ts-ignore
                                                 column.content(item[column.key])
@@ -615,13 +616,13 @@ const Dashboard: NextPage = () => {
                         {
                           // @ts-ignore
                           column.content(item[column.key]).paidUser ||
-                            rowIndex > 0 ? (
+                          rowIndex > 0 ? (
                             <div className="flex items-center">
                               <Image
                                 src={`/projectPictures/${
                                   // @ts-ignore
                                   column.content(item[column.key]).pool.name
-                                  }.webp`}
+                                }.webp`}
                                 alt={
                                   // @ts-ignore
                                   column.content(item[column.key]).pool.name
@@ -641,8 +642,8 @@ const Dashboard: NextPage = () => {
                                   {
                                     // @ts-ignore
                                     "pool ID: " +
-                                    column.content(item[column.key]).pool
-                                      .poolID
+                                      column.content(item[column.key]).pool
+                                        .poolID
                                   }
                                 </span>
                                 {
@@ -711,7 +712,7 @@ const Dashboard: NextPage = () => {
                               // @ts-ignore
                               column.content(item[column.key]).length > 1
                                 ? // @ts-ignore
-                                column.content(item[column.key]).join("-")
+                                  column.content(item[column.key]).join("-")
                                 : column.content(item[column.key])
                             }
                           </span>
@@ -746,7 +747,7 @@ const Dashboard: NextPage = () => {
                         {
                           // @ts-ignore
                           column.content(item[column.key]).aprPredicted ===
-                            "Down" ? (
+                          "Down" ? (
                             <ArrowDownOutlined className="text-red-400 px-2" />
                           ) : (
                             <ArrowUpOutlined className="text-green-400 px-2" />
@@ -770,7 +771,7 @@ const Dashboard: NextPage = () => {
       portfolioComposition[record.category_from_request] === undefined
         ? 0
         : Object.values(portfolioComposition[record.category_from_request])
-          .length;
+            .length;
     if (selected === true) {
       const categoryPools = _getOrCreate(
         portfolioComposition,
@@ -897,8 +898,9 @@ const Dashboard: NextPage = () => {
                           {basicColumns.map((column, index) => (
                             <th
                               key={index}
-                              className={`px-3 py-3.5 text-left text-sm font-semibold text-black ${index > 0 ? "hidden " : ""
-                                }sm:table-cell`}
+                              className={`px-3 py-3.5 text-left text-sm font-semibold text-black ${
+                                index > 0 ? "hidden " : ""
+                              }sm:table-cell`}
                             >
                               {index == 0 ? (
                                 <span className="sm:hidden">Pool</span>
@@ -921,9 +923,9 @@ const Dashboard: NextPage = () => {
                                 onChange={(e) =>
                                   e.target.checked
                                     ? onSelectCallback(
-                                      item.data[rowIndex],
-                                      true,
-                                    )
+                                        item.data[rowIndex],
+                                        true,
+                                      )
                                     : null
                                 }
                               />
@@ -987,15 +989,15 @@ const Dashboard: NextPage = () => {
                                                         item[column.key],
                                                       ).length > 1
                                                         ? // @ts-ignore
-                                                        column
-                                                          .content(
+                                                          column
+                                                            .content(
+                                                              item[column.key],
+                                                            )
+                                                            .join("-")
+                                                        : // @ts-ignore
+                                                          column.content(
                                                             item[column.key],
                                                           )
-                                                          .join("-")
-                                                        : // @ts-ignore
-                                                        column.content(
-                                                          item[column.key],
-                                                        )
                                                     }
                                                   </p>
                                                 </div>
@@ -1104,11 +1106,12 @@ const Dashboard: NextPage = () => {
                                                         <Image
                                                           src={
                                                             // @ts-ignore
-                                                            `/projectPictures/${column.content(
-                                                              item[
-                                                              column.key
-                                                              ],
-                                                            ).pool.name
+                                                            `/projectPictures/${
+                                                              column.content(
+                                                                item[
+                                                                  column.key
+                                                                ],
+                                                              ).pool.name
                                                             }.webp`
                                                           }
                                                           alt={
@@ -1135,11 +1138,11 @@ const Dashboard: NextPage = () => {
                                                           {
                                                             // @ts-ignore
                                                             "pool ID: " +
-                                                            column.content(
-                                                              item[
-                                                              column.key
-                                                              ],
-                                                            ).pool.poolID
+                                                              column.content(
+                                                                item[
+                                                                  column.key
+                                                                ],
+                                                              ).pool.poolID
                                                           }
                                                         </span>
                                                         {
@@ -1152,7 +1155,7 @@ const Dashboard: NextPage = () => {
                                                                 // @ts-ignore
                                                                 column.content(
                                                                   item[
-                                                                  column.key
+                                                                    column.key
                                                                   ],
                                                                 ).pool.meta
                                                               }
@@ -1192,8 +1195,9 @@ const Dashboard: NextPage = () => {
                                           <Image
                                             src={
                                               // @ts-ignore
-                                              `/projectPictures/${column.content(item[column.key])
-                                                .pool.name
+                                              `/projectPictures/${
+                                                column.content(item[column.key])
+                                                  .pool.name
                                               }.webp`
                                             }
                                             alt={
@@ -1217,9 +1221,9 @@ const Dashboard: NextPage = () => {
                                               {
                                                 // @ts-ignore
                                                 "pool ID: " +
-                                                column.content(
-                                                  item[column.key],
-                                                ).pool.poolID
+                                                  column.content(
+                                                    item[column.key],
+                                                  ).pool.poolID
                                               }
                                             </span>
                                             {
@@ -1295,11 +1299,11 @@ const Dashboard: NextPage = () => {
                                           column.content(item[column.key])
                                             .length > 1
                                             ? // @ts-ignore
-                                            column
-                                              .content(item[column.key])
-                                              .join("-")
+                                              column
+                                                .content(item[column.key])
+                                                .join("-")
                                             : // @ts-ignore
-                                            column.content(item[column.key])
+                                              column.content(item[column.key])
                                         }
                                       </span>
                                     </div>
@@ -1421,11 +1425,11 @@ const Dashboard: NextPage = () => {
                                             column.content(item[column.ket])
                                               .length > 1
                                               ? // @ts-ignore
-                                              column
-                                                .content(item[column.key])
-                                                .join("-")
+                                                column
+                                                  .content(item[column.key])
+                                                  .join("-")
                                               : // @ts-ignore
-                                              column.content(item[column.key])
+                                                column.content(item[column.key])
                                           }
                                         </span>
                                       </div>
@@ -1439,9 +1443,9 @@ const Dashboard: NextPage = () => {
                                       <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
                                         {column.content
                                           ? // @ts-ignore
-                                          column.content(item[column.key])
+                                            column.content(item[column.key])
                                           : // @ts-ignore
-                                          item[column.key]}
+                                            item[column.key]}
                                         %
                                       </span>
                                     </td>
