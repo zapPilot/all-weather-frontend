@@ -1,3 +1,5 @@
+//@ts-nocheck
+// All code in this file will be ignored by the TypeScript compiler
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Popover, Tag, Spin, ConfigProvider } from "antd";
@@ -36,7 +38,8 @@ const APRPopOver = ({ mode }) => {
     maxDrawdown,
     claimableRewards,
   } = useRebalanceSuggestions();
-
+  // web3_context is just a placeholder for now, will be deprecated soon
+  const WEB3_CONTEXT = {"debankContext": {}};
   useEffect(() => {
     async function fetchData() {
       const claimableRewardsWithChainInfo =

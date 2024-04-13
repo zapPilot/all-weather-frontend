@@ -155,7 +155,7 @@ const ZapInButton = () => {
       throw approveAmountError;
     }
     setApproveAmount(approveAmountData);
-  }, [approveAmounIsPending, approveAmountData, slippage]);
+  }, [approveAmounIsPending, approveAmountData, slippage, approveAmountError]);
 
   const handleInputChange = async (eventValue) => {
     if (eventValue === "") {

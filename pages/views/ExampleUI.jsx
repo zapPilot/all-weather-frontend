@@ -5,7 +5,6 @@ import PortfolioMetaTab from "./PortfolioMetaTab";
 import { Row, Col, ConfigProvider, Button } from "antd";
 import Link from "next/link";
 import Image from "next/image";
-// import { web3Context } from "./Web3DataProvider";
 import { useWindowHeight } from "../../utils/chartUtils";
 import styles from "../../styles/Home.module.css";
 import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";

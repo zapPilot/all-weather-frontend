@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useAccount } from "wagmi";
 import BasePage from "../basePage";
+import { useAddress } from "@thirdweb-dev/react";
 import { CheckCircleIcon, XMarkIcon } from "@heroicons/react/20/solid";
 
 const EmailSubscription = () => {
-  const { address } = useAccount();
+  const address = useAddress();
   const [email, setEmail] = useState("");
   const [apiStatus, setApiStatus] = useState("");
 

@@ -1,82 +1,29 @@
+//@ts-nocheck
+// All code in this file will be ignored by the TypeScript compiler
 import React from "react";
-import { useContext, useState, useEffect } from "react";
-import { ConfigProvider, Image, Button, Spin } from "antd";
+import { useState, useEffect } from "react";
+import { Image, Button, Spin } from "antd";
 import RebalanceChart from "./RebalanceChart";
 import { useWindowWidth } from "../../utils/chartUtils";
 
-const columns = [
-  {
-    title: "Category",
-    dataIndex: "category",
-    key: "category",
-    render: (text) => <span style={{ color: "#ffffff" }}>{text}</span>,
-  },
-  {
-    title: "Target Weight",
-    dataIndex: "weight",
-    key: "weight",
-    render: (weight) => {
-      if (weight !== 0) {
-        return <span style={{ color: "#ffffff" }}>{weight}%</span>;
-      }
-    },
-  },
-  {
-    title: "Explanation",
-    dataIndex: "explanation",
-    key: "explanation",
-    render: (explanation) => (
-      <span style={{ color: "#ffffff" }}>{explanation}</span>
-    ),
-  },
-  {
-    title: "Examples",
-    key: "examples",
-    dataIndex: "examples",
-    render: (_, { examples }) => (
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "auto auto auto",
-        }}
-      >
-        {examples.map((tokenSymbol, index) => {
-          return (
-            <span key={index}>
-              <Image
-                src={`tokenPictures/${tokenSymbol}.png`}
-                height={20}
-                width={20}
-                alt={`${tokenSymbol}-token`}
-              />
-            </span>
-          );
-        })}
-      </div>
-    ),
-  },
-];
-
-const Strategy = () => {
+const Strategy = ({
+  netWorth,
+  netWorthWithCustomLogic,
+  rebalanceSuggestions,
+  totalInterest,
+  portfolioApr,
+  sharpeRatio,
+  topNLowestAprPools,
+  topNPoolConsistOfSameLpToken,
+  topNStableCoins,
+  aggregatedPositions,
+  ROI,
+  maxDrawdown,
+  claimableRewards,
+}) => {
   const windowWidth = useWindowWidth();
-  const WEB3_CONTEXT = useContext(web3Context);
-  const [netWorth, setNetWorth] = useState(0);
-  const [rebalanceSuggestions, setRebalanceSuggestions] = useState([]);
 
-  useEffect(() => {
-    async function fetchPortfolioMetadata() {
-      if (
-        WEB3_CONTEXT !== undefined &&
-        WEB3_CONTEXT.rebalanceSuggestions.length !== 0
-      ) {
-        setNetWorth(WEB3_CONTEXT.netWorth);
-        setRebalanceSuggestions(WEB3_CONTEXT.rebalanceSuggestions);
-      }
-    }
-    fetchPortfolioMetadata();
-  }, [WEB3_CONTEXT]);
-
-  if (rebalanceSuggestions.length === 0) {
+  if ((rebalanceSuggestions?.length ?? 0) === 0) {
     return <Spin size="large" />;
   }
   return (
