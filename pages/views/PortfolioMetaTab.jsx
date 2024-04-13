@@ -48,13 +48,21 @@ const PortfolioMetaTab = () => {
   const tabs = TabWordings.map((wording, index) => ({
     label: wording,
     key: index,
-    children: _getChildrenTab(
-      wording,
+    children: _getChildrenTab(wording, {
+      netWorth,
+      netWorthWithCustomLogic,
+      rebalanceSuggestions,
+      totalInterest,
       portfolioApr,
       sharpeRatio,
+      topNLowestAprPools,
+      topNPoolConsistOfSameLpToken,
+      topNStableCoins,
+      aggregatedPositions,
       ROI,
       maxDrawdown,
-    ),
+      claimableRewards,
+    }),
   }));
 
   return (
@@ -85,10 +93,21 @@ const PortfolioMetaTab = () => {
 
 const _getChildrenTab = (
   wording,
-  portfolioApr,
-  sharpeRatio,
-  ROI,
-  maxDrawdown,
+  {
+    netWorth,
+    netWorthWithCustomLogic,
+    rebalanceSuggestions,
+    totalInterest,
+    portfolioApr,
+    sharpeRatio,
+    topNLowestAprPools,
+    topNPoolConsistOfSameLpToken,
+    topNStableCoins,
+    aggregatedPositions,
+    ROI,
+    maxDrawdown,
+    claimableRewards,
+  },
 ) => {
   if (wording === "Performance") {
     return (
@@ -100,11 +119,47 @@ const _getChildrenTab = (
       />
     );
   } else if (wording === "Assets") {
-    return <Assets />;
+    return (
+      <Assets
+        web3Context={{
+          netWorth,
+          netWorthWithCustomLogic,
+          rebalanceSuggestions,
+          totalInterest,
+          portfolioApr,
+          sharpeRatio,
+          topNLowestAprPools,
+          topNPoolConsistOfSameLpToken,
+          topNStableCoins,
+          aggregatedPositions,
+          ROI,
+          maxDrawdown,
+          claimableRewards,
+        }}
+      />
+    );
   } else if (wording === "Fees") {
     return <Fees />;
   } else if (wording === "Strategy") {
-    return <Strategy />;
+    return (
+      <Strategy
+        web3Context={{
+          netWorth,
+          netWorthWithCustomLogic,
+          rebalanceSuggestions,
+          totalInterest,
+          portfolioApr,
+          sharpeRatio,
+          topNLowestAprPools,
+          topNPoolConsistOfSameLpToken,
+          topNStableCoins,
+          aggregatedPositions,
+          ROI,
+          maxDrawdown,
+          claimableRewards,
+        }}
+      />
+    );
   } else if (wording === "Risks") {
     return <Risks />;
   } else if (wording === "Maintenance") {

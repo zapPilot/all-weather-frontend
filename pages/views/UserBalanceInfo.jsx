@@ -66,8 +66,9 @@ const UserBalanceInfo = ({
       </h3>
       <h3>
         <b style={{ color: "#555555" }}>
-          Claimable Rewards in the Portfolio: ${claimableRewards.toFixed(2)}
-          &nbsp;(NTD: {(claimableRewards * exchangeRates["TWD"]).toFixed(2)})
+          Claimable Rewards in the Portfolio: $
+          {(claimableRewards ?? 0).toFixed(2)}
+          &nbsp;(NTD: {(claimableRewards * exchangeRates["TWD"])?.toFixed(2)})
         </b>
       </h3>
     </div>

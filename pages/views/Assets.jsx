@@ -1,6 +1,5 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { Tag, Image } from "antd";
-// import { web3Context } from "./Web3DataProvider";
 import TokenTable from "./components/TokenTable.jsx";
 const upcomingProtocol = [
   {
@@ -147,38 +146,46 @@ const columns = [
     ),
   },
 ];
-const Assets = () => {
-  const [aggregatedPositions, setAggregatedPositions] = useState([]);
-  const WEB3_CONTEXT = useContext(web3Context);
+const Assets = ({
+  netWorth,
+  netWorthWithCustomLogic,
+  rebalanceSuggestions,
+  totalInterest,
+  portfolioApr,
+  sharpeRatio,
+  topNLowestAprPools,
+  topNPoolConsistOfSameLpToken,
+  topNStableCoins,
+  aggregatedPositions,
+  ROI,
+  maxDrawdown,
+  claimableRewards,
+}) => {
+  const [sortedAggregatedPositions, setSortedAggregatedPositions] =
+    React.useState([]);
   useEffect(() => {
-    async function fetchAggregatedPositions() {
-      if (WEB3_CONTEXT) {
-        const netWorth = WEB3_CONTEXT.netWorth;
-        if (WEB3_CONTEXT.aggregatedPositions !== undefined) {
-          const assetsData = Object.entries(WEB3_CONTEXT.aggregatedPositions)
-            .map(([position, metadata], idx) => ({
-              key: String(idx + 1),
-              chain: metadata["tokens_metadata"][0].chain,
-              protocol: metadata.protocol_logo_url,
-              asset: position.split(":")[1],
-              weight: ((metadata.worth / netWorth) * 100).toFixed(2),
-              apr: metadata.APR,
-              categories: metadata.metadata.categories,
-              worth: metadata.worth, // Include the 'worth' property in the object
-            }))
-            .sort((a, b) => b.worth - a.worth);
-          setAggregatedPositions(assetsData);
-        } else {
-          setAggregatedPositions([]);
-        }
-      }
+    if (aggregatedPositions !== undefined) {
+      const assetsData = Object.entries(aggregatedPositions)
+        .map(([position, metadata], idx) => ({
+          key: String(idx + 1),
+          chain: metadata["tokens_metadata"][0].chain,
+          protocol: metadata.protocol_logo_url,
+          asset: position.split(":")[1],
+          weight: ((metadata.worth / netWorth) * 100).toFixed(2),
+          apr: metadata.APR,
+          categories: metadata.metadata.categories,
+          worth: metadata.worth, // Include the 'worth' property in the object
+        }))
+        .sort((a, b) => b.worth - a.worth);
+      setSortedAggregatedPositions(assetsData);
+    } else {
+      setSortedAggregatedPositions([]);
     }
-    fetchAggregatedPositions();
-  }, [WEB3_CONTEXT]);
+  }, [aggregatedPositions]);
   return (
     <>
       <p className="heading-subtitle">Current Protocols</p>
-      <TokenTable columns={columns} dataSource={aggregatedPositions} />
+      <TokenTable columns={columns} dataSource={sortedAggregatedPositions} />
       <p className="heading-subtitle">Upcoming Protocols</p>
       <TokenTable columns={columns} dataSource={upcomingProtocol} />
       <p className="heading-subtitle">Historical Protocols</p>

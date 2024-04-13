@@ -38,6 +38,7 @@ export default function useRebalanceSuggestions() {
         );
         const newRebalanceSuggestions = response.data.suggestions;
         setRebalanceSuggestions(newRebalanceSuggestions);
+        console.log("newRebalanceSuggestions", newRebalanceSuggestions);
         const portfolioApr = response.data.portfolio_apr;
         setPortfolioApr(portfolioApr);
         const sharpeRatio = response.data.sharpe_ratio;

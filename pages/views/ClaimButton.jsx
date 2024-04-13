@@ -1,3 +1,5 @@
+//@ts-nocheck
+// All code in this file will be ignored by the TypeScript compiler
 import { Button, message, Space } from "antd";
 import {
   fetch1InchSwapData,
@@ -17,7 +19,6 @@ const ClaimButton = () => {
   const address = useAddress();
   const [messageApi, contextHolder] = message.useMessage();
   const [aggregatorDataReady, setAggregatorDataReady] = useState(true);
-  const WEB3_CONTEXT = useContext(web3Context);
   const [claimableRewards, setClaimableRewards] = useState(0);
   const [chosenToken, setChosenToken] = useState(
     "0x55d398326f99059fF775485246999027B3197955",
@@ -28,7 +29,10 @@ const ClaimButton = () => {
   const useDump = true;
 
   const { data, writeContract, status } = useContractWrite();
-
+  // Mocked data
+  const WEB3_CONTEXT = {
+    dataOfGetClaimableRewards: [{ claimableRewards: [{ amount: 0 }] }],
+  };
   useEffect(() => {
     async function fetchData() {
       const claimableRewards = WEB3_CONTEXT.dataOfGetClaimableRewards;

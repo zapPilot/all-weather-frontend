@@ -19,7 +19,6 @@ const TokenDropdownInput = ({
       ? undefined
       : chosenToken,
   );
-  console.log("chosenTokenBalance", chosenTokenBalance, chosenToken, address);
   const [amount, setAmount] = useState(0);
   const [inputValue, setInputValue] = useState("");
   const chainId = useChainId();
