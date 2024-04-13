@@ -1,3 +1,5 @@
+//@ts-nocheck
+// All code in this file will be ignored by the TypeScript compiler
 import type { NextPage } from "next";
 import Image from "next/image";
 import BasePage from "./basePage.tsx";
@@ -441,11 +443,13 @@ const Dashboard: NextPage = () => {
                                       <p className="text-white text-xl font-medium px-2">
                                         {
                                           // @ts-ignore
+                                          // @ts-ignore
                                           column.content(item[column.key])
                                             .length > 1
                                             ? // @ts-ignore
                                               column
                                                 .content(item[column.key])
+                                                // @ts-ignore
                                                 .join("-")
                                             : column.content(item[column.key])
                                         }

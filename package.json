@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "export": "next export",
-    "format": "prettier --write . --ignore=node_modules,buildgi; black .",
-    "check-format": "prettier --check . --ignore=node_modules,build",
+    "format": "prettier --write . --ignore-path .prettierignore; black .",
+    "check-format": "prettier --check . --ignore-path .prettierignore",
     "test": "vitest --testTimeout=40000",
     "coverage": "vitest run --coverage"
   },
