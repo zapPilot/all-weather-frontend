@@ -1,31 +1,13 @@
 //@ts-nocheck
 // All code in this file will be ignored by the TypeScript compiler
 import React from "react";
-import { useState, useEffect } from "react";
-import { Image, Button, Spin } from "antd";
+import { Button } from "antd";
 import RebalanceChart from "./RebalanceChart";
 import { useWindowWidth } from "../../utils/chartUtils";
 
-const Strategy = ({
-  netWorth,
-  netWorthWithCustomLogic,
-  rebalanceSuggestions,
-  totalInterest,
-  portfolioApr,
-  sharpeRatio,
-  topNLowestAprPools,
-  topNPoolConsistOfSameLpToken,
-  topNStableCoins,
-  aggregatedPositions,
-  ROI,
-  maxDrawdown,
-  claimableRewards,
-}) => {
+const Strategy = ({ web3Context }) => {
   const windowWidth = useWindowWidth();
-
-  if ((rebalanceSuggestions?.length ?? 0) === 0) {
-    return <Spin size="large" />;
-  }
+  const { rebalanceSuggestions, netWorth } = web3Context || {};
   return (
     <>
       <Button type="primary" block>
