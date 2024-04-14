@@ -7,7 +7,7 @@ import { useWindowWidth } from "../../utils/chartUtils";
 
 const Strategy = ({ web3Context }) => {
   const windowWidth = useWindowWidth();
-  const { rebalanceSuggestions, netWorth } = web3Context;
+  const { rebalanceSuggestions, netWorth } = web3Context || {};
   return (
     <>
       <Button type="primary" block>
