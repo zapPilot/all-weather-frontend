@@ -35,3 +35,6 @@ jobs:
 
       - name: Run prettier check
         run: yarn check-format
+
+      - name: Test typescript build
+        run: yarn build
