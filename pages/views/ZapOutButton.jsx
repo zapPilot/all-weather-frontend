@@ -3,12 +3,8 @@ import { portfolioContractAddress } from "../../utils/oneInch";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
-import {
-  useContractWrite,
-  useContractRead,
-  useContract,
-} from "@thirdweb-dev/react";
-import { useChainId, useAddress } from "@thirdweb-dev/react";
+import { useActiveAccount } from "thirdweb/react";
+
 import { refreshTVLData } from "../../utils/contractInteractions";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import { selectBefore } from "../../utils/contractInteractions";
@@ -16,7 +12,8 @@ import { selectBefore } from "../../utils/contractInteractions";
 const { ethers } = require("ethers");
 
 const ZapOutButton = () => {
-  const address = useAddress();
+  const account = useActiveAccount();
+  const address = account?.address;
   const normalWording = "Withdraw";
   const loadingWording = "Fetching the best route to withdraw";
   const [withdrawAmount, setWithdrawAmount] = useState(0);
@@ -30,67 +27,54 @@ const ZapOutButton = () => {
   );
   const [apiDataReady, setApiDataReady] = useState(true);
 
-  const {
-    data: redeemData,
-    writeContract,
-    isPending: redeemDataIsPending,
-    status: redeemDataStatus,
-  } = useContractWrite();
+  // TODO(david): replace wagmi's useContract with thirdweb's useContract
+  // const { contract } = useContract(
+  //   portfolioContractAddress,
+  //   permanentPortfolioJson.abi,
+  // );
+  // const {
+  //   data: approveAmountContract,
+  //   error: approveAmountError,
+  //   isPending: approveAmountContractIsPending,
+  // } = useContractRead(
+  //   contract,
+  //   "allowance",
+  //   [address, portfolioContractAddress],
+  //   // args: ["0x43cd745Bd5FbFc8CfD79ebC855f949abc79a1E0C", "0x78000b0605E81ea9df54b33f72ebC61B5F5c8077"],
+  // );
+  const chainId = account.chainId;
 
-  const {
-    data: approveData,
-    writeContract: approveWrite,
-    isPending: approveIsPending,
-    status: approveStatus,
-  } = useContractWrite();
+  // useEffect(() => {
+  //   if (approveAmountContractIsPending) return; // Don't proceed if loading
+  //   if (approveAmountError)
+  //     console.log("allowance Error", approveAmountError.message);
+  //   setApproveAmount(approveAmountContract);
 
-  const { contract } = useContract(
-    portfolioContractAddress,
-    permanentPortfolioJson.abi,
-  );
-  const {
-    data: approveAmountContract,
-    error: approveAmountError,
-    isPending: approveAmountContractIsPending,
-  } = useContractRead(
-    contract,
-    "allowance",
-    [address, portfolioContractAddress],
-    // args: ["0x43cd745Bd5FbFc8CfD79ebC855f949abc79a1E0C", "0x78000b0605E81ea9df54b33f72ebC61B5F5c8077"],
-  );
-  const chainId = useChainId();
+  //   // Approve feedback
+  //   if (approveStatus === "pending") {
+  //     message.loading("Approved loading");
+  //   } else if (approveStatus === "success") {
+  //     message.destroy();
+  //     message.success("Approved success");
+  //   }
 
-  useEffect(() => {
-    if (approveAmountContractIsPending) return; // Don't proceed if loading
-    if (approveAmountError)
-      console.log("allowance Error", approveAmountError.message);
-    setApproveAmount(approveAmountContract);
-
-    // Approve feedback
-    if (approveStatus === "pending") {
-      message.loading("Approved loading");
-    } else if (approveStatus === "success") {
-      message.destroy();
-      message.success("Approved success");
-    }
-
-    // Withdraw feedback
-    if (redeemDataStatus === "pending") {
-      message.loading("Withdraw loading");
-    } else if (redeemDataStatus === "success") {
-      message.destroy();
-      message.success("Withdraw success");
-    }
-  }, [
-    address,
-    approveAmountContractIsPending,
-    approveAmountContract,
-    approveAmountError,
-    approveReady,
-    redeemDataIsPending,
-    approveStatus,
-    redeemDataStatus,
-  ]);
+  //   // Withdraw feedback
+  //   if (redeemDataStatus === "pending") {
+  //     message.loading("Withdraw loading");
+  //   } else if (redeemDataStatus === "success") {
+  //     message.destroy();
+  //     message.success("Withdraw success");
+  //   }
+  // }, [
+  //   address,
+  //   approveAmountContractIsPending,
+  //   approveAmountContract,
+  //   approveAmountError,
+  //   approveReady,
+  //   redeemDataIsPending,
+  //   approveStatus,
+  //   redeemDataStatus,
+  // ]);
   const handleInputChange = async (eventValue) => {
     setInputValue(eventValue);
     if (eventValue !== "") {
