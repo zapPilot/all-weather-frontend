@@ -17,7 +17,7 @@ const TokenDropdownInput = ({
   loadingWording,
 }) => {
   const [chosenToken, setChosenToken] = useState("");
-  const chain = useActiveWalletChain();
+  const chainId = useActiveWalletChain();
   const contract = getContract({
     clien: THIRDWEB_CLIENT,
     chain: optimism,
@@ -35,7 +35,6 @@ const TokenDropdownInput = ({
 
   const [amount, setAmount] = useState(0);
   const [inputValue, setInputValue] = useState("");
-  const chainId = account?.chainId;
   const handleInputChange = async (eventValue) => {
     if (eventValue === "") {
       return;
