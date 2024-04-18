@@ -3,7 +3,6 @@ import { EditOutlined } from "@ant-design/icons";
 import styles from "../../styles/zapInOut.module.scss";
 import { z } from "zod";
 import { optimism } from "thirdweb/chains";
-import { useActiveWalletChain } from "thirdweb/react";
 
 import { encodeFunctionData } from "viem";
 import { portfolioContractAddress, USDT } from "../../utils/oneInch";
@@ -19,7 +18,7 @@ import {
   ExclamationCircleOutlined,
   LoadingOutlined,
 } from "@ant-design/icons";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { useActiveAccount } from "thirdweb/react";
 import { useReadContract } from "thirdweb/react";
@@ -45,7 +44,6 @@ const depositSchema = z
     MAXIMUM_ZAP_IN_AMOUNT,
     `The deposit amount should be at most ${MAXIMUM_ZAP_IN_AMOUNT}`,
   );
-const fakeAllowanceAddressForBNB = "0x55d398326f99059fF775485246999027B3197955";
 
 const ZapInButton = () => {
   const account = useActiveAccount();
@@ -59,8 +57,8 @@ const ZapInButton = () => {
 
   const [apiDataReady, setApiDataReady] = useState(true);
   const [fetchingStatus, setFetchingStatus] = useState("");
-  const [approveReady, setApproveReady] = useState(true);
-  const [approveAmount, setApproveAmount] = useState(0);
+  const [, setApproveReady] = useState(true);
+  const [approveAmount] = useState(0);
   const [depositHash, setDepositHash] = useState(undefined);
   const [chosenToken, setChosenToken] = useState(
     "0x55d398326f99059fF775485246999027B3197955",

@@ -18,10 +18,10 @@ const ZapOutButton = () => {
   const normalWording = "Withdraw";
   const loadingWording = "Fetching the best route to withdraw";
   const [withdrawAmount, setWithdrawAmount] = useState(0);
-  const [userShares, setUserShares] = useState(0);
+  const [userShares] = useState(0);
   const [inputValue, setInputValue] = useState("");
-  const [approveReady, setApproveReady] = useState(true);
-  const [approveAmount, setApproveAmount] = useState(0);
+  const [, setApproveReady] = useState(true);
+  const [approveAmount] = useState(0);
   const [messageApi, contextHolder] = message.useMessage();
   const [chosenToken, setChosenToken] = useState(
     "0x55d398326f99059fF775485246999027B3197955",
