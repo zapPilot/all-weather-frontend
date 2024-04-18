@@ -37,15 +37,16 @@ const ClaimButton = () => {
       const claimableRewards = WEB3_CONTEXT.dataOfGetClaimableRewards;
       if (claimableRewards === undefined) return;
       setClaimableRewards(claimableRewards[0].claimableRewards[0].amount);
-      if (status === "success") {
-        messageApi.open({
-          type: "success",
-          content: `Successfully claimed! https://bscscan.com/tx/${data.hash}`,
-        });
-      }
+      // TODO(david): need to replace wagmi's status with thidweb's status
+      // if (status === "success") {
+      //   messageApi.open({
+      //     type: "success",
+      //     content: `Successfully claimed! https://bscscan.com/tx/${data.hash}`,
+      //   });
+      // }
     }
     fetchData();
-  }, [WEB3_CONTEXT, status]);
+  }, [WEB3_CONTEXT]);
 
   const handleClaim = async () => {
     await sendDiscordMessage(address, "starts claim()");
