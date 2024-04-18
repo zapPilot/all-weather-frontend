@@ -1,16 +1,9 @@
-import {
-  Button,
-  Space,
-  Modal,
-  message,
-  Spin,
-  ConfigProvider,
-  Radio,
-} from "antd";
+import { Button, Space, Modal, message, ConfigProvider } from "antd";
 import { EditOutlined } from "@ant-design/icons";
 import styles from "../../styles/zapInOut.module.scss";
 import { z } from "zod";
 import { optimism } from "thirdweb/chains";
+import { useActiveWalletChain } from "thirdweb/react";
 
 import { encodeFunctionData } from "viem";
 import { portfolioContractAddress, USDT } from "../../utils/oneInch";
@@ -75,7 +68,7 @@ const ZapInButton = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const [slippage, setSlippage] = useState(1);
   const [slippageModalOpen, setSlippageModalOpen] = useState(false);
-  const chainId = account?.chainId;
+  const chainId = useActiveWalletChain();
 
   const showModal = () => {
     setOpen(true);

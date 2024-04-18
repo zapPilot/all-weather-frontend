@@ -2,8 +2,9 @@ import { Button, Space, message, ConfigProvider } from "antd";
 import { portfolioContractAddress } from "../../utils/oneInch";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
+import { useActiveWalletChain } from "thirdweb/react";
 
 import { refreshTVLData } from "../../utils/contractInteractions";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
@@ -42,7 +43,7 @@ const ZapOutButton = () => {
   //   [address, portfolioContractAddress],
   //   // args: ["0x43cd745Bd5FbFc8CfD79ebC855f949abc79a1E0C", "0x78000b0605E81ea9df54b33f72ebC61B5F5c8077"],
   // );
-  const chainId = account.chainId;
+  const chainId = useActiveWalletChain();
 
   // useEffect(() => {
   //   if (approveAmountContractIsPending) return; // Don't proceed if loading
