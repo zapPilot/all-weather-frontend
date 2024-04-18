@@ -9,16 +9,17 @@ import { ethers } from "ethers";
 import TokenTable from "./components/TokenTable.jsx";
 import { chainIDToName } from "../../utils/contractInteractions.jsx";
 import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
-import { useChainId } from "@thirdweb-dev/react";
-import { useAddress } from "@thirdweb-dev/react";
+import { useActiveWalletChain } from "thirdweb/react";
+import { useActiveAccount } from "thirdweb/react";
 
 const BigNumber = require("bignumber.js");
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const APRPopOver = ({ mode }) => {
-  const address = useAddress();
-  const chainId = useChainId();
+  const account = useActiveAccount();
+  const address = account?.address;
+  const chainId = useActiveWalletChain();
 
   const [aprComposition, setAprComposition] = useState({});
   const [sumOfRewardsDenominatedInUSD, setSumOfRewardsDenominatedInUSD] =

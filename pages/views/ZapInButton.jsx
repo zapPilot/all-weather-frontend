@@ -1,16 +1,9 @@
-import {
-  Button,
-  Space,
-  Modal,
-  message,
-  Spin,
-  ConfigProvider,
-  Radio,
-} from "antd";
+import { Button, Space, Modal, message, ConfigProvider } from "antd";
 import { EditOutlined } from "@ant-design/icons";
 import styles from "../../styles/zapInOut.module.scss";
 import { z } from "zod";
-import { useChainId } from "@thirdweb-dev/react";
+import { optimism } from "thirdweb/chains";
+
 import { encodeFunctionData } from "viem";
 import { portfolioContractAddress, USDT } from "../../utils/oneInch";
 import {
@@ -25,15 +18,14 @@ import {
   ExclamationCircleOutlined,
   LoadingOutlined,
 } from "@ant-design/icons";
-import { useEffect, useState } from "react";
-import {
-  useContractWrite,
-  useContractRead,
-  useContract,
-} from "@thirdweb-dev/react";
+import { useState } from "react";
 
-import { useBalance } from "@thirdweb-dev/react";
-import { useAddress } from "@thirdweb-dev/react";
+import { useActiveAccount } from "thirdweb/react";
+import { useReadContract } from "thirdweb/react";
+import { balanceOf } from "thirdweb/extensions/erc20";
+import { getContract } from "thirdweb";
+import THIRDWEB_CLIENT from "../../utils/thirdweb";
+import { useActiveWalletChain } from "thirdweb/react";
 
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import NumericInput from "./NumberInput";
@@ -52,10 +44,10 @@ const depositSchema = z
     MAXIMUM_ZAP_IN_AMOUNT,
     `The deposit amount should be at most ${MAXIMUM_ZAP_IN_AMOUNT}`,
   );
-const fakeAllowanceAddressForBNB = "0x55d398326f99059fF775485246999027B3197955";
 
 const ZapInButton = () => {
-  const address = useAddress();
+  const account = useActiveAccount();
+  const address = account?.address;
   const [open, setOpen] = useState(false);
   const normalWording = "Deposit";
   const loadingWording = "Fetching the best route to deposit";
@@ -65,8 +57,8 @@ const ZapInButton = () => {
 
   const [apiDataReady, setApiDataReady] = useState(true);
   const [fetchingStatus, setFetchingStatus] = useState("");
-  const [approveReady, setApproveReady] = useState(true);
-  const [approveAmount, setApproveAmount] = useState(0);
+  const [, setApproveReady] = useState(true);
+  const [approveAmount] = useState(0);
   const [depositHash, setDepositHash] = useState(undefined);
   const [chosenToken, setChosenToken] = useState(
     "0x55d398326f99059fF775485246999027B3197955",
@@ -74,7 +66,7 @@ const ZapInButton = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const [slippage, setSlippage] = useState(1);
   const [slippageModalOpen, setSlippageModalOpen] = useState(false);
-  const chainId = useChainId();
+  const chainId = useActiveWalletChain();
 
   const showModal = () => {
     setOpen(true);
@@ -87,12 +79,21 @@ const ZapInButton = () => {
   const showSlippageModal = () => {
     setSlippageModalOpen(true);
   };
-  const { data: chosenTokenBalance } = useBalance(
-    chosenToken === "0x0000000000000000000000000000000000000000" ||
-      chosenToken === ""
-      ? undefined
-      : chosenToken,
-  );
+  const chain = useActiveWalletChain();
+  const contractOfChosenToken = getContract({
+    clien: THIRDWEB_CLIENT,
+    chain: optimism,
+    address: chosenToken,
+    // chosenToken === "0x0000000000000000000000000000000000000000" ||
+    // chosenToken === ""
+    // ? undefined
+    // : chosenToken
+    // optional ABI
+  });
+  const { data: chosenTokenBalance } = useReadContract({
+    contract: contractOfChosenToken,
+    method: balanceOf,
+  });
 
   const iconSize = { fontSize: "20px" };
   const defaultIcon = {
@@ -121,41 +122,30 @@ const ZapInButton = () => {
     }
   };
 
-  const {
-    data: approveData,
-    writeContract: approveWrite,
-    isPending: approveIsPending,
-  } = useContractWrite();
+  // TODO(david): replace wagmi's useContractWrite with thirdweb's v5 function
+  // const { contract } = useContract(
+  //   chosenToken === "0x0000000000000000000000000000000000000000"
+  //     ? fakeAllowanceAddressForBNB
+  //     : chosenToken,
+  //   permanentPortfolioJson.abi,
+  // );
+  // const {
+  //   data: approveAmountData,
+  //   error: approveAmountError,
+  //   isPending: approveAmounIsPending,
+  // } = useContractRead(contract, "allowance", [
+  //   address,
+  //   portfolioContractAddress,
+  // ]);
 
-  const {
-    data: depositData,
-    writeContract,
-    isPending: depositIsPending,
-  } = useContractWrite();
-
-  const { contract } = useContract(
-    chosenToken === "0x0000000000000000000000000000000000000000"
-      ? fakeAllowanceAddressForBNB
-      : chosenToken,
-    permanentPortfolioJson.abi,
-  );
-  const {
-    data: approveAmountData,
-    error: approveAmountError,
-    isPending: approveAmounIsPending,
-  } = useContractRead(contract, "allowance", [
-    address,
-    portfolioContractAddress,
-  ]);
-
-  useEffect(() => {
-    if (approveAmounIsPending) return; // Don't proceed if loading
-    if (approveAmountError) {
-      console.log("allowance Error", approveAmountError.message);
-      throw approveAmountError;
-    }
-    setApproveAmount(approveAmountData);
-  }, [approveAmounIsPending, approveAmountData, slippage, approveAmountError]);
+  // useEffect(() => {
+  //   if (approveAmounIsPending) return; // Don't proceed if loading
+  //   if (approveAmountError) {
+  //     console.log("allowance Error", approveAmountError.message);
+  //     throw approveAmountError;
+  //   }
+  //   setApproveAmount(approveAmountData);
+  // }, [approveAmountData, slippage, approveAmountError]);
 
   const handleInputChange = async (eventValue) => {
     if (eventValue === "") {

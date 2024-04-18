@@ -3,8 +3,12 @@ import { useState } from "react";
 import { selectBefore } from "../../utils/contractInteractions";
 import NumericInput from "./NumberInput";
 import { DollarOutlined } from "@ant-design/icons";
-import { useBalance } from "@thirdweb-dev/react";
-import { useChainId } from "@thirdweb-dev/react";
+import { useReadContract } from "thirdweb/react";
+import { balanceOf } from "thirdweb/extensions/erc20";
+import { getContract } from "thirdweb";
+import THIRDWEB_CLIENT from "../../utils/thirdweb";
+import { useActiveWalletChain } from "thirdweb/react";
+import { optimism } from "thirdweb/chains";
 
 const TokenDropdownInput = ({
   address,
@@ -13,15 +17,24 @@ const TokenDropdownInput = ({
   loadingWording,
 }) => {
   const [chosenToken, setChosenToken] = useState("");
-  const { data: chosenTokenBalance } = useBalance(
-    chosenToken === "0x0000000000000000000000000000000000000000" ||
-      chosenToken === ""
-      ? undefined
-      : chosenToken,
-  );
+  const chainId = useActiveWalletChain();
+  const contract = getContract({
+    clien: THIRDWEB_CLIENT,
+    chain: optimism,
+    address: chosenToken,
+    // chosenToken === "0x0000000000000000000000000000000000000000" ||
+    // chosenToken === ""
+    // ? undefined
+    // : chosenToken
+    // optional ABI
+  });
+  const { data: chosenTokenBalance } = useReadContract({
+    contract: contract,
+    method: balanceOf,
+  });
+
   const [amount, setAmount] = useState(0);
   const [inputValue, setInputValue] = useState("");
-  const chainId = useChainId();
   const handleInputChange = async (eventValue) => {
     if (eventValue === "") {
       return;

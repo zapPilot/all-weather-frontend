@@ -1,10 +1,11 @@
 import { useState } from "react";
 import BasePage from "../basePage";
-import { useAddress } from "@thirdweb-dev/react";
+import { useActiveAccount } from "thirdweb/react";
 import { CheckCircleIcon, XMarkIcon } from "@heroicons/react/20/solid";
 
 const EmailSubscription = () => {
-  const address = useAddress();
+  const account = useActiveAccount();
+  const address = account?.address;
   const [email, setEmail] = useState("");
   const [apiStatus, setApiStatus] = useState("");
 

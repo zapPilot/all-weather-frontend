@@ -14,14 +14,14 @@ import {
 } from "@ant-design/icons";
 import { useWindowHeight } from "../utils/chartUtils.js";
 import { investByAAWallet } from "../utils/etherspot.js";
-import { useAddress } from "@thirdweb-dev/react";
+import { useActiveAccount } from "thirdweb/react";
 
 import {
   getBasicColumnsForSuggestionsTable,
   getExpandableColumnsForSuggestionsTable,
   columnMapping,
 } from "../utils/tableExpansionUtils";
-import { useState, useEffect, ChangeEventHandler } from "react";
+import { useState, useEffect } from "react";
 import RebalanceChart from "./views/RebalanceChart";
 import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
 import LinkModal from "./views/components/LinkModal";
@@ -54,7 +54,8 @@ interface queriesObj {
 
 const Dashboard: NextPage = () => {
   const userApiKey = "placeholder";
-  const walletAddress = useAddress();
+  const account = useActiveAccount();
+  const walletAddress = account?.address;
 
   const windowHeight = useWindowHeight();
   const divBetterPools = {
