@@ -7,16 +7,16 @@ import {
   APX,
 } from "../../utils/oneInch";
 import { DollarOutlined } from "@ant-design/icons";
-import { useAddress } from "@thirdweb-dev/react";
+import { useActiveAccount } from "thirdweb/react";
 
 import { useState, useContext, useEffect } from "react";
-import { useContractWrite } from "@thirdweb-dev/react";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import { sendDiscordMessage } from "../../utils/discord";
 import TokenDropdown from "./components/TokenDropdowns.jsx";
 
 const ClaimButton = () => {
-  const address = useAddress();
+  const account = useActiveAccount();
+  const address = account?.address;
   const [messageApi, contextHolder] = message.useMessage();
   const [aggregatorDataReady, setAggregatorDataReady] = useState(true);
   const [claimableRewards, setClaimableRewards] = useState(0);
@@ -28,7 +28,6 @@ const ClaimButton = () => {
   const loadingWording = "Fetching the best route to dump these rewards...";
   const useDump = true;
 
-  const { data, writeContract, status } = useContractWrite();
   // Mocked data
   const WEB3_CONTEXT = {
     dataOfGetClaimableRewards: [{ claimableRewards: [{ amount: 0 }] }],
@@ -38,15 +37,16 @@ const ClaimButton = () => {
       const claimableRewards = WEB3_CONTEXT.dataOfGetClaimableRewards;
       if (claimableRewards === undefined) return;
       setClaimableRewards(claimableRewards[0].claimableRewards[0].amount);
-      if (status === "success") {
-        messageApi.open({
-          type: "success",
-          content: `Successfully claimed! https://bscscan.com/tx/${data.hash}`,
-        });
-      }
+      // TODO(david): need to replace wagmi's status with thidweb's status
+      // if (status === "success") {
+      //   messageApi.open({
+      //     type: "success",
+      //     content: `Successfully claimed! https://bscscan.com/tx/${data.hash}`,
+      //   });
+      // }
     }
     fetchData();
-  }, [WEB3_CONTEXT, status]);
+  }, [WEB3_CONTEXT]);
 
   const handleClaim = async () => {
     await sendDiscordMessage(address, "starts claim()");
@@ -62,26 +62,27 @@ const ClaimButton = () => {
     );
     setAggregatorDataReady(true);
     const claimData = _getClaimData(useDump, aggregatorDatas);
-    writeContract(
-      {
-        address: portfolioContractAddress,
-        abi: permanentPortfolioJson.abi,
-        functionName: "claim",
-        args: claimData,
-        from: address,
-      },
-      {
-        onError(error) {
-          messageApi.error({
-            content: error.shortMessage,
-            duration: 5,
-          });
-        },
-        onSuccess(data) {
-          sendDiscordMessage(address, "successfully claimed!");
-        },
-      },
-    );
+    // TODO(david): need to replace wagmi's useContractWrite with thirdweb's v5 function
+    // writeContract(
+    //   {
+    //     address: portfolioContractAddress,
+    //     abi: permanentPortfolioJson.abi,
+    //     functionName: "claim",
+    //     args: claimData,
+    //     from: address,
+    //   },
+    //   {
+    //     onError(error) {
+    //       messageApi.error({
+    //         content: error.shortMessage,
+    //         duration: 5,
+    //       });
+    //     },
+    //     onSuccess(data) {
+    //       sendDiscordMessage(address, "successfully claimed!");
+    //     },
+    //   },
+    // );
   };
 
   const _getAggregatorData = async (
