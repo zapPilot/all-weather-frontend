@@ -1,32 +1,11 @@
 import React, { ReactElement } from "react";
 import "@rainbow-me/rainbowkit/styles.css";
 import "../styles/index.scss";
-import {
-  ThirdwebProvider,
-  embeddedWallet,
-  metamaskWallet,
-  walletConnect,
-  rainbowWallet,
-  rabbyWallet,
-} from "@thirdweb-dev/react";
+import { ThirdwebProvider } from "@thirdweb-dev/react";
 import { render, RenderOptions } from "@testing-library/react";
 
 const MyApp = ({ children }: { children: React.ReactNode }) => (
-  <ThirdwebProvider
-    clientId={process.env.NEXT_PUBLIC_TEMPLATE_CLIENT_ID}
-    activeChain={"binance"}
-    supportedWallets={[
-      embeddedWallet({
-        auth: {
-          options: ["email", "google", "apple", "facebook"],
-        },
-      }),
-      rabbyWallet(),
-      rainbowWallet(),
-      metamaskWallet(),
-      walletConnect(),
-    ]}
-  >
+  <ThirdwebProvider>
     {children}
   </ThirdwebProvider>
 );

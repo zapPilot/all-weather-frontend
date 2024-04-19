@@ -1,18 +1,26 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
-import {
-  useConnectionStatus,
-  useWalletContext,
-  useAddress,
-} from "@thirdweb-dev/react";
 
 import { Layout, Affix } from "antd";
 import styles from "../styles/Home.module.css";
 import HeaderInner from "./views/Header";
 import "@flaticon/flaticon-uicons/css/brands/all.css";
 import "@flaticon/flaticon-uicons/css/regular/all.css";
-import { ConnectWallet } from "@thirdweb-dev/react";
+import { ConnectButton } from "thirdweb/react";
+import { createWallet, walletConnect, inAppWallet } from "thirdweb/wallets";
+import THIRDWEB_CLIENT from "../utils/thirdweb";
+
+const WALLETS = [
+  createWallet("io.metamask"),
+  createWallet("com.coinbase.wallet"),
+  walletConnect(),
+  inAppWallet({
+    auth: {
+      options: ["email", "google", "apple", "facebook"],
+    },
+  }),
+];
 
 const { Header, Footer, Content } = Layout;
 interface BasePageProps {
@@ -20,10 +28,6 @@ interface BasePageProps {
 }
 
 const BasePage: NextPage<BasePageProps> = ({ children }) => {
-  const connectionStatus = useConnectionStatus();
-  const { isAutoConnecting } = useWalletContext();
-  const address = useAddress();
-
   return (
     <div>
       <Head>
@@ -42,7 +46,12 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
             </div>
             <HeaderInner />
             <div className="connect-button">
-              <ConnectWallet theme={"light"} modalSize={"compact"} />
+              <ConnectButton
+                client={THIRDWEB_CLIENT}
+                wallets={WALLETS}
+                theme={"light"}
+                connectModal={{ size: "compact" }}
+              />
             </div>
           </Header>
         </Affix>

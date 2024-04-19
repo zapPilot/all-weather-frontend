@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import axios from "axios";
-import { useAddress } from "@thirdweb-dev/react";
+import { useActiveAccount } from "thirdweb/react";
 
 const Line = dynamic(
   () => import("@ant-design/plots").then((item) => item.Line),
@@ -12,7 +12,9 @@ const Line = dynamic(
 const HistoricalDataChart = () => {
   const [data, setData] = useState([]);
   const [userAddress, setUserAddress] = useState("");
-  const address = useAddress();
+  const account = useActiveAccount();
+  const address = account?.address;
+
   useEffect(() => {
     if (address) {
       setUserAddress(address.toLowerCase());
