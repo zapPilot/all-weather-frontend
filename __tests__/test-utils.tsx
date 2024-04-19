@@ -1,7 +1,7 @@
 import React, { ReactElement } from "react";
 import "@rainbow-me/rainbowkit/styles.css";
 import "../styles/index.scss";
-import { ThirdwebProvider } from "@thirdweb-dev/react";
+import { ThirdwebProvider } from "thirdweb/react";
 import { render, RenderOptions } from "@testing-library/react";
 
 const MyApp = ({ children }: { children: React.ReactNode }) => (
