@@ -8,6 +8,11 @@ import Image from "next/image";
 import { useWindowHeight } from "../../utils/chartUtils";
 import styles from "../../styles/Home.module.css";
 import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchDataStart, fetchDataSuccess, fetchDataFailure } from '../../lib/features/apiSlice';
+import axios from "axios";
+import { portfolioVaults } from "../../utils/oneInch";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ExampleUI() {
   const windowHeight = useWindowHeight();
@@ -30,6 +35,20 @@ export default function ExampleUI() {
   const handleMouseEnter = () => {
     setIsHover(true);
   };
+  const dispatch = useDispatch();
+  const { data, loading, error } = useSelector((state) => state.api);
+  useEffect(() => {
+    dispatch(fetchDataStart());
+    axios
+      .get(
+        `${API_URL}/addresses?addresses=${portfolioVaults.join(
+          "+",
+        )}&worksheet=bsc_contract`,
+      )
+      .then((response) => response.data)
+      .then((data) => dispatch(fetchDataSuccess(data)))
+      .catch((error) => dispatch(fetchDataFailure(error.toString())));
+  }, [dispatch]);
 
   const handleMouseLeave = () => {
     setIsHover(false);
