@@ -1,9 +1,7 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
-process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID =
-  "bee6af70ea57e6499462532060febf40";
-process.env.NEXT_PUBLIC_API_URL =
-  "https://portfolio-backend-e3gk6w67ba-uc.a.run.app";
+import { config } from "dotenv";
+
 export default defineConfig({
   plugins: [react()],
   test: {
@@ -11,6 +9,9 @@ export default defineConfig({
     environment: "jsdom",
     coverage: {
       provider: "v8",
+    },
+    env: {
+      ...config({ path: "./.env.local" }).parsed,
     },
   },
 });
