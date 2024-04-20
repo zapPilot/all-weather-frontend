@@ -12,8 +12,10 @@ import { createWallet, walletConnect, inAppWallet } from "thirdweb/wallets";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 
 const WALLETS = [
+  createWallet("io.rabby"),
+  createWallet("me.rainbow"),
   createWallet("io.metamask"),
-  createWallet("com.coinbase.wallet"),
+  createWallet("app.phantom"),
   walletConnect(),
   inAppWallet({
     auth: {
