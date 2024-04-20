@@ -72,7 +72,7 @@ describe("Dashboard Component", () => {
     });
   });
 
-  it("fetches protocol link data", async () => {
+  it("fetch protocol link data", async () => {
     // Mock the fetch API
     vi.mock("node-fetch", () => {
       return {
@@ -100,17 +100,47 @@ describe("Dashboard Component", () => {
 
     // Render the Dashboard component
     render(<Dashboard />);
-    await waitFor(() => {
-      try {
-        // Check if the component renders the data
-        const linkButtons = screen.getByRole('button', { name: "export" });
-        expect(linkButtons.length).toBeGreaterThan(0);
-        linkButtons.forEach((element) => {
-          expect(element).toBeInTheDocument();
-        });
-      } catch (error) {
-        console.error("An error occurred:", error);
-      }
+    try {
+      // Check if the component renders the data
+      const linkButtons = await screen.findAllByRole("button", { name: "export" }, { timeout: 5000 });
+      expect(linkButtons.length).toBeGreaterThan(0);
+      linkButtons.forEach((element) => {
+        expect(element).toBeInTheDocument();
+      });
+    } catch (error) {
+      console.error("An error occurred:", error);
+    }
+  });
+
+  it("fetch subscription data", async () => {
+    // Mock the fetch API
+    vi.mock("node-fetch", () => {
+      return {
+        default: vi.fn(() =>
+          Promise.resolve({
+            json: () =>
+              Promise.resolve({
+                data: [
+                  {
+                    "subscriptionStatus": false,
+                  }
+                ],
+              }),
+          })
+        ),
+      };
     });
+    // Render the Dashboard component
+    render(<Dashboard />);
+    try {
+      // Check if the component renders the data
+      const unlockButtons = await screen.findAllByRole('link', { name: "unlock Unlock" }, { timeout: 5000 });
+      expect(unlockButtons.length).toBeGreaterThan(0);
+      unlockButtons.forEach((element) => {
+        expect(element).toBeInTheDocument();
+      });
+    } catch (error) {
+      console.error("An error occurred:", error);
+    }
   });
 });

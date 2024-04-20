@@ -28,6 +28,10 @@ You can start editing the page by modifying `pages/index.tsx`. The page auto-upd
 1. install @vitest/coverage-v8 `yarn add @vitest/coverage-v8 --dev`
 2. Showing your Vitest Coverage : run `yarn coverage`.
 
+### Vitest UI
+1. Start the tests with UI: run `yarn test-ui`.
+2. Then you can visit the Vitest UI at [http://localhost:51204/__vitest__/](http://localhost:51204/__vitest__/).
+
 ## CI/CD
 
 1. [./github/workflows/lint.yaml]: before committing to Github, run `yarn format`. Otherwise, `prettier` would raise an exception
