@@ -5,9 +5,7 @@ import { ThirdwebProvider } from "thirdweb/react";
 import { render, RenderOptions } from "@testing-library/react";
 
 const MyApp = ({ children }: { children: React.ReactNode }) => (
-  <ThirdwebProvider>
-    {children}
-  </ThirdwebProvider>
+  <ThirdwebProvider>{children}</ThirdwebProvider>
 );
 
 const customRender = (

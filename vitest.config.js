@@ -12,6 +12,6 @@ export default defineConfig({
     },
     env: {
       ...config({ path: "./.env.local" }).parsed,
-    }
+    },
   },
 });

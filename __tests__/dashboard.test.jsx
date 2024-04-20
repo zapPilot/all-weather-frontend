@@ -26,33 +26,38 @@ vi.mock("next/navigation", async () => {
 describe("Dashboard Component", () => {
   it("displays multiple instances of data fetched from the API", async () => {
     // Mock the fetch API
-    vi.mock('node-fetch', () => {
+    vi.mock("node-fetch", () => {
       return {
-        default: vi.fn(() => Promise.resolve({
-          json: () => Promise.resolve({
-            data: [{
-              chain: "avalanche",
-              pool: {
-                meta: null,
-                name: "struct-finance",
-                poolID: "87e6c43a-bc0f-4a4f-adcd-1f5bff02402b",
-              },
-              symbol: "btc.b",
-              tvlUsd: "538161",
-              apr: {
-                predictions: {
-                  binnedConfidence: 2,
-                  predictedClass: "Down",
-                  predictedProbability: 65,
-                },
-                value: 9.53
-              }
-            }],
-            unique_query_tokens: ["btc"],
-            unexpandable: true,
-          })
-        }))
-      }
+        default: vi.fn(() =>
+          Promise.resolve({
+            json: () =>
+              Promise.resolve({
+                data: [
+                  {
+                    chain: "avalanche",
+                    pool: {
+                      meta: null,
+                      name: "struct-finance",
+                      poolID: "87e6c43a-bc0f-4a4f-adcd-1f5bff02402b",
+                    },
+                    symbol: "btc.b",
+                    tvlUsd: "538161",
+                    apr: {
+                      predictions: {
+                        binnedConfidence: 2,
+                        predictedClass: "Down",
+                        predictedProbability: 65,
+                      },
+                      value: 9.53,
+                    },
+                  },
+                ],
+                unique_query_tokens: ["btc"],
+                unexpandable: true,
+              }),
+          }),
+        ),
+      };
     });
     // Render the Dashboard component
     render(<Dashboard />);
@@ -63,7 +68,7 @@ describe("Dashboard Component", () => {
         const btcElements = screen.getAllByText(/.*btc.*/i);
         expect(btcElements.length).toBeGreaterThan(0);
 
-        btcElements.forEach(element => {
+        btcElements.forEach((element) => {
           expect(element).toBeInTheDocument();
         });
       } catch (error) {
@@ -82,18 +87,18 @@ describe("Dashboard Component", () => {
               Promise.resolve({
                 data: [
                   {
-                    "name": "Binance CEX",
-                    "url": "https://www.binance.com",
-                    "slug": "binance-cex"
+                    name: "Binance CEX",
+                    url: "https://www.binance.com",
+                    slug: "binance-cex",
                   },
                   {
-                    "name": "Lido",
-                    "url": "https://lido.fi/",
-                    "slug": "lido"
+                    name: "Lido",
+                    url: "https://lido.fi/",
+                    slug: "lido",
                   },
-                ]
+                ],
               }),
-          })
+          }),
         ),
       };
     });
@@ -102,7 +107,11 @@ describe("Dashboard Component", () => {
     render(<Dashboard />);
     try {
       // Check if the component renders the data
-      const linkButtons = await screen.findAllByRole("button", { name: "export" }, { timeout: 5000 });
+      const linkButtons = await screen.findAllByRole(
+        "button",
+        { name: "export" },
+        { timeout: 5000 },
+      );
       expect(linkButtons.length).toBeGreaterThan(0);
       linkButtons.forEach((element) => {
         expect(element).toBeInTheDocument();
@@ -122,11 +131,11 @@ describe("Dashboard Component", () => {
               Promise.resolve({
                 data: [
                   {
-                    "subscriptionStatus": false,
-                  }
+                    subscriptionStatus: false,
+                  },
                 ],
               }),
-          })
+          }),
         ),
       };
     });
@@ -134,7 +143,11 @@ describe("Dashboard Component", () => {
     render(<Dashboard />);
     try {
       // Check if the component renders the data
-      const unlockButtons = await screen.findAllByRole('link', { name: "unlock Unlock" }, { timeout: 5000 });
+      const unlockButtons = await screen.findAllByRole(
+        "link",
+        { name: "unlock Unlock" },
+        { timeout: 5000 },
+      );
       expect(unlockButtons.length).toBeGreaterThan(0);
       unlockButtons.forEach((element) => {
         expect(element).toBeInTheDocument();

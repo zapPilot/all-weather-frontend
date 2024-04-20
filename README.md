@@ -29,8 +29,9 @@ You can start editing the page by modifying `pages/index.tsx`. The page auto-upd
 2. Showing your Vitest Coverage : run `yarn coverage`.
 
 ### Vitest UI
+
 1. Start the tests with UI: run `yarn test-ui`.
-2. Then you can visit the Vitest UI at [http://localhost:51204/__vitest__/](http://localhost:51204/__vitest__/).
+2. Then you can visit the Vitest UI at [http://localhost:51204/**vitest**/](http://localhost:51204/__vitest__/).
 
 ## CI/CD
 
