@@ -15,4 +15,4 @@ const App = ({ Component, pageProps }: AppProps) => {
     </ThirdwebProvider>
   );
 };
-export default App
+export default App;
