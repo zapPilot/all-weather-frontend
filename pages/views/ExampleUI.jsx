@@ -8,6 +8,7 @@ import Image from "next/image";
 import { useWindowHeight } from "../../utils/chartUtils";
 import styles from "../../styles/Home.module.css";
 import { useDispatch, useSelector } from "react-redux";
+import { useActiveAccount } from "thirdweb/react";
 import {
   fetchDataStart,
   fetchDataSuccess,
@@ -26,14 +27,14 @@ export default function ExampleUI() {
   };
   const dispatch = useDispatch();
   const { data, loading } = useSelector((state) => state.api);
+  const account = useActiveAccount();
+  const walletAddress = account?.address;
+  console.log("walletAddress" + walletAddress);
   useEffect(() => {
     dispatch(fetchDataStart());
+    if (!walletAddress) return;
     axios
-      .get(
-        `${API_URL}/addresses?addresses=${portfolioVaults.join(
-          "+",
-        )}&worksheet=bsc_contract`,
-      )
+      .get(`${API_URL}/addresses?worksheet=${walletAddress}&refresh=true`)
       .then((response) => response.data)
       .then((data) => dispatch(fetchDataSuccess(data)))
       .catch((error) => dispatch(fetchDataFailure(error.toString())));
