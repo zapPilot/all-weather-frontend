@@ -9,6 +9,7 @@ import { useSelector } from "react-redux";
 const Strategy = () => {
   const windowWidth = useWindowWidth();
   const { data } = useSelector((state) => state.api);
+  console.log("strategy data", data.suggestions);
   return (
     <>
       <Button type="primary" block>
@@ -26,8 +27,8 @@ const Strategy = () => {
       </p>
       <RebalanceChart
         key="double_layer_pie_chart"
-        suggestions={data?.suggestions}
-        netWorth={data?.netWorth}
+        rebalanceSuggestions={data.suggestions}
+        netWorth={data?.net_worth}
         windowWidth={windowWidth}
         showCategory={true}
       />

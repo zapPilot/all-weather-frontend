@@ -35,7 +35,7 @@ const PortfolioMetaTab = () => {
     label: wording,
     key: index,
     children: _getChildrenTab(wording, {
-      netWorth: data?.netWorth,
+      netWorth: data?.net_worth,
       netWorthWithCustomLogic: data?.netWorthWithCustomLogic,
       suggestions: data?.suggestions,
       totalInterest: data?.totalInterest,

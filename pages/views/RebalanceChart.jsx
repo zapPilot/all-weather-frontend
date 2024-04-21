@@ -323,6 +323,9 @@ export default function BasicSunburst(props) {
     mode,
     portfolioComposition,
   } = props;
+  // const {
+
+  // } = props;
   const [data, setData] = useState(defaultData);
   const [apr, setAPR] = useState(0);
   const [finalValue, setFinalValue] = useState("Your Portfolio Chart");
@@ -369,8 +372,16 @@ export default function BasicSunburst(props) {
         setData(chartData);
       }
     }
+    console.log(
+      "rebalanceSuggestions",
+      rebalanceSuggestions,
+      netWorth,
+      showCategory,
+      mode,
+      portfolioComposition,
+    );
     fetchData();
-  }, [portfolioComposition]);
+  }, [props]);
   return (
     <div style={divSunBurst}>
       <Sunburst

@@ -32,12 +32,13 @@ const RebalancerWidget = () => {
     );
   };
   const getRebalanceDom = () => {
+    console.log("getRebalanceDom", data, data.net_worth);
     return (
       <>
         <div id="zapSection">
           <RebalanceChart
-            rebalanceSuggestions={data?.suggestions}
-            netWorth={!data?.netWorth ? 0 : data?.netWorth.toFixed(2)}
+            rebalanceSuggestions={data.suggestions}
+            netWorth={data.net_worth}
             windowWidth={windowWidth}
             showCategory={false}
           />
@@ -45,7 +46,7 @@ const RebalancerWidget = () => {
             <div>
               <h3>
                 {/* TVL: ${data?.netWorthWithCustomLogic}{" "} */}
-                TVL: ${data?.netWorth}{" "}
+                TVL: ${data?.net_worth}{" "}
                 <a
                   href="https://debank.com/profile/0x9ad45d46e2a2ca19bbb5d5a50df319225ad60e0d"
                   target="_blank"
@@ -61,8 +62,8 @@ const RebalancerWidget = () => {
             </div>
             <div>
               <UserBalanceInfo
-                netWorth={data?.netWorth}
-                netWorthWithCustomLogic={data?.netWorth}
+                netWorth={data?.net_worth}
+                netWorthWithCustomLogic={data?.net_worth}
                 portfolioApr={data?.portfolioApr}
                 claimableRewards={data?.claimableRewards}
               />
