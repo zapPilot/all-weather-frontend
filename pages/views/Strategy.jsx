@@ -4,10 +4,11 @@ import React from "react";
 import { Button } from "antd";
 import RebalanceChart from "./RebalanceChart";
 import { useWindowWidth } from "../../utils/chartUtils";
+import { useSelector } from "react-redux";
 
-const Strategy = ({ web3Context }) => {
+const Strategy = () => {
   const windowWidth = useWindowWidth();
-  const { rebalanceSuggestions, netWorth } = web3Context || {};
+  const { data } = useSelector((state) => state.api);
   return (
     <>
       <Button type="primary" block>
@@ -25,8 +26,8 @@ const Strategy = ({ web3Context }) => {
       </p>
       <RebalanceChart
         key="double_layer_pie_chart"
-        rebalanceSuggestions={rebalanceSuggestions}
-        netWorth={netWorth}
+        suggestions={data?.suggestions}
+        netWorth={data?.netWorth}
         windowWidth={windowWidth}
         showCategory={true}
       />

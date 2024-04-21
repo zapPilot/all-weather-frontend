@@ -15,7 +15,6 @@ import {
   fetchDataFailure,
 } from "../../lib/features/apiSlice";
 import axios from "axios";
-import { portfolioVaults } from "../../utils/oneInch";
 import { Spin } from "antd";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -26,10 +25,10 @@ export default function ExampleUI() {
     setIsHover(true);
   };
   const dispatch = useDispatch();
-  const { data, loading } = useSelector((state) => state.api);
+  const { data, loading, error } = useSelector((state) => state.api);
+  console.log("redux data", data), loading, error;
   const account = useActiveAccount();
   const walletAddress = account?.address;
-  console.log("walletAddress" + walletAddress);
   useEffect(() => {
     dispatch(fetchDataStart());
     if (!walletAddress) return;
@@ -38,7 +37,7 @@ export default function ExampleUI() {
       .then((response) => response.data)
       .then((data) => dispatch(fetchDataSuccess(data)))
       .catch((error) => dispatch(fetchDataFailure(error.toString())));
-  }, [dispatch]);
+  }, [account]);
 
   const handleMouseLeave = () => {
     setIsHover(false);

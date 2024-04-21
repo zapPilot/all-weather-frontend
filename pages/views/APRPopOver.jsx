@@ -8,13 +8,11 @@ import ClaimButton from "./ClaimButton";
 import { ethers } from "ethers";
 import TokenTable from "./components/TokenTable.jsx";
 import { chainIDToName } from "../../utils/contractInteractions.jsx";
-import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
 import { useActiveWalletChain } from "thirdweb/react";
 import { useActiveAccount } from "thirdweb/react";
+import { useSelector } from "react-redux";
 
 const BigNumber = require("bignumber.js");
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const APRPopOver = ({ mode }) => {
   const account = useActiveAccount();
@@ -24,28 +22,15 @@ const APRPopOver = ({ mode }) => {
   const [aprComposition, setAprComposition] = useState({});
   const [sumOfRewardsDenominatedInUSD, setSumOfRewardsDenominatedInUSD] =
     useState(0);
-  const {
-    netWorth,
-    netWorthWithCustomLogic,
-    rebalanceSuggestions,
-    totalInterest,
-    portfolioApr,
-    sharpeRatio,
-    topNLowestAprPools,
-    topNPoolConsistOfSameLpToken,
-    topNStableCoins,
-    aggregatedPositions,
-    ROI,
-    maxDrawdown,
-    claimableRewards,
-  } = useRebalanceSuggestions();
+  const { data } = useSelector((state) => state.api);
   // web3_context is just a placeholder for now, will be deprecated soon
   const WEB3_CONTEXT = { debankContext: {} };
   useEffect(() => {
-    async function fetchData() {
-      const claimableRewardsWithChainInfo =
-        addChainInfoToToken(claimableRewards);
-      setClaimableRewards(claimableRewardsWithChainInfo);
+    function fetchData() {
+      if (!data) return;
+      const claimableRewardsWithChainInfo = addChainInfoToToken(
+        data.claimableRewards,
+      );
       if (claimableRewardsWithChainInfo === undefined) return;
       const sumOfRewardsDenominatedInUSD_ =
         claimableRewardsWithChainInfo.reduce((total, reward) => {
@@ -72,18 +57,8 @@ const APRPopOver = ({ mode }) => {
       }
       return claimableRewards;
     }
-
-    async function fetchAprComposition() {
-      fetch(
-        `${API_URL}/apr_composition?portfolio_name=stablecoin_vault&worksheet=bsc_contract`,
-      )
-        .then((response) => response.json())
-        .then((result) => setAprComposition(result))
-        .catch((error) => console.error("Error of apr_composition:", error));
-    }
     fetchData();
-    fetchAprComposition();
-  }, [claimableRewards]);
+  }, [data]);
 
   function renderContent() {
     if (!WEB3_CONTEXT || Object.keys(aprComposition).length === 0)

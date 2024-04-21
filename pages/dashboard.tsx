@@ -334,23 +334,26 @@ const Dashboard: NextPage = () => {
       }
     };
     const fetchSubscriptionStatus = async () => {
-      try {
-        const response = await axios.get(
+      if (!walletAddress) return;
+      await axios
+        .get(
           `${process.env.NEXT_PUBLIC_SDK_API_URL}/subscriptions?address=${walletAddress}`,
-        );
-        setSubscriptionStatus(response.data.subscriptionStatus);
-      } catch (error) {
-        console.error(
-          "An error occurred while fetching subscription status:",
-          error,
-        );
-        throw error;
-      }
+        )
+        .then((response) => {
+          setSubscriptionStatus(response.data.subscriptionStatus);
+        })
+        .catch((error) => {
+          console.error(
+            "An error occurred while fetching subscription status:",
+            error,
+          );
+          throw error;
+        });
     };
 
     fetchProtocolList();
     fetchSubscriptionStatus();
-  }, []);
+  }, [account]);
 
   const expandedRowRender = (records: Pools) => {
     const columns = [
@@ -853,7 +856,7 @@ const Dashboard: NextPage = () => {
           </div>
         </div>
         <RebalanceChart
-          rebalanceSuggestions={[]}
+          suggestions={[]}
           netWorth={100}
           windowWidth={200}
           showCategory={false}
@@ -1489,7 +1492,7 @@ const Dashboard: NextPage = () => {
         </>
       </div>
       <RebalanceChart
-        rebalanceSuggestions={[]}
+        suggestions={[]}
         netWorth={100}
         windowWidth={200}
         showCategory={true}

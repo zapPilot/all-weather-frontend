@@ -7,31 +7,17 @@ import ZapOutButton from "./ZapOutButton";
 import UserBalanceInfo from "./UserBalanceInfo";
 import { useWindowWidth } from "../../utils/chartUtils";
 import { useEffect, useState } from "react";
-import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
+import { useSelector } from "react-redux";
 
 const RebalancerWidget = () => {
   const windowWidth = useWindowWidth();
+  const { data } = useSelector((state) => state.api);
   const divSpin = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     height: "100px",
   };
-  const {
-    netWorth,
-    netWorthWithCustomLogic,
-    rebalanceSuggestions,
-    totalInterest,
-    portfolioApr,
-    sharpeRatio,
-    topNLowestAprPools,
-    topNPoolConsistOfSameLpToken,
-    topNStableCoins,
-    aggregatedPositions,
-    ROI,
-    maxDrawdown,
-    claimableRewards,
-  } = useRebalanceSuggestions();
   const getLoadingDom = () => {
     return (
       <>
@@ -45,38 +31,21 @@ const RebalancerWidget = () => {
       </>
     );
   };
-  const getRebalanceDom = ({
-    netWorth,
-    netWorthWithCustomLogic,
-    rebalanceSuggestions,
-    totalInterest,
-    portfolioApr,
-    sharpeRatio,
-    topNLowestAprPools,
-    topNPoolConsistOfSameLpToken,
-    topNStableCoins,
-    aggregatedPositions,
-    ROI,
-    maxDrawdown,
-    claimableRewards,
-  }) => {
+  const getRebalanceDom = () => {
     return (
       <>
         <div id="zapSection">
           <RebalanceChart
-            rebalanceSuggestions={rebalanceSuggestions}
-            netWorth={
-              process.env.NEXT_PUBLIC_DAVID_PORTFOLIO !== "true"
-                ? (netWorth + 25873).toFixed(2)
-                : netWorth.toFixed(2)
-            }
+            rebalanceSuggestions={data?.suggestions}
+            netWorth={!data?.netWorth ? 0 : data?.netWorth.toFixed(2)}
             windowWidth={windowWidth}
             showCategory={false}
           />
           <div>
             <div>
               <h3>
-                TVL: ${netWorthWithCustomLogic}{" "}
+                {/* TVL: ${data?.netWorthWithCustomLogic}{" "} */}
+                TVL: ${data?.netWorth}{" "}
                 <a
                   href="https://debank.com/profile/0x9ad45d46e2a2ca19bbb5d5a50df319225ad60e0d"
                   target="_blank"
@@ -85,16 +54,17 @@ const RebalancerWidget = () => {
                 </a>
               </h3>
               <h3>
-                Reward APR: {portfolioApr ? portfolioApr.toFixed(2) : 0}%{" "}
+                Reward APR:{" "}
+                {data?.portfolioApr ? data?.portfolioApr.toFixed(2) : 0}%{" "}
                 {/* <APRPopOver mode="percentage" /> */}
               </h3>
             </div>
             <div>
               <UserBalanceInfo
-                netWorth={netWorth}
-                netWorthWithCustomLogic={netWorthWithCustomLogic}
-                portfolioApr={portfolioApr}
-                claimableRewards={claimableRewards}
+                netWorth={data?.netWorth}
+                netWorthWithCustomLogic={data?.netWorth}
+                portfolioApr={data?.portfolioApr}
+                claimableRewards={data?.claimableRewards}
               />
             </div>
             <div>
@@ -110,30 +80,12 @@ const RebalancerWidget = () => {
   const [renderContent, setRenderContent] = useState(null);
 
   useEffect(() => {
-    console.log("netWorth", netWorth);
-    if (netWorth !== 0) {
-      console.log("in if");
-      setRenderContent(
-        getRebalanceDom({
-          netWorth,
-          netWorthWithCustomLogic,
-          rebalanceSuggestions,
-          totalInterest,
-          portfolioApr,
-          sharpeRatio,
-          topNLowestAprPools,
-          topNPoolConsistOfSameLpToken,
-          topNStableCoins,
-          aggregatedPositions,
-          ROI,
-          maxDrawdown,
-          claimableRewards,
-        }),
-      );
+    if (data) {
+      setRenderContent(getRebalanceDom());
     } else {
       setRenderContent(getLoadingDom());
     }
-  }, [netWorth]);
+  }, [data]);
 
   return renderContent;
 };
