@@ -813,12 +813,7 @@ const Dashboard: NextPage = () => {
     }
     setPortfolioComposition(portfolioComposition);
   };
-  const handleScroll = (id) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
-  };
+
   function _getOrCreate(obj: { [key: string]: any }, key: string) {
     if (!obj[key]) {
       obj[key] = {};
@@ -876,19 +871,11 @@ const Dashboard: NextPage = () => {
         <>
           {Object.values(queriesForAllWeather).map((categoryMetaData) => {
             return (
-              <div
-                key={categoryMetaData.category}
-                id={categoryMetaData.category}
-              >
+              <div key={categoryMetaData.category}>
                 {" "}
                 {/* Make sure to provide a unique key for each item */}
                 <h2 className="my-2 text-xl font-bold">
-                  <a
-                    href={`#${categoryMetaData.category}`}
-                    onClick={() => handleScroll(categoryMetaData.category)}
-                  >
-                    {categoryMetaData.wording}
-                  </a>
+                  {categoryMetaData.wording}
                 </h2>
                 {categoryMetaData.state === null ? (
                   <div
