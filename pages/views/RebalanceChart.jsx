@@ -154,28 +154,31 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
     };
   }
   return {
-    children: rebalanceSuggestions.map((categoryObj, idx) => ({
-      name: `${categoryObj.category}: ${getPercentage(
-        categoryObj.sum_of_this_category_in_the_portfolio,
-        netWorth,
-      )}%`,
-      hex: colorList[idx],
-      children: categoryObj.suggestions_for_positions
-        .sort((a, b) => b.balanceUSD - a.balanceUSD)
-        .map((subCategoryObj) => {
-          return {
-            name:
-              subCategoryObj.symbol.split(":")[1] +
-              " " +
-              uniqueIdToMetaDataMapping[subCategoryObj.symbol].symbol +
-              " " +
-              getPercentage(subCategoryObj.balanceUSD, netWorth) +
-              "%",
-            value: subCategoryObj.balanceUSD,
-            hex: colorList[idx],
-          };
-        }),
-    })),
+    children: rebalanceSuggestions.map((categoryObj, idx) => {
+      return {
+        name: `${categoryObj.category}: ${getPercentage(
+          categoryObj.sum_of_this_category_in_the_portfolio,
+          netWorth,
+        )}%`,
+        hex: colorList[idx],
+        children: categoryObj.suggestions_for_positions
+          .slice()
+          .sort((a, b) => b.balanceUSD - a.balanceUSD)
+          .map((subCategoryObj) => {
+            return {
+              name:
+                subCategoryObj.symbol.split(":")[1] +
+                " " +
+                uniqueIdToMetaDataMapping[subCategoryObj.symbol].symbol +
+                " " +
+                getPercentage(subCategoryObj.balanceUSD, netWorth) +
+                "%",
+              value: subCategoryObj.balanceUSD,
+              hex: colorList[idx],
+            };
+          }),
+      };
+    }),
   };
 }
 

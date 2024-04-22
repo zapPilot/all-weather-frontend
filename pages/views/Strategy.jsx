@@ -9,7 +9,6 @@ import { useSelector } from "react-redux";
 const Strategy = () => {
   const windowWidth = useWindowWidth();
   const { data } = useSelector((state) => state.api);
-  console.log("strategy data", data.suggestions);
   return (
     <>
       <Button type="primary" block>
