@@ -1,5 +1,5 @@
 // import suggestions from "./suggestions.json";
-import { Spin, Row, Col } from "antd";
+import { Spin } from "antd";
 import { LinkOutlined } from "@ant-design/icons";
 import RebalanceChart from "./RebalanceChart";
 import ZapInButton from "./ZapInButton";
