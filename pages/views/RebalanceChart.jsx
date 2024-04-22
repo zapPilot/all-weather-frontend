@@ -229,7 +229,7 @@ function convertPortfolioStrategyToChartData(
         if (mode === "portfolioStrategy") {
           const poolID = positionObj.poolID;
           const positionObjMetadata = poolsMetadata[poolID];
-          name = `${poolName}:${positionObjMetadata.metadata.symbol}(${weightedValue}%)`;
+          name = `${poolName}:${positionObjMetadata?.metadata?.symbol}(${weightedValue}%)`;
         } else {
           name = `${poolName}:${positionObj.tokens.join(
             "-",
