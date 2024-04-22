@@ -351,8 +351,7 @@ export default function BasicSunburst(props) {
         );
         setData(chartData);
         setAPR(calculatePortfolioAPR(sortedPortfolioComposition));
-      } 
-      else if (mode === "portfolioStrategy") {
+      } else if (mode === "portfolioStrategy") {
         const portfolioHelper = new AllWeatherPortfolio();
         await portfolioHelper.initialize();
         const chartData = convertPortfolioStrategyToChartData(
@@ -367,8 +366,7 @@ export default function BasicSunburst(props) {
             portfolioHelper.poolsMetadata,
           ),
         );
-      } 
-      else {
+      } else {
         if (!rebalanceSuggestions) return;
         // set showCategory = true, to show its category. For instance, long_term_bond
         const chartData = createChartData(
