@@ -26,7 +26,6 @@ export default function ExampleUI() {
   };
   const dispatch = useDispatch();
   const { data, loading, error } = useSelector((state) => state.api);
-  console.log("redux data", data), loading, error;
   const account = useActiveAccount();
   const walletAddress = account?.address;
   useEffect(() => {

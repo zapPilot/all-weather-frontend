@@ -375,14 +375,6 @@ export default function BasicSunburst(props) {
         setData(chartData);
       }
     }
-    console.log(
-      "rebalanceSuggestions",
-      rebalanceSuggestions,
-      netWorth,
-      showCategory,
-      mode,
-      portfolioComposition,
-    );
     fetchData();
   }, [props]);
   return (

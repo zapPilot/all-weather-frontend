@@ -2,20 +2,11 @@ import React, { useState, useEffect } from "react";
 import { ConfigProvider, Tabs } from "antd";
 import Fees from "./Fees.jsx";
 import Performance from "./Performance.jsx";
-import Assets from "./Assets.jsx";
 import Strategy from "./Strategy.jsx";
 import Risks from "./Risks.jsx";
-import Maintenance from "./Maintenance.jsx";
 import { useSelector } from "react-redux";
 
-const TabWordings = [
-  "Performance",
-  "Assets",
-  "Fees",
-  "Strategy",
-  "Risks",
-  "Maintenance",
-];
+const TabWordings = ["Performance", "Fees", "Strategy", "Risks"];
 
 const PortfolioMetaTab = () => {
   const [windowWidth, setWindowWidth] = useState(0);
@@ -104,26 +95,6 @@ const _getChildrenTab = (
         maxDrawdown={maxDrawdown}
       />
     );
-  } else if (wording === "Assets") {
-    return (
-      <Assets
-        web3Context={{
-          netWorth,
-          netWorthWithCustomLogic,
-          suggestions,
-          totalInterest,
-          portfolioApr,
-          sharpeRatio,
-          topNLowestAprPools,
-          topNPoolConsistOfSameLpToken,
-          topNStableCoins,
-          aggregatedPositions,
-          ROI,
-          maxDrawdown,
-          claimableRewards,
-        }}
-      />
-    );
   } else if (wording === "Fees") {
     return <Fees />;
   } else if (wording === "Strategy") {
@@ -148,8 +119,6 @@ const _getChildrenTab = (
     );
   } else if (wording === "Risks") {
     return <Risks />;
-  } else if (wording === "Maintenance") {
-    return <Maintenance />;
   }
 };
 

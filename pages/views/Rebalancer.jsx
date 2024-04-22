@@ -64,8 +64,8 @@ const RebalancerWidget = () => {
               <UserBalanceInfo
                 netWorth={data?.net_worth}
                 netWorthWithCustomLogic={data?.net_worth}
-                portfolioApr={data?.portfolioApr}
-                claimableRewards={data?.claimableRewards}
+                portfolioApr={data?.portfolio_apr}
+                claimableRewards={data?.claimable_rewards}
               />
             </div>
             <div>
