@@ -26,7 +26,7 @@ const Strategy = () => {
       </p>
       <RebalanceChart
         key="double_layer_pie_chart"
-        rebalanceSuggestions={data.suggestions}
+        rebalanceSuggestions={data?.suggestions}
         netWorth={data?.net_worth}
         windowWidth={windowWidth}
         showCategory={true}
