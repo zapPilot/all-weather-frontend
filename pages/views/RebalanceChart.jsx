@@ -114,6 +114,7 @@ const colorList = [
   "#ECF0F1",
 ];
 function createChartData(rebalanceSuggestions, netWorth, showCategory) {
+  if (!rebalanceSuggestions || rebalanceSuggestions.length === 0) return;
   let aggregatedBalanceDict = {};
   let uniqueIdToMetaDataMapping = {};
   rebalanceSuggestions.forEach((item) => {
@@ -154,28 +155,31 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
     };
   }
   return {
-    children: rebalanceSuggestions.map((categoryObj, idx) => ({
-      name: `${categoryObj.category}: ${getPercentage(
-        categoryObj.sum_of_this_category_in_the_portfolio,
-        netWorth,
-      )}%`,
-      hex: colorList[idx],
-      children: categoryObj.suggestions_for_positions
-        .sort((a, b) => b.balanceUSD - a.balanceUSD)
-        .map((subCategoryObj) => {
-          return {
-            name:
-              subCategoryObj.symbol.split(":")[1] +
-              " " +
-              uniqueIdToMetaDataMapping[subCategoryObj.symbol].symbol +
-              " " +
-              getPercentage(subCategoryObj.balanceUSD, netWorth) +
-              "%",
-            value: subCategoryObj.balanceUSD,
-            hex: colorList[idx],
-          };
-        }),
-    })),
+    children: rebalanceSuggestions.map((categoryObj, idx) => {
+      return {
+        name: `${categoryObj.category}: ${getPercentage(
+          categoryObj.sum_of_this_category_in_the_portfolio,
+          netWorth,
+        )}%`,
+        hex: colorList[idx],
+        children: categoryObj.suggestions_for_positions
+          .slice()
+          .sort((a, b) => b.balanceUSD - a.balanceUSD)
+          .map((subCategoryObj) => {
+            return {
+              name:
+                subCategoryObj.symbol.split(":")[1] +
+                " " +
+                uniqueIdToMetaDataMapping[subCategoryObj.symbol].symbol +
+                " " +
+                getPercentage(subCategoryObj.balanceUSD, netWorth) +
+                "%",
+              value: subCategoryObj.balanceUSD,
+              hex: colorList[idx],
+            };
+          }),
+      };
+    }),
   };
 }
 
@@ -323,6 +327,9 @@ export default function BasicSunburst(props) {
     mode,
     portfolioComposition,
   } = props;
+  // const {
+
+  // } = props;
   const [data, setData] = useState(defaultData);
   const [apr, setAPR] = useState(0);
   const [finalValue, setFinalValue] = useState("Your Portfolio Chart");
@@ -360,6 +367,7 @@ export default function BasicSunburst(props) {
           ),
         );
       } else {
+        if (!rebalanceSuggestions) return;
         // set showCategory = true, to show its category. For instance, long_term_bond
         const chartData = createChartData(
           rebalanceSuggestions,
@@ -370,7 +378,7 @@ export default function BasicSunburst(props) {
       }
     }
     fetchData();
-  }, [portfolioComposition]);
+  }, [props]);
   return (
     <div style={divSunBurst}>
       <Sunburst

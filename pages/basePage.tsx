@@ -50,6 +50,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
             <div className="connect-button">
               <ConnectButton
                 client={THIRDWEB_CLIENT}
+                autoConnect={true}
                 wallets={WALLETS}
                 theme={"light"}
                 connectModal={{ size: "compact" }}

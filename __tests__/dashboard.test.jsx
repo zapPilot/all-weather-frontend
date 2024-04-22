@@ -1,4 +1,4 @@
-import { vi, expect, describe, it, test } from "vitest";
+import { vi, expect, describe, it } from "vitest";
 import { render, screen } from "./test-utils";
 import Dashboard from "../pages/dashboard";
 import { waitFor } from "@testing-library/dom";

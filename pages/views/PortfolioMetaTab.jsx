@@ -1,39 +1,16 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ConfigProvider, Tabs } from "antd";
 import Fees from "./Fees.jsx";
 import Performance from "./Performance.jsx";
-import Assets from "./Assets.jsx";
 import Strategy from "./Strategy.jsx";
 import Risks from "./Risks.jsx";
-import Maintenance from "./Maintenance.jsx";
-import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
+import { useSelector } from "react-redux";
 
-const TabWordings = [
-  "Performance",
-  "Assets",
-  "Fees",
-  "Strategy",
-  "Risks",
-  "Maintenance",
-];
+const TabWordings = ["Performance", "Fees", "Strategy", "Risks"];
 
 const PortfolioMetaTab = () => {
   const [windowWidth, setWindowWidth] = useState(0);
-  const {
-    netWorth,
-    netWorthWithCustomLogic,
-    rebalanceSuggestions,
-    totalInterest,
-    portfolioApr,
-    sharpeRatio,
-    topNLowestAprPools,
-    topNPoolConsistOfSameLpToken,
-    topNStableCoins,
-    aggregatedPositions,
-    ROI,
-    maxDrawdown,
-    claimableRewards,
-  } = useRebalanceSuggestions();
+  const { data } = useSelector((state) => state.api);
 
   useEffect(() => {
     const updateWindowWidth = () => {
@@ -49,19 +26,19 @@ const PortfolioMetaTab = () => {
     label: wording,
     key: index,
     children: _getChildrenTab(wording, {
-      netWorth,
-      netWorthWithCustomLogic,
-      rebalanceSuggestions,
-      totalInterest,
-      portfolioApr,
-      sharpeRatio,
-      topNLowestAprPools,
-      topNPoolConsistOfSameLpToken,
-      topNStableCoins,
-      aggregatedPositions,
-      ROI,
-      maxDrawdown,
-      claimableRewards,
+      netWorth: data?.net_worth,
+      netWorthWithCustomLogic: data?.netWorthWithCustomLogic,
+      suggestions: data?.suggestions,
+      totalInterest: data?.totalInterest,
+      portfolioApr: data?.portfolioApr,
+      sharpeRatio: data?.sharpeRatio,
+      topNLowestAprPools: data?.topNLowestAprPools,
+      topNPoolConsistOfSameLpToken: data?.topNPoolConsistOfSameLpToken,
+      topNStableCoins: data?.topNStableCoins,
+      aggregatedPositions: data?.aggregatedPositions,
+      ROI: data?.ROI,
+      maxDrawdown: data?.maxDrawdown,
+      claimableRewards: data?.claimableRewards,
     }),
   }));
 
@@ -96,7 +73,7 @@ const _getChildrenTab = (
   {
     netWorth,
     netWorthWithCustomLogic,
-    rebalanceSuggestions,
+    suggestions,
     totalInterest,
     portfolioApr,
     sharpeRatio,
@@ -118,26 +95,6 @@ const _getChildrenTab = (
         maxDrawdown={maxDrawdown}
       />
     );
-  } else if (wording === "Assets") {
-    return (
-      <Assets
-        web3Context={{
-          netWorth,
-          netWorthWithCustomLogic,
-          rebalanceSuggestions,
-          totalInterest,
-          portfolioApr,
-          sharpeRatio,
-          topNLowestAprPools,
-          topNPoolConsistOfSameLpToken,
-          topNStableCoins,
-          aggregatedPositions,
-          ROI,
-          maxDrawdown,
-          claimableRewards,
-        }}
-      />
-    );
   } else if (wording === "Fees") {
     return <Fees />;
   } else if (wording === "Strategy") {
@@ -146,7 +103,7 @@ const _getChildrenTab = (
         web3Context={{
           netWorth,
           netWorthWithCustomLogic,
-          rebalanceSuggestions,
+          suggestions,
           totalInterest,
           portfolioApr,
           sharpeRatio,
@@ -162,8 +119,6 @@ const _getChildrenTab = (
     );
   } else if (wording === "Risks") {
     return <Risks />;
-  } else if (wording === "Maintenance") {
-    return <Maintenance />;
   }
 };
 
