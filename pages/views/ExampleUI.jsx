@@ -1,5 +1,5 @@
 import React from "react";
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState } from "react";
 import RebalancerWidget from "./Rebalancer";
 import PortfolioMetaTab from "./PortfolioMetaTab";
 import { Row, Col, ConfigProvider, Button } from "antd";
@@ -7,29 +7,36 @@ import Link from "next/link";
 import Image from "next/image";
 import { useWindowHeight } from "../../utils/chartUtils";
 import styles from "../../styles/Home.module.css";
-import useRebalanceSuggestions from "../../utils/rebalanceSuggestions";
+import { useDispatch, useSelector } from "react-redux";
+import { useActiveAccount } from "thirdweb/react";
+import {
+  fetchDataStart,
+  fetchDataSuccess,
+  fetchDataFailure,
+} from "../../lib/features/apiSlice";
+import axios from "axios";
+import { Spin } from "antd";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ExampleUI() {
   const windowHeight = useWindowHeight();
   const [isHover, setIsHover] = useState(false);
-  const {
-    netWorth,
-    netWorthWithCustomLogic,
-    rebalanceSuggestions,
-    totalInterest,
-    portfolioApr,
-    sharpeRatio,
-    topNLowestAprPools,
-    topNPoolConsistOfSameLpToken,
-    topNStableCoins,
-    aggregatedPositions,
-    ROI,
-    maxDrawdown,
-    claimableRewards,
-  } = useRebalanceSuggestions();
   const handleMouseEnter = () => {
     setIsHover(true);
   };
+  const dispatch = useDispatch();
+  const { data, loading, error } = useSelector((state) => state.api);
+  const account = useActiveAccount();
+  const walletAddress = account?.address;
+  useEffect(() => {
+    dispatch(fetchDataStart());
+    if (!walletAddress) return;
+    axios
+      .get(`${API_URL}/addresses?worksheet=${walletAddress}&refresh=true`)
+      .then((response) => response.data)
+      .then((data) => dispatch(fetchDataSuccess(data)))
+      .catch((error) => dispatch(fetchDataFailure(error.toString())));
+  }, [account]);
 
   const handleMouseLeave = () => {
     setIsHover(false);
@@ -74,11 +81,9 @@ export default function ExampleUI() {
                 All Weather Protocol
               </h1>
               <h2 className="heading-subtitle">
-                An Omnichain Yield Aggregator with the Highest Yield
+                An AA Wallet-Based, Omnichain Index Fund
               </h2>
-              <p className="heading-subtitle">
-                Click Once, Farm the Best Forever.
-              </p>
+              <p className="heading-subtitle">Click Once, Diversify Forever!</p>
               <p className="heading-subtitle">
                 Enjoy
                 <span
@@ -88,7 +93,11 @@ export default function ExampleUI() {
                   className="heading-title"
                 >
                   {" "}
-                  {portfolioApr.toFixed(2)}%{" "}
+                  {loading ? (
+                    <Spin />
+                  ) : (
+                    data?.portfolio_apr && `${data.portfolio_apr.toFixed(2)}%`
+                  )}{" "}
                 </span>
                 APR
               </p>
@@ -103,7 +112,7 @@ export default function ExampleUI() {
                 <Link href="#zapSection">
                   <Button
                     type="primary"
-                    loading={portfolioApr === 0 ? true : false}
+                    loading={data?.portfolio_apr === 0 ? true : false}
                     className={styles.btnInvest}
                     style={
                       isHover
