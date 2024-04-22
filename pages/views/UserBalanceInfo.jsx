@@ -35,10 +35,7 @@ const UserBalanceInfo = ({
   }, []);
 
   const userPercentage = new BigNumber(userShares).div(totalSupply);
-  const userDeposit =
-    process.env.NEXT_PUBLIC_DAVID_PORTFOLIO === "true"
-      ? netWorthWithCustomLogic
-      : userPercentage * netWorth;
+  const userDeposit = netWorth;
 
   return (
     <div
