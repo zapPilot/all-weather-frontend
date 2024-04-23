@@ -49,8 +49,8 @@ const ClaimButton = () => {
   }, [WEB3_CONTEXT]);
 
   const handleClaim = async () => {
-    await sendDiscordMessage(address, "starts claim()");
-    await _sendDepositTransaction();
+    // await sendDiscordMessage(address, "starts claim()");
+    // await _sendDepositTransaction();
   };
   const _sendDepositTransaction = async () => {
     setAggregatorDataReady(false);
