@@ -14,6 +14,7 @@ import {
   fetchDataSuccess,
   fetchDataFailure,
 } from "../../lib/features/apiSlice";
+import { fetchSubscriptionStatus } from "../../lib/features/subscriptionSlice";
 import axios from "axios";
 import { Spin } from "antd";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -26,17 +27,25 @@ export default function ExampleUI() {
   };
   const dispatch = useDispatch();
   const { data, loading, error } = useSelector((state) => state.api);
+  const subscriptionStatus = useSelector((state) => state.subscription.subscriptionStatus);
   const account = useActiveAccount();
-  const walletAddress = account?.address;
+  const walletAddress = account?.address.toLocaleLowerCase();
+
   useEffect(() => {
+    dispatch(fetchSubscriptionStatus({ walletAddress: walletAddress }));
     dispatch(fetchDataStart());
+  }, [dispatch, account]);
+
+  useEffect(() => {
     if (!walletAddress) return;
-    axios
-      .get(`${API_URL}/addresses?worksheet=${walletAddress}&refresh=true`)
-      .then((response) => response.data)
-      .then((data) => dispatch(fetchDataSuccess(data)))
-      .catch((error) => dispatch(fetchDataFailure(error.toString())));
-  }, [account]);
+    if (subscriptionStatus) {
+      axios
+        .get(`${API_URL}/addresses?worksheet=${walletAddress}&refresh=true`)
+        .then((response) => response.data)
+        .then((data) => dispatch(fetchDataSuccess(data)))
+        .catch((error) => dispatch(fetchDataFailure(error.toString())));
+    }
+  }, [subscriptionStatus]);
 
   const handleMouseLeave = () => {
     setIsHover(false);
@@ -153,7 +162,7 @@ export default function ExampleUI() {
             offset: 7,
           }}
         >
-          <RebalancerWidget />
+          {subscriptionStatus ? <RebalancerWidget /> : "not a subscription user"}
         </Col>
       </Row>
     </div>

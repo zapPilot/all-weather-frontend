@@ -411,7 +411,8 @@ export default function BasicSunburst(props) {
         colorType="literal"
         getSize={(d) => d.value}
         getColor={(d) => d.hex}
-        data={data}
+        // data={data}
+        data={defaultData}
         height={props.windowWidth > 767 ? 500 : 300}
         width={props.windowWidth > 767 ? 500 : 300}
       >
