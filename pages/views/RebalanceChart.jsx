@@ -308,7 +308,8 @@ function calculatePortfolioAPRForAAWallet(portfolioComposition, poolsMetadata) {
         // if (weight.only_for_sunburst_chart === true) {
         //   continue;
         // }
-        result += positionObj.weight * poolsMetadata[positionObj.poolID].apr;
+        result +=
+          positionObj.weight * poolsMetadata?.[positionObj.poolID]?.apr ?? 0;
       }
     }
   }
