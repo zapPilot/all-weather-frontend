@@ -320,7 +320,7 @@ function getPercentage(value, total) {
   return Math.round((value / total) * 100);
 }
 
-export default function BasicSunburst(props) {
+export default function RebalanceChart(props) {
   const {
     rebalanceSuggestions,
     netWorth,
