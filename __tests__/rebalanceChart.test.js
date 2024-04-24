@@ -1,5 +1,8 @@
 import exp from "constants";
-import { _prepareSunburstData, RebalanceChart } from "../pages/views/RebalanceChart.jsx";
+import {
+  _prepareSunburstData,
+  RebalanceChart,
+} from "../pages/views/RebalanceChart.jsx";
 import { vi, expect, describe, it, test } from "vitest";
 import { render, screen } from "./test-utils";
 import { waitFor } from "@testing-library/dom";
@@ -24,7 +27,6 @@ test("RebalanceChart funcs", () => {
     ),
   ).toEqual([{ long_term_bond: "#12939A" }, 1]);
 });
-
 
 describe("RebalanceChart Component", () => {
   it("normal rendering without any http request", async () => {
