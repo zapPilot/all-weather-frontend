@@ -23,7 +23,7 @@ const HistoricalDataChart = () => {
         ? fetchClaimableReward()
         : asyncFetch();
     }
-  }, [userAddress]);
+  }, [address, userAddress]);
 
   const asyncFetch = () => {
     fetch(`${process.env.NEXT_PUBLIC_SDK_API_URL}/apr/historical-data`)
