@@ -32,12 +32,12 @@ export default function ExampleUI() {
   const walletAddress = account?.address.toLocaleLowerCase();
 
   useEffect(() => {
+    if (!walletAddress) return;
     dispatch(fetchSubscriptionStatus({ walletAddress: walletAddress }));
     dispatch(fetchDataStart());
   }, [dispatch, account]);
 
   useEffect(() => {
-    if (!walletAddress) return;
     if (subscriptionStatus) {
       axios
         .get(`${API_URL}/addresses?worksheet=${walletAddress}&refresh=true`)
@@ -162,7 +162,21 @@ export default function ExampleUI() {
             offset: 7,
           }}
         >
-          {subscriptionStatus ? <RebalancerWidget /> : "not a subscription user"}
+          {
+            subscriptionStatus
+            ? <RebalancerWidget />
+            : <>
+                <h3 className="text-base font-semibold leading-5">Please subscribe to access your personal profile.</h3>
+                <div className="my-5">
+                  <Link
+                    href="/subscribtion"
+                    className="px-2 py-1 rounded ring-1 ring-inset ring-emerald-400 text-sm font-semibold leading-6 text-emerald-400 "
+                  >
+                    Subscribe <span aria-hidden="true">&rarr;</span>
+                  </Link>
+                </div>
+              </>
+          }
         </Col>
       </Row>
     </div>
