@@ -27,7 +27,9 @@ export default function ExampleUI() {
   };
   const dispatch = useDispatch();
   const { data, loading, error } = useSelector((state) => state.api);
-  const subscriptionStatus = useSelector((state) => state.subscription.subscriptionStatus);
+  const subscriptionStatus = useSelector(
+    (state) => state.subscription.subscriptionStatus,
+  );
   const account = useActiveAccount();
   const walletAddress = account?.address.toLocaleLowerCase();
 
@@ -162,21 +164,23 @@ export default function ExampleUI() {
             offset: 7,
           }}
         >
-          {
-            subscriptionStatus
-            ? <RebalancerWidget />
-            : <>
-                <h3 className="text-base font-semibold leading-5">Please subscribe to access your personal profile.</h3>
-                <div className="my-5">
-                  <Link
-                    href="/subscribtion"
-                    className="px-2 py-1 rounded ring-1 ring-inset ring-emerald-400 text-sm font-semibold leading-6 text-emerald-400 "
-                  >
-                    Subscribe <span aria-hidden="true">&rarr;</span>
-                  </Link>
-                </div>
-              </>
-          }
+          {subscriptionStatus ? (
+            <RebalancerWidget />
+          ) : (
+            <>
+              <h3 className="text-base font-semibold leading-5">
+                Please subscribe to access your personal profile.
+              </h3>
+              <div className="my-5">
+                <Link
+                  href="/subscribtion"
+                  className="px-2 py-1 rounded ring-1 ring-inset ring-emerald-400 text-sm font-semibold leading-6 text-emerald-400 "
+                >
+                  Subscribe <span aria-hidden="true">&rarr;</span>
+                </Link>
+              </div>
+            </>
+          )}
         </Col>
       </Row>
     </div>

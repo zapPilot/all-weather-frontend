@@ -15,9 +15,11 @@ const RebalancerWidget = () => {
     return (
       <>
         <div className="flex justify-items-center items-center h-24">
-          <LoadingOutlined className="mx-auto text-5xl"/>
+          <LoadingOutlined className="mx-auto text-5xl" />
         </div>
-        <p className="text-base text-center font-semibold leading-5">Loading, please wait...</p>
+        <p className="text-base text-center font-semibold leading-5">
+          Loading, please wait...
+        </p>
       </>
     );
   };
