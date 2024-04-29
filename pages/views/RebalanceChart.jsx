@@ -229,7 +229,7 @@ function convertPortfolioStrategyToChartData(
         if (mode === "portfolioStrategy") {
           const poolID = positionObj.poolID;
           const positionObjMetadata = poolsMetadata[poolID];
-          name = `${poolName}:${positionObjMetadata.metadata.symbol}(${weightedValue}%)`;
+          name = `${poolName}:${positionObjMetadata?.metadata?.symbol}(${weightedValue}%)`;
         } else {
           name = `${poolName}:${positionObj.tokens.join(
             "-",
@@ -308,7 +308,8 @@ function calculatePortfolioAPRForAAWallet(portfolioComposition, poolsMetadata) {
         // if (weight.only_for_sunburst_chart === true) {
         //   continue;
         // }
-        result += positionObj.weight * poolsMetadata[positionObj.poolID].apr;
+        result +=
+          positionObj.weight * poolsMetadata?.[positionObj.poolID]?.apr ?? 0;
       }
     }
   }
@@ -319,7 +320,7 @@ function getPercentage(value, total) {
   return Math.round((value / total) * 100);
 }
 
-export default function BasicSunburst(props) {
+export default function RebalanceChart(props) {
   const {
     rebalanceSuggestions,
     netWorth,

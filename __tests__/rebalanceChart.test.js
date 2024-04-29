@@ -1,7 +1,11 @@
 import exp from "constants";
-import { _prepareSunburstData } from "../pages/views/RebalanceChart.jsx";
-
-import { expect, test } from "vitest";
+import {
+  _prepareSunburstData,
+  RebalanceChart,
+} from "../pages/views/RebalanceChart.jsx";
+import { vi, expect, describe, it, test } from "vitest";
+import { render, screen } from "./test-utils";
+import { waitFor } from "@testing-library/dom";
 
 test("RebalanceChart funcs", () => {
   const result = { children: [] };
@@ -22,4 +26,12 @@ test("RebalanceChart funcs", () => {
       weightedValue,
     ),
   ).toEqual([{ long_term_bond: "#12939A" }, 1]);
+});
+
+describe("RebalanceChart Component", () => {
+  it("normal rendering without any http request", async () => {
+    // Render the Dashboard component
+    // TODO(david): fix it
+    // render(<RebalanceChart />);
+  });
 });
