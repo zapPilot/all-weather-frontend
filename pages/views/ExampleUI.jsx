@@ -14,7 +14,7 @@ import {
   fetchDataSuccess,
   fetchDataFailure,
 } from "../../lib/features/apiSlice";
-import { fetchSubscriptionStatus } from "../../lib/features/subscriptionSlice";
+import { walletAddressChanged  } from "../../lib/features/subscriptionSlice";
 import axios from "axios";
 import { Spin } from "antd";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -28,16 +28,16 @@ export default function ExampleUI() {
   const dispatch = useDispatch();
   const { data, loading, error } = useSelector((state) => state.api);
   const subscriptionStatus = useSelector(
-    (state) => state.subscription.subscriptionStatus,
+    (state) => state.subscriptionStatus.subscriptionStatus,
   );
   const account = useActiveAccount();
   const walletAddress = account?.address.toLocaleLowerCase();
 
   useEffect(() => {
     if (!walletAddress) return;
-    dispatch(fetchSubscriptionStatus({ walletAddress: walletAddress }));
+    dispatch(walletAddressChanged({ walletAddress: walletAddress }));
     dispatch(fetchDataStart());
-  }, [dispatch, account]);
+  }, [account]);
 
   useEffect(() => {
     if (subscriptionStatus) {

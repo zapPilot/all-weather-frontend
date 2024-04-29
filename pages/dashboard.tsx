@@ -26,8 +26,8 @@ import RebalanceChart from "./views/RebalanceChart";
 import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
 import LinkModal from "./views/components/LinkModal";
 import axios from "axios";
-import { fetchSubscriptionStatus } from "../lib/features/subscriptionSlice";
 import { useDispatch, useSelector } from "react-redux";
+import { walletAddressChanged } from "../lib/features/subscriptionSlice";
 
 interface Pools {
   key: string;
@@ -70,7 +70,7 @@ const Dashboard: NextPage = () => {
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const dispatch = useDispatch();
   const subscriptionStatus = useSelector(
-    (state) => state.subscription.subscriptionStatus,
+    (state) => state.subscriptionStatus.subscriptionStatus,
   );
 
   const handleLinkButton = (url: string) => {
@@ -286,7 +286,7 @@ const Dashboard: NextPage = () => {
 
   useEffect(() => {
     if (!walletAddress) return;
-    dispatch(fetchSubscriptionStatus({ walletAddress: walletAddress }));
+    dispatch(walletAddressChanged({ walletAddress: walletAddress }));
   }, [account]);
 
   useEffect(() => {
