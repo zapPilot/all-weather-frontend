@@ -14,7 +14,7 @@ import {
   fetchDataSuccess,
   fetchDataFailure,
 } from "../../lib/features/apiSlice";
-import { walletAddressChanged  } from "../../lib/features/subscriptionSlice";
+import { walletAddressChanged } from "../../lib/features/subscriptionSlice";
 import axios from "axios";
 import { Spin } from "antd";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
