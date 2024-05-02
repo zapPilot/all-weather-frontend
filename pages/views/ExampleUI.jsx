@@ -14,6 +14,7 @@ import {
   fetchDataSuccess,
   fetchDataFailure,
 } from "../../lib/features/apiSlice";
+import { walletAddressChanged } from "../../lib/features/subscriptionSlice";
 import axios from "axios";
 import { Spin } from "antd";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -26,17 +27,27 @@ export default function ExampleUI() {
   };
   const dispatch = useDispatch();
   const { data, loading, error } = useSelector((state) => state.api);
+  const subscriptionStatus = useSelector(
+    (state) => state.subscriptionStatus.subscriptionStatus,
+  );
   const account = useActiveAccount();
-  const walletAddress = account?.address;
+  const walletAddress = account?.address.toLocaleLowerCase();
+
   useEffect(() => {
-    dispatch(fetchDataStart());
     if (!walletAddress) return;
-    axios
-      .get(`${API_URL}/addresses?worksheet=${walletAddress}&refresh=true`)
-      .then((response) => response.data)
-      .then((data) => dispatch(fetchDataSuccess(data)))
-      .catch((error) => dispatch(fetchDataFailure(error.toString())));
+    dispatch(walletAddressChanged({ walletAddress: walletAddress }));
+    dispatch(fetchDataStart());
   }, [account]);
+
+  useEffect(() => {
+    if (subscriptionStatus) {
+      axios
+        .get(`${API_URL}/addresses?worksheet=${walletAddress}&refresh=true`)
+        .then((response) => response.data)
+        .then((data) => dispatch(fetchDataSuccess(data)))
+        .catch((error) => dispatch(fetchDataFailure(error.toString())));
+    }
+  }, [subscriptionStatus]);
 
   const handleMouseLeave = () => {
     setIsHover(false);
@@ -153,7 +164,23 @@ export default function ExampleUI() {
             offset: 7,
           }}
         >
-          <RebalancerWidget />
+          {subscriptionStatus ? (
+            <RebalancerWidget />
+          ) : (
+            <>
+              <h3 className="text-base font-semibold leading-5">
+                Please subscribe to access your personal profile.
+              </h3>
+              <div className="my-5">
+                <Link
+                  href="/subscribtion"
+                  className="px-2 py-1 rounded ring-1 ring-inset ring-emerald-400 text-sm font-semibold leading-6 text-emerald-400 "
+                >
+                  Subscribe <span aria-hidden="true">&rarr;</span>
+                </Link>
+              </div>
+            </>
+          )}
         </Col>
       </Row>
     </div>
