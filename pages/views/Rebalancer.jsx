@@ -1,6 +1,5 @@
 // import suggestions from "./suggestions.json";
-import { Spin } from "antd";
-import { LinkOutlined } from "@ant-design/icons";
+import { LinkOutlined, LoadingOutlined } from "@ant-design/icons";
 import RebalanceChart from "./RebalanceChart";
 import ZapInButton from "./ZapInButton";
 import ZapOutButton from "./ZapOutButton";
@@ -12,21 +11,14 @@ import { useSelector } from "react-redux";
 const RebalancerWidget = () => {
   const windowWidth = useWindowWidth();
   const { data } = useSelector((state) => state.api);
-  const divSpin = {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "100px",
-  };
   const getLoadingDom = () => {
     return (
       <>
-        <div style={divSpin}>
-          <Spin size="large" />
+        <div className="flex justify-items-center items-center h-24">
+          <LoadingOutlined className="mx-auto text-5xl" />
         </div>
-        <p style={{ textAlign: "center" }}>
-          Please click the &apos;Connect Wallet&apos; button to connect your
-          wallet.
+        <p className="text-base text-center font-semibold leading-5">
+          Loading, please wait...
         </p>
       </>
     );

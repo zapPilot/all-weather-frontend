@@ -26,6 +26,8 @@ import RebalanceChart from "./views/RebalanceChart";
 import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
 import LinkModal from "./views/components/LinkModal";
 import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import { walletAddressChanged } from "../lib/features/subscriptionSlice";
 
 interface Pools {
   key: string;
@@ -66,7 +68,10 @@ const Dashboard: NextPage = () => {
   const [protocolList, setProtocolList] = useState([]);
   const [protocolLink, setProtocolLink] = useState("");
   const [linkModalOpen, setLinkModalOpen] = useState(false);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<Boolean>(false);
+  const dispatch = useDispatch();
+  const subscriptionStatus = useSelector(
+    (state) => state.subscriptionStatus.subscriptionStatus,
+  );
 
   const handleLinkButton = (url: string) => {
     setProtocolLink(url);
@@ -280,6 +285,11 @@ const Dashboard: NextPage = () => {
   const tableRowMobile = ["Tokens", "Chain", "Pool", "TVL", "APR"];
 
   useEffect(() => {
+    if (!walletAddress) return;
+    dispatch(walletAddressChanged({ walletAddress: walletAddress }));
+  }, [account]);
+
+  useEffect(() => {
     const fetchDefaultPools = async () => {
       try {
         for (const categoryMetaData of Object.values(queriesForAllWeather)) {
@@ -333,27 +343,9 @@ const Dashboard: NextPage = () => {
         throw error;
       }
     };
-    const fetchSubscriptionStatus = async () => {
-      if (!walletAddress) return;
-      await axios
-        .get(
-          `${process.env.NEXT_PUBLIC_SDK_API_URL}/subscriptions?address=${walletAddress}`,
-        )
-        .then((response) => {
-          setSubscriptionStatus(response.data.subscriptionStatus);
-        })
-        .catch((error) => {
-          console.error(
-            "An error occurred while fetching subscription status:",
-            error,
-          );
-          throw error;
-        });
-    };
 
     fetchProtocolList();
-    fetchSubscriptionStatus();
-  }, [account]);
+  }, []);
 
   const expandedRowRender = (records: Pools) => {
     const columns = [
