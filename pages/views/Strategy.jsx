@@ -5,10 +5,12 @@ import { Button } from "antd";
 import RebalanceChart from "./RebalanceChart";
 import { useWindowWidth } from "../../utils/chartUtils";
 import { useSelector } from "react-redux";
+import { useActiveAccount } from "thirdweb/react";
 
 const Strategy = () => {
   const windowWidth = useWindowWidth();
   const { data } = useSelector((state) => state.api);
+  const account = useActiveAccount();
   return (
     <>
       <Button type="primary" block>
@@ -30,6 +32,7 @@ const Strategy = () => {
         netWorth={data?.net_worth}
         windowWidth={windowWidth}
         showCategory={true}
+        account={account}
       />
     </>
   );

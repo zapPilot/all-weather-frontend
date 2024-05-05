@@ -1,6 +1,10 @@
-import { PrimeSdk, EtherspotBundler } from "@etherspot/prime-sdk";
+import { smartWallet } from "thirdweb/wallets";
+import { arbitrum } from "thirdweb/chains";
 import { CamelotV3 } from "./camelot/Camelotv3";
 import React from "react";
+import { approve, transferFrom } from "thirdweb/extensions/erc20";
+import { sendBatchTransaction } from "thirdweb";
+import THIRDWEB_CLIENT from "../utils/thirdweb";
 
 // add/change these values
 const precisionOfInvestAmount = 4;
@@ -13,145 +17,129 @@ const wsolAddress = "0x2bcC6D6CdBbDC0a4071e48bb3B969b06B3330c07";
 const rdntAddress = "0x3082CC23568eA640225c2467653dB90e9250AaA0";
 const magicAddress = "0x539bdE0d7Dbd336b79148AA742883198BBF60342";
 const wstEthAddress = "0x5979D7b546E38E414F7E9822514be443A4800529";
+
 export class AllWeatherPortfolio extends React.Component {
-  static strategy = {
-    long_term_bond: {
-      42161: [
-        {
-          interface: new CamelotV3(
-            42161,
-            wstEthAddress,
-            wethAddress,
-            this.primeSdk,
-            this.aaWalletAddress,
-          ),
-          weight: 0.13,
-          poolID:
-            "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:wstETH",
-        },
-      ],
-    },
-    intermediate_term_bond: {
-      42161: [
-        {
-          interface: new CamelotV3(
-            42161,
-            pendleAddress,
-            wethAddress,
-            this.primeSdk,
-            this.aaWalletAddress,
-          ),
-          weight: 0.15 * 2,
-          poolID:
-            "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:49661",
-        },
-      ],
-    },
-    commodities: {},
-    gold: {
-      42161: [
-        {
-          interface: new CamelotV3(
-            42161,
-            wethAddress,
-            gmxAddress,
-            this.primeSdk,
-            this.aaWalletAddress,
-          ),
-          weight: 0.075 * 2,
-          poolID: "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:gmx",
-        },
-      ],
-    },
-    large_cap_us_stocks: {
-      42161: [
-        {
-          interface: new CamelotV3(
-            42161,
-            wethAddress,
-            linkAddress,
-            this.primeSdk,
-            this.aaWalletAddress,
-          ),
-          weight: 0.09 * 2,
-          poolID:
-            "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:53459",
-        },
-      ],
-    },
-    small_cap_us_stocks: {
-      42161: [
-        {
-          interface: new CamelotV3(
-            42161,
-            rdntAddress,
-            wethAddress,
-            this.primeSdk,
-            this.aaWalletAddress,
-          ),
-          weight: 0.03 * 2,
-          poolID:
-            "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:rdnt",
-        },
-      ],
-    },
-    non_us_developed_market_stocks: {
-      42161: [
-        {
-          interface: new CamelotV3(
-            42161,
-            wsolAddress,
-            usdcAddress,
-            this.primeSdk,
-            this.aaWalletAddress,
-          ),
-          weight: 0.06 * 2,
-          poolID: "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:sol",
-        },
-      ],
-    },
-    non_us_emerging_market_stocks: {
-      42161: [
-        {
-          interface: new CamelotV3(
-            42161,
-            magicAddress,
-            wethAddress,
-            this.primeSdk,
-            this.aaWalletAddress,
-          ),
-          weight: 0.03 * 2,
-          poolID:
-            "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:magic",
-        },
-      ],
-    },
-  };
-  constructor() {
+  constructor(account) {
     super();
-    // initializating sdk...
-    const customBundlerUrl = "";
-    this.primeSdk = new PrimeSdk(
-      { privateKey: process.env.NEXT_PUBLIC_WALLET_PRIVATE_KEY },
-      {
-        chainId: Number(process.env.NEXT_PUBLIC_CHAIN_ID),
-        projectKey: "all-weather-dev",
-        bundlerProvider: new EtherspotBundler(
-          Number(process.env.NEXT_PUBLIC_CHAIN_ID),
-          process.env.NEXT_PUBLIC_ETHERSPOT_PROJECT_KEY,
-          customBundlerUrl,
-        ),
+    if (!account) {
+      return;
+    }
+    this.smartAccount = account;
+    this.strategy = {
+      long_term_bond: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              wstEthAddress,
+              wethAddress,
+              this.smartAccount.address,
+            ),
+            weight: 0.13,
+            poolID:
+              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:wstETH",
+          },
+        ],
       },
-    ); // Testnets dont need apiKey on bundlerProvider
-    this.EOAAddress = this.primeSdk.state.EOAAddress;
-    this.concatenatedString = Object.values(AllWeatherPortfolio.strategy)
+      intermediate_term_bond: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              pendleAddress,
+              wethAddress,
+              this.smartAccount.address,
+            ),
+            weight: 0.15 * 2,
+            poolID:
+              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:49661",
+          },
+        ],
+      },
+      commodities: {},
+      gold: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              wethAddress,
+              gmxAddress,
+              this.smartAccount.address,
+            ),
+            weight: 0.075 * 2,
+            poolID:
+              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:gmx",
+          },
+        ],
+      },
+      large_cap_us_stocks: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              wethAddress,
+              linkAddress,
+              this.smartAccount.address,
+            ),
+            weight: 0.09 * 2,
+            poolID:
+              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:53459",
+          },
+        ],
+      },
+      small_cap_us_stocks: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              rdntAddress,
+              wethAddress,
+              this.smartAccount.address,
+            ),
+            weight: 0.03 * 2,
+            poolID:
+              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:rdnt",
+          },
+        ],
+      },
+      non_us_developed_market_stocks: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              wsolAddress,
+              usdcAddress,
+              this.smartAccount.address,
+            ),
+            weight: 0.06 * 2,
+            poolID:
+              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:sol",
+          },
+        ],
+      },
+      non_us_emerging_market_stocks: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              magicAddress,
+              wethAddress,
+              this.smartAccount.address,
+            ),
+            weight: 0.03 * 2,
+            poolID:
+              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:magic",
+          },
+        ],
+      },
+    };
+    this.concatenatedString = Object.values(this.strategy)
       .flatMap(Object.values)
       .flatMap((arr) => arr)
       .map((obj) => obj.poolID)
       .join("/");
   }
   async initialize() {
-    // get address of EtherspotWallet...
     await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/pools/${this.concatenatedString}`,
     )
@@ -160,10 +148,8 @@ export class AllWeatherPortfolio extends React.Component {
         this.poolsMetadata = data;
       })
       .catch((error) => this.setState({ error }));
-    this.aaWalletAddress = await this.primeSdk.getCounterFactualAddress();
-    this._checkTotalWeight(AllWeatherPortfolio.strategy);
+    this._checkTotalWeight(this.strategy);
   }
-  componentDidMount() {}
 
   _checkTotalWeight(strategyObject) {
     let totalWeight = 0;
@@ -192,7 +178,7 @@ export class AllWeatherPortfolio extends React.Component {
   async _diversify(investmentAmount, chosenToken) {
     let transactionHashes = [];
     for (const [category, protocolsInThisCategory] of Object.entries(
-      AllWeatherPortfolio.strategy,
+      this.strategy,
     )) {
       for (const [chainId, protocols] of Object.entries(
         protocolsInThisCategory,
@@ -215,7 +201,6 @@ export class AllWeatherPortfolio extends React.Component {
     retryIndex,
   }) {
     // clear the transaction batch
-    await this.primeSdk.clearUserOpsFromBatch();
     let concurrentRequests = [];
     for (const protocol of protocols) {
       const investPromise = protocol.interface.invest(
@@ -225,8 +210,11 @@ export class AllWeatherPortfolio extends React.Component {
       );
       concurrentRequests.push(investPromise);
     }
-    await Promise.all(concurrentRequests);
-    return await this._signTransaction(category);
+    const txs = await Promise.all(concurrentRequests);
+    await sendBatchTransaction({
+      txs,
+      account: this.smartAccount,
+    });
   }
 
   async _signTransaction(category) {
