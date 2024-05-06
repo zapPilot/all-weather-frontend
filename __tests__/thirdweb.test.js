@@ -15,10 +15,15 @@ test("AllWeatherPortfolio initialize", async () => {
     "non_us_developed_market_stocks",
     "non_us_emerging_market_stocks",
   ];
-  const portfolioHelper = new AllWeatherPortfolio();
+
+  const placeholderAddress = "0xB388be53c8225A60328A906300f821a3af7AC8cd";
+  const account = {
+    address: placeholderAddress,
+  };
+  const portfolioHelper = new AllWeatherPortfolio(account);
   await portfolioHelper.initialize();
   for (const [categoryName, sectorObject] of Object.entries(
-    AllWeatherPortfolio.strategy,
+    portfolioHelper.strategy,
   )) {
     expect(categoryNames.includes(categoryName)).toBeTruthy();
     if (Object.keys(sectorObject).length !== 0) {

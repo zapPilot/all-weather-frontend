@@ -10,6 +10,7 @@ import "@flaticon/flaticon-uicons/css/regular/all.css";
 import { ConnectButton } from "thirdweb/react";
 import { createWallet, walletConnect, inAppWallet } from "thirdweb/wallets";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
+import { arbitrum } from "thirdweb/chains";
 
 const WALLETS = [
   createWallet("io.rabby"),
@@ -54,6 +55,13 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
                 wallets={WALLETS}
                 theme={"light"}
                 connectModal={{ size: "compact" }}
+                accountAbstraction={{
+                  chain: arbitrum, // the chain where your smart wallet will be or is deployed
+                  factoryAddress: String(
+                    process.env.NEXT_PUBLIC_FACTORY_ADDRESS,
+                  ),
+                  gasless: false, // enable or disable gasless transactions
+                }}
               />
             </div>
           </Header>
