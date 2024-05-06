@@ -1,14 +1,15 @@
 import { AllWeatherPortfolio } from "../classes/AllWeatherPortfolio";
 
-export async function investByAAWallet(investmentAmount, chosenToken) {
-  console.log("Investing by AA Wallet...");
-  console.log("chosenToken", chosenToken);
-  const portfolioHelper = await getPortfolioHelper("AllWeatherPortfolio");
+export async function investByAAWallet(investmentAmount, chosenToken, account) {
+  const portfolioHelper = await getPortfolioHelper(
+    "AllWeatherPortfolio",
+    account,
+  );
   const transactionHash = await portfolioHelper.diversify(
     investmentAmount,
     chosenToken,
   );
-  console.log("transactionHash", transactionHash);
+  // console.log("transactionHash", transactionHash);
   // const dataService = new DataUtils(
   //     "public-prime-testnet-key",
   //     graphqlEndpoints.QA,
@@ -20,10 +21,10 @@ export async function investByAAWallet(investmentAmount, chosenToken) {
   // console.log("\x1b[33m%s\x1b[0m", `EtherspotWallet balances:`, balances);
 }
 
-async function getPortfolioHelper(portfolioName) {
+async function getPortfolioHelper(portfolioName, account) {
   let portfolioHelper;
   if (portfolioName === "AllWeatherPortfolio") {
-    portfolioHelper = new AllWeatherPortfolio();
+    portfolioHelper = new AllWeatherPortfolio(account);
   }
   await portfolioHelper.initialize();
   return portfolioHelper;

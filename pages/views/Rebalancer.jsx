@@ -7,10 +7,12 @@ import UserBalanceInfo from "./UserBalanceInfo";
 import { useWindowWidth } from "../../utils/chartUtils";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import { useActiveAccount } from "thirdweb/react";
 
 const RebalancerWidget = () => {
   const windowWidth = useWindowWidth();
   const { data } = useSelector((state) => state.api);
+  const account = useActiveAccount();
   const getLoadingDom = () => {
     return (
       <>
@@ -33,6 +35,7 @@ const RebalancerWidget = () => {
             netWorth={data.net_worth}
             windowWidth={windowWidth}
             showCategory={false}
+            account={account}
           />
           <div>
             <div>

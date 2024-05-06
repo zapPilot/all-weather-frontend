@@ -13,7 +13,7 @@ import {
   PlusCircleOutlined,
 } from "@ant-design/icons";
 import { useWindowHeight } from "../utils/chartUtils.js";
-import { investByAAWallet } from "../utils/etherspot.js";
+import { investByAAWallet } from "../utils/thirdwebSmartWallet.js";
 import { useActiveAccount } from "thirdweb/react";
 
 import {
@@ -854,6 +854,7 @@ const Dashboard: NextPage = () => {
           showCategory={false}
           mode="portfolioComposer"
           portfolioComposition={Object.values(portfolioCompositionForReRender)}
+          account={account}
         />
         <Button
           type="primary"
@@ -1489,15 +1490,23 @@ const Dashboard: NextPage = () => {
         windowWidth={200}
         showCategory={true}
         mode="portfolioStrategy"
+        account={account}
       />
       <TokenDropdownInput
-        address={walletAddress}
         onClickCallback={async (
           investmentAmount: number,
           chosenToken: string,
-        ) => await investByAAWallet(String(investmentAmount), chosenToken)}
+          account: any,
+        ) => {
+          await investByAAWallet(
+            String(investmentAmount),
+            chosenToken,
+            account,
+          );
+        }}
         normalWording="Etherspots"
         loadingWording="Fetching the best route to deposit"
+        account={account}
       />
       <LinkModal
         protocolLink={protocolLink}

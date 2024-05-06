@@ -17,29 +17,28 @@ const slippageOfLP = [0.95, 0.9, 0.8, 0.7, 0.1];
 const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const CamelotNFTPositionManagerAddress =
   "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15";
-
+const PROVIDER = new ethers.providers.JsonRpcProvider(
+  process.env.NEXT_PUBLIC_RPC_PROVIDER_URL,
+);
 export class CamelotV3 {
-  constructor(chaindId, token0, token1, primeSdk, aaWalletAddress) {
+  constructor(chaindId, token0, token1, aaWalletAddress) {
     this.chainId = chaindId;
     this.token0 = token0;
     this.token1 = token1;
-    this.primeSdk = primeSdk;
-    this.provider = new ethers.providers.JsonRpcProvider(
-      process.env.NEXT_PUBLIC_BUNDLER_URL,
-    );
     this.aaWalletAddress = aaWalletAddress;
   }
   async invest(investmentAmountInThisPosition, chosenToken, retryIndex) {
     // get erc20 Contract Interface
     const erc20Instance = new ethers.Contract(
+      // "0x55d398326f99059ff775485246999027b3197955",
       chosenToken,
       ERC20_ABI,
-      this.provider,
+      PROVIDER,
     );
 
     // get decimals from erc20 contract
     const decimals = (await erc20Instance.functions.decimals())[0];
-    await this.primeSdk.addUserOpsToBatch({
+    const approveTxn = {
       to: chosenToken,
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
@@ -56,52 +55,60 @@ export class CamelotV3 {
           ),
         ],
       }),
-    });
-    const [token0Amount, token1Amount] = await this._concurrentSwap(
+    };
+    const [tokenSwapTxns, swapEstimateAmounts] = await this._swaps(
       chosenToken,
       investmentAmountInThisPosition,
       decimals,
       retryIndex,
     );
-    await this._concurrentApprove(token0Amount, token1Amount);
-    await this._deposit(token0Amount, token1Amount, retryIndex);
+    const token0Amount = swapEstimateAmounts[0];
+    const token1Amount = swapEstimateAmounts[1];
+    const approveTransactions = this._approves(token0Amount, token1Amount);
+    return [
+      approveTxn,
+      tokenSwapTxns,
+      ...approveTransactions,
+      this._deposit(token0Amount, token1Amount, retryIndex),
+    ];
   }
 
-  async _concurrentSwap(
+  async _swaps(
     chosenToken,
     investmentAmountInThisPosition,
     decimals,
     retryIndex,
   ) {
-    let tokenSwapPromises = [];
+    let tokenSwapTxns = [];
+    let swapEstimateAmounts = [];
     for (const token of [this.token0, this.token1]) {
-      tokenSwapPromises.push(
-        this._swap(
-          chosenToken,
-          token,
-          ethers.utils.parseUnits(
-            String(investmentAmountInThisPosition / 2),
-            decimals,
-          ),
-          slippage[retryIndex],
+      tokenSwapTxns.push();
+      const [swapTxn, swapEstimateAmount] = await this._swap(
+        chosenToken,
+        token,
+        ethers.utils.parseUnits(
+          String(investmentAmountInThisPosition / 2),
+          decimals,
         ),
+        slippage[retryIndex],
       );
+      tokenSwapTxns.push(swapTxn);
+      swapEstimateAmounts.push(swapEstimateAmount);
     }
-    const [token0Amount, token1Amount] = await Promise.all(tokenSwapPromises);
-    return [token0Amount, token1Amount];
+    return [tokenSwapTxns, swapEstimateAmounts];
   }
 
-  async _concurrentApprove(token0Amount, token1Amount) {
-    let tokenApprovePromises = [];
+  async _approves(token0Amount, token1Amount) {
+    let tokenApproveTransactions = [];
     for (const [token, tokenAmount] of [
       [this.token0, token0Amount],
       [this.token1, token1Amount],
     ]) {
-      tokenApprovePromises.push(
+      tokenApproveTransactions.push(
         this._approve(token, CamelotNFTPositionManagerAddress, tokenAmount),
       );
     }
-    await Promise.all(tokenApprovePromises);
+    return tokenApproveTransactions;
   }
   async withdraw() {
     throw new Error("This function is not implemented yet.");
@@ -118,14 +125,13 @@ export class CamelotV3 {
       this.aaWalletAddress,
       slippage,
     );
-    await this.primeSdk.addUserOpsToBatch({
-      to: oneInchAddress,
-      data: swapCallDataFrom1inch["tx"]["data"],
-    });
-    return swapCallDataFrom1inch["toAmount"];
+    return [
+      { to: oneInchAddress, data: swapCallDataFrom1inch["tx"]["data"] },
+      swapCallDataFrom1inch["toAmount"],
+    ];
   }
   async _approve(tokenAddress, spenderAddress, amount) {
-    await this.primeSdk.addUserOpsToBatch({
+    return {
       to: tokenAddress,
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
@@ -135,7 +141,7 @@ export class CamelotV3 {
           ethers.BigNumber.from(amount).mul(approvalBufferParam),
         ],
       }),
-    });
+    };
   }
   async _deposit(token0Amount, token1Amount, retryIndex) {
     const camelotCallData = encodeFunctionData({
@@ -156,9 +162,9 @@ export class CamelotV3 {
         },
       ],
     });
-    await this.primeSdk.addUserOpsToBatch({
+    return {
       to: CamelotNFTPositionManagerAddress,
       data: camelotCallData,
-    });
+    };
   }
 }

@@ -327,6 +327,7 @@ export default function RebalanceChart(props) {
     showCategory,
     mode,
     portfolioComposition,
+    account,
   } = props;
   // const {
 
@@ -353,17 +354,18 @@ export default function RebalanceChart(props) {
         setData(chartData);
         setAPR(calculatePortfolioAPR(sortedPortfolioComposition));
       } else if (mode === "portfolioStrategy") {
-        const portfolioHelper = new AllWeatherPortfolio();
+        if (!account) return;
+        const portfolioHelper = new AllWeatherPortfolio(account);
         await portfolioHelper.initialize();
         const chartData = convertPortfolioStrategyToChartData(
-          Object.entries(AllWeatherPortfolio.strategy),
+          Object.entries(portfolioHelper.strategy),
           mode,
           portfolioHelper.poolsMetadata,
         );
         setData(chartData);
         setAPR(
           calculatePortfolioAPRForAAWallet(
-            Object.values(AllWeatherPortfolio.strategy),
+            Object.values(portfolioHelper.strategy),
             portfolioHelper.poolsMetadata,
           ),
         );
