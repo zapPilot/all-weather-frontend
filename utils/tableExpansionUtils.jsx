@@ -41,16 +41,18 @@ export const columnMapping = (
           </Button>
         </Link>
       ) : (
-        <div className="flex items-center">
-          <Image
-            src={`/projectPictures/${pool.name}.webp`}
-            alt={pool.name}
-            className="me-2"
-            height={20}
-            width={20}
-          />
-          <div className="relative group">
+        <>
+          <div className="inline-block">
+            <Image
+              src={`/projectPictures/${pool.name}.webp`}
+              alt={pool.name}
+              className="inline-block me-2"
+              height={20}
+              width={20}
+            />
             <span className="text-white pe-2"> {pool.name}</span>
+          </div>
+          <div className="inline-block relative group">
             <span class="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
               {"pool ID: " + pool.poolID}
             </span>
@@ -72,7 +74,7 @@ export const columnMapping = (
               </button>
             ) : null,
           )}
-        </div>
+        </>
       );
     },
     content: (pool, _, index) => {
@@ -202,7 +204,7 @@ export const columnMapping = (
         </span>
       );
     },
-    content: (apr) => apr.value.toFixed(2),
+    content: (apr) => apr.value ? apr.value.toFixed(2) : apr,
   },
 });
 export const getExpandableColumnsForSuggestionsTable = () => [
