@@ -176,22 +176,22 @@ export class AllWeatherPortfolio extends React.Component {
   }
 
   async _diversify(investmentAmount, chosenToken) {
-    let transactionHashes = [];
+    let txns = [];
     for (const [category, protocolsInThisCategory] of Object.entries(
       this.strategy,
     )) {
       for (const [chainId, protocols] of Object.entries(
         protocolsInThisCategory,
       )) {
-        const transactionHash = await this._retryFunction(
+        const txn = await this._retryFunction(
           this._investInThisCategory.bind(this),
           { investmentAmount, chosenToken, protocols, category },
           { retries: 5, delay: 1000 },
         );
-        transactionHashes.push(transactionHash);
+        txns.push(txn);
       }
     }
-    return transactionHashes;
+    return txns;
   }
   async _investInThisCategory({
     investmentAmount,
@@ -210,31 +210,9 @@ export class AllWeatherPortfolio extends React.Component {
       );
       concurrentRequests.push(investPromise);
     }
-    const txs = await Promise.all(concurrentRequests);
-    await sendBatchTransaction({
-      txs,
-      account: this.smartAccount,
-    });
+    return await Promise.all(concurrentRequests);
   }
 
-  async _signTransaction(category) {
-    // estimate transactions added to the batch and get the fee data for the UserOp
-    const op = await this.primeSdk.estimate();
-    console.log(`Investment in ${category} completed...`);
-    // console.log(`Estimate UserOp: ${await printOp(op)}`);
-    //   // sign the UserOp and sending to the bundler...
-    //   const uoHash = await primeSdk.send(op);
-    //   console.log(`UserOpHash: ${uoHash}`);
-    //   // get transaction hash...
-    //   console.log("Waiting for transaction...");
-    //   let userOpsReceipt = null;
-    //   const timeout = Date.now() + 60000; // 1 minute timeout
-    //   while (userOpsReceipt == null && Date.now() < timeout) {
-    //     await sleep(2);
-    //     userOpsReceipt = await primeSdk.getUserOpReceipt(uoHash);
-    //   }
-    // return uoHash;
-  }
   async _retryFunction(fn, params, options = {}) {
     const { retries = 3, delay = 1000 } = options; // Set defaults
 

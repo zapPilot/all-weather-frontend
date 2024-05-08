@@ -98,7 +98,7 @@ export class CamelotV3 {
     return [tokenSwapTxns, swapEstimateAmounts];
   }
 
-  async _approves(token0Amount, token1Amount) {
+  _approves(token0Amount, token1Amount) {
     let tokenApproveTransactions = [];
     for (const [token, tokenAmount] of [
       [this.token0, token0Amount],
@@ -130,7 +130,7 @@ export class CamelotV3 {
       swapCallDataFrom1inch["toAmount"],
     ];
   }
-  async _approve(tokenAddress, spenderAddress, amount) {
+  _approve(tokenAddress, spenderAddress, amount) {
     return {
       to: tokenAddress,
       data: encodeFunctionData({
@@ -143,7 +143,7 @@ export class CamelotV3 {
       }),
     };
   }
-  async _deposit(token0Amount, token1Amount, retryIndex) {
+  _deposit(token0Amount, token1Amount, retryIndex) {
     const camelotCallData = encodeFunctionData({
       abi: CamelotNFTPositionManager,
       functionName: "mint",
