@@ -5,7 +5,7 @@ export async function investByAAWallet(investmentAmount, chosenToken, account) {
     "AllWeatherPortfolio",
     account,
   );
-  const transactionHash = await portfolioHelper.diversify(
+  return await portfolioHelper.diversify(
     investmentAmount,
     chosenToken,
   );

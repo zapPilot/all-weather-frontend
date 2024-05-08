@@ -511,11 +511,12 @@ const Dashboard: NextPage = () => {
           chosenToken: string,
           account: any,
         ) => {
-          await investByAAWallet(
+          const txs = await investByAAWallet(
             String(investmentAmount),
             chosenToken,
             account,
           );
+          console.log("txs", txs)
         }}
         normalWording="Etherspots"
         loadingWording="Fetching the best route to deposit"
