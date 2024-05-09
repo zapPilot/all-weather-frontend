@@ -5,20 +5,7 @@ export async function investByAAWallet(investmentAmount, chosenToken, account) {
     "AllWeatherPortfolio",
     account,
   );
-  return await portfolioHelper.diversify(
-    investmentAmount,
-    chosenToken,
-  );
-  // console.log("transactionHash", transactionHash);
-  // const dataService = new DataUtils(
-  //     "public-prime-testnet-key",
-  //     graphqlEndpoints.QA,
-  // );
-  // const balances = await dataService.getAccountBalances({
-  //     account: aaWalletAddress,
-  //     chainId: Number(process.env.NEXT_PUBLIC_CHAIN_ID),
-  // });
-  // console.log("\x1b[33m%s\x1b[0m", `EtherspotWallet balances:`, balances);
+  return await portfolioHelper.diversify(investmentAmount, chosenToken);
 }
 
 async function getPortfolioHelper(portfolioName, account) {

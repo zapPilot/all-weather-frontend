@@ -1,10 +1,11 @@
+import { approve, transferFrom } from "thirdweb/extensions/erc20";
 import { ethers } from "ethers";
 import { ERC20_ABI } from "../../node_modules/@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
 import { encodeFunctionData } from "viem";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json" assert { type: "json" };
 import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import { fetch1InchSwapData } from "../../utils/oneInch.js";
-
+import { arbitrum } from "thirdweb/chains";
 // const approvalBufferParam = 1.2;
 const approvalBufferParam = 100;
 
@@ -39,6 +40,7 @@ export class CamelotV3 {
     // get decimals from erc20 contract
     const decimals = (await erc20Instance.functions.decimals())[0];
     const approveTxn = {
+      chain: arbitrum,
       to: chosenToken,
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
@@ -67,7 +69,7 @@ export class CamelotV3 {
     const approveTransactions = this._approves(token0Amount, token1Amount);
     return [
       approveTxn,
-      tokenSwapTxns,
+      ...tokenSwapTxns,
       ...approveTransactions,
       this._deposit(token0Amount, token1Amount, retryIndex),
     ];
@@ -126,12 +128,17 @@ export class CamelotV3 {
       slippage,
     );
     return [
-      { to: oneInchAddress, data: swapCallDataFrom1inch["tx"]["data"] },
+      {
+        to: oneInchAddress,
+        data: swapCallDataFrom1inch["tx"]["data"],
+        chain: arbitrum,
+      },
       swapCallDataFrom1inch["toAmount"],
     ];
   }
   _approve(tokenAddress, spenderAddress, amount) {
     return {
+      chain: arbitrum,
       to: tokenAddress,
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
@@ -163,6 +170,7 @@ export class CamelotV3 {
       ],
     });
     return {
+      chain: arbitrum,
       to: CamelotNFTPositionManagerAddress,
       data: camelotCallData,
     };
