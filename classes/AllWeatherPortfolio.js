@@ -1,8 +1,5 @@
-import { smartWallet } from "thirdweb/wallets";
-import { arbitrum } from "thirdweb/chains";
 import { CamelotV3 } from "./camelot/Camelotv3";
 import React from "react";
-import { approve, transferFrom } from "thirdweb/extensions/erc20";
 import { sendBatchTransaction } from "thirdweb";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 

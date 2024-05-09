@@ -14,7 +14,6 @@ import {
 } from "@ant-design/icons";
 import { useWindowHeight } from "../utils/chartUtils.js";
 import { investByAAWallet } from "../utils/thirdwebSmartWallet.js";
-import { useActiveAccount } from "thirdweb/react";
 
 import {
   getBasicColumnsForSuggestionsTable,
@@ -28,7 +27,7 @@ import LinkModal from "./views/components/LinkModal";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { walletAddressChanged } from "../lib/features/subscriptionSlice";
-
+import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
 interface Pools {
   key: string;
   apr: number;
@@ -142,6 +141,7 @@ const Dashboard: NextPage = () => {
     }));
   };
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const { mutate: sendBatch } = useSendBatchTransaction();
 
   const toggleExpand = (rowKey: string) => {
     setExpandedRows((prevExpandedRows) => {
@@ -1496,12 +1496,13 @@ const Dashboard: NextPage = () => {
           chosenToken: string,
           account: any,
         ) => {
-          const txs = await investByAAWallet(
+          const txns = await investByAAWallet(
             String(investmentAmount),
             chosenToken,
             account,
           );
-          console.log("txs", txs)
+          console.log("txns", txns);
+          sendBatch(txns[0][0]);
         }}
         normalWording="Etherspots"
         loadingWording="Fetching the best route to deposit"
