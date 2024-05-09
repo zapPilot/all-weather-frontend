@@ -357,6 +357,7 @@ const Dashboard: NextPage = () => {
         onSelectCallback={onSelectCallback}
         handleLinkButton={handleLinkButton}
         setLinkModalOpen={setLinkModalOpen}
+        webView={true}
       />
     );
   };
@@ -975,6 +976,7 @@ const Dashboard: NextPage = () => {
                       column={expandableColumns}
                       columnData={categoryMetaData.state}
                       expandedRowRender={expandedRowRender}
+                      webView={true}
                     />
                   </>
                 )}
