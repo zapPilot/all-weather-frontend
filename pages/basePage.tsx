@@ -10,7 +10,7 @@ import "@flaticon/flaticon-uicons/css/regular/all.css";
 import { ConnectButton } from "thirdweb/react";
 import { createWallet, walletConnect, inAppWallet } from "thirdweb/wallets";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
-import { arbitrum } from "thirdweb/chains";
+import { arbitrum, optimism } from "thirdweb/chains";
 
 const WALLETS = [
   createWallet("io.rabby"),
@@ -55,6 +55,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
                 wallets={WALLETS}
                 theme={"light"}
                 connectModal={{ size: "compact" }}
+                chains={[arbitrum, optimism]}
                 accountAbstraction={{
                   chain: arbitrum,
                   // sponsorGas: true,
