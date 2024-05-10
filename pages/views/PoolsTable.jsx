@@ -67,6 +67,7 @@ export const ExpandTableComponent = ({ column, columnData, expandedRowRender, we
 
 export const TableComponent = ({ column, columnData, webView }) => {
   const tableRowMobile = ["Tokens", "Chain", "Pool", "TVL", "APR"];
+  const columnDataArray = Array.isArray(columnData) ? columnData : columnData.data;
   return (
     <>
       <table className={`min-w-full ${webView ? 'hidden sm:table' : 'sm:hidden'}`}>
@@ -80,7 +81,7 @@ export const TableComponent = ({ column, columnData, webView }) => {
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-400">
-          {columnData.data.map((item, index) => (
+          {columnDataArray.map((item, index) => (
             <tr key={index} className="hover:bg-black-900 cursor-pointer">
               <td className="relative px-7 sm:w-12 sm:px-6">
                 <input

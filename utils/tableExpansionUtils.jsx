@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import {
   UnlockOutlined,
   ArrowUpOutlined,
@@ -20,13 +21,6 @@ export const columnMapping = (
     render: (chain) => (
       <Image src={`/chainPicturesWebp/${chain}.webp`} height={20} width={20} />
     ),
-    content: (chain) => {
-      const chainImg = `/chainPicturesWebp/${chain}.webp`;
-      return {
-        chainAlt: chain,
-        chainImg: chainImg,
-      };
-    },
   },
   pool: {
     title: "Pool",
@@ -77,18 +71,6 @@ export const columnMapping = (
         </>
       );
     },
-    content: (pool, _, index) => {
-      const paidUser = subscriptionStatus;
-      const poolName = pool && pool.name;
-      const protocolLink = protocolList.find(
-        (protocol) => protocol.slug === poolName,
-      );
-      return {
-        paidUser: paidUser,
-        pool: pool,
-        protocolLink: protocolLink ? protocolLink.url : null,
-      };
-    },
   },
   tokens: {
     title: "Tokens",
@@ -119,15 +101,6 @@ export const columnMapping = (
         </div>
       );
     },
-    content: (tokens) => {
-      if (typeof tokens === "string") {
-        return tokens.split("-");
-      } else if (Array.isArray(tokens)) {
-        return tokens;
-      } else {
-        return []; // Return an empty array if tokens is not a string or an array
-      }
-    },
   },
   tvlUsd: {
     title: "TVL",
@@ -141,14 +114,6 @@ export const columnMapping = (
           {(tvlUsd / 1e6).toFixed(2)}M
         </span>
       );
-    },
-    content: (tvlUsd) => {
-      const danger = tvlUsd < 500000 ? 1 : 0;
-      const tvlUsdCount = (tvlUsd / 1e6).toFixed(2);
-      return {
-        danger: danger,
-        tvlUsdCount: tvlUsdCount,
-      };
     },
   },
   apr: {
@@ -176,21 +141,6 @@ export const columnMapping = (
         </span>
       );
     },
-    content: (apr) => {
-      if (typeof apr === "undefined") {
-        return {
-          aprVal: "",
-          aprPredicted: "",
-        };
-      } else {
-        const aprVal = apr.value ? apr.value.toFixed(2) : apr;
-        const aprPredicted = apr.predictions.predictedClass;
-        return {
-          aprVal: aprVal,
-          aprPredicted: aprPredicted,
-        };
-      }
-    },
   },
   outerAprColumn: {
     title: "Highest APR",
@@ -204,7 +154,6 @@ export const columnMapping = (
         </span>
       );
     },
-    content: (apr) => apr.value ? apr.value.toFixed(2) : apr,
   },
 });
 export const getExpandableColumnsForSuggestionsTable = () => [

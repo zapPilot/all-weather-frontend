@@ -2,20 +2,11 @@
 // All code in this file will be ignored by the TypeScript compiler
 import type { NextPage } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import BasePage from "./basePage.tsx";
 import { Spin, Button } from "antd";
-import {
-  UnlockOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
-  ExportOutlined,
-  PlusCircleOutlined,
-} from "@ant-design/icons";
 import { useWindowHeight } from "../utils/chartUtils.js";
 import { investByAAWallet } from "../utils/etherspot.js";
 import { useActiveAccount } from "thirdweb/react";
-
 import {
   getBasicColumnsForSuggestionsTable,
   getExpandableColumnsForSuggestionsTable,
@@ -29,6 +20,7 @@ import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { walletAddressChanged } from "../lib/features/subscriptionSlice";
 import { ExpandTableComponent, TableComponent } from "./views/PoolsTable";
+import { useWindowWidth } from "../utils/chartUtils";
 
 interface Pools {
   key: string;
@@ -272,8 +264,6 @@ const Dashboard: NextPage = () => {
     });
   });
 
-  const tableRowMobile = ["Tokens", "Chain", "Pool", "TVL", "APR"];
-
   useEffect(() => {
     if (!walletAddress) return;
     dispatch(walletAddressChanged({ walletAddress: walletAddress }));
@@ -337,6 +327,8 @@ const Dashboard: NextPage = () => {
     fetchProtocolList();
   }, []);
 
+  const windowWidth = useWindowWidth();
+  
   const expandedRowRender = (records: Pools) => {
     const columns = [
       columnMapping("")["chain"],
@@ -357,7 +349,7 @@ const Dashboard: NextPage = () => {
         onSelectCallback={onSelectCallback}
         handleLinkButton={handleLinkButton}
         setLinkModalOpen={setLinkModalOpen}
-        webView={true}
+        webView={windowWidth > 768 ? true : false}
       />
     );
   };
@@ -495,490 +487,21 @@ const Dashboard: NextPage = () => {
                     <Spin size="large" />
                   </div>
                 ) : unexpandable[categoryMetaData.category] === true ? (
-                  <>
-                    {/* <table className="min-w-full">
-                      <thead>
-                        <tr className="bg-emerald-400">
-                          <th
-                            scope="col"
-                            className="relative px-7 sm:w-12 sm:px-6"
-                          ></th>
-                          {basicColumns.map((column, index) => (
-                            <th
-                              key={index}
-                              className={`px-3 py-3.5 text-left text-sm font-semibold text-black ${
-                                index > 0 ? "hidden " : ""
-                              }sm:table-cell`}
-                            >
-                              {index == 0 ? (
-                                <span className="sm:hidden">Pool</span>
-                              ) : (
-                                <span className="hidden sm:block">
-                                  {column.title}
-                                </span>
-                              )}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-400">
-                        {categoryMetaData.state.map((item, rowIndex) => (
-                          <tr key={rowIndex} className="hover:bg-black-900">
-                            <td className="relative px-7 sm:w-12 sm:px-6">
-                              <input
-                                type="checkbox"
-                                className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-400 text-indigo-600 focus:ring-indigo-600"
-                                onChange={(e) =>
-                                  e.target.checked
-                                    ? onSelectCallback(
-                                        item.data[rowIndex],
-                                        true,
-                                      )
-                                    : null
-                                }
-                              />
-                            </td>
-                            {basicColumns.map((column, colIndex) => (
-                              <>
-                                {column.title === "Chain" && (
-                                  <td
-                                    key={colIndex}
-                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 sm:table-cell"
-                                  >
-                                    <div className="hidden sm:block">
-                                      <Image
-                                        src={
-                                          // @ts-ignore
-                                          column.content(item[column.key])
-                                            .chainImg
-                                        }
-                                        alt={
-                                          // @ts-ignore
-                                          column.content(item[column.key])
-                                            .chainAlt
-                                        }
-                                        height={20}
-                                        width={20}
-                                      />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4 sm:hidden">
-                                      {tableRowMobile.map((title, index) => {
-                                        const column = basicColumns.find(
-                                          (column) => column.title === title,
-                                        );
-                                        if (!column) return null;
-                                        return (
-                                          <>
-                                            {column.title === "Tokens" && (
-                                              <div className="col-span-2">
-                                                <div className="flex items-center">
-                                                  {
-                                                    // @ts-ignore
-                                                    column
-                                                      .content(item[column.key])
-                                                      // @ts-ignore
-                                                      .map((item, index) => (
-                                                        <Image
-                                                          src={`/tokenPictures/${item.replace(
-                                                            /[()]/g,
-                                                            "",
-                                                          )}.webp`}
-                                                          key={item}
-                                                          alt={item}
-                                                          height={20}
-                                                          width={20}
-                                                        />
-                                                      ))
-                                                  }
-                                                  <p className="text-white text-xl font-medium px-2">
-                                                    {
-                                                      // @ts-ignore
-                                                      column.content(
-                                                        item[column.key],
-                                                      ).length > 1
-                                                        ? // @ts-ignore
-                                                          column
-                                                            .content(
-                                                              item[column.key],
-                                                            )
-                                                            .join("-")
-                                                        : // @ts-ignore
-                                                          column.content(
-                                                            item[column.key],
-                                                          )
-                                                    }
-                                                  </p>
-                                                </div>
-                                              </div>
-                                            )}
-                                            {column.title === "TVL" && (
-                                              <div className="col-span-1">
-                                                <p className="text-gray-400 text-sm font-medium">
-                                                  TVL
-                                                </p>
-                                                <span
-                                                  className={
-                                                    // @ts-ignore
-                                                    column.content(
-                                                      item[column.key],
-                                                    ).danger == 1
-                                                      ? "block px-2 text-red-400"
-                                                      : "block px-2 text-white"
-                                                  }
-                                                >
-                                                  {
-                                                    // @ts-ignore
-                                                    column.content(
-                                                      item[column.key],
-                                                    ).tvlUsdCount
-                                                  }
-                                                  M
-                                                </span>
-                                              </div>
-                                            )}
-                                            {column.title === "APR" && (
-                                              <div className="col-span-1">
-                                                <p className="text-gray-400 text-sm font-medium">
-                                                  APR
-                                                </p>
-                                                <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                                                  {
-                                                    // @ts-ignore
-                                                    column.content(
-                                                      item[column.key],
-                                                    ).aprVal
-                                                  }
-                                                  %
-                                                </span>
-                                                {
-                                                  // @ts-ignore
-                                                  column.content(
-                                                    item[column.key],
-                                                  ).aprPredicted === "Down" ? (
-                                                    <ArrowDownOutlined className="text-red-400 px-2" />
-                                                  ) : (
-                                                    <ArrowUpOutlined className="text-green-400 px-2" />
-                                                  )
-                                                }
-                                              </div>
-                                            )}
-                                            {column.title === "Chain" && (
-                                              <div className="col-span-1">
-                                                <p className="text-gray-400 text-sm font-medium">
-                                                  Chain
-                                                </p>
-                                                <Image
-                                                  src={
-                                                    // @ts-ignore
-                                                    column.content(
-                                                      item[column.key],
-                                                    ).chainImg
-                                                  }
-                                                  alt={
-                                                    // @ts-ignore
-                                                    column.content(
-                                                      item[column.key],
-                                                    ).chainAlt
-                                                  }
-                                                  height={20}
-                                                  width={20}
-                                                />
-                                              </div>
-                                            )}
-                                            {column.title === "Pool" && (
-                                              <div className="col-span-1">
-                                                <p className="text-gray-400 text-sm font-medium">
-                                                  DEX
-                                                </p>
-                                                {
-                                                  // @ts-ignore
-                                                  column.content(
-                                                    item[column.key],
-                                                  ).paidUser || rowIndex > 0 ? (
-                                                    <div>
-                                                      <button
-                                                        type="button"
-                                                        className="text-sm text-gray-400 shadow-sm hover:text-white"
-                                                        onClick={() => {
-                                                          handleLinkButton(
-                                                            // @ts-ignore
-                                                            column.content(
-                                                              item[column.key],
-                                                            ).protocolLink,
-                                                          );
-                                                          setLinkModalOpen(
-                                                            true,
-                                                          );
-                                                        }}
-                                                      >
-                                                        <Image
-                                                          src={
-                                                            // @ts-ignore
-                                                            `/projectPictures/${
-                                                              column.content(
-                                                                item[
-                                                                  column.key
-                                                                ],
-                                                              ).pool.name
-                                                            }.webp`
-                                                          }
-                                                          alt={
-                                                            // @ts-ignore
-                                                            column.content(
-                                                              item[column.key],
-                                                            ).pool.name
-                                                          }
-                                                          className="me-2"
-                                                          height={20}
-                                                          width={20}
-                                                        />
-                                                      </button>
-                                                      <div className="relative group">
-                                                        <span className="text-white pe-2">
-                                                          {
-                                                            // @ts-ignore
-                                                            column.content(
-                                                              item[column.key],
-                                                            ).pool.name
-                                                          }
-                                                        </span>
-                                                        <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
-                                                          {
-                                                            // @ts-ignore
-                                                            "pool ID: " +
-                                                              column.content(
-                                                                item[
-                                                                  column.key
-                                                                ],
-                                                              ).pool.poolID
-                                                          }
-                                                        </span>
-                                                        {
-                                                          // @ts-ignore
-                                                          column.content(
-                                                            item[column.key],
-                                                          ).pool.meta ? (
-                                                            <p className="text-gray-400 text-xs pe-2">
-                                                              {
-                                                                // @ts-ignore
-                                                                column.content(
-                                                                  item[
-                                                                    column.key
-                                                                  ],
-                                                                ).pool.meta
-                                                              }
-                                                            </p>
-                                                          ) : null
-                                                        }
-                                                      </div>
-                                                    </div>
-                                                  ) : (
-                                                    <Link
-                                                      href="/subscription"
-                                                      className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm text-black"
-                                                    >
-                                                      <UnlockOutlined className="-ml-0.5 h-5 w-5" />
-                                                      Unlock
-                                                    </Link>
-                                                  )
-                                                }
-                                              </div>
-                                            )}
-                                          </>
-                                        );
-                                      })}
-                                    </div>
-                                  </td>
-                                )}
-                                {column.title === "Pool" && (
-                                  <td
-                                    key={colIndex}
-                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 hidden sm:table-cell"
-                                  >
-                                    {
-                                      // @ts-ignore
-                                      column.content(item[column.key])
-                                        .paidUser || rowIndex > 0 ? (
-                                        <div className="flex items-center">
-                                          <Image
-                                            src={
-                                              // @ts-ignore
-                                              `/projectPictures/${
-                                                column.content(item[column.key])
-                                                  .pool.name
-                                              }.webp`
-                                            }
-                                            alt={
-                                              // @ts-ignore
-                                              column.content(item[column.key])
-                                                .pool.name
-                                            }
-                                            className="me-2"
-                                            height={20}
-                                            width={20}
-                                          />
-                                          <div className="relative group">
-                                            <span className="text-white pe-2">
-                                              {
-                                                // @ts-ignore
-                                                column.content(item[column.key])
-                                                  .pool.name
-                                              }
-                                            </span>
-                                            <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
-                                              {
-                                                // @ts-ignore
-                                                "pool ID: " +
-                                                  column.content(
-                                                    item[column.key],
-                                                  ).pool.poolID
-                                              }
-                                            </span>
-                                            {
-                                              // @ts-ignore
-                                              column.content(item[column.key])
-                                                .pool.meta ? (
-                                                <span className="text-gray-400 text-xs pe-2">
-                                                  {
-                                                    // @ts-ignore
-                                                    column.content(
-                                                      item[column.key],
-                                                    ).pool.meta
-                                                  }
-                                                </span>
-                                              ) : (
-                                                ""
-                                              )
-                                            }
-                                          </div>
-                                          <button
-                                            type="button"
-                                            className="text-sm text-gray-400 shadow-sm hover:text-white"
-                                            onClick={() => {
-                                              handleLinkButton(
-                                                // @ts-ignore
-                                                column.content(item[column.key])
-                                                  .protocolLink,
-                                              );
-                                              setLinkModalOpen(true);
-                                            }}
-                                          >
-                                            <ExportOutlined />
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <Link
-                                          href="/subscription"
-                                          className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm text-black"
-                                        >
-                                          <UnlockOutlined className="-ml-0.5 h-5 w-5" />
-                                          Unlock
-                                        </Link>
-                                      )
-                                    }
-                                  </td>
-                                )}
-                                {column.title === "Tokens" && (
-                                  <td
-                                    key={colIndex}
-                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 hidden sm:table-cell"
-                                  >
-                                    <div className="flex items-center">
-                                      {
-                                        // @ts-ignore
-                                        column
-                                          .content(item[column.key])
-                                          .map((item, index) => (
-                                            <Image
-                                              src={`/tokenPictures/${item.replace(
-                                                /[()]/g,
-                                                "",
-                                              )}.webp`}
-                                              key={item}
-                                              alt={item}
-                                              height={20}
-                                              width={20}
-                                            />
-                                          ))
-                                      }
-                                      <span className="text-white px-2">
-                                        {
-                                          // @ts-ignore
-                                          column.content(item[column.key])
-                                            .length > 1
-                                            ? // @ts-ignore
-                                              column
-                                                .content(item[column.key])
-                                                .join("-")
-                                            : // @ts-ignore
-                                              column.content(item[column.key])
-                                        }
-                                      </span>
-                                    </div>
-                                  </td>
-                                )}
-                                {column.title === "TVL" && (
-                                  <td
-                                    key={colIndex}
-                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 hidden sm:table-cell"
-                                  >
-                                    <span
-                                      className={
-                                        // @ts-ignore
-                                        column.content(item[column.key])
-                                          .danger == 1
-                                          ? "px-2 text-red-400"
-                                          : "px-2 text-white"
-                                      }
-                                    >
-                                      {
-                                        // @ts-ignore
-                                        column.content(item[column.key])
-                                          .tvlUsdCount
-                                      }
-                                      M
-                                    </span>
-                                  </td>
-                                )}
-                                {column.title === "APR" && (
-                                  <td
-                                    key={colIndex}
-                                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 hidden sm:table-cell"
-                                  >
-                                    <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                                      {
-                                        // @ts-ignore
-                                        column.content(item[column.key]).aprVal
-                                      }
-                                      %
-                                    </span>
-                                    {
-                                      // @ts-ignore
-                                      column.content(item[column.key])
-                                        .aprPredicted === "Down" ? (
-                                        <ArrowDownOutlined className="text-red-400 px-2" />
-                                      ) : (
-                                        <ArrowUpOutlined className="text-green-400 px-2" />
-                                      )
-                                    }
-                                  </td>
-                                )}
-                              </>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table> */}
-                  </>
+                  <TableComponent
+                    column={basicColumns}
+                    columnData={categoryMetaData.state}
+                    onSelectCallback={onSelectCallback}
+                    handleLinkButton={handleLinkButton}
+                    setLinkModalOpen={setLinkModalOpen}
+                    webView={windowWidth > 768 ? true : false}
+                  />
                 ) : (
-                  <>
                     <ExpandTableComponent
                       column={expandableColumns}
                       columnData={categoryMetaData.state}
                       expandedRowRender={expandedRowRender}
-                      webView={true}
+                      webView={windowWidth > 768 ? true : false}
                     />
-                  </>
                 )}
               </div>
             );
