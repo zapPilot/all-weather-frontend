@@ -56,11 +56,9 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
                 theme={"light"}
                 connectModal={{ size: "compact" }}
                 accountAbstraction={{
-                  chain: arbitrum, // the chain where your smart wallet will be or is deployed
-                  factoryAddress: String(
-                    process.env.NEXT_PUBLIC_FACTORY_ADDRESS,
-                  ),
-                  gasless: false, // enable or disable gasless transactions
+                  chain: arbitrum,
+                  // sponsorGas: true,
+                  sponsorGas: false,
                 }}
               />
             </div>
