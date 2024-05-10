@@ -92,7 +92,7 @@ export const TableComponent = ({ column, columnData, webView }) => {
                   }
                 />
               </td>
-              {webView ? <WebTableBody column={column} item={item} /> : <MobileTableBody column={column} item={item} tableRowMobile={tableRowMobile} />
+              {webView ? <WebTableBody column={column} item={item} rowIndex={index} /> : <MobileTableBody column={column} item={item} tableRowMobile={tableRowMobile} rowIndex={index} />
               }
             </tr>
           ))}
@@ -121,12 +121,12 @@ class WebTableThead extends React.Component {
 
 class WebTableBody extends React.Component {
   render() {
-    const { column, item } = this.props;
+    const { column, item, rowIndex } = this.props;
     return (
       <>
         {column.map((column, colIndex) => (
           <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400">
-            {column.render(item[column.key])}
+            {column.render(item[column.key], rowIndex)}
           </td>
         ))}
       </>
@@ -144,7 +144,7 @@ class MobileTableThead extends React.Component {
 
 class MobileTableBody extends React.Component {
   render() {
-    const { column, item, tableRowMobile } = this.props;
+    const { column, item, tableRowMobile, rowIndex } = this.props;
     return (
       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400">
         <div className="grid grid-cols-2 gap-4 sm:hidden">
@@ -157,7 +157,7 @@ class MobileTableBody extends React.Component {
               {isTokens ? (
                 <>
                   <div className="text-white text-xl font-medium px-2">
-                    {columnItem.render(item[columnItem.key])}
+                    {columnItem.render(item[columnItem.key], rowIndex)}
                   </div>
                 </>
               ) : (

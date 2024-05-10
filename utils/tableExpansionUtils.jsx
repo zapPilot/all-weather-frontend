@@ -27,12 +27,14 @@ export const columnMapping = (
     dataIndex: "pool",
     key: "pool",
     width: 24,
-    render: (pool, _, index) => {
+    render: (pool, index) => {
       return index === 0 && subscriptionStatus === false ? (
-        <Link href="/subscription" passHref>
-          <Button type="primary" icon={<UnlockOutlined />}>
-            Unlock
-          </Button>
+        <Link
+        href="/subscription"
+          className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm text-black"
+        >
+          <UnlockOutlined className="-ml-0.5 h-5 w-5" />
+          Unlock
         </Link>
       ) : (
         <>
