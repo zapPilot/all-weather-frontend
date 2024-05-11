@@ -384,7 +384,7 @@ export default function RebalanceChart(props) {
     fetchData();
   }, [props]);
   return (
-    <div style={divSunBurst}>
+    <div style={divSunBurst} role="sunburst-chart">
       <Sunburst
         animation
         hideRootNode
