@@ -19,7 +19,7 @@ import LinkModal from "./views/components/LinkModal";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { walletAddressChanged } from "../lib/features/subscriptionSlice";
-import { ExpandTableComponent, TableComponent } from "./views/PoolsTable";
+import TableComponent, { ExpandTableComponent } from "./views/PoolsTable";
 import { useWindowWidth } from "../utils/chartUtils";
 
 interface Pools {
