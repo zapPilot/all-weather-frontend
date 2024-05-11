@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { PlusCircleOutlined } from "@ant-design/icons";
 
-export default ExpandTableComponent = ({
+export const ExpandTableComponent = ({
   column,
   columnData,
   expandedRowRender,
@@ -206,3 +206,5 @@ class MobileTableBody extends React.Component {
     );
   }
 }
+
+export { ExpandTableComponent, TableComponent };
