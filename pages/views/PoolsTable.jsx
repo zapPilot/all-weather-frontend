@@ -22,7 +22,7 @@ export const ExpandTableComponent = ({ column, columnData, expandedRowRender, we
             <th></th>
             {column.map((item, index) => (
               <th
-                key={index}
+                key={`${item.title}-${index}`}
                 className="px-3 py-3.5 text-left text-sm font-semibold text-black"
               >
                 {item.title}
@@ -34,7 +34,7 @@ export const ExpandTableComponent = ({ column, columnData, expandedRowRender, we
           {columnData.map((item, rowIndex) => (
             <>
               <tr
-                key={rowIndex}
+                key={item.tokens.join('-')}
                 className="hover:bg-black-900 cursor-pointer"
                 onClick={
                   // @ts-ignore
@@ -45,7 +45,7 @@ export const ExpandTableComponent = ({ column, columnData, expandedRowRender, we
                   <PlusCircleOutlined />
                 </td>
                 {column.map((column, colIndex) => (
-                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400">
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400" key={`${column.key}-${item.tokens.join('-')}`}>
                     {column.render(item[column.key])}
                   </td>
                 ))}
@@ -82,7 +82,7 @@ export const TableComponent = ({ column, columnData, webView }) => {
         </thead>
         <tbody className="divide-y divide-gray-400">
           {columnDataArray.map((item, index) => (
-            <tr key={index} className="hover:bg-black-900 cursor-pointer">
+            <tr key={item.pool.poolID} className="hover:bg-black-900 cursor-pointer">
               <td className="relative px-7 sm:w-12 sm:px-6">
                 <input
                   type="checkbox"
@@ -108,7 +108,7 @@ class WebTableThead extends React.Component {
       <>
         {column.map((item, index) => (
           <th
-            key={index}
+            key={`${item.title}-${index}`}
             className="px-3 py-3.5 text-left text-sm font-semibold text-black"
           >
             {item.title}
@@ -125,7 +125,7 @@ class WebTableBody extends React.Component {
     return (
       <>
         {column.map((column, colIndex) => (
-          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400">
+          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400" key={`${column.title}-${item.pool.poolID}`}>
             {column.render(item[column.key], rowIndex)}
           </td>
         ))}
@@ -153,23 +153,23 @@ class MobileTableBody extends React.Component {
             if (!columnItem) return null;
             const isTokens = columnItem.title === "Tokens";
             return (
-              <div key={colIndex} className={isTokens ? "col-span-2" : "col-span-1"}>
-              {isTokens ? (
-                <>
-                  <div className="text-white text-xl font-medium px-2">
-                    {columnItem.render(item[columnItem.key], rowIndex)}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <p className="text-gray-400 text-sm font-medium">{columnItem.title}</p>
-                  <div className="w-36 text-wrap">
-                    {columnItem.render(item[columnItem.key])}
-                  </div>
-                </>
-              
-              )}
-            </div>
+              <div key={`${columnItem.title}-${item.pool.poolID}`} className={isTokens ? "col-span-2" : "col-span-1"}>
+                {isTokens ? (
+                  <>
+                    <div className="text-white text-xl font-medium px-2">
+                      {columnItem.render(item[columnItem.key], rowIndex)}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-gray-400 text-sm font-medium">{columnItem.title}</p>
+                    <div className="w-36 text-wrap">
+                      {columnItem.render(item[columnItem.key])}
+                    </div>
+                  </>
+                
+                )}
+              </div>
             );
           })}
         </div>

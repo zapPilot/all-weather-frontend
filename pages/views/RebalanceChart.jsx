@@ -36,7 +36,7 @@ const LABEL_STYLE = {
   fontSize: "16px",
   textAnchor: "middle",
   fill: "white",
-  whiteSpace: "pre-wrap",
+  whitespace: "pre-wrap",
   color: "white",
 };
 
