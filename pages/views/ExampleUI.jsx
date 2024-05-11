@@ -173,7 +173,7 @@ export default function ExampleUI() {
               </h3>
               <div className="my-5">
                 <Link
-                  href="/subscribtion"
+                  href="/subscription"
                   className="px-2 py-1 rounded ring-1 ring-inset ring-emerald-400 text-sm font-semibold leading-6 text-emerald-400 "
                 >
                   Subscribe <span aria-hidden="true">&rarr;</span>
