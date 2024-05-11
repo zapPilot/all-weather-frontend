@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { PlusCircleOutlined } from "@ant-design/icons";
 
-export const ExpandTableComponent = ({
+export default ExpandTableComponent = ({
   column,
   columnData,
   expandedRowRender,
