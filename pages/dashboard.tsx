@@ -328,7 +328,7 @@ const Dashboard: NextPage = () => {
   }, []);
 
   const windowWidth = useWindowWidth();
-  
+
   const expandedRowRender = (records: Pools) => {
     const columns = [
       columnMapping("")["chain"],
@@ -496,12 +496,12 @@ const Dashboard: NextPage = () => {
                     webView={windowWidth > 768 ? true : false}
                   />
                 ) : (
-                    <ExpandTableComponent
-                      column={expandableColumns}
-                      columnData={categoryMetaData.state}
-                      expandedRowRender={expandedRowRender}
-                      webView={windowWidth > 768 ? true : false}
-                    />
+                  <ExpandTableComponent
+                    column={expandableColumns}
+                    columnData={categoryMetaData.state}
+                    expandedRowRender={expandedRowRender}
+                    webView={windowWidth > 768 ? true : false}
+                  />
                 )}
               </div>
             );

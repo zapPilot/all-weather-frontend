@@ -19,7 +19,12 @@ export const columnMapping = (
     key: "chain",
     width: 24,
     render: (chain) => (
-      <Image src={`/chainPicturesWebp/${chain}.webp`} height={20} width={20} alt={chain} />
+      <Image
+        src={`/chainPicturesWebp/${chain}.webp`}
+        height={20}
+        width={20}
+        alt={chain}
+      />
     ),
   },
   pool: {
@@ -30,7 +35,7 @@ export const columnMapping = (
     render: (pool, index) => {
       return index === 0 && subscriptionStatus === false ? (
         <Link
-        href="/subscription"
+          href="/subscription"
           className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm text-black"
         >
           <UnlockOutlined className="-ml-0.5 h-5 w-5" />
