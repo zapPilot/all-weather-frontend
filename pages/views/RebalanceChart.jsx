@@ -329,9 +329,6 @@ export default function RebalanceChart(props) {
     portfolioComposition,
     account,
   } = props;
-  // const {
-
-  // } = props;
   const [data, setData] = useState(defaultData);
   const [apr, setAPR] = useState(0);
   const [finalValue, setFinalValue] = useState("Your Portfolio Chart");
@@ -370,6 +367,10 @@ export default function RebalanceChart(props) {
           ),
         );
       } else {
+        console.log(
+          "rebalanceSuggestions in rebalanceChart",
+          rebalanceSuggestions,
+        );
         if (!rebalanceSuggestions) return;
         // set showCategory = true, to show its category. For instance, long_term_bond
         const chartData = createChartData(
@@ -414,7 +415,7 @@ export default function RebalanceChart(props) {
         colorType="literal"
         getSize={(d) => d.value}
         getColor={(d) => d.hex}
-        data={defaultData}
+        data={data}
         height={props.windowWidth > 767 ? 500 : 300}
         width={props.windowWidth > 767 ? 500 : 300}
       >
