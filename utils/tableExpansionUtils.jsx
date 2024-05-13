@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import {
   UnlockOutlined,
   ArrowUpOutlined,
@@ -18,40 +19,42 @@ export const columnMapping = (
     key: "chain",
     width: 24,
     render: (chain) => (
-      <Image src={`/chainPicturesWebp/${chain}.webp`} height={20} width={20} />
+      <Image
+        src={`/chainPicturesWebp/${chain}.webp`}
+        height={20}
+        width={20}
+        alt={chain}
+      />
     ),
-    content: (chain) => {
-      const chainImg = `/chainPicturesWebp/${chain}.webp`;
-      return {
-        chainAlt: chain,
-        chainImg: chainImg,
-      };
-    },
   },
   pool: {
     title: "Pool",
     dataIndex: "pool",
     key: "pool",
     width: 24,
-    render: (pool, _, index) => {
+    render: (pool, index) => {
       return index === 0 && subscriptionStatus === false ? (
-        <Link href="/subscription" passHref>
-          <Button type="primary" icon={<UnlockOutlined />}>
-            Unlock
-          </Button>
+        <Link
+          href="/subscription"
+          className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm text-black"
+        >
+          <UnlockOutlined className="-ml-0.5 h-5 w-5" />
+          Unlock
         </Link>
       ) : (
-        <div className="flex items-center">
-          <Image
-            src={`/projectPictures/${pool.name}.webp`}
-            alt={pool.name}
-            className="me-2"
-            height={20}
-            width={20}
-          />
-          <div className="relative group">
+        <>
+          <div className="inline-block">
+            <Image
+              src={`/projectPictures/${pool.name}.webp`}
+              alt={pool.name}
+              className="inline-block me-2"
+              height={20}
+              width={20}
+            />
             <span className="text-white pe-2"> {pool.name}</span>
-            <span class="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
+          </div>
+          <div className="inline-block relative group">
+            <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
               {"pool ID: " + pool.poolID}
             </span>
             {pool.meta ? (
@@ -72,20 +75,8 @@ export const columnMapping = (
               </button>
             ) : null,
           )}
-        </div>
+        </>
       );
-    },
-    content: (pool, _, index) => {
-      const paidUser = subscriptionStatus;
-      const poolName = pool && pool.name;
-      const protocolLink = protocolList.find(
-        (protocol) => protocol.slug === poolName,
-      );
-      return {
-        paidUser: paidUser,
-        pool: pool,
-        protocolLink: protocolLink ? protocolLink.url : null,
-      };
     },
   },
   tokens: {
@@ -117,15 +108,6 @@ export const columnMapping = (
         </div>
       );
     },
-    content: (tokens) => {
-      if (typeof tokens === "string") {
-        return tokens.split("-");
-      } else if (Array.isArray(tokens)) {
-        return tokens;
-      } else {
-        return []; // Return an empty array if tokens is not a string or an array
-      }
-    },
   },
   tvlUsd: {
     title: "TVL",
@@ -139,14 +121,6 @@ export const columnMapping = (
           {(tvlUsd / 1e6).toFixed(2)}M
         </span>
       );
-    },
-    content: (tvlUsd) => {
-      const danger = tvlUsd < 500000 ? 1 : 0;
-      const tvlUsdCount = (tvlUsd / 1e6).toFixed(2);
-      return {
-        danger: danger,
-        tvlUsdCount: tvlUsdCount,
-      };
     },
   },
   apr: {
@@ -174,21 +148,6 @@ export const columnMapping = (
         </span>
       );
     },
-    content: (apr) => {
-      if (typeof apr === "undefined") {
-        return {
-          aprVal: "",
-          aprPredicted: "",
-        };
-      } else {
-        const aprVal = apr.value ? apr.value.toFixed(2) : apr;
-        const aprPredicted = apr.predictions.predictedClass;
-        return {
-          aprVal: aprVal,
-          aprPredicted: aprPredicted,
-        };
-      }
-    },
   },
   outerAprColumn: {
     title: "Highest APR",
@@ -202,7 +161,6 @@ export const columnMapping = (
         </span>
       );
     },
-    content: (apr) => apr.value.toFixed(2),
   },
 });
 export const getExpandableColumnsForSuggestionsTable = () => [
