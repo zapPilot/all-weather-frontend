@@ -329,9 +329,6 @@ export default function RebalanceChart(props) {
     portfolioComposition,
     account,
   } = props;
-  // const {
-
-  // } = props;
   const [data, setData] = useState(defaultData);
   const [apr, setAPR] = useState(0);
   const [finalValue, setFinalValue] = useState("Your Portfolio Chart");
@@ -383,7 +380,7 @@ export default function RebalanceChart(props) {
     fetchData();
   }, [props]);
   return (
-    <div style={divSunBurst}>
+    <div style={divSunBurst} role="sunburst-chart">
       <Sunburst
         animation
         hideRootNode
@@ -414,7 +411,7 @@ export default function RebalanceChart(props) {
         colorType="literal"
         getSize={(d) => d.value}
         getColor={(d) => d.hex}
-        data={defaultData}
+        data={data}
         height={props.windowWidth > 767 ? 500 : 300}
         width={props.windowWidth > 767 ? 500 : 300}
       >
