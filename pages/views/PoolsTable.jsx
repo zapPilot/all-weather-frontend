@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { PlusCircleOutlined } from "@ant-design/icons";
+import PropTypes from "prop-types";
 
 export const ExpandTableComponent = ({
   column,
@@ -121,6 +122,30 @@ const TableComponent = ({ column, columnData, webView }) => {
     </>
   );
 };
+
+TableComponent.propTypes = {
+  column: PropTypes.array,
+  columnData: PropTypes.oneOfType([
+    PropTypes.array,
+    PropTypes.shape({
+      data: PropTypes.array.isRequired,
+    }),
+  ]).isRequired,
+  onSelectCallback: PropTypes.func,
+  handleLinkButton: PropTypes.func,
+  setLinkModalOpen: PropTypes.func,
+  webView: PropTypes.bool,
+};
+
+TableComponent.defaultProps = {
+  column: [],
+  columnData: [],
+  onSelectCallback: () => {},
+  handleLinkButton: () => {},
+  setLinkModalOpen: () => {},
+  webView: false,
+};
+
 class WebTableThead extends React.Component {
   render() {
     const { column } = this.props;
