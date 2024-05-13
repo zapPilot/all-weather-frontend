@@ -156,4 +156,42 @@ describe("Dashboard Component", () => {
       console.error("An error occurred:", error);
     }
   });
+
+  it("render on mobile", async () => {
+    // Mock mobile screen size
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 500,
+    });
+    window.dispatchEvent(new Event("resize"));
+
+    render(<Dashboard />);
+    // Check if the component renders the table
+    const tables = screen.getAllByRole("table");
+    // Check if the table has the correct class
+    const specificClassTables = tables.filter((table) =>
+      table.classList.contains("sm:hidden"),
+    );
+    expect(specificClassTables.length).toBeGreaterThan(0);
+  });
+
+  it("render on desktop", async () => {
+    // Mock desktop screen size
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 1024,
+    });
+    window.dispatchEvent(new Event("resize"));
+
+    render(<Dashboard />);
+    // Check if the component renders the table
+    const tables = screen.getAllByRole("table");
+    // Check if the table has the correct class
+    const specificClassTables = tables.filter((table) =>
+      table.classList.contains("sm:table"),
+    );
+    expect(specificClassTables.length).toBeGreaterThan(0);
+  });
 });
