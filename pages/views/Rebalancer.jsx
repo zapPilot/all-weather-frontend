@@ -51,7 +51,7 @@ const RebalancerWidget = () => {
               </h3>
               <h3>
                 Reward APR:{" "}
-                {data?.portfolio_apr ? data?.portfolio_apr.toFixed(2) : 0}%{" "}
+                {data?.portfolioApr ? data?.portfolioApr.toFixed(2) : 0}%{" "}
                 {/* <APRPopOver mode="percentage" /> */}
               </h3>
             </div>
