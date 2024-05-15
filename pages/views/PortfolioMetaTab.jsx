@@ -30,7 +30,7 @@ const PortfolioMetaTab = () => {
       netWorthWithCustomLogic: data?.netWorthWithCustomLogic,
       suggestions: data?.suggestions,
       totalInterest: data?.totalInterest,
-      portfolioApr: data?.portfolioApr,
+      portfolioApr: data?.portfolio_apr,
       sharpeRatio: data?.sharpeRatio,
       topNLowestAprPools: data?.topNLowestAprPools,
       topNPoolConsistOfSameLpToken: data?.topNPoolConsistOfSameLpToken,
