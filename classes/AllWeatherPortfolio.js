@@ -140,15 +140,16 @@ export class AllWeatherPortfolio extends React.Component {
       .join("/");
   }
   async initialize() {
-    await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/pools/${this.concatenatedString}`,
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        this.poolsMetadata = data;
-      })
-      .catch((error) => this.setState({ error }));
-    this._checkTotalWeight(this.strategy);
+    // TODO(david): Uncomment this when the API is ready
+    // await fetch(
+    //   `${process.env.NEXT_PUBLIC_API_URL}/pools/${this.concatenatedString}`,
+    // )
+    //   .then((response) => response.json())
+    //   .then((data) => {
+    //     this.poolsMetadata = data;
+    //   })
+    //   .catch((error) => this.setState({ error }));
+    // this._checkTotalWeight(this.strategy);
   }
 
   _checkTotalWeight(strategyObject) {
