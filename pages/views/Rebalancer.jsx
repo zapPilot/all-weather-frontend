@@ -8,6 +8,7 @@ import { useWindowWidth } from "../../utils/chartUtils";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useActiveAccount } from "thirdweb/react";
+import APRPopOver from "./APRPopOver";
 
 const RebalancerWidget = () => {
   const windowWidth = useWindowWidth();
@@ -52,7 +53,7 @@ const RebalancerWidget = () => {
               <h3>
                 Reward APR:{" "}
                 {data?.portfolio_apr ? data?.portfolio_apr.toFixed(2) : 0}%{" "}
-                {/* <APRPopOver mode="percentage" /> */}
+                <APRPopOver />
               </h3>
             </div>
             <div>
@@ -66,7 +67,7 @@ const RebalancerWidget = () => {
             <div>
               <ZapInButton />
               <ZapOutButton />
-              {/* <APRPopOver mode="price" /> */}
+              {/* <APRPopOver /> */}
             </div>
           </div>
         </div>
