@@ -1,7 +1,7 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
-
+import Link from "next/link";
 import { Layout, Affix } from "antd";
 import styles from "../styles/Home.module.css";
 import HeaderInner from "./views/Header";
@@ -45,7 +45,9 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
         <Affix offsetTop={0}>
           <Header className={styles.header}>
             <div className="div-logo">
-              <Image src="/../logo.png" alt="logo" width={40} height={40} />
+              <Link href="/">
+                <Image src="/logo.png" alt="logo" width={40} height={40} />
+              </Link>
             </div>
             <HeaderInner />
             <div className="connect-button">

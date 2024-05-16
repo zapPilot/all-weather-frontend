@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import NavBar from "./NavBar.jsx";
 import { MenuOutlined, CloseOutlined } from "@ant-design/icons";
 import { ConfigProvider, Drawer } from "antd";
@@ -31,7 +32,11 @@ export default function Header({ ...props }) {
         }}
       >
         <Drawer
-          title={<Image src="../logo.png" alt="logo" width={40} height={40} />}
+          title={
+            <Link href="/">
+              <Image src="/logo.png" alt="logo" width={40} height={40} />
+            </Link>
+          }
           placement="right"
           closable={false}
           onClose={onClose}
