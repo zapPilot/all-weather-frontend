@@ -46,7 +46,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
           <Header className={styles.header}>
             <div className="div-logo">
               <Link href="/">
-                <Image src="../logo.png" alt="logo" width={40} height={40} />
+                <Image src="/logo.png" alt="logo" width={40} height={40} />
               </Link>
             </div>
             <HeaderInner />
