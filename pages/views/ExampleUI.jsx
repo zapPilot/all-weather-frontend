@@ -42,7 +42,7 @@ export default function ExampleUI() {
   useEffect(() => {
     if (subscriptionStatus) {
       axios
-        .get(`${API_URL}/addresses?worksheet=${walletAddress}&refresh=true`)
+        .get(`${API_URL}/bundle_portfolio/${walletAddress}?refresh=true`)
         .then((response) => response.data)
         .then((data) => dispatch(fetchDataSuccess(data)))
         .catch((error) => dispatch(fetchDataFailure(error.toString())));
