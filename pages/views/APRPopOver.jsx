@@ -15,7 +15,7 @@ const APRPopOver = () => {
   useEffect(() => {
     if (loading) return;
     let tmpMissingPools = [];
-    for (const pool of Object.values(data.aggregated_positions)) {
+    for (const pool of Object.values(data?.aggregated_positions ?? {})) {
       if (pool.apr.success === false) {
         tmpMissingPools.push(pool);
       }
@@ -26,7 +26,7 @@ const APRPopOver = () => {
   if (loading)
     return (
       <center>
-        <Spin size="small" />
+        <Spin size="small" role="aprpopoverloading" />
         Loading...
       </center>
     );
@@ -38,7 +38,7 @@ const APRPopOver = () => {
       open={open}
       onOpenChange={handleOpenChange}
     >
-      <a>
+      <a role="aprpopover">
         {missingPools.length > 0 ? (
           <span className="inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 text-xs font-medium text-white ring-1 ring-inset ring-gray-800">
             <svg
