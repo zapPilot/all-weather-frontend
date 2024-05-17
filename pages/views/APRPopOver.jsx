@@ -8,9 +8,6 @@ const APRPopOver = () => {
   const { data, loading } = useSelector((state) => state.api);
   const [missingPools, setMissingPools] = useState([]);
   const [open, setOpen] = useState(false);
-  const hide = () => {
-    setOpen(false);
-  };
   const handleOpenChange = (newOpen) => {
     setOpen(newOpen);
   };
@@ -35,8 +32,8 @@ const APRPopOver = () => {
     );
   return (
     <Popover
-      content={<a onClick={hide}>Close</a>}
-      title="Title"
+      content={JSON.stringify(missingPools)}
+      title={missingPools.length > 0 ? "Missing Pools" : "APR Details"}
       trigger="click"
       open={open}
       onOpenChange={handleOpenChange}
