@@ -26,7 +26,7 @@ export default function ExampleUI() {
     setIsHover(true);
   };
   const dispatch = useDispatch();
-  const { data, loading, error } = useSelector((state) => state.api);
+  const { data, loading } = useSelector((state) => state.api);
   const subscriptionStatus = useSelector(
     (state) => state.subscriptionStatus.subscriptionStatus,
   );
@@ -36,11 +36,11 @@ export default function ExampleUI() {
   useEffect(() => {
     if (!walletAddress) return;
     dispatch(walletAddressChanged({ walletAddress: walletAddress }));
-    dispatch(fetchDataStart());
   }, [account]);
 
   useEffect(() => {
     if (subscriptionStatus) {
+      dispatch(fetchDataStart());
       axios
         .get(`${API_URL}/bundle_portfolio/${walletAddress}?refresh=true`)
         .then((response) => response.data)
