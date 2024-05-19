@@ -119,10 +119,10 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
   let uniqueIdToMetaDataMapping = {};
   rebalanceSuggestions.forEach((item) => {
     item.suggestions_for_positions.forEach(
-      ({ symbol: uniqueId, balanceUSD, metadata }) => {
+      ({ symbol: uniqueId, balanceUSD, apr }) => {
         aggregatedBalanceDict[uniqueId] =
           (aggregatedBalanceDict[uniqueId] || 0) + balanceUSD;
-        uniqueIdToMetaDataMapping[uniqueId] = metadata;
+        uniqueIdToMetaDataMapping[uniqueId] = (apr * 100).toFixed(2);
       },
     );
   });
@@ -141,13 +141,9 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
     return {
       children: aggregatedArray.map(([uniqueId, value], idx) => {
         return {
-          name:
-            uniqueId.split(":")[1] +
-            " " +
-            uniqueIdToMetaDataMapping[uniqueId].symbol +
-            " " +
-            value +
-            "%",
+          name: `${uniqueId.split("/")[0]} ${
+            uniqueId.split("/")[uniqueId.split("/").length - 1]
+          }, APR: ${uniqueIdToMetaDataMapping[uniqueId]}% Weight: ${value}%`,
           hex: colorList[idx],
           value,
         };
@@ -167,13 +163,16 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
           .sort((a, b) => b.balanceUSD - a.balanceUSD)
           .map((subCategoryObj) => {
             return {
-              name:
-                subCategoryObj.symbol.split(":")[1] +
-                " " +
-                uniqueIdToMetaDataMapping[subCategoryObj.symbol].symbol +
-                " " +
-                getPercentage(subCategoryObj.balanceUSD, netWorth) +
-                "%",
+              name: `${subCategoryObj.symbol.split("/")[0]} ${
+                subCategoryObj.symbol.split("/")[
+                  subCategoryObj.symbol.split("/").length - 1
+                ]
+              }, APR: ${
+                uniqueIdToMetaDataMapping[subCategoryObj.symbol]
+              }% Weight: ${getPercentage(
+                subCategoryObj.balanceUSD,
+                netWorth,
+              )}%`,
               value: subCategoryObj.balanceUSD,
               hex: colorList[idx],
             };
