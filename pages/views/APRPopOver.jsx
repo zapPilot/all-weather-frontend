@@ -48,6 +48,7 @@ const APRPopOver = () => {
                 height={20}
                 alt=""
               />
+              {poolJson.mapping_chain}
             </dt>
             <dt className="flex-none">
               <span className="sr-only">Protocol</span>
