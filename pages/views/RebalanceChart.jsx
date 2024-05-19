@@ -63,7 +63,7 @@ function getKeyPath(node) {
  * @returns {Object} Updated tree structure
  */
 function updateData(data, keyPath) {
-  if (data.children) {
+  if (data?.children) {
     data.children.map((child) => updateData(child, keyPath));
   }
   // add a fill to all the uncolored cells
@@ -76,7 +76,6 @@ function updateData(data, keyPath) {
     ...data.style,
     fillOpacity: keyPath && !keyPath[data.name] ? 0.2 : 1,
   };
-
   return data;
 }
 
@@ -118,7 +117,7 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
   let aggregatedBalanceDict = {};
   let uniqueIdToMetaDataMapping = {};
   rebalanceSuggestions.forEach((item) => {
-    item.suggestions_for_positions.forEach(
+    item?.suggestions_for_positions.forEach(
       ({ symbol: uniqueId, balanceUSD, apr }) => {
         aggregatedBalanceDict[uniqueId] =
           (aggregatedBalanceDict[uniqueId] || 0) + balanceUSD;
@@ -133,7 +132,6 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
       ((value / netWorth) * 100).toFixed(2),
     ]),
   );
-
   if (!showCategory) {
     const aggregatedArray = Object.entries(aggregatedBalanceDict).sort(
       (a, b) => b[1] - a[1],
@@ -269,7 +267,7 @@ export function _prepareSunburstData(
     value: weightedValue,
     hex: colorForThisName,
   };
-  const categoryObj = result.children.find((obj) => obj.name === category);
+  const categoryObj = result?.children.find((obj) => obj.name === category);
   if (categoryObj) {
     categoryObj.children.push(payloadForSunburst);
   } else {
@@ -366,7 +364,7 @@ export default function RebalanceChart(props) {
           ),
         );
       } else {
-        if (!rebalanceSuggestions) return;
+        if (rebalanceSuggestions.length === 0) return;
         // set showCategory = true, to show its category. For instance, long_term_bond
         const chartData = createChartData(
           rebalanceSuggestions,

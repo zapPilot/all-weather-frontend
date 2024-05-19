@@ -27,7 +27,6 @@ const RebalancerWidget = () => {
     );
   };
   const getRebalanceDom = () => {
-    console.log("getRebalanceDom", data, data.net_worth);
     return (
       <>
         <div id="zapSection">
