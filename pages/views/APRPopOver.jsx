@@ -30,9 +30,36 @@ const APRPopOver = () => {
         Loading...
       </center>
     );
+
   return (
     <Popover
-      content={JSON.stringify(missingPools)}
+      content={missingPools.map((pool) => {
+        const poolJson = JSON.parse(pool.apr.debug);
+        return (
+          <div
+            className="mt-4 flex w-full flex-none gap-x-4 px-6"
+            key={poolJson.project_id}
+          >
+            <dt className="flex-none">
+              <span className="sr-only">Chain</span>
+              <img
+                src={`/chainPicturesWebp/${poolJson.mapping_chain}.webp`}
+                width={20}
+                height={20}
+                alt=""
+              />
+            </dt>
+            <dt className="flex-none">
+              <span className="sr-only">Protocol</span>
+              <img src={pool.protocol_logo_url} width={20} height={20} alt="" />
+              {poolJson.project_id}
+            </dt>
+            <dd className="text-sm leading-6 text-gray-500">
+              {poolJson.sorted_debank_optimized_symbol_list.join("-")}
+            </dd>
+          </div>
+        );
+      })}
       title={missingPools.length > 0 ? "Missing Pools" : "APR Details"}
       trigger="click"
       open={open}
