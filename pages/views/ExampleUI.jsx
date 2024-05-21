@@ -17,6 +17,8 @@ import {
 import { walletAddressChanged } from "../../lib/features/subscriptionSlice";
 import axios from "axios";
 import { Spin } from "antd";
+import { useRouter } from "next/router";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ExampleUI() {
@@ -32,6 +34,9 @@ export default function ExampleUI() {
   );
   const account = useActiveAccount();
   const walletAddress = account?.address.toLocaleLowerCase();
+  const router = useRouter();
+  const { query } = router;
+  const searchWalletAddress = query.address;
 
   useEffect(() => {
     if (!walletAddress) return;
@@ -42,7 +47,13 @@ export default function ExampleUI() {
     if (subscriptionStatus) {
       dispatch(fetchDataStart());
       axios
-        .get(`${API_URL}/bundle_portfolio/${walletAddress}?refresh=true`)
+        .get(
+          `${API_URL}/bundle_portfolio/${
+            searchWalletAddress === undefined
+              ? walletAddress
+              : searchWalletAddress.toLowerCase().trim().replace("/", "")
+          }?refresh=true`,
+        )
         .then((response) => response.data)
         .then((data) => dispatch(fetchDataSuccess(data)))
         .catch((error) => dispatch(fetchDataFailure(error.toString())));
