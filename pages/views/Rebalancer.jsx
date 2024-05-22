@@ -1,8 +1,6 @@
 // import suggestions from "./suggestions.json";
 import { LinkOutlined, LoadingOutlined } from "@ant-design/icons";
 import RebalanceChart from "./RebalanceChart";
-import ZapInButton from "./ZapInButton";
-import ZapOutButton from "./ZapOutButton";
 import UserBalanceInfo from "./UserBalanceInfo";
 import { useWindowWidth } from "../../utils/chartUtils";
 import { useEffect, useState } from "react";
@@ -62,11 +60,6 @@ const RebalancerWidget = () => {
                 portfolioApr={data?.portfolio_apr}
                 claimableRewards={data?.claimable_rewards}
               />
-            </div>
-            <div>
-              <ZapInButton />
-              <ZapOutButton />
-              {/* <APRPopOver /> */}
             </div>
           </div>
         </div>
