@@ -34,26 +34,63 @@ describe("Dashboard Component", () => {
               Promise.resolve({
                 data: [
                   {
-                    chain: "avalanche",
-                    pool: {
-                      meta: null,
-                      name: "struct-finance",
-                      poolID: "87e6c43a-bc0f-4a4f-adcd-1f5bff02402b",
-                    },
-                    symbol: "btc.b",
-                    tvlUsd: "538161",
                     apr: {
                       predictions: {
-                        binnedConfidence: 2,
+                        binnedConfidence: 3,
                         predictedClass: "Down",
-                        predictedProbability: 65,
+                        predictedProbability: 97,
                       },
-                      value: 9.53,
+                      value: 163.61597704364695,
                     },
+                    apyBase: 0.13891,
+                    apyMean30d: 314.62732,
+                    apyReward: 411.52794,
+                    categories: [
+                      [
+                        "long_term_bond",
+                        {
+                          only_for_sunburst_chart: false,
+                          value: 1,
+                        },
+                      ],
+                    ],
+                    category_from_request: "long_term_bond",
+                    category_weight: 0.01,
+                    chain: "ethereum",
+                    count: 97,
+                    exposure: "multi",
+                    key: "0",
+                    mu: 159.98632,
+                    outlier: true,
+                    pool: {
+                      meta: null,
+                      name: "aura",
+                      poolID: "b2f7a5b1-b743-4337-9ecd-3bef72a75eeb",
+                    },
+                    poolMeta: null,
+                    rewardTokens: [
+                      "0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF",
+                      "0xba100000625a3754423978a60c9317c58a424e3D",
+                      "0x38D64ce1Bdf1A9f24E0Ec469C9cAde61236fB4a0",
+                      "0x1BB9b64927e0C5e207C9DB4093b3738Eef5D8447",
+                      "0xbB2935E7691c3C0FbAc1Ed85030Cee284464EcA1",
+                      "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                      "0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF",
+                    ],
+                    sigma: 2.98651,
+                    stablecoin: false,
+                    symbol: "veth-wsteth",
+                    tokens: ["veth", "wsteth"],
+                    tvlUsd: 152969,
+                    underlyingTokens: [
+                      "0x38D64ce1Bdf1A9f24E0Ec469C9cAde61236fB4a0",
+                      "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+                    ],
+                    volumeUsd7d: null,
                   },
                 ],
-                unique_query_tokens: ["btc"],
                 unexpandable: true,
+                unique_query_tokens: ["eth"],
               }),
           }),
         ),
@@ -65,10 +102,10 @@ describe("Dashboard Component", () => {
     await waitFor(() => {
       try {
         // Check if the component renders the data
-        const btcElements = screen.getAllByText(/.*btc.*/i);
-        expect(btcElements.length).toBeGreaterThan(0);
+        const ethElements = screen.getAllByText(/.*eth.*/i);
+        expect(ethElements.length).toBeGreaterThan(0);
 
-        btcElements.forEach((element) => {
+        ethElements.forEach((element) => {
           expect(element).toBeInTheDocument();
         });
       } catch (error) {

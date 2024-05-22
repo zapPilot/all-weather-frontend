@@ -77,7 +77,6 @@ const Dashboard: NextPage = () => {
     subscriptionStatus,
   );
   const expandableColumns = getExpandableColumnsForSuggestionsTable();
-  const [btc, setBTC] = useState<Pools[] | null>(null);
   const [longTermBond, setLongTermBond] = useState<Pools[] | null>(null);
   const [intermediateTermBond, setIntermediateTermBond] = useState<
     Pools[] | null
@@ -96,7 +95,6 @@ const Dashboard: NextPage = () => {
     useState<Pools[] | null>(null);
   const [airdrop, set_airdrop] = useState<Pools[] | null>(null);
 
-  const [BTCFilterDict, setBTCFilterDict] = useState([]);
   const [longTermBondFilterDict, setLongTermBondFilterDict] = useState([]);
   const [intermediateTermBondFilterDict, setIntermediateTermBondFilterDict] =
     useState([]);
@@ -143,18 +141,9 @@ const Dashboard: NextPage = () => {
       [key: string]: any;
     }>({});
 
-  const topN = 5;
+  const defaultTopN = 5;
+  const biggerTopN = 10;
   const queriesForAllWeather: queriesObj[] = [
-    {
-      wording: "BTC",
-      category: "btc",
-      setStateMethod: setBTC,
-      state: btc,
-      setUniqueQueryTokens: setBTCFilterDict,
-      uniqueQueryTokens: BTCFilterDict,
-      unexpandable: unexpandable.btc,
-      setUnexpandable: updateState,
-    },
     {
       wording: "Long Term Bond (40%)",
       category: "long_term_bond",
@@ -164,6 +153,7 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: longTermBondFilterDict,
       unexpandable: unexpandable.long_term_bond,
       setUnexpandable: updateState,
+      topN: biggerTopN,
     },
     {
       wording: "Intermediate Term Bond (15%)",
@@ -174,6 +164,7 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: intermediateTermBondFilterDict,
       unexpandable: unexpandable.intermediate_term_bond,
       setUnexpandable: updateState,
+      topN: defaultTopN,
     },
     {
       wording: "Commodities (7.5%)",
@@ -184,6 +175,7 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: commoditiesFilterDict,
       unexpandable: unexpandable.commodities,
       setUnexpandable: updateState,
+      topN: biggerTopN,
     },
     {
       wording: "Gold (7.5%)",
@@ -194,6 +186,7 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: goldDataFilterDict,
       unexpandable: unexpandable.gold,
       setUnexpandable: updateState,
+      topN: biggerTopN,
     },
     {
       wording: "Large Cap US Stocks (18%)",
@@ -204,6 +197,7 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: large_cap_us_stocksFilterDict,
       unexpandable: unexpandable.large_cap_us_stocks,
       setUnexpandable: updateState,
+      topN: defaultTopN,
     },
     {
       wording: "Small Cap US Stocks (3%)",
@@ -215,6 +209,7 @@ const Dashboard: NextPage = () => {
       unexpandable: unexpandable.small_cap_us_stocks,
       setUnexpandable: updateState,
       chain_blacklist: ["cardano", "fantom"],
+      topN: defaultTopN,
     },
     {
       wording: "Non US Developed Market Stocks (6%)",
@@ -225,6 +220,7 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: non_us_developed_market_stocksFilterDict,
       unexpandable: unexpandable.non_us_developed_market_stocks,
       setUnexpandable: updateState,
+      topN: defaultTopN,
     },
     {
       wording: "Non US Emerging Market Stocks (3%)",
@@ -235,6 +231,7 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: non_us_emerging_market_stocksFilterDict,
       unexpandable: unexpandable.non_us_emerging_market_stocks,
       setUnexpandable: updateState,
+      topN: defaultTopN,
     },
     {
       wording: "Airdrop",
@@ -253,6 +250,7 @@ const Dashboard: NextPage = () => {
         "scroll",
         "taiko",
       ],
+      topN: biggerTopN,
     },
   ];
 
@@ -283,7 +281,7 @@ const Dashboard: NextPage = () => {
               body: JSON.stringify({
                 user_api_key: userApiKey,
                 category: categoryMetaData.category,
-                top_n: topN,
+                top_n: categoryMetaData.topN,
                 ...(categoryMetaData.chain_blacklist && {
                   chain_blacklist: categoryMetaData.chain_blacklist,
                 }),
