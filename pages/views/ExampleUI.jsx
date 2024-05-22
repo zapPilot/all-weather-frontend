@@ -17,6 +17,7 @@ import {
 import { walletAddressChanged } from "../../lib/features/subscriptionSlice";
 import axios from "axios";
 import { Spin } from "antd";
+import Dashboard from "../dashboard.tsx";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ExampleUI() {
@@ -83,11 +84,8 @@ export default function ExampleUI() {
             <center>
               <Image src="/logo.png" alt="logo" width={100} height={100} />
               <h1
-                style={{
-                  marginBottom: 32,
-                  color: "#5DFDCB",
-                }}
-                className="heading-title"
+                style={{ color: "#5DFDCB" }}
+                className="text-5xl tracking-tight mb-8"
               >
                 All Weather Protocol
               </h1>
@@ -98,10 +96,8 @@ export default function ExampleUI() {
               <p className="heading-subtitle">
                 Enjoy
                 <span
-                  style={{
-                    color: "#5DFDCB",
-                  }}
-                  className="heading-title"
+                  style={{ color: "#5DFDCB" }}
+                  className="text-5xl tracking-tight"
                 >
                   {" "}
                   {loading ? (
@@ -181,6 +177,18 @@ export default function ExampleUI() {
               </div>
             </>
           )}
+        </Col>
+        <Col
+          xs={{
+            span: 24,
+            offset: 0,
+          }}
+          md={{
+            span: 18,
+            offset: 3,
+          }}
+        >
+          <Dashboard />
         </Col>
       </Row>
     </div>
