@@ -482,7 +482,7 @@ const Dashboard: NextPage = () => {
                       height: "15rem",
                     }}
                   >
-                    <Spin size="large" role="spin"/>
+                    <Spin size="large" role="spin" />
                   </div>
                 ) : unexpandable[categoryMetaData.category] === true ? (
                   <TableComponent

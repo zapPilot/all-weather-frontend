@@ -365,11 +365,7 @@ export default function RebalanceChart(props) {
       } else {
         if (!suggestions || suggestions.length === 0) return;
         // set showCategory = true, to show its category. For instance, long_term_bond
-        const chartData = createChartData(
-          suggestions,
-          netWorth,
-          showCategory,
-        );
+        const chartData = createChartData(suggestions, netWorth, showCategory);
         setData(chartData);
       }
     }
