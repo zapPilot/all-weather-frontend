@@ -1,8 +1,6 @@
 // import suggestions from "./suggestions.json";
 import { LinkOutlined, LoadingOutlined } from "@ant-design/icons";
 import RebalanceChart from "./RebalanceChart";
-import ZapInButton from "./ZapInButton";
-import ZapOutButton from "./ZapOutButton";
 import UserBalanceInfo from "./UserBalanceInfo";
 import { useWindowWidth } from "../../utils/chartUtils";
 import { useEffect, useState } from "react";

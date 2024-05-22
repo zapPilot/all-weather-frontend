@@ -48,7 +48,7 @@ const UserBalanceInfo = ({ netWorth, portfolioApr, claimableRewards }) => {
       }}
     >
       <h3>Your Deposit: ${userDeposit}</h3>
-      <h3>
+      <h3 role="monthly_interest">
         Monthly Interest: {currencyError === false ? currency : "USD"}{" "}
         {currencyError === false
           ? calculateMonthlyEarnings(
