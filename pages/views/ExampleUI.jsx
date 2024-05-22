@@ -98,6 +98,7 @@ export default function ExampleUI() {
                 <span
                   style={{ color: "#5DFDCB" }}
                   className="text-5xl tracking-tight"
+                  data-testid="apr"
                 >
                   {" "}
                   {loading ? (
