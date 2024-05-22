@@ -1,15 +1,8 @@
 import { useEffect, useState } from "react";
-const BigNumber = require("bignumber.js");
-
-const UserBalanceInfo = ({
-  netWorth,
-  netWorthWithCustomLogic,
-  portfolioApr,
-  claimableRewards,
-}) => {
-  const [userShares, setUserShares] = useState(0);
-  const [totalSupply, setTotalSupply] = useState(1);
+const UserBalanceInfo = ({ netWorth, portfolioApr, claimableRewards }) => {
   const [exchangeRates, setExchangeRates] = useState({});
+  const [currency, setCurrenty] = useState("USD");
+  const [currencyError, setCurrencyError] = useState(false);
 
   useEffect(() => {
     async function fetchExchangeRate() {
@@ -27,16 +20,26 @@ const UserBalanceInfo = ({
           setExchangeRates(data.rates);
         })
         .catch((error) => {
-          console.error("Error fetching data: ", error);
-          setError(error);
+          setCurrencyError(error);
         });
     }
+    const fetchCountry = async () => {
+      try {
+        const response = await fetch("https://ipapi.co/json/");
+        const data = await response.json();
+        setCurrenty(data.currency);
+      } catch (error) {
+        setCurrencyError(true);
+      }
+    };
     fetchExchangeRate();
+    fetchCountry();
   }, []);
 
-  const userPercentage = new BigNumber(userShares).div(totalSupply);
   const userDeposit = netWorth;
-
+  const calculateMonthlyEarnings = (deposit, apr, exchangeRate = 1) => {
+    return (((deposit * apr) / 100 / 12) * exchangeRate).toFixed(2);
+  };
   return (
     <div
       style={{
@@ -45,27 +48,23 @@ const UserBalanceInfo = ({
       }}
     >
       <h3>Your Deposit: ${userDeposit}</h3>
-      <b style={{ color: "#555555" }}>
-        Your Share: {userPercentage.times(100).toFixed(2)}%
-      </b>
       <h3>
-        Monthly Interest: $
-        {((userDeposit * portfolioApr) / 100 / 12).toFixed(2)}
-        <b style={{ color: "#555555" }}>
-          &nbsp;(NTD:{" "}
-          {(
-            (userDeposit * exchangeRates["TWD"] * portfolioApr) /
-            100 /
-            12
-          ).toFixed(2)}
-          )
-        </b>
+        Monthly Interest: {currencyError === false ? currency : "USD"}{" "}
+        {currencyError === false
+          ? calculateMonthlyEarnings(
+              userDeposit,
+              portfolioApr,
+              exchangeRates[currency],
+            )
+          : calculateMonthlyEarnings(userDeposit, portfolioApr)}
       </h3>
       <h3>
         <b style={{ color: "#555555" }}>
-          Claimable Rewards in the Portfolio: $
-          {(claimableRewards ?? 0).toFixed(2)}
-          &nbsp;(NTD: {(claimableRewards * exchangeRates["TWD"])?.toFixed(2)})
+          Claimable Rewards in the Portfolio:{" "}
+          {currencyError === false ? currency : "USD"}{" "}
+          {currencyError === false
+            ? (claimableRewards * exchangeRates[currency])?.toFixed(2)
+            : claimableRewards?.toFixed(2)}
         </b>
       </h3>
     </div>

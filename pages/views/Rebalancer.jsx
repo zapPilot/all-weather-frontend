@@ -63,11 +63,6 @@ const RebalancerWidget = () => {
                 claimableRewards={data?.claimable_rewards}
               />
             </div>
-            <div>
-              <ZapInButton />
-              <ZapOutButton />
-              {/* <APRPopOver /> */}
-            </div>
           </div>
         </div>
       </>
