@@ -1,9 +1,6 @@
 import { vi, expect, describe, it } from "vitest";
 import { render, screen } from "./test-utils";
 import ExampleUI from "../pages/views/ExampleUI";
-import { waitFor } from "@testing-library/dom";
-import { beforeEach, afterEach } from "node:test";
-import exp from "constants";
 
 describe("ExampleUI Component", () => {
   it("display portfolio_apr value", async () => {

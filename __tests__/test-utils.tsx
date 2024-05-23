@@ -5,13 +5,17 @@ import { ThirdwebProvider } from "thirdweb/react";
 import { render, RenderOptions } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { makeStore } from "../lib/store";
+import { RouterContext } from "next/dist/shared/lib/router-context";
+import memoryRouter from "next-router-mock";
 
 // Create a store for testing
 const store = makeStore();
 
 const MyApp = ({ children }: { children: React.ReactNode }) => (
   <Provider store={store}>
-    <ThirdwebProvider>{children}</ThirdwebProvider>
+    <RouterContext.Provider value={memoryRouter}>
+      <ThirdwebProvider>{children}</ThirdwebProvider>
+    </RouterContext.Provider>
   </Provider>
 );
 
