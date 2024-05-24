@@ -1,5 +1,5 @@
 import { vi, expect, describe, it } from "vitest";
-import { render, screen } from "./test-utils";
+import { render, screen, fireEvent } from "./test-utils";
 import Dashboard from "../pages/dashboard";
 import { waitFor } from "@testing-library/dom";
 
@@ -108,8 +108,11 @@ describe("Dashboard Component", () => {
         ethElements.forEach((element) => {
           expect(element).toBeInTheDocument();
         });
-        const tooltip = screen.findAllByRole("tooltip");
-        expect(tooltip).toHaveLength(1);
+        const image = screen.getByAlt("ethereum");
+        fireEvent.mouseOver(image);
+
+        const tooltipContent = screen.getByText(chain);
+        expect(tooltipContent).toBeInTheDocument();
       } catch (error) {
         console.error("An error occurred:", error);
       }
