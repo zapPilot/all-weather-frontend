@@ -6,6 +6,7 @@ import {
   ArrowDownOutlined,
   ExportOutlined,
 } from "@ant-design/icons";
+import { Tooltip } from "react-tooltip";
 
 export const columnMapping = (
   protocolList,
@@ -19,12 +20,17 @@ export const columnMapping = (
     key: "chain",
     width: 24,
     render: (chain) => (
-      <Image
-        src={`/chainPicturesWebp/${chain}.webp`}
-        height={20}
-        width={20}
-        alt={chain}
-      />
+      <div>
+        <Image
+          src={`/chainPicturesWebp/${chain}.webp`}
+          height={20}
+          width={20}
+          alt={chain}
+          data-tooltip-id={chain}
+          data-tooltip-content={chain}
+        />
+        <Tooltip id={chain} />
+      </div>
     ),
   },
   pool: {
