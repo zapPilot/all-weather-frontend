@@ -108,6 +108,8 @@ describe("Dashboard Component", () => {
         ethElements.forEach((element) => {
           expect(element).toBeInTheDocument();
         });
+        const tooltip = screen.findAllByRole("tooltip");
+        expect(tooltip).toHaveLength(1);
       } catch (error) {
         console.error("An error occurred:", error);
       }

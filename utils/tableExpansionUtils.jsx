@@ -29,7 +29,7 @@ export const columnMapping = (
           data-tooltip-id={chain}
           data-tooltip-content={chain}
         />
-        <Tooltip id={chain} />
+        <Tooltip id={chain} role="tooltip" />
       </div>
     ),
   },
