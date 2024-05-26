@@ -2,7 +2,6 @@
 // All code in this file will be ignored by the TypeScript compiler
 import type { NextPage } from "next";
 import Image from "next/image";
-import BasePage from "./basePage.tsx";
 import { Spin, Button } from "antd";
 import { useWindowHeight } from "../utils/chartUtils.js";
 import { investByAAWallet } from "../utils/thirdwebSmartWallet.js";
@@ -412,7 +411,7 @@ const Dashboard: NextPage = () => {
   }
 
   return (
-    <BasePage>
+    <>
       <div style={divBetterPools}>
         <center>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
@@ -485,7 +484,7 @@ const Dashboard: NextPage = () => {
                       height: "15rem",
                     }}
                   >
-                    <Spin size="large" />
+                    <Spin size="large" role="spin" />
                   </div>
                 ) : unexpandable[categoryMetaData.category] === true ? (
                   <TableComponent
@@ -538,7 +537,7 @@ const Dashboard: NextPage = () => {
         linkModalOpen={linkModalOpen}
         setLinkModalOpen={setLinkModalOpen}
       />
-    </BasePage>
+    </>
   );
 };
 
