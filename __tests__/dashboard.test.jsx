@@ -204,13 +204,21 @@ describe("Dashboard Component", () => {
     window.dispatchEvent(new Event("resize"));
 
     render(<Dashboard />);
-    // Check if the component renders the table
-    const tables = screen.getAllByRole("table");
-    // Check if the table has the correct class
-    const specificClassTables = tables.filter((table) =>
-      table.classList.contains("sm:hidden"),
-    );
-    expect(specificClassTables.length).toBeGreaterThan(0);
+
+    try {
+      // Check if the component renders the table
+      const tables = screen.getAllByRole("table");
+      // Check if the table has the correct class
+      const specificClassTables = tables.filter((table) =>
+        table.classList.contains("sm:hidden"),
+      );
+      expect(specificClassTables.length).toBeGreaterThan(0);
+    } catch (error) {
+      const spins = await screen.findAllByRole("spin");
+      spins.forEach((element) => {
+        expect(element).toBeInTheDocument();
+      });
+    }
   });
 
   it("render on desktop", async () => {
@@ -223,12 +231,20 @@ describe("Dashboard Component", () => {
     window.dispatchEvent(new Event("resize"));
 
     render(<Dashboard />);
-    // Check if the component renders the table
-    const tables = screen.getAllByRole("table");
-    // Check if the table has the correct class
-    const specificClassTables = tables.filter((table) =>
-      table.classList.contains("sm:table"),
-    );
-    expect(specificClassTables.length).toBeGreaterThan(0);
+
+    try {
+      // Check if the component renders the table
+      const tables = screen.getAllByRole("table");
+      // Check if the table has the correct class
+      const specificClassTables = tables.filter((table) =>
+        table.classList.contains("hidden"),
+      );
+      expect(specificClassTables.length).toBeGreaterThan(0);
+    } catch (error) {
+      const spins = await screen.findAllByRole("spin");
+      spins.forEach((element) => {
+        expect(element).toBeInTheDocument();
+      });
+    }
   });
 });

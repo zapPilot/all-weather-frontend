@@ -26,10 +26,6 @@ const items = [
         key: "setting:2",
       },
       {
-        label: <Link href="/dashboard">Dashboard</Link>,
-        key: "setting:4",
-      },
-      {
         label: (
           <Link href="/liquidityPoolRangeMonitoring">
             Liquidity Pool Range Monitoring
@@ -101,11 +97,8 @@ export default function NavBar({ mode }) {
         style={{ minWidth: 300, flex: "auto" }}
         role="menu"
       />
-      <div
-        className="flex flex-1 justify-center px-2 lg:ml-6 lg:justify-end"
-        role="searchbar"
-      >
-        <div className="w-full max-w-lg lg:max-w-xs">
+      <div className="flex flex-1 justify-center px-6" role="searchbar">
+        <div className="w-full max-w-lg">
           <label htmlFor="search" className="sr-only">
             Search
           </label>
