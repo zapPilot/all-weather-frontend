@@ -43,7 +43,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
       </Head>
       <Layout style={{ background: "#000000" }}>
         <Affix offsetTop={0}>
-          <Header className={styles.header}>
+          <Header className={`${styles.header} sm:h-24 h-auto`}>
             <div className="div-logo">
               <Link href="/">
                 <Image src="/logo.png" alt="logo" width={40} height={40} />
