@@ -100,9 +100,7 @@ const TableComponent = ({ column, columnData, webView, onSelectCallback }) => {
                 <input
                   type="checkbox"
                   className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-400 text-indigo-600 focus:ring-indigo-600"
-                  onChange={(e) =>
-                    onSelectCallback(item, e.target.checked)
-                  }
+                  onChange={(e) => onSelectCallback(item, e.target.checked)}
                 />
               </td>
               {webView ? (
