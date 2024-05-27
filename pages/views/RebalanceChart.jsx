@@ -335,6 +335,7 @@ export default function RebalanceChart(props) {
     height: props.windowWidth > 767 ? 500 : 300,
     width: props.windowWidth > 767 ? 500 : 300,
   };
+
   useEffect(() => {
     async function fetchData() {
       if (mode === "portfolioComposer" && portfolioComposition.length > 0) {
@@ -365,7 +366,13 @@ export default function RebalanceChart(props) {
       } else {
         if (!rebalanceSuggestions || rebalanceSuggestions.length === 0) return;
         // set showCategory = true, to show its category. For instance, long_term_bond
-        const chartData = createChartData(rebalanceSuggestions, netWorth, showCategory);
+
+        const chartData = createChartData(
+          rebalanceSuggestions,
+          netWorth,
+          showCategory,
+        );
+
         setData(chartData);
       }
     }
