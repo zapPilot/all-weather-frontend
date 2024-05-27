@@ -112,11 +112,11 @@ const colorList = [
   "#E74C3C",
   "#ECF0F1",
 ];
-function createChartData(suggestions, netWorth, showCategory) {
-  if (!suggestions || suggestions.length === 0) return;
+function createChartData(rebalanceSuggestions, netWorth, showCategory) {
+  if (!rebalanceSuggestions || rebalanceSuggestions.length === 0) return;
   let aggregatedBalanceDict = {};
   let uniqueIdToMetaDataMapping = {};
-  suggestions.forEach((item) => {
+  rebalanceSuggestions.forEach((item) => {
     item?.suggestions_for_positions.forEach(
       ({ symbol: uniqueId, balanceUSD, apr }) => {
         aggregatedBalanceDict[uniqueId] =
@@ -149,7 +149,7 @@ function createChartData(suggestions, netWorth, showCategory) {
     };
   }
   return {
-    children: suggestions.map((categoryObj, idx) => {
+    children: rebalanceSuggestions.map((categoryObj, idx) => {
       return {
         name: `${categoryObj.category}: ${getPercentage(
           categoryObj.sum_of_this_category_in_the_portfolio,
@@ -319,7 +319,7 @@ function getPercentage(value, total) {
 
 export default function RebalanceChart(props) {
   const {
-    suggestions,
+    rebalanceSuggestions,
     netWorth,
     showCategory,
     mode,
@@ -363,9 +363,9 @@ export default function RebalanceChart(props) {
           ),
         );
       } else {
-        if (!suggestions || suggestions.length === 0) return;
+        if (!rebalanceSuggestions || rebalanceSuggestions.length === 0) return;
         // set showCategory = true, to show its category. For instance, long_term_bond
-        const chartData = createChartData(suggestions, netWorth, showCategory);
+        const chartData = createChartData(rebalanceSuggestions, netWorth, showCategory);
         setData(chartData);
       }
     }

@@ -74,7 +74,7 @@ export const ExpandTableComponent = ({
   );
 };
 
-const TableComponent = ({ column, columnData, webView }) => {
+const TableComponent = ({ column, columnData, webView, onSelectCallback }) => {
   const tableRowMobile = ["Tokens", "Chain", "Pool", "TVL", "APR"];
   const columnDataArray = Array.isArray(columnData)
     ? columnData
@@ -101,7 +101,7 @@ const TableComponent = ({ column, columnData, webView }) => {
                   type="checkbox"
                   className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-400 text-indigo-600 focus:ring-indigo-600"
                   onChange={(e) =>
-                    e.target.checked ? onSelectCallback(item, true) : null
+                    onSelectCallback(item, e.target.checked)
                   }
                 />
               </td>
