@@ -1,7 +1,5 @@
 import React from "react";
 import { ConfigProvider, Row, Col, Card, Statistic } from "antd";
-import HistoricalDataChart from "./HistoricalDataChart";
-
 const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
   const colorLogic = (value, notSharpe = true) => {
     if (notSharpe === false) {
@@ -114,15 +112,6 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
           </Col> */}
         </Row>
       </ConfigProvider>
-      <p
-        className="heading-subtitle"
-        style={{
-          margin: "32px 0",
-        }}
-      >
-        Historical Reward
-      </p>
-      <HistoricalDataChart />
     </>
   );
 };
