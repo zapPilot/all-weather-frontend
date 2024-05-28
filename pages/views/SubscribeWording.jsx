@@ -5,7 +5,7 @@ export default function SubscribeWording() {
       <h3 className="text-base font-semibold leading-5">
         Please subscribe to unlock advanced features!
       </h3>
-      <div className="my-5">
+      <div className="my-5" role="subscribe_link">
         <Link
           href="/subscription"
           className="px-2 py-1 rounded ring-1 ring-inset ring-emerald-400 text-sm font-semibold leading-6 text-emerald-400 "
