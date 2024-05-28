@@ -141,7 +141,7 @@ const Dashboard: NextPage = () => {
     }>({});
 
   const defaultTopN = 5;
-  const biggerTopN = 10;
+  const biggerTopN = 7;
   const queriesForAllWeather: queriesObj[] = [
     {
       wording: "Long Term Bond (40%)",
@@ -153,7 +153,7 @@ const Dashboard: NextPage = () => {
       unexpandable: unexpandable.long_term_bond,
       setUnexpandable: updateState,
       chain_blacklist: ["cardano", "fantom", "ethereum"],
-      topN: biggerTopN,
+      topN: defaultTopN,
     },
     {
       wording: "Intermediate Term Bond (15%)",
@@ -175,7 +175,7 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: commoditiesFilterDict,
       unexpandable: unexpandable.commodities,
       setUnexpandable: updateState,
-      chain_blacklist: ["cardano", "fantom", "ethereum"],
+      chain_blacklist: ["cardano", "fantom"],
       topN: biggerTopN,
     },
     {
@@ -436,15 +436,6 @@ const Dashboard: NextPage = () => {
             ))}
           </div>
         </div>
-        <RebalanceChart
-          suggestions={[]}
-          netWorth={100}
-          windowWidth={200}
-          showCategory={false}
-          mode="portfolioComposer"
-          portfolioComposition={Object.values(portfolioCompositionForReRender)}
-          account={account}
-        />
         <Button
           type="primary"
           onClick={() =>
@@ -508,14 +499,6 @@ const Dashboard: NextPage = () => {
           })}
         </>
       </div>
-      <RebalanceChart
-        suggestions={[]}
-        netWorth={100}
-        windowWidth={200}
-        showCategory={true}
-        mode="portfolioStrategy"
-        account={account}
-      />
       <TokenDropdownInput
         onClickCallback={async (
           investmentAmount: number,

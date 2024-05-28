@@ -19,6 +19,8 @@ import axios from "axios";
 import { Spin } from "antd";
 import Dashboard from "../dashboard.tsx";
 import { useRouter } from "next/router";
+import HistoricalDataChart from "./HistoricalDataChart";
+import SubscribeWording from "./SubscribeWording";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -45,21 +47,19 @@ export default function ExampleUI() {
   }, [account]);
 
   useEffect(() => {
-    if (subscriptionStatus) {
-      dispatch(fetchDataStart());
-      axios
-        .get(
-          `${API_URL}/bundle_portfolio/${
-            searchWalletAddress === undefined
-              ? walletAddress
-              : searchWalletAddress.toLowerCase().trim().replace("/", "")
-          }?refresh=true`,
-        )
-        .then((response) => response.data)
-        .then((data) => dispatch(fetchDataSuccess(data)))
-        .catch((error) => dispatch(fetchDataFailure(error.toString())));
-    }
-  }, [subscriptionStatus]);
+    dispatch(fetchDataStart());
+    axios
+      .get(
+        `${API_URL}/bundle_portfolio/${
+          searchWalletAddress === undefined
+            ? walletAddress
+            : searchWalletAddress.toLowerCase().trim().replace("/", "")
+        }?refresh=true`,
+      )
+      .then((response) => response.data)
+      .then((data) => dispatch(fetchDataSuccess(data)))
+      .catch((error) => dispatch(fetchDataFailure(error.toString())));
+  }, [searchWalletAddress, walletAddress]);
 
   const handleMouseLeave = () => {
     setIsHover(false);
@@ -172,22 +172,21 @@ export default function ExampleUI() {
             offset: 7,
           }}
         >
+          <RebalancerWidget />
           {subscriptionStatus ? (
-            <RebalancerWidget />
-          ) : (
             <>
-              <h3 className="text-base font-semibold leading-5">
-                Please subscribe to access your personal profile.
-              </h3>
-              <div className="my-5">
-                <Link
-                  href="/subscription"
-                  className="px-2 py-1 rounded ring-1 ring-inset ring-emerald-400 text-sm font-semibold leading-6 text-emerald-400 "
-                >
-                  Subscribe <span aria-hidden="true">&rarr;</span>
-                </Link>
-              </div>
+              <p
+                className="heading-subtitle"
+                style={{
+                  margin: "32px 0",
+                }}
+              >
+                Historical Reward
+              </p>
+              <HistoricalDataChart />
             </>
+          ) : (
+            <SubscribeWording />
           )}
         </Col>
         <Col
