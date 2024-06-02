@@ -86,7 +86,6 @@ const colorList = [
   "#4DC19C",
   "#DDB27C",
   "#88572C",
-  "#F15C17",
   "#223F9A",
   "#DA70BF",
   "#FF5733",
@@ -121,7 +120,7 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
       ({ symbol: uniqueId, balanceUSD, apr }) => {
         aggregatedBalanceDict[uniqueId] =
           (aggregatedBalanceDict[uniqueId] || 0) + balanceUSD;
-        uniqueIdToMetaDataMapping[uniqueId] = (apr * 100).toFixed(2);
+        uniqueIdToMetaDataMapping[uniqueId] = (apr * 100).toFixed(0);
       },
     );
   });
@@ -141,7 +140,7 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
         return {
           name: `${uniqueId.split("/")[0]} ${
             uniqueId.split("/")[uniqueId.split("/").length - 1]
-          }, APR: ${uniqueIdToMetaDataMapping[uniqueId]}% Weight: ${value}%`,
+          }, APR: ${uniqueIdToMetaDataMapping[uniqueId]}% Per: ${value}%`,
           hex: colorList[idx],
           value,
         };
@@ -161,16 +160,13 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
           .sort((a, b) => b.balanceUSD - a.balanceUSD)
           .map((subCategoryObj) => {
             return {
-              name: `${subCategoryObj.symbol.split("/")[0]} ${
+              name: `${subCategoryObj.symbol.split("/")[0]}:${
                 subCategoryObj.symbol.split("/")[
                   subCategoryObj.symbol.split("/").length - 1
                 ]
               }, APR: ${
                 uniqueIdToMetaDataMapping[subCategoryObj.symbol]
-              }% Weight: ${getPercentage(
-                subCategoryObj.balanceUSD,
-                netWorth,
-              )}%`,
+              }% Per: ${getPercentage(subCategoryObj.balanceUSD, netWorth)}%`,
               value: subCategoryObj.balanceUSD,
               hex: colorList[idx],
             };
