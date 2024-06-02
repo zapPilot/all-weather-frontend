@@ -48,6 +48,7 @@ export default function ExampleUI() {
 
   useEffect(() => {
     dispatch(fetchDataStart());
+    if (!walletAddress && !searchWalletAddress) return;
     axios
       .get(
         `${API_URL}/bundle_portfolio/${

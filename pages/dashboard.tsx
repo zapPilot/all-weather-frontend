@@ -243,14 +243,7 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: airdropFilterDict,
       unexpandable: unexpandable.airdrop,
       setUnexpandable: updateState,
-      chain_whitelist: [
-        "blast",
-        "mode",
-        "zksync era",
-        "linea",
-        "scroll",
-        "taiko",
-      ],
+      chain_whitelist: ["zksync era", "linea", "scroll"],
       topN: biggerTopN,
     },
   ];
