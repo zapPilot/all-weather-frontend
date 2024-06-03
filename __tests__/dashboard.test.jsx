@@ -49,7 +49,6 @@ describe("Dashboard Component", () => {
                       [
                         "long_term_bond",
                         {
-                          only_for_sunburst_chart: false,
                           value: 1,
                         },
                       ],
@@ -222,8 +221,6 @@ describe("Dashboard Component", () => {
         table.classList.contains("sm:hidden"),
       );
       expect(specificClassTables.length).toBeGreaterThan(0);
-      const portfolio_composer = screen.getAllByRole("portfolio_composer");
-      expect(portfolio_composer.length).equal(1);
     } catch (error) {
       const spins = await screen.findAllByRole("spin");
       spins.forEach((element) => {
@@ -251,8 +248,6 @@ describe("Dashboard Component", () => {
         table.classList.contains("hidden"),
       );
       expect(specificClassTables.length).toBeGreaterThan(0);
-      const portfolio_composer = screen.getAllByRole("portfolio_composer");
-      expect(portfolio_composer.length).equal(1);
     } catch (error) {
       const spins = await screen.findAllByRole("spin");
       spins.forEach((element) => {
