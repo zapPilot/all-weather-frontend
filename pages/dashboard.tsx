@@ -429,6 +429,19 @@ const Dashboard: NextPage = () => {
             ))}
           </div>
         </div>
+        <div role="portfolio_composer">
+          <RebalanceChart
+            suggestions={[]}
+            netWorth={100}
+            windowWidth={200}
+            showCategory={false}
+            mode="portfolioComposer"
+            portfolioComposition={Object.values(
+              portfolioCompositionForReRender,
+            )}
+            account={account}
+          />
+        </div>
         <Button
           type="primary"
           onClick={() =>

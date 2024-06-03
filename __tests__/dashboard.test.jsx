@@ -49,7 +49,6 @@ describe("Dashboard Component", () => {
                       [
                         "long_term_bond",
                         {
-                          only_for_sunburst_chart: false,
                           value: 1,
                         },
                       ],
@@ -158,6 +157,8 @@ describe("Dashboard Component", () => {
       linkButtons.forEach((element) => {
         expect(element).toBeInTheDocument();
       });
+      const portfolio_composer = screen.getAllByRole("portfolio_composer");
+      expect(portfolio_composer.length).equal(1);
     } catch (error) {
       console.error("An error occurred:", error);
     }
@@ -194,6 +195,8 @@ describe("Dashboard Component", () => {
       unlockButtons.forEach((element) => {
         expect(element).toBeInTheDocument();
       });
+      const portfolio_composer = screen.getAllByRole("portfolio_composer");
+      expect(portfolio_composer.length).equal(1);
     } catch (error) {
       console.error("An error occurred:", error);
     }
