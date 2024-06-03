@@ -158,6 +158,8 @@ describe("Dashboard Component", () => {
       linkButtons.forEach((element) => {
         expect(element).toBeInTheDocument();
       });
+      const portfolio_composer = screen.getAllByRole("portfolio_composer");
+      expect(portfolio_composer.length).equal(1);
     } catch (error) {
       console.error("An error occurred:", error);
     }
@@ -194,6 +196,8 @@ describe("Dashboard Component", () => {
       unlockButtons.forEach((element) => {
         expect(element).toBeInTheDocument();
       });
+      const portfolio_composer = screen.getAllByRole("portfolio_composer");
+      expect(portfolio_composer.length).equal(1);
     } catch (error) {
       console.error("An error occurred:", error);
     }
@@ -218,6 +222,8 @@ describe("Dashboard Component", () => {
         table.classList.contains("sm:hidden"),
       );
       expect(specificClassTables.length).toBeGreaterThan(0);
+      const portfolio_composer = screen.getAllByRole("portfolio_composer");
+      expect(portfolio_composer.length).equal(1);
     } catch (error) {
       const spins = await screen.findAllByRole("spin");
       spins.forEach((element) => {
@@ -245,6 +251,8 @@ describe("Dashboard Component", () => {
         table.classList.contains("hidden"),
       );
       expect(specificClassTables.length).toBeGreaterThan(0);
+      const portfolio_composer = screen.getAllByRole("portfolio_composer");
+      expect(portfolio_composer.length).equal(1);
     } catch (error) {
       const spins = await screen.findAllByRole("spin");
       spins.forEach((element) => {
