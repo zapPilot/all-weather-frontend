@@ -140,7 +140,7 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
         return {
           name: `${uniqueId.split("/")[0]} ${
             uniqueId.split("/")[uniqueId.split("/").length - 1]
-          }, APR: ${uniqueIdToMetaDataMapping[uniqueId]}% Per: ${value}%`,
+          }, APR: ${uniqueIdToMetaDataMapping[uniqueId]}% PER: ${value}%`,
           hex: colorList[idx],
           value,
         };
@@ -166,7 +166,7 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
                 ]
               }, APR: ${
                 uniqueIdToMetaDataMapping[subCategoryObj.symbol]
-              }% Per: ${getPercentage(subCategoryObj.balanceUSD, netWorth)}%`,
+              }% PER: ${getPercentage(subCategoryObj.balanceUSD, netWorth)}%`,
               value: subCategoryObj.balanceUSD,
               hex: colorList[idx],
             };
@@ -342,7 +342,14 @@ export default function RebalanceChart(props) {
           sortedPortfolioComposition,
         );
         setData(chartData);
-        setAPR(calculatePortfolioAPR(sortedPortfolioComposition));
+        const totalApr = sortedPortfolioComposition.reduce((sum, item) => {
+          // Extract the key (uuid-key) of the current item
+          const uuidKey = Object.keys(item)[0];
+
+          // Add the apr value to the accumulator (sum)
+          return sum + item[uuidKey].apr.value;
+        }, 0);
+        setAPR(totalApr);
       } else if (mode === "portfolioStrategy") {
         if (!account) return;
         const portfolioHelper = new AllWeatherPortfolio(account);
