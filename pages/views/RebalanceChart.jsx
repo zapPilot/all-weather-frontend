@@ -282,9 +282,6 @@ function calculatePortfolioAPR(portfolioComposition) {
   for (const positionObjsInThisCategory of portfolioComposition) {
     for (const positionObj of Object.values(positionObjsInThisCategory)) {
       for (const [_, weight] of positionObj.categories) {
-        if (weight.only_for_sunburst_chart === true) {
-          continue;
-        }
         result += weight.value * positionObj.apr;
       }
     }
@@ -296,11 +293,6 @@ function calculatePortfolioAPRForAAWallet(portfolioComposition, poolsMetadata) {
   for (const positionObjsInThisCategory of portfolioComposition) {
     for (const positionObjs of Object.values(positionObjsInThisCategory)) {
       for (const positionObj of positionObjs) {
-        // TODO(david): currently, `only_for_sunburst_chart` this field is missing in `portfolio_config` on the backend side
-        // we need to figure out a way to consolidate `pool_optimier` and `portfolio_config`
-        // if (weight.only_for_sunburst_chart === true) {
-        //   continue;
-        // }
         result +=
           positionObj.weight * poolsMetadata?.[positionObj.poolID]?.apr ?? 0;
       }
