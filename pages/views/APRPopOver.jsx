@@ -56,7 +56,7 @@ const APRPopOver = () => {
               {poolJson.project_id}
             </dt>
             <dd className="text-sm leading-6 text-gray-500">
-              {poolJson.sorted_debank_optimized_symbol_list.join("-")}
+              {poolJson.sorted_debank_optimized_symbol_list?.join("-")}
             </dd>
           </div>
         );
