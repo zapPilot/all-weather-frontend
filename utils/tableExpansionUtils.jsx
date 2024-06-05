@@ -49,7 +49,11 @@ export const columnMapping = (
         </Link>
       ) : (
         <>
-          <div className="inline-block">
+          <div
+            className="inline-block"
+            data-tooltip-id={pool.poolID}
+            data-tooltip-content={pool.poolID}
+          >
             <Image
               src={`/projectPictures/${pool.name}.webp`}
               alt={pool.name}
@@ -58,14 +62,6 @@ export const columnMapping = (
               width={20}
             />
             <span className="text-white pe-2"> {pool.name}</span>
-          </div>
-          <div className="inline-block relative group">
-            <span className="hidden group-hover:inline-block bg-black/50 px-2 py-2 text-sm text-white border rounded-md absolute bottom-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300">
-              {"pool ID: " + pool.poolID}
-            </span>
-            {pool.meta ? (
-              <span className="text-gray-400 text-xs pe-2">({pool.meta})</span>
-            ) : null}
           </div>
           {protocolList.map((protocol) =>
             protocol.slug === pool.name ? (
@@ -81,6 +77,7 @@ export const columnMapping = (
               </button>
             ) : null,
           )}
+          <Tooltip id={pool.poolID} />
         </>
       );
     },
