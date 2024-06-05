@@ -51,6 +51,7 @@ export const columnMapping = (
         <>
           <div
             className="inline-block"
+            role="pool_id_tooltip"
             data-tooltip-id={pool.poolID}
             data-tooltip-content={pool.poolID}
           >
