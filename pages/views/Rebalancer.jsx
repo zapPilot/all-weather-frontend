@@ -50,7 +50,6 @@ const RebalancerWidget = () => {
               <h3>
                 Reward APR:{" "}
                 {data?.portfolio_apr ? data?.portfolio_apr.toFixed(2) : 0}%{" "}
-                <APRPopOver />
               </h3>
             </div>
             <div>
@@ -61,6 +60,7 @@ const RebalancerWidget = () => {
                 claimableRewards={data?.claimable_rewards}
               />
             </div>
+            <APRPopOver />
           </div>
         </div>
       </>
