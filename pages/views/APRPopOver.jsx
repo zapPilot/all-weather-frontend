@@ -32,66 +32,100 @@ const APRPopOver = () => {
     );
 
   return (
-    <Popover
-      content={missingPools.map((pool) => {
+    <>
+      <p>Missing Pools</p>
+      {missingPools.map((pool) => {
         const poolJson = JSON.parse(pool.apr.debug);
         return (
-          <div
-            className="mt-4 flex w-full flex-none gap-x-4 px-6"
-            key={poolJson.project_id}
-          >
-            <dt className="flex-none">
-              <span className="sr-only">Chain</span>
+          <>
+            <div className="flex">
               <img
                 src={`/chainPicturesWebp/${poolJson.mapping_chain}.webp`}
                 width={20}
                 height={20}
-                alt=""
+                alt={poolJson.mapping_chain}
               />
-              {poolJson.mapping_chain}
-            </dt>
-            <dt className="flex-none">
-              <span className="sr-only">Protocol</span>
-              <img src={pool.protocol_logo_url} width={20} height={20} alt="" />
-              {poolJson.project_id}
-            </dt>
-            <dd className="text-sm leading-6 text-gray-500">
-              {poolJson.sorted_debank_optimized_symbol_list?.join("-")}
-            </dd>
-          </div>
-        );
+              <span>{poolJson.mapping_chain.toUpperCase()}</span>
+              <span className="mx-2">-</span>
+              <img src={pool.protocol_logo_url} width={20} height={20} alt={poolJson.project_id} />
+              <span>{poolJson.project_id}</span>
+            </div>
+            <div>
+              <span>{poolJson.sorted_debank_optimized_symbol_list?.join("-").toUpperCase()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Your pool value</span>
+              <span>${pool.worth.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Pool APR</span>
+              <span>{pool.apr.value * 100}%</span>
+            </div>
+            <hr />
+          </>
+        )
       })}
-      title={missingPools.length > 0 ? "Missing Pools" : "APR Details"}
-      trigger="click"
-      open={open}
-      onOpenChange={handleOpenChange}
-    >
-      <a role="aprpopover">
-        {missingPools.length > 0 ? (
-          <span className="inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 text-xs font-medium text-white ring-1 ring-inset ring-gray-800">
-            <svg
-              className="h-1.5 w-1.5 fill-red-400"
-              viewBox="0 0 6 6"
-              aria-hidden="true"
+      <Popover
+        content={missingPools.map((pool) => {
+          const poolJson = JSON.parse(pool.apr.debug);
+          return (
+            <div
+              className="mt-4 flex w-full flex-none gap-x-4 px-6"
+              key={poolJson.project_id}
             >
-              <circle cx={3} cy={3} r={3} />
-            </svg>
-            Missing {missingPools.length} Pools
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 text-xs font-medium text-white ring-1 ring-inset ring-gray-800">
-            <svg
-              className="h-1.5 w-1.5 fill-green-400"
-              viewBox="0 0 6 6"
-              aria-hidden="true"
-            >
-              <circle cx={3} cy={3} r={3} />
-            </svg>
-            APR Details
-          </span>
-        )}
-      </a>
-    </Popover>
+              <dt className="flex-none">
+                <span className="sr-only">Chain</span>
+                <img
+                  src={`/chainPicturesWebp/${poolJson.mapping_chain}.webp`}
+                  width={20}
+                  height={20}
+                  alt=""
+                />
+                {poolJson.mapping_chain}
+              </dt>
+              <dt className="flex-none">
+                <span className="sr-only">Protocol</span>
+                <img src={pool.protocol_logo_url} width={20} height={20} alt="" />
+                {poolJson.project_id}
+              </dt>
+              <dd className="text-sm leading-6 text-gray-500">
+                {poolJson.sorted_debank_optimized_symbol_list?.join("-")}
+              </dd>
+            </div>
+          );
+        })}
+        title={missingPools.length > 0 ? "Missing Pools" : "APR Details"}
+        trigger="click"
+        open={open}
+        onOpenChange={handleOpenChange}
+      >
+        <a role="aprpopover">
+          {missingPools.length > 0 ? (
+            <span className="inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 text-xs font-medium text-white ring-1 ring-inset ring-gray-800">
+              <svg
+                className="h-1.5 w-1.5 fill-red-400"
+                viewBox="0 0 6 6"
+                aria-hidden="true"
+              >
+                <circle cx={3} cy={3} r={3} />
+              </svg>
+              Missing {missingPools.length} Pools
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 text-xs font-medium text-white ring-1 ring-inset ring-gray-800">
+              <svg
+                className="h-1.5 w-1.5 fill-green-400"
+                viewBox="0 0 6 6"
+                aria-hidden="true"
+              >
+                <circle cx={3} cy={3} r={3} />
+              </svg>
+              APR Details
+            </span>
+          )}
+        </a>
+      </Popover>
+    </>
   );
 };
 
