@@ -9,36 +9,36 @@ const items = [
     label: <Link href="/">Portfolio</Link>,
     key: "portfolio",
   },
-  {
-    label: "Analytics",
-    key: "analytics",
-    children: [
-      {
-        label: (
-          <a
-            href="https://dune.com/davidtnfsh/all-weather-protocol"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Dune Analytics
-          </a>
-        ),
-        key: "setting:2",
-      },
-      {
-        label: (
-          <Link href="/liquidityPoolRangeMonitoring">
-            Liquidity Pool Range Monitoring
-          </Link>
-        ),
-        key: "setting:5",
-      },
-      {
-        label: <Link href="/subscription">Subscription</Link>,
-        key: "subscription",
-      },
-    ],
-  },
+  // {
+  //   label: "Analytics",
+  //   key: "analytics",
+  //   children: [
+  //     {
+  //       label: (
+  //         <a
+  //           href="https://dune.com/davidtnfsh/all-weather-protocol"
+  //           target="_blank"
+  //           rel="noopener noreferrer"
+  //         >
+  //           Dune Analytics
+  //         </a>
+  //       ),
+  //       key: "setting:2",
+  //     },
+  //     {
+  //       label: (
+  //         <Link href="/liquidityPoolRangeMonitoring">
+  //           Liquidity Pool Range Monitoring
+  //         </Link>
+  //       ),
+  //       key: "setting:5",
+  //     },
+  //     {
+  //       label: <Link href="/subscription">Subscription</Link>,
+  //       key: "subscription",
+  //     },
+  //   ],
+  // },
   {
     label: (
       <a
