@@ -1,6 +1,52 @@
 import React from "react";
 import { ConfigProvider, Row, Col, Card, Statistic } from "antd";
+import RebalanceChart from "./RebalanceChart";
+import { useSelector } from "react-redux";
+import { useWindowWidth } from "../../utils/chartUtils";
+import { useActiveAccount } from "thirdweb/react";
+import { useEffect, useState } from "react";
+
 const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
+  const windowWidth = useWindowWidth();
+  const { data } = useSelector((state) => state.api);
+  const account = useActiveAccount();
+  const [exchangeRates, setExchangeRates] = useState({});
+  const [currency, setCurrenty] = useState("USD");
+  const [currencyError, setCurrencyError] = useState(false);
+  useEffect(() => {
+    async function fetchExchangeRate() {
+      fetch("https://api.exchangerate-api.com/v4/latest/USD", {
+        // Replace with your API endpoint
+        method: "GET",
+      })
+        .then((response) => {
+          if (response.ok) {
+            return response.json();
+          }
+          throw response;
+        })
+        .then((data) => {
+          setExchangeRates(data.rates);
+        })
+        .catch((error) => {
+          setCurrencyError(error);
+        });
+    }
+    const fetchCountry = async () => {
+      try {
+        const response = await fetch("https://ipapi.co/json/");
+        const data = await response.json();
+        setCurrenty(data.currency);
+      } catch (error) {
+        setCurrencyError(true);
+      }
+    };
+    fetchExchangeRate();
+    fetchCountry();
+  }, []);
+  const calculateMonthlyEarnings = (deposit, apr, exchangeRate = 1) => {
+    return (((deposit * apr) / 100 / 12) * exchangeRate).toFixed(2);
+  };
   const colorLogic = (value, notSharpe = true) => {
     if (notSharpe === false) {
       if (value < 2) {
@@ -53,21 +99,30 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
           <Col xs={12} md={8}>
             <Card>
               <Statistic
-                title={`ROI (365 days)`}
-                value="WIP"
+                title="Net Worth"
+                value={`${data?.net_worth}`}
                 precision={2}
                 valueStyle={colorLogic(0)}
+                prefix="$"
               />
             </Card>
           </Col>
           <Col xs={12} md={8}>
             <Card>
               <Statistic
-                title={`Sharpe Ratio (365 days)`}
-                value="WIP"
-                precision={2}
+                title="Monthly Interest"
+                value={
+                  currencyError === false
+                    ? calculateMonthlyEarnings(
+                        data?.net_worth,
+                        portfolioApr,
+                        exchangeRates[currency],
+                      )
+                    : calculateMonthlyEarnings(data?.net_worth, portfolioApr)
+                }
+                precision={0}
                 valueStyle={colorLogic(0)}
-                suffix=""
+                prefix={`${currencyError === false ? currency : "USD"}`}
               />
             </Card>
           </Col>
@@ -112,6 +167,15 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
           </Col> */}
         </Row>
       </ConfigProvider>
+      <RebalanceChart
+        key="double_layer_pie_chart"
+        rebalanceSuggestions={data?.suggestions}
+        netWorth={data?.net_worth}
+        windowWidth={windowWidth}
+        showCategory={true}
+        account={account}
+        portfolio_apr={data?.portfolio_apr}
+      />
     </>
   );
 };
