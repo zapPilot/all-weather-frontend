@@ -313,6 +313,7 @@ export default function RebalanceChart(props) {
     mode,
     portfolioComposition,
     account,
+    portfolio_apr,
   } = props;
   const [data, setData] = useState(defaultData);
   const [apr, setAPR] = useState(0);
@@ -341,7 +342,7 @@ export default function RebalanceChart(props) {
           // Add the apr value to the accumulator (sum)
           return sum + item[uuidKey].apr.value;
         }, 0);
-        setAPR(totalApr);
+        setAPR(totalApr / sortedPortfolioComposition.length);
       } else if (mode === "portfolioStrategy") {
         if (!account) return;
         const portfolioHelper = new AllWeatherPortfolio(account);
@@ -367,8 +368,8 @@ export default function RebalanceChart(props) {
           netWorth,
           showCategory,
         );
-
         setData(chartData);
+        setAPR(portfolio_apr);
       }
     }
     fetchData();

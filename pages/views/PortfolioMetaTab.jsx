@@ -2,11 +2,10 @@ import React, { useState, useEffect } from "react";
 import { ConfigProvider, Tabs } from "antd";
 import Fees from "./Fees.jsx";
 import Performance from "./Performance.jsx";
-import Strategy from "./Strategy.jsx";
 import Risks from "./Risks.jsx";
 import { useSelector } from "react-redux";
 
-const TabWordings = ["Performance", "Fees", "Strategy", "Risks"];
+const TabWordings = ["Performance", "Fees", "Risks"];
 
 const PortfolioMetaTab = () => {
   const [windowWidth, setWindowWidth] = useState(0);
@@ -97,26 +96,6 @@ const _getChildrenTab = (
     );
   } else if (wording === "Fees") {
     return <Fees />;
-  } else if (wording === "Strategy") {
-    return (
-      <Strategy
-        web3Context={{
-          netWorth,
-          netWorthWithCustomLogic,
-          suggestions,
-          totalInterest,
-          portfolioApr,
-          sharpeRatio,
-          topNLowestAprPools,
-          topNPoolConsistOfSameLpToken,
-          topNStableCoins,
-          aggregatedPositions,
-          ROI,
-          maxDrawdown,
-          claimableRewards,
-        }}
-      />
-    );
   } else if (wording === "Risks") {
     return <Risks />;
   }
