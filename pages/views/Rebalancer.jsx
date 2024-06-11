@@ -35,22 +35,15 @@ const RebalancerWidget = () => {
             showCategory={false}
             account={account}
           />
-          <div>
-            <div>
-              <h3>
-                {/* TVL: ${data?.netWorthWithCustomLogic}{" "} */}
-                TVL: ${data?.net_worth}{" "}
-                <a
-                  href="https://debank.com/profile/0x9ad45d46e2a2ca19bbb5d5a50df319225ad60e0d"
-                  target="_blank"
-                >
-                  <LinkOutlined />
-                </a>
-              </h3>
-              <h3>
-                Reward APR:{" "}
-                {data?.portfolio_apr ? data?.portfolio_apr.toFixed(2) : 0}%{" "}
-              </h3>
+          <div className="mt-2">
+            <div className="flex justify-between">
+              {/* TVL: ${data?.netWorthWithCustomLogic}{" "} */}
+              <span className="text-gray-400">TVL</span>
+              <span>${data?.net_worth}{" "}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Reward APR{" "}</span>
+              <span className="text-green-400">{data?.portfolio_apr ? data?.portfolio_apr.toFixed(2) : 0}%{" "}</span>
             </div>
             <div>
               <UserBalanceInfo

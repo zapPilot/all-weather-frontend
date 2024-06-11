@@ -35,7 +35,7 @@ const APRPopOver = () => {
   return (
     <>
       <p
-        className="text-xl font-medium mb-2 cursor-pointer"
+        className="font-bold my-2 cursor-pointer"
         onClick={() => setOpen(!open)}
       >
         Missing Pools 
@@ -47,8 +47,8 @@ const APRPopOver = () => {
           {missingPools.map((pool) => {
             const poolJson = JSON.parse(pool.apr.debug);
             return (
-              <div className="bg-white/20 p-2">
-                <div className="flex mb-1">
+              <div className="bg-gray-800 p-2">
+                <div className="flex mb-1 font-medium">
                   <img
                     src={`/chainPicturesWebp/${poolJson.mapping_chain}.webp`}
                     width={20}
@@ -61,15 +61,15 @@ const APRPopOver = () => {
                   <span>{poolJson.project_id}</span>
                 </div>
                 <div className="mb-1">
-                  <span>{poolJson.sorted_debank_optimized_symbol_list?.join("-").toUpperCase()}</span>
+                  <span className="text-gray-400">{poolJson.sorted_debank_optimized_symbol_list?.join("-").toUpperCase()}</span>
                 </div>
                 <div className="flex justify-between mb-1">
-                  <span>Your pool value</span>
+                  <span className="text-gray-400">Your pool value</span>
                   <span>${pool.worth.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Pool APR</span>
-                  <span className="text-green-700">{pool.apr.value * 100}%</span>
+                  <span className="text-gray-400">Pool APR</span>
+                  <span className="text-green-400">{pool.apr.value * 100}%</span>
                 </div>
               </div>
             )

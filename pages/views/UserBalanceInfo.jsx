@@ -41,32 +41,36 @@ const UserBalanceInfo = ({ netWorth, portfolioApr, claimableRewards }) => {
     return (((deposit * apr) / 100 / 12) * exchangeRate).toFixed(2);
   };
   return (
-    <div
-      style={{
-        marginTop: 20,
-        color: "white",
-      }}
-    >
-      <h3>Your Deposit: ${userDeposit}</h3>
-      <h3 role="monthly_interest">
-        Monthly Interest: {currencyError === false ? currency : "USD"}{" "}
-        {currencyError === false
-          ? calculateMonthlyEarnings(
-              userDeposit,
-              portfolioApr,
-              exchangeRates[currency],
-            )
-          : calculateMonthlyEarnings(userDeposit, portfolioApr)}
-      </h3>
-      <h3>
-        <b style={{ color: "#555555" }}>
-          Claimable Rewards in the Portfolio:{" "}
+    <div className="text-white mt-2">
+      <div className="flex justify-between">
+        <span className="text-gray-400">Your Deposit</span>
+        <span>${userDeposit}</span>
+      </div>
+      <div
+        className="flex justify-between"
+        role="monthly_interest"
+      >
+        <span className="text-gray-400">Monthly Interest</span>
+        <span>
+          {currencyError === false ? currency : "USD"}{" "}
+          {currencyError === false
+            ? calculateMonthlyEarnings(
+                userDeposit,
+                portfolioApr,
+                exchangeRates[currency],
+              )
+            : calculateMonthlyEarnings(userDeposit, portfolioApr)}
+        </span>
+      </div>
+      <div className="flex justify-between">
+        <span className="text-gray-400">Claimable Rewards in the Portfolio{" "}</span>
+        <span>
           {currencyError === false ? currency : "USD"}{" "}
           {currencyError === false
             ? (claimableRewards * exchangeRates[currency])?.toFixed(2)
             : claimableRewards?.toFixed(2)}
-        </b>
-      </h3>
+        </span>
+      </div>
     </div>
   );
 };
