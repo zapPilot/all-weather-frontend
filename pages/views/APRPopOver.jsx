@@ -51,7 +51,7 @@ const APRPopOver = () => {
           {missingPools.map((pool) => {
             const poolJson = JSON.parse(pool.apr.debug);
             return (
-              <div className="bg-gray-800 p-2">
+              <div className="bg-gray-800 p-2" key={pool.address}>
                 <div className="flex mb-1 font-medium">
                   <img
                     src={`/chainPicturesWebp/${poolJson.mapping_chain}.webp`}
