@@ -164,7 +164,7 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: intermediateTermBondFilterDict,
       unexpandable: unexpandable.intermediate_term_bond,
       setUnexpandable: updateState,
-      topN: 5,
+      topN: defaultTopN,
     },
     {
       wording: "Commodities (7.5%)",
@@ -187,7 +187,7 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: goldDataFilterDict,
       unexpandable: unexpandable.gold,
       setUnexpandable: updateState,
-      chain_blacklist: ["cardano", "fantom", "ethereum"],
+      chain_blacklist: ["cardano", "fantom", "ethereum", "multiversx"],
       topN: defaultTopN,
     },
     {
@@ -243,7 +243,7 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: airdropFilterDict,
       unexpandable: unexpandable.airdrop,
       setUnexpandable: updateState,
-      chain_whitelist: ["zksync era", "linea", "scroll"],
+      chain_whitelist: ["linea", "scroll"],
       topN: biggerTopN,
     },
   ];
