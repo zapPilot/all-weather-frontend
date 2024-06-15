@@ -39,7 +39,7 @@ const APRPopOver = () => {
         onClick={() => setOpen(!open)}
         role="aprpopover"
       >
-        Missing Pools
+        Missing {missingPools.length} Pools
         <WarningOutlined className="text-red-400 ms-2" />
       </p>
       {open && (
