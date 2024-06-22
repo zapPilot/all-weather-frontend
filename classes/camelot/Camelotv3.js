@@ -10,7 +10,7 @@ import { arbitrum } from "thirdweb/chains";
 const approvalBufferParam = 100;
 
 //  `Error: execution reverted: STF` means there's no enough tokens to safe transfer from
-const slippage = [0.1, 0.5, 1, 10, 50];
+const slippage = [1, 2, 3, 5, 10];
 
 // would get `Error: execution reverted: Price slippage check` if it hit the amount0Min and amount1Min when providing liquidity
 const slippageOfLP = [0.95, 0.9, 0.8, 0.7, 0.1];
@@ -19,6 +19,10 @@ const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const CamelotNFTPositionManagerAddress =
   "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15";
 const PROVIDER = new ethers.providers.JsonRpcProvider(
+  process.env.NEXT_PUBLIC_RPC_PROVIDER_URL,
+);
+console.log(
+  "process.env.NEXT_PUBLIC_RPC_PROVIDER_URL",
   process.env.NEXT_PUBLIC_RPC_PROVIDER_URL,
 );
 export class CamelotV3 {
@@ -31,7 +35,6 @@ export class CamelotV3 {
   async invest(investmentAmountInThisPosition, chosenToken, retryIndex) {
     // get erc20 Contract Interface
     const erc20Instance = new ethers.Contract(
-      // "0x55d398326f99059ff775485246999027b3197955",
       chosenToken,
       ERC20_ABI,
       PROVIDER,

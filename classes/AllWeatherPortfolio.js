@@ -38,97 +38,97 @@ export class AllWeatherPortfolio extends React.Component {
           },
         ],
       },
-      intermediate_term_bond: {
-        42161: [
-          {
-            interface: new CamelotV3(
-              42161,
-              pendleAddress,
-              wethAddress,
-              this.smartAccount.address,
-            ),
-            weight: 0.15 * 2,
-            poolID:
-              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:49661",
-          },
-        ],
-      },
-      commodities: {},
-      gold: {
-        42161: [
-          {
-            interface: new CamelotV3(
-              42161,
-              wethAddress,
-              gmxAddress,
-              this.smartAccount.address,
-            ),
-            weight: 0.075 * 2,
-            poolID:
-              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:gmx",
-          },
-        ],
-      },
-      large_cap_us_stocks: {
-        42161: [
-          {
-            interface: new CamelotV3(
-              42161,
-              wethAddress,
-              linkAddress,
-              this.smartAccount.address,
-            ),
-            weight: 0.09 * 2,
-            poolID:
-              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:53459",
-          },
-        ],
-      },
-      small_cap_us_stocks: {
-        42161: [
-          {
-            interface: new CamelotV3(
-              42161,
-              rdntAddress,
-              wethAddress,
-              this.smartAccount.address,
-            ),
-            weight: 0.03 * 2,
-            poolID:
-              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:rdnt",
-          },
-        ],
-      },
-      non_us_developed_market_stocks: {
-        42161: [
-          {
-            interface: new CamelotV3(
-              42161,
-              wsolAddress,
-              usdcAddress,
-              this.smartAccount.address,
-            ),
-            weight: 0.06 * 2,
-            poolID:
-              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:sol",
-          },
-        ],
-      },
-      non_us_emerging_market_stocks: {
-        42161: [
-          {
-            interface: new CamelotV3(
-              42161,
-              magicAddress,
-              wethAddress,
-              this.smartAccount.address,
-            ),
-            weight: 0.03 * 2,
-            poolID:
-              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:magic",
-          },
-        ],
-      },
+      // intermediate_term_bond: {
+      //   42161: [
+      //     {
+      //       interface: new CamelotV3(
+      //         42161,
+      //         pendleAddress,
+      //         wethAddress,
+      //         this.smartAccount.address,
+      //       ),
+      //       weight: 0.15 * 2,
+      //       poolID:
+      //         "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:49661",
+      //     },
+      //   ],
+      // },
+      // commodities: {},
+      // gold: {
+      //   // 42161: [
+      //   //   {
+      //   //     interface: new CamelotV3(
+      //   //       42161,
+      //   //       wethAddress,
+      //   //       gmxAddress,
+      //   //       this.smartAccount.address,
+      //   //     ),
+      //   //     weight: 0.075 * 2,
+      //   //     poolID:
+      //   //       "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:gmx",
+      //   //   },
+      //   // ],
+      // },
+      // large_cap_us_stocks: {
+      //   42161: [
+      //     {
+      //       interface: new CamelotV3(
+      //         42161,
+      //         wethAddress,
+      //         linkAddress,
+      //         this.smartAccount.address,
+      //       ),
+      //       weight: 0.09 * 2,
+      //       poolID:
+      //         "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:53459",
+      //     },
+      //   ],
+      // },
+      // small_cap_us_stocks: {
+      //   // 42161: [
+      //   //   {
+      //   //     interface: new CamelotV3(
+      //   //       42161,
+      //   //       rdntAddress,
+      //   //       wethAddress,
+      //   //       this.smartAccount.address,
+      //   //     ),
+      //   //     weight: 0.03 * 2,
+      //   //     poolID:
+      //   //       "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:rdnt",
+      //   //   },
+      //   // ],
+      // },
+      // non_us_developed_market_stocks: {
+      //   // 42161: [
+      //   //   {
+      //   //     interface: new CamelotV3(
+      //   //       42161,
+      //   //       wsolAddress,
+      //   //       usdcAddress,
+      //   //       this.smartAccount.address,
+      //   //     ),
+      //   //     weight: 0.06 * 2,
+      //   //     poolID:
+      //   //       "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:sol",
+      //   //   },
+      //   // ],
+      // },
+      // non_us_emerging_market_stocks: {
+      //   // 42161: [
+      //   //   {
+      //   //     interface: new CamelotV3(
+      //   //       42161,
+      //   //       magicAddress,
+      //   //       wethAddress,
+      //   //       this.smartAccount.address,
+      //   //     ),
+      //   //     weight: 0.03 * 2,
+      //   //     poolID:
+      //   //       "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:magic",
+      //   //   },
+      //   // ],
+      // },
     };
     this.concatenatedString = Object.values(this.strategy)
       .flatMap(Object.values)
@@ -166,6 +166,7 @@ export class AllWeatherPortfolio extends React.Component {
     }
   }
   async diversify(investmentAmount, chosenToken) {
+    console.log("diversify", chosenToken)
     const transactionHashes = await this._diversify(
       investmentAmount,
       chosenToken,
@@ -178,6 +179,7 @@ export class AllWeatherPortfolio extends React.Component {
     for (const [category, protocolsInThisCategory] of Object.entries(
       this.strategy,
     )) {
+      console.log("category", category, protocolsInThisCategory)
       for (const [chainId, protocols] of Object.entries(
         protocolsInThisCategory,
       )) {

@@ -10,8 +10,6 @@ import { DollarOutlined } from "@ant-design/icons";
 import { useActiveAccount } from "thirdweb/react";
 
 import { useState, useContext, useEffect } from "react";
-import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
-import { sendDiscordMessage } from "../../utils/discord";
 import TokenDropdown from "./components/TokenDropdowns.jsx";
 
 const ClaimButton = () => {
