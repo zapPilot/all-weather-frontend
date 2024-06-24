@@ -12,7 +12,6 @@ jobs:
   test:
     runs-on: ${{ matrix.os }}
     env:
-      NEXT_PUBLIC_WALLET_PRIVATE_KEY: ${{ secrets.NEXT_PUBLIC_WALLET_PRIVATE_KEY }}
       NEXT_PUBLIC_CHAIN_ID: ${{ secrets.NEXT_PUBLIC_CHAIN_ID }}
       NEXT_PUBLIC_BUNDLER_URL: ${{ secrets.NEXT_PUBLIC_BUNDLER_URL }}
       NEXT_PUBLIC_ETHERSPOT_PROJECT_KEY: ${{ secrets.NEXT_PUBLIC_ETHERSPOT_PROJECT_KEY }}
@@ -22,15 +21,8 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         node-version: [18.16.0]
-    
-    steps:
-      - name: Test
-      - uses: actions/checkout@v3
-      - uses: oNaiPs/secrets-to-env-action@v1
-        with:
-          secrets: ${{ toJSON(secrets) }}
-      - run: echo "Value of MY_SECRET:$NEXT_PUBLIC_WALLET_PRIVATE_KEY"
 
+    steps:
       - uses: actions/checkout@master
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3

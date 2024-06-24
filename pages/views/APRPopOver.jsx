@@ -38,6 +38,7 @@ const APRPopOver = () => {
         className="font-bold my-2 cursor-pointer"
         onClick={() => setOpen(!open)}
         role="aprpopover"
+        style={{ display: missingPools.length === 0 ? "none" : "block" }}
       >
         Missing {missingPools.length} Pools
         <WarningOutlined className="text-red-400 ms-2" />

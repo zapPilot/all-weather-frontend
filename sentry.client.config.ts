@@ -9,6 +9,7 @@ Sentry.init({
 
   environment: Boolean(
     process.env.NEXT_PUBLIC_API_URL?.includes("0.0.0.0") ||
+      process.env.NEXT_PUBLIC_API_URL?.includes("127.0.0.1") ||
       process.env.NEXT_PUBLIC_API_URL?.includes("localhost"),
   )
     ? "development"
