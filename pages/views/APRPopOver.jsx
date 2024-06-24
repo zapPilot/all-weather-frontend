@@ -9,10 +9,6 @@ const APRPopOver = () => {
   const { data, loading } = useSelector((state) => state.api);
   const [missingPools, setMissingPools] = useState([]);
   const [open, setOpen] = useState(false);
-  const handleOpenChange = (newOpen) => {
-    setOpen(newOpen);
-  };
-
   useEffect(() => {
     if (loading) return;
     let tmpMissingPools = [];
@@ -21,6 +17,7 @@ const APRPopOver = () => {
         tmpMissingPools.push(pool);
       }
     }
+    tmpMissingPools.sort((a, b) => b.worth - a.worth);
     setMissingPools(tmpMissingPools);
   }, [data, loading]);
 
