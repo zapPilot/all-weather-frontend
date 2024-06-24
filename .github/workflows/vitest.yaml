@@ -12,7 +12,6 @@ jobs:
   test:
     runs-on: ${{ matrix.os }}
     env:
-      NEXT_PUBLIC_WALLET_PRIVATE_KEY: ${{ secrets.NEXT_PUBLIC_WALLET_PRIVATE_KEY }}
       NEXT_PUBLIC_CHAIN_ID: ${{ secrets.NEXT_PUBLIC_CHAIN_ID }}
       NEXT_PUBLIC_BUNDLER_URL: ${{ secrets.NEXT_PUBLIC_BUNDLER_URL }}
       NEXT_PUBLIC_ETHERSPOT_PROJECT_KEY: ${{ secrets.NEXT_PUBLIC_ETHERSPOT_PROJECT_KEY }}
