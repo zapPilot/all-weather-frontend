@@ -22,7 +22,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         node-version: [18.16.0]
-    
+
     steps:
       - name: Test
       - uses: actions/checkout@v3
