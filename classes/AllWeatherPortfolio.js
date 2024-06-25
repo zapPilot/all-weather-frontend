@@ -182,6 +182,7 @@ export class AllWeatherPortfolio extends React.Component {
     // clear the transaction batch
     let concurrentRequests = [];
     for (const protocol of protocols) {
+      console.log("Investing in ", category, protocol);
       const investPromise = protocol.interface.invest(
         (investmentAmount * protocol.weight).toFixed(precisionOfInvestAmount),
         chosenToken,
