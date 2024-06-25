@@ -5,7 +5,6 @@ import Image from "next/image";
 import { Spin, Button } from "antd";
 import { useWindowHeight } from "../utils/chartUtils.js";
 import { investByAAWallet } from "../utils/thirdwebSmartWallet.js";
-import { useActiveAccount } from "thirdweb/react";
 import {
   getBasicColumnsForSuggestionsTable,
   getExpandableColumnsForSuggestionsTable,
@@ -21,6 +20,7 @@ import { walletAddressChanged } from "../lib/features/subscriptionSlice";
 import TableComponent, { ExpandTableComponent } from "./views/PoolsTable";
 import { useWindowWidth } from "../utils/chartUtils";
 
+import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
 interface Pools {
   key: string;
   apr: number;
@@ -131,6 +131,7 @@ const Dashboard: NextPage = () => {
       [key]: value,
     }));
   };
+  const { mutate: sendBatch } = useSendBatchTransaction();
 
   const [portfolioComposition, setPortfolioComposition] = useState<{
     [key: string]: any;
@@ -511,11 +512,13 @@ const Dashboard: NextPage = () => {
           chosenToken: string,
           account: any,
         ) => {
-          await investByAAWallet(
+          const txns = await investByAAWallet(
             String(investmentAmount),
             chosenToken,
             account,
           );
+          console.log("txns", txns.flat(Infinity));
+          sendBatch(txns.flat(Infinity));
         }}
         normalWording="Etherspots"
         loadingWording="Fetching the best route to deposit"
