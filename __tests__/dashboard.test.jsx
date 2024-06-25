@@ -1,5 +1,5 @@
 import { vi, expect, describe, it } from "vitest";
-import { render, screen, fireEvent } from "./test_utils.tsx";
+import { render, screen, fireEvent } from "./test-utils";
 import Dashboard from "../pages/dashboard";
 import { waitFor } from "@testing-library/dom";
 

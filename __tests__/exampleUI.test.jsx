@@ -1,5 +1,5 @@
 import { vi, expect, describe, it } from "vitest";
-import { render, screen } from "./test_utils.tsx";
+import { render, screen } from "./test-utils";
 import ExampleUI from "../pages/views/ExampleUI";
 
 describe("ExampleUI Component", () => {
