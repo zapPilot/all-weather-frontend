@@ -1,5 +1,5 @@
 import { expect, describe, it } from "vitest";
-import { render, screen } from "./test-utils";
+import { render, screen } from "./test-utils.tsx";
 import SubscribeWording from "../pages/views/SubscribeWording";
 
 describe("SubscribeWording Component", () => {
