@@ -33,108 +33,89 @@ export class AllWeatherPortfolio extends React.Component {
               this.smartAccount.address,
             ),
             weight: 0.13,
-            poolID:
-              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:wstETH",
           },
         ],
       },
-      // intermediate_term_bond: {
-      //   42161: [
-      //     {
-      //       interface: new CamelotV3(
-      //         42161,
-      //         pendleAddress,
-      //         wethAddress,
-      //         this.smartAccount.address,
-      //       ),
-      //       weight: 0.15 * 2,
-      //       poolID:
-      //         "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:49661",
-      //     },
-      //   ],
-      // },
-      // commodities: {},
+      intermediate_term_bond: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              pendleAddress,
+              wethAddress,
+              this.smartAccount.address,
+            ),
+            weight: 0.15 * 2,
+          },
+        ],
+      },
+      commodities: {},
       // gold: {
-      //   // 42161: [
-      //   //   {
-      //   //     interface: new CamelotV3(
-      //   //       42161,
-      //   //       wethAddress,
-      //   //       gmxAddress,
-      //   //       this.smartAccount.address,
-      //   //     ),
-      //   //     weight: 0.075 * 2,
-      //   //     poolID:
-      //   //       "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:gmx",
-      //   //   },
-      //   // ],
-      // },
-      // large_cap_us_stocks: {
       //   42161: [
       //     {
       //       interface: new CamelotV3(
       //         42161,
       //         wethAddress,
-      //         linkAddress,
+      //         gmxAddress,
       //         this.smartAccount.address,
       //       ),
-      //       weight: 0.09 * 2,
-      //       poolID:
-      //         "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:53459",
+      //       weight: 0.075 * 2,
       //     },
       //   ],
       // },
-      // small_cap_us_stocks: {
-      //   // 42161: [
-      //   //   {
-      //   //     interface: new CamelotV3(
-      //   //       42161,
-      //   //       rdntAddress,
-      //   //       wethAddress,
-      //   //       this.smartAccount.address,
-      //   //     ),
-      //   //     weight: 0.03 * 2,
-      //   //     poolID:
-      //   //       "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:rdnt",
-      //   //   },
-      //   // ],
-      // },
-      // non_us_developed_market_stocks: {
-      //   // 42161: [
-      //   //   {
-      //   //     interface: new CamelotV3(
-      //   //       42161,
-      //   //       wsolAddress,
-      //   //       usdcAddress,
-      //   //       this.smartAccount.address,
-      //   //     ),
-      //   //     weight: 0.06 * 2,
-      //   //     poolID:
-      //   //       "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:sol",
-      //   //   },
-      //   // ],
-      // },
-      // non_us_emerging_market_stocks: {
-      //   // 42161: [
-      //   //   {
-      //   //     interface: new CamelotV3(
-      //   //       42161,
-      //   //       magicAddress,
-      //   //       wethAddress,
-      //   //       this.smartAccount.address,
-      //   //     ),
-      //   //     weight: 0.03 * 2,
-      //   //     poolID:
-      //   //       "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:magic",
-      //   //   },
-      //   // ],
-      // },
+      large_cap_us_stocks: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              wethAddress,
+              linkAddress,
+              this.smartAccount.address,
+            ),
+            weight: 0.09 * 2,
+          },
+        ],
+      },
+      small_cap_us_stocks: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              rdntAddress,
+              wethAddress,
+              this.smartAccount.address,
+            ),
+            weight: 0.03 * 2,
+          },
+        ],
+      },
+      non_us_developed_market_stocks: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              wsolAddress,
+              usdcAddress,
+              this.smartAccount.address,
+            ),
+            weight: 0.06 * 2,
+          },
+        ],
+      },
+      non_us_emerging_market_stocks: {
+        42161: [
+          {
+            interface: new CamelotV3(
+              42161,
+              magicAddress,
+              wethAddress,
+              this.smartAccount.address,
+            ),
+            weight: 0.03 * 2,
+          },
+        ],
+      },
     };
-    this.concatenatedString = Object.values(this.strategy)
-      .flatMap(Object.values)
-      .flatMap((arr) => arr)
-      .map((obj) => obj.poolID)
-      .join("/");
   }
   async initialize() {
     // TODO(david): Uncomment this when the API is ready
@@ -166,7 +147,6 @@ export class AllWeatherPortfolio extends React.Component {
     }
   }
   async diversify(investmentAmount, chosenToken) {
-    console.log("diversify", chosenToken)
     const transactionHashes = await this._diversify(
       investmentAmount,
       chosenToken,
@@ -179,7 +159,6 @@ export class AllWeatherPortfolio extends React.Component {
     for (const [category, protocolsInThisCategory] of Object.entries(
       this.strategy,
     )) {
-      console.log("category", category, protocolsInThisCategory)
       for (const [chainId, protocols] of Object.entries(
         protocolsInThisCategory,
       )) {

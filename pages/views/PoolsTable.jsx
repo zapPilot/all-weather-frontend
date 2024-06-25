@@ -24,6 +24,7 @@ export const ExpandTableComponent = ({
     <>
       <table
         className={`min-w-full ${webView ? "hidden sm:table" : "sm:hidden"}`}
+        key="expand_table"
       >
         <thead>
           <tr className="bg-emerald-400">
@@ -38,7 +39,7 @@ export const ExpandTableComponent = ({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-400">
+        <tbody className="divide-y divide-gray-400" key="toggle_table">
           {columnData.map((item, rowIndex) => (
             <>
               <tr
@@ -83,6 +84,7 @@ const TableComponent = ({ column, columnData, webView, onSelectCallback }) => {
     <>
       <table
         className={`min-w-full ${webView ? "hidden sm:table" : "sm:hidden"}`}
+        key="table"
       >
         <thead>
           <tr className="bg-white">
@@ -90,7 +92,7 @@ const TableComponent = ({ column, columnData, webView, onSelectCallback }) => {
             {webView ? <WebTableThead column={column} /> : <MobileTableThead />}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-400">
+        <tbody className="divide-y divide-gray-400" key="regular_table">
           {columnDataArray.map((item, index) => (
             <tr
               key={item.pool.poolID}

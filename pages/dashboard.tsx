@@ -517,8 +517,8 @@ const Dashboard: NextPage = () => {
             chosenToken,
             account,
           );
-          console.log("txns", txns);
-          sendBatch(txns[0][0]);
+          console.log("txns", txns.flat(Infinity));
+          sendBatch(txns.flat(Infinity));
         }}
         normalWording="Etherspots"
         loadingWording="Fetching the best route to deposit"

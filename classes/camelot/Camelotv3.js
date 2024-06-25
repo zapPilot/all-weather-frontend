@@ -6,23 +6,18 @@ import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToke
 import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import { fetch1InchSwapData } from "../../utils/oneInch.js";
 import { arbitrum } from "thirdweb/chains";
-// const approvalBufferParam = 1.2;
-const approvalBufferParam = 100;
-
+const approvalBufferParam = 1.2;
 //  `Error: execution reverted: STF` means there's no enough tokens to safe transfer from
+// number: min: 0, max: 50
 const slippage = [1, 2, 3, 5, 10];
 
 // would get `Error: execution reverted: Price slippage check` if it hit the amount0Min and amount1Min when providing liquidity
-const slippageOfLP = [0.95, 0.9, 0.8, 0.7, 0.1];
+const slippageOfLP = [0.95, 0.9, 0.8, 0.7, 0.6];
 
 const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const CamelotNFTPositionManagerAddress =
   "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15";
 const PROVIDER = new ethers.providers.JsonRpcProvider(
-  process.env.NEXT_PUBLIC_RPC_PROVIDER_URL,
-);
-console.log(
-  "process.env.NEXT_PUBLIC_RPC_PROVIDER_URL",
   process.env.NEXT_PUBLIC_RPC_PROVIDER_URL,
 );
 export class CamelotV3 {
@@ -34,11 +29,7 @@ export class CamelotV3 {
   }
   async invest(investmentAmountInThisPosition, chosenToken, retryIndex) {
     // get erc20 Contract Interface
-    const erc20Instance = new ethers.Contract(
-      chosenToken,
-      ERC20_ABI,
-      PROVIDER,
-    );
+    const erc20Instance = new ethers.Contract(chosenToken, ERC20_ABI, PROVIDER);
 
     // get decimals from erc20 contract
     const decimals = (await erc20Instance.functions.decimals())[0];
@@ -87,18 +78,28 @@ export class CamelotV3 {
     let tokenSwapTxns = [];
     let swapEstimateAmounts = [];
     for (const token of [this.token0, this.token1]) {
-      tokenSwapTxns.push();
-      const [swapTxn, swapEstimateAmount] = await this._swap(
-        chosenToken,
-        token,
-        ethers.utils.parseUnits(
-          String(investmentAmountInThisPosition / 2),
-          decimals,
-        ),
-        slippage[retryIndex],
-      );
-      tokenSwapTxns.push(swapTxn);
-      swapEstimateAmounts.push(swapEstimateAmount);
+      if (token.toLowerCase() === chosenToken.toLowerCase()) {
+        swapEstimateAmounts.push(
+          ethers.utils.parseUnits(
+            String(investmentAmountInThisPosition / 2),
+            decimals,
+          ),
+        );
+      } else {
+        const [swapTxn, swapEstimateAmount] = await this._swap(
+          chosenToken,
+          token,
+          ethers.utils.parseUnits(
+            String(investmentAmountInThisPosition / 2),
+            decimals,
+          ),
+          slippage[retryIndex],
+        );
+        tokenSwapTxns.push(swapTxn);
+        swapEstimateAmounts.push(
+          Math.floor((swapEstimateAmount * (100 - slippage[retryIndex])) / 100),
+        );
+      }
     }
     return [tokenSwapTxns, swapEstimateAmounts];
   }
@@ -146,10 +147,7 @@ export class CamelotV3 {
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
         functionName: "approve",
-        args: [
-          spenderAddress,
-          ethers.BigNumber.from(amount).mul(approvalBufferParam),
-        ],
+        args: [spenderAddress, Math.floor(amount * approvalBufferParam)],
       }),
     };
   }
