@@ -100,10 +100,11 @@ describe("Dashboard Component", () => {
 
     await waitFor(() => {
       // Check if the component renders the data
-      const ethElements = screen.getAllByText(/.*eth.*/i);
-      expect(ethElements.length).toBeGreaterThan(0);
+      // TODO(chris): turns out the DOM you're check is the zap in button, not those farming pools listed in the dashboard
+      const zapInButton = screen.getAllByText(/.*zap in.*/i);
+      expect(zapInButton.length).toBeGreaterThan(0);
 
-      ethElements.forEach((element) => {
+      zapInButton.forEach((element) => {
         expect(element).toBeInTheDocument();
       });
       // const image = screen.getByAlt("ethereum");

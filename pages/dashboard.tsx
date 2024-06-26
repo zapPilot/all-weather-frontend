@@ -19,8 +19,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { walletAddressChanged } from "../lib/features/subscriptionSlice";
 import TableComponent, { ExpandTableComponent } from "./views/PoolsTable";
 import { useWindowWidth } from "../utils/chartUtils";
-
 import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
+import PortfolioList from "./PortfolioList";
+import RoutesPreview from "./RoutesPreview/index.tsx";
 interface Pools {
   key: string;
   apr: number;
@@ -407,9 +408,33 @@ const Dashboard: NextPage = () => {
   return (
     <>
       <div style={divBetterPools}>
+        <PortfolioList />
+        <RoutesPreview />
+        <TokenDropdownInput
+          onClickCallback={async (
+            investmentAmount: number,
+            chosenToken: string,
+            account: any,
+          ) => {
+            if (!chosenToken) {
+              alert("Please select a token");
+              return;
+            }
+            const txns = await investByAAWallet(
+              String(investmentAmount),
+              chosenToken,
+              account,
+            );
+            console.log("txns", txns.flat(Infinity));
+            sendBatch(txns.flat(Infinity));
+          }}
+          normalWording="Zap In"
+          loadingWording="Fetching the best route to deposit"
+          account={account}
+        />
         <center>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Better Pools Search Engine
+            Compose Your Own Portfolio
           </h1>
         </center>
         <div className="mt-2">
@@ -506,24 +531,6 @@ const Dashboard: NextPage = () => {
           })}
         </>
       </div>
-      <TokenDropdownInput
-        onClickCallback={async (
-          investmentAmount: number,
-          chosenToken: string,
-          account: any,
-        ) => {
-          const txns = await investByAAWallet(
-            String(investmentAmount),
-            chosenToken,
-            account,
-          );
-          console.log("txns", txns.flat(Infinity));
-          sendBatch(txns.flat(Infinity));
-        }}
-        normalWording="Etherspots"
-        loadingWording="Fetching the best route to deposit"
-        account={account}
-      />
       <LinkModal
         protocolLink={protocolLink}
         linkModalOpen={linkModalOpen}

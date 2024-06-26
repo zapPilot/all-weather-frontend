@@ -6,18 +6,43 @@ import axios from "axios";
 
 const { Option } = Select;
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const relevantSymbols = [
+  "eth",
+  "usdc.e",
+  "usdc",
+  "usdt",
+  "wbtc",
+  "weth",
+  "frax",
+  "wsteth",
+  "usds",
+  "eura",
+  "usd+",
+  "reth",
+  "pendle",
+  "ezeth",
+  "cbeth",
+  "lusd",
+  "susd",
+  "euroe",
+  "axlusdc",
+];
 export const selectBefore = (handleChange, addressOrSymbol, chainID) => (
   <Select
     onChange={handleChange}
-    defaultValue="0x55d398326f99059ff775485246999027b3197955"
+    defaultValue="Please select a token"
     theme="light"
     style={{
       width: 100,
     }}
   >
     {tokens.props.pageProps.tokenList[String(chainID)]
-      ?.slice(0, 30)
-      .map((option) => {
+      ?.filter((option) =>
+        relevantSymbols.some(
+          (symbol) => option.symbol.toLowerCase() === symbol && option.logoURI2,
+        ),
+      )
+      ?.map((option) => {
         const keyAndValue =
           addressOrSymbol === "address" ? option.address : option.symbol;
         return (

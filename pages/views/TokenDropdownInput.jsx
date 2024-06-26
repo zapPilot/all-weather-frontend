@@ -16,20 +16,12 @@ const TokenDropdownInput = ({
   loadingWording,
   account,
 }) => {
-  // default value 0x55d398326f99059ff775485246999027b3197955 stands for USDT on BSC
-  const [chosenToken, setChosenToken] = useState(
-    "0x55d398326f99059ff775485246999027b3197955",
-  );
+  const [chosenToken, setChosenToken] = useState("");
   const chainId = useActiveWalletChain();
   const contract = getContract({
-    clien: THIRDWEB_CLIENT,
+    client: THIRDWEB_CLIENT,
     chain: arbitrum,
     address: chosenToken,
-    // chosenToken === "0x0000000000000000000000000000000000000000" ||
-    // chosenToken === ""
-    // ? undefined
-    // : chosenToken
-    // optional ABI
   });
   const { data: chosenTokenBalance } = useReadContract({
     contract: contract,
@@ -69,7 +61,6 @@ const TokenDropdownInput = ({
         {selectBefore(
           (value) => {
             setChosenToken(value);
-            console.log("value", value);
           },
           "address",
           chainId?.id,
