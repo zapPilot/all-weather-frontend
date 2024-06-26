@@ -30,7 +30,6 @@ import { useActiveWalletChain } from "thirdweb/react";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
 import NumericInput from "./NumberInput";
 import { ethers } from "ethers";
-import { sendDiscordMessage } from "../../utils/discord";
 import SlippageModal from "./components/SlippageModal";
 const MINIMUM_ZAP_IN_AMOUNT = 0.001;
 const MAXIMUM_ZAP_IN_AMOUNT = 1000000;
@@ -170,7 +169,6 @@ const ZapInButton = () => {
   };
 
   const handleZapIn = async () => {
-    await sendDiscordMessage(address, "starts handleZapin()");
     const validationResult = depositSchema.safeParse(Number(inputValue));
     if (!validationResult.success) {
       setAlert(true);
@@ -265,7 +263,6 @@ const ZapInButton = () => {
           ) {
             return;
           }
-          sendDiscordMessage(address, "handleZapin failed!");
           messageApi.error({
             content: `${error.shortMessage}. Amout: ${error.args[0].amount}. Increase the deposit amount and try again.`,
             duration: 5,
@@ -273,7 +270,6 @@ const ZapInButton = () => {
           throw error;
         },
         onSuccess(data) {
-          sendDiscordMessage(address, "handleZapin succeeded!");
           setDepositHash(data.hash);
           messageApi.info("Deposit succeeded");
         },

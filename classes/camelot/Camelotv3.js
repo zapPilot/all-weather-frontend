@@ -1,18 +1,18 @@
+import { approve, transferFrom } from "thirdweb/extensions/erc20";
 import { ethers } from "ethers";
 import { ERC20_ABI } from "../../node_modules/@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
 import { encodeFunctionData } from "viem";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json" assert { type: "json" };
 import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import { fetch1InchSwapData } from "../../utils/oneInch.js";
-
-// const approvalBufferParam = 1.2;
-const approvalBufferParam = 100;
-
+import { arbitrum } from "thirdweb/chains";
+const approvalBufferParam = 1.2;
 //  `Error: execution reverted: STF` means there's no enough tokens to safe transfer from
-const slippage = [0.1, 0.5, 1, 10, 50];
+// number: min: 0, max: 50
+const slippage = [1, 2, 3, 5, 10];
 
 // would get `Error: execution reverted: Price slippage check` if it hit the amount0Min and amount1Min when providing liquidity
-const slippageOfLP = [0.95, 0.9, 0.8, 0.7, 0.1];
+const slippageOfLP = [0.95, 0.9, 0.8, 0.7, 0.6];
 
 const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const CamelotNFTPositionManagerAddress =
@@ -29,16 +29,12 @@ export class CamelotV3 {
   }
   async invest(investmentAmountInThisPosition, chosenToken, retryIndex) {
     // get erc20 Contract Interface
-    const erc20Instance = new ethers.Contract(
-      // "0x55d398326f99059ff775485246999027b3197955",
-      chosenToken,
-      ERC20_ABI,
-      PROVIDER,
-    );
+    const erc20Instance = new ethers.Contract(chosenToken, ERC20_ABI, PROVIDER);
 
     // get decimals from erc20 contract
     const decimals = (await erc20Instance.functions.decimals())[0];
     const approveTxn = {
+      chain: arbitrum,
       to: chosenToken,
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
@@ -67,7 +63,7 @@ export class CamelotV3 {
     const approveTransactions = this._approves(token0Amount, token1Amount);
     return [
       approveTxn,
-      tokenSwapTxns,
+      ...tokenSwapTxns,
       ...approveTransactions,
       this._deposit(token0Amount, token1Amount, retryIndex),
     ];
@@ -82,23 +78,33 @@ export class CamelotV3 {
     let tokenSwapTxns = [];
     let swapEstimateAmounts = [];
     for (const token of [this.token0, this.token1]) {
-      tokenSwapTxns.push();
-      const [swapTxn, swapEstimateAmount] = await this._swap(
-        chosenToken,
-        token,
-        ethers.utils.parseUnits(
-          String(investmentAmountInThisPosition / 2),
-          decimals,
-        ),
-        slippage[retryIndex],
-      );
-      tokenSwapTxns.push(swapTxn);
-      swapEstimateAmounts.push(swapEstimateAmount);
+      if (token.toLowerCase() === chosenToken.toLowerCase()) {
+        swapEstimateAmounts.push(
+          ethers.utils.parseUnits(
+            String(investmentAmountInThisPosition / 2),
+            decimals,
+          ),
+        );
+      } else {
+        const [swapTxn, swapEstimateAmount] = await this._swap(
+          chosenToken,
+          token,
+          ethers.utils.parseUnits(
+            String(investmentAmountInThisPosition / 2),
+            decimals,
+          ),
+          slippage[retryIndex],
+        );
+        tokenSwapTxns.push(swapTxn);
+        swapEstimateAmounts.push(
+          Math.floor((swapEstimateAmount * (100 - slippage[retryIndex])) / 100),
+        );
+      }
     }
     return [tokenSwapTxns, swapEstimateAmounts];
   }
 
-  async _approves(token0Amount, token1Amount) {
+  _approves(token0Amount, token1Amount) {
     let tokenApproveTransactions = [];
     for (const [token, tokenAmount] of [
       [this.token0, token0Amount],
@@ -126,24 +132,26 @@ export class CamelotV3 {
       slippage,
     );
     return [
-      { to: oneInchAddress, data: swapCallDataFrom1inch["tx"]["data"] },
+      {
+        to: oneInchAddress,
+        data: swapCallDataFrom1inch["tx"]["data"],
+        chain: arbitrum,
+      },
       swapCallDataFrom1inch["toAmount"],
     ];
   }
-  async _approve(tokenAddress, spenderAddress, amount) {
+  _approve(tokenAddress, spenderAddress, amount) {
     return {
+      chain: arbitrum,
       to: tokenAddress,
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
         functionName: "approve",
-        args: [
-          spenderAddress,
-          ethers.BigNumber.from(amount).mul(approvalBufferParam),
-        ],
+        args: [spenderAddress, Math.floor(amount * approvalBufferParam)],
       }),
     };
   }
-  async _deposit(token0Amount, token1Amount, retryIndex) {
+  _deposit(token0Amount, token1Amount, retryIndex) {
     const camelotCallData = encodeFunctionData({
       abi: CamelotNFTPositionManager,
       functionName: "mint",
@@ -163,6 +171,7 @@ export class CamelotV3 {
       ],
     });
     return {
+      chain: arbitrum,
       to: CamelotNFTPositionManagerAddress,
       data: camelotCallData,
     };

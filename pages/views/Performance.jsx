@@ -101,7 +101,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
               <Statistic
                 title="Net Worth"
                 value={`${data?.net_worth}`}
-                precision={2}
+                precision={0}
                 valueStyle={colorLogic(0)}
                 prefix="$"
               />

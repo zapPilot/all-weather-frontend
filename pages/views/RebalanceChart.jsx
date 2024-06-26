@@ -309,6 +309,7 @@ export default function RebalanceChart(props) {
   const {
     rebalanceSuggestions,
     netWorth,
+    windowWidth,
     showCategory,
     mode,
     portfolioComposition,

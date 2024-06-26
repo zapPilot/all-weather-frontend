@@ -1,8 +1,5 @@
-import { smartWallet } from "thirdweb/wallets";
-import { arbitrum } from "thirdweb/chains";
 import { CamelotV3 } from "./camelot/Camelotv3";
 import React from "react";
-import { approve, transferFrom } from "thirdweb/extensions/erc20";
 import { sendBatchTransaction } from "thirdweb";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 
@@ -36,8 +33,6 @@ export class AllWeatherPortfolio extends React.Component {
               this.smartAccount.address,
             ),
             weight: 0.13,
-            poolID:
-              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:wstETH",
           },
         ],
       },
@@ -51,27 +46,23 @@ export class AllWeatherPortfolio extends React.Component {
               this.smartAccount.address,
             ),
             weight: 0.15 * 2,
-            poolID:
-              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:49661",
           },
         ],
       },
       commodities: {},
-      gold: {
-        42161: [
-          {
-            interface: new CamelotV3(
-              42161,
-              wethAddress,
-              gmxAddress,
-              this.smartAccount.address,
-            ),
-            weight: 0.075 * 2,
-            poolID:
-              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:gmx",
-          },
-        ],
-      },
+      // gold: {
+      //   42161: [
+      //     {
+      //       interface: new CamelotV3(
+      //         42161,
+      //         wethAddress,
+      //         gmxAddress,
+      //         this.smartAccount.address,
+      //       ),
+      //       weight: 0.075 * 2,
+      //     },
+      //   ],
+      // },
       large_cap_us_stocks: {
         42161: [
           {
@@ -82,8 +73,6 @@ export class AllWeatherPortfolio extends React.Component {
               this.smartAccount.address,
             ),
             weight: 0.09 * 2,
-            poolID:
-              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:53459",
           },
         ],
       },
@@ -97,8 +86,6 @@ export class AllWeatherPortfolio extends React.Component {
               this.smartAccount.address,
             ),
             weight: 0.03 * 2,
-            poolID:
-              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:rdnt",
           },
         ],
       },
@@ -112,8 +99,6 @@ export class AllWeatherPortfolio extends React.Component {
               this.smartAccount.address,
             ),
             weight: 0.06 * 2,
-            poolID:
-              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:sol",
           },
         ],
       },
@@ -127,17 +112,10 @@ export class AllWeatherPortfolio extends React.Component {
               this.smartAccount.address,
             ),
             weight: 0.03 * 2,
-            poolID:
-              "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15:arb_camelot2:magic",
           },
         ],
       },
     };
-    this.concatenatedString = Object.values(this.strategy)
-      .flatMap(Object.values)
-      .flatMap((arr) => arr)
-      .map((obj) => obj.poolID)
-      .join("/");
   }
   async initialize() {
     // TODO(david): Uncomment this when the API is ready
@@ -177,22 +155,22 @@ export class AllWeatherPortfolio extends React.Component {
   }
 
   async _diversify(investmentAmount, chosenToken) {
-    let transactionHashes = [];
+    let txns = [];
     for (const [category, protocolsInThisCategory] of Object.entries(
       this.strategy,
     )) {
       for (const [chainId, protocols] of Object.entries(
         protocolsInThisCategory,
       )) {
-        const transactionHash = await this._retryFunction(
+        const txn = await this._retryFunction(
           this._investInThisCategory.bind(this),
           { investmentAmount, chosenToken, protocols, category },
           { retries: 5, delay: 1000 },
         );
-        transactionHashes.push(transactionHash);
+        txns.push(txn);
       }
     }
-    return transactionHashes;
+    return txns;
   }
   async _investInThisCategory({
     investmentAmount,
@@ -204,6 +182,7 @@ export class AllWeatherPortfolio extends React.Component {
     // clear the transaction batch
     let concurrentRequests = [];
     for (const protocol of protocols) {
+      console.log("Investing in ", category, protocol);
       const investPromise = protocol.interface.invest(
         (investmentAmount * protocol.weight).toFixed(precisionOfInvestAmount),
         chosenToken,
@@ -211,31 +190,9 @@ export class AllWeatherPortfolio extends React.Component {
       );
       concurrentRequests.push(investPromise);
     }
-    const txs = await Promise.all(concurrentRequests);
-    await sendBatchTransaction({
-      txs,
-      account: this.smartAccount,
-    });
+    return await Promise.all(concurrentRequests);
   }
 
-  async _signTransaction(category) {
-    // estimate transactions added to the batch and get the fee data for the UserOp
-    const op = await this.primeSdk.estimate();
-    console.log(`Investment in ${category} completed...`);
-    // console.log(`Estimate UserOp: ${await printOp(op)}`);
-    //   // sign the UserOp and sending to the bundler...
-    //   const uoHash = await primeSdk.send(op);
-    //   console.log(`UserOpHash: ${uoHash}`);
-    //   // get transaction hash...
-    //   console.log("Waiting for transaction...");
-    //   let userOpsReceipt = null;
-    //   const timeout = Date.now() + 60000; // 1 minute timeout
-    //   while (userOpsReceipt == null && Date.now() < timeout) {
-    //     await sleep(2);
-    //     userOpsReceipt = await primeSdk.getUserOpReceipt(uoHash);
-    //   }
-    // return uoHash;
-  }
   async _retryFunction(fn, params, options = {}) {
     const { retries = 3, delay = 1000 } = options; // Set defaults
 

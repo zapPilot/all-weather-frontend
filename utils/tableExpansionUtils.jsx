@@ -54,6 +54,7 @@ export const columnMapping = (
             role="pool_id_tooltip"
             data-tooltip-id={pool.poolID}
             data-tooltip-content={pool.poolID}
+            key={pool.poolID}
           >
             <Image
               src={`/projectPictures/${pool.name}.webp`}
@@ -73,6 +74,7 @@ export const columnMapping = (
                   handleLinkButton(protocol.url);
                   setLinkModalOpen(true);
                 }}
+                key={protocol.slug}
               >
                 <ExportOutlined />
               </button>
@@ -101,6 +103,7 @@ export const columnMapping = (
               alt={token}
               height={20}
               width={20}
+              key={index}
             />
           ))}
           <span className="text-white px-2">
