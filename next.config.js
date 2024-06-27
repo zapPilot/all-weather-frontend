@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  transpilePackages: [
+    "@ant-design",
+    "antd",
+    "rc-util",
+    "rc-pagination",
+    "rc-picker",
+  ],
   trailingSlash: true,
   webpack: (config) => {
     config.resolve.fallback = { fs: false, net: false, tls: false };

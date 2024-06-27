@@ -174,7 +174,8 @@ export default function ExampleUI() {
           }}
         >
           <RebalancerWidget />
-          {subscriptionStatus ? (
+          {/* TODO(david): Use this historical chart to track portfolio's APR */}
+          {/* {subscriptionStatus ? (
             <>
               <p
                 className="heading-subtitle"
@@ -188,7 +189,7 @@ export default function ExampleUI() {
             </>
           ) : (
             <SubscribeWording />
-          )}
+          )} */}
         </Col>
         <Col
           xs={{
