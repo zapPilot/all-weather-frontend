@@ -408,8 +408,8 @@ const Dashboard: NextPage = () => {
   return (
     <>
       <div style={divBetterPools}>
-        <PortfolioList />
-        <RoutesPreview />
+        {/* <PortfolioList />
+        <RoutesPreview /> */}
         <TokenDropdownInput
           onClickCallback={async (
             investmentAmount: number,
