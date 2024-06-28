@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 import React, { useState, useEffect } from "react";
-import { AllWeatherPortfolio } from "../../classes/AllWeatherPortfolio.js";
+import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 
 import { Sunburst, LabelSeries } from "react-vis";
 import { EXTENDED_DISCRETE_COLOR_RANGE } from "react-vis/dist/theme";
@@ -32,14 +32,6 @@ const DefaultValue = {
     },
   ],
 };
-const LABEL_STYLE = {
-  fontSize: "16px",
-  textAnchor: "middle",
-  fill: "white",
-  whitespace: "pre-wrap",
-  color: "white",
-};
-
 /**
  * Recursively work backwards from highlighted node to find path of valud nodes
  * @param {Object} node - the current node being considered
@@ -203,31 +195,27 @@ function convertPortfolioCompositionToChartData(portfolioComposition) {
   return result;
 }
 
-function convertPortfolioStrategyToChartData(
-  strategy,
-  mode = "",
-  poolsMetadata = {},
-) {
+function convertPortfolioStrategyToChartData(portfolioHelper) {
   let result = { children: [] };
   let idx = 0;
-
+  let totalAPR = 0;
   // need to refactor
   let nameToColor = {};
-  for (const [category, positionObjsInThisCategory] of strategy) {
-    for (const positionObjs of Object.values(positionObjsInThisCategory)) {
-      for (const positionObj of positionObjs) {
-        const weightedValue = positionObj.weight * 100;
-        const poolName = positionObj.poolID.split(":")[1];
-        let name;
-        if (mode === "portfolioStrategy") {
-          const poolID = positionObj.poolID;
-          const positionObjMetadata = poolsMetadata[poolID];
-          name = `${poolName}:${positionObjMetadata?.metadata?.symbol}(${weightedValue}%)`;
-        } else {
-          name = `${poolName}:${positionObj.tokens.join(
-            "-",
-          )}(${weightedValue}%)`;
-        }
+  for (const [category, protocols] of Object.entries(
+    portfolioHelper.strategy,
+  )) {
+    for (const [chain, protocolArray] of Object.entries(protocols)) {
+      for (const protocol of protocolArray) {
+        const weightedValue = protocol.weight * 100;
+        const poolName = protocol.interface.constructor.protocolName;
+        const sortedSymbolList = protocol.interface.symbolList.sort().join("-");
+        const keyForpoolsMetadata = `${chain}/${protocol.interface.constructor.protocolName}:${sortedSymbolList}`;
+        const aprOfProtocol =
+          portfolioHelper.strategyMetadata[keyForpoolsMetadata].value * 100;
+        totalAPR += aprOfProtocol * protocol.weight;
+        const name = `${poolName}:${sortedSymbolList},APR: ${aprOfProtocol.toFixed(
+          2,
+        )}%`;
         [nameToColor, idx] = _prepareSunburstData(
           result,
           nameToColor,
@@ -239,7 +227,7 @@ function convertPortfolioStrategyToChartData(
       }
     }
   }
-  return result;
+  return [result, totalAPR];
 }
 
 export function _prepareSunburstData(
@@ -277,30 +265,6 @@ export function _prepareSunburstData(
   return [nameToColor, idx];
 }
 
-function calculatePortfolioAPR(portfolioComposition) {
-  let result = 0;
-  for (const positionObjsInThisCategory of portfolioComposition) {
-    for (const positionObj of Object.values(positionObjsInThisCategory)) {
-      for (const [_, weight] of positionObj.categories) {
-        result += weight.value * positionObj.apr;
-      }
-    }
-  }
-  return result;
-}
-function calculatePortfolioAPRForAAWallet(portfolioComposition, poolsMetadata) {
-  let result = 0;
-  for (const positionObjsInThisCategory of portfolioComposition) {
-    for (const positionObjs of Object.values(positionObjsInThisCategory)) {
-      for (const positionObj of positionObjs) {
-        result +=
-          positionObj.weight * poolsMetadata?.[positionObj.poolID]?.apr ?? 0;
-      }
-    }
-  }
-  return result * 100;
-}
-
 function getPercentage(value, total) {
   return Math.round((value / total) * 100);
 }
@@ -309,12 +273,12 @@ export default function RebalanceChart(props) {
   const {
     rebalanceSuggestions,
     netWorth,
-    windowWidth,
     showCategory,
     mode,
     portfolioComposition,
     account,
     portfolio_apr,
+    color,
   } = props;
   const [data, setData] = useState(defaultData);
   const [apr, setAPR] = useState(0);
@@ -324,6 +288,13 @@ export default function RebalanceChart(props) {
     margin: "0 auto",
     height: props.windowWidth > 767 ? 500 : 300,
     width: props.windowWidth > 767 ? 500 : 300,
+  };
+  const LABEL_STYLE = {
+    fontSize: "16px",
+    textAnchor: "middle",
+    fill: color,
+    whitespace: "pre-wrap",
+    color: color,
   };
 
   useEffect(() => {
@@ -346,20 +317,14 @@ export default function RebalanceChart(props) {
         setAPR(totalApr / sortedPortfolioComposition.length);
       } else if (mode === "portfolioStrategy") {
         if (!account) return;
-        const portfolioHelper = new AllWeatherPortfolio(account);
-        await portfolioHelper.initialize();
-        const chartData = convertPortfolioStrategyToChartData(
-          Object.entries(portfolioHelper.strategy),
-          mode,
-          portfolioHelper.poolsMetadata,
+        const portfolioHelper = await getPortfolioHelper(
+          "AllWeatherPortfolio",
+          account,
         );
+        const [chartData, totalAPR] =
+          convertPortfolioStrategyToChartData(portfolioHelper);
         setData(chartData);
-        setAPR(
-          calculatePortfolioAPRForAAWallet(
-            Object.values(portfolioHelper.strategy),
-            portfolioHelper.poolsMetadata,
-          ),
-        );
+        setAPR(totalAPR);
       } else {
         if (!rebalanceSuggestions || rebalanceSuggestions.length === 0) return;
         // set showCategory = true, to show its category. For instance, long_term_bond

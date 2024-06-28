@@ -1,5 +1,5 @@
 import { expect, describe, it } from "vitest";
-import { render, screen } from "./test-utils";
+import { render, screen } from "./test-utils.tsx";
 import RebalanceChart from "../pages/views/RebalanceChart";
 
 describe("RebalanceChart Component", () => {
