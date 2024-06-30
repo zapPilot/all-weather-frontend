@@ -14,136 +14,177 @@ const wsolAddress = "0x2bcC6D6CdBbDC0a4071e48bb3B969b06B3330c07";
 const rdntAddress = "0x3082CC23568eA640225c2467653dB90e9250AaA0";
 const magicAddress = "0x539bdE0d7Dbd336b79148AA742883198BBF60342";
 const wstEthAddress = "0x5979D7b546E38E414F7E9822514be443A4800529";
+const tiaAddress = "0xD56734d7f9979dD94FAE3d67C7e928234e71cD4C";
+const kujiAddress = "0x3A18dcC9745eDcD1Ef33ecB93b0b6eBA5671e7Ca";
+const axlAddress = "0x23ee2343B892b1BB63503a4FAbc840E0e2C6810f";
 
 export class AllWeatherPortfolio extends React.Component {
   constructor(account) {
     super();
-    if (!account) {
-      return;
-    }
+    this.strategyMetadata = {};
     this.smartAccount = account;
+    this.weightMapping = {
+      long_term_bond: 0,
+      intermediate_term_bond: 0.15 * 2,
+      commodities: 0.06 * 2,
+      gold: 0.06 * 2,
+      large_cap_us_stocks: 0.12 * 2,
+      small_cap_us_stocks: 0.02 * 2,
+      non_us_developed_market_stocks: 0.06 * 2,
+      non_us_emerging_market_stocks: 0.03 * 2,
+    };
     this.strategy = {
-      long_term_bond: {
-        42161: [
-          {
-            interface: new CamelotV3(
-              42161,
-              wstEthAddress,
-              wethAddress,
-              this.smartAccount.address,
-            ),
-            weight: 0.13,
-          },
-        ],
-      },
+      // long_term_bond: {
+      //   "arb": [
+      //     {
+      //       interface: new CamelotV3(
+      //         42161,
+      //         wstEthAddress,
+      //         wethAddress,
+      //         this.smartAccount.address,
+      //       ),
+      //       weight: 0.4,
+      //     },
+      //   ],
+      // },
       intermediate_term_bond: {
-        42161: [
+        arb: [
           {
             interface: new CamelotV3(
               42161,
+              ["pendle", "eth"],
               pendleAddress,
               wethAddress,
               this.smartAccount.address,
             ),
-            weight: 0.15 * 2,
+            weight: this.weightMapping.intermediate_term_bond,
           },
         ],
       },
-      commodities: {},
-      // gold: {
-      //   42161: [
-      //     {
-      //       interface: new CamelotV3(
-      //         42161,
-      //         wethAddress,
-      //         gmxAddress,
-      //         this.smartAccount.address,
-      //       ),
-      //       weight: 0.075 * 2,
-      //     },
-      //   ],
-      // },
-      large_cap_us_stocks: {
-        42161: [
+      commodities: {
+        arb: [
           {
             interface: new CamelotV3(
               42161,
+              ["link", "eth"],
               wethAddress,
               linkAddress,
               this.smartAccount.address,
             ),
-            weight: 0.09 * 2,
+            weight: this.weightMapping.commodities,
+          },
+        ],
+      },
+      gold: {
+        arb: [
+          {
+            interface: new CamelotV3(
+              42161,
+              ["usdc", "eth"],
+
+              wethAddress,
+              usdcAddress,
+              this.smartAccount.address,
+            ),
+            weight: this.weightMapping.gold,
+          },
+        ],
+      },
+      large_cap_us_stocks: {
+        arb: [
+          {
+            interface: new CamelotV3(
+              42161,
+              ["tia.n", "eth"],
+              wethAddress,
+              tiaAddress,
+              this.smartAccount.address,
+            ),
+            weight: this.weightMapping.large_cap_us_stocks,
           },
         ],
       },
       small_cap_us_stocks: {
-        42161: [
+        arb: [
           {
             interface: new CamelotV3(
               42161,
-              rdntAddress,
-              wethAddress,
+              ["axl", "usdc"],
+              axlAddress,
+              usdcAddress,
               this.smartAccount.address,
             ),
-            weight: 0.03 * 2,
+            weight: this.weightMapping.small_cap_us_stocks,
           },
         ],
       },
       non_us_developed_market_stocks: {
-        42161: [
+        arb: [
           {
             interface: new CamelotV3(
               42161,
+              ["sol", "usdc"],
+
               wsolAddress,
               usdcAddress,
               this.smartAccount.address,
             ),
-            weight: 0.06 * 2,
+            weight: this.weightMapping.non_us_developed_market_stocks,
           },
         ],
       },
       non_us_emerging_market_stocks: {
-        42161: [
+        arb: [
           {
             interface: new CamelotV3(
               42161,
-              magicAddress,
+              ["kuji", "eth"],
+
+              kujiAddress,
               wethAddress,
               this.smartAccount.address,
             ),
-            weight: 0.03 * 2,
+            weight: this.weightMapping.non_us_emerging_market_stocks,
           },
         ],
       },
     };
   }
   async initialize() {
-    // TODO(david): Uncomment this when the API is ready
-    // await fetch(
-    //   `${process.env.NEXT_PUBLIC_API_URL}/pools/${this.concatenatedString}`,
-    // )
-    //   .then((response) => response.json())
-    //   .then((data) => {
-    //     this.poolsMetadata = data;
-    //   })
-    //   .catch((error) => this.setState({ error }));
-    // this._checkTotalWeight(this.strategy);
-  }
+    try {
+      const allProtocols = Object.values(this.strategy).flatMap((protocols) =>
+        Object.entries(protocols).flatMap(([chain, protocolArray]) =>
+          protocolArray.map((protocol) => ({ chain, protocol })),
+        ),
+      );
 
-  _checkTotalWeight(strategyObject) {
-    let totalWeight = 0;
-    for (const strategyKey in strategyObject) {
-      const strategy = strategyObject[strategyKey]; // Access each strategy object
-      for (const bondKey in strategy) {
-        const bonds = strategy[bondKey]; // Access bond array within each strategy
-        for (const bond of bonds) {
-          totalWeight += bond.weight; // Access weight property and add to total
+      const results = await Promise.all(
+        allProtocols.map(async ({ chain, protocol }) => {
+          const symbolList = protocol.interface.symbolList.join("+");
+          const sortedSymbolList = protocol.interface.symbolList
+            .sort()
+            .join("-");
+          const url = `${process.env.NEXT_PUBLIC_API_URL}/pool/apr?chain=${chain}&project_id=${protocol.interface.constructor.projectID}&project_version=${protocol.interface.constructor.projectVersion}&symbol_list=${symbolList}`;
+
+          try {
+            const response = await fetch(url);
+            const data = await response.json();
+            const key = `${chain}/${protocol.interface.constructor.protocolName}:${sortedSymbolList}`;
+            return { key, data };
+          } catch (error) {
+            console.error(`Error fetching data for ${url}:`, error);
+            return null;
+          }
+        }),
+      );
+
+      results.forEach((result) => {
+        if (result) {
+          this.strategyMetadata[result.key] = result.data;
         }
-      }
-    }
-    console.log("Total Weight: ", totalWeight);
-    if (Math.abs(totalWeight - 1) > 0.0001) {
-      throw new Error("Total weight of all protocols must be 1");
+      });
+    } catch (error) {
+      console.error("Error initializing strategy metadata:", error);
     }
   }
   async diversify(investmentAmount, chosenToken) {
@@ -182,7 +223,6 @@ export class AllWeatherPortfolio extends React.Component {
     // clear the transaction batch
     let concurrentRequests = [];
     for (const protocol of protocols) {
-      console.log("Investing in ", category, protocol);
       const investPromise = protocol.interface.invest(
         (investmentAmount * protocol.weight).toFixed(precisionOfInvestAmount),
         chosenToken,

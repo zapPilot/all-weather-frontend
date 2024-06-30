@@ -21,8 +21,12 @@ const PROVIDER = new ethers.providers.JsonRpcProvider(
   process.env.NEXT_PUBLIC_RPC_PROVIDER_URL,
 );
 export class CamelotV3 {
-  constructor(chaindId, token0, token1, aaWalletAddress) {
+  static projectID = "camelot";
+  static projectVersion = "v3";
+  static protocolName = `${CamelotV3.projectID}-${CamelotV3.projectVersion}`;
+  constructor(chaindId, symbolList, token0, token1, aaWalletAddress) {
     this.chainId = chaindId;
+    this.symbolList = symbolList;
     this.token0 = token0;
     this.token1 = token1;
     this.aaWalletAddress = aaWalletAddress;

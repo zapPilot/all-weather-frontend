@@ -27,7 +27,7 @@ test("AllWeatherPortfolio initialize", async () => {
   )) {
     expect(categoryNames.includes(categoryName)).toBeTruthy();
     if (Object.keys(sectorObject).length !== 0) {
-      expect(sectorObject[42161].length).toBeGreaterThan(0);
+      expect(sectorObject["arb"].length).toBeGreaterThan(0);
     }
   }
 });

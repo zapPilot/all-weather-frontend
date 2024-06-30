@@ -90,10 +90,6 @@ const LiquidityPoolRangeMonitoring: NextPage = () => {
         },
       );
       const statuses_of_liquidity_pools = await response.json();
-      console.log(
-        "statuses_of_liquidity_pools",
-        statuses_of_liquidity_pools.data,
-      );
       setstatusesOfLiquidityPools(statuses_of_liquidity_pools);
     }
     getPositions();

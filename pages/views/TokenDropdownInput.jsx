@@ -2,20 +2,15 @@ import { Button, Space } from "antd";
 import { useState } from "react";
 import { selectBefore } from "../../utils/contractInteractions";
 import NumericInput from "./NumberInput";
-import { DollarOutlined } from "@ant-design/icons";
 import { useReadContract } from "thirdweb/react";
 import { balanceOf } from "thirdweb/extensions/erc20";
 import { getContract } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { useActiveWalletChain } from "thirdweb/react";
-import { arbitrum, optimism } from "thirdweb/chains";
+import { arbitrum } from "thirdweb/chains";
+import RoutesPreview from "../RoutesPreview/index.tsx";
 
-const TokenDropdownInput = ({
-  onClickCallback,
-  normalWording,
-  loadingWording,
-  account,
-}) => {
+const TokenDropdownInput = () => {
   const [chosenToken, setChosenToken] = useState("");
   const chainId = useActiveWalletChain();
   const contract = getContract({
@@ -50,13 +45,13 @@ const TokenDropdownInput = ({
       setApproveReady(false);
     }
   };
-  const [apiDataReady, setApiDataReady] = useState(true);
   return (
     <>
       <Space.Compact
         style={{
           margin: "10px 0",
         }}
+        role="crypto_input"
       >
         {selectBefore(
           (value) => {
@@ -78,17 +73,12 @@ const TokenDropdownInput = ({
           Max
         </Button>
       </Space.Compact>
-      <Button
-        loading={!apiDataReady}
-        onClick={() => onClickCallback(amount, chosenToken, account)}
-        type="primary"
-        icon={<DollarOutlined />}
-        style={{
-          margin: "10px 0",
-        }}
-      >
-        {apiDataReady ? normalWording : loadingWording}
-      </Button>
+      <RoutesPreview
+        portfolioName="AllWeatherPortfolio"
+        investmentAmount={inputValue}
+        chosenToken={chosenToken}
+        role="portfolio_in_transaction_preview"
+      />
     </>
   );
 };
