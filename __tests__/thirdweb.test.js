@@ -21,6 +21,11 @@ test("AllWeatherPortfolio initialize", async () => {
     address: placeholderAddress,
   };
   const portfolioHelper = new AllWeatherPortfolio(account);
+  const sum = Object.values(portfolioHelper.weightMapping).reduce(
+    (acc, weight) => acc + weight,
+    0,
+  );
+  expect(Math.abs(sum - 1)).toBeLessThan(1e-10);
   await portfolioHelper.initialize();
   for (const [categoryName, sectorObject] of Object.entries(
     portfolioHelper.strategy,
