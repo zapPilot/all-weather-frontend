@@ -100,10 +100,11 @@ describe("Dashboard Component", () => {
 
     await waitFor(() => {
       // Check if the component renders the data
-      const ethElements = screen.getAllByText(/.*eth.*/i);
-      expect(ethElements.length).toBeGreaterThan(0);
+      // TODO(chris): turns out the DOM you're check is the zap in button, not those farming pools listed in the dashboard
+      const zapInButton = screen.getAllByText(/.*zap in.*/i);
+      expect(zapInButton.length).toBeGreaterThan(0);
 
-      ethElements.forEach((element) => {
+      zapInButton.forEach((element) => {
         expect(element).toBeInTheDocument();
       });
       // const image = screen.getByAlt("ethereum");
@@ -152,8 +153,11 @@ describe("Dashboard Component", () => {
     // linkButtons.forEach((element) => {
     //   expect(element).toBeInTheDocument();
     // });
-    const portfolio_composer = screen.getAllByRole("portfolio_composer");
-    expect(portfolio_composer.length).equal(2);
+    await waitFor(() => {
+      const portfolioInTransactionPreview =
+        screen.queryAllByRole("crypto_input");
+      expect(portfolioInTransactionPreview.length).equal(2);
+    });
     // const pool_id_tooltip = screen.getAllByRole("pool_id_tooltip");
     // expect(pool_id_tooltip.length).equal(10);
   });
@@ -188,9 +192,9 @@ describe("Dashboard Component", () => {
     // unlockButtons.forEach((element) => {
     //   expect(element).toBeInTheDocument();
     // });
-    const portfolio_composer = screen.getAllByRole("portfolio_composer");
-    console.log("portfolio_composer length", portfolio_composer.length);
-    expect(portfolio_composer.length).equal(3);
+    const portfolioInTransactionPreview = screen.queryAllByRole("crypto_input");
+    console.log("portfolioInTransactionPreview", portfolioInTransactionPreview);
+    expect(portfolioInTransactionPreview.length).equal(3);
   });
 
   it("render on mobile", async () => {

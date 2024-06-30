@@ -4,14 +4,12 @@ import type { NextPage } from "next";
 import Image from "next/image";
 import { Spin, Button } from "antd";
 import { useWindowHeight } from "../utils/chartUtils.js";
-import { investByAAWallet } from "../utils/thirdwebSmartWallet.js";
 import {
   getBasicColumnsForSuggestionsTable,
   getExpandableColumnsForSuggestionsTable,
   columnMapping,
 } from "../utils/tableExpansionUtils";
 import { useState, useEffect } from "react";
-import RebalanceChart from "./views/RebalanceChart";
 import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
 import LinkModal from "./views/components/LinkModal";
 import axios from "axios";
@@ -19,8 +17,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { walletAddressChanged } from "../lib/features/subscriptionSlice";
 import TableComponent, { ExpandTableComponent } from "./views/PoolsTable";
 import { useWindowWidth } from "../utils/chartUtils";
+import { useActiveAccount } from "thirdweb/react";
 
-import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
 interface Pools {
   key: string;
   apr: number;
@@ -131,7 +129,6 @@ const Dashboard: NextPage = () => {
       [key]: value,
     }));
   };
-  const { mutate: sendBatch } = useSendBatchTransaction();
 
   const [portfolioComposition, setPortfolioComposition] = useState<{
     [key: string]: any;
@@ -407,9 +404,10 @@ const Dashboard: NextPage = () => {
   return (
     <>
       <div style={divBetterPools}>
+        <TokenDropdownInput />
         <center>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Better Pools Search Engine
+            Compose Your Own Portfolio
           </h1>
         </center>
         <div className="mt-2">
@@ -429,19 +427,6 @@ const Dashboard: NextPage = () => {
               />
             ))}
           </div>
-        </div>
-        <div role="portfolio_composer">
-          <RebalanceChart
-            suggestions={[]}
-            netWorth={100}
-            windowWidth={200}
-            showCategory={false}
-            mode="portfolioComposer"
-            portfolioComposition={Object.values(
-              portfolioCompositionForReRender,
-            )}
-            account={account}
-          />
         </div>
         <Button
           type="primary"
@@ -506,24 +491,6 @@ const Dashboard: NextPage = () => {
           })}
         </>
       </div>
-      <TokenDropdownInput
-        onClickCallback={async (
-          investmentAmount: number,
-          chosenToken: string,
-          account: any,
-        ) => {
-          const txns = await investByAAWallet(
-            String(investmentAmount),
-            chosenToken,
-            account,
-          );
-          console.log("txns", txns.flat(Infinity));
-          sendBatch(txns.flat(Infinity));
-        }}
-        normalWording="Etherspots"
-        loadingWording="Fetching the best route to deposit"
-        account={account}
-      />
       <LinkModal
         protocolLink={protocolLink}
         linkModalOpen={linkModalOpen}
