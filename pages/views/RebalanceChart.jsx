@@ -22,6 +22,8 @@ import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 
 import { Sunburst, LabelSeries } from "react-vis";
 import { EXTENDED_DISCRETE_COLOR_RANGE } from "react-vis/dist/theme";
+import { Spin } from "antd";
+import { useSelector } from "react-redux";
 
 const DefaultValue = {
   children: [
@@ -201,9 +203,10 @@ function convertPortfolioStrategyToChartData(portfolioHelper) {
   let totalAPR = 0;
   // need to refactor
   let nameToColor = {};
-  for (const [category, protocols] of Object.entries(
-    portfolioHelper.strategy,
-  )) {
+  const strategy = portfolioHelper.getStrategyData(
+    "0x0000000000000000000000000000000000000000",
+  );
+  for (const [category, protocols] of Object.entries(strategy)) {
     for (const [chain, protocolArray] of Object.entries(protocols)) {
       for (const protocol of protocolArray) {
         const weightedValue = protocol.weight * 100;
@@ -211,7 +214,7 @@ function convertPortfolioStrategyToChartData(portfolioHelper) {
         const sortedSymbolList = protocol.interface.symbolList.sort().join("-");
         const keyForpoolsMetadata = `${chain}/${protocol.interface.constructor.protocolName}:${sortedSymbolList}`;
         const aprOfProtocol =
-          portfolioHelper.strategyMetadata[keyForpoolsMetadata].value * 100;
+          portfolioHelper.strategyMetadata[keyForpoolsMetadata]?.value * 100;
         totalAPR += aprOfProtocol * protocol.weight;
         const name = `${poolName}:${sortedSymbolList},APR: ${aprOfProtocol.toFixed(
           2,
@@ -284,6 +287,10 @@ export default function RebalanceChart(props) {
   const [apr, setAPR] = useState(0);
   const [finalValue, setFinalValue] = useState("Your Portfolio Chart");
   const [clicked, setClicked] = useState(false);
+  const { strategyMetadata, loading, error } = useSelector(
+    (state) => state.strategyMetadata,
+  );
+
   const divSunBurst = {
     margin: "0 auto",
     height: props.windowWidth > 767 ? 500 : 300,
@@ -317,10 +324,8 @@ export default function RebalanceChart(props) {
         setAPR(totalApr / sortedPortfolioComposition.length);
       } else if (mode === "portfolioStrategy") {
         if (!account) return;
-        const portfolioHelper = await getPortfolioHelper(
-          "AllWeatherPortfolio",
-          account,
-        );
+        const portfolioHelper = getPortfolioHelper("AllWeatherPortfolio");
+        portfolioHelper.setStrategyMetadata(strategyMetadata);
         const [chartData, totalAPR] =
           convertPortfolioStrategyToChartData(portfolioHelper);
         setData(chartData);
@@ -340,6 +345,13 @@ export default function RebalanceChart(props) {
     }
     fetchData();
   }, [props]);
+  if (data.children[0].name === "Loading...") {
+    return (
+      <center role="sunburst-chart-spin">
+        <Spin size="large" />
+      </center>
+    ); // Loading
+  }
   return (
     <div style={divSunBurst} role="sunburst-chart">
       <Sunburst

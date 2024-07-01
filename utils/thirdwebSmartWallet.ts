@@ -1,22 +1,12 @@
 import { AllWeatherPortfolio } from "../classes/AllWeatherPortfolio";
-export async function investByAAWallet(
-  portfolioHelper: AllWeatherPortfolio,
-  investmentAmount: string,
-  chosenToken: string,
-) {
-  return await portfolioHelper.diversify(investmentAmount, chosenToken);
-}
 
-export async function getPortfolioHelper(
-  portfolioName: string,
-  account: any,
-): Promise<AllWeatherPortfolio> {
+export function getPortfolioHelper(portfolioName: string): AllWeatherPortfolio {
   let portfolioHelper: AllWeatherPortfolio;
   if (portfolioName === "AllWeatherPortfolio") {
-    portfolioHelper = new AllWeatherPortfolio(account);
+    portfolioHelper = new AllWeatherPortfolio();
   } else {
-    throw new Error("Invalid portfolio name");
+    console.log("portfolioName", portfolioName);
+    throw new Error(`Invalid portfolio name`);
   }
-  await portfolioHelper.initialize();
   return portfolioHelper;
 }
