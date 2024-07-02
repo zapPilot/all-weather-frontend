@@ -5,7 +5,7 @@ import RebalanceChart from "../pages/views/RebalanceChart";
 describe("RebalanceChart Component", () => {
   it("Test Default RebalanceChart", async () => {
     render(<RebalanceChart />);
-    const chart = await screen.findAllByRole("sunburst-chart");
+    const chart = await screen.findAllByRole("sunburst-chart-spin");
     expect(chart).toHaveLength(1);
   });
 });

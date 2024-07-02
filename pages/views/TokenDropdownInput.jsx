@@ -8,7 +8,6 @@ import { getContract } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { useActiveWalletChain } from "thirdweb/react";
 import { arbitrum } from "thirdweb/chains";
-import RoutesPreview from "../RoutesPreview/index.tsx";
 
 const TokenDropdownInput = () => {
   const [chosenToken, setChosenToken] = useState("");
@@ -73,12 +72,6 @@ const TokenDropdownInput = () => {
           Max
         </Button>
       </Space.Compact>
-      <RoutesPreview
-        portfolioName="AllWeatherPortfolio"
-        investmentAmount={inputValue}
-        chosenToken={chosenToken}
-        role="portfolio_in_transaction_preview"
-      />
     </>
   );
 };
