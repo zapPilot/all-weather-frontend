@@ -9,8 +9,6 @@ import { arbitrum } from "thirdweb/chains";
 import NumericInput from "./NumberInput";
 import { selectBefore } from "../../utils/contractInteractions";
 
-const { Option } = Select;
-
 const TokenDropdownInput = memo(
   ({
     selectedToken,
@@ -74,5 +72,6 @@ const TokenDropdownInput = memo(
     );
   },
 );
+TokenDropdownInput.displayName = "TokenDropdownInput";
 
 export default TokenDropdownInput;
