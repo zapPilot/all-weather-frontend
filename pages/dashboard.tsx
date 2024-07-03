@@ -10,7 +10,6 @@ import {
   columnMapping,
 } from "../utils/tableExpansionUtils";
 import { useState, useEffect } from "react";
-import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
 import LinkModal from "./views/components/LinkModal";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
@@ -404,7 +403,6 @@ const Dashboard: NextPage = () => {
   return (
     <>
       <div style={divBetterPools}>
-        <TokenDropdownInput />
         <center>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
             Compose Your Own Portfolio

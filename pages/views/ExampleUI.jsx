@@ -14,22 +14,18 @@ import {
   fetchDataSuccess,
   fetchDataFailure,
 } from "../../lib/features/apiSlice";
+import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { walletAddressChanged } from "../../lib/features/subscriptionSlice";
 import axios from "axios";
 import { Spin } from "antd";
 import Dashboard from "../dashboard.tsx";
 import { useRouter } from "next/router";
-import HistoricalDataChart from "./HistoricalDataChart";
-import SubscribeWording from "./SubscribeWording";
+import RoutesPreview from "../RoutesPreview/index.tsx";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ExampleUI() {
   const windowHeight = useWindowHeight();
-  const [isHover, setIsHover] = useState(false);
-  const handleMouseEnter = () => {
-    setIsHover(true);
-  };
   const dispatch = useDispatch();
   const { data, loading } = useSelector((state) => state.api);
   const subscriptionStatus = useSelector(
@@ -47,6 +43,7 @@ export default function ExampleUI() {
   }, [account]);
 
   useEffect(() => {
+    dispatch(fetchStrategyMetadata());
     dispatch(fetchDataStart());
     if (!walletAddress && !searchWalletAddress) return;
     axios
@@ -61,10 +58,6 @@ export default function ExampleUI() {
       .then((data) => dispatch(fetchDataSuccess(data)))
       .catch((error) => dispatch(fetchDataFailure(error.toString())));
   }, [searchWalletAddress, walletAddress]);
-
-  const handleMouseLeave = () => {
-    setIsHover(false);
-  };
 
   return (
     <div className={styles.divInstallment}>
@@ -129,22 +122,10 @@ export default function ExampleUI() {
                   },
                 }}
               >
-                <Link href="#zapSection">
-                  <Button
-                    type="primary"
-                    loading={data?.portfolio_apr === 0 ? true : false}
-                    className={styles.btnInvest}
-                    style={
-                      isHover
-                        ? { backgroundColor: "#5DFDCB", color: "#000000" }
-                        : { backgroundColor: "transparent", color: "#5DFDCB" }
-                    }
-                    onMouseEnter={handleMouseEnter}
-                    onMouseLeave={handleMouseLeave}
-                  >
-                    Invest Now!
-                  </Button>
-                </Link>
+                <RoutesPreview
+                  portfolioName="AllWeatherPortfolio"
+                  role="portfolio_in_transaction_preview"
+                />
               </ConfigProvider>
             </center>
           </div>

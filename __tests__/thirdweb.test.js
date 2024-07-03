@@ -20,11 +20,15 @@ test("AllWeatherPortfolio initialize", async () => {
   const account = {
     address: placeholderAddress,
   };
-  const portfolioHelper = new AllWeatherPortfolio(account);
+  const portfolioHelper = new AllWeatherPortfolio();
+  const sum = Object.values(portfolioHelper.weightMapping).reduce(
+    (acc, weight) => acc + weight,
+    0,
+  );
+  expect(Math.abs(sum - 1)).toBeLessThan(1e-10);
   await portfolioHelper.initialize();
-  for (const [categoryName, sectorObject] of Object.entries(
-    portfolioHelper.strategy,
-  )) {
+  const strategy = portfolioHelper.getStrategyData(placeholderAddress);
+  for (const [categoryName, sectorObject] of Object.entries(strategy)) {
     expect(categoryNames.includes(categoryName)).toBeTruthy();
     if (Object.keys(sectorObject).length !== 0) {
       expect(sectorObject["arb"].length).toBeGreaterThan(0);

@@ -19,10 +19,9 @@ const kujiAddress = "0x3A18dcC9745eDcD1Ef33ecB93b0b6eBA5671e7Ca";
 const axlAddress = "0x23ee2343B892b1BB63503a4FAbc840E0e2C6810f";
 
 export class AllWeatherPortfolio extends React.Component {
-  constructor(account) {
+  constructor() {
     super();
     this.strategyMetadata = {};
-    this.smartAccount = account;
     this.weightMapping = {
       long_term_bond: 0,
       intermediate_term_bond: 0.15 * 2,
@@ -33,126 +32,13 @@ export class AllWeatherPortfolio extends React.Component {
       non_us_developed_market_stocks: 0.06 * 2,
       non_us_emerging_market_stocks: 0.03 * 2,
     };
-    this.strategy = {
-      // long_term_bond: {
-      //   "arb": [
-      //     {
-      //       interface: new CamelotV3(
-      //         42161,
-      //         wstEthAddress,
-      //         wethAddress,
-      //         this.smartAccount.address,
-      //       ),
-      //       weight: 0.4,
-      //     },
-      //   ],
-      // },
-      intermediate_term_bond: {
-        arb: [
-          {
-            interface: new CamelotV3(
-              42161,
-              ["pendle", "eth"],
-              pendleAddress,
-              wethAddress,
-              this.smartAccount.address,
-            ),
-            weight: this.weightMapping.intermediate_term_bond,
-          },
-        ],
-      },
-      commodities: {
-        arb: [
-          {
-            interface: new CamelotV3(
-              42161,
-              ["link", "eth"],
-              wethAddress,
-              linkAddress,
-              this.smartAccount.address,
-            ),
-            weight: this.weightMapping.commodities,
-          },
-        ],
-      },
-      gold: {
-        arb: [
-          {
-            interface: new CamelotV3(
-              42161,
-              ["usdc", "eth"],
-
-              wethAddress,
-              usdcAddress,
-              this.smartAccount.address,
-            ),
-            weight: this.weightMapping.gold,
-          },
-        ],
-      },
-      large_cap_us_stocks: {
-        arb: [
-          {
-            interface: new CamelotV3(
-              42161,
-              ["tia.n", "eth"],
-              wethAddress,
-              tiaAddress,
-              this.smartAccount.address,
-            ),
-            weight: this.weightMapping.large_cap_us_stocks,
-          },
-        ],
-      },
-      small_cap_us_stocks: {
-        arb: [
-          {
-            interface: new CamelotV3(
-              42161,
-              ["axl", "usdc"],
-              axlAddress,
-              usdcAddress,
-              this.smartAccount.address,
-            ),
-            weight: this.weightMapping.small_cap_us_stocks,
-          },
-        ],
-      },
-      non_us_developed_market_stocks: {
-        arb: [
-          {
-            interface: new CamelotV3(
-              42161,
-              ["sol", "usdc"],
-
-              wsolAddress,
-              usdcAddress,
-              this.smartAccount.address,
-            ),
-            weight: this.weightMapping.non_us_developed_market_stocks,
-          },
-        ],
-      },
-      non_us_emerging_market_stocks: {
-        arb: [
-          {
-            interface: new CamelotV3(
-              42161,
-              ["kuji", "eth"],
-
-              kujiAddress,
-              wethAddress,
-              this.smartAccount.address,
-            ),
-            weight: this.weightMapping.non_us_emerging_market_stocks,
-          },
-        ],
-      },
-    };
   }
   async initialize() {
     try {
-      const allProtocols = Object.values(this.strategy).flatMap((protocols) =>
+      const strategy = this.getStrategyData(
+        "0x0000000000000000000000000000000000000000",
+      );
+      const allProtocols = Object.values(strategy).flatMap((protocols) =>
         Object.entries(protocols).flatMap(([chain, protocolArray]) =>
           protocolArray.map((protocol) => ({ chain, protocol })),
         ),
@@ -187,18 +73,132 @@ export class AllWeatherPortfolio extends React.Component {
       console.error("Error initializing strategy metadata:", error);
     }
   }
-  async diversify(investmentAmount, chosenToken) {
-    const transactionHashes = await this._diversify(
-      investmentAmount,
-      chosenToken,
-    );
-    return transactionHashes;
-  }
+  getStrategyData(address) {
+    return {
+      // long_term_bond: {
+      //   "arb": [
+      //     {
+      //       interface: new CamelotV3(
+      //         42161,
+      //         wstEthAddress,
+      //         wethAddress,
+      //         address,
+      //       ),
+      //       weight: 0.4,
+      //     },
+      //   ],
+      // },
+      intermediate_term_bond: {
+        arb: [
+          {
+            interface: new CamelotV3(
+              42161,
+              ["pendle", "eth"],
+              pendleAddress,
+              wethAddress,
+              address,
+            ),
+            weight: this.weightMapping.intermediate_term_bond,
+          },
+        ],
+      },
+      commodities: {
+        arb: [
+          {
+            interface: new CamelotV3(
+              42161,
+              ["link", "eth"],
+              wethAddress,
+              linkAddress,
+              address,
+            ),
+            weight: this.weightMapping.commodities,
+          },
+        ],
+      },
+      gold: {
+        arb: [
+          {
+            interface: new CamelotV3(
+              42161,
+              ["usdc", "eth"],
 
-  async _diversify(investmentAmount, chosenToken) {
+              wethAddress,
+              usdcAddress,
+              address,
+            ),
+            weight: this.weightMapping.gold,
+          },
+        ],
+      },
+      large_cap_us_stocks: {
+        arb: [
+          {
+            interface: new CamelotV3(
+              42161,
+              ["tia.n", "eth"],
+              wethAddress,
+              tiaAddress,
+              address,
+            ),
+            weight: this.weightMapping.large_cap_us_stocks,
+          },
+        ],
+      },
+      small_cap_us_stocks: {
+        arb: [
+          {
+            interface: new CamelotV3(
+              42161,
+              ["axl", "usdc"],
+              axlAddress,
+              usdcAddress,
+              address,
+            ),
+            weight: this.weightMapping.small_cap_us_stocks,
+          },
+        ],
+      },
+      non_us_developed_market_stocks: {
+        arb: [
+          {
+            interface: new CamelotV3(
+              42161,
+              ["sol", "usdc"],
+
+              wsolAddress,
+              usdcAddress,
+              address,
+            ),
+            weight: this.weightMapping.non_us_developed_market_stocks,
+          },
+        ],
+      },
+      non_us_emerging_market_stocks: {
+        arb: [
+          {
+            interface: new CamelotV3(
+              42161,
+              ["kuji", "eth"],
+
+              kujiAddress,
+              wethAddress,
+              address,
+            ),
+            weight: this.weightMapping.non_us_emerging_market_stocks,
+          },
+        ],
+      },
+    };
+  }
+  setStrategyMetadata(strategyMetadata) {
+    this.strategyMetadata = strategyMetadata;
+  }
+  async diversify(account, investmentAmount, chosenToken) {
     let txns = [];
+    const strategy = this.getStrategyData(account.address);
     for (const [category, protocolsInThisCategory] of Object.entries(
-      this.strategy,
+      strategy,
     )) {
       for (const [chainId, protocols] of Object.entries(
         protocolsInThisCategory,
