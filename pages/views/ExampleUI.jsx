@@ -124,8 +124,6 @@ export default function ExampleUI() {
               >
                 <RoutesPreview
                   portfolioName="AllWeatherPortfolio"
-                  investmentAmount={10000}
-                  chosenToken={""}
                   role="portfolio_in_transaction_preview"
                 />
               </ConfigProvider>

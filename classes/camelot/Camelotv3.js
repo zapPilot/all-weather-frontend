@@ -1,4 +1,3 @@
-import { approve, transferFrom } from "thirdweb/extensions/erc20";
 import { ethers } from "ethers";
 import { ERC20_ABI } from "../../node_modules/@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
 import { encodeFunctionData } from "viem";

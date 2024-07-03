@@ -14,15 +14,9 @@ import { useSelector } from "react-redux";
 
 interface RoutesPreviewProps {
   portfolioName: string;
-  investmentAmount: number;
-  chosenToken: string;
 }
 
-const RoutesPreview: React.FC<RoutesPreviewProps> = ({
-  portfolioName,
-  investmentAmount,
-  chosenToken,
-}) => {
+const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
   const [open, setOpen] = React.useState<boolean>(false);
   const account = useActiveAccount();
   const { mutate: sendBatch } = useSendBatchTransaction();
@@ -40,7 +34,15 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({
     () => getPortfolioHelper(portfolioName ?? "AllWeatherPortfolio"),
     [portfolioName],
   );
-
+  const [selectedToken, setSelectedToken] = React.useState("");
+  const [investmentAmount, setInvestmentAmount] = React.useState(0);
+  // useCallback ensures setSelectedToken has a stable reference
+  const handleSetSelectedToken = React.useCallback((token) => {
+    setSelectedToken(token);
+  }, []);
+  const handleSetInvestmentAmount = React.useCallback((amount) => {
+    setInvestmentAmount(amount);
+  }, []);
   React.useEffect(() => {
     if (strategyMetadata && !loading) {
       portfolioHelper.setStrategyMetadata(strategyMetadata);
@@ -53,9 +55,9 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({
 
   const signTransaction = async (
     investmentAmount: number,
-    chosenToken: string,
+    selectedToken: string,
   ) => {
-    if (!chosenToken) {
+    if (!selectedToken) {
       alert("Please select a token");
       return;
     }
@@ -64,7 +66,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({
     const txns = await portfolioHelper.diversify(
       account,
       String(investmentAmount),
-      chosenToken,
+      selectedToken,
     );
     sendBatch(txns.flat(Infinity));
   };
@@ -91,7 +93,12 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({
             />
           ) : null}
           <form className="mt-12">
-            <TokenDropdownInput />
+            <TokenDropdownInput
+              selectedToken={selectedToken}
+              setSelectedToken={handleSetSelectedToken}
+              investmentAmount={investmentAmount}
+              setInvestmentAmount={handleSetInvestmentAmount}
+            />
             <section aria-labelledby="cart-heading">
               <ul
                 role="list"
@@ -245,9 +252,10 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({
 
               <div className="mt-10">
                 <button
+                  type="button"
                   className="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
                   onClick={() => {
-                    signTransaction(investmentAmount, chosenToken);
+                    signTransaction(investmentAmount, selectedToken);
                   }}
                 >
                   Sign

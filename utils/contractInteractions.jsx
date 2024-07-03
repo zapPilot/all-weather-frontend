@@ -1,6 +1,6 @@
 import { Select } from "antd";
-import tokens from "../pages/views/components/tokens.json";
 import { fetch1InchSwapData } from "./oneInch";
+import tokens from "../pages/views/components/tokens.json";
 import { portfolioVaults } from "./oneInch";
 import axios from "axios";
 
@@ -27,14 +27,17 @@ const relevantSymbols = [
   "euroe",
   "axlusdc",
 ];
-export const selectBefore = (handleChange, addressOrSymbol, chainID) => (
+export const selectBefore = (
+  handleChange,
+  addressOrSymbol,
+  chainID,
+  selectedToken,
+) => (
   <Select
     onChange={handleChange}
-    defaultValue="Please select a token"
+    value={selectedToken || "Please select a token"}
     theme="light"
-    style={{
-      width: 100,
-    }}
+    style={{ width: 100 }}
   >
     {tokens.props.pageProps.tokenList[String(chainID)]
       ?.filter((option) =>
@@ -59,13 +62,7 @@ export const selectBefore = (handleChange, addressOrSymbol, chainID) => (
                 height="20"
                 alt={option.symbol}
               />
-              <span
-                style={{
-                  marginLeft: 6,
-                }}
-              >
-                {option.symbol}
-              </span>
+              <span style={{ marginLeft: 6 }}>{option.symbol}</span>
             </div>
           </Option>
         );
