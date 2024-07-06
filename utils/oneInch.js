@@ -44,6 +44,7 @@ export async function fetch1InchSwapData(
   slippage,
 ) {
   const url = `${API_URL}/one_1inch_swap_data?chainId=${chainId}&fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount.toString()}&fromAddress=${fromAddress}&slippage=${slippage}&compatibility=true`;
+  console.log("url", url);
   const retryLimit = 3;
   const retryStatusCodes = [429, 500, 502, 503, 504];
 
