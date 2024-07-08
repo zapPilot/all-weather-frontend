@@ -43,8 +43,7 @@ export async function fetch1InchSwapData(
   fromAddress,
   slippage,
 ) {
-  const url = `${API_URL}/one_1inch_swap_data?chainId=${chainId}&fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount.toString()}&fromAddress=${fromAddress}&slippage=${slippage}&compatibility=true`;
-  console.log("url", url);
+  const url = `${API_URL}/the_best_swap_data?chainId=${chainId}&fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount.toString()}&fromAddress=${fromAddress}&slippage=${slippage}&provider=1inch`;
   const retryLimit = 3;
   const retryStatusCodes = [429, 500, 502, 503, 504];
 

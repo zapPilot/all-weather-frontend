@@ -1,7 +1,5 @@
 import { CamelotV3 } from "./camelot/Camelotv3";
 import React from "react";
-import { sendBatchTransaction } from "thirdweb";
-import THIRDWEB_CLIENT from "../utils/thirdweb";
 
 // add/change these values
 const precisionOfInvestAmount = 4;
@@ -51,7 +49,6 @@ export class AllWeatherPortfolio extends React.Component {
             .sort()
             .join("-");
           const url = `${process.env.NEXT_PUBLIC_API_URL}/pool/apr?chain=${chain}&project_id=${protocol.interface.constructor.projectID}&project_version=${protocol.interface.constructor.projectVersion}&symbol_list=${symbolList}`;
-
           try {
             const response = await fetch(url);
             const data = await response.json();
@@ -194,35 +191,34 @@ export class AllWeatherPortfolio extends React.Component {
   setStrategyMetadata(strategyMetadata) {
     this.strategyMetadata = strategyMetadata;
   }
-  async diversify(account, investmentAmount, chosenToken, progressCallback) {
+  async diversify(
+    account,
+    investmentAmount,
+    chosenToken,
+    progressCallback,
+    slippage,
+  ) {
     const strategy = this.getStrategyData(account.address);
-    const totalSteps = Object.keys(strategy).length;
+    const totalSteps = this._countProtocolNumber(strategy);
     let completedSteps = 0;
     const updateProgress = () => {
-      console.log("Completed steps:", completedSteps);
       completedSteps++;
       progressCallback((completedSteps / totalSteps) * 100);
     };
 
     let txns = [];
-    const retryIndexArray = this.initializeDynamic2DArray(strategy);
-    let rowIndex = 0;
-    let colIndex = 0;
     for (const [category, protocolsInThisCategory] of Object.entries(
       strategy,
     )) {
       for (const protocols of Object.values(protocolsInThisCategory)) {
-        const [txn, retryIndex] = await this._retryFunction(
+        const txn = await this._retryFunction(
           this._investInThisCategory.bind(this),
-          { investmentAmount, chosenToken, protocols, category },
+          { investmentAmount, chosenToken, protocols, slippage },
           { retries: 5, delay: 1000 },
         );
-        retryIndexArray[rowIndex][colIndex] = retryIndex;
         txns.push(txn);
-        colIndex++;
+        updateProgress();
       }
-      updateProgress();
-      rowIndex++;
     }
     return txns;
   }
@@ -230,8 +226,7 @@ export class AllWeatherPortfolio extends React.Component {
     investmentAmount,
     chosenToken,
     protocols,
-    category,
-    retryIndex,
+    slippage,
   }) {
     // clear the transaction batch
     let concurrentRequests = [];
@@ -239,7 +234,7 @@ export class AllWeatherPortfolio extends React.Component {
       const investPromise = protocol.interface.invest(
         (investmentAmount * protocol.weight).toFixed(precisionOfInvestAmount),
         chosenToken,
-        retryIndex,
+        slippage,
       );
       concurrentRequests.push(investPromise);
     }
@@ -250,28 +245,25 @@ export class AllWeatherPortfolio extends React.Component {
     const { retries = 3, delay = 1000 } = options; // Set defaults
 
     for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        params.retryIndex = attempt - 1;
-        const result = await fn(params);
-        return [result, params.retryIndex]; // Exit on successful execution
-      } catch (error) {
-        console.error(
-          `Attempt ${params.category} ${attempt}/${retries}: Error occurred, retrying...`,
-          error,
-        );
-        await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retry
-      }
+      // try {
+      params.retryIndex = attempt - 1;
+      const result = await fn(params);
+      return result;
+      // } catch (error) {
+      //   console.error(
+      //     `Attempt ${params.category} ${attempt}/${retries}: Error occurred, retrying...`,
+      //     error,
+      //   );
+      //   await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retry
+      // }
     }
     throw new Error(`Function failed after ${retries} retries`); // Throw error if all retries fail
   }
-  initializeDynamic2DArray(strategy) {
-    const retryIndexArray = [];
-
+  _countProtocolNumber(strategy) {
+    let count = 0;
     for (const protocolsInThisCategory of Object.values(strategy)) {
-      const row = Array(Object.keys(protocolsInThisCategory).length).fill(0);
-      retryIndexArray.push(row);
+      count += Object.keys(protocolsInThisCategory).length;
     }
-
-    return retryIndexArray;
+    return count;
   }
 }
