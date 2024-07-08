@@ -5,14 +5,11 @@ import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToke
 import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import { fetch1InchSwapData } from "../../utils/oneInch.js";
 import { arbitrum } from "thirdweb/chains";
-const approvalBufferParam = 1.2;
-//  `Error: execution reverted: STF` means there's no enough tokens to safe transfer from
-// number: min: 0, max: 50
-const slippage = [1, 2, 3, 5, 10];
-
-// would get `Error: execution reverted: Price slippage check` if it hit the amount0Min and amount1Min when providing liquidity
-const slippageOfLP = [0.95, 0.9, 0.8, 0.7, 0.6];
-
+import {
+  approvalBufferParam,
+  slippage,
+  slippageOfLP,
+} from "../slippageUtils.js";
 const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const CamelotNFTPositionManagerAddress =
   "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15";

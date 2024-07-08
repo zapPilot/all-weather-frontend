@@ -1,7 +1,6 @@
 import { CamelotV3 } from "./camelot/Camelotv3";
 import React from "react";
-import { sendBatchTransaction } from "thirdweb";
-import THIRDWEB_CLIENT from "../utils/thirdweb";
+import { slippage, slippageOfLP } from "./slippageUtils.js";
 
 // add/change these values
 const precisionOfInvestAmount = 4;
@@ -194,18 +193,26 @@ export class AllWeatherPortfolio extends React.Component {
   setStrategyMetadata(strategyMetadata) {
     this.strategyMetadata = strategyMetadata;
   }
-  async diversify(account, investmentAmount, chosenToken, progressCallback) {
+  async diversify(
+    account,
+    investmentAmount,
+    chosenToken,
+    progressCallback,
+    slippageCallback,
+  ) {
     const strategy = this.getStrategyData(account.address);
-    const totalSteps = Object.keys(strategy).length;
+    const totalSteps = this._countProtocolNumber(strategy);
     let completedSteps = 0;
     const updateProgress = () => {
-      console.log("Completed steps:", completedSteps);
       completedSteps++;
       progressCallback((completedSteps / totalSteps) * 100);
     };
+    const updateSlippage = (slippage) => {
+      slippageCallback(slippage);
+    };
 
     let txns = [];
-    const retryIndexArray = this.initializeDynamic2DArray(strategy);
+    const retryIndexArray = this._initializeDynamic2DArray(strategy);
     let rowIndex = 0;
     let colIndex = 0;
     for (const [category, protocolsInThisCategory] of Object.entries(
@@ -220,8 +227,9 @@ export class AllWeatherPortfolio extends React.Component {
         retryIndexArray[rowIndex][colIndex] = retryIndex;
         txns.push(txn);
         colIndex++;
+        updateProgress();
+        updateSlippage(this._calculateSlippage(retryIndexArray));
       }
-      updateProgress();
       rowIndex++;
     }
     return txns;
@@ -264,7 +272,7 @@ export class AllWeatherPortfolio extends React.Component {
     }
     throw new Error(`Function failed after ${retries} retries`); // Throw error if all retries fail
   }
-  initializeDynamic2DArray(strategy) {
+  _initializeDynamic2DArray(strategy) {
     const retryIndexArray = [];
 
     for (const protocolsInThisCategory of Object.values(strategy)) {
@@ -273,5 +281,21 @@ export class AllWeatherPortfolio extends React.Component {
     }
 
     return retryIndexArray;
+  }
+  _countProtocolNumber(strategy) {
+    let count = 0;
+    for (const protocolsInThisCategory of Object.values(strategy)) {
+      count += Object.keys(protocolsInThisCategory).length;
+    }
+    return count;
+  }
+
+  _calculateSlippage(retryIndexArray) {
+    const flatArray = retryIndexArray.flat();
+    const avgSlippageIndex =
+      flatArray.reduce((sum, num) => sum + num, 0) / flatArray.length;
+    return (
+      100 - (100 - slippage[avgSlippageIndex]) * slippageOfLP[avgSlippageIndex]
+    );
   }
 }
