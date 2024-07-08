@@ -194,22 +194,35 @@ export class AllWeatherPortfolio extends React.Component {
   setStrategyMetadata(strategyMetadata) {
     this.strategyMetadata = strategyMetadata;
   }
-  async diversify(account, investmentAmount, chosenToken) {
-    let txns = [];
+  async diversify(account, investmentAmount, chosenToken, progressCallback) {
     const strategy = this.getStrategyData(account.address);
+    const totalSteps = Object.keys(strategy).length;
+    let completedSteps = 0;
+    const updateProgress = () => {
+      console.log("Completed steps:", completedSteps);
+      completedSteps++;
+      progressCallback((completedSteps / totalSteps) * 100);
+    };
+
+    let txns = [];
+    const retryIndexArray = this.initializeDynamic2DArray(strategy);
+    let rowIndex = 0;
+    let colIndex = 0;
     for (const [category, protocolsInThisCategory] of Object.entries(
       strategy,
     )) {
-      for (const [chainId, protocols] of Object.entries(
-        protocolsInThisCategory,
-      )) {
-        const txn = await this._retryFunction(
+      for (const protocols of Object.values(protocolsInThisCategory)) {
+        const [txn, retryIndex] = await this._retryFunction(
           this._investInThisCategory.bind(this),
           { investmentAmount, chosenToken, protocols, category },
           { retries: 5, delay: 1000 },
         );
+        retryIndexArray[rowIndex][colIndex] = retryIndex;
         txns.push(txn);
+        colIndex++;
       }
+      updateProgress();
+      rowIndex++;
     }
     return txns;
   }
@@ -240,7 +253,7 @@ export class AllWeatherPortfolio extends React.Component {
       try {
         params.retryIndex = attempt - 1;
         const result = await fn(params);
-        return result; // Exit on successful execution
+        return [result, params.retryIndex]; // Exit on successful execution
       } catch (error) {
         console.error(
           `Attempt ${params.category} ${attempt}/${retries}: Error occurred, retrying...`,
@@ -250,5 +263,15 @@ export class AllWeatherPortfolio extends React.Component {
       }
     }
     throw new Error(`Function failed after ${retries} retries`); // Throw error if all retries fail
+  }
+  initializeDynamic2DArray(strategy) {
+    const retryIndexArray = [];
+
+    for (const protocolsInThisCategory of Object.values(strategy)) {
+      const row = Array(Object.keys(protocolsInThisCategory).length).fill(0);
+      retryIndexArray.push(row);
+    }
+
+    return retryIndexArray;
   }
 }
