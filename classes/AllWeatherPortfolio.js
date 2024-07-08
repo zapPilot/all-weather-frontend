@@ -50,7 +50,7 @@ export class AllWeatherPortfolio extends React.Component {
             .sort()
             .join("-");
           const url = `${process.env.NEXT_PUBLIC_API_URL}/pool/apr?chain=${chain}&project_id=${protocol.interface.constructor.projectID}&project_version=${protocol.interface.constructor.projectVersion}&symbol_list=${symbolList}`;
-
+          console.log("initialize url", url);
           try {
             const response = await fetch(url);
             const data = await response.json();
@@ -258,17 +258,17 @@ export class AllWeatherPortfolio extends React.Component {
     const { retries = 3, delay = 1000 } = options; // Set defaults
 
     for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        params.retryIndex = attempt - 1;
-        const result = await fn(params);
-        return [result, params.retryIndex]; // Exit on successful execution
-      } catch (error) {
-        console.error(
-          `Attempt ${params.category} ${attempt}/${retries}: Error occurred, retrying...`,
-          error,
-        );
-        await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retry
-      }
+      // try {
+      params.retryIndex = attempt - 1;
+      const result = await fn(params);
+      return [result, params.retryIndex]; // Exit on successful execution
+      // } catch (error) {
+      //   console.error(
+      //     `Attempt ${params.category} ${attempt}/${retries}: Error occurred, retrying...`,
+      //     error,
+      //   );
+      //   await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retry
+      // }
     }
     throw new Error(`Function failed after ${retries} retries`); // Throw error if all retries fail
   }
