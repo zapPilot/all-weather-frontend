@@ -2,7 +2,7 @@
 // originated from Tailwind UI and Ant Design
 // https://ant.design/components/modal
 // https://tailwindui.com/components/ecommerce/components/shopping-carts
-import { Button, Modal, Spin, Progress } from "antd";
+import { Button, Modal, Progress } from "antd";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import React from "react";
 import ChainList from "../../public/chainList.json" assert { type: "json" };
@@ -38,6 +38,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
   const [investmentAmount, setInvestmentAmount] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
+  const [slippage, setSlippage] = React.useState(1);
   // useCallback ensures setSelectedToken has a stable reference
   const handleSetSelectedToken = React.useCallback((token) => {
     setSelectedToken(token);
@@ -50,6 +51,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
       portfolioHelper.setStrategyMetadata(strategyMetadata);
     }
     setProgress(0);
+    setSlippage(1);
   }, [strategyMetadata, loading, portfolioHelper]);
 
   const showLoading = () => {
@@ -60,11 +62,11 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
     investmentAmount: number,
     selectedToken: string,
   ) => {
-    setIsLoading(true);
     if (!selectedToken) {
       alert("Please select a token");
       return;
     }
+    setIsLoading(true);
     if (!account) return;
     portfolioHelper.setStrategyMetadata(strategyMetadata);
     const txns = await portfolioHelper.diversify(
@@ -72,6 +74,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
       String(investmentAmount),
       selectedToken,
       (progressPercentage) => setProgress(progressPercentage),
+      (slippage) => setSlippage(slippage),
     );
     sendBatch(txns.flat(Infinity));
     setIsLoading(false);
@@ -259,7 +262,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                   </div>
                 </dl>
                 <p className="mt-1 text-sm text-gray-500">
-                  Slippage: {}. Service Fee: $0. Estimated Gas Fee: $0.04
+                  Slippage: {slippage.toFixed(2)}%. Service Fee: $0.
                 </p>
               </div>
 
@@ -272,7 +275,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                   }}
                   loading={isLoading}
                 >
-                  Sign
+                  {isLoading ? "Fetching the Best Routes" : "Sign"}
                 </Button>
               </div>
             </section>
