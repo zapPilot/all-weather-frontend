@@ -2,7 +2,7 @@
 // originated from Tailwind UI and Ant Design
 // https://ant.design/components/modal
 // https://tailwindui.com/components/ecommerce/components/shopping-carts
-import { Button, Modal } from "antd";
+import { Button, Modal, Spin, Progress } from "antd";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import React from "react";
 import ChainList from "../../public/chainList.json" assert { type: "json" };
@@ -36,6 +36,8 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
   );
   const [selectedToken, setSelectedToken] = React.useState("");
   const [investmentAmount, setInvestmentAmount] = React.useState(0);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [progress, setProgress] = React.useState(0);
   // useCallback ensures setSelectedToken has a stable reference
   const handleSetSelectedToken = React.useCallback((token) => {
     setSelectedToken(token);
@@ -47,6 +49,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
     if (strategyMetadata && !loading) {
       portfolioHelper.setStrategyMetadata(strategyMetadata);
     }
+    setProgress(0);
   }, [strategyMetadata, loading, portfolioHelper]);
 
   const showLoading = () => {
@@ -57,6 +60,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
     investmentAmount: number,
     selectedToken: string,
   ) => {
+    setIsLoading(true);
     if (!selectedToken) {
       alert("Please select a token");
       return;
@@ -67,8 +71,10 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
       account,
       String(investmentAmount),
       selectedToken,
+      (progressPercentage) => setProgress(progressPercentage),
     );
     sendBatch(txns.flat(Infinity));
+    setIsLoading(false);
   };
   function ModalContent() {
     return (
@@ -120,7 +126,11 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                             </a>
                           </h4>
                           <p className="ml-4 text-sm font-medium text-gray-900">
-                            $100
+                            $
+                            {(
+                              portfolioHelper.weightMapping[category] *
+                              investmentAmount
+                            ).toFixed(2)}
                           </p>
                         </div>
                         {Object.entries(protocols).map(
@@ -227,10 +237,13 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
 
             {/* Order summary */}
             <section aria-labelledby="summary-heading" className="mt-10">
-              <h2 id="summary-heading" className="sr-only">
-                Order summary
-              </h2>
-
+              {isLoading ? (
+                <Progress
+                  percent={progress.toFixed(2)}
+                  status={isLoading ? "active" : ""}
+                  size={[400, 10]}
+                />
+              ) : null}
               <div>
                 <dl className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -241,25 +254,26 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                         : null} */}
                     </dt>
                     <dd className="ml-4 text-base font-medium text-gray-900">
-                      $96.00
+                      ${Number(investmentAmount)}
                     </dd>
                   </div>
                 </dl>
                 <p className="mt-1 text-sm text-gray-500">
-                  Fee: Free for now. Estimated Gas Fee: $0.04
+                  Slippage: {}. Service Fee: $0. Estimated Gas Fee: $0.04
                 </p>
               </div>
 
               <div className="mt-10">
-                <button
+                <Button
                   type="button"
-                  className="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
+                  className="w-full rounded-md border border-transparent bg-indigo-600 text-base font-medium text-white"
                   onClick={() => {
                     signTransaction(investmentAmount, selectedToken);
                   }}
+                  loading={isLoading}
                 >
                   Sign
-                </button>
+                </Button>
               </div>
             </section>
           </form>
