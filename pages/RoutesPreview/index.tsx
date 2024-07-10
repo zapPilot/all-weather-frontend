@@ -276,7 +276,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                       onChange={(e) => setSlippage(e.target.value)}
                     >
                       {[0.5, 1, 3, 5].map((slippage) => (
-                        <Radio.Button value={slippage}>
+                        <Radio.Button value={slippage} key={slippage}>
                           {slippage}%
                         </Radio.Button>
                       ))}
