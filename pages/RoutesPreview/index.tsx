@@ -2,7 +2,7 @@
 // originated from Tailwind UI and Ant Design
 // https://ant.design/components/modal
 // https://tailwindui.com/components/ecommerce/components/shopping-carts
-import { Button, Modal, Progress } from "antd";
+import { Button, Modal, Progress, Radio, ConfigProvider } from "antd";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import React from "react";
 import ChainList from "../../public/chainList.json" assert { type: "json" };
@@ -50,12 +50,11 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
     if (strategyMetadata && !loading) {
       portfolioHelper.setStrategyMetadata(strategyMetadata);
     }
-    setProgress(0);
-    setSlippage(1);
   }, [strategyMetadata, loading, portfolioHelper]);
 
   const showLoading = () => {
     setOpen(true);
+    setProgress(0);
   };
 
   const signTransaction = async (
@@ -74,7 +73,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
       String(investmentAmount),
       selectedToken,
       (progressPercentage) => setProgress(progressPercentage),
-      (slippage) => setSlippage(slippage),
+      slippage,
     );
     sendBatch(txns.flat(Infinity));
     setIsLoading(false);
@@ -262,7 +261,28 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                   </div>
                 </dl>
                 <p className="mt-1 text-sm text-gray-500">
-                  Slippage: {slippage.toFixed(2)}%. Service Fee: $0.
+                  <ConfigProvider
+                    theme={{
+                      token: {
+                        colorPrimary: "#5DFDCB",
+                        colorTextLightSolid: "#000000",
+                      },
+                    }}
+                  >
+                    Slippage:
+                    <Radio.Group
+                      value={slippage}
+                      buttonStyle="solid"
+                      onChange={(e) => setSlippage(e.target.value)}
+                    >
+                      {[0.5, 1, 3, 5].map((slippage) => (
+                        <Radio.Button value={slippage} key={slippage}>
+                          {slippage}%
+                        </Radio.Button>
+                      ))}
+                    </Radio.Group>
+                  </ConfigProvider>
+                  Service Fee: $0
                 </p>
               </div>
 

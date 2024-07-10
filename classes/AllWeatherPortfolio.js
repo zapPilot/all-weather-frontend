@@ -1,6 +1,9 @@
 import { CamelotV3 } from "./camelot/Camelotv3";
 import React from "react";
+<<<<<<< HEAD
 import { slippage, slippageOfLP } from "./slippageUtils.js";
+=======
+>>>>>>> 3409dfb0496e9295414f21df85e3b42268a54762
 
 // add/change these values
 const precisionOfInvestAmount = 4;
@@ -50,7 +53,10 @@ export class AllWeatherPortfolio extends React.Component {
             .sort()
             .join("-");
           const url = `${process.env.NEXT_PUBLIC_API_URL}/pool/apr?chain=${chain}&project_id=${protocol.interface.constructor.projectID}&project_version=${protocol.interface.constructor.projectVersion}&symbol_list=${symbolList}`;
+<<<<<<< HEAD
           console.log("initialize url", url);
+=======
+>>>>>>> 3409dfb0496e9295414f21df85e3b42268a54762
           try {
             const response = await fetch(url);
             const data = await response.json();
@@ -198,7 +204,7 @@ export class AllWeatherPortfolio extends React.Component {
     investmentAmount,
     chosenToken,
     progressCallback,
-    slippageCallback,
+    slippage,
   ) {
     const strategy = this.getStrategyData(account.address);
     const totalSteps = this._countProtocolNumber(strategy);
@@ -212,25 +218,32 @@ export class AllWeatherPortfolio extends React.Component {
     };
 
     let txns = [];
+<<<<<<< HEAD
     const retryIndexArray = this._initializeDynamic2DArray(strategy);
     let rowIndex = 0;
     let colIndex = 0;
+=======
+>>>>>>> 3409dfb0496e9295414f21df85e3b42268a54762
     for (const [category, protocolsInThisCategory] of Object.entries(
       strategy,
     )) {
       for (const protocols of Object.values(protocolsInThisCategory)) {
-        const [txn, retryIndex] = await this._retryFunction(
+        const txn = await this._retryFunction(
           this._investInThisCategory.bind(this),
-          { investmentAmount, chosenToken, protocols, category },
+          { investmentAmount, chosenToken, protocols, slippage },
           { retries: 5, delay: 1000 },
         );
-        retryIndexArray[rowIndex][colIndex] = retryIndex;
         txns.push(txn);
+<<<<<<< HEAD
         colIndex++;
         updateProgress();
         updateSlippage(this._calculateSlippage(retryIndexArray));
       }
       rowIndex++;
+=======
+        updateProgress();
+      }
+>>>>>>> 3409dfb0496e9295414f21df85e3b42268a54762
     }
     return txns;
   }
@@ -238,8 +251,7 @@ export class AllWeatherPortfolio extends React.Component {
     investmentAmount,
     chosenToken,
     protocols,
-    category,
-    retryIndex,
+    slippage,
   }) {
     // clear the transaction batch
     let concurrentRequests = [];
@@ -247,7 +259,7 @@ export class AllWeatherPortfolio extends React.Component {
       const investPromise = protocol.interface.invest(
         (investmentAmount * protocol.weight).toFixed(precisionOfInvestAmount),
         chosenToken,
-        retryIndex,
+        slippage,
       );
       concurrentRequests.push(investPromise);
     }
@@ -261,7 +273,11 @@ export class AllWeatherPortfolio extends React.Component {
       // try {
       params.retryIndex = attempt - 1;
       const result = await fn(params);
+<<<<<<< HEAD
       return [result, params.retryIndex]; // Exit on successful execution
+=======
+      return result;
+>>>>>>> 3409dfb0496e9295414f21df85e3b42268a54762
       // } catch (error) {
       //   console.error(
       //     `Attempt ${params.category} ${attempt}/${retries}: Error occurred, retrying...`,
@@ -272,15 +288,18 @@ export class AllWeatherPortfolio extends React.Component {
     }
     throw new Error(`Function failed after ${retries} retries`); // Throw error if all retries fail
   }
+<<<<<<< HEAD
   _initializeDynamic2DArray(strategy) {
     const retryIndexArray = [];
 
+=======
+  _countProtocolNumber(strategy) {
+    let count = 0;
+>>>>>>> 3409dfb0496e9295414f21df85e3b42268a54762
     for (const protocolsInThisCategory of Object.values(strategy)) {
-      const row = Array(Object.keys(protocolsInThisCategory).length).fill(0);
-      retryIndexArray.push(row);
+      count += Object.keys(protocolsInThisCategory).length;
     }
-
-    return retryIndexArray;
+    return count;
   }
   _countProtocolNumber(strategy) {
     let count = 0;
