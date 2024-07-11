@@ -309,7 +309,7 @@ const Dashboard: NextPage = () => {
           const data = JSON.parse(response.data);
           setProtocolList(data);
         } else {
-          console.error('Invalid or no data available from the API');
+          console.error("Invalid or no data available from the API");
         }
       } catch (error) {
         console.error("An error occurred while fetching protocol link:", error);
