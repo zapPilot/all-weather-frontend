@@ -205,9 +205,6 @@ export class AllWeatherPortfolio extends React.Component {
       completedSteps++;
       progressCallback((completedSteps / totalSteps) * 100);
     };
-    const updateSlippage = (slippage) => {
-      slippageCallback(slippage);
-    };
 
     let txns = [];
     for (const [category, protocolsInThisCategory] of Object.entries(
@@ -268,21 +265,5 @@ export class AllWeatherPortfolio extends React.Component {
       count += Object.keys(protocolsInThisCategory).length;
     }
     return count;
-  }
-  _countProtocolNumber(strategy) {
-    let count = 0;
-    for (const protocolsInThisCategory of Object.values(strategy)) {
-      count += Object.keys(protocolsInThisCategory).length;
-    }
-    return count;
-  }
-
-  _calculateSlippage(retryIndexArray) {
-    const flatArray = retryIndexArray.flat();
-    const avgSlippageIndex =
-      flatArray.reduce((sum, num) => sum + num, 0) / flatArray.length;
-    return (
-      100 - (100 - slippage[avgSlippageIndex]) * slippageOfLP[avgSlippageIndex]
-    );
   }
 }
