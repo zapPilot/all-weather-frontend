@@ -11,6 +11,5 @@ export const fetchApr = async () => {
             : searchWalletAddress.toLowerCase().trim().replace("/", "")
         }?refresh=true`)
     const { portfolio_apr } = response
-    console.log("portfolio_apr", portfolio_apr)
     return portfolio_apr
 }

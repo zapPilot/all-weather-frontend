@@ -24,7 +24,7 @@ describe("ExampleUI Component", () => {
   it('Should handle Axios resolved promise', async () => {
     // Mock Axios request form the fetchApr function
     vi.spyOn(axios, 'get').mockResolvedValue({ portfolio_apr: 5 })
-    await expect(fetchApr()).resolves.toBeGreaterThan(0)
+    await expect(fetchApr()).resolves.toBe(5);
   })
 
   it("display portfolio_apr value", async () => {
@@ -42,7 +42,7 @@ describe("ExampleUI Component", () => {
       const aprElement = screen.findByTestId("apr");
       const aprValue = aprElement.textContent;
       // aprValue should be a number with a percentage sign
-      expect(aprValue).toBe(/(\d+)%/);
+      expect(aprValue).toBe("5%");
     }, { timeout: 10000 });
   });
 });
