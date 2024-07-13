@@ -5,14 +5,11 @@ import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToke
 import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import { fetch1InchSwapData } from "../../utils/oneInch.js";
 import { arbitrum } from "thirdweb/chains";
-const approvalBufferParam = 1.2;
-//  `Error: execution reverted: STF` means there's no enough tokens to safe transfer from
-// number: min: 0, max: 50
-const slippage = [1, 2, 3, 5, 10];
-
-// would get `Error: execution reverted: Price slippage check` if it hit the amount0Min and amount1Min when providing liquidity
-const slippageOfLP = [0.95, 0.9, 0.8, 0.7, 0.6];
-
+import {
+  approvalBufferParam,
+  slippageForLP,
+  nullAddress,
+} from "../slippageUtils.js";
 const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const CamelotNFTPositionManagerAddress =
   "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15";
@@ -30,12 +27,16 @@ export class CamelotV3 {
     this.token1 = token1;
     this.aaWalletAddress = aaWalletAddress;
   }
-  async invest(investmentAmountInThisPosition, chosenToken, retryIndex) {
+  async invest(investmentAmountInThisPosition, chosenToken, slippage) {
     // get erc20 Contract Interface
     const erc20Instance = new ethers.Contract(chosenToken, ERC20_ABI, PROVIDER);
 
     // get decimals from erc20 contract
-    const decimals = (await erc20Instance.functions.decimals())[0];
+    const decimalsOfChosenToken = (await erc20Instance.functions.decimals())[0];
+    const approvalAmount = investmentAmountInThisPosition * approvalBufferParam;
+    if (approvalAmount === 0) {
+      throw new Error("Approval amount is 0. Cannot proceed with approving.");
+    }
     const approveTxn = {
       chain: arbitrum,
       to: chosenToken,
@@ -45,12 +46,8 @@ export class CamelotV3 {
         args: [
           oneInchAddress,
           ethers.utils.parseUnits(
-            String(
-              (investmentAmountInThisPosition * approvalBufferParam).toFixed(
-                decimals,
-              ),
-            ),
-            decimals,
+            String(approvalAmount),
+            decimalsOfChosenToken,
           ),
         ],
       }),
@@ -58,8 +55,8 @@ export class CamelotV3 {
     const [tokenSwapTxns, swapEstimateAmounts] = await this._swaps(
       chosenToken,
       investmentAmountInThisPosition,
-      decimals,
-      retryIndex,
+      decimalsOfChosenToken,
+      slippage,
     );
     const token0Amount = swapEstimateAmounts[0];
     const token1Amount = swapEstimateAmounts[1];
@@ -68,15 +65,15 @@ export class CamelotV3 {
       approveTxn,
       ...tokenSwapTxns,
       ...approveTransactions,
-      this._deposit(token0Amount, token1Amount, retryIndex),
+      this._deposit(token0Amount, token1Amount, slippage),
     ];
   }
 
   async _swaps(
     chosenToken,
     investmentAmountInThisPosition,
-    decimals,
-    retryIndex,
+    decimalsOfChosenToken,
+    slippage,
   ) {
     let tokenSwapTxns = [];
     let swapEstimateAmounts = [];
@@ -85,7 +82,7 @@ export class CamelotV3 {
         swapEstimateAmounts.push(
           ethers.utils.parseUnits(
             String(investmentAmountInThisPosition / 2),
-            decimals,
+            decimalsOfChosenToken,
           ),
         );
       } else {
@@ -94,20 +91,29 @@ export class CamelotV3 {
           token,
           ethers.utils.parseUnits(
             String(investmentAmountInThisPosition / 2),
-            decimals,
+            decimalsOfChosenToken,
           ),
-          slippage[retryIndex],
+          slippage,
         );
         tokenSwapTxns.push(swapTxn);
         swapEstimateAmounts.push(
-          Math.floor((swapEstimateAmount * (100 - slippage[retryIndex])) / 100),
+          Math.floor((swapEstimateAmount * (100 - slippage)) / 100),
         );
       }
     }
+    swapEstimateAmounts.map((value) => {
+      if (value === 0) {
+        throw new Error("Token amount is 0. Cannot proceed with swapping.");
+      }
+    });
+
     return [tokenSwapTxns, swapEstimateAmounts];
   }
 
   _approves(token0Amount, token1Amount) {
+    if (token0Amount === 0 || token1Amount === 0) {
+      throw new Error("Token amount is 0. Cannot proceed with approving.");
+    }
     let tokenApproveTransactions = [];
     for (const [token, tokenAmount] of [
       [this.token0, token0Amount],
@@ -126,7 +132,7 @@ export class CamelotV3 {
     throw new Error("This function is not implemented yet.");
   }
   async _swap(fromTokenAddress, toTokenAddress, amount, slippage) {
-    const swapCallDataFrom1inch = await fetch1InchSwapData(
+    const swapCallData = await fetch1InchSwapData(
       this.chainId,
       fromTokenAddress,
       toTokenAddress,
@@ -134,27 +140,59 @@ export class CamelotV3 {
       this.aaWalletAddress,
       slippage,
     );
+    if (swapCallData["data"] === undefined) {
+      throw new Error("Swap data is undefined. Cannot proceed with swapping.");
+    }
+    if (swapCallData["toAmount"] === 0) {
+      throw new Error("To amount is 0. Cannot proceed with swapping.");
+    }
     return [
       {
         to: oneInchAddress,
-        data: swapCallDataFrom1inch["tx"]["data"],
+        data: swapCallData["data"],
         chain: arbitrum,
       },
-      swapCallDataFrom1inch["toAmount"],
+      swapCallData["toAmount"],
     ];
   }
   _approve(tokenAddress, spenderAddress, amount) {
+    const approvalAmount = Math.floor(amount * approvalBufferParam);
+    if (approvalAmount === 0) {
+      throw new Error("Approval amount is 0. Cannot proceed with approving.");
+    }
+    if (spenderAddress === nullAddress) {
+      throw new Error(
+        "Spender address is null. Cannot proceed with approving.",
+      );
+    }
     return {
       chain: arbitrum,
       to: tokenAddress,
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
         functionName: "approve",
-        args: [spenderAddress, Math.floor(amount * approvalBufferParam)],
+        args: [spenderAddress, approvalAmount],
       }),
     };
   }
-  _deposit(token0Amount, token1Amount, retryIndex) {
+  _deposit(token0Amount, token1Amount, slippage) {
+    const amount0Desired = Math.floor((token0Amount * (100 - slippage)) / 100);
+    const amount1Desired = Math.floor((token1Amount * (100 - slippage)) / 100);
+    const amount0Min = Math.floor(token0Amount * slippageForLP);
+    const amount1Min = Math.floor(token1Amount * slippageForLP);
+    [amount0Desired, amount1Desired, amount0Min, amount1Min].forEach(
+      (value, index) => {
+        if (value === 0) {
+          const keys = [
+            "amount0Desired",
+            "amount1Desired",
+            "amount0Min",
+            "amount1Min",
+          ];
+          throw new Error(`${keys[index]} is 0. Cannot proceed with minting.`);
+        }
+      },
+    );
     const camelotCallData = encodeFunctionData({
       abi: CamelotNFTPositionManager,
       functionName: "mint",
@@ -164,10 +202,10 @@ export class CamelotV3 {
           token1: this.token1,
           tickLower: -887220,
           tickUpper: 887220,
-          amount0Desired: token0Amount,
-          amount1Desired: token1Amount,
-          amount0Min: Math.floor(token0Amount * slippageOfLP[retryIndex]),
-          amount1Min: Math.floor(token1Amount * slippageOfLP[retryIndex]),
+          amount0Desired,
+          amount1Desired,
+          amount0Min,
+          amount1Min,
           recipient: this.aaWalletAddress,
           deadline: Math.floor(Date.now() / 1000) + 600,
         },
