@@ -251,9 +251,6 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                   <div className="flex items-center justify-between">
                     <dt className="text-base font-medium text-gray-900">
                       Subtotal
-                      {/* {totalWeight !== 100
-                        ? `Something goes wrong, weight should be exacly 100%, ${totalWeight}`
-                        : null} */}
                     </dt>
                     <dd className="ml-4 text-base font-medium text-gray-900">
                       ${Number(investmentAmount)}

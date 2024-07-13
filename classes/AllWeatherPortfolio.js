@@ -189,6 +189,7 @@ export class AllWeatherPortfolio extends React.Component {
     };
   }
   setStrategyMetadata(strategyMetadata) {
+    // get strategyMetadata data directly from the redux store. So that we don't need to run `initialize` function again
     this.strategyMetadata = strategyMetadata;
   }
   async diversify(

@@ -11,8 +11,6 @@ import {
   nullAddress,
 } from "../slippageUtils.js";
 const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
-const CamelotNFTPositionManagerAddress =
-  "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15";
 const PROVIDER = new ethers.providers.JsonRpcProvider(
   process.env.NEXT_PUBLIC_RPC_PROVIDER_URL,
 );
@@ -20,6 +18,7 @@ export class CamelotV3 {
   static projectID = "camelot";
   static projectVersion = "v3";
   static protocolName = `${CamelotV3.projectID}-${CamelotV3.projectVersion}`;
+  static lpTokenAddress = "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15";
   constructor(chaindId, symbolList, token0, token1, aaWalletAddress) {
     this.chainId = chaindId;
     this.symbolList = symbolList;
@@ -120,7 +119,7 @@ export class CamelotV3 {
       [this.token1, token1Amount],
     ]) {
       tokenApproveTransactions.push(
-        this._approve(token, CamelotNFTPositionManagerAddress, tokenAmount),
+        this._approve(token, CamelotV3.lpTokenAddress, tokenAmount),
       );
     }
     return tokenApproveTransactions;
@@ -213,7 +212,7 @@ export class CamelotV3 {
     });
     return {
       chain: arbitrum,
-      to: CamelotNFTPositionManagerAddress,
+      to: CamelotV3.lpTokenAddress,
       data: camelotCallData,
     };
   }
