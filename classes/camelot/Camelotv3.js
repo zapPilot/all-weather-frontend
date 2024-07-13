@@ -18,15 +18,30 @@ export class CamelotV3 {
   static projectID = "camelot";
   static projectVersion = "v3";
   static protocolName = `${CamelotV3.projectID}-${CamelotV3.projectVersion}`;
-  static lpTokenAddress = "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15";
-  constructor(chaindId, symbolList, token0, token1, aaWalletAddress) {
+  static lpTokenAddress = "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15";
+  constructor(
+    chaindId,
+    symbolList,
+    token0,
+    token1,
+    tickLower,
+    tickUpper,
+    aaWalletAddress,
+  ) {
     this.chainId = chaindId;
     this.symbolList = symbolList;
     this.token0 = token0;
     this.token1 = token1;
+    this.tickLower = tickLower;
+    this.tickUpper = tickUpper;
     this.aaWalletAddress = aaWalletAddress;
   }
-  async invest(investmentAmountInThisPosition, chosenToken, slippage) {
+  async invest(
+    investmentAmountInThisPosition,
+    chosenToken,
+    slippage,
+    existingInvestmentPositionsInThisChain,
+  ) {
     // get erc20 Contract Interface
     const erc20Instance = new ethers.Contract(chosenToken, ERC20_ABI, PROVIDER);
 
@@ -60,12 +75,26 @@ export class CamelotV3 {
     const token0Amount = swapEstimateAmounts[0];
     const token1Amount = swapEstimateAmounts[1];
     const approveTransactions = this._approves(token0Amount, token1Amount);
-    return [
-      approveTxn,
-      ...tokenSwapTxns,
-      ...approveTransactions,
-      this._deposit(token0Amount, token1Amount, slippage),
-    ];
+    let txns = [approveTxn, ...tokenSwapTxns, ...approveTransactions];
+    const nftPositionUniqueKey = this._getNFTPositionUniqueKey();
+    if (
+      existingInvestmentPositionsInThisChain[nftPositionUniqueKey] !== undefined
+    ) {
+      txns.push(
+        this._increateLiquidityToExistingNFT(
+          Number(
+            existingInvestmentPositionsInThisChain[nftPositionUniqueKey]
+              .token_id,
+          ),
+          token0Amount,
+          token1Amount,
+          slippage,
+        ),
+      );
+    } else {
+      txns.push(this._mintLpNFT(token0Amount, token1Amount, slippage));
+    }
+    return txns;
   }
 
   async _swaps(
@@ -174,7 +203,65 @@ export class CamelotV3 {
       }),
     };
   }
-  _deposit(token0Amount, token1Amount, slippage) {
+
+  _increateLiquidityToExistingNFT(
+    tokenId,
+    token0Amount,
+    token1Amount,
+    slippage,
+  ) {
+    const [amount0Desired, amount1Desired, amount0Min, amount1Min] =
+      this._getAmountDesiredAndMin(token0Amount, token1Amount, slippage);
+    const camelotCallData = encodeFunctionData({
+      abi: CamelotNFTPositionManager,
+      functionName: "increaseLiquidity",
+      args: [
+        {
+          tokenId,
+          amount0Desired,
+          amount1Desired,
+          amount0Min,
+          amount1Min,
+          deadline: Math.floor(Date.now() / 1000) + 600,
+        },
+      ],
+    });
+    return {
+      chain: arbitrum,
+      to: CamelotV3.lpTokenAddress,
+      data: camelotCallData,
+    };
+  }
+
+  _mintLpNFT(token0Amount, token1Amount, slippage) {
+    const [amount0Desired, amount1Desired, amount0Min, amount1Min] =
+      this._getAmountDesiredAndMin(token0Amount, token1Amount, slippage);
+    const camelotCallData = encodeFunctionData({
+      abi: CamelotNFTPositionManager,
+      functionName: "mint",
+      args: [
+        {
+          token0: this.token0,
+          token1: this.token1,
+          tickLower: this.tickLower,
+          tickUpper: this.tickUpper,
+          amount0Desired,
+          amount1Desired,
+          amount0Min,
+          amount1Min,
+          recipient: this.aaWalletAddress,
+          deadline: Math.floor(Date.now() / 1000) + 600,
+        },
+      ],
+    });
+    return {
+      chain: arbitrum,
+      to: CamelotV3.lpTokenAddress,
+      data: camelotCallData,
+    };
+  }
+
+  _getAmountDesiredAndMin(token0Amount, token1Amount, slippage) {
     const amount0Desired = Math.floor((token0Amount * (100 - slippage)) / 100);
     const amount1Desired = Math.floor((token1Amount * (100 - slippage)) / 100);
     const amount0Min = Math.floor(token0Amount * slippageForLP);
@@ -192,28 +279,12 @@ export class CamelotV3 {
         }
       },
     );
-    const camelotCallData = encodeFunctionData({
-      abi: CamelotNFTPositionManager,
-      functionName: "mint",
-      args: [
-        {
-          token0: this.token0,
-          token1: this.token1,
-          tickLower: -887220,
-          tickUpper: 887220,
-          amount0Desired,
-          amount1Desired,
-          amount0Min,
-          amount1Min,
-          recipient: this.aaWalletAddress,
-          deadline: Math.floor(Date.now() / 1000) + 600,
-        },
-      ],
-    });
-    return {
-      chain: arbitrum,
-      to: CamelotV3.lpTokenAddress,
-      data: camelotCallData,
-    };
+    return [amount0Desired, amount1Desired, amount0Min, amount1Min];
+  }
+
+  _getNFTPositionUniqueKey() {
+    return `${CamelotV3.lpTokenAddress.toLowerCase()}/${this.token0.toLowerCase()}/${this.token1.toLowerCase()}/${
+      this.tickLower
+    }/${this.tickUpper}`;
   }
 }

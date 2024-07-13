@@ -48,7 +48,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
   }, []);
   React.useEffect(() => {
     if (strategyMetadata && !loading) {
-      portfolioHelper.setStrategyMetadata(strategyMetadata);
+      portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
     }
   }, [strategyMetadata, loading, portfolioHelper]);
 
@@ -67,7 +67,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
     }
     setIsLoading(true);
     if (!account) return;
-    portfolioHelper.setStrategyMetadata(strategyMetadata);
+    portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
     const txns = await portfolioHelper.diversify(
       account,
       String(investmentAmount),
@@ -139,10 +139,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                           ([chain, protocolArray], index) => (
                             <div key={`${chain}-${index}`}>
                               <p className="mt-1 text-sm text-gray-500">
-                                {ChainList.filter(
-                                  (chainMetadata) =>
-                                    chainMetadata.shortName === chain,
-                                )[0]?.name || "Unknown Chain"}
+                                {chain}
                               </p>
                               {protocolArray.map(
                                 (
