@@ -48,7 +48,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
   }, []);
   React.useEffect(() => {
     if (strategyMetadata && !loading) {
-      portfolioHelper.setStrategyMetadata(strategyMetadata);
+      portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
     }
   }, [strategyMetadata, loading, portfolioHelper]);
 
@@ -67,7 +67,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
     }
     setIsLoading(true);
     if (!account) return;
-    portfolioHelper.setStrategyMetadata(strategyMetadata);
+    portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
     const txns = await portfolioHelper.diversify(
       account,
       String(investmentAmount),
@@ -139,10 +139,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                           ([chain, protocolArray], index) => (
                             <div key={`${chain}-${index}`}>
                               <p className="mt-1 text-sm text-gray-500">
-                                {ChainList.filter(
-                                  (chainMetadata) =>
-                                    chainMetadata.shortName === chain,
-                                )[0]?.name || "Unknown Chain"}
+                                {chain}
                               </p>
                               {protocolArray.map(
                                 (
@@ -184,7 +181,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                                     {protocol.interface.symbolList.join("-")}{" "}
                                     APR:{" "}
                                     {(
-                                      portfolioHelper.strategyMetadata[
+                                      portfolioHelper?.strategyMetadata[
                                         `${chain}/${
                                           protocol.interface.constructor
                                             .protocolName
@@ -251,9 +248,6 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                   <div className="flex items-center justify-between">
                     <dt className="text-base font-medium text-gray-900">
                       Subtotal
-                      {/* {totalWeight !== 100
-                        ? `Something goes wrong, weight should be exacly 100%, ${totalWeight}`
-                        : null} */}
                     </dt>
                     <dd className="ml-4 text-base font-medium text-gray-900">
                       ${Number(investmentAmount)}

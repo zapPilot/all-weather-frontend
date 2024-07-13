@@ -31,7 +31,7 @@ test("AllWeatherPortfolio initialize", async () => {
   for (const [categoryName, sectorObject] of Object.entries(strategy)) {
     expect(categoryNames.includes(categoryName)).toBeTruthy();
     if (Object.keys(sectorObject).length !== 0) {
-      expect(sectorObject["arb"].length).toBeGreaterThan(0);
+      expect(sectorObject["arbitrum"].length).toBeGreaterThan(0);
     }
   }
 });
