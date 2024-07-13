@@ -212,7 +212,7 @@ export class AllWeatherPortfolio extends React.Component {
   reuseFetchedDataFromRedux(slice) {
     // get strategyMetadata data directly from the redux store. So that we don't need to run `initialize` function again
     // this data is for SunBurst chart to visualize the data
-    this.strategyMetadata = slice.strategyMetadata;
+    this.strategyMetadata = slice;
   }
   async diversify(
     account,

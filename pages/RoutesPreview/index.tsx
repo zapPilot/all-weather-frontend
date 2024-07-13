@@ -181,7 +181,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                                     {protocol.interface.symbolList.join("-")}{" "}
                                     APR:{" "}
                                     {(
-                                      portfolioHelper.strategyMetadata[
+                                      portfolioHelper?.strategyMetadata[
                                         `${chain}/${
                                           protocol.interface.constructor
                                             .protocolName
