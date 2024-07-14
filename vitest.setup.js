@@ -1,4 +1,5 @@
 import "@testing-library/jest-dom/vitest";
+import { vi } from 'vitest';
 
 if (typeof window !== "undefined") {
   window.matchMedia =
@@ -11,3 +12,10 @@ if (typeof window !== "undefined") {
       };
     };
 }
+
+// Mock ResizeObserver
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}));
