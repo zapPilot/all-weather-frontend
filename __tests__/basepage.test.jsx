@@ -1,7 +1,11 @@
 import { describe, it, vi, expect } from "vitest";
 import { render, screen, waitFor, fireEvent } from "./test-utils.tsx";
 import BasePage from "../pages/basePage";
-import { ThirdwebProvider, ConnectButton, useActiveAccount } from "thirdweb/react";
+import {
+  ThirdwebProvider,
+  ConnectButton,
+  useActiveAccount,
+} from "thirdweb/react";
 import { createWallet, walletConnect, inAppWallet } from "thirdweb/wallets";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 import { arbitrum, optimism } from "thirdweb/chains";
@@ -74,7 +78,7 @@ describe("basePage Component", () => {
             <p>{account?.address}</p>
           </>
         </BasePage>
-      </ThirdwebProvider>
+      </ThirdwebProvider>,
     );
 
     // Click on the connect wallet button
@@ -84,30 +88,42 @@ describe("basePage Component", () => {
     fireEvent.click(connectButtons[0]);
 
     // Wait for the modal to appear
-    waitFor(() => {
-      const modal = screen.findByRole("dialog");
-      expect(modal).toBeInTheDocument();
-    }, { timeout: 3000 });
+    waitFor(
+      () => {
+        const modal = screen.findByRole("dialog");
+        expect(modal).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
 
     // Find the "Connect a wallet" button and click it
-    waitFor(() => {
-      const connectWalletButton = screen.findByRole("button", {
-        name: "Connect a wallet",
-      });
-      fireEvent.click(connectWalletButton);
-    }, { timeout: 3000 });
+    waitFor(
+      () => {
+        const connectWalletButton = screen.findByRole("button", {
+          name: "Connect a wallet",
+        });
+        fireEvent.click(connectWalletButton);
+      },
+      { timeout: 3000 },
+    );
 
     // Find the Rabby Wallet button by partial name and click it
-    waitFor(() => {
-      const rabbyWalletButton = screen.getByRole("button", {
-        name: /rabby wallet/i,
-      });
-      fireEvent.click(rabbyWalletButton);
-    }, { timeout: 3000 });
+    waitFor(
+      () => {
+        const rabbyWalletButton = screen.getByRole("button", {
+          name: /rabby wallet/i,
+        });
+        fireEvent.click(rabbyWalletButton);
+      },
+      { timeout: 3000 },
+    );
 
     // Wait for the wallet address to appear
-    await waitFor(() => {
-      expect(screen.getByText(account?.address)).toBeInTheDocument();
-    }, { timeout: 5000 });  // Increase timeout if necessary
+    await waitFor(
+      () => {
+        expect(screen.getByText(account?.address)).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    ); // Increase timeout if necessary
   });
 });
