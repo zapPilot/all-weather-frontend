@@ -1,5 +1,9 @@
 import { CamelotV3 } from "./camelot/Camelotv3";
 import React from "react";
+import axios from "axios";
+import axiosRetry from "axios-retry";
+// Exponential back-off retry delay between requests
+axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 
 // add/change these values
 const precisionOfInvestAmount = 4;
@@ -92,6 +96,8 @@ export class AllWeatherPortfolio extends React.Component {
             interface: new CamelotV3(
               42161,
               ["pendle", "eth"],
+              // coinmarketcap API id
+              { pendle: 9481, eth: 1027 },
               pendleAddress,
               wethAddress,
               -887220,
@@ -108,6 +114,7 @@ export class AllWeatherPortfolio extends React.Component {
             interface: new CamelotV3(
               42161,
               ["link", "eth"],
+              { link: 1975, eth: 1027 },
               wethAddress,
               linkAddress,
               -887220,
@@ -125,7 +132,7 @@ export class AllWeatherPortfolio extends React.Component {
             interface: new CamelotV3(
               42161,
               ["usdc", "eth"],
-
+              { usdc: 3408, eth: 1027 },
               wethAddress,
               usdcAddress,
               -887220,
@@ -143,6 +150,7 @@ export class AllWeatherPortfolio extends React.Component {
             interface: new CamelotV3(
               42161,
               ["tia.n", "eth"],
+              { "tia.n": 22861, eth: 1027 },
               wethAddress,
               tiaAddress,
               -887220,
@@ -160,6 +168,7 @@ export class AllWeatherPortfolio extends React.Component {
             interface: new CamelotV3(
               42161,
               ["axl", "usdc"],
+              { axl: 17799, usdc: 3408 },
               axlAddress,
               usdcAddress,
               -887220,
@@ -177,7 +186,7 @@ export class AllWeatherPortfolio extends React.Component {
             interface: new CamelotV3(
               42161,
               ["sol", "usdc"],
-
+              { sol: 5426, usdc: 3408 },
               wsolAddress,
               usdcAddress,
               -887220,
@@ -189,24 +198,6 @@ export class AllWeatherPortfolio extends React.Component {
           },
         ],
       },
-      non_us_emerging_market_stocks: {
-        arbitrum: [
-          {
-            interface: new CamelotV3(
-              42161,
-              ["kuji", "eth"],
-
-              kujiAddress,
-              wethAddress,
-              -887220,
-              887220,
-
-              address,
-            ),
-            weight: this.weightMapping.non_us_emerging_market_stocks,
-          },
-        ],
-      },
     };
   }
   reuseFetchedDataFromRedux(slice) {
@@ -214,6 +205,7 @@ export class AllWeatherPortfolio extends React.Component {
     // this data is for SunBurst chart to visualize the data
     this.strategyMetadata = slice;
   }
+
   async diversify(
     account,
     investmentAmount,
@@ -221,24 +213,38 @@ export class AllWeatherPortfolio extends React.Component {
     progressCallback,
     slippage,
   ) {
-    const strategy = this.getStrategyData(account.address);
-    this.existingInvestmentPositions =
-      await this._getExistingInvestmentPositionsByChain(
-        strategy,
-        account.address,
-      );
-    const totalSteps = this._countProtocolNumber(strategy);
     let completedSteps = 0;
+    const strategy = this.getStrategyData(account.address);
+    const lpTokenAddressSetByChain =
+      this._getLpTokenAddressSetByChain(strategy);
+    const uniqueTokenIdsForCurrentPrice =
+      this._getUniqueTokenIdsForCurrentPrice(strategy);
+    const totalSteps =
+      this._countProtocolNumber(strategy) +
+      Object.keys(lpTokenAddressSetByChain).length +
+      Object.keys(uniqueTokenIdsForCurrentPrice).length;
     const updateProgress = () => {
       completedSteps++;
       progressCallback((completedSteps / totalSteps) * 100);
     };
+
+    this.existingInvestmentPositions =
+      await this._getExistingInvestmentPositionsByChain(
+        lpTokenAddressSetByChain,
+        account.address,
+        updateProgress,
+      );
+    const tokenPricesMappingTable = await this._getTokenPricesMappingTable(
+      uniqueTokenIdsForCurrentPrice,
+      updateProgress,
+    );
     const txns = await this._generateInvestmentTxns(
       strategy,
       investmentAmount,
       chosenToken,
       slippage,
       updateProgress,
+      tokenPricesMappingTable,
     );
     return txns;
   }
@@ -289,22 +295,13 @@ export class AllWeatherPortfolio extends React.Component {
     return count;
   }
 
-  async _getExistingInvestmentPositionsByChain(strategy, address) {
-    let result = {};
-    for (const protocolsInThisCategory of Object.values(strategy)) {
-      for (const [chain, protocols] of Object.entries(
-        protocolsInThisCategory,
-      )) {
-        if (!result[chain]) {
-          result[chain] = new Set();
-        }
-        for (const protocol of protocols) {
-          result[chain].add(protocol.interface.constructor.lpTokenAddress);
-        }
-      }
-    }
+  async _getExistingInvestmentPositionsByChain(
+    lpTokenAddressSetByChain,
+    address,
+    updateProgress,
+  ) {
     let existingInvestmentPositionsbyChain = {};
-    for (const [chain, lpTokens] of Object.entries(result)) {
+    for (const [chain, lpTokens] of Object.entries(lpTokenAddressSetByChain)) {
       const response = await fetch(
         `${
           process.env.NEXT_PUBLIC_API_URL
@@ -314,8 +311,42 @@ export class AllWeatherPortfolio extends React.Component {
       );
       const data = await response.json();
       existingInvestmentPositionsbyChain[chain] = data;
+      updateProgress();
     }
     return existingInvestmentPositionsbyChain;
+  }
+
+  _getUniqueTokenIdsForCurrentPrice(strategy) {
+    let coingeckoIdSet = {};
+    for (const protocolsInThisCategory of Object.values(strategy)) {
+      for (const protocols of Object.values(protocolsInThisCategory)) {
+        for (const protocol of protocols) {
+          coingeckoIdSet = {
+            ...coingeckoIdSet,
+            ...protocol.interface.token2TokenIdMapping,
+          };
+        }
+      }
+    }
+    return coingeckoIdSet;
+  }
+
+  async _getTokenPricesMappingTable(
+    uniqueTokenIdsForCurrentPrice,
+    updateProgress,
+  ) {
+    let tokenPricesMappingTable = {};
+    for (const [token, coingeckoId] of Object.entries(
+      uniqueTokenIdsForCurrentPrice,
+    )) {
+      axios
+        .get(`${process.env.NEXT_PUBLIC_API_URL}/token/${coingeckoId}/price`)
+        .then((result) => {
+          tokenPricesMappingTable[token] = result.data.price;
+        });
+      updateProgress();
+    }
+    return tokenPricesMappingTable;
   }
 
   async _generateInvestmentTxns(
@@ -324,6 +355,7 @@ export class AllWeatherPortfolio extends React.Component {
     chosenToken,
     slippage,
     updateProgress,
+    tokenPricesMappingTable,
   ) {
     let txns = [];
     for (const [category, protocolsInThisCategory] of Object.entries(
@@ -334,7 +366,14 @@ export class AllWeatherPortfolio extends React.Component {
       )) {
         const txn = await this._retryFunction(
           this._investInThisCategory.bind(this),
-          { investmentAmount, chosenToken, chain, protocols, slippage },
+          {
+            investmentAmount,
+            chosenToken,
+            chain,
+            protocols,
+            slippage,
+            tokenPricesMappingTable,
+          },
           { retries: 5, delay: 1000 },
         );
         txns.push(txn);
@@ -342,5 +381,23 @@ export class AllWeatherPortfolio extends React.Component {
       }
     }
     return txns;
+  }
+  _getLpTokenAddressSetByChain(strategy) {
+    let lpTokenAddressSetByChain = {};
+    for (const protocolsInThisCategory of Object.values(strategy)) {
+      for (const [chain, protocols] of Object.entries(
+        protocolsInThisCategory,
+      )) {
+        if (!lpTokenAddressSetByChain[chain]) {
+          lpTokenAddressSetByChain[chain] = new Set();
+        }
+        for (const protocol of protocols) {
+          lpTokenAddressSetByChain[chain].add(
+            protocol.interface.constructor.lpTokenAddress,
+          );
+        }
+      }
+    }
+    return lpTokenAddressSetByChain;
   }
 }

@@ -5,6 +5,7 @@ import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToke
 import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import { fetch1InchSwapData } from "../../utils/oneInch.js";
 import { arbitrum } from "thirdweb/chains";
+import BaseUniswap from "../uniswapv3/BaseUniswap.js";
 import {
   approvalBufferParam,
   slippageForLP,
@@ -14,7 +15,7 @@ const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const PROVIDER = new ethers.providers.JsonRpcProvider(
   process.env.NEXT_PUBLIC_RPC_PROVIDER_URL,
 );
-export class CamelotV3 {
+export class CamelotV3 extends BaseUniswap {
   static projectID = "camelot";
   static projectVersion = "v3";
   static protocolName = `${CamelotV3.projectID}-${CamelotV3.projectVersion}`;
@@ -22,14 +23,17 @@ export class CamelotV3 {
   constructor(
     chaindId,
     symbolList,
+    token2TokenIdMapping,
     token0,
     token1,
     tickLower,
     tickUpper,
     aaWalletAddress,
   ) {
+    super();
     this.chainId = chaindId;
     this.symbolList = symbolList;
+    this.token2TokenIdMapping = token2TokenIdMapping;
     this.token0 = token0;
     this.token1 = token1;
     this.tickLower = tickLower;
