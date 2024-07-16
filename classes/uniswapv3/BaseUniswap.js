@@ -1,4 +1,3 @@
-// Base class without a constructor
 class BaseUniswap {
   calculateTokenAmountsForLP(
     depositAmountUSD,
@@ -8,6 +7,9 @@ class BaseUniswap {
     Pl,
     Pu,
   ) {
+    // priceUSDX: token0
+    // priceUSDY: token1
+    // P = token0 / token1
     deltaL =
       depositAmountUSD /
       ((math.sqrt(P) - math.sqrt(Pl)) * priceUSDY +

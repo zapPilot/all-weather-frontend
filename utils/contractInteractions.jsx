@@ -7,25 +7,25 @@ import axios from "axios";
 const { Option } = Select;
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const relevantSymbols = [
-  "eth",
-  "usdc.e",
+  // "eth",
+  // "usdc.e",
   "usdc",
   "usdt",
-  "wbtc",
-  "weth",
-  "frax",
-  "wsteth",
-  "usds",
-  "eura",
-  "usd+",
-  "reth",
-  "pendle",
-  "ezeth",
-  "cbeth",
-  "lusd",
-  "susd",
-  "euroe",
-  "axlusdc",
+  // "wbtc",
+  // "weth",
+  // "frax",
+  // "wsteth",
+  // "usds",
+  // "eura",
+  // "usd+",
+  // "reth",
+  // "pendle",
+  // "ezeth",
+  // "cbeth",
+  // "lusd",
+  // "susd",
+  // "euroe",
+  // "axlusdc",
 ];
 export const selectBefore = (
   handleChange,
@@ -46,8 +46,7 @@ export const selectBefore = (
         ),
       )
       ?.map((option) => {
-        const keyAndValue =
-          addressOrSymbol === "address" ? option.address : option.symbol;
+        const keyAndValue = `${option.symbol}-${option.address}`;
         return (
           <Option key={keyAndValue} value={keyAndValue}>
             <div

@@ -42,22 +42,59 @@ export class CamelotV3 extends BaseUniswap {
   }
   async invest(
     investmentAmountInThisPosition,
-    chosenToken,
+    tokenSymbol,
+    tokenAddress,
     slippage,
     existingInvestmentPositionsInThisChain,
+    tokenPricesMappingTable,
   ) {
     // get erc20 Contract Interface
-    const erc20Instance = new ethers.Contract(chosenToken, ERC20_ABI, PROVIDER);
+    const erc20Instance = new ethers.Contract(
+      tokenAddress,
+      ERC20_ABI,
+      PROVIDER,
+    );
+    const token0Instance = new ethers.Contract(
+      this.token0,
+      ERC20_ABI,
+      PROVIDER,
+    );
+    const token1Instance = new ethers.Contract(
+      this.token1,
+      ERC20_ABI,
+      PROVIDER,
+    );
 
-    // get decimals from erc20 contract
+    const decimalsOfToken0 = (await token0Instance.functions.decimals())[0];
+    const decimalsOfToken1 = (await token1Instance.functions.decimals())[0];
     const decimalsOfChosenToken = (await erc20Instance.functions.decimals())[0];
+    const depositAmountUSD =
+      tokenPricesMappingTable[tokenSymbol] * investmentAmountInThisPosition;
+
+    const minPrice =
+      1.0001 ** this.tickLower *
+      10 ** (18 * 2 - decimalsOfToken0 - decimalsOfToken1);
+    const maxPrice =
+      1.0001 ** this.tickUpper *
+      10 ** (18 * 2 - decimalsOfToken0 - decimalsOfToken1);
+    const [amountForToken0, amountForToken1] = this.calculateTokenAmountsForLP(
+      depositAmountUSD,
+      tokenPricesMappingTable[this.symbolList[0]],
+      tokenPricesMappingTable[this.symbolList[1]],
+      tokenPricesMappingTable[this.symbolList[0]] /
+        tokenPricesMappingTable[this.symbolList[1]],
+      minPrice,
+      maxPrice,
+    );
+    console.log("amountForToken0", amountForToken0, amountForToken1);
+    // get decimals from erc20 contract
     const approvalAmount = investmentAmountInThisPosition * approvalBufferParam;
     if (approvalAmount === 0) {
       throw new Error("Approval amount is 0. Cannot proceed with approving.");
     }
     const approveTxn = {
       chain: arbitrum,
-      to: chosenToken,
+      to: tokenAddress,
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
         functionName: "approve",
@@ -71,10 +108,11 @@ export class CamelotV3 extends BaseUniswap {
       }),
     };
     const [tokenSwapTxns, swapEstimateAmounts] = await this._swaps(
-      chosenToken,
+      tokenAddress,
       investmentAmountInThisPosition,
       decimalsOfChosenToken,
       slippage,
+      tokenPricesMappingTable,
     );
     const token0Amount = swapEstimateAmounts[0];
     const token1Amount = swapEstimateAmounts[1];
@@ -106,9 +144,12 @@ export class CamelotV3 extends BaseUniswap {
     investmentAmountInThisPosition,
     decimalsOfChosenToken,
     slippage,
+    tokenPricesMappingTable,
   ) {
     let tokenSwapTxns = [];
     let swapEstimateAmounts = [];
+    depositAmountUSD, priceUSDX, priceUSDY, P, Pl, Pu;
+    this.calculateTokenAmountsForLP();
     for (const token of [this.token0, this.token1]) {
       if (token.toLowerCase() === chosenToken.toLowerCase()) {
         swapEstimateAmounts.push(

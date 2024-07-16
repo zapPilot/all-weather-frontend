@@ -59,9 +59,9 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
 
   const signTransaction = async (
     investmentAmount: number,
-    selectedToken: string,
+    tokenSymbolAndAddress: string,
   ) => {
-    if (!selectedToken) {
+    if (!tokenSymbolAndAddress) {
       alert("Please select a token");
       return;
     }
@@ -71,7 +71,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
     const txns = await portfolioHelper.diversify(
       account,
       String(investmentAmount),
-      selectedToken,
+      tokenSymbolAndAddress,
       (progressPercentage) => setProgress(progressPercentage),
       slippage,
     );

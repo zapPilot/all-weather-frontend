@@ -25,6 +25,7 @@ export class AllWeatherPortfolio extends React.Component {
     super();
     this.strategyMetadata = {};
     this.existingInvestmentPositions = {};
+    this.tokenPricesMappingTable = {};
     this.weightMapping = {
       long_term_bond: 0,
       intermediate_term_bond: 0.15 * 2,
@@ -77,19 +78,6 @@ export class AllWeatherPortfolio extends React.Component {
   }
   getStrategyData(address) {
     return {
-      // long_term_bond: {
-      //   "arbitrum": [
-      //     {
-      //       interface: new CamelotV3(
-      //         42161,
-      //         wstEthAddress,
-      //         wethAddress,
-      //         address,
-      //       ),
-      //       weight: 0.4,
-      //     },
-      //   ],
-      // },
       intermediate_term_bond: {
         arbitrum: [
           {
@@ -100,8 +88,8 @@ export class AllWeatherPortfolio extends React.Component {
               { pendle: 9481, eth: 1027 },
               pendleAddress,
               wethAddress,
-              -887220,
-              887220,
+              -73500,
+              -60120,
               address,
             ),
             weight: this.weightMapping.intermediate_term_bond,
@@ -113,34 +101,15 @@ export class AllWeatherPortfolio extends React.Component {
           {
             interface: new CamelotV3(
               42161,
-              ["link", "eth"],
+              ["eth", "link"],
               { link: 1975, eth: 1027 },
               wethAddress,
               linkAddress,
-              -887220,
-              887220,
-
+              -78245,
+              -40807,
               address,
             ),
             weight: this.weightMapping.commodities,
-          },
-        ],
-      },
-      gold: {
-        arbitrum: [
-          {
-            interface: new CamelotV3(
-              42161,
-              ["usdc", "eth"],
-              { usdc: 3408, eth: 1027 },
-              wethAddress,
-              usdcAddress,
-              -887220,
-              887220,
-
-              address,
-            ),
-            weight: this.weightMapping.gold,
           },
         ],
       },
@@ -149,13 +118,12 @@ export class AllWeatherPortfolio extends React.Component {
           {
             interface: new CamelotV3(
               42161,
-              ["tia.n", "eth"],
+              ["eth", "tia.n"],
               { "tia.n": 22861, eth: 1027 },
               wethAddress,
               tiaAddress,
-              -887220,
-              887220,
-
+              -228420,
+              -204180,
               address,
             ),
             weight: this.weightMapping.large_cap_us_stocks,
@@ -191,7 +159,6 @@ export class AllWeatherPortfolio extends React.Component {
               usdcAddress,
               -887220,
               887220,
-
               address,
             ),
             weight: this.weightMapping.non_us_developed_market_stocks,
@@ -209,10 +176,11 @@ export class AllWeatherPortfolio extends React.Component {
   async diversify(
     account,
     investmentAmount,
-    chosenToken,
+    tokenSymbolAndAddress,
     progressCallback,
     slippage,
   ) {
+    const [tokenSymbol, tokenAddress] = tokenSymbolAndAddress.split("-");
     let completedSteps = 0;
     const strategy = this.getStrategyData(account.address);
     const lpTokenAddressSetByChain =
@@ -234,23 +202,24 @@ export class AllWeatherPortfolio extends React.Component {
         account.address,
         updateProgress,
       );
-    const tokenPricesMappingTable = await this._getTokenPricesMappingTable(
+    this.tokenPricesMappingTable = await this._getTokenPricesMappingTable(
       uniqueTokenIdsForCurrentPrice,
       updateProgress,
     );
     const txns = await this._generateInvestmentTxns(
       strategy,
       investmentAmount,
-      chosenToken,
+      tokenSymbol,
+      tokenAddress,
       slippage,
       updateProgress,
-      tokenPricesMappingTable,
     );
     return txns;
   }
   async _investInThisCategory({
     investmentAmount,
-    chosenToken,
+    tokenSymbol,
+    tokenAddress,
     chain,
     protocols,
     slippage,
@@ -260,9 +229,11 @@ export class AllWeatherPortfolio extends React.Component {
     for (const protocol of protocols) {
       const investPromise = protocol.interface.invest(
         (investmentAmount * protocol.weight).toFixed(precisionOfInvestAmount),
-        chosenToken,
+        tokenSymbol,
+        tokenAddress,
         slippage,
         this.existingInvestmentPositions[chain],
+        this.tokenPricesMappingTable,
       );
       concurrentRequests.push(investPromise);
     }
@@ -352,10 +323,10 @@ export class AllWeatherPortfolio extends React.Component {
   async _generateInvestmentTxns(
     strategy,
     investmentAmount,
-    chosenToken,
+    tokenSymbol,
+    tokenAddress,
     slippage,
     updateProgress,
-    tokenPricesMappingTable,
   ) {
     let txns = [];
     for (const [category, protocolsInThisCategory] of Object.entries(
@@ -368,11 +339,11 @@ export class AllWeatherPortfolio extends React.Component {
           this._investInThisCategory.bind(this),
           {
             investmentAmount,
-            chosenToken,
+            tokenSymbol,
+            tokenAddress,
             chain,
             protocols,
             slippage,
-            tokenPricesMappingTable,
           },
           { retries: 5, delay: 1000 },
         );

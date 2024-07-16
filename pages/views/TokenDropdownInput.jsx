@@ -51,7 +51,6 @@ const TokenDropdownInput = memo(
             (value) => {
               setSelectedToken(value);
             },
-            "address",
             chainId?.id,
             selectedToken, // Pass the current selected token
           )}

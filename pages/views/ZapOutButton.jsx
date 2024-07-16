@@ -188,13 +188,9 @@ const ZapOutButton = () => {
             margin: "10px 0",
           }}
         >
-          {selectBefore(
-            (value) => {
-              setChosenToken(value);
-            },
-            "address",
-            chainId,
-          )}
+          {selectBefore((value) => {
+            setChosenToken(value);
+          }, chainId)}
           <NumericInput
             placeholder={`Balance: ${userShares} SCLP`}
             value={inputValue}
