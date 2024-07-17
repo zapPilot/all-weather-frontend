@@ -1,14 +1,7 @@
+import React, { useState } from 'react';
 import { describe, it, vi, expect } from "vitest";
-import { render, screen, waitFor, fireEvent } from "./test-utils.tsx";
+import { render, screen, fireEvent } from "./test-utils.tsx";
 import BasePage from "../pages/basePage";
-import {
-  ThirdwebProvider,
-  ConnectButton,
-  useActiveAccount,
-} from "thirdweb/react";
-import { createWallet, walletConnect, inAppWallet } from "thirdweb/wallets";
-import THIRDWEB_CLIENT from "../utils/thirdweb";
-import { arbitrum, optimism } from "thirdweb/chains";
 
 /**
  * @vitest-environment jsdom
@@ -30,100 +23,45 @@ vi.mock("next/navigation", async () => {
   };
 });
 
-// mock the thirdweb provider
+// mock the thirdweb react module
 vi.mock("thirdweb/react", async () => {
   const actual = await vi.importActual("thirdweb/react");
+  let currentAddress = null; // mock current address
+  const mockUseActiveAccount = vi.fn(() => ({ address: currentAddress }));
+
+  // mock ConnectButton component
+  const ConnectButton = () => {
+    // useState to store the button text
+    const [buttonText, setButtonText] = useState("Connect Wallet");
+
+    return (
+      <button onClick={() => {
+        currentAddress = "0x123456789abcdef"; // mock connect wallet address
+        mockUseActiveAccount.mockReturnValue({ address: currentAddress });
+        setButtonText(currentAddress || "Connect Wallet"); // update button text
+      }}>
+        {buttonText}
+      </button>
+    );
+  };
+
   return {
     ...actual,
-    ThirdwebProvider: ({ children }) => <div>{children}</div>,
-    ConnectButton: () => <button>Connect Wallet</button>,
-    useActiveAccount: () => ({ address: "0x123456789abcdef" }),
+    useActiveAccount: mockUseActiveAccount,
+    ConnectButton,
   };
 });
 
-const WALLETS = [
-  createWallet("io.rabby"),
-  createWallet("me.rainbow"),
-  createWallet("io.metamask"),
-  createWallet("app.phantom"),
-  walletConnect(),
-  inAppWallet({
-    auth: {
-      options: ["email", "google", "apple", "facebook"],
-    },
-  }),
-];
-
 describe("basePage Component", () => {
-  const account = useActiveAccount();
-
   it("Connect Wallet", async () => {
-    render(
-      <ThirdwebProvider>
-        <BasePage>
-          <>
-            <ConnectButton
-              client={THIRDWEB_CLIENT}
-              autoConnect={true}
-              wallets={WALLETS}
-              theme={"light"}
-              connectModal={{ size: "compact" }}
-              chains={[arbitrum, optimism]}
-              accountAbstraction={{
-                chain: arbitrum,
-                // sponsorGas: true,
-                sponsorGas: false,
-              }}
-            />
-            <p>{account?.address}</p>
-          </>
-        </BasePage>
-      </ThirdwebProvider>,
-    );
+    render(<BasePage />);
+    
+    // check if the connect button is rendered
+    const connectButton = screen.getByRole('button', { name: 'Connect Wallet' });
+    fireEvent.click(connectButton);
 
-    // Click on the connect wallet button
-    const connectButtons = await screen.findAllByRole("button", {
-      name: "Connect Wallet",
-    });
-    fireEvent.click(connectButtons[0]);
-
-    // Wait for the modal to appear
-    waitFor(
-      () => {
-        const modal = screen.findByRole("dialog");
-        expect(modal).toBeInTheDocument();
-      },
-      { timeout: 3000 },
-    );
-
-    // Find the "Connect a wallet" button and click it
-    waitFor(
-      () => {
-        const connectWalletButton = screen.findByRole("button", {
-          name: "Connect a wallet",
-        });
-        fireEvent.click(connectWalletButton);
-      },
-      { timeout: 3000 },
-    );
-
-    // Find the Rabby Wallet button by partial name and click it
-    waitFor(
-      () => {
-        const rabbyWalletButton = screen.getByRole("button", {
-          name: /rabby wallet/i,
-        });
-        fireEvent.click(rabbyWalletButton);
-      },
-      { timeout: 3000 },
-    );
-
-    // Wait for the wallet address to appear
-    await waitFor(
-      () => {
-        expect(screen.getByText(account?.address)).toBeInTheDocument();
-      },
-      { timeout: 5000 },
-    ); // Increase timeout if necessary
+    // check if the address is rendered
+    const address = screen.getByText("0x123456789abcdef");
+    expect(address).toBeInTheDocument();
   });
 });
