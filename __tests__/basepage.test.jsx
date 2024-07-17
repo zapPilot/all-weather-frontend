@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { describe, it, vi, expect } from "vitest";
 import { render, screen, fireEvent } from "./test-utils.tsx";
 import BasePage from "../pages/basePage";
@@ -35,11 +35,13 @@ vi.mock("thirdweb/react", async () => {
     const [buttonText, setButtonText] = useState("Connect Wallet");
 
     return (
-      <button onClick={() => {
-        currentAddress = "0x123456789abcdef"; // mock connect wallet address
-        mockUseActiveAccount.mockReturnValue({ address: currentAddress });
-        setButtonText(currentAddress || "Connect Wallet"); // update button text
-      }}>
+      <button
+        onClick={() => {
+          currentAddress = "0x123456789abcdef"; // mock connect wallet address
+          mockUseActiveAccount.mockReturnValue({ address: currentAddress });
+          setButtonText(currentAddress || "Connect Wallet"); // update button text
+        }}
+      >
         {buttonText}
       </button>
     );
@@ -55,9 +57,11 @@ vi.mock("thirdweb/react", async () => {
 describe("basePage Component", () => {
   it("Connect Wallet", async () => {
     render(<BasePage />);
-    
+
     // check if the connect button is rendered
-    const connectButton = screen.getByRole('button', { name: 'Connect Wallet' });
+    const connectButton = screen.getByRole("button", {
+      name: "Connect Wallet",
+    });
     fireEvent.click(connectButton);
 
     // check if the address is rendered
