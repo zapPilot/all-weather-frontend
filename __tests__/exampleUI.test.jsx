@@ -1,4 +1,4 @@
-import { vi, expect, describe, it, beforeEach, afterEach } from "vitest";
+import { vi, expect, describe, it, afterEach } from "vitest";
 import { render, screen, waitFor } from "./test-utils.tsx";
 import ExampleUI from "../pages/views/ExampleUI";
 import axios from "axios";

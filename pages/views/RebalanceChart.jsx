@@ -325,7 +325,7 @@ export default function RebalanceChart(props) {
       } else if (mode === "portfolioStrategy") {
         if (!account) return;
         const portfolioHelper = getPortfolioHelper("AllWeatherPortfolio");
-        portfolioHelper.setStrategyMetadata(strategyMetadata);
+        portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
         const [chartData, totalAPR] =
           convertPortfolioStrategyToChartData(portfolioHelper);
         setData(chartData);

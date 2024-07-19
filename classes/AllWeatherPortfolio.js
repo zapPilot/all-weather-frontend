@@ -20,6 +20,7 @@ export class AllWeatherPortfolio extends React.Component {
   constructor() {
     super();
     this.strategyMetadata = {};
+    this.existingInvestmentPositions = {};
     this.weightMapping = {
       long_term_bond: 0,
       intermediate_term_bond: 0.15 * 2,
@@ -73,7 +74,7 @@ export class AllWeatherPortfolio extends React.Component {
   getStrategyData(address) {
     return {
       // long_term_bond: {
-      //   "arb": [
+      //   "arbitrum": [
       //     {
       //       interface: new CamelotV3(
       //         42161,
@@ -86,13 +87,15 @@ export class AllWeatherPortfolio extends React.Component {
       //   ],
       // },
       intermediate_term_bond: {
-        arb: [
+        arbitrum: [
           {
             interface: new CamelotV3(
               42161,
               ["pendle", "eth"],
               pendleAddress,
               wethAddress,
+              -887220,
+              887220,
               address,
             ),
             weight: this.weightMapping.intermediate_term_bond,
@@ -100,13 +103,16 @@ export class AllWeatherPortfolio extends React.Component {
         ],
       },
       commodities: {
-        arb: [
+        arbitrum: [
           {
             interface: new CamelotV3(
               42161,
               ["link", "eth"],
               wethAddress,
               linkAddress,
+              -887220,
+              887220,
+
               address,
             ),
             weight: this.weightMapping.commodities,
@@ -114,7 +120,7 @@ export class AllWeatherPortfolio extends React.Component {
         ],
       },
       gold: {
-        arb: [
+        arbitrum: [
           {
             interface: new CamelotV3(
               42161,
@@ -122,6 +128,9 @@ export class AllWeatherPortfolio extends React.Component {
 
               wethAddress,
               usdcAddress,
+              -887220,
+              887220,
+
               address,
             ),
             weight: this.weightMapping.gold,
@@ -129,13 +138,16 @@ export class AllWeatherPortfolio extends React.Component {
         ],
       },
       large_cap_us_stocks: {
-        arb: [
+        arbitrum: [
           {
             interface: new CamelotV3(
               42161,
               ["tia.n", "eth"],
               wethAddress,
               tiaAddress,
+              -887220,
+              887220,
+
               address,
             ),
             weight: this.weightMapping.large_cap_us_stocks,
@@ -143,13 +155,16 @@ export class AllWeatherPortfolio extends React.Component {
         ],
       },
       small_cap_us_stocks: {
-        arb: [
+        arbitrum: [
           {
             interface: new CamelotV3(
               42161,
               ["axl", "usdc"],
               axlAddress,
               usdcAddress,
+              -887220,
+              887220,
+
               address,
             ),
             weight: this.weightMapping.small_cap_us_stocks,
@@ -157,7 +172,7 @@ export class AllWeatherPortfolio extends React.Component {
         ],
       },
       non_us_developed_market_stocks: {
-        arb: [
+        arbitrum: [
           {
             interface: new CamelotV3(
               42161,
@@ -165,6 +180,9 @@ export class AllWeatherPortfolio extends React.Component {
 
               wsolAddress,
               usdcAddress,
+              -887220,
+              887220,
+
               address,
             ),
             weight: this.weightMapping.non_us_developed_market_stocks,
@@ -172,7 +190,7 @@ export class AllWeatherPortfolio extends React.Component {
         ],
       },
       non_us_emerging_market_stocks: {
-        arb: [
+        arbitrum: [
           {
             interface: new CamelotV3(
               42161,
@@ -180,6 +198,9 @@ export class AllWeatherPortfolio extends React.Component {
 
               kujiAddress,
               wethAddress,
+              -887220,
+              887220,
+
               address,
             ),
             weight: this.weightMapping.non_us_emerging_market_stocks,
@@ -188,8 +209,10 @@ export class AllWeatherPortfolio extends React.Component {
       },
     };
   }
-  setStrategyMetadata(strategyMetadata) {
-    this.strategyMetadata = strategyMetadata;
+  reuseFetchedDataFromRedux(slice) {
+    // get strategyMetadata data directly from the redux store. So that we don't need to run `initialize` function again
+    // this data is for SunBurst chart to visualize the data
+    this.strategyMetadata = slice;
   }
   async diversify(
     account,
@@ -199,32 +222,30 @@ export class AllWeatherPortfolio extends React.Component {
     slippage,
   ) {
     const strategy = this.getStrategyData(account.address);
+    this.existingInvestmentPositions =
+      await this._getExistingInvestmentPositionsByChain(
+        strategy,
+        account.address,
+      );
     const totalSteps = this._countProtocolNumber(strategy);
     let completedSteps = 0;
     const updateProgress = () => {
       completedSteps++;
       progressCallback((completedSteps / totalSteps) * 100);
     };
-
-    let txns = [];
-    for (const [category, protocolsInThisCategory] of Object.entries(
+    const txns = await this._generateInvestmentTxns(
       strategy,
-    )) {
-      for (const protocols of Object.values(protocolsInThisCategory)) {
-        const txn = await this._retryFunction(
-          this._investInThisCategory.bind(this),
-          { investmentAmount, chosenToken, protocols, slippage },
-          { retries: 5, delay: 1000 },
-        );
-        txns.push(txn);
-        updateProgress();
-      }
-    }
+      investmentAmount,
+      chosenToken,
+      slippage,
+      updateProgress,
+    );
     return txns;
   }
   async _investInThisCategory({
     investmentAmount,
     chosenToken,
+    chain,
     protocols,
     slippage,
   }) {
@@ -235,6 +256,7 @@ export class AllWeatherPortfolio extends React.Component {
         (investmentAmount * protocol.weight).toFixed(precisionOfInvestAmount),
         chosenToken,
         slippage,
+        this.existingInvestmentPositions[chain],
       );
       concurrentRequests.push(investPromise);
     }
@@ -265,5 +287,60 @@ export class AllWeatherPortfolio extends React.Component {
       count += Object.keys(protocolsInThisCategory).length;
     }
     return count;
+  }
+
+  async _getExistingInvestmentPositionsByChain(strategy, address) {
+    let result = {};
+    for (const protocolsInThisCategory of Object.values(strategy)) {
+      for (const [chain, protocols] of Object.entries(
+        protocolsInThisCategory,
+      )) {
+        if (!result[chain]) {
+          result[chain] = new Set();
+        }
+        for (const protocol of protocols) {
+          result[chain].add(protocol.interface.constructor.lpTokenAddress);
+        }
+      }
+    }
+    let existingInvestmentPositionsbyChain = {};
+    for (const [chain, lpTokens] of Object.entries(result)) {
+      const response = await fetch(
+        `${
+          process.env.NEXT_PUBLIC_API_URL
+        }/${address}/nft/tvl_highest?token_addresses=${Array.from(
+          lpTokens,
+        ).join("+")}&chain=${chain}`,
+      );
+      const data = await response.json();
+      existingInvestmentPositionsbyChain[chain] = data;
+    }
+    return existingInvestmentPositionsbyChain;
+  }
+
+  async _generateInvestmentTxns(
+    strategy,
+    investmentAmount,
+    chosenToken,
+    slippage,
+    updateProgress,
+  ) {
+    let txns = [];
+    for (const [category, protocolsInThisCategory] of Object.entries(
+      strategy,
+    )) {
+      for (const [chain, protocols] of Object.entries(
+        protocolsInThisCategory,
+      )) {
+        const txn = await this._retryFunction(
+          this._investInThisCategory.bind(this),
+          { investmentAmount, chosenToken, chain, protocols, slippage },
+          { retries: 5, delay: 1000 },
+        );
+        txns.push(txn);
+        updateProgress();
+      }
+    }
+    return txns;
   }
 }

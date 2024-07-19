@@ -1,4 +1,7 @@
-import { test, vi } from "vitest";
+import React, { useState } from "react";
+import { describe, it, vi, expect } from "vitest";
+import { render, screen, fireEvent } from "./test-utils.tsx";
+import BasePage from "../pages/basePage";
 
 /**
  * @vitest-environment jsdom
@@ -20,15 +23,49 @@ vi.mock("next/navigation", async () => {
   };
 });
 
-test("Connect Wallet", async () => {
-  // render(<BasePage />);
-  // const button = await screen.getAllByRole("button", {
-  //   name: "Connect Wallet",
-  // });
-  // fireEvent.click(button[0]);
-  // // Wait for any asynchronous updates
-  // const modal = await screen.queryByRole("dialog");
-  // expect(modal).not.toBeNull();
-  // const metaMaskButton = screen.getAllByRole("button", { name: "Rainbow" });
-  // expect(metaMaskButton).not.toBeNull();
+// mock the thirdweb react module
+vi.mock("thirdweb/react", async () => {
+  const actual = await vi.importActual("thirdweb/react");
+  let currentAddress = null; // mock current address
+  const mockUseActiveAccount = vi.fn(() => ({ address: currentAddress }));
+
+  // mock ConnectButton component
+  const ConnectButton = () => {
+    // useState to store the button text
+    const [buttonText, setButtonText] = useState("Connect Wallet");
+
+    return (
+      <button
+        onClick={() => {
+          currentAddress = "0x123456789abcdef"; // mock connect wallet address
+          mockUseActiveAccount.mockReturnValue({ address: currentAddress });
+          setButtonText(currentAddress || "Connect Wallet"); // update button text
+        }}
+      >
+        {buttonText}
+      </button>
+    );
+  };
+
+  return {
+    ...actual,
+    useActiveAccount: mockUseActiveAccount,
+    ConnectButton,
+  };
+});
+
+describe("basePage Component", () => {
+  it("Connect Wallet", async () => {
+    render(<BasePage />);
+
+    // check if the connect button is rendered
+    const connectButton = screen.getByRole("button", {
+      name: "Connect Wallet",
+    });
+    fireEvent.click(connectButton);
+
+    // check if the address is rendered
+    const address = screen.getByText("0x123456789abcdef");
+    expect(address).toBeInTheDocument();
+  });
 });
