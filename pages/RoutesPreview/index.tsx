@@ -11,6 +11,9 @@ import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
 import styles from "../../styles/Home.module.css";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import { useSelector } from "react-redux";
+import { arbitrum } from "thirdweb/chains";
+import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
+import { encodeFunctionData } from "viem";
 
 interface RoutesPreviewProps {
   portfolioName: string;
@@ -70,12 +73,26 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
     portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
     const txns = await portfolioHelper.diversify(
       account,
-      String(investmentAmount),
+      Number(investmentAmount),
       tokenSymbolAndAddress,
       (progressPercentage) => setProgress(progressPercentage),
       slippage,
     );
     sendBatch(txns.flat(Infinity));
+    // TODO: use this script to transfer all the NFT from AA to my wallet
+    // const nft_ids = [107023, 111289, 101889, 101776, 111298, 111291, 101723, 101855, 111323, 101881, 111305, 111292, 107025, 101863, 101880, 111223, 111319, 101777, 111287, 101865, 101883, 101870, 111325, 101862, 101887, 111304, 101303, 101730, 110567, 111222, 101879, 107022, 111302, 111299, 107024, 101888, 111297, 111314, 101868, 101861, 111306, 111322, 107026, 101867, 101871, 111303, 101866, 111316, 101722, 101885, 101884, 111315, 111307, 111293, 111300, 111324, 111288, 101304, 111296, 111318, 101729, 111294, 107021, 111313, 101886, 101731, 101728, 101297, 111290, 101890, 107020, 111308, 111295, 101860, 111328, 101864, 101305, 111317, 101882, 101856, 101298, 101869, 101724];
+    // const txsn_ids = nft_ids.map((id) => {
+    //   return {
+    //     chain: arbitrum,
+    //     to: "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15",
+    //     data: encodeFunctionData({
+    //       abi: CamelotNFTPositionManager,
+    //       functionName: "approve",
+    //       args: ["0xa1761fc95E8B2A1E99dfdEE816F6D8F4c47e26AE", id],
+    //     }),
+    //   }
+    // })
+    // sendBatch(txsn_ids)
     setIsLoading(false);
   };
   function ModalContent() {
@@ -285,7 +302,10 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                   type="button"
                   className="w-full rounded-md border border-transparent bg-indigo-600 text-base font-medium text-white"
                   onClick={() => {
-                    signTransaction(investmentAmount, selectedToken);
+                    signTransaction(
+                      investmentAmount,
+                      selectedToken.toLowerCase(),
+                    );
                   }}
                   loading={isLoading}
                 >

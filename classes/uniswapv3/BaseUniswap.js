@@ -10,12 +10,13 @@ class BaseUniswap {
     // priceUSDX: token0
     // priceUSDY: token1
     // P = token0 / token1
-    deltaL =
+    const deltaL =
       depositAmountUSD /
-      ((math.sqrt(P) - math.sqrt(Pl)) * priceUSDY +
-        (1 / math.sqrt(P) - 1 / math.sqrt(Pu)) * priceUSDX);
-    deltaY = deltaL * (math.sqrt(P) - math.sqrt(Pl));
-    deltaX = deltaL * (1 / math.sqrt(P) - 1 / math.sqrt(Pu));
+      ((Math.sqrt(P) - Math.sqrt(Pl)) * priceUSDY +
+        (1 / Math.sqrt(P) - 1 / Math.sqrt(Pu)) * priceUSDX);
+    const deltaY = deltaL * (Math.sqrt(P) - Math.sqrt(Pl));
+    const deltaX = deltaL * (1 / Math.sqrt(P) - 1 / Math.sqrt(Pu));
+
     return [deltaX, deltaY];
   }
 }

@@ -2,6 +2,7 @@ import { CamelotV3 } from "./camelot/Camelotv3";
 import React from "react";
 import axios from "axios";
 import axiosRetry from "axios-retry";
+import { tokensAndCoinmarketcapIds } from "../utils/contractInteractions";
 // Exponential back-off retry delay between requests
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 
@@ -105,66 +106,68 @@ export class AllWeatherPortfolio extends React.Component {
               { link: 1975, eth: 1027 },
               wethAddress,
               linkAddress,
-              -78245,
-              -40807,
+              // -78240,
+              // -40800,
+              46050,
+              58780,
               address,
             ),
             weight: this.weightMapping.commodities,
           },
         ],
       },
-      large_cap_us_stocks: {
-        arbitrum: [
-          {
-            interface: new CamelotV3(
-              42161,
-              ["eth", "tia.n"],
-              { "tia.n": 22861, eth: 1027 },
-              wethAddress,
-              tiaAddress,
-              -228420,
-              -204180,
-              address,
-            ),
-            weight: this.weightMapping.large_cap_us_stocks,
-          },
-        ],
-      },
-      small_cap_us_stocks: {
-        arbitrum: [
-          {
-            interface: new CamelotV3(
-              42161,
-              ["axl", "usdc"],
-              { axl: 17799, usdc: 3408 },
-              axlAddress,
-              usdcAddress,
-              -887220,
-              887220,
+      // large_cap_us_stocks: {
+      //   arbitrum: [
+      //     {
+      //       interface: new CamelotV3(
+      //         42161,
+      //         ["eth", "tia.n"],
+      //         { "tia.n": 22861, eth: 1027 },
+      //         wethAddress,
+      //         tiaAddress,
+      //         -228420,
+      //         -204180,
+      //         address,
+      //       ),
+      //       weight: this.weightMapping.large_cap_us_stocks,
+      //     },
+      //   ],
+      // },
+      // small_cap_us_stocks: {
+      //   arbitrum: [
+      //     {
+      //       interface: new CamelotV3(
+      //         42161,
+      //         ["axl", "usdc"],
+      //         { axl: 17799, usdc: 3408 },
+      //         axlAddress,
+      //         usdcAddress,
+      //         -887220,
+      //         887220,
 
-              address,
-            ),
-            weight: this.weightMapping.small_cap_us_stocks,
-          },
-        ],
-      },
-      non_us_developed_market_stocks: {
-        arbitrum: [
-          {
-            interface: new CamelotV3(
-              42161,
-              ["sol", "usdc"],
-              { sol: 5426, usdc: 3408 },
-              wsolAddress,
-              usdcAddress,
-              -887220,
-              887220,
-              address,
-            ),
-            weight: this.weightMapping.non_us_developed_market_stocks,
-          },
-        ],
-      },
+      //         address,
+      //       ),
+      //       weight: this.weightMapping.small_cap_us_stocks,
+      //     },
+      //   ],
+      // },
+      // non_us_developed_market_stocks: {
+      //   arbitrum: [
+      //     {
+      //       interface: new CamelotV3(
+      //         42161,
+      //         ["sol", "usdc"],
+      //         { sol: 5426, usdc: 3408 },
+      //         wsolAddress,
+      //         usdcAddress,
+      //         -887220,
+      //         887220,
+      //         address,
+      //       ),
+      //       weight: this.weightMapping.non_us_developed_market_stocks,
+      //     },
+      //   ],
+      // },
     };
   }
   reuseFetchedDataFromRedux(slice) {
@@ -228,7 +231,9 @@ export class AllWeatherPortfolio extends React.Component {
     let concurrentRequests = [];
     for (const protocol of protocols) {
       const investPromise = protocol.interface.invest(
-        (investmentAmount * protocol.weight).toFixed(precisionOfInvestAmount),
+        Number(
+          (investmentAmount * protocol.weight).toFixed(precisionOfInvestAmount),
+        ),
         tokenSymbol,
         tokenAddress,
         slippage,
@@ -299,6 +304,10 @@ export class AllWeatherPortfolio extends React.Component {
         }
       }
     }
+    coingeckoIdSet = {
+      ...coingeckoIdSet,
+      ...tokensAndCoinmarketcapIds,
+    };
     return coingeckoIdSet;
   }
 

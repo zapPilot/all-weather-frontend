@@ -43,7 +43,7 @@ export const ExpandTableComponent = ({
           {columnData.map((item, rowIndex) => (
             <>
               <tr
-                key={item.tokens.join("-")}
+                key={`${item.tokens.join("-")}-${rowIndex}`}
                 className="hover:bg-black-900 cursor-pointer"
                 onClick={
                   // @ts-ignore
@@ -56,7 +56,7 @@ export const ExpandTableComponent = ({
                 {column.map((column, colIndex) => (
                   <td
                     className="whitespace-nowrap px-3 py-4 text-sm text-gray-400"
-                    key={`${column.key}-${item.tokens.join("-")}`}
+                    key={`${column.key}-${item.tokens.join("-")}-${colIndex}`}
                   >
                     {column.render(item[column.key])}
                   </td>
