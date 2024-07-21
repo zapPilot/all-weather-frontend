@@ -1,3 +1,9 @@
+// Use Python to calculate upper/lower price back to tick
+// Price = token0 / token1, and then calculate your upper price and lower price.
+// ```
+// import math
+// math.log(upper price / (10 ** (18*2 - decimal of token0 - decimal of token 1)), 1.0001)
+// ```
 class BaseUniswap {
   calculateTokenAmountsForLP(
     depositAmountUSD,

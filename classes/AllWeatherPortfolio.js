@@ -3,6 +3,7 @@ import React from "react";
 import axios from "axios";
 import axiosRetry from "axios-retry";
 import { tokensAndCoinmarketcapIds } from "../utils/contractInteractions";
+import assert from "assert";
 // Exponential back-off retry delay between requests
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 
@@ -28,15 +29,16 @@ export class AllWeatherPortfolio extends React.Component {
     this.existingInvestmentPositions = {};
     this.tokenPricesMappingTable = {};
     this.weightMapping = {
-      long_term_bond: 0,
-      intermediate_term_bond: 0.15 * 2,
-      commodities: 0.06 * 2,
-      gold: 0.06 * 2,
+      // long_term_bond: 0,
+      intermediate_term_bond: 0.25 * 2,
+      commodities: 0.1 * 2,
+      // gold: 0.1 * 2,
       large_cap_us_stocks: 0.12 * 2,
-      small_cap_us_stocks: 0.02 * 2,
-      non_us_developed_market_stocks: 0.06 * 2,
-      non_us_emerging_market_stocks: 0.03 * 2,
+      small_cap_us_stocks: 0.01 * 2,
+      non_us_developed_market_stocks: 0.02 * 2,
+      // non_us_emerging_market_stocks: 0.01 * 2,
     };
+    assert(Object.values(this.weightMapping).reduce((a, b) => a + b) === 1);
   }
   async initialize() {
     try {
@@ -106,8 +108,6 @@ export class AllWeatherPortfolio extends React.Component {
               { link: 1975, eth: 1027 },
               wethAddress,
               linkAddress,
-              // -78240,
-              // -40800,
               46050,
               58780,
               address,
@@ -116,58 +116,58 @@ export class AllWeatherPortfolio extends React.Component {
           },
         ],
       },
-      // large_cap_us_stocks: {
-      //   arbitrum: [
-      //     {
-      //       interface: new CamelotV3(
-      //         42161,
-      //         ["eth", "tia.n"],
-      //         { "tia.n": 22861, eth: 1027 },
-      //         wethAddress,
-      //         tiaAddress,
-      //         -228420,
-      //         -204180,
-      //         address,
-      //       ),
-      //       weight: this.weightMapping.large_cap_us_stocks,
-      //     },
-      //   ],
-      // },
-      // small_cap_us_stocks: {
-      //   arbitrum: [
-      //     {
-      //       interface: new CamelotV3(
-      //         42161,
-      //         ["axl", "usdc"],
-      //         { axl: 17799, usdc: 3408 },
-      //         axlAddress,
-      //         usdcAddress,
-      //         -887220,
-      //         887220,
+      large_cap_us_stocks: {
+        arbitrum: [
+          {
+            interface: new CamelotV3(
+              42161,
+              ["eth", "tia.n"],
+              { "tia.n": 22861, eth: 1027 },
+              wethAddress,
+              tiaAddress,
+              -228420,
+              -204180,
+              address,
+            ),
+            weight: this.weightMapping.large_cap_us_stocks,
+          },
+        ],
+      },
+      small_cap_us_stocks: {
+        arbitrum: [
+          {
+            interface: new CamelotV3(
+              42161,
+              ["axl", "usdc"],
+              { axl: 17799, usdc: 3408 },
+              axlAddress,
+              usdcAddress,
+              -887220,
+              887220,
 
-      //         address,
-      //       ),
-      //       weight: this.weightMapping.small_cap_us_stocks,
-      //     },
-      //   ],
-      // },
-      // non_us_developed_market_stocks: {
-      //   arbitrum: [
-      //     {
-      //       interface: new CamelotV3(
-      //         42161,
-      //         ["sol", "usdc"],
-      //         { sol: 5426, usdc: 3408 },
-      //         wsolAddress,
-      //         usdcAddress,
-      //         -887220,
-      //         887220,
-      //         address,
-      //       ),
-      //       weight: this.weightMapping.non_us_developed_market_stocks,
-      //     },
-      //   ],
-      // },
+              address,
+            ),
+            weight: this.weightMapping.small_cap_us_stocks,
+          },
+        ],
+      },
+      non_us_developed_market_stocks: {
+        arbitrum: [
+          {
+            interface: new CamelotV3(
+              42161,
+              ["sol", "usdc"],
+              { sol: 5426, usdc: 3408 },
+              wsolAddress,
+              usdcAddress,
+              -887220,
+              887220,
+              address,
+            ),
+            weight: this.weightMapping.non_us_developed_market_stocks,
+          },
+        ],
+      },
     };
   }
   reuseFetchedDataFromRedux(slice) {

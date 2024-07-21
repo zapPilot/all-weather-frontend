@@ -29,12 +29,11 @@ const TokenDropdownInput = memo(
     });
 
     const handleInputChange = (eventValue) => {
-      setInvestmentAmount(eventValue);
+      setInvestmentAmount(Number(eventValue));
     };
 
     const handleOnClickMax = () => {
       const balance = chosenTokenBalance ? chosenTokenBalance.displayValue : "";
-      setInvestmentAmount(balance);
       handleInputChange(balance);
     };
 
