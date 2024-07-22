@@ -1,8 +1,13 @@
 import { CamelotV3 } from "./camelot/Camelotv3";
 import React from "react";
+import axios from "axios";
+import axiosRetry from "axios-retry";
+import { tokensAndCoinmarketcapIds } from "../utils/contractInteractions";
+import assert from "assert";
+// Exponential back-off retry delay between requests
+axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 
 // add/change these values
-const precisionOfInvestAmount = 4;
 const pendleAddress = "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8";
 const wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 const linkAddress = "0xf97f4df75117a78c1A5a0DBb814Af92458539FB4";
@@ -21,16 +26,18 @@ export class AllWeatherPortfolio extends React.Component {
     super();
     this.strategyMetadata = {};
     this.existingInvestmentPositions = {};
+    this.tokenPricesMappingTable = {};
     this.weightMapping = {
-      long_term_bond: 0,
-      intermediate_term_bond: 0.15 * 2,
-      commodities: 0.06 * 2,
-      gold: 0.06 * 2,
+      // long_term_bond: 0,
+      intermediate_term_bond: 0.25 * 2,
+      commodities: 0.1 * 2,
+      // gold: 0.1 * 2,
       large_cap_us_stocks: 0.12 * 2,
-      small_cap_us_stocks: 0.02 * 2,
-      non_us_developed_market_stocks: 0.06 * 2,
-      non_us_emerging_market_stocks: 0.03 * 2,
+      small_cap_us_stocks: 0.01 * 2,
+      non_us_developed_market_stocks: 0.02 * 2,
+      // non_us_emerging_market_stocks: 0.01 * 2,
     };
+    assert(Object.values(this.weightMapping).reduce((a, b) => a + b) === 1);
   }
   async initialize() {
     try {
@@ -73,29 +80,18 @@ export class AllWeatherPortfolio extends React.Component {
   }
   getStrategyData(address) {
     return {
-      // long_term_bond: {
-      //   "arbitrum": [
-      //     {
-      //       interface: new CamelotV3(
-      //         42161,
-      //         wstEthAddress,
-      //         wethAddress,
-      //         address,
-      //       ),
-      //       weight: 0.4,
-      //     },
-      //   ],
-      // },
       intermediate_term_bond: {
         arbitrum: [
           {
             interface: new CamelotV3(
               42161,
               ["pendle", "eth"],
+              // coinmarketcap API id
+              { pendle: 9481, eth: 1027 },
               pendleAddress,
               wethAddress,
-              -887220,
-              887220,
+              -73500,
+              -60120,
               address,
             ),
             weight: this.weightMapping.intermediate_term_bond,
@@ -107,33 +103,15 @@ export class AllWeatherPortfolio extends React.Component {
           {
             interface: new CamelotV3(
               42161,
-              ["link", "eth"],
+              ["eth", "link"],
+              { link: 1975, eth: 1027 },
               wethAddress,
               linkAddress,
-              -887220,
-              887220,
-
+              46050,
+              58780,
               address,
             ),
             weight: this.weightMapping.commodities,
-          },
-        ],
-      },
-      gold: {
-        arbitrum: [
-          {
-            interface: new CamelotV3(
-              42161,
-              ["usdc", "eth"],
-
-              wethAddress,
-              usdcAddress,
-              -887220,
-              887220,
-
-              address,
-            ),
-            weight: this.weightMapping.gold,
           },
         ],
       },
@@ -142,12 +120,12 @@ export class AllWeatherPortfolio extends React.Component {
           {
             interface: new CamelotV3(
               42161,
-              ["tia.n", "eth"],
+              ["eth", "tia.n"],
+              { "tia.n": 22861, eth: 1027 },
               wethAddress,
               tiaAddress,
-              -887220,
-              887220,
-
+              -228420,
+              -204180,
               address,
             ),
             weight: this.weightMapping.large_cap_us_stocks,
@@ -160,6 +138,7 @@ export class AllWeatherPortfolio extends React.Component {
             interface: new CamelotV3(
               42161,
               ["axl", "usdc"],
+              { axl: 17799, usdc: 3408 },
               axlAddress,
               usdcAddress,
               -887220,
@@ -177,33 +156,14 @@ export class AllWeatherPortfolio extends React.Component {
             interface: new CamelotV3(
               42161,
               ["sol", "usdc"],
-
+              { sol: 5426, usdc: 3408 },
               wsolAddress,
               usdcAddress,
               -887220,
               887220,
-
               address,
             ),
             weight: this.weightMapping.non_us_developed_market_stocks,
-          },
-        ],
-      },
-      non_us_emerging_market_stocks: {
-        arbitrum: [
-          {
-            interface: new CamelotV3(
-              42161,
-              ["kuji", "eth"],
-
-              kujiAddress,
-              wethAddress,
-              -887220,
-              887220,
-
-              address,
-            ),
-            weight: this.weightMapping.non_us_emerging_market_stocks,
           },
         ],
       },
@@ -214,29 +174,45 @@ export class AllWeatherPortfolio extends React.Component {
     // this data is for SunBurst chart to visualize the data
     this.strategyMetadata = slice;
   }
+
   async diversify(
     account,
     investmentAmount,
-    chosenToken,
+    tokenSymbolAndAddress,
     progressCallback,
     slippage,
   ) {
-    const strategy = this.getStrategyData(account.address);
-    this.existingInvestmentPositions =
-      await this._getExistingInvestmentPositionsByChain(
-        strategy,
-        account.address,
-      );
-    const totalSteps = this._countProtocolNumber(strategy);
+    const [tokenSymbol, tokenAddress] = tokenSymbolAndAddress.split("-");
     let completedSteps = 0;
+    const strategy = this.getStrategyData(account.address);
+    const lpTokenAddressSetByChain =
+      this._getLpTokenAddressSetByChain(strategy);
+    const uniqueTokenIdsForCurrentPrice =
+      this._getUniqueTokenIdsForCurrentPrice(strategy);
+    const totalSteps =
+      this._countProtocolNumber(strategy) +
+      Object.keys(lpTokenAddressSetByChain).length +
+      Object.keys(uniqueTokenIdsForCurrentPrice).length;
     const updateProgress = () => {
       completedSteps++;
       progressCallback((completedSteps / totalSteps) * 100);
     };
+
+    this.existingInvestmentPositions =
+      await this._getExistingInvestmentPositionsByChain(
+        lpTokenAddressSetByChain,
+        account.address,
+        updateProgress,
+      );
+    this.tokenPricesMappingTable = await this._getTokenPricesMappingTable(
+      uniqueTokenIdsForCurrentPrice,
+      updateProgress,
+    );
     const txns = await this._generateInvestmentTxns(
       strategy,
       investmentAmount,
-      chosenToken,
+      tokenSymbol,
+      tokenAddress,
       slippage,
       updateProgress,
     );
@@ -244,7 +220,8 @@ export class AllWeatherPortfolio extends React.Component {
   }
   async _investInThisCategory({
     investmentAmount,
-    chosenToken,
+    tokenSymbol,
+    tokenAddress,
     chain,
     protocols,
     slippage,
@@ -253,10 +230,12 @@ export class AllWeatherPortfolio extends React.Component {
     let concurrentRequests = [];
     for (const protocol of protocols) {
       const investPromise = protocol.interface.invest(
-        (investmentAmount * protocol.weight).toFixed(precisionOfInvestAmount),
-        chosenToken,
+        Number(investmentAmount * protocol.weight),
+        tokenSymbol,
+        tokenAddress,
         slippage,
         this.existingInvestmentPositions[chain],
+        this.tokenPricesMappingTable,
       );
       concurrentRequests.push(investPromise);
     }
@@ -267,17 +246,17 @@ export class AllWeatherPortfolio extends React.Component {
     const { retries = 3, delay = 1000 } = options; // Set defaults
 
     for (let attempt = 1; attempt <= retries; attempt++) {
-      // try {
-      params.retryIndex = attempt - 1;
-      const result = await fn(params);
-      return result;
-      // } catch (error) {
-      //   console.error(
-      //     `Attempt ${params.category} ${attempt}/${retries}: Error occurred, retrying...`,
-      //     error,
-      //   );
-      //   await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retry
-      // }
+      try {
+        params.retryIndex = attempt - 1;
+        const result = await fn(params);
+        return result;
+      } catch (error) {
+        console.error(
+          `Attempt ${params.category} ${attempt}/${retries}: Error occurred, retrying...`,
+          error,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retry
+      }
     }
     throw new Error(`Function failed after ${retries} retries`); // Throw error if all retries fail
   }
@@ -289,22 +268,13 @@ export class AllWeatherPortfolio extends React.Component {
     return count;
   }
 
-  async _getExistingInvestmentPositionsByChain(strategy, address) {
-    let result = {};
-    for (const protocolsInThisCategory of Object.values(strategy)) {
-      for (const [chain, protocols] of Object.entries(
-        protocolsInThisCategory,
-      )) {
-        if (!result[chain]) {
-          result[chain] = new Set();
-        }
-        for (const protocol of protocols) {
-          result[chain].add(protocol.interface.constructor.lpTokenAddress);
-        }
-      }
-    }
+  async _getExistingInvestmentPositionsByChain(
+    lpTokenAddressSetByChain,
+    address,
+    updateProgress,
+  ) {
     let existingInvestmentPositionsbyChain = {};
-    for (const [chain, lpTokens] of Object.entries(result)) {
+    for (const [chain, lpTokens] of Object.entries(lpTokenAddressSetByChain)) {
       const response = await fetch(
         `${
           process.env.NEXT_PUBLIC_API_URL
@@ -314,14 +284,55 @@ export class AllWeatherPortfolio extends React.Component {
       );
       const data = await response.json();
       existingInvestmentPositionsbyChain[chain] = data;
+      updateProgress();
     }
     return existingInvestmentPositionsbyChain;
+  }
+
+  _getUniqueTokenIdsForCurrentPrice(strategy) {
+    let coinMarketCapIdSet = {};
+    for (const protocolsInThisCategory of Object.values(strategy)) {
+      for (const protocols of Object.values(protocolsInThisCategory)) {
+        for (const protocol of protocols) {
+          coinMarketCapIdSet = {
+            ...coinMarketCapIdSet,
+            ...protocol.interface.token2TokenIdMapping,
+          };
+        }
+      }
+    }
+    coinMarketCapIdSet = {
+      ...coinMarketCapIdSet,
+      ...tokensAndCoinmarketcapIds,
+    };
+    return coinMarketCapIdSet;
+  }
+
+  async _getTokenPricesMappingTable(
+    uniqueTokenIdsForCurrentPrice,
+    updateProgress,
+  ) {
+    let tokenPricesMappingTable = {};
+    for (const [token, coinMarketCapId] of Object.entries(
+      uniqueTokenIdsForCurrentPrice,
+    )) {
+      axios
+        .get(
+          `${process.env.NEXT_PUBLIC_API_URL}/token/${coinMarketCapId}/price`,
+        )
+        .then((result) => {
+          tokenPricesMappingTable[token] = result.data.price;
+        });
+      updateProgress();
+    }
+    return tokenPricesMappingTable;
   }
 
   async _generateInvestmentTxns(
     strategy,
     investmentAmount,
-    chosenToken,
+    tokenSymbol,
+    tokenAddress,
     slippage,
     updateProgress,
   ) {
@@ -334,7 +345,14 @@ export class AllWeatherPortfolio extends React.Component {
       )) {
         const txn = await this._retryFunction(
           this._investInThisCategory.bind(this),
-          { investmentAmount, chosenToken, chain, protocols, slippage },
+          {
+            investmentAmount,
+            tokenSymbol,
+            tokenAddress,
+            chain,
+            protocols,
+            slippage,
+          },
           { retries: 5, delay: 1000 },
         );
         txns.push(txn);
@@ -342,5 +360,23 @@ export class AllWeatherPortfolio extends React.Component {
       }
     }
     return txns;
+  }
+  _getLpTokenAddressSetByChain(strategy) {
+    let lpTokenAddressSetByChain = {};
+    for (const protocolsInThisCategory of Object.values(strategy)) {
+      for (const [chain, protocols] of Object.entries(
+        protocolsInThisCategory,
+      )) {
+        if (!lpTokenAddressSetByChain[chain]) {
+          lpTokenAddressSetByChain[chain] = new Set();
+        }
+        for (const protocol of protocols) {
+          lpTokenAddressSetByChain[chain].add(
+            protocol.interface.constructor.lpTokenAddress,
+          );
+        }
+      }
+    }
+    return lpTokenAddressSetByChain;
   }
 }

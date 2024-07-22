@@ -11,6 +11,9 @@ import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
 import styles from "../../styles/Home.module.css";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import { useSelector } from "react-redux";
+import { arbitrum } from "thirdweb/chains";
+import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
+import { encodeFunctionData } from "viem";
 
 interface RoutesPreviewProps {
   portfolioName: string;
@@ -59,9 +62,9 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
 
   const signTransaction = async (
     investmentAmount: number,
-    selectedToken: string,
+    tokenSymbolAndAddress: string,
   ) => {
-    if (!selectedToken) {
+    if (!tokenSymbolAndAddress) {
       alert("Please select a token");
       return;
     }
@@ -70,12 +73,26 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
     portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
     const txns = await portfolioHelper.diversify(
       account,
-      String(investmentAmount),
-      selectedToken,
+      Number(investmentAmount),
+      tokenSymbolAndAddress,
       (progressPercentage) => setProgress(progressPercentage),
       slippage,
     );
     sendBatch(txns.flat(Infinity));
+    // TODO: use this script to transfer all the NFT from AA to my wallet
+    // const nft_ids = [117347, 117349,117064, 117348, 117063];
+    // const txsn_ids = nft_ids.map((id) => {
+    //   return {
+    //     chain: arbitrum,
+    //     to: "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15",
+    //     data: encodeFunctionData({
+    //       abi: CamelotNFTPositionManager,
+    //       functionName: "safeTransferFrom",
+    //       args: ["0x2Cb044bd28c62a5d2841EDc1d3EDb34f1c3CAeA6", "0x7EE54ab0f204bb3A83DF90fDd824D8b4abE93222", id],
+    //     }),
+    //   }
+    // })
+    // sendBatch(txsn_ids)
     setIsLoading(false);
   };
   function ModalContent() {
@@ -285,7 +302,10 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                   type="button"
                   className="w-full rounded-md border border-transparent bg-indigo-600 text-base font-medium text-white"
                   onClick={() => {
-                    signTransaction(investmentAmount, selectedToken);
+                    signTransaction(
+                      investmentAmount,
+                      selectedToken.toLowerCase(),
+                    );
                   }}
                   loading={isLoading}
                 >

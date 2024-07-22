@@ -5,6 +5,8 @@ import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToke
 import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import { fetch1InchSwapData } from "../../utils/oneInch.js";
 import { arbitrum } from "thirdweb/chains";
+import assert from "assert";
+import BaseUniswap from "../uniswapv3/BaseUniswap.js";
 import {
   approvalBufferParam,
   slippageForLP,
@@ -14,7 +16,7 @@ const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 const PROVIDER = new ethers.providers.JsonRpcProvider(
   process.env.NEXT_PUBLIC_RPC_PROVIDER_URL,
 );
-export class CamelotV3 {
+export class CamelotV3 extends BaseUniswap {
   static projectID = "camelot";
   static projectVersion = "v3";
   static protocolName = `${CamelotV3.projectID}-${CamelotV3.projectVersion}`;
@@ -22,14 +24,17 @@ export class CamelotV3 {
   constructor(
     chaindId,
     symbolList,
+    token2TokenIdMapping,
     token0,
     token1,
     tickLower,
     tickUpper,
     aaWalletAddress,
   ) {
+    super();
     this.chainId = chaindId;
     this.symbolList = symbolList;
+    this.token2TokenIdMapping = token2TokenIdMapping;
     this.token0 = token0;
     this.token1 = token1;
     this.tickLower = tickLower;
@@ -38,39 +43,93 @@ export class CamelotV3 {
   }
   async invest(
     investmentAmountInThisPosition,
-    chosenToken,
+    inputToken,
+    tokenAddress,
     slippage,
     existingInvestmentPositionsInThisChain,
+    tokenPricesMappingTable,
   ) {
     // get erc20 Contract Interface
-    const erc20Instance = new ethers.Contract(chosenToken, ERC20_ABI, PROVIDER);
+    const erc20Instance = new ethers.Contract(
+      tokenAddress,
+      ERC20_ABI,
+      PROVIDER,
+    );
+    const token0Instance = new ethers.Contract(
+      this.token0,
+      ERC20_ABI,
+      PROVIDER,
+    );
+    const token1Instance = new ethers.Contract(
+      this.token1,
+      ERC20_ABI,
+      PROVIDER,
+    );
 
-    // get decimals from erc20 contract
+    const decimalsOfToken0 = (await token0Instance.functions.decimals())[0];
+    const decimalsOfToken1 = (await token1Instance.functions.decimals())[0];
     const decimalsOfChosenToken = (await erc20Instance.functions.decimals())[0];
+    const depositAmountUSD =
+      tokenPricesMappingTable[inputToken] * investmentAmountInThisPosition;
+
+    const minPrice =
+      1.0001 ** this.tickLower *
+      10 ** (18 * 2 - decimalsOfToken0 - decimalsOfToken1);
+    const maxPrice =
+      1.0001 ** this.tickUpper *
+      10 ** (18 * 2 - decimalsOfToken0 - decimalsOfToken1);
+    const currentPrice =
+      tokenPricesMappingTable[this.symbolList[0]] /
+        tokenPricesMappingTable[this.symbolList[1]] >
+        minPrice &&
+      tokenPricesMappingTable[this.symbolList[0]] /
+        tokenPricesMappingTable[this.symbolList[1]] <
+        maxPrice
+        ? tokenPricesMappingTable[this.symbolList[0]] /
+          tokenPricesMappingTable[this.symbolList[1]]
+        : tokenPricesMappingTable[this.symbolList[1]] /
+          tokenPricesMappingTable[this.symbolList[0]];
+    const [amountForToken0, amountForToken1] = this.calculateTokenAmountsForLP(
+      depositAmountUSD,
+      tokenPricesMappingTable[this.symbolList[0]],
+      tokenPricesMappingTable[this.symbolList[1]],
+      currentPrice,
+      minPrice,
+      maxPrice,
+    );
+    assert(currentPrice > minPrice);
+    assert(currentPrice < maxPrice);
+    const swapAmountFromInputToToken0 =
+      (tokenPricesMappingTable[this.symbolList[0]] * amountForToken0) /
+      tokenPricesMappingTable[inputToken];
+    const swapAmountFromInputToToken1 =
+      (tokenPricesMappingTable[this.symbolList[1]] * amountForToken1) /
+      tokenPricesMappingTable[inputToken];
+    // get decimals from erc20 contract
     const approvalAmount = investmentAmountInThisPosition * approvalBufferParam;
     if (approvalAmount === 0) {
       throw new Error("Approval amount is 0. Cannot proceed with approving.");
     }
     const approveTxn = {
       chain: arbitrum,
-      to: chosenToken,
+      to: tokenAddress,
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
         functionName: "approve",
         args: [
           oneInchAddress,
           ethers.utils.parseUnits(
-            String(approvalAmount),
+            approvalAmount.toFixed(decimalsOfChosenToken),
             decimalsOfChosenToken,
           ),
         ],
       }),
     };
     const [tokenSwapTxns, swapEstimateAmounts] = await this._swaps(
-      chosenToken,
-      investmentAmountInThisPosition,
+      tokenAddress,
       decimalsOfChosenToken,
       slippage,
+      [swapAmountFromInputToToken0, swapAmountFromInputToToken1],
     );
     const token0Amount = swapEstimateAmounts[0];
     const token1Amount = swapEstimateAmounts[1];
@@ -99,17 +158,20 @@ export class CamelotV3 {
 
   async _swaps(
     chosenToken,
-    investmentAmountInThisPosition,
     decimalsOfChosenToken,
     slippage,
+    amountForTokenArray,
   ) {
     let tokenSwapTxns = [];
     let swapEstimateAmounts = [];
-    for (const token of [this.token0, this.token1]) {
+    const tokenArray = [this.token0, this.token1];
+    for (const token of tokenArray) {
+      const index = tokenArray.indexOf(token);
+      const amountForToken = amountForTokenArray[index];
       if (token.toLowerCase() === chosenToken.toLowerCase()) {
         swapEstimateAmounts.push(
           ethers.utils.parseUnits(
-            String(investmentAmountInThisPosition / 2),
+            amountForToken.toFixed(decimalsOfChosenToken),
             decimalsOfChosenToken,
           ),
         );
@@ -118,7 +180,7 @@ export class CamelotV3 {
           chosenToken,
           token,
           ethers.utils.parseUnits(
-            String(investmentAmountInThisPosition / 2),
+            amountForToken.toFixed(decimalsOfChosenToken),
             decimalsOfChosenToken,
           ),
           slippage,

@@ -6,33 +6,32 @@ import axios from "axios";
 
 const { Option } = Select;
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-const relevantSymbols = [
-  "eth",
-  "usdc.e",
+export const tokensAndCoinmarketcapIds = {
+  usdc: 3408,
+  usdt: 825,
+};
+export const tokensForDropDown = [
+  // "eth",
+  // "usdc.e",
   "usdc",
   "usdt",
-  "wbtc",
-  "weth",
-  "frax",
-  "wsteth",
-  "usds",
-  "eura",
-  "usd+",
-  "reth",
-  "pendle",
-  "ezeth",
-  "cbeth",
-  "lusd",
-  "susd",
-  "euroe",
-  "axlusdc",
+  // "wbtc",
+  // "weth",
+  // "frax",
+  // "wsteth",
+  // "usds",
+  // "eura",
+  // "usd+",
+  // "reth",
+  // "pendle",
+  // "ezeth",
+  // "cbeth",
+  // "lusd",
+  // "susd",
+  // "euroe",
+  // "axlusdc",
 ];
-export const selectBefore = (
-  handleChange,
-  addressOrSymbol,
-  chainID,
-  selectedToken,
-) => (
+export const selectBefore = (handleChange, chainID, selectedToken) => (
   <Select
     onChange={handleChange}
     value={selectedToken || "Please select a token"}
@@ -41,13 +40,12 @@ export const selectBefore = (
   >
     {tokens.props.pageProps.tokenList[String(chainID)]
       ?.filter((option) =>
-        relevantSymbols.some(
+        tokensForDropDown.some(
           (symbol) => option.symbol.toLowerCase() === symbol && option.logoURI2,
         ),
       )
       ?.map((option) => {
-        const keyAndValue =
-          addressOrSymbol === "address" ? option.address : option.symbol;
+        const keyAndValue = `${option.symbol}-${option.address}`;
         return (
           <Option key={keyAndValue} value={keyAndValue}>
             <div
