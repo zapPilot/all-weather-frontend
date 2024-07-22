@@ -423,7 +423,6 @@ const ZapInButton = () => {
             (value) => {
               setChosenToken(value);
             },
-            "address",
             // @ts-ignore
             chainId,
           )}
