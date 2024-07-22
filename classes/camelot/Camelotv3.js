@@ -97,29 +97,8 @@ export class CamelotV3 extends BaseUniswap {
       minPrice,
       maxPrice,
     );
-    console.log(
-      "currentPrice",
-      currentPrice,
-      tokenPricesMappingTable[this.symbolList[1]] /
-        tokenPricesMappingTable[this.symbolList[0]],
-      tokenPricesMappingTable[this.symbolList[0]] /
-        tokenPricesMappingTable[this.symbolList[1]],
-      minPrice,
-      maxPrice,
-      tokenPricesMappingTable,
-      this.symbolList,
-      this.tickLower,
-      this.tickUpper,
-    );
     assert(currentPrice > minPrice);
     assert(currentPrice < maxPrice);
-    console.log(
-      "tokenPricesMappingTable",
-      tokenPricesMappingTable[this.symbolList[1]],
-      this.symbolList[1],
-      amountForToken1,
-      tokenPricesMappingTable[inputToken],
-    );
     const swapAmountFromInputToToken0 =
       (tokenPricesMappingTable[this.symbolList[0]] * amountForToken0) /
       tokenPricesMappingTable[inputToken];

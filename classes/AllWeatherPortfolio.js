@@ -8,7 +8,6 @@ import assert from "assert";
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 
 // add/change these values
-const precisionOfInvestAmount = 4;
 const pendleAddress = "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8";
 const wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 const linkAddress = "0xf97f4df75117a78c1A5a0DBb814Af92458539FB4";
@@ -231,9 +230,7 @@ export class AllWeatherPortfolio extends React.Component {
     let concurrentRequests = [];
     for (const protocol of protocols) {
       const investPromise = protocol.interface.invest(
-        Number(
-          (investmentAmount * protocol.weight).toFixed(precisionOfInvestAmount),
-        ),
+        Number(investmentAmount * protocol.weight),
         tokenSymbol,
         tokenAddress,
         slippage,
@@ -249,17 +246,17 @@ export class AllWeatherPortfolio extends React.Component {
     const { retries = 3, delay = 1000 } = options; // Set defaults
 
     for (let attempt = 1; attempt <= retries; attempt++) {
-      // try {
-      params.retryIndex = attempt - 1;
-      const result = await fn(params);
-      return result;
-      // } catch (error) {
-      //   console.error(
-      //     `Attempt ${params.category} ${attempt}/${retries}: Error occurred, retrying...`,
-      //     error,
-      //   );
-      //   await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retry
-      // }
+      try {
+        params.retryIndex = attempt - 1;
+        const result = await fn(params);
+        return result;
+      } catch (error) {
+        console.error(
+          `Attempt ${params.category} ${attempt}/${retries}: Error occurred, retrying...`,
+          error,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retry
+      }
     }
     throw new Error(`Function failed after ${retries} retries`); // Throw error if all retries fail
   }
@@ -293,22 +290,22 @@ export class AllWeatherPortfolio extends React.Component {
   }
 
   _getUniqueTokenIdsForCurrentPrice(strategy) {
-    let coingeckoIdSet = {};
+    let coinMarketCapIdSet = {};
     for (const protocolsInThisCategory of Object.values(strategy)) {
       for (const protocols of Object.values(protocolsInThisCategory)) {
         for (const protocol of protocols) {
-          coingeckoIdSet = {
-            ...coingeckoIdSet,
+          coinMarketCapIdSet = {
+            ...coinMarketCapIdSet,
             ...protocol.interface.token2TokenIdMapping,
           };
         }
       }
     }
-    coingeckoIdSet = {
-      ...coingeckoIdSet,
+    coinMarketCapIdSet = {
+      ...coinMarketCapIdSet,
       ...tokensAndCoinmarketcapIds,
     };
-    return coingeckoIdSet;
+    return coinMarketCapIdSet;
   }
 
   async _getTokenPricesMappingTable(
@@ -316,11 +313,13 @@ export class AllWeatherPortfolio extends React.Component {
     updateProgress,
   ) {
     let tokenPricesMappingTable = {};
-    for (const [token, coingeckoId] of Object.entries(
+    for (const [token, coinMarketCapId] of Object.entries(
       uniqueTokenIdsForCurrentPrice,
     )) {
       axios
-        .get(`${process.env.NEXT_PUBLIC_API_URL}/token/${coingeckoId}/price`)
+        .get(
+          `${process.env.NEXT_PUBLIC_API_URL}/token/${coinMarketCapId}/price`,
+        )
         .then((result) => {
           tokenPricesMappingTable[token] = result.data.price;
         });
