@@ -6,39 +6,15 @@ import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 
 const items = [
   {
-    label: <Link href="/">Portfolio</Link>,
-    key: "portfolio",
+    label: <Link href="/bundle">Bundle (WIP)</Link>,
+    key: "bundle",
+    disabled: true,
   },
-  // {
-  //   label: "Analytics",
-  //   key: "analytics",
-  //   children: [
-  //     {
-  //       label: (
-  //         <a
-  //           href="https://dune.com/davidtnfsh/all-weather-protocol"
-  //           target="_blank"
-  //           rel="noopener noreferrer"
-  //         >
-  //           Dune Analytics
-  //         </a>
-  //       ),
-  //       key: "setting:2",
-  //     },
-  //     {
-  //       label: (
-  //         <Link href="/liquidityPoolRangeMonitoring">
-  //           Liquidity Pool Range Monitoring
-  //         </Link>
-  //       ),
-  //       key: "setting:5",
-  //     },
-  //     {
-  //       label: <Link href="/subscription">Subscription</Link>,
-  //       key: "subscription",
-  //     },
-  //   ],
-  // },
+  {
+    label: <Link href="/vote">Vote (WIP)</Link>,
+    key: "vote",
+    disabled: true,
+  },
   {
     label: (
       <a
