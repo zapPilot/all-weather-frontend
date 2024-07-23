@@ -60,8 +60,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
                 chains={[arbitrum, optimism]}
                 accountAbstraction={{
                   chain: arbitrum,
-                  // sponsorGas: true,
-                  sponsorGas: false,
+                  sponsorGas: true,
                 }}
               />
             </div>
