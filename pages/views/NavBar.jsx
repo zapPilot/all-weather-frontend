@@ -14,9 +14,8 @@ const items = [
     key: "bundle",
   },
   {
-    label: <Link href="/vote">Vote (WIP)</Link>,
+    label: <Link href="/vote">Vote</Link>,
     key: "vote",
-    disabled: true,
   },
 ];
 export default function NavBar({ mode }) {

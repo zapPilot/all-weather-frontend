@@ -17,7 +17,6 @@ import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.
 import { walletAddressChanged } from "../../lib/features/subscriptionSlice";
 import axios from "axios";
 import { Spin } from "antd";
-import Dashboard from "../dashboard.tsx";
 import { useRouter } from "next/router";
 import RoutesPreview from "../RoutesPreview/index.tsx";
 
@@ -169,18 +168,6 @@ export default function ExampleUI() {
             <SubscribeWording />
           )} */}
         </Col>
-        {/* <Col
-          xs={{
-            span: 24,
-            offset: 0,
-          }}
-          md={{
-            span: 18,
-            offset: 3,
-          }}
-        >
-          <Dashboard />
-        </Col> */}
       </Row>
     </div>
   );
