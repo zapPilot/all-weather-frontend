@@ -6,26 +6,17 @@ import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 
 const items = [
   {
-    label: <Link href="/bundle">Bundle (WIP)</Link>,
+    label: <Link href="/">Portfolio</Link>,
+    key: "portfolio",
+  },
+  {
+    label: <Link href="/bundle">Bundle</Link>,
     key: "bundle",
-    disabled: true,
   },
   {
     label: <Link href="/vote">Vote (WIP)</Link>,
     key: "vote",
     disabled: true,
-  },
-  {
-    label: (
-      <a
-        href="https://all-weather.gitbook.io/all-weather-protocol/"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Docs
-      </a>
-    ),
-    key: "docs",
   },
 ];
 export default function NavBar({ mode }) {

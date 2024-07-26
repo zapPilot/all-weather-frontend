@@ -14,6 +14,7 @@ import { useSelector } from "react-redux";
 import { arbitrum } from "thirdweb/chains";
 import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import { encodeFunctionData } from "viem";
+import Image from "next/image";
 
 interface RoutesPreviewProps {
   portfolioName: string;
@@ -170,7 +171,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                                     className="mt-1 text-sm text-gray-500 flex items-center"
                                     key={`${protocol.interface.constructor.protocolName}-${index}`}
                                   >
-                                    <img
+                                    <Image
                                       src={`/projectPictures/${protocol.interface.constructor.protocolName}.webp`}
                                       alt={
                                         protocol.interface.constructor
@@ -186,7 +187,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                                     &nbsp;
                                     {protocol.interface.symbolList.map(
                                       (symbol: string, index: number) => (
-                                        <img
+                                        <Image
                                           key={`${symbol}-${index}`}
                                           src={`/tokenPictures/${symbol}.webp`}
                                           alt={symbol}

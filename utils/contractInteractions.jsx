@@ -3,7 +3,7 @@ import { fetch1InchSwapData } from "./oneInch";
 import tokens from "../pages/views/components/tokens.json";
 import { portfolioVaults } from "./oneInch";
 import axios from "axios";
-
+import Image from "next/image";
 const { Option } = Select;
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export const tokensAndCoinmarketcapIds = {
@@ -54,7 +54,7 @@ export const selectBefore = (handleChange, chainID, selectedToken) => (
                 alignItems: "center",
               }}
             >
-              <img
+              <Image
                 src={option.logoURI2}
                 width="20"
                 height="20"

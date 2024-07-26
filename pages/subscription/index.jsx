@@ -4,7 +4,7 @@ import BasePage from "../basePage";
 
 const tiers = [
   {
-    name: "Basic",
+    name: "Provide Email",
     id: "tier-basic",
     href: "/emailsubscription",
     priceMonthly: "Free",
@@ -12,15 +12,15 @@ const tiers = [
     mostPopular: false,
   },
   {
-    name: "Essential",
+    name: "Provide Liquidity",
     id: "tier-essential",
     href: "#",
     priceMonthly: "$?",
-    description: "Quis eleifend a tincidunt pellentesque. A tempor in sed.",
+    description: "Qff",
     mostPopular: true,
   },
   {
-    name: "Premium",
+    name: "Lock Token",
     id: "tier-premium",
     href: "#",
     priceMonthly: "$?",
@@ -97,11 +97,11 @@ export default function Example() {
               Subscriptions
             </h2>
             <p className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">
-              Lifetime Subscription Plans
+              Subscription Plans
             </p>
           </div>
           <p className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-gray-300">
-            Click Once, Diversify Forever!
+            Your Web3 S&P500
           </p>
 
           {/* xs to lg */}
@@ -122,6 +122,10 @@ export default function Example() {
                 >
                   {tier.name}
                 </h3>
+                <p className="mt-4 text-sm leading-6 text-gray-600">
+                  {tier.description}
+                </p>
+
                 <p className="mt-2 flex items-baseline gap-x-1">
                   <span className="text-4xl font-bold text-white">
                     {tier.priceMonthly}
@@ -235,11 +239,6 @@ export default function Example() {
                           <span className="text-4xl font-bold">
                             {tier.priceMonthly}
                           </span>
-                          {tier.priceMonthly === "Free" ? null : (
-                            <span className="text-sm font-semibold text-gray-300">
-                              /lifetime
-                            </span>
-                          )}
                         </div>
                         <a
                           href={tier.href}
