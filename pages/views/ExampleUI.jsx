@@ -1,9 +1,8 @@
 import React from "react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import RebalancerWidget from "./Rebalancer";
 import PortfolioMetaTab from "./PortfolioMetaTab";
-import { Row, Col, ConfigProvider, Button } from "antd";
-import Link from "next/link";
+import { Row, Col, ConfigProvider } from "antd";
 import Image from "next/image";
 import { useWindowHeight } from "../../utils/chartUtils";
 import styles from "../../styles/Home.module.css";
@@ -170,7 +169,7 @@ export default function ExampleUI() {
             <SubscribeWording />
           )} */}
         </Col>
-        <Col
+        {/* <Col
           xs={{
             span: 24,
             offset: 0,
@@ -181,7 +180,7 @@ export default function ExampleUI() {
           }}
         >
           <Dashboard />
-        </Col>
+        </Col> */}
       </Row>
     </div>
   );
