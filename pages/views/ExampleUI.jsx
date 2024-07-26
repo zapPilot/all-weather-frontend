@@ -1,9 +1,8 @@
 import React from "react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import RebalancerWidget from "./Rebalancer";
 import PortfolioMetaTab from "./PortfolioMetaTab";
-import { Row, Col, ConfigProvider, Button } from "antd";
-import Link from "next/link";
+import { Row, Col, ConfigProvider } from "antd";
 import Image from "next/image";
 import { useWindowHeight } from "../../utils/chartUtils";
 import styles from "../../styles/Home.module.css";
@@ -18,7 +17,6 @@ import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.
 import { walletAddressChanged } from "../../lib/features/subscriptionSlice";
 import axios from "axios";
 import { Spin } from "antd";
-import Dashboard from "../dashboard.tsx";
 import { useRouter } from "next/router";
 import RoutesPreview from "../RoutesPreview/index.tsx";
 
@@ -169,18 +167,6 @@ export default function ExampleUI() {
           ) : (
             <SubscribeWording />
           )} */}
-        </Col>
-        <Col
-          xs={{
-            span: 24,
-            offset: 0,
-          }}
-          md={{
-            span: 18,
-            offset: 3,
-          }}
-        >
-          <Dashboard />
         </Col>
       </Row>
     </div>

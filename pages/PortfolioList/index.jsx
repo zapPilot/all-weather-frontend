@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 const products = [
   {
     id: 1,
@@ -25,7 +27,7 @@ export default function PortfolioList({}) {
             <div key={product.id}>
               <div className="relative">
                 <div className="relative h-72 w-full overflow-hidden rounded-lg">
-                  <img
+                  <Image
                     src={product.imageSrc}
                     alt={product.imageAlt}
                     className="h-full w-full object-cover object-center"

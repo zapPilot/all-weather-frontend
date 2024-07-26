@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Spin } from "antd";
 import { WarningOutlined } from "@ant-design/icons";
 import { useSelector } from "react-redux";
+import Image from "next/image";
 
 const APRPopOver = () => {
   const { data, loading } = useSelector((state) => state.api);
@@ -51,7 +52,7 @@ const APRPopOver = () => {
             return (
               <div className="bg-gray-800 p-2" key={pool.address}>
                 <div className="flex mb-1 font-medium">
-                  <img
+                  <Image
                     src={`/chainPicturesWebp/${poolJson.mapping_chain}.webp`}
                     width={20}
                     height={20}
@@ -61,7 +62,7 @@ const APRPopOver = () => {
                     {poolJson.mapping_chain.toUpperCase()}
                   </span>
                   <span>-</span>
-                  <img
+                  <Image
                     src={pool.protocol_logo_url}
                     width={20}
                     height={20}

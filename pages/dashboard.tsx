@@ -409,7 +409,7 @@ const Dashboard: NextPage = () => {
       <div style={divBetterPools}>
         <center>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Compose Your Own Portfolio
+            Vote for the Better Pools
           </h1>
         </center>
         <div className="mt-2">
