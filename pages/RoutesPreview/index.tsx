@@ -103,6 +103,20 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
           <h1 className="text-center text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
             Transaction Preview
           </h1>
+          <div style={{ textAlign: "left" }}>
+            1. Remember to top up some tokens + ETH to your Account Abstract
+            Wallet: <span style={{ color: "#4a90e2" }}>{account?.address}</span>
+            <br />
+            2.{" "}
+            <a
+              href="https://all-weather.gitbook.io/all-weather-protocol/overview/what-we-do-your-web3-s-and-p500"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#4a90e2" }}
+            >
+              Demo
+            </a>
+          </div>
           {account ? (
             <RebalanceChart
               suggestions={[]}
