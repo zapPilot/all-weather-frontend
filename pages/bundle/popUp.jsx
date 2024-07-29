@@ -9,6 +9,7 @@ import { WalletIcon } from "@heroicons/react/20/solid";
 import { ethers } from "ethers";
 import { Alert } from "antd";
 import { useActiveAccount } from "thirdweb/react";
+import { useSelector } from "react-redux";
 
 export default function PopUp({ open, setOpen, addresses, setAddresses }) {
   const [inputValue, setInputValue] = useState("");
@@ -17,6 +18,9 @@ export default function PopUp({ open, setOpen, addresses, setAddresses }) {
   const inputValueRef = useRef(inputValue);
   const addressesRef = useRef(addresses);
   const account = useActiveAccount();
+  const subscriptionStatus = useSelector(
+    (state) => state.subscriptionStatus.subscriptionStatus,
+  );
 
   useEffect(() => {
     inputValueRef.current = inputValue;
@@ -47,6 +51,11 @@ export default function PopUp({ open, setOpen, addresses, setAddresses }) {
   const handleAddAddress = async () => {
     setAlert(false);
     setDuplicateAlert(false);
+
+    if (addresses.length >= 10 && subscriptionStatus === true) {
+      setAlert(true);
+      return;
+    }
     const currentInputValue = inputValueRef.current;
     if (ethers.utils.isAddress(currentInputValue)) {
       // Check if the address already exists (case-insensitive)
@@ -86,7 +95,12 @@ export default function PopUp({ open, setOpen, addresses, setAddresses }) {
             className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all data-[closed]:translate-y-4 data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in sm:my-8 sm:w-full sm:max-w-sm sm:p-6 data-[closed]:sm:translate-y-0 data-[closed]:sm:scale-95"
           >
             {alert ? (
-              <Alert message="Invalid address" type="error" showIcon closable />
+              <Alert
+                message="Invalid address or subscribe to add more than 10 addresses"
+                type="error"
+                showIcon
+                closable
+              />
             ) : null}
             {duplicateAlert ? (
               <Alert
