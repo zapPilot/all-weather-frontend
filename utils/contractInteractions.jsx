@@ -34,7 +34,7 @@ export const tokensForDropDown = [
 export const selectBefore = (handleChange, chainID, selectedToken) => (
   <Select
     onChange={handleChange}
-    value={selectedToken || "Please select a token"}
+    value={selectedToken}
     theme="light"
     style={{ width: 100 }}
   >
