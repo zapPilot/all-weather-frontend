@@ -56,7 +56,7 @@ export class AllWeatherPortfolio extends React.Component {
           const sortedSymbolList = protocol.interface.symbolList
             .sort()
             .join("-");
-          const url = `${process.env.NEXT_PUBLIC_API_URL}/pool/apr?chain=${chain}&project_id=${protocol.interface.constructor.projectID}&project_version=${protocol.interface.constructor.projectVersion}&symbol_list=${symbolList}`;
+          const url = `${process.env.NEXT_PUBLIC_API_URL}/pool/${chain}/${protocol.interface.constructor.projectID}/${protocol.interface.constructor.projectVersion}/${symbolList}/apr`;
           try {
             const response = await fetch(url);
             const data = await response.json();
