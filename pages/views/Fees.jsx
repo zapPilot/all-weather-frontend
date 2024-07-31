@@ -10,7 +10,7 @@ const items = [
   {
     key: "2",
     label: "Deposit Fee",
-    children: "0% (will be replaced by performance fee mentioned below)",
+    children: "0%",
   },
   {
     key: "3",

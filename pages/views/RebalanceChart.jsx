@@ -170,34 +170,7 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
   };
 }
 
-function convertPortfolioCompositionToChartData(portfolioComposition) {
-  let result = { children: [] };
-  let idx = 0;
-
-  // need to refactor
-  let nameToColor = {};
-  for (const positionObjsInThisCategory of portfolioComposition) {
-    for (const positionObj of Object.values(positionObjsInThisCategory)) {
-      for (const [category, weight] of positionObj.categories) {
-        const weightedValue = weight.value * 100;
-        const name = `${positionObj.pool.name}:${positionObj.tokens.join(
-          "-",
-        )}(${weightedValue}%)`;
-        [nameToColor, idx] = _prepareSunburstData(
-          result,
-          nameToColor,
-          name,
-          idx,
-          category,
-          weightedValue,
-        );
-      }
-    }
-  }
-  return result;
-}
-
-function convertPortfolioStrategyToChartData(portfolioHelper) {
+export function convertPortfolioStrategyToChartData(portfolioHelper) {
   let result = { children: [] };
   let idx = 0;
   let totalAPR = 0;
@@ -278,8 +251,6 @@ export default function RebalanceChart(props) {
     netWorth,
     showCategory,
     mode,
-    portfolioComposition,
-    account,
     portfolio_apr,
     color,
   } = props;
@@ -306,24 +277,7 @@ export default function RebalanceChart(props) {
 
   useEffect(() => {
     async function fetchData() {
-      if (mode === "portfolioComposer" && portfolioComposition.length > 0) {
-        const sortedPortfolioComposition = portfolioComposition.sort(
-          (a, b) => b.weight - a.weight,
-        );
-        const chartData = convertPortfolioCompositionToChartData(
-          sortedPortfolioComposition,
-        );
-        setData(chartData);
-        const totalApr = sortedPortfolioComposition.reduce((sum, item) => {
-          // Extract the key (uuid-key) of the current item
-          const uuidKey = Object.keys(item)[0];
-
-          // Add the apr value to the accumulator (sum)
-          return sum + item[uuidKey].apr.value;
-        }, 0);
-        setAPR(totalApr / sortedPortfolioComposition.length);
-      } else if (mode === "portfolioStrategy") {
-        if (!account) return;
+      if (mode === "portfolioStrategy") {
         const portfolioHelper = getPortfolioHelper("AllWeatherPortfolio");
         portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
         const [chartData, totalAPR] =
