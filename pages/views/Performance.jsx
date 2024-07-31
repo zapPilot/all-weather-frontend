@@ -88,7 +88,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
           <Col xs={12} md={8}>
             <Card>
               <Statistic
-                title="Reward APR"
+                title="Reward APR of Your Portfolio"
                 value={portfolioApr}
                 precision={2}
                 valueStyle={colorLogic(portfolioApr)}

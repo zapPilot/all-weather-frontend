@@ -38,13 +38,17 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
     () => getPortfolioHelper(portfolioName ?? "AllWeatherPortfolio"),
     [portfolioName],
   );
-  const [selectedToken, setSelectedToken] = React.useState("");
+  // TODO(david): this USDC-0xaf88d065e77c8cc2239327c5edb3a432268e5831 is for arbitrum. we need a way to get different default address for omnichain product
+  const [selectedToken, setSelectedToken] = React.useState(
+    "USDC-0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+  );
   const [investmentAmount, setInvestmentAmount] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
   const [slippage, setSlippage] = React.useState(1);
   // useCallback ensures setSelectedToken has a stable reference
   const handleSetSelectedToken = React.useCallback((token) => {
+    console.log("token", token);
     setSelectedToken(token);
   }, []);
   const handleSetInvestmentAmount = React.useCallback((amount) => {
@@ -317,6 +321,12 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                   type="button"
                   className="w-full rounded-md border border-transparent bg-indigo-600 text-base font-medium text-white"
                   onClick={() => {
+                    console.log(
+                      "selectedToken",
+                      selectedToken,
+                      "investmentAmount",
+                      investmentAmount,
+                    );
                     signTransaction(
                       investmentAmount,
                       selectedToken.toLowerCase(),

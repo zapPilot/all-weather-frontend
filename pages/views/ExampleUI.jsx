@@ -1,6 +1,7 @@
 import React from "react";
 import { useEffect } from "react";
 import RebalancerWidget from "./Rebalancer";
+import { convertPortfolioStrategyToChartData } from "./RebalanceChart.jsx";
 import PortfolioMetaTab from "./PortfolioMetaTab";
 import { Row, Col, ConfigProvider } from "antd";
 import Image from "next/image";
@@ -8,6 +9,7 @@ import { useWindowHeight } from "../../utils/chartUtils";
 import styles from "../../styles/Home.module.css";
 import { useDispatch, useSelector } from "react-redux";
 import { useActiveAccount } from "thirdweb/react";
+import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import {
   fetchDataStart,
   fetchDataSuccess,
@@ -26,12 +28,17 @@ export default function ExampleUI() {
   const windowHeight = useWindowHeight();
   const dispatch = useDispatch();
   const { data, loading } = useSelector((state) => state.api);
-  const subscriptionStatus = useSelector(
-    (state) => state.subscriptionStatus.subscriptionStatus,
-  );
   const account = useActiveAccount();
   const walletAddress = account?.address.toLocaleLowerCase();
+  const { strategyMetadata, strategyLoading, error } = useSelector(
+    (state) => state.strategyMetadata,
+  );
+  const portfolioHelper = React.useMemo(
+    () => getPortfolioHelper("AllWeatherPortfolio"),
+    [],
+  );
   const router = useRouter();
+
   const { query } = router;
   const searchWalletAddress = query.address;
 
@@ -41,9 +48,9 @@ export default function ExampleUI() {
   }, [account]);
 
   useEffect(() => {
+    if (!walletAddress && !searchWalletAddress) return;
     dispatch(fetchStrategyMetadata());
     dispatch(fetchDataStart());
-    if (!walletAddress && !searchWalletAddress) return;
     axios
       .get(
         `${API_URL}/bundle_portfolio/${
@@ -56,6 +63,15 @@ export default function ExampleUI() {
       .then((data) => dispatch(fetchDataSuccess(data)))
       .catch((error) => dispatch(fetchDataFailure(error.toString())));
   }, [searchWalletAddress, walletAddress]);
+  useEffect(() => {
+    if (strategyMetadata && !strategyLoading) {
+      console.log("reuseFetchedDataFromRedux");
+      portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
+      console.log(
+        JSON.stringify(convertPortfolioStrategyToChartData(portfolioHelper)),
+      );
+    }
+  }, [strategyMetadata, strategyLoading, portfolioHelper]);
 
   return (
     <div className={styles.divInstallment}>
@@ -102,11 +118,14 @@ export default function ExampleUI() {
                   data-testid="apr"
                 >
                   {" "}
-                  {loading ? (
+                  {strategyLoading ? (
                     <Spin />
                   ) : (
-                    data?.portfolio_apr && `${data.portfolio_apr.toFixed(2)}%`
-                  )}{" "}
+                    convertPortfolioStrategyToChartData(
+                      portfolioHelper,
+                    )[1].toFixed(2)
+                  )}
+                  %{" "}
                 </span>
                 APR
               </p>
