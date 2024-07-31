@@ -6,7 +6,7 @@ import {
   ArrowDownOutlined,
   ExportOutlined,
 } from "@ant-design/icons";
-import { Tooltip } from "react-tooltip";
+import { Tooltip } from "antd";
 
 export const columnMapping = (
   protocolList,
@@ -21,14 +21,14 @@ export const columnMapping = (
     width: 24,
     render: (chain) => (
       <div>
-        <Image
-          src={`/chainPicturesWebp/${chain}.webp`}
-          height={20}
-          width={20}
-          alt={chain}
-          data-tooltip-id={chain}
-          data-tooltip-content={chain}
-        />
+        <Tooltip placement="top" title={chain}>
+          <Image
+            src={`/chainPicturesWebp/${chain}.webp`}
+            height={20}
+            width={20}
+            alt={chain}
+          />
+        </Tooltip>
         <Tooltip id={chain} />
       </div>
     ),
@@ -49,13 +49,7 @@ export const columnMapping = (
         </Link>
       ) : (
         <>
-          <div
-            className="inline-block"
-            role="pool_id_tooltip"
-            data-tooltip-id={pool.poolID}
-            data-tooltip-content={pool.poolID}
-            key={pool.poolID}
-          >
+          <Tooltip placement="top" title={pool.poolID}>
             <Image
               src={`/projectPictures/${pool.name}.webp`}
               alt={pool.name}
@@ -63,8 +57,13 @@ export const columnMapping = (
               height={20}
               width={20}
             />
-            <span className="text-white pe-2"> {pool.name}</span>
-          </div>
+            <span className="text-white pe-2">
+              {pool.name}
+              {pool.meta !== null && pool.meta !== "" ? (
+                <span className="text-gray-400 text-sm">({pool.meta})</span>
+              ) : null}
+            </span>
+          </Tooltip>
           {protocolList.map((protocol) =>
             protocol.slug === pool.name ? (
               <button
@@ -80,7 +79,6 @@ export const columnMapping = (
               </button>
             ) : null,
           )}
-          <Tooltip id={pool.poolID} />
         </>
       );
     },
