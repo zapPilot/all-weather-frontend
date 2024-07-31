@@ -48,7 +48,6 @@ const ZapOutButton = () => {
   // useEffect(() => {
   //   if (approveAmountContractIsPending) return; // Don't proceed if loading
   //   if (approveAmountError)
-  //     console.log("allowance Error", approveAmountError.message);
   //   setApproveAmount(approveAmountContract);
 
   //   // Approve feedback

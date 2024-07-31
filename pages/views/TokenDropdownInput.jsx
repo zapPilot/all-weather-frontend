@@ -48,7 +48,6 @@ const TokenDropdownInput = memo(
         <Space style={{ margin: "10px 0" }} role="crypto_input">
           {selectBefore(
             (value) => {
-              console.log("value", value);
               setSelectedToken(value);
             },
             chainId?.id,

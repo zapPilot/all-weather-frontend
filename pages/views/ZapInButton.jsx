@@ -140,7 +140,6 @@ const ZapInButton = () => {
   // useEffect(() => {
   //   if (approveAmounIsPending) return; // Don't proceed if loading
   //   if (approveAmountError) {
-  //     console.log("allowance Error", approveAmountError.message);
   //     throw approveAmountError;
   //   }
   //   setApproveAmount(approveAmountData);

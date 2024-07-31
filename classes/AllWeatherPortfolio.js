@@ -49,7 +49,6 @@ export class AllWeatherPortfolio extends React.Component {
           protocolArray.map((protocol) => ({ chain, protocol })),
         ),
       );
-
       const results = await Promise.all(
         allProtocols.map(async ({ chain, protocol }) => {
           const symbolList = protocol.interface.symbolList.join("+");

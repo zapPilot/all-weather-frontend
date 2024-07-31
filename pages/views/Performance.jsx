@@ -126,17 +126,18 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
               />
             </Card>
           </Col>
-          {/* <Col xs={12} md={8}>
+          <Col xs={12} md={8}>
             <Card>
               <Statistic
-                title={`MAX Drawdown (365 days)`}
-                value="WIP"
+                title="Claimable Rewards"
+                value={data?.claimable_rewards}
                 precision={2}
-                valueStyle={{ color: "#FF6347" }}
+                valueStyle={colorLogic(0)}
+                prefix="$"
               />
             </Card>
           </Col>
-          <Col xs={12} md={8}>
+          {/* <Col xs={12} md={8}>
             <Card>
               <Statistic
                 title={
@@ -153,8 +154,8 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
                 suffix=""
               />
             </Card>
-          </Col>
-          <Col xs={12} md={8}>
+          </Col> */}
+          {/* <Col xs={12} md={8}>
             <Card>
               <Statistic
                 title="Beta"
@@ -174,7 +175,6 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
           netWorth={data?.net_worth}
           windowWidth={windowWidth}
           showCategory={true}
-          account={account}
           portfolio_apr={data?.portfolio_apr}
           color="white"
         />

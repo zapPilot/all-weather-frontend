@@ -48,7 +48,6 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
   const [slippage, setSlippage] = React.useState(1);
   // useCallback ensures setSelectedToken has a stable reference
   const handleSetSelectedToken = React.useCallback((token) => {
-    console.log("token", token);
     setSelectedToken(token);
   }, []);
   const handleSetInvestmentAmount = React.useCallback((amount) => {
@@ -121,21 +120,13 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
               Demo
             </a>
           </div>
-          {account ? (
-            <RebalanceChart
-              suggestions={[]}
-              netWorth={100}
-              showCategory={true}
-              mode="portfolioStrategy"
-              portfolioComposition={Object.entries(
-                portfolioHelper.getStrategyData(
-                  "0x0000000000000000000000000000000000000000",
-                ),
-              )}
-              account={account}
-              color="black"
-            />
-          ) : null}
+          <RebalanceChart
+            suggestions={[]}
+            netWorth={100}
+            showCategory={true}
+            mode="portfolioStrategy"
+            color="black"
+          />
           <form className="mt-12">
             <TokenDropdownInput
               selectedToken={selectedToken}
@@ -321,12 +312,6 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                   type="button"
                   className="w-full rounded-md border border-transparent bg-indigo-600 text-base font-medium text-white"
                   onClick={() => {
-                    console.log(
-                      "selectedToken",
-                      selectedToken,
-                      "investmentAmount",
-                      investmentAmount,
-                    );
                     signTransaction(
                       investmentAmount,
                       selectedToken.toLowerCase(),
