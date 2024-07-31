@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Input, Tooltip } from "antd";
 const NumericInputComponent = (props) => {
   const { value, onChange, placeholder, addonBefore } = props;
@@ -13,7 +13,7 @@ const NumericInputComponent = (props) => {
   // '.' at the end or only '-' in the input box.
   const handleBlur = () => {
     let valueTemp = value;
-    if (value.charAt(value.length - 1) === "." || value === "-") {
+    if (value?.charAt(value.length - 1) === "." || value === "-") {
       valueTemp = value.slice(0, -1);
     }
     onChange(valueTemp.replace(/0*(\d+)/, "$1"));
