@@ -1,4 +1,4 @@
-import React from "react";
+import React, { use } from "react";
 import { useEffect } from "react";
 import RebalancerWidget from "./Rebalancer";
 import { convertPortfolioStrategyToChartData } from "./RebalanceChart.jsx";
@@ -43,13 +43,14 @@ export default function ExampleUI() {
   const searchWalletAddress = query.address;
 
   useEffect(() => {
+    dispatch(fetchStrategyMetadata());
+  }, []);
+  useEffect(() => {
     if (!walletAddress) return;
     dispatch(walletAddressChanged({ walletAddress: walletAddress }));
   }, [account]);
-
   useEffect(() => {
     if (!walletAddress && !searchWalletAddress) return;
-    dispatch(fetchStrategyMetadata());
     dispatch(fetchDataStart());
     axios
       .get(
@@ -65,11 +66,7 @@ export default function ExampleUI() {
   }, [searchWalletAddress, walletAddress]);
   useEffect(() => {
     if (strategyMetadata && !strategyLoading) {
-      console.log("reuseFetchedDataFromRedux");
       portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
-      console.log(
-        JSON.stringify(convertPortfolioStrategyToChartData(portfolioHelper)),
-      );
     }
   }, [strategyMetadata, strategyLoading, portfolioHelper]);
 

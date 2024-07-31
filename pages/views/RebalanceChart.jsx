@@ -186,11 +186,6 @@ export function convertPortfolioStrategyToChartData(portfolioHelper) {
         const poolName = protocol.interface.constructor.protocolName;
         const sortedSymbolList = protocol.interface.symbolList.sort().join("-");
         const keyForpoolsMetadata = `${chain}/${protocol.interface.constructor.protocolName}:${sortedSymbolList}`;
-        console.log(
-          "keyForpoolsMetadata",
-          keyForpoolsMetadata,
-          portfolioHelper.strategyMetadata,
-        );
         const aprOfProtocol =
           portfolioHelper.strategyMetadata[keyForpoolsMetadata]?.value * 100;
         totalAPR += aprOfProtocol * protocol.weight;
