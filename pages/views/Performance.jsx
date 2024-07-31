@@ -174,7 +174,6 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
           netWorth={data?.net_worth}
           windowWidth={windowWidth}
           showCategory={true}
-          account={account}
           portfolio_apr={data?.portfolio_apr}
           color="white"
         />

@@ -251,8 +251,6 @@ export default function RebalanceChart(props) {
     netWorth,
     showCategory,
     mode,
-    portfolioComposition,
-    account,
     portfolio_apr,
     color,
   } = props;
@@ -280,7 +278,6 @@ export default function RebalanceChart(props) {
   useEffect(() => {
     async function fetchData() {
       if (mode === "portfolioStrategy") {
-        if (!account) return;
         const portfolioHelper = getPortfolioHelper("AllWeatherPortfolio");
         portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
         const [chartData, totalAPR] =
