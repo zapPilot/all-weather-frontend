@@ -21,6 +21,7 @@ import axios from "axios";
 import { Spin } from "antd";
 import { useRouter } from "next/router";
 import RoutesPreview from "../RoutesPreview/index.tsx";
+import { timeAgo } from "../../utils/general";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -51,6 +52,14 @@ export default function ExampleUI() {
   }, [account]);
   useEffect(() => {
     if (!walletAddress && !searchWalletAddress) return;
+    fetchBundlePortfolio(false);
+  }, [searchWalletAddress, walletAddress]);
+  useEffect(() => {
+    if (strategyMetadata && !strategyLoading) {
+      portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
+    }
+  }, [strategyMetadata, strategyLoading, portfolioHelper]);
+  const fetchBundlePortfolio = (refresh) => {
     dispatch(fetchDataStart());
     axios
       .get(
@@ -58,18 +67,12 @@ export default function ExampleUI() {
           searchWalletAddress === undefined
             ? walletAddress
             : searchWalletAddress.toLowerCase().trim().replace("/", "")
-        }?refresh=true`,
+        }?refresh=${refresh}`,
       )
       .then((response) => response.data)
       .then((data) => dispatch(fetchDataSuccess(data)))
       .catch((error) => dispatch(fetchDataFailure(error.toString())));
-  }, [searchWalletAddress, walletAddress]);
-  useEffect(() => {
-    if (strategyMetadata && !strategyLoading) {
-      portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
-    }
-  }, [strategyMetadata, strategyLoading, portfolioHelper]);
-
+  };
   return (
     <div className={styles.divInstallment}>
       <Row
@@ -166,6 +169,31 @@ export default function ExampleUI() {
             offset: 7,
           }}
         >
+          {data ? (
+            <>
+              Data updated <b>{timeAgo(data?.last_updated)}</b> ago
+              <button
+                type="button"
+                className="rounded-full bg-indigo-600 p-1 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                onClick={() => fetchBundlePortfolio(true)}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="size-6"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                  />
+                </svg>
+              </button>
+            </>
+          ) : null}
           <APRDetails />
           {/* TODO(david): Use this historical chart to track portfolio's APR */}
           {/* {subscriptionStatus ? (
