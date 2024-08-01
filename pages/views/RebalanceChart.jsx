@@ -24,6 +24,11 @@ import { Sunburst, LabelSeries } from "react-vis";
 import { EXTENDED_DISCRETE_COLOR_RANGE } from "react-vis/dist/theme";
 import { Spin } from "antd";
 import { useSelector } from "react-redux";
+import { useActiveAccount } from "thirdweb/react";
+import Link from "next/link";
+import { Typography, Space, Button, message } from "antd";
+import { CopyOutlined } from "@ant-design/icons";
+const { Title, Paragraph, Text } = Typography;
 
 const DefaultValue = {
   children: [
@@ -261,6 +266,7 @@ export default function RebalanceChart(props) {
   const { strategyMetadata, loading, error } = useSelector(
     (state) => state.strategyMetadata,
   );
+  const account = useActiveAccount();
 
   const divSunBurst = {
     margin: "0 auto",
@@ -299,12 +305,14 @@ export default function RebalanceChart(props) {
     }
     fetchData();
   }, [props]);
-  if (data.children[0].name === "Loading...") {
+  if (data.children[0].name === "Loading..." && !rebalanceSuggestions) {
     return (
       <center role="sunburst-chart-spin">
         <Spin size="large" />
       </center>
     ); // Loading
+  } else if (rebalanceSuggestions && rebalanceSuggestions.length === 0) {
+    return <AntdInstructions account={account} />;
   }
   return (
     <div style={divSunBurst} role="sunburst-chart">
@@ -352,3 +360,64 @@ export default function RebalanceChart(props) {
     </div>
   );
 }
+
+const AntdInstructions = ({ account }) => {
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(account.address);
+    message.success("Address copied to clipboard");
+  };
+
+  return (
+    <Space
+      direction="vertical"
+      size="large"
+      style={{ display: "flex", maxWidth: 600, margin: "0 auto" }}
+    >
+      <div>
+        <Title level={3}>1. Visualize Your Bundle</Title>
+        <Paragraph>
+          Visit the{" "}
+          <Link href="/bundle" style={{ color: "#1890ff" }}>
+            Bundle
+          </Link>{" "}
+          page to visualize your bundle, including all tokens in your wallet.
+          View performance metrics and calculate your ROI and APR.
+        </Paragraph>
+      </div>
+
+      <div>
+        <Title level={3}>2. Fund Your Account</Title>
+        <Paragraph>
+          Please deposit assets into your AA wallet:
+          <br />
+          <Space>
+            <Text code>{`${account.address.slice(
+              0,
+              6,
+            )}...${account.address.slice(-4)}`}</Text>
+            <button
+              type="button"
+              className="rounded-full bg-indigo-600 p-1 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              onClick={copyToClipboard}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75"
+                />
+              </svg>
+            </button>
+          </Space>
+        </Paragraph>
+      </div>
+    </Space>
+  );
+};

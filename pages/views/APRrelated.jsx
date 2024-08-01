@@ -1,16 +1,12 @@
-import { LoadingOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import APRPopOver from "./APRPopOver";
 
-const RebalancerWidget = () => {
+const APRDetails = () => {
   const { data } = useSelector((state) => state.api);
   const getLoadingDom = () => {
     return (
       <>
-        <div className="flex justify-items-center items-center h-24">
-          <LoadingOutlined className="mx-auto text-5xl" />
-        </div>
         <p className="text-base text-center font-semibold leading-5">
           Loading, please wait...
         </p>
@@ -45,4 +41,4 @@ const RebalancerWidget = () => {
   return renderContent;
 };
 
-export default RebalancerWidget;
+export default APRDetails;
