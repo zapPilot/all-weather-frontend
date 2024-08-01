@@ -1,5 +1,5 @@
 export function timeAgo(dateString) {
-  console.log("dateString", dateString);
+  if (!dateString || dateString?.split(" ") === undefined || datePart?.split("/") === undefined) return "";
   // Parse the input date string
   const [datePart, timePart] = dateString.split(" ");
   const [month, day, year] = datePart.split("/");
