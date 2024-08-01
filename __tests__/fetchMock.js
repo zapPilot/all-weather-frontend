@@ -10,7 +10,7 @@ export const fetchApr = async () => {
       searchWalletAddress === undefined
         ? walletAddress
         : searchWalletAddress.toLowerCase().trim().replace("/", "")
-    }?refresh=true`,
+    }`,
   );
   const { portfolio_apr } = response;
   return portfolio_apr;

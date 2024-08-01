@@ -169,15 +169,17 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
         </Row>
       </ConfigProvider>
       {account ? (
-        <RebalanceChart
-          key="double_layer_pie_chart"
-          rebalanceSuggestions={data?.suggestions}
-          netWorth={data?.net_worth}
-          windowWidth={windowWidth}
-          showCategory={true}
-          portfolio_apr={data?.portfolio_apr}
-          color="white"
-        />
+        <>
+          <RebalanceChart
+            key="double_layer_pie_chart"
+            rebalanceSuggestions={data?.suggestions}
+            netWorth={data?.net_worth}
+            windowWidth={windowWidth}
+            showCategory={true}
+            portfolio_apr={data?.portfolio_apr}
+            color="white"
+          />
+        </>
       ) : null}
     </>
   );
