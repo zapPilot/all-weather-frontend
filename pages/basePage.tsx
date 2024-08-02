@@ -7,23 +7,7 @@ import styles from "../styles/Home.module.css";
 import HeaderInner from "./views/Header";
 import "@flaticon/flaticon-uicons/css/brands/all.css";
 import "@flaticon/flaticon-uicons/css/regular/all.css";
-import { ConnectButton } from "thirdweb/react";
-import { createWallet, walletConnect, inAppWallet } from "thirdweb/wallets";
-import THIRDWEB_CLIENT from "../utils/thirdweb";
-import { arbitrum, optimism } from "thirdweb/chains";
-
-const WALLETS = [
-  createWallet("io.rabby"),
-  createWallet("me.rainbow"),
-  createWallet("io.metamask"),
-  createWallet("app.phantom"),
-  walletConnect(),
-  inAppWallet({
-    auth: {
-      options: ["email", "google", "apple", "facebook"],
-    },
-  }),
-];
+import ConfiguredConnectButton from "./ConnectButton";
 
 const { Header, Footer, Content } = Layout;
 interface BasePageProps {
@@ -51,18 +35,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
             </div>
             <HeaderInner />
             <div className="connect-button">
-              <ConnectButton
-                client={THIRDWEB_CLIENT}
-                autoConnect={true}
-                wallets={WALLETS}
-                theme={"light"}
-                connectModal={{ size: "compact" }}
-                chains={[arbitrum, optimism]}
-                accountAbstraction={{
-                  chain: arbitrum,
-                  sponsorGas: true,
-                }}
-              />
+              <ConfiguredConnectButton />
             </div>
           </Header>
         </Affix>

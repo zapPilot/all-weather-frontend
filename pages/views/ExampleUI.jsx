@@ -111,7 +111,7 @@ export default function ExampleUI() {
               <h2 className="heading-subtitle">Your Web3 S&P 500</h2>
               <p className="heading-subtitle">Click Once, Diversify Forever!</p>
               <p className="heading-subtitle">
-                Enjoy
+                Enjoy Up to
                 <span
                   style={{ color: "#5DFDCB" }}
                   className="text-5xl tracking-tight"
