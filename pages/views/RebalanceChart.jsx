@@ -26,8 +26,8 @@ import { Spin } from "antd";
 import { useSelector } from "react-redux";
 import { useActiveAccount } from "thirdweb/react";
 import Link from "next/link";
-import { Typography, Space, Button, message } from "antd";
-import { CopyOutlined } from "@ant-design/icons";
+import { Typography, Space, message } from "antd";
+import ConfiguredConnectButton from "../ConnectButton";
 const { Title, Paragraph, Text } = Typography;
 
 const DefaultValue = {
@@ -305,17 +305,27 @@ export default function RebalanceChart(props) {
     }
     fetchData();
   }, [props]);
-  if (data.children[0].name === "Loading..." && !rebalanceSuggestions) {
+  if (
+    account !== undefined &&
+    data.children[0].name === "Loading..." &&
+    !rebalanceSuggestions
+  ) {
+    // wallet is connected but data is loading
     return (
       <center role="sunburst-chart-spin">
         <Spin size="large" />
       </center>
     ); // Loading
   } else if (rebalanceSuggestions && rebalanceSuggestions.length === 0) {
+    // wallet is connected but no data
     return <AntdInstructions account={account} />;
   }
   return (
     <div style={divSunBurst} role="sunburst-chart">
+      {
+        // wallet is not connected
+        account === undefined ? <ConfiguredConnectButton /> : null
+      }
       <Sunburst
         animation
         hideRootNode

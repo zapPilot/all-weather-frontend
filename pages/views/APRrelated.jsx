@@ -4,15 +4,6 @@ import APRPopOver from "./APRPopOver";
 
 const APRDetails = () => {
   const { data } = useSelector((state) => state.api);
-  const getLoadingDom = () => {
-    return (
-      <>
-        <p className="text-base text-center font-semibold leading-5">
-          Loading, please wait...
-        </p>
-      </>
-    );
-  };
   const getRebalanceDom = () => {
     return (
       <>
@@ -33,8 +24,6 @@ const APRDetails = () => {
   useEffect(() => {
     if (data) {
       setRenderContent(getRebalanceDom());
-    } else {
-      setRenderContent(getLoadingDom());
     }
   }, [data]);
 
