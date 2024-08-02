@@ -171,7 +171,9 @@ export default function ExampleUI() {
         >
           {data ? (
             <>
-              Data updated <b>{timeAgo(data.last_updated)}</b> ago
+              <span>
+                Data updated <b>{timeAgo(data.last_updated)}</b> ago
+              </span>
               <button
                 type="button"
                 className="rounded-full bg-indigo-600 p-1 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
@@ -192,6 +194,11 @@ export default function ExampleUI() {
                   />
                 </svg>
               </button>
+              <br />
+              <span className="text-sm text-gray-500">
+                (quota: {data?.user_record_update_times_today.counts}/
+                {data?.user_record_update_times_today.limit})
+              </span>
             </>
           ) : null}
           <APRDetails />
