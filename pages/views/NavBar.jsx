@@ -14,7 +14,7 @@ const items = [
     key: "bundle",
   },
   {
-    label: <Link href="/vote">Vote</Link>,
+    label: <Link href="/vote">Pools</Link>,
     key: "vote",
   },
 ];
