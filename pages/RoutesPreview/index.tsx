@@ -15,6 +15,11 @@ import { arbitrum } from "thirdweb/chains";
 import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import { encodeFunctionData } from "viem";
 import Image from "next/image";
+import { ethers } from "ethers";
+import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json" assert { type: "json" };
+const PROVIDER = new ethers.providers.JsonRpcProvider(
+  process.env.NEXT_PUBLIC_RPC_PROVIDER_URL,
+);
 
 interface RoutesPreviewProps {
   portfolioName: string;
@@ -75,29 +80,92 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
     setIsLoading(true);
     if (!account) return;
     portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
-    const txns = await portfolioHelper.diversify(
-      account,
-      Number(investmentAmount),
-      tokenSymbolAndAddress,
-      (progressPercentage) => setProgress(progressPercentage),
-      slippage,
-    );
-    sendBatch(txns.flat(Infinity));
+    // const txns = await portfolioHelper.diversify(
+    //   account,
+    //   Number(investmentAmount),
+    //   tokenSymbolAndAddress,
+    //   (progressPercentage) => setProgress(progressPercentage),
+    //   slippage,
+    // );
+    // console.log("tokenSymbolAndAddress", tokenSymbolAndAddress);
+    // const txns = await portfolioHelper.claim(
+    //   account,
+    //   tokenSymbolAndAddress,
+    //   (progressPercentage) => setProgress(progressPercentage),
+    //   slippage,
+    // );
+    // sendBatch(txns.flat(Infinity));
     // TODO: use this script to transfer all the NFT from AA to my wallet
     // const nft_ids = [117347, 117349,117064, 117348, 117063];
+    // for withdraw: '111299', '101730', '101864', '101297', '101856', '101865'
+    // const nft_ids = ['101303', '118287', '111287', '101886', '111289', '111296', '107020', '111303', '101879', '101883', '101882', '111295', '111290', '101776', '101890', '111298', '101884', '111300', '111304', '101887', '101888', '111305', '101885', '101728', '111328', '101868', '101723', '111307', '111292', '111327', '111325', '111323', '101855', '101722', '101871', '101863', '101867', '111315', '111318', '107026', '111293', '107025', '110567', '101298', '107024', '111288', '111316', '101881', '101861', '101777', '101860', '111326', '118288', '101866', '111223', '101869', '111314', '111297', '111308', '101305', '101724', '107022', '101870', '111319', '101304', '101729', '101880', '101862', '107021', ]
+    const nft_ids = ["101303"];
+    const camelotContract = new ethers.Contract(
+      "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15",
+      CamelotNFTPositionManager,
+      PROVIDER,
+    );
+    let txns = [];
+    for (const id of nft_ids) {
+      const liquidity = (await camelotContract.positions(id)).liquidity;
+      console.log("liquidity", liquidity);
+      txns.push({
+        chain: arbitrum,
+        to: "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15",
+        data: encodeFunctionData({
+          abi: CamelotNFTPositionManager,
+          functionName: "decreaseLiquidity",
+          args: [
+            {
+              tokenId: id,
+              liquidity,
+              amount0Min: 1,
+              amount1Min: 1,
+              deadline: Math.floor(Date.now() / 1000) + 60 * 20,
+            },
+          ],
+        }),
+      });
+      // const token0Instance = new ethers.Contract(
+      //   token0,
+      //   permanentPortfolioJson.abi,
+      //   PROVIDER,
+      // );
+      // const token1Instance = new ethers.Contract(
+      //   token1,
+      //   permanentPortfolioJson.abi,
+      //   PROVIDER,
+      // );
+      // const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+      // const decimalsOfToken0 = (await token0Instance.functions.decimals())[0];
+      // const txsn_ids = [
+      //   {
+      //     chain: arbitrum,
+      //     to: "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15",
+      //     data: encodeFunctionData({
+      //       abi: CamelotNFTPositionManager,
+      //       functionName: "decreaseLiquidity",
+      //       args: [id, liquidity, 10000, 10000, deadline]
+      //     }),
+      //   }
+      // ]
+    }
+    console.log("txns", txns);
+    sendBatch(txns);
+    // const decimalsOfToken0 = (await token0Instance.functions.decimals())[0];
     // const txsn_ids = nft_ids.map((id) => {
     //   return {
     //     chain: arbitrum,
     //     to: "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15",
     //     data: encodeFunctionData({
     //       abi: CamelotNFTPositionManager,
-    //       functionName: "safeTransferFrom",
-    //       args: ["0x2Cb044bd28c62a5d2841EDc1d3EDb34f1c3CAeA6", "0x7EE54ab0f204bb3A83DF90fDd824D8b4abE93222", id],
-    //     }),
+    //       functionName: "decreaseLiquidity",
+    //       args: [id, liquidity, 10000, 10000, deadline]
+    //     })
     //   }
     // })
     // sendBatch(txsn_ids)
-    setIsLoading(false);
+    // setIsLoading(false);
   };
   function ModalContent() {
     return (
@@ -345,6 +413,22 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
       >
         Invest Now!
       </Button>
+      <Button
+        type="primary"
+        className={styles.btnInvest}
+        style={
+          isHover
+            ? { backgroundColor: "#5DFDCB", color: "#000000" }
+            : { backgroundColor: "transparent", color: "#5DFDCB" }
+        }
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onClick={showLoading}
+        role="invest_now"
+      >
+        Withdraw
+      </Button>
+
       <Modal open={open} onCancel={() => setOpen(false)} footer={<></>}>
         <ModalContent />
       </Modal>

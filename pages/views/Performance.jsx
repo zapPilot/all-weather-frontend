@@ -1,10 +1,11 @@
 import React from "react";
-import { ConfigProvider, Row, Col, Card, Statistic } from "antd";
+import { Button, ConfigProvider, Row, Col, Card, Statistic } from "antd";
 import RebalanceChart from "./RebalanceChart";
 import { useSelector } from "react-redux";
 import { useWindowWidth } from "../../utils/chartUtils";
 import { useActiveAccount } from "thirdweb/react";
 import { useEffect, useState } from "react";
+import styles from "../../styles/Home.module.css";
 
 const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
   const windowWidth = useWindowWidth();
@@ -13,6 +14,18 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
   const [exchangeRates, setExchangeRates] = useState({});
   const [currency, setCurrenty] = useState("USD");
   const [currencyError, setCurrencyError] = useState(false);
+  const [isHover, setIsHover] = React.useState(false);
+  const handleMouseEnter = () => {
+    setIsHover(true);
+  };
+  const handleMouseLeave = () => {
+    setIsHover(false);
+  };
+  const showLoading = () => {
+    setOpen(true);
+    setProgress(0);
+  };
+
   useEffect(() => {
     async function fetchExchangeRate() {
       fetch("https://api.exchangerate-api.com/v4/latest/USD", {

@@ -181,6 +181,10 @@ export class AllWeatherPortfolio extends React.Component {
     progressCallback,
     slippage,
   ) {
+    const updateProgress = () => {
+      completedSteps++;
+      progressCallback((completedSteps / totalSteps) * 100);
+    };
     const [tokenSymbol, tokenAddress] = tokenSymbolAndAddress.split("-");
     let completedSteps = 0;
     const strategy = this.getStrategyData(account.address);
@@ -192,10 +196,6 @@ export class AllWeatherPortfolio extends React.Component {
       this._countProtocolNumber(strategy) +
       Object.keys(lpTokenAddressSetByChain).length +
       Object.keys(uniqueTokenIdsForCurrentPrice).length;
-    const updateProgress = () => {
-      completedSteps++;
-      progressCallback((completedSteps / totalSteps) * 100);
-    };
 
     this.existingInvestmentPositions =
       await this._getExistingInvestmentPositionsByChain(
@@ -217,6 +217,69 @@ export class AllWeatherPortfolio extends React.Component {
     );
     return txns;
   }
+
+  async claim(account, tokenSymbolAndAddress, progressCallback, slippage) {
+    const [
+      updateProgress,
+      tokenSymbol,
+      tokenAddress,
+      strategy,
+      lpTokenAddressSetByChain,
+      uniqueTokenIdsForCurrentPrice,
+    ] = this._getCommonData(account, tokenSymbolAndAddress, progressCallback);
+    this.existingInvestmentPositions =
+      await this._getExistingInvestmentPositionsByChain(
+        lpTokenAddressSetByChain,
+        account.address,
+        updateProgress,
+      );
+    this.tokenPricesMappingTable = await this._getTokenPricesMappingTable(
+      uniqueTokenIdsForCurrentPrice,
+      updateProgress,
+    );
+    const txns = await this._generateClaimTxns(
+      strategy,
+      tokenSymbol,
+      tokenAddress,
+      slippage,
+      updateProgress,
+    );
+    return txns;
+  }
+  async withdraw(account, tokenSymbolAndAddress, progressCallback, slippage) {
+    const [
+      updateProgress,
+      tokenSymbol,
+      tokenAddress,
+      strategy,
+      lpTokenAddressSetByChain,
+      uniqueTokenIdsForCurrentPrice,
+    ] = this._getCommonData(account, tokenSymbolAndAddress, progressCallback);
+    this.existingInvestmentPositions =
+      await this._getExistingInvestmentPositionsByChain(
+        lpTokenAddressSetByChain,
+        account.address,
+        updateProgress,
+      );
+    this.tokenPricesMappingTable = await this._getTokenPricesMappingTable(
+      uniqueTokenIdsForCurrentPrice,
+      updateProgress,
+    );
+    const txns = await this._generateWithdrawTxns(
+      strategy,
+      tokenSymbol,
+      tokenAddress,
+      slippage,
+      updateProgress,
+    );
+    return txns;
+  }
+
+  async zapOut() {
+    // decreaseLiquidity
+    // collect
+  }
+
   async _investInThisCategory({
     investmentAmount,
     tokenSymbol,
@@ -230,6 +293,48 @@ export class AllWeatherPortfolio extends React.Component {
     for (const protocol of protocols) {
       const investPromise = protocol.interface.invest(
         Number(investmentAmount * protocol.weight),
+        tokenSymbol,
+        tokenAddress,
+        slippage,
+        this.existingInvestmentPositions[chain],
+        this.tokenPricesMappingTable,
+      );
+      concurrentRequests.push(investPromise);
+    }
+    return await Promise.all(concurrentRequests);
+  }
+  async _claimInThisCategory(
+    tokenSymbol,
+    tokenAddress,
+    chain,
+    protocols,
+    slippage,
+  ) {
+    // clear the transaction batch
+    let concurrentRequests = [];
+    for (const protocol of protocols) {
+      const investPromise = protocol.interface.claimAndConvert(
+        tokenSymbol,
+        tokenAddress,
+        slippage,
+        this.existingInvestmentPositions[chain],
+        this.tokenPricesMappingTable,
+      );
+      concurrentRequests.push(investPromise);
+    }
+    return await Promise.all(concurrentRequests);
+  }
+  async _withdrawInThisCategory(
+    tokenSymbol,
+    tokenAddress,
+    chain,
+    protocols,
+    slippage,
+  ) {
+    // clear the transaction batch
+    let concurrentRequests = [];
+    for (const protocol of protocols) {
+      const investPromise = protocol.interface.claimAndConvert(
         tokenSymbol,
         tokenAddress,
         slippage,
@@ -360,6 +465,58 @@ export class AllWeatherPortfolio extends React.Component {
     }
     return txns;
   }
+  async _generateClaimTxns(
+    strategy,
+    tokenSymbol,
+    tokenAddress,
+    slippage,
+    updateProgress,
+  ) {
+    let txns = [];
+    for (const protocolsInThisCategory of Object.values(strategy)) {
+      for (const [chain, protocols] of Object.entries(
+        protocolsInThisCategory,
+      )) {
+        const txnsForTheseProtocolsInThisChainAndCategory =
+          this._claimInThisCategory(
+            tokenSymbol,
+            tokenAddress,
+            chain,
+            protocols,
+            slippage,
+          );
+        txns.push(txnsForTheseProtocolsInThisChainAndCategory);
+        updateProgress();
+      }
+    }
+    return txns;
+  }
+  async _generateWithdrawTxns(
+    strategy,
+    tokenSymbol,
+    tokenAddress,
+    slippage,
+    updateProgress,
+  ) {
+    let txns = [];
+    for (const protocolsInThisCategory of Object.values(strategy)) {
+      for (const [chain, protocols] of Object.entries(
+        protocolsInThisCategory,
+      )) {
+        const txnsForTheseProtocolsInThisChainAndCategory =
+          this._claimInThisCategory(
+            tokenSymbol,
+            tokenAddress,
+            chain,
+            protocols,
+            slippage,
+          );
+        txns.push(txnsForTheseProtocolsInThisChainAndCategory);
+        updateProgress();
+      }
+    }
+    return txns;
+  }
   _getLpTokenAddressSetByChain(strategy) {
     let lpTokenAddressSetByChain = {};
     for (const protocolsInThisCategory of Object.values(strategy)) {
@@ -377,5 +534,31 @@ export class AllWeatherPortfolio extends React.Component {
       }
     }
     return lpTokenAddressSetByChain;
+  }
+
+  _getCommonData(account, tokenSymbolAndAddress, progressCallback) {
+    const updateProgress = () => {
+      completedSteps++;
+      progressCallback((completedSteps / totalSteps) * 100);
+    };
+    const [tokenSymbol, tokenAddress] = tokenSymbolAndAddress.split("-");
+    let completedSteps = 0;
+    const strategy = this.getStrategyData(account.address);
+    const lpTokenAddressSetByChain =
+      this._getLpTokenAddressSetByChain(strategy);
+    const uniqueTokenIdsForCurrentPrice =
+      this._getUniqueTokenIdsForCurrentPrice(strategy);
+    const totalSteps =
+      this._countProtocolNumber(strategy) +
+      Object.keys(lpTokenAddressSetByChain).length +
+      Object.keys(uniqueTokenIdsForCurrentPrice).length;
+    return [
+      updateProgress,
+      tokenSymbol,
+      tokenAddress,
+      strategy,
+      lpTokenAddressSetByChain,
+      uniqueTokenIdsForCurrentPrice,
+    ];
   }
 }

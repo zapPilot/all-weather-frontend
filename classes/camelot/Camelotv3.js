@@ -125,7 +125,7 @@ export class CamelotV3 extends BaseUniswap {
         ],
       }),
     };
-    const [tokenSwapTxns, swapEstimateAmounts] = await this._swaps(
+    const [tokenSwapTxns, swapEstimateAmounts] = await this._swapsForZapIn(
       tokenAddress,
       decimalsOfChosenToken,
       slippage,
@@ -156,7 +156,60 @@ export class CamelotV3 extends BaseUniswap {
     return txns;
   }
 
-  async _swaps(
+  async claimAndConvert(
+    outputToken,
+    tokenAddress,
+    slippage,
+    existingInvestmentPositionsInThisChain,
+    tokenPricesMappingTable,
+  ) {
+    const nftPositionUniqueKey = this._getNFTPositionUniqueKey();
+    if (
+      existingInvestmentPositionsInThisChain[nftPositionUniqueKey] === undefined
+    ) {
+      return;
+    }
+    const claimTxns = this.claim(
+      Number(
+        existingInvestmentPositionsInThisChain[nftPositionUniqueKey].token_id,
+      ),
+    );
+    // TODO: we can swap these rewards to outputToken, once we know how many tokens we can claim
+    // const erc20Instance = new ethers.Contract(
+    //   tokenAddress,
+    //   ERC20_ABI,
+    //   PROVIDER,
+    // );
+    // const decimalsOfChosenToken = (await erc20Instance.functions.decimals())[0];
+    // const swapTxns = this._swap(outputToken, decimalsOfChosenToken, slippage)
+    console.log("claimTxns", claimTxns);
+    return [...claimTxns];
+  }
+
+  async claim(tokenId) {
+    const camelotCallData = encodeFunctionData({
+      abi: CamelotNFTPositionManager,
+      functionName: "collect",
+      args: [
+        {
+          tokenId,
+          recipient: this.aaWalletAddress,
+          // TODO: we can swap these rewards to outputToken, once we know how many tokens we can claim
+          // Example: https://dashboard.tenderly.co/davidtnfsh/project/tx/arbitrum/0xf960cad68a336d00c2d46c8f564f031ae96c5dd5c5cfe1fcc03880293412bd06?trace=0.0.10
+          // need to use computeAddress and compute to get the pool Key,
+          amount0Max: ethers.constants.MaxUint256,
+          amount1Max: ethers.constants.MaxUint256,
+        },
+      ],
+    });
+    return {
+      chain: arbitrum,
+      to: CamelotV3.lpTokenAddress,
+      data: camelotCallData,
+    };
+  }
+
+  async _swapsForZapIn(
     chosenToken,
     decimalsOfChosenToken,
     slippage,
@@ -348,5 +401,44 @@ export class CamelotV3 extends BaseUniswap {
     return `${CamelotV3.lpTokenAddress.toLowerCase()}/${this.token0.toLowerCase()}/${this.token1.toLowerCase()}/${
       this.tickLower
     }/${this.tickUpper}`;
+  }
+  _compute(owner, bottomTick, topTick) {
+    // Convert owner address to BigInt
+    const ownerBigInt = BigInt(owner);
+
+    // Ensure bottomTick and topTick are within 24-bit range
+    const bottomTick24Bit = BigInt(bottomTick) & 0xffffffn;
+    const topTick24Bit = BigInt(topTick) & 0xffffffn;
+
+    // Perform the bitwise operations
+    const key = (ownerBigInt << 48n) | (bottomTick24Bit << 24n) | topTick24Bit;
+
+    // Convert the result to a 32-byte hex string
+    return "0x" + key.toString(16).padStart(64, "0");
+  }
+  _computeAddress(factory) {
+    if (this.token0 >= this.token1) {
+      throw new Error("token0 must be less than token1");
+    }
+
+    // Assuming POOL_INIT_CODE_HASH is defined somewhere in your code
+    const POOL_INIT_CODE_HASH = "0x..."; // Replace with actual hash
+
+    const encodedTokens = ethers.utils.defaultAbiCoder.encode(
+      ["address", "address"],
+      [this.token0, this.token1],
+    );
+
+    const salt = ethers.utils.keccak256(encodedTokens);
+
+    const encodedData = ethers.utils.solidityPack(
+      ["bytes1", "address", "bytes32", "bytes32"],
+      ["0xff", factory, salt, POOL_INIT_CODE_HASH],
+    );
+
+    const hash = ethers.utils.keccak256(encodedData);
+
+    // Take the last 20 bytes (40 characters) to get the address
+    return ethers.utils.getAddress("0x" + hash.slice(-40));
   }
 }
