@@ -215,7 +215,7 @@ export class CamelotV3 extends BaseUniswap {
     }
     return tokenApproveTransactions;
   }
-  async withdraw() {
+  async zapOut() {
     throw new Error("This function is not implemented yet.");
   }
   async rebalance() {

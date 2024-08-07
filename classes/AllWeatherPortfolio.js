@@ -2,7 +2,7 @@ import { CamelotV3 } from "./camelot/Camelotv3";
 import React from "react";
 import axios from "axios";
 import axiosRetry from "axios-retry";
-import { tokensAndCoinmarketcapIds } from "../utils/contractInteractions";
+import { tokensAndCoinmarketcapIdsFromDropdownOptions } from "../utils/contractInteractions";
 import assert from "assert";
 // Exponential back-off retry delay between requests
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
@@ -174,7 +174,7 @@ export class AllWeatherPortfolio extends React.Component {
     this.strategyMetadata = slice;
   }
 
-  async diversify(
+  async zapIn(
     account,
     investmentAmount,
     tokenSymbolAndAddress,
@@ -302,7 +302,7 @@ export class AllWeatherPortfolio extends React.Component {
     }
     coinMarketCapIdSet = {
       ...coinMarketCapIdSet,
-      ...tokensAndCoinmarketcapIds,
+      ...tokensAndCoinmarketcapIdsFromDropdownOptions,
     };
     return coinMarketCapIdSet;
   }
