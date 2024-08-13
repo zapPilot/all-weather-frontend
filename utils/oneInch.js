@@ -24,6 +24,8 @@ export const ApolloX = "0x1b6f2d3844c6ae7d56ceb3c3643b9060ba28feb0";
 export const USDC = "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d";
 export const APX = "0x78f5d389f5cdccfc41594abab4b0ed02f31398b3";
 export const USDT = "0x55d398326f99059ff775485246999027b3197955";
+export const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
+
 // export const magicTokenAddress = "0x539bdE0d7Dbd336b79148AA742883198BBF60342";
 // export const gDAIMarketPoolAddress =
 //   "0xa0192f6567f8f5DC38C53323235FD08b318D2dcA";

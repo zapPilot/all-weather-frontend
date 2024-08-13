@@ -1,3 +1,15 @@
+import { ethers } from "ethers";
+import { arbitrum } from "thirdweb/chains";
+import { ERC20_ABI } from "../node_modules/@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
+import { encodeFunctionData } from "viem";
+import permanentPortfolioJson from "../lib/contracts/PermanentPortfolioLPToken.json" assert { type: "json" };
+
+export const PROVIDER = new ethers.providers.JsonRpcProvider(
+  process.env.NEXT_PUBLIC_RPC_PROVIDER_URL,
+);
+const APPROVAL_BUFFER = 1.1;
+const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
+
 export function timeAgo(dateString) {
   if (!dateString || dateString?.split(" ") === undefined) return "";
   // Parse the input date string
@@ -41,4 +53,41 @@ export function timeAgo(dateString) {
   }
   // Return the string with the timing part bold
   return timeAgoString;
+}
+
+export async function getTokenDecimal(tokenAddress) {
+  const tokenInstance = new ethers.Contract(tokenAddress, ERC20_ABI, PROVIDER);
+  return (await tokenInstance.functions.decimals())[0];
+}
+
+export function approve(
+  tokenAddress,
+  spenderAddress,
+  amount,
+  decimalsOfChosenToken,
+  updateProgress,
+) {
+  const approvalAmount = Math.ceil(amount * APPROVAL_BUFFER);
+  if (approvalAmount === 0) {
+    throw new Error("Approval amount is 0. Cannot proceed with approving.");
+  }
+  if (spenderAddress === NULL_ADDRESS) {
+    throw new Error("Spender address is null. Cannot proceed with approving.");
+  }
+  updateProgress();
+  return {
+    chain: arbitrum,
+    to: tokenAddress,
+    data: encodeFunctionData({
+      abi: permanentPortfolioJson.abi,
+      functionName: "approve",
+      args: [
+        spenderAddress,
+        ethers.utils.parseUnits(
+          approvalAmount.toFixed(decimalsOfChosenToken),
+          decimalsOfChosenToken,
+        ),
+      ],
+    }),
+  };
 }

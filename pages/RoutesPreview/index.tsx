@@ -75,14 +75,14 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
     setIsLoading(true);
     if (!account) return;
     portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
-    const txns = await portfolioHelper.diversify(
+    const txns = await portfolioHelper.zapIn(
       account,
       Number(investmentAmount),
       tokenSymbolAndAddress,
       (progressPercentage) => setProgress(progressPercentage),
       slippage,
     );
-    sendBatch(txns.flat(Infinity));
+    sendBatch(txns.flat(Infinity), { gasless: true });
     // TODO: use this script to transfer all the NFT from AA to my wallet
     // const nft_ids = [117347, 117349,117064, 117348, 117063];
     // const txsn_ids = nft_ids.map((id) => {
