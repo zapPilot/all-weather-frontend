@@ -47,7 +47,9 @@ export default function IndexOverviews() {
     "USDC-0xaf88d065e77c8cc2239327c5edb3a432268e5831",
   );
   const [investmentAmount, setInvestmentAmount] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [zapInIsLoading, setZapInIsLoading] = useState(false);
+  const [zapOutIsLoading, setZapOutIsLoading] = useState(false);
+  const [claimIsLoading, setClaimIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [slippage, setSlippage] = useState(1);
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
@@ -66,24 +68,45 @@ export default function IndexOverviews() {
 
   const { mutate: sendBatchTransaction } = useSendBatchTransaction();
 
-  const handleDiversify = async () => {
+  const handleAAWalletAction = async (actionName) => {
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
     if (!tokenSymbolAndAddress) {
       alert("Please select a token");
       return;
     }
-    setIsLoading(true);
+    if (actionName === "zapIn") {
+      setZapInIsLoading(true);
+    } else if (actionName === "zapOut") {
+      setZapOutIsLoading(true);
+    } else if (actionName === "claim") {
+      setClaimIsLoading(true);
+    }
     if (!account) return;
     const [tokenSymbol, tokenAddress] = tokenSymbolAndAddress.split("-");
-    const txns = await portfolioHelper.zapIn(
-      account,
-      tokenSymbol,
-      tokenAddress,
-      Number(investmentAmount),
-      (progressPercentage) => setProgress(progressPercentage),
-      slippage,
-    );
-
+    let txns;
+    if (actionName === "zapIn") {
+      txns = await portfolioHelper.zapIn(
+        account,
+        tokenSymbol,
+        tokenAddress,
+        Number(investmentAmount),
+        (progressPercentage) => setProgress(progressPercentage),
+        slippage,
+      );
+    } else if (actionName === "zapOut") {
+      txns = await portfolioHelper.zapOut(
+        account,
+        tokenSymbol,
+        tokenAddress,
+        Number(zapOutPercentage),
+        (progressPercentage) => setProgress(progressPercentage),
+        slippage,
+      );
+    } else if (actionName === "claim") {
+      txns = await portfolioHelper.claim(account, (progressPercentage) =>
+        setProgress(progressPercentage),
+      );
+    }
     // Call sendBatchTransaction and wait for the result
     const result = await new Promise((resolve, reject) => {
       sendBatchTransaction(txns.flat(Infinity), {
@@ -94,37 +117,13 @@ export default function IndexOverviews() {
 
     // Handle the successful result
     console.log("Transaction successful:", result);
-    // You can update your component state or perform other actions here
-  };
-  const handleZapOut = async () => {
-    const tokenSymbolAndAddress = selectedToken.toLowerCase();
-    if (!tokenSymbolAndAddress) {
-      alert("Please select a token");
-      return;
+    if (actionName === "zapIn") {
+      setZapInIsLoading(false);
+    } else if (actionName === "zapOut") {
+      setZapOutIsLoading(false);
+    } else if (actionName === "claim") {
+      setClaimIsLoading(false);
     }
-    setIsLoading(true);
-    if (!account) return;
-    const [tokenSymbol, tokenAddress] = tokenSymbolAndAddress.split("-");
-    const txns = await portfolioHelper.zapOut(
-      account,
-      tokenSymbol,
-      tokenAddress,
-      Number(zapOutPercentage),
-      (progressPercentage) => setProgress(progressPercentage),
-      slippage,
-    );
-
-    // Call sendBatchTransaction and wait for the result
-    const result = await new Promise((resolve, reject) => {
-      sendBatchTransaction(txns.flat(Infinity), {
-        onSuccess: (data) => resolve(data),
-        onError: (error) => reject(error),
-      });
-    });
-
-    // Handle the successful result
-    console.log("Transaction successful:", result);
-    // You can update your component state or perform other actions here
   };
 
   return (
@@ -230,8 +229,8 @@ export default function IndexOverviews() {
                   <Button
                     type="button"
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
-                    onClick={handleDiversify}
-                    // loading={isLoading}
+                    onClick={() => handleAAWalletAction("zapIn")}
+                    // loading={zapInIsLoading}
                   >
                     Zap In
                   </Button>
@@ -246,8 +245,8 @@ export default function IndexOverviews() {
                   <Button
                     type="button"
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
-                    onClick={handleZapOut}
-                    // loading={isLoading}
+                    onClick={() => handleAAWalletAction("zapOut")}
+                    // loading={zapOutIsLoading}
                   >
                     Zap Out
                   </Button>
@@ -256,8 +255,8 @@ export default function IndexOverviews() {
                   <Button
                     type="button"
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
-                    onClick={handleDiversify}
-                    // loading={isLoading}
+                    onClick={() => handleAAWalletAction("claim")}
+                    // loading={claimIsLoading}
                   >
                     Claim
                   </Button>
