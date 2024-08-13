@@ -148,7 +148,18 @@ export default class BaseProtocol extends BaseUniswap {
     );
     return [...zapOutTxns, ...afterZapOutTxns];
   }
-  async claim() {
+  async claimAndSwap(recipient, outputToken, slippage, updateProgress) {
+    const [claimTxns, claimedTokenAndBalance] = await this.claim(recipient);
+    const txns = await this._afterZapOut(
+      recipient,
+      claimedTokenAndBalance,
+      outputToken,
+      slippage,
+      updateProgress,
+    );
+    return [...claimTxns, ...txns];
+  }
+  async claim(recipient) {
     throw new Error("Method 'claim()' must be implemented.");
   }
   async _beforeZapIn(

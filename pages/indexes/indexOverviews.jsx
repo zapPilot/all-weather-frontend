@@ -78,7 +78,7 @@ export default function IndexOverviews() {
       setZapInIsLoading(true);
     } else if (actionName === "zapOut") {
       setZapOutIsLoading(true);
-    } else if (actionName === "claim") {
+    } else if (actionName === "claimAndSwap") {
       setClaimIsLoading(true);
     }
     if (!account) return;
@@ -102,10 +102,14 @@ export default function IndexOverviews() {
         (progressPercentage) => setProgress(progressPercentage),
         slippage,
       );
-    } else if (actionName === "claim") {
-      txns = await portfolioHelper.claim(account, (progressPercentage) =>
-        setProgress(progressPercentage),
-      );
+    } else if (actionName === "claimAndSwap") {
+      txns = await portfolioHelper.portfolioAction(actionName, {
+        account,
+        tokenOutAddress: tokenAddress,
+        progressCallback: (progressPercentage) =>
+          setProgress(progressPercentage),
+        slippage,
+      });
     }
     // Call sendBatchTransaction and wait for the result
     const result = await new Promise((resolve, reject) => {
@@ -230,7 +234,7 @@ export default function IndexOverviews() {
                     type="button"
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
                     onClick={() => handleAAWalletAction("zapIn")}
-                    // loading={zapInIsLoading}
+                    loading={zapInIsLoading}
                   >
                     Zap In
                   </Button>
@@ -246,7 +250,7 @@ export default function IndexOverviews() {
                     type="button"
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
                     onClick={() => handleAAWalletAction("zapOut")}
-                    // loading={zapOutIsLoading}
+                    loading={zapOutIsLoading}
                   >
                     Zap Out
                   </Button>
@@ -255,10 +259,10 @@ export default function IndexOverviews() {
                   <Button
                     type="button"
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
-                    onClick={() => handleAAWalletAction("claim")}
-                    // loading={claimIsLoading}
+                    onClick={() => handleAAWalletAction("claimAndSwap")}
+                    loading={claimIsLoading}
                   >
-                    Claim
+                    Claim and Swap
                   </Button>
                 </div>
                 <div className="mt-6 text-center">

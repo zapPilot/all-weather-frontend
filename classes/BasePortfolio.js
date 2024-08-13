@@ -118,8 +118,31 @@ export class BasePortfolio {
   async rebalance() {
     throw new Error("Method 'rebalance()' must be implemented.");
   }
-  async claimAndConvert() {
-    throw new Error("Method 'claimAndConvert()' must be implemented.");
+  async portfolioAction(actionName, actionParams) {
+    let completedSteps = 0;
+    const totalSteps =
+      this._countProtocolNumber() +
+      Object.keys(this.uniqueTokenIdsForCurrentPrice).length +
+      Object.keys(this.assetAddressSetByChain).length;
+    const updateProgress = () => {
+      completedSteps++;
+      actionParams.progressCallback((completedSteps / totalSteps) * 100);
+    };
+    const tokenPricesMappingTable =
+      await this._getTokenPricesMappingTable(updateProgress);
+    let txns;
+    if (actionName === "zapIn") {
+    } else if (actionName === "zapOut") {
+    } else if (actionName === "rebalance") {
+    } else if (actionName === "claimAndSwap") {
+      txns = await this._generateClaimAndSwapTxns(
+        actionParams.account,
+        actionParams.tokenOutAddress,
+        actionParams.slippage,
+        updateProgress,
+      );
+    }
+    return txns;
   }
   async _generateZapInTxns(
     account,
@@ -197,6 +220,32 @@ export class BasePortfolio {
     }
     return totalTxns;
   }
+  async _generateClaimAndSwapTxns(
+    account,
+    tokenOutAddress,
+    slippage,
+    updateProgress,
+  ) {
+    let totalTxns = [];
+    for (const protocolsInThisCategory of Object.values(this.strategy)) {
+      for (const [chain, protocols] of Object.entries(
+        protocolsInThisCategory,
+      )) {
+        for (const protocol of protocols) {
+          // TODO: make it concurrent!
+          const txnsForThisProtocol = await protocol.interface.claimAndSwap(
+            account.address,
+            tokenOutAddress,
+            slippage,
+            updateProgress,
+          );
+          totalTxns = totalTxns.concat(txnsForThisProtocol);
+        }
+      }
+    }
+    return totalTxns;
+  }
+
   async _getExistingInvestmentPositionsByChain(address, updateProgress) {
     let existingInvestmentPositionsbyChain = {};
     for (const [chain, lpTokens] of Object.entries(
