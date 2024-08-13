@@ -17,6 +17,10 @@ const items = [
     label: <Link href="/vote">Pools</Link>,
     key: "vote",
   },
+  {
+    label: <Link href="/indexes">Indexes</Link>,
+    key: "indexes",
+  },
 ];
 export default function NavBar({ mode }) {
   const router = useRouter();

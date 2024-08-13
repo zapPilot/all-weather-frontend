@@ -6,15 +6,17 @@ import axios from "axios";
 import Image from "next/image";
 const { Option } = Select;
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-export const tokensAndCoinmarketcapIds = {
+export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   usdc: 3408,
   usdt: 825,
+  "usdc.e": 3408,
 };
 export const tokensForDropDown = [
   // "eth",
   // "usdc.e",
   "usdc",
   "usdt",
+  "usdc.e",
   // "wbtc",
   // "weth",
   // "frax",

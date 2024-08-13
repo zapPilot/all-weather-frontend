@@ -1,0 +1,302 @@
+import { ethers } from "ethers";
+import { fetch1InchSwapData, oneInchAddress } from "../utils/oneInch.js";
+import { PROVIDER } from "../utils/general.js";
+import { arbitrum } from "thirdweb/chains";
+import { ERC20_ABI } from "../node_modules/@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
+import BaseUniswap from "./uniswapv3/BaseUniswap.js";
+import assert from "assert";
+import { getTokenDecimal, approve } from "../utils/general";
+
+export default class BaseProtocol extends BaseUniswap {
+  // arbitrum's Apollox is staked on PancakeSwap
+  constructor(
+    chaindId,
+    token2TokenIdMapping,
+    allowedZapInTokens,
+    mode,
+    customParams,
+  ) {
+    super();
+    this.protocolName = "placeholder";
+    this.assetContract = "placeholder";
+    this.protocolContract = "placeholder";
+    this.stakeFarmContract = "placeholder";
+    // TODO: the totalSteps should be dynamically calculated
+    this.totalSteps = 3;
+
+    this.chainId = chaindId;
+    this.token2TokenIdMapping = token2TokenIdMapping;
+    this.allowedZapInTokens = allowedZapInTokens;
+    this.mode = mode;
+    this.customParams = customParams;
+  }
+  _checkIfParamsAreSet() {
+    assert(this.protocolName !== "placeholder", "protocolName is not set");
+    assert(typeof this.assetContract === "object", "assetContract is not set");
+    assert(
+      typeof this.protocolContract === "object",
+      "assetContract is not set",
+    );
+    assert(
+      typeof this.stakeFarmContract === "object",
+      "assetContract is not set",
+    );
+  }
+  async zapIn(
+    address,
+    investmentAmountInThisPosition,
+    inputToken,
+    inputTokenAddress,
+    slippage,
+    existingInvestmentPositionsInThisChain,
+    tokenPricesMappingTable,
+    updateProgress,
+  ) {
+    if (this.mode === "single") {
+      const [beforeZapInTxns, bestTokenAddressToZapIn, amountToZapIn] =
+        await this._beforeZapIn(
+          inputTokenAddress,
+          investmentAmountInThisPosition,
+          slippage,
+          updateProgress,
+        );
+      const zapinTxns = await this._customZapIn(
+        inputToken,
+        bestTokenAddressToZapIn,
+        amountToZapIn,
+        tokenPricesMappingTable,
+        slippage,
+        updateProgress,
+      );
+      return beforeZapInTxns.concat(zapinTxns);
+    } else if (this.mode === "LP") {
+      // TODO: should meet all tokens listed in allowedZapInTokens
+      throw new Error("Not implemented yet.");
+      //   // TODO: it's just a pseudo code
+      //   let txns = [];
+      //   const [amountForToken0, amountForToken1] =
+      //     this.calculateTokenAmountsForLPV2(
+      //       inputToken,
+      //       investmentAmountInThisPosition,
+      //       tokenPricesMappingTable,
+      //       decimalsOfToken0,
+      //       decimalsOfToken1,
+      //       minPrice,
+      //       maxPrice,
+      //     );
+      //   const [swap0Txn, swap0EstimateAmount] = await this._swap(
+      //     chosenToken,
+      //     this.token0,
+      //     ethers.utils.parseUnits(
+      //       amountForToken0.toFixed(decimalsOfChosenToken),
+      //       decimalsOfChosenToken,
+      //     ),
+      //     slippage,
+      //   );
+      //   const [swap1Txn, swap1EstimateAmount] = await this._swap(
+      //     chosenToken,
+      //     this.token1,
+      //     ethers.utils.parseUnits(
+      //       amountForToken1.toFixed(decimalsOfChosenToken),
+      //       decimalsOfChosenToken,
+      //     ),
+      //     slippage,
+      //   );
+      //   txns.push(swap0Txn, swap1Txn);
+      //   for (const [token, amount] of [
+      //     [this.token0, swap0EstimateAmount],
+      //     [this.token1, swap1EstimateAmount],
+      //   ]) {
+      //     const approveForCreateLpTxn = this._approve(
+      //       token,
+      //       liquidityManager,
+      //       amount,
+      //     );
+      //     txns.push(approveForCreateLpTxn);
+      //   }
+      //   const mintOrIncreaseTxn = this._mintLPOrIncreaseLiquidity(
+      //     swap0EstimateAmount,
+      //     swap1EstimateAmount,
+      //   );
+      //   txns.push(mintOrIncreaseTxn);
+      //   const finalTxns = this._customCallback(txns);
+      //   return finalTxns;
+    }
+  }
+  async zapOut(
+    recipient,
+    percentage,
+    outputToken,
+    slippage,
+    tokenPricesMappingTable,
+    updateProgress,
+    customParams,
+  ) {
+    const [zapOutTxns, withdrawTokenAndBalance] = await this._customZapOut(
+      recipient,
+      percentage,
+      slippage,
+      updateProgress,
+      customParams,
+    );
+    const [claimTxn, estimatedClaimTokensAddressAndBalance] =
+      await this.claim();
+    const afterZapOutTxns = await this._afterZapOut(
+      recipient,
+      withdrawTokenAndBalance,
+      estimatedClaimTokensAddressAndBalance,
+      outputToken,
+      slippage,
+      updateProgress,
+    );
+    return [...zapOutTxns, ...claimTxn, ...afterZapOutTxns];
+  }
+  async claim() {
+    throw new Error("Method 'claim()' must be implemented.");
+  }
+  async _beforeZapIn(
+    inputTokenAddress,
+    investmentAmountInThisPosition,
+    slippage,
+    updateProgress,
+  ) {
+    let swapTxns = [];
+
+    const tokenInstance = new ethers.Contract(
+      inputTokenAddress,
+      ERC20_ABI,
+      PROVIDER,
+    );
+    const decimalsOfChosenToken = (await tokenInstance.functions.decimals())[0];
+    const bestTokenAddressToZapIn = this._getTheBestTokenAddressToZapIn();
+    let amountToZapIn = ethers.utils.parseUnits(
+      investmentAmountInThisPosition.toFixed(decimalsOfChosenToken),
+      decimalsOfChosenToken,
+    );
+    if (inputTokenAddress !== bestTokenAddressToZapIn) {
+      const [swapTxn, swapEstimateAmount] = await this._swap(
+        inputTokenAddress,
+        inputTokenAddress,
+        bestTokenAddressToZapIn,
+        amountToZapIn,
+        slippage,
+        updateProgress,
+      );
+      amountToZapIn = Math.floor((swapEstimateAmount * (100 - slippage)) / 100);
+      swapTxns.push(swapTxn);
+    }
+    const inputTokenDecimal = await getTokenDecimal(bestTokenAddressToZapIn);
+    const approveForZapInTxn = approve(
+      bestTokenAddressToZapIn,
+      this.protocolAddress,
+      amountToZapIn,
+      inputTokenDecimal,
+      updateProgress,
+    );
+    return [
+      [...swapTxns, approveForZapInTxn],
+      bestTokenAddressToZapIn,
+      amountToZapIn,
+    ];
+  }
+  async _afterZapOut(
+    recipient,
+    withdrawTokenAndBalance,
+    estimatedClaimTokensAddressAndBalance,
+    outputToken,
+    slippage,
+    updateProgress,
+  ) {
+    let txns = [];
+    const tokensAddressAndBalances = this._calculateTokensAddressAndBalances(
+      withdrawTokenAndBalance,
+      estimatedClaimTokensAddressAndBalance,
+    );
+    for (const [address, amount] of Object.entries(tokensAddressAndBalances)) {
+      const tokenInstance = new ethers.Contract(address, ERC20_ABI, PROVIDER);
+      const decimalsOfChosenToken = (
+        await tokenInstance.functions.decimals()
+      )[0];
+      const approveTxn = approve(
+        address,
+        oneInchAddress,
+        amount,
+        decimalsOfChosenToken,
+        updateProgress,
+      );
+      const swapTxnResult = await this._swap(
+        recipient,
+        address,
+        outputToken,
+        amount,
+        slippage,
+        updateProgress,
+      );
+      if (swapTxnResult === undefined) {
+        continue;
+      }
+      txns = txns.concat([approveTxn, swapTxnResult[0]]);
+    }
+    return txns;
+  }
+  _calculateTokensAddressAndBalances(
+    withdrawTokenAndBalance,
+    estimatedClaimTokensAddressAndBalance,
+  ) {
+    for (const [address, balance] of Object.entries(
+      estimatedClaimTokensAddressAndBalance,
+    )) {
+      if (withdrawTokenAndBalance[address] === undefined) {
+        withdrawTokenAndBalance[address] = 0;
+      }
+      withdrawTokenAndBalance[address] += balance;
+    }
+    return withdrawTokenAndBalance;
+  }
+  async _swap(
+    walletAddress,
+    fromTokenAddress,
+    toTokenAddress,
+    amount,
+    slippage,
+    updateProgress,
+  ) {
+    if (fromTokenAddress === toTokenAddress) {
+      return;
+    }
+    const swapCallData = await fetch1InchSwapData(
+      this.chainId,
+      fromTokenAddress,
+      toTokenAddress,
+      amount,
+      walletAddress,
+      slippage,
+    );
+    if (swapCallData["data"] === undefined) {
+      throw new Error("Swap data is undefined. Cannot proceed with swapping.");
+    }
+    if (swapCallData["toAmount"] === 0) {
+      throw new Error("To amount is 0. Cannot proceed with swapping.");
+    }
+    updateProgress();
+    return [
+      {
+        to: oneInchAddress,
+        data: swapCallData["data"],
+        chain: arbitrum,
+      },
+      swapCallData["toAmount"],
+    ];
+  }
+  async _customZapIn(amount) {
+    throw new Error("Method '_customZapIn()' must be implemented.", amount);
+  }
+  async _customZapOut(amount) {
+    throw new Error("Method '_customZapOut()' must be implemented.", amount);
+  }
+  _getTheBestTokenAddressToZapIn() {
+    throw new Error(
+      "Method '_getTheBestTokenAddressToZapIn()' must be implemented.",
+    );
+  }
+}
