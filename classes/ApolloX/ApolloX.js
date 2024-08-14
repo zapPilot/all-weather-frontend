@@ -18,6 +18,7 @@ export class ApolloX extends BaseProtocol {
     super(chaindId, symbolList, token2TokenIdMapping, mode, customParams);
     // arbitrum's Apollox is staked on PancakeSwap
     this.protocolName = "pancakeswap";
+    this.protocolVersion = "0";
     this.assetContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0xbc76b3fd0d18c7496c0b04aea0fe7c3ed0e4d9c9",

@@ -6,7 +6,13 @@ export class StablecoinVault extends BasePortfolio {
       gold: {
         arbitrum: [
           {
-            interface: new ApolloX(42161, ["alp"], {}, "single", {}),
+            interface: new ApolloX(
+              42161,
+              ["btc", "dai", "eth", "usdc(bridged)", "usdt"],
+              {},
+              "single",
+              {},
+            ),
             weight: 1,
           },
         ],
