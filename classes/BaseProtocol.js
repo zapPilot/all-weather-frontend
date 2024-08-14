@@ -43,14 +43,14 @@ export default class BaseProtocol extends BaseUniswap {
     );
   }
   async zapIn(
-    address,
+    recipient,
     investmentAmountInThisPosition,
     inputToken,
     inputTokenAddress,
     slippage,
-    existingInvestmentPositionsInThisChain,
     tokenPricesMappingTable,
     updateProgress,
+    existingInvestmentPositionsInThisChain,
   ) {
     if (this.mode === "single") {
       const [beforeZapInTxns, bestTokenAddressToZapIn, amountToZapIn] =
@@ -131,6 +131,7 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
     customParams,
+    existingInvestmentPositionsInThisChain,
   ) {
     const [zapOutTxns, withdrawTokenAndBalance] = await this.customZapOut(
       recipient,
@@ -148,7 +149,13 @@ export default class BaseProtocol extends BaseUniswap {
     );
     return [...zapOutTxns, ...afterZapOutTxns];
   }
-  async claimAndSwap(recipient, outputToken, slippage, updateProgress) {
+  async claimAndSwap(
+    recipient,
+    outputToken,
+    slippage,
+    updateProgress,
+    existingInvestmentPositionsInThisChain,
+  ) {
     const [claimTxns, claimedTokenAndBalance] = await this.claim(recipient);
     const txns = await this._afterZapOut(
       recipient,

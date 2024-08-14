@@ -32,6 +32,9 @@ export class BasePortfolio {
         updateProgress,
       );
   }
+  async getClaimableRewards() {
+    throw new Error("Method 'getClaimableRewards()' must be implemented.");
+  }
   async getPortfolioAPR() {
     throw new Error("Method 'getPortfolioAPR()' must be implemented.");
   }
@@ -50,74 +53,7 @@ export class BasePortfolio {
     // this data is for SunBurst chart to visualize the data
     this.existingInvestmentPositions = slice;
   }
-  async getTokenPricesMappingTable() {
-    throw new Error(
-      "Method 'getTokenPricesMappingTable()' must be implemented.",
-    );
-  }
-  async zapIn(
-    account,
-    tokenSymbol,
-    tokenAddress,
-    investmentAmount,
-    progressCallback,
-    slippage,
-  ) {
-    let completedSteps = 0;
-    const totalSteps =
-      this._countProtocolNumber() +
-      Object.keys(this.uniqueTokenIdsForCurrentPrice).length +
-      Object.keys(this.assetAddressSetByChain).length;
-    const updateProgress = () => {
-      completedSteps++;
-      progressCallback((completedSteps / totalSteps) * 100);
-    };
-    const tokenPricesMappingTable =
-      await this._getTokenPricesMappingTable(updateProgress);
-    const txns = await this._generateZapInTxns(
-      account,
-      investmentAmount,
-      tokenSymbol,
-      tokenAddress,
-      slippage,
-      updateProgress,
-      tokenPricesMappingTable,
-    );
-    return txns;
-  }
-  async zapOut(
-    account,
-    tokenOutSymbol,
-    tokenOutAddress,
-    zapOutPercentage,
-    progressCallback,
-    slippage,
-  ) {
-    let completedSteps = 0;
-    const totalSteps =
-      this._countProtocolNumber() +
-      Object.keys(this.uniqueTokenIdsForCurrentPrice).length +
-      Object.keys(this.assetAddressSetByChain).length;
-    const updateProgress = () => {
-      completedSteps++;
-      progressCallback((completedSteps / totalSteps) * 100);
-    };
-    const tokenPricesMappingTable =
-      await this._getTokenPricesMappingTable(updateProgress);
-    const txns = await this._generateZapOutTxns(
-      account,
-      zapOutPercentage,
-      tokenOutSymbol,
-      tokenOutAddress,
-      slippage,
-      updateProgress,
-      tokenPricesMappingTable,
-    );
-    return txns;
-  }
-  async rebalance() {
-    throw new Error("Method 'rebalance()' must be implemented.");
-  }
+
   async portfolioAction(actionName, actionParams) {
     let completedSteps = 0;
     const totalSteps =
@@ -130,115 +66,69 @@ export class BasePortfolio {
     };
     const tokenPricesMappingTable =
       await this._getTokenPricesMappingTable(updateProgress);
-    let txns;
-    if (actionName === "zapIn") {
-    } else if (actionName === "zapOut") {
-    } else if (actionName === "rebalance") {
-    } else if (actionName === "claimAndSwap") {
-      txns = await this._generateClaimAndSwapTxns(
-        actionParams.account,
-        actionParams.tokenOutAddress,
-        actionParams.slippage,
-        updateProgress,
-      );
-    }
-    return txns;
+    actionParams.tokenPricesMappingTable = tokenPricesMappingTable;
+    actionParams.updateProgress = updateProgress;
+    return this._generateTxnsByAction(actionName, actionParams);
   }
-  async _generateZapInTxns(
-    account,
-    investmentAmount,
-    tokenSymbol,
-    tokenAddress,
-    slippage,
-    updateProgress,
-    tokenPricesMappingTable,
-  ) {
-    let totalTxns = [];
-    const inputTokenDecimal = await getTokenDecimal(tokenAddress);
-    const approveTxn = approve(
-      tokenAddress,
-      oneInchAddress,
-      investmentAmount,
-      inputTokenDecimal,
-      updateProgress,
+  async getTokenPricesMappingTable() {
+    throw new Error(
+      "Method 'getTokenPricesMappingTable()' must be implemented.",
     );
-    totalTxns.push(approveTxn);
+  }
+  async _generateTxnsByAction(actionName, actionParams) {
+    let totalTxns = [];
+    if (actionName === "zapIn") {
+      const inputTokenDecimal = await getTokenDecimal(
+        actionParams.tokenInAddress,
+      );
+      const approveTxn = approve(
+        actionParams.tokenInAddress,
+        oneInchAddress,
+        actionParams.zapInAmount,
+        inputTokenDecimal,
+        actionParams.updateProgress,
+      );
+      totalTxns.push(approveTxn);
+    }
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const [chain, protocols] of Object.entries(
         protocolsInThisCategory,
       )) {
         for (const protocol of protocols) {
           // make it concurrent!
-          const txnsForThisProtocol = await protocol.interface.zapIn(
-            account.address,
-            Number(investmentAmount * protocol.weight),
-            tokenSymbol,
-            tokenAddress,
-            slippage,
-            this.existingInvestmentPositions[chain],
-            tokenPricesMappingTable,
-            updateProgress,
-          );
-          totalTxns = totalTxns.concat(txnsForThisProtocol);
-        }
-      }
-    }
-    return totalTxns;
-  }
-
-  async _generateZapOutTxns(
-    account,
-    zapOutPercentage,
-    tokenOutSymbol,
-    tokenOutAddress,
-    slippage,
-    updateProgress,
-    tokenPricesMappingTable,
-  ) {
-    let totalTxns = [];
-    for (const protocolsInThisCategory of Object.values(this.strategy)) {
-      for (const [chain, protocols] of Object.entries(
-        protocolsInThisCategory,
-      )) {
-        for (const protocol of protocols) {
-          // TODO: make it concurrent!
-          const txnsForThisProtocol = await protocol.interface.zapOut(
-            account.address,
-            Number(zapOutPercentage * protocol.weight),
-            tokenOutAddress,
-            slippage,
-            tokenPricesMappingTable,
-            updateProgress,
-            {
-              existingInvestmentPositions:
-                this.existingInvestmentPositions[chain],
-            },
-          );
-          totalTxns = totalTxns.concat(txnsForThisProtocol);
-        }
-      }
-    }
-    return totalTxns;
-  }
-  async _generateClaimAndSwapTxns(
-    account,
-    tokenOutAddress,
-    slippage,
-    updateProgress,
-  ) {
-    let totalTxns = [];
-    for (const protocolsInThisCategory of Object.values(this.strategy)) {
-      for (const [chain, protocols] of Object.entries(
-        protocolsInThisCategory,
-      )) {
-        for (const protocol of protocols) {
-          // TODO: make it concurrent!
-          const txnsForThisProtocol = await protocol.interface.claimAndSwap(
-            account.address,
-            tokenOutAddress,
-            slippage,
-            updateProgress,
-          );
+          let txnsForThisProtocol;
+          if (actionName === "zapIn") {
+            txnsForThisProtocol = await protocol.interface.zapIn(
+              actionParams.account.address,
+              Number(actionParams.zapInAmount * protocol.weight),
+              actionParams.tokenInSymbol,
+              actionParams.tokenInAddress,
+              actionParams.slippage,
+              actionParams.tokenPricesMappingTable,
+              actionParams.updateProgress,
+              this.existingInvestmentPositions[chain],
+            );
+          } else if (actionName === "zapOut") {
+            txnsForThisProtocol = await protocol.interface.zapOut(
+              actionParams.account.address,
+              Number(actionParams.zapOutPercentage * protocol.weight),
+              actionParams.tokenOutAddress,
+              actionParams.slippage,
+              actionParams.tokenPricesMappingTable,
+              actionParams.updateProgress,
+              this.existingInvestmentPositions[chain],
+            );
+          } else if (actionName === "rebalance") {
+            throw new Error("Method 'rebalance()' must be implemented.");
+          } else if (actionName === "claimAndSwap") {
+            txnsForThisProtocol = await protocol.interface.claimAndSwap(
+              actionParams.account.address,
+              actionParams.tokenOutAddress,
+              actionParams.slippage,
+              actionParams.updateProgress,
+              this.existingInvestmentPositions[chain],
+            );
+          }
           totalTxns = totalTxns.concat(txnsForThisProtocol);
         }
       }

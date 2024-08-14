@@ -85,23 +85,25 @@ export default function IndexOverviews() {
     const [tokenSymbol, tokenAddress] = tokenSymbolAndAddress.split("-");
     let txns;
     if (actionName === "zapIn") {
-      txns = await portfolioHelper.zapIn(
+      txns = await portfolioHelper.portfolioAction("zapIn", {
         account,
-        tokenSymbol,
-        tokenAddress,
-        Number(investmentAmount),
-        (progressPercentage) => setProgress(progressPercentage),
+        tokenInSymbol: tokenSymbol,
+        tokenInAddress: tokenAddress,
+        zapInAmount: Number(investmentAmount),
+        progressCallback: (progressPercentage) =>
+          setProgress(progressPercentage),
         slippage,
-      );
+      });
     } else if (actionName === "zapOut") {
-      txns = await portfolioHelper.zapOut(
+      txns = await portfolioHelper.portfolioAction("zapOut", {
         account,
-        tokenSymbol,
-        tokenAddress,
-        Number(zapOutPercentage),
-        (progressPercentage) => setProgress(progressPercentage),
+        tokenOutSymbol: tokenSymbol,
+        tokenOutAddress: tokenAddress,
+        zapOutPercentage: Number(zapOutPercentage),
+        progressCallback: (progressPercentage) =>
+          setProgress(progressPercentage),
         slippage,
-      );
+      });
     } else if (actionName === "claimAndSwap") {
       txns = await portfolioHelper.portfolioAction(actionName, {
         account,
