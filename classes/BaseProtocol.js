@@ -9,15 +9,10 @@ import { getTokenDecimal, approve } from "../utils/general";
 
 export default class BaseProtocol extends BaseUniswap {
   // arbitrum's Apollox is staked on PancakeSwap
-  constructor(
-    chaindId,
-    token2TokenIdMapping,
-    allowedZapInTokens,
-    mode,
-    customParams,
-  ) {
+  constructor(chaindId, symbolList, token2TokenIdMapping, mode, customParams) {
     super();
     this.protocolName = "placeholder";
+    this.protocolVersion = "placeholder";
     this.assetContract = "placeholder";
     this.protocolContract = "placeholder";
     this.stakeFarmContract = "placeholder";
@@ -25,13 +20,17 @@ export default class BaseProtocol extends BaseUniswap {
     this.totalSteps = 3;
 
     this.chainId = chaindId;
+    this.symbolList = symbolList;
     this.token2TokenIdMapping = token2TokenIdMapping;
-    this.allowedZapInTokens = allowedZapInTokens;
     this.mode = mode;
     this.customParams = customParams;
   }
   _checkIfParamsAreSet() {
     assert(this.protocolName !== "placeholder", "protocolName is not set");
+    assert(
+      this.protocolVersion !== "placeholder",
+      "protocolVersion is not set",
+    );
     assert(typeof this.assetContract === "object", "assetContract is not set");
     assert(
       typeof this.protocolContract === "object",

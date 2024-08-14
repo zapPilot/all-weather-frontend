@@ -14,7 +14,7 @@
 */
 "use client";
 import BasePage from "../basePage.tsx";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import DecimalStep from "./DecimalStep";
 import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
@@ -67,7 +67,7 @@ export default function IndexOverviews() {
   );
 
   const { mutate: sendBatchTransaction } = useSendBatchTransaction();
-
+  const [portfolioApr, setPortfolioAPR] = useState(20);
   const handleAAWalletAction = async (actionName) => {
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
     if (!tokenSymbolAndAddress) {
@@ -127,10 +127,19 @@ export default function IndexOverviews() {
       setZapInIsLoading(false);
     } else if (actionName === "zapOut") {
       setZapOutIsLoading(false);
-    } else if (actionName === "claim") {
+    } else if (actionName === "claimAndSwap") {
       setClaimIsLoading(false);
     }
   };
+  useEffect(() => {
+    if (!portfolioName) return;
+    const fetchPortfolioAPR = async () => {
+      const apr = await portfolioHelper.getPortfolioAPR();
+      console.log("apr", apr);
+      setPortfolioAPR((apr.portfolioAPR * 100).toFixed(2));
+    };
+    fetchPortfolioAPR();
+  }, [portfolioName]);
 
   return (
     <BasePage>
@@ -177,7 +186,9 @@ export default function IndexOverviews() {
               </h2>
 
               <div className="flex items-center">
-                <p className="text-lg text-gray-900 sm:text-xl">APR: 30%</p>
+                <p className="text-lg text-gray-900 sm:text-xl">
+                  APR: {portfolioApr}%
+                </p>
 
                 <div className="ml-4 border-l border-gray-300 pl-4">
                   <div className="flex items-center">
