@@ -37,9 +37,21 @@ export class ApolloX extends BaseProtocol {
       chain: arbitrum,
       abi: SmartChefInitializable,
     });
+    this.arbReward = "0x912ce59144191c1204e64559fe8253a0e49e6548";
     this._checkIfParamsAreSet();
   }
-  async _customZapIn(
+  async pendingRewards(recipient) {
+    const stakeFarmContractInstance = new ethers.Contract(
+      this.stakeFarmContract.address,
+      SmartChefInitializable,
+      PROVIDER,
+    );
+    const pendingReward = (
+      await stakeFarmContractInstance.functions.pendingReward(recipient)
+    )[0];
+    return pendingReward;
+  }
+  async customZapIn(
     inputToken,
     bestTokenAddressToZapIn,
     amountToZapIn,
@@ -74,21 +86,28 @@ export class ApolloX extends BaseProtocol {
     return [mintTxn, approveAlpTxn, depositTxn];
   }
 
-  async _customZapOut(
+  async customZapOut(
     recipient,
     percentage,
     slippage,
     updateProgress,
     customParams,
   ) {
-    const assetContractInstance = new ethers.Contract(
-      this.assetContract.address,
-      ERC20_ABI,
+    const stakeFarmContractInstance = new ethers.Contract(
+      this.stakeFarmContract.address,
+      SmartChefInitializable,
       PROVIDER,
     );
-    const amount =
-      (await assetContractInstance.functions.balanceOf(recipient))[0] *
-      percentage;
+    const amount = Math.floor(
+      (await stakeFarmContractInstance.functions.userInfo(recipient)).amount *
+        percentage,
+    );
+    const withdrawTxn = prepareContractCall({
+      contract: this.stakeFarmContract,
+      method: "withdraw",
+      params: [amount],
+    });
+
     const approveAlpTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
@@ -107,12 +126,24 @@ export class ApolloX extends BaseProtocol {
       method: "burnAlp", // <- this gets inferred from the contract
       params: [bestTokenAddressToZapOut, amount, minOutAmount, recipient],
     });
-    let withdrawTokenAndBalance = {};
-    withdrawTokenAndBalance[bestTokenAddressToZapOut] = minOutAmount;
-    return [[approveAlpTxn, burnTxn], withdrawTokenAndBalance];
+    const withdrawTokenAndBalance =
+      await this._calculateWithdrawTokenAndBalance(
+        recipient,
+        bestTokenAddressToZapOut,
+        minOutAmount,
+      );
+    return [[withdrawTxn, approveAlpTxn, burnTxn], withdrawTokenAndBalance];
   }
-  async claim() {
-    return [[], {}];
+  async claim(recipient) {
+    const pendingReward = await this.pendingRewards(recipient);
+    const claimTxn = prepareContractCall({
+      contract: this.stakeFarmContract,
+      method: "deposit",
+      params: [0],
+    });
+    let rewardBalance = {};
+    rewardBalance[this.arbReward] = pendingReward;
+    return [[claimTxn], rewardBalance];
   }
 
   async _fetchAlpPrice(updateProgress) {
@@ -142,5 +173,16 @@ export class ApolloX extends BaseProtocol {
     // TODO: minor, but we can read the composition of ALP to get the cheapest token to zap in
     const usdcBridgedAddress = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8";
     return usdcBridgedAddress;
+  }
+  async _calculateWithdrawTokenAndBalance(
+    recipient,
+    bestTokenAddressToZapOut,
+    minOutAmount,
+  ) {
+    let withdrawTokenAndBalance = {};
+    withdrawTokenAndBalance[bestTokenAddressToZapOut] = minOutAmount;
+    const pendingRewards = await this.pendingRewards(recipient);
+    withdrawTokenAndBalance[this.arbReward] = pendingRewards;
+    return withdrawTokenAndBalance;
   }
 }

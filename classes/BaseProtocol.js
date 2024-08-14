@@ -43,14 +43,14 @@ export default class BaseProtocol extends BaseUniswap {
     );
   }
   async zapIn(
-    address,
+    recipient,
     investmentAmountInThisPosition,
     inputToken,
     inputTokenAddress,
     slippage,
-    existingInvestmentPositionsInThisChain,
     tokenPricesMappingTable,
     updateProgress,
+    existingInvestmentPositionsInThisChain,
   ) {
     if (this.mode === "single") {
       const [beforeZapInTxns, bestTokenAddressToZapIn, amountToZapIn] =
@@ -60,7 +60,7 @@ export default class BaseProtocol extends BaseUniswap {
           slippage,
           updateProgress,
         );
-      const zapinTxns = await this._customZapIn(
+      const zapinTxns = await this.customZapIn(
         inputToken,
         bestTokenAddressToZapIn,
         amountToZapIn,
@@ -131,27 +131,42 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
     customParams,
+    existingInvestmentPositionsInThisChain,
   ) {
-    const [zapOutTxns, withdrawTokenAndBalance] = await this._customZapOut(
+    const [zapOutTxns, withdrawTokenAndBalance] = await this.customZapOut(
       recipient,
       percentage,
       slippage,
       updateProgress,
       customParams,
     );
-    const [claimTxn, estimatedClaimTokensAddressAndBalance] =
-      await this.claim();
     const afterZapOutTxns = await this._afterZapOut(
       recipient,
       withdrawTokenAndBalance,
-      estimatedClaimTokensAddressAndBalance,
       outputToken,
       slippage,
       updateProgress,
     );
-    return [...zapOutTxns, ...claimTxn, ...afterZapOutTxns];
+    return [...zapOutTxns, ...afterZapOutTxns];
   }
-  async claim() {
+  async claimAndSwap(
+    recipient,
+    outputToken,
+    slippage,
+    updateProgress,
+    existingInvestmentPositionsInThisChain,
+  ) {
+    const [claimTxns, claimedTokenAndBalance] = await this.claim(recipient);
+    const txns = await this._afterZapOut(
+      recipient,
+      claimedTokenAndBalance,
+      outputToken,
+      slippage,
+      updateProgress,
+    );
+    return [...claimTxns, ...txns];
+  }
+  async claim(recipient) {
     throw new Error("Method 'claim()' must be implemented.");
   }
   async _beforeZapIn(
@@ -188,7 +203,7 @@ export default class BaseProtocol extends BaseUniswap {
     const inputTokenDecimal = await getTokenDecimal(bestTokenAddressToZapIn);
     const approveForZapInTxn = approve(
       bestTokenAddressToZapIn,
-      this.protocolAddress,
+      this.protocolContract.address,
       amountToZapIn,
       inputTokenDecimal,
       updateProgress,
@@ -202,17 +217,15 @@ export default class BaseProtocol extends BaseUniswap {
   async _afterZapOut(
     recipient,
     withdrawTokenAndBalance,
-    estimatedClaimTokensAddressAndBalance,
     outputToken,
     slippage,
     updateProgress,
   ) {
     let txns = [];
-    const tokensAddressAndBalances = this._calculateTokensAddressAndBalances(
-      withdrawTokenAndBalance,
-      estimatedClaimTokensAddressAndBalance,
-    );
-    for (const [address, amount] of Object.entries(tokensAddressAndBalances)) {
+    for (const [address, amount] of Object.entries(withdrawTokenAndBalance)) {
+      if (amount === 0) {
+        continue;
+      }
       const tokenInstance = new ethers.Contract(address, ERC20_ABI, PROVIDER);
       const decimalsOfChosenToken = (
         await tokenInstance.functions.decimals()
@@ -239,17 +252,25 @@ export default class BaseProtocol extends BaseUniswap {
     }
     return txns;
   }
-  _calculateTokensAddressAndBalances(
+  calculateTokensAddressAndBalances(
     withdrawTokenAndBalance,
     estimatedClaimTokensAddressAndBalance,
   ) {
     for (const [address, balance] of Object.entries(
       estimatedClaimTokensAddressAndBalance,
     )) {
-      if (withdrawTokenAndBalance[address] === undefined) {
-        withdrawTokenAndBalance[address] = 0;
+      if (!withdrawTokenAndBalance[address]) {
+        withdrawTokenAndBalance[address] = ethers.BigNumber.from(0);
       }
-      withdrawTokenAndBalance[address] += balance;
+
+      // Ensure balance is a ethers.BigNumber
+      const balanceBN = ethers.BigNumber.isBigNumber(balance)
+        ? balance
+        : ethers.BigNumber.from(balance);
+
+      // Add balances
+      withdrawTokenAndBalance[address] =
+        withdrawTokenAndBalance[address].add(balanceBN);
     }
     return withdrawTokenAndBalance;
   }
@@ -288,11 +309,14 @@ export default class BaseProtocol extends BaseUniswap {
       swapCallData["toAmount"],
     ];
   }
-  async _customZapIn(amount) {
-    throw new Error("Method '_customZapIn()' must be implemented.", amount);
+  async customZapIn(amount) {
+    throw new Error("Method 'customZapIn()' must be implemented.", amount);
   }
-  async _customZapOut(amount) {
-    throw new Error("Method '_customZapOut()' must be implemented.", amount);
+  async customZapOut(amount) {
+    throw new Error(
+      "Method 'customZapOut()' must be implemented. Also need to take claim() into account.",
+      amount,
+    );
   }
   _getTheBestTokenAddressToZapIn() {
     throw new Error(
