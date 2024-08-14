@@ -5,7 +5,7 @@ import Performance from "./Performance.jsx";
 import Risks from "./Risks.jsx";
 import { useSelector } from "react-redux";
 
-const TabWordings = ["Performance", "Fees", "Risks"];
+const TabWordings = ["Performance"];
 
 const PortfolioMetaTab = () => {
   const [windowWidth, setWindowWidth] = useState(0);
@@ -94,11 +94,12 @@ const _getChildrenTab = (
         maxDrawdown={maxDrawdown}
       />
     );
-  } else if (wording === "Fees") {
-    return <Fees />;
-  } else if (wording === "Risks") {
-    return <Risks />;
   }
+  // else if (wording === "Fees") {
+  //   return <Fees />;
+  // } else if (wording === "Risks") {
+  //   return <Risks />;
+  // }
 };
 
 export default PortfolioMetaTab;
