@@ -1,0 +1,5 @@
+{
+  "debug": "{\"mapping_chain\": \"arbitrum\", \"project_id\": \"pancakeswap\", \"version\": \"0\", \"sorted_debank_optimized_symbol_list\": [\"btc-dai-eth-usdc(bridged)-usdt\"]}",
+  "success": true,
+  "value": 0.35
+}
