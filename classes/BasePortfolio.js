@@ -69,12 +69,10 @@ export class BasePortfolio {
     );
     await Promise.all(
       allProtocols.map(async ({ chain, protocol }) => {
-        console.log("symbolList: ", protocol.interface.symbolList);
         // const symbolList = protocol.interface.symbolList.join("+");
         const sortedSymbolList = protocol.interface.symbolList.sort().join("-");
         const poolUniqueKey = `${chain}/${protocol.interface.protocolName}/${protocol.interface.protocolVersion}/${sortedSymbolList}`;
         const url = `${process.env.NEXT_PUBLIC_API_URL}/pool/${poolUniqueKey}/apr`;
-        console.log("url", url);
         try {
           const response = await fetch(url);
           const data = await response.json();
@@ -113,12 +111,13 @@ export class BasePortfolio {
   async portfolioAction(actionName, actionParams) {
     let completedSteps = 0;
     const totalSteps =
-      this._countProtocolNumber() +
+      this._countProtocolStepsWithThisAction(actionName) +
       Object.keys(this.uniqueTokenIdsForCurrentPrice).length +
       Object.keys(this.assetAddressSetByChain).length;
-    const updateProgress = () => {
+    const updateProgress = (actionName) => {
       completedSteps++;
       actionParams.progressCallback((completedSteps / totalSteps) * 100);
+      actionParams.progressStepNameCallback(actionName);
     };
     const tokenPricesMappingTable =
       await this._getTokenPricesMappingTable(updateProgress);
@@ -206,7 +205,7 @@ export class BasePortfolio {
       );
       const data = await response.json();
       existingInvestmentPositionsbyChain[chain] = data;
-      updateProgress();
+      updateProgress(`Fetching ${chain}\'s investment positions: ${lpTokens}`);
     }
     return existingInvestmentPositionsbyChain;
   }
@@ -257,7 +256,7 @@ export class BasePortfolio {
         .then((result) => {
           tokenPricesMappingTable[token] = result.data.price;
         });
-      updateProgress();
+      updateProgress(`Fetching price for ${token}`);
     }
     return tokenPricesMappingTable;
   }
@@ -278,13 +277,23 @@ export class BasePortfolio {
       `Total weight across all strategies should be 1, but is ${totalWeight}`,
     );
   }
-  _countProtocolNumber() {
+  _countProtocolStepsWithThisAction(actionName) {
     let counts = 0;
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const protocolsInThisChain of Object.values(
         protocolsInThisCategory,
       )) {
-        counts += protocolsInThisChain.length;
+        for (const protocol of protocolsInThisChain) {
+          if (actionName === "zapIn") {
+            counts += protocol.interface.zapInSteps();
+          } else if (actionName === "zapOut") {
+            counts += protocol.interface.zapOutSteps();
+          } else if (actionName === "claimAndSwap") {
+            counts += protocol.interface.claimAndSwapSteps();
+          } else {
+            throw new Error(`Method '${actionName}()' must be implemented.`);
+          }
+        }
       }
     }
     return counts;

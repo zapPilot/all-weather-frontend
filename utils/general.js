@@ -74,7 +74,7 @@ export function approve(
   if (spenderAddress === NULL_ADDRESS) {
     throw new Error("Spender address is null. Cannot proceed with approving.");
   }
-  updateProgress();
+  updateProgress("approve");
   return {
     chain: arbitrum,
     to: tokenAddress,

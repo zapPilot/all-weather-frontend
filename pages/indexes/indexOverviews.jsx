@@ -13,13 +13,14 @@
   ```
 */
 "use client";
+// import { Button, Modal, Progress, Radio, ConfigProvider } from "antd";
 import BasePage from "../basePage.tsx";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import DecimalStep from "./DecimalStep";
 import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
-import { Button } from "antd";
+import { Button, Progress } from "antd";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
@@ -51,6 +52,7 @@ export default function IndexOverviews() {
   const [zapOutIsLoading, setZapOutIsLoading] = useState(false);
   const [claimIsLoading, setClaimIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(1);
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [sliderValue, setSliderValue] = useState(0);
@@ -92,6 +94,7 @@ export default function IndexOverviews() {
         zapInAmount: Number(investmentAmount),
         progressCallback: (progressPercentage) =>
           setProgress(progressPercentage),
+        progressStepNameCallback: (stepName) => setStepName(stepName),
         slippage,
       });
     } else if (actionName === "zapOut") {
@@ -102,6 +105,7 @@ export default function IndexOverviews() {
         zapOutPercentage: Number(zapOutPercentage),
         progressCallback: (progressPercentage) =>
           setProgress(progressPercentage),
+        progressStepNameCallback: (stepName) => setStepName(stepName),
         slippage,
       });
     } else if (actionName === "claimAndSwap") {
@@ -110,8 +114,16 @@ export default function IndexOverviews() {
         tokenOutAddress: tokenAddress,
         progressCallback: (progressPercentage) =>
           setProgress(progressPercentage),
+        progressStepNameCallback: (stepName) => setStepName(stepName),
         slippage,
       });
+    }
+    if (actionName === "zapIn") {
+      setZapInIsLoading(false);
+    } else if (actionName === "zapOut") {
+      setZapOutIsLoading(false);
+    } else if (actionName === "claimAndSwap") {
+      setClaimIsLoading(false);
     }
     // Call sendBatchTransaction and wait for the result
     const result = await new Promise((resolve, reject) => {
@@ -123,13 +135,6 @@ export default function IndexOverviews() {
 
     // Handle the successful result
     console.log("Transaction successful:", result);
-    if (actionName === "zapIn") {
-      setZapInIsLoading(false);
-    } else if (actionName === "zapOut") {
-      setZapOutIsLoading(false);
-    } else if (actionName === "claimAndSwap") {
-      setClaimIsLoading(false);
-    }
   };
   useEffect(() => {
     if (!portfolioName) return;
@@ -278,6 +283,19 @@ export default function IndexOverviews() {
                     Claim and Swap
                   </Button>
                 </div>
+                {zapInIsLoading || zapOutIsLoading || claimIsLoading ? (
+                  <Progress
+                    percent={progress.toFixed(2)}
+                    status={
+                      zapInIsLoading || zapOutIsLoading || claimIsLoading
+                        ? "active"
+                        : ""
+                    }
+                    size={[400, 10]}
+                    showInfo={true}
+                    format={(percent) => `${percent}% ${stepName}`}
+                  />
+                ) : null}
                 <div className="mt-6 text-center">
                   <a
                     href="https://all-weather.gitbook.io/all-weather-protocol/contracts-and-security/audits"

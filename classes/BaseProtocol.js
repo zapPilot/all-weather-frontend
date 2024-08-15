@@ -16,8 +16,6 @@ export default class BaseProtocol extends BaseUniswap {
     this.assetContract = "placeholder";
     this.protocolContract = "placeholder";
     this.stakeFarmContract = "placeholder";
-    // TODO: the totalSteps should be dynamically calculated
-    this.totalSteps = 3;
 
     this.chainId = chaindId;
     this.symbolList = symbolList;
@@ -40,6 +38,17 @@ export default class BaseProtocol extends BaseUniswap {
       typeof this.stakeFarmContract === "object",
       "assetContract is not set",
     );
+  }
+  zapInSteps(tokenInAddress) {
+    // TODO: we can use `tokenInAddress` to dynamically determine the steps
+    // if the user is using the best token to zap in, then the step would be less than others (no need to swap)
+    throw new Error("Method 'zapInSteps()' must be implemented.");
+  }
+  zapOutSteps(tokenOutAddress) {
+    throw new Error("Method 'zapOutSteps()' must be implemented.");
+  }
+  claimAndSwapSteps() {
+    throw new Error("Method 'claimAndSwapSteps()' must be implemented.");
   }
   async userBalance(address) {
     throw new Error("Method 'userBalance()' must be implemented.");
@@ -161,7 +170,10 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
     existingInvestmentPositionsInThisChain,
   ) {
-    const [claimTxns, claimedTokenAndBalance] = await this.claim(recipient);
+    const [claimTxns, claimedTokenAndBalance] = await this.claim(
+      recipient,
+      updateProgress,
+    );
     const txns = await this._afterZapOut(
       recipient,
       claimedTokenAndBalance,
@@ -304,7 +316,7 @@ export default class BaseProtocol extends BaseUniswap {
     if (swapCallData["toAmount"] === 0) {
       throw new Error("To amount is 0. Cannot proceed with swapping.");
     }
-    updateProgress();
+    updateProgress(`swap ${fromTokenAddress} to ${toTokenAddress}`);
     return [
       {
         to: oneInchAddress,

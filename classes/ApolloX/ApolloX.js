@@ -41,11 +41,23 @@ export class ApolloX extends BaseProtocol {
     this.arbReward = "0x912ce59144191c1204e64559fe8253a0e49e6548";
     this._checkIfParamsAreSet();
   }
-  async pendingRewards(recipient) {
+  zapInSteps(tokenInAddress) {
+    return 4;
+  }
+  zapOutSteps(tokenInAddress) {
+    return 5;
+  }
+  claimAndSwapSteps() {
+    return 3;
+  }
+  async pendingRewards(recipient, updateProgress) {
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       SmartChefInitializable,
       PROVIDER,
+    );
+    updateProgress(
+      `fetching pending rewards from ${this.stakeFarmContract.address}`,
     );
     const pendingReward = (
       await stakeFarmContractInstance.functions.pendingReward(recipient)
@@ -132,11 +144,12 @@ export class ApolloX extends BaseProtocol {
         recipient,
         bestTokenAddressToZapOut,
         minOutAmount,
+        updateProgress,
       );
     return [[withdrawTxn, approveAlpTxn, burnTxn], withdrawTokenAndBalance];
   }
-  async claim(recipient) {
-    const pendingReward = await this.pendingRewards(recipient);
+  async claim(recipient, updateProgress) {
+    const pendingReward = await this.pendingRewards(recipient, updateProgress);
     const claimTxn = prepareContractCall({
       contract: this.stakeFarmContract,
       method: "deposit",
@@ -162,7 +175,7 @@ export class ApolloX extends BaseProtocol {
       referrer: "https://www.apollox.finance/en/ALP",
     });
     const latestPrice = response.data.data[0].price;
-    updateProgress();
+    updateProgress("fetching ALP price");
     return latestPrice;
   }
   _getTheBestTokenAddressToZapIn() {
@@ -179,10 +192,11 @@ export class ApolloX extends BaseProtocol {
     recipient,
     bestTokenAddressToZapOut,
     minOutAmount,
+    updateProgress,
   ) {
     let withdrawTokenAndBalance = {};
     withdrawTokenAndBalance[bestTokenAddressToZapOut] = minOutAmount;
-    const pendingRewards = await this.pendingRewards(recipient);
+    const pendingRewards = await this.pendingRewards(recipient, updateProgress);
     withdrawTokenAndBalance[this.arbReward] = pendingRewards;
     return withdrawTokenAndBalance;
   }
