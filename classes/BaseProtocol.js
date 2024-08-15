@@ -41,6 +41,12 @@ export default class BaseProtocol extends BaseUniswap {
       "assetContract is not set",
     );
   }
+  async userBalance(address) {
+    throw new Error("Method 'userBalance()' must be implemented.");
+  }
+  async pendingRewards(address) {
+    throw new Error("Method 'pendingRewards()' must be implemented.");
+  }
   async zapIn(
     recipient,
     investmentAmountInThisPosition,

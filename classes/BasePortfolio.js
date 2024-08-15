@@ -32,8 +32,33 @@ export class BasePortfolio {
         updateProgress,
       );
   }
-  async getClaimableRewards() {
-    throw new Error("Method 'getClaimableRewards()' must be implemented.");
+  async userBalance(address) {
+    let balanceMappingTable = {};
+    for (const protocolsInThisCategory of Object.values(this.strategy)) {
+      for (const protocolsInThisChain of Object.values(
+        protocolsInThisCategory,
+      )) {
+        for (const protocol of protocolsInThisChain) {
+          const balance = await protocol.interface.userBalance(address);
+          balanceMappingTable[protocol.interface.assetAddress] = balance;
+        }
+      }
+    }
+    return balanceMappingTable;
+  }
+  async pendingRewards(address) {
+    let rewardsMappingTable = {};
+    for (const protocolsInThisCategory of Object.values(this.strategy)) {
+      for (const protocolsInThisChain of Object.values(
+        protocolsInThisCategory,
+      )) {
+        for (const protocol of protocolsInThisChain) {
+          const rewards = await protocol.interface.pendingRewards(address);
+          rewardsMappingTable[protocol.interface.assetAddress] = rewards;
+        }
+      }
+    }
+    return rewardsMappingTable;
   }
   async getPortfolioAPR() {
     let aprMappingTable = {};
