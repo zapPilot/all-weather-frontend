@@ -11,11 +11,12 @@ import { approve } from "../../utils/general.js";
 import BaseProtocol from "../BaseProtocol.js";
 // For PancakeSwap Stake
 import SmartChefInitializable from "../../lib/contracts/PancakeSwap/SmartChefInitializable.json" assert { type: "json" };
+import { decimals } from "thirdweb/extensions/erc20";
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 export class ApolloX extends BaseProtocol {
-  constructor(chaindId, symbolList, token2TokenIdMapping, mode, customParams) {
-    super(chaindId, symbolList, token2TokenIdMapping, mode, customParams);
+  constructor(chaindId, symbolList, mode, customParams) {
+    super(chaindId, symbolList, mode, customParams);
     // arbitrum's Apollox is staked on PancakeSwap
     this.protocolName = "pancakeswap";
     this.protocolVersion = "0";
@@ -38,19 +39,51 @@ export class ApolloX extends BaseProtocol {
       chain: arbitrum,
       abi: SmartChefInitializable,
     });
-    this.arbReward = "0x912ce59144191c1204e64559fe8253a0e49e6548";
     this._checkIfParamsAreSet();
   }
-  async pendingRewards(recipient) {
+  zapInSteps(tokenInAddress) {
+    return 4;
+  }
+  zapOutSteps(tokenInAddress) {
+    return 5;
+  }
+  claimAndSwapSteps() {
+    return 3;
+  }
+  tokens() {
+    return {
+      rewards: [
+        {
+          symbol: "arb",
+          coinmarketcapApiId: 11841,
+          address: "0x912ce59144191c1204e64559fe8253a0e49e6548",
+          decimals: 18,
+        },
+      ],
+    };
+  }
+  async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       SmartChefInitializable,
       PROVIDER,
     );
+    updateProgress(
+      `fetching pending rewards from ${this.stakeFarmContract.address}`,
+    );
     const pendingReward = (
       await stakeFarmContractInstance.functions.pendingReward(recipient)
     )[0];
-    return pendingReward;
+    let rewardBalance = {};
+    for (const token of this.tokens().rewards) {
+      rewardBalance[token.symbol] = {
+        balance: pendingReward,
+        usdDenominatedValue:
+          (tokenPricesMappingTable[token.symbol] * pendingReward) /
+          Math.pow(10, token.decimals),
+      };
+    }
+    return rewardBalance;
   }
   async customZapIn(
     inputToken,
@@ -132,19 +165,30 @@ export class ApolloX extends BaseProtocol {
         recipient,
         bestTokenAddressToZapOut,
         minOutAmount,
+        updateProgress,
       );
     return [[withdrawTxn, approveAlpTxn, burnTxn], withdrawTokenAndBalance];
   }
-  async claim(recipient) {
-    const pendingReward = await this.pendingRewards(recipient);
+  async claim(recipient, updateProgress) {
+    const pendingRewards = await this.pendingRewards(recipient, updateProgress);
     const claimTxn = prepareContractCall({
       contract: this.stakeFarmContract,
       method: "deposit",
       params: [0],
     });
-    let rewardBalance = {};
-    rewardBalance[this.arbReward] = pendingReward;
-    return [[claimTxn], rewardBalance];
+    return [[claimTxn], pendingRewards];
+  }
+  async usdBalanceOf(recipient) {
+    const stakeFarmContractInstance = new ethers.Contract(
+      this.stakeFarmContract.address,
+      SmartChefInitializable,
+      PROVIDER,
+    );
+    const userInfo = (
+      await stakeFarmContractInstance.functions.userInfo(recipient)
+    ).amount;
+    const latestAlpPrice = await this._fetchAlpPrice(() => {});
+    return (userInfo / 1e18) * latestAlpPrice;
   }
 
   async _fetchAlpPrice(updateProgress) {
@@ -162,7 +206,7 @@ export class ApolloX extends BaseProtocol {
       referrer: "https://www.apollox.finance/en/ALP",
     });
     const latestPrice = response.data.data[0].price;
-    updateProgress();
+    updateProgress("fetching ALP price");
     return latestPrice;
   }
   _getTheBestTokenAddressToZapIn() {
@@ -179,11 +223,12 @@ export class ApolloX extends BaseProtocol {
     recipient,
     bestTokenAddressToZapOut,
     minOutAmount,
+    updateProgress,
   ) {
     let withdrawTokenAndBalance = {};
     withdrawTokenAndBalance[bestTokenAddressToZapOut] = minOutAmount;
-    const pendingRewards = await this.pendingRewards(recipient);
-    withdrawTokenAndBalance[this.arbReward] = pendingRewards;
+    const pendingRewards = await this.pendingRewards(recipient, updateProgress);
+    withdrawTokenAndBalance = { ...withdrawTokenAndBalance, ...pendingRewards };
     return withdrawTokenAndBalance;
   }
 }

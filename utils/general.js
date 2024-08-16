@@ -74,7 +74,7 @@ export function approve(
   if (spenderAddress === NULL_ADDRESS) {
     throw new Error("Spender address is null. Cannot proceed with approving.");
   }
-  updateProgress();
+  updateProgress("approve");
   return {
     chain: arbitrum,
     to: tokenAddress,
@@ -91,3 +91,43 @@ export function approve(
     }),
   };
 }
+
+export async function getLocalizedCurrencyAndExchangeRate() {
+  const currency = await fetchCurrency();
+  const exchangeRateWithUSD = await getexchangeRateWithUSD(currency);
+  return {
+    currency,
+    exchangeRateWithUSD,
+  };
+}
+
+async function getexchangeRateWithUSD(currency) {
+  try {
+    const response = await fetch(
+      "https://api.exchangerate-api.com/v4/latest/USD",
+      {
+        method: "GET",
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.rates[currency];
+  } catch (error) {
+    console.error("Error fetching exchange rate:", error);
+    return 0;
+  }
+}
+
+const fetchCurrency = async () => {
+  try {
+    const response = await fetch("https://ipapi.co/json/");
+    const data = await response.json();
+    return data.currency;
+  } catch (error) {
+    return "USD";
+  }
+};

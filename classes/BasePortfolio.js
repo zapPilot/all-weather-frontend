@@ -2,13 +2,13 @@ import { tokensAndCoinmarketcapIdsFromDropdownOptions } from "../utils/contractI
 import assert from "assert";
 import { oneInchAddress } from "../utils/oneInch";
 import axios from "axios";
+import { ethers } from "ethers";
 import { getTokenDecimal, approve } from "../utils/general";
 export class BasePortfolio {
   constructor(strategy) {
     this.strategy = strategy;
     this.portfolioAPR = {};
     this.existingInvestmentPositions = {};
-    this.tokenPricesMappingTable = {};
     this.assetAddressSetByChain = this._getAssetAddressSetByChain();
     this.uniqueTokenIdsForCurrentPrice =
       this._getUniqueTokenIdsForCurrentPrice();
@@ -32,29 +32,47 @@ export class BasePortfolio {
         updateProgress,
       );
   }
-  async userBalance(address) {
-    let balanceMappingTable = {};
+  async usdBalanceOf(address) {
+    let usdBalance = 0;
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const protocolsInThisChain of Object.values(
         protocolsInThisCategory,
       )) {
         for (const protocol of protocolsInThisChain) {
-          const balance = await protocol.interface.userBalance(address);
-          balanceMappingTable[protocol.interface.assetAddress] = balance;
+          const balance = await protocol.interface.usdBalanceOf(address);
+          usdBalance += balance;
         }
       }
     }
-    return balanceMappingTable;
+    return usdBalance;
   }
-  async pendingRewards(address) {
+  async pendingRewards(recipient, updateProgress) {
+    const tokenPricesMappingTable =
+      await this._getTokenPricesMappingTable(updateProgress);
+
     let rewardsMappingTable = {};
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const protocolsInThisChain of Object.values(
         protocolsInThisCategory,
       )) {
         for (const protocol of protocolsInThisChain) {
-          const rewards = await protocol.interface.pendingRewards(address);
-          rewardsMappingTable[protocol.interface.assetAddress] = rewards;
+          const rewards = await protocol.interface.pendingRewards(
+            recipient,
+            tokenPricesMappingTable,
+            updateProgress,
+          );
+          for (const [tokenSymbol, rewardMetadata] of Object.entries(rewards)) {
+            if (!rewardsMappingTable[tokenSymbol]) {
+              rewardsMappingTable[tokenSymbol] = {};
+            }
+            rewardsMappingTable[tokenSymbol]["balance"] = (
+              rewardsMappingTable[tokenSymbol]["balance"] ||
+              ethers.BigNumber.from(0)
+            ).add(rewardMetadata.balance);
+            rewardsMappingTable[tokenSymbol]["usdDenominatedValue"] =
+              (rewardsMappingTable[tokenSymbol]["usdDenominatedValue"] || 0) +
+              rewardMetadata.usdDenominatedValue;
+          }
         }
       }
     }
@@ -69,12 +87,10 @@ export class BasePortfolio {
     );
     await Promise.all(
       allProtocols.map(async ({ chain, protocol }) => {
-        console.log("symbolList: ", protocol.interface.symbolList);
         // const symbolList = protocol.interface.symbolList.join("+");
         const sortedSymbolList = protocol.interface.symbolList.sort().join("-");
         const poolUniqueKey = `${chain}/${protocol.interface.protocolName}/${protocol.interface.protocolVersion}/${sortedSymbolList}`;
         const url = `${process.env.NEXT_PUBLIC_API_URL}/pool/${poolUniqueKey}/apr`;
-        console.log("url", url);
         try {
           const response = await fetch(url);
           const data = await response.json();
@@ -113,12 +129,13 @@ export class BasePortfolio {
   async portfolioAction(actionName, actionParams) {
     let completedSteps = 0;
     const totalSteps =
-      this._countProtocolNumber() +
+      this._countProtocolStepsWithThisAction(actionName) +
       Object.keys(this.uniqueTokenIdsForCurrentPrice).length +
       Object.keys(this.assetAddressSetByChain).length;
-    const updateProgress = () => {
+    const updateProgress = (actionName) => {
       completedSteps++;
       actionParams.progressCallback((completedSteps / totalSteps) * 100);
+      actionParams.progressStepNameCallback(actionName);
     };
     const tokenPricesMappingTable =
       await this._getTokenPricesMappingTable(updateProgress);
@@ -206,7 +223,7 @@ export class BasePortfolio {
       );
       const data = await response.json();
       existingInvestmentPositionsbyChain[chain] = data;
-      updateProgress();
+      updateProgress(`Fetching ${chain}\'s investment positions: ${lpTokens}`);
     }
     return existingInvestmentPositionsbyChain;
   }
@@ -216,13 +233,26 @@ export class BasePortfolio {
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const protocols of Object.values(protocolsInThisCategory)) {
         for (const protocol of protocols) {
+          const apiSymbolToIdMapping = Object.values(
+            protocol.interface.tokens(),
+          )
+            .flatMap((tokenArray) =>
+              Array.isArray(tokenArray) ? tokenArray : [],
+            )
+            .reduce((idMapping, token) => {
+              if (token.coinmarketcapApiId !== undefined) {
+                idMapping[token.symbol] = token.coinmarketcapApiId;
+              }
+              return idMapping;
+            }, {});
           coinMarketCapIdSet = {
             ...coinMarketCapIdSet,
-            ...protocol.interface.token2TokenIdMapping,
+            ...apiSymbolToIdMapping,
           };
         }
       }
     }
+
     coinMarketCapIdSet = {
       ...coinMarketCapIdSet,
       ...tokensAndCoinmarketcapIdsFromDropdownOptions,
@@ -257,7 +287,7 @@ export class BasePortfolio {
         .then((result) => {
           tokenPricesMappingTable[token] = result.data.price;
         });
-      updateProgress();
+      updateProgress(`Fetching price for ${token}`);
     }
     return tokenPricesMappingTable;
   }
@@ -278,13 +308,23 @@ export class BasePortfolio {
       `Total weight across all strategies should be 1, but is ${totalWeight}`,
     );
   }
-  _countProtocolNumber() {
+  _countProtocolStepsWithThisAction(actionName) {
     let counts = 0;
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const protocolsInThisChain of Object.values(
         protocolsInThisCategory,
       )) {
-        counts += protocolsInThisChain.length;
+        for (const protocol of protocolsInThisChain) {
+          if (actionName === "zapIn") {
+            counts += protocol.interface.zapInSteps();
+          } else if (actionName === "zapOut") {
+            counts += protocol.interface.zapOutSteps();
+          } else if (actionName === "claimAndSwap") {
+            counts += protocol.interface.claimAndSwapSteps();
+          } else {
+            throw new Error(`Method '${actionName}()' must be implemented.`);
+          }
+        }
       }
     }
     return counts;
