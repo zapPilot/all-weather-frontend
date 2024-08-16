@@ -32,11 +32,67 @@ export class BasePortfolio {
         updateProgress,
       );
   }
-  async getClaimableRewards() {
-    throw new Error("Method 'getClaimableRewards()' must be implemented.");
+  async userBalance(address) {
+    let balanceMappingTable = {};
+    for (const protocolsInThisCategory of Object.values(this.strategy)) {
+      for (const protocolsInThisChain of Object.values(
+        protocolsInThisCategory,
+      )) {
+        for (const protocol of protocolsInThisChain) {
+          const balance = await protocol.interface.userBalance(address);
+          balanceMappingTable[protocol.interface.assetAddress] = balance;
+        }
+      }
+    }
+    return balanceMappingTable;
+  }
+  async pendingRewards(address) {
+    let rewardsMappingTable = {};
+    for (const protocolsInThisCategory of Object.values(this.strategy)) {
+      for (const protocolsInThisChain of Object.values(
+        protocolsInThisCategory,
+      )) {
+        for (const protocol of protocolsInThisChain) {
+          const rewards = await protocol.interface.pendingRewards(address);
+          rewardsMappingTable[protocol.interface.assetAddress] = rewards;
+        }
+      }
+    }
+    return rewardsMappingTable;
   }
   async getPortfolioAPR() {
-    throw new Error("Method 'getPortfolioAPR()' must be implemented.");
+    let aprMappingTable = {};
+    const allProtocols = Object.values(this.strategy).flatMap((protocols) =>
+      Object.entries(protocols).flatMap(([chain, protocolArray]) =>
+        protocolArray.map((protocol) => ({ chain, protocol })),
+      ),
+    );
+    await Promise.all(
+      allProtocols.map(async ({ chain, protocol }) => {
+        console.log("symbolList: ", protocol.interface.symbolList);
+        // const symbolList = protocol.interface.symbolList.join("+");
+        const sortedSymbolList = protocol.interface.symbolList.sort().join("-");
+        const poolUniqueKey = `${chain}/${protocol.interface.protocolName}/${protocol.interface.protocolVersion}/${sortedSymbolList}`;
+        const url = `${process.env.NEXT_PUBLIC_API_URL}/pool/${poolUniqueKey}/apr`;
+        console.log("url", url);
+        try {
+          const response = await fetch(url);
+          const data = await response.json();
+          aprMappingTable[poolUniqueKey] = {
+            apr: data.value,
+            weight: protocol.weight,
+          };
+        } catch (error) {
+          console.error(`Error fetching data for ${url}:`, error);
+          return null;
+        }
+      }),
+    );
+    aprMappingTable["portfolioAPR"] = Object.values(aprMappingTable).reduce(
+      (sum, pool) => sum + pool.apr * pool.weight,
+      0,
+    );
+    return aprMappingTable;
   }
   reuseFetchedDataFromRedux(slice) {
     // get strategyMetadata data directly from the redux store. So that we don't need to run `initialize` function again
