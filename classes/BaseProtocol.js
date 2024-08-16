@@ -9,7 +9,7 @@ import { getTokenDecimal, approve } from "../utils/general";
 
 export default class BaseProtocol extends BaseUniswap {
   // arbitrum's Apollox is staked on PancakeSwap
-  constructor(chaindId, symbolList, token2TokenIdMapping, mode, customParams) {
+  constructor(chaindId, symbolList, mode, customParams) {
     super();
     this.protocolName = "placeholder";
     this.protocolVersion = "placeholder";
@@ -19,9 +19,16 @@ export default class BaseProtocol extends BaseUniswap {
 
     this.chainId = chaindId;
     this.symbolList = symbolList;
-    this.token2TokenIdMapping = token2TokenIdMapping;
     this.mode = mode;
     this.customParams = customParams;
+  }
+  uniqueId() {
+    return `${this.chainId}/${this.protocolName}/${
+      this.protocolVersion
+    }/${this.symbolList.join("-")}`;
+  }
+  tokens() {
+    throw new Error("Method 'tokens()' must be implemented.");
   }
   _checkIfParamsAreSet() {
     assert(this.protocolName !== "placeholder", "protocolName is not set");
@@ -50,10 +57,10 @@ export default class BaseProtocol extends BaseUniswap {
   claimAndSwapSteps() {
     throw new Error("Method 'claimAndSwapSteps()' must be implemented.");
   }
-  async userBalance(address) {
-    throw new Error("Method 'userBalance()' must be implemented.");
+  async usdBalanceOf(address) {
+    throw new Error("Method 'usdBalanceOf()' must be implemented.");
   }
-  async pendingRewards(address) {
+  async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
     throw new Error("Method 'pendingRewards()' must be implemented.");
   }
   async zapIn(

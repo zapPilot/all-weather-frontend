@@ -9,7 +9,6 @@ export class StablecoinVault extends BasePortfolio {
             interface: new ApolloX(
               42161,
               ["btc", "dai", "eth", "usdc(bridged)", "usdt"],
-              {},
               "single",
               {},
             ),

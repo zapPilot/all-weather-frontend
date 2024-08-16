@@ -1,19 +1,4 @@
-/*
-  This example requires some changes to your config:
-  
-  ```
-  // tailwind.config.js
-  module.exports = {
-    // ...
-    plugins: [
-      // ...
-      require('@tailwindcss/aspect-ratio'),
-    ],
-  }
-  ```
-*/
 "use client";
-// import { Button, Modal, Progress, Radio, ConfigProvider } from "antd";
 import BasePage from "../basePage.tsx";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import DecimalStep from "./DecimalStep";
@@ -24,24 +9,21 @@ import { Button, Progress } from "antd";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
-
-const product = {
-  name: "Everyday Ruck Snack",
-  href: "#",
-  price: "$220",
-  description: "A diversified stablecoin vault",
-  imageSrc: "/indexFunds/allWeatherPortfolio.png",
-  imageAlt:
-    "Model wearing light green backpack with black canvas straps and front zipper pouch.",
-  breadcrumbs: [
-    { id: 1, name: "Indexes", href: "#" },
-    { id: 2, name: "Bags", href: "#" },
-  ],
-};
+import { getLocalizedCurrencyAndExchangeRate } from "../../utils/general";
 
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
+  const product = {
+    description: "A diversified stablecoin vault",
+    imageSrc: "/indexFunds/allWeatherPortfolio.png",
+    imageAlt:
+      "Model wearing light green backpack with black canvas straps and front zipper pouch.",
+    breadcrumbs: [
+      { id: 1, name: "Indexes", href: "#" },
+      { id: 2, name: portfolioName, href: "#" },
+    ],
+  };
 
   const account = useActiveAccount();
   const [selectedToken, setSelectedToken] = useState(
@@ -54,8 +36,13 @@ export default function IndexOverviews() {
   const [progress, setProgress] = useState(0);
   const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(1);
-  const [zapOutPercentage, setZapOutPercentage] = useState(0);
-  const [sliderValue, setSliderValue] = useState(0);
+  const [zapOutPercentage, setZapOutPercentage] = useState(1);
+  const [sliderValue, setSliderValue] = useState(100);
+  const [portfolioApr, setPortfolioAPR] = useState(20);
+  const [usdBalance, setUsdBalance] = useState(0);
+  const [pendingRewards, setPendingRewards] = useState(0);
+  const [currency, setCurrency] = useState("USD");
+  const [exchangeRateWithUSD, setExchangeRateWithUSD] = useState(1);
 
   const handleSetSelectedToken = useCallback((token) => {
     setSelectedToken(token);
@@ -69,7 +56,6 @@ export default function IndexOverviews() {
   );
 
   const { mutate: sendBatchTransaction } = useSendBatchTransaction();
-  const [portfolioApr, setPortfolioAPR] = useState(20);
   const handleAAWalletAction = async (actionName) => {
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
     if (!tokenSymbolAndAddress) {
@@ -136,15 +122,42 @@ export default function IndexOverviews() {
     // Handle the successful result
     console.log("Transaction successful:", result);
   };
+  // Function to sum up the usdDenominatedValue
+  function sumUsdDenominatedValues(mapping) {
+    return Object.values(mapping).reduce((total, entry) => {
+      return total + (entry.usdDenominatedValue || 0);
+    }, 0);
+  }
+  const formatBalanceWithLocalizedCurrency = (usdDenominatedValue) => {
+    return exchangeRateWithUSD * usdDenominatedValue < 0.01
+      ? `${currency} ${exchangeRateWithUSD * usdDenominatedValue}`
+      : `${currency} ${(exchangeRateWithUSD * usdDenominatedValue).toFixed(2)}`;
+  };
   useEffect(() => {
-    if (!portfolioName) return;
+    if (!portfolioName || account === undefined) return;
     const fetchPortfolioAPR = async () => {
       const apr = await portfolioHelper.getPortfolioAPR();
-      console.log("apr", apr);
       setPortfolioAPR((apr.portfolioAPR * 100).toFixed(2));
     };
+    const fetchUsdBalance = async () => {
+      const usdBalance = await portfolioHelper.usdBalanceOf(account.address);
+      setUsdBalance(usdBalance);
+      const pendingRewards = await portfolioHelper.pendingRewards(
+        account.address,
+        (progressPercentage) => setProgress(progressPercentage),
+      );
+      setPendingRewards(sumUsdDenominatedValues(pendingRewards));
+    };
+    const fetchExchangeRateWithUSD = async () => {
+      const { currency, exchangeRateWithUSD } =
+        await getLocalizedCurrencyAndExchangeRate();
+      setCurrency(currency);
+      setExchangeRateWithUSD(exchangeRateWithUSD);
+    };
     fetchPortfolioAPR();
-  }, [portfolioName]);
+    fetchUsdBalance();
+    fetchExchangeRateWithUSD();
+  }, [portfolioName, account]);
 
   return (
     <BasePage>
@@ -194,10 +207,19 @@ export default function IndexOverviews() {
                 <p className="text-lg text-gray-900 sm:text-xl">
                   APR: {portfolioApr}%
                 </p>
+                <a
+                  href="#"
+                  className="group inline-flex text-sm text-gray-500 hover:text-gray-700"
+                >
+                  <QuestionMarkCircleIcon
+                    aria-hidden="true"
+                    className="ml-2 h-5 w-5 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
+                  />
+                </a>
 
                 <div className="ml-4 border-l border-gray-300 pl-4">
                   <div className="flex items-center">
-                    <p className="ml-2 text-sm text-gray-500">TVL: $1000</p>
+                    <p className="ml-2 text-sm text-gray-500">TVL: upcoming</p>
                   </div>
                 </div>
               </div>
@@ -236,20 +258,10 @@ export default function IndexOverviews() {
                       investmentAmount={investmentAmount}
                       setInvestmentAmount={handleSetInvestmentAmount}
                     />
-                    <a
-                      href="#"
-                      className="group inline-flex text-sm text-gray-500 hover:text-gray-700"
-                    >
-                      <QuestionMarkCircleIcon
-                        aria-hidden="true"
-                        className="ml-2 h-5 w-5 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
-                      />
-                    </a>
                   </fieldset>
                 </div>
                 <div className="mt-10">
                   <Button
-                    type="button"
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
                     onClick={() => handleAAWalletAction("zapIn")}
                     loading={zapInIsLoading}
@@ -258,29 +270,31 @@ export default function IndexOverviews() {
                   </Button>
                 </div>
                 <div className="mt-10">
-                  How Many % Do You Want to Zap Out:{" "}
                   <DecimalStep
                     setZapOutPercentage={setZapOutPercentage}
                     sliderValue={sliderValue}
                     setSliderValue={setSliderValue}
                   />
                   <Button
-                    type="button"
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
                     onClick={() => handleAAWalletAction("zapOut")}
                     loading={zapOutIsLoading}
+                    disabled={usdBalance === 0}
                   >
-                    Zap Out
+                    Zap Out{" "}
+                    {formatBalanceWithLocalizedCurrency(
+                      usdBalance * zapOutPercentage,
+                    )}
                   </Button>
                 </div>
                 <div className="mt-10">
                   <Button
-                    type="button"
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
                     onClick={() => handleAAWalletAction("claimAndSwap")}
                     loading={claimIsLoading}
+                    disabled={pendingRewards === 0}
                   >
-                    Claim and Swap
+                    Claim {formatBalanceWithLocalizedCurrency(pendingRewards)}
                   </Button>
                 </div>
                 {zapInIsLoading || zapOutIsLoading || claimIsLoading ? (

@@ -2,13 +2,13 @@ import { tokensAndCoinmarketcapIdsFromDropdownOptions } from "../utils/contractI
 import assert from "assert";
 import { oneInchAddress } from "../utils/oneInch";
 import axios from "axios";
+import { ethers } from "ethers";
 import { getTokenDecimal, approve } from "../utils/general";
 export class BasePortfolio {
   constructor(strategy) {
     this.strategy = strategy;
     this.portfolioAPR = {};
     this.existingInvestmentPositions = {};
-    this.tokenPricesMappingTable = {};
     this.assetAddressSetByChain = this._getAssetAddressSetByChain();
     this.uniqueTokenIdsForCurrentPrice =
       this._getUniqueTokenIdsForCurrentPrice();
@@ -32,29 +32,47 @@ export class BasePortfolio {
         updateProgress,
       );
   }
-  async userBalance(address) {
-    let balanceMappingTable = {};
+  async usdBalanceOf(address) {
+    let usdBalance = 0;
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const protocolsInThisChain of Object.values(
         protocolsInThisCategory,
       )) {
         for (const protocol of protocolsInThisChain) {
-          const balance = await protocol.interface.userBalance(address);
-          balanceMappingTable[protocol.interface.assetAddress] = balance;
+          const balance = await protocol.interface.usdBalanceOf(address);
+          usdBalance += balance;
         }
       }
     }
-    return balanceMappingTable;
+    return usdBalance;
   }
-  async pendingRewards(address) {
+  async pendingRewards(recipient, updateProgress) {
+    const tokenPricesMappingTable =
+      await this._getTokenPricesMappingTable(updateProgress);
+
     let rewardsMappingTable = {};
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const protocolsInThisChain of Object.values(
         protocolsInThisCategory,
       )) {
         for (const protocol of protocolsInThisChain) {
-          const rewards = await protocol.interface.pendingRewards(address);
-          rewardsMappingTable[protocol.interface.assetAddress] = rewards;
+          const rewards = await protocol.interface.pendingRewards(
+            recipient,
+            tokenPricesMappingTable,
+            updateProgress,
+          );
+          for (const [tokenSymbol, rewardMetadata] of Object.entries(rewards)) {
+            if (!rewardsMappingTable[tokenSymbol]) {
+              rewardsMappingTable[tokenSymbol] = {};
+            }
+            rewardsMappingTable[tokenSymbol]["balance"] = (
+              rewardsMappingTable[tokenSymbol]["balance"] ||
+              ethers.BigNumber.from(0)
+            ).add(rewardMetadata.balance);
+            rewardsMappingTable[tokenSymbol]["usdDenominatedValue"] =
+              (rewardsMappingTable[tokenSymbol]["usdDenominatedValue"] || 0) +
+              rewardMetadata.usdDenominatedValue;
+          }
         }
       }
     }
@@ -215,13 +233,26 @@ export class BasePortfolio {
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const protocols of Object.values(protocolsInThisCategory)) {
         for (const protocol of protocols) {
+          const apiSymbolToIdMapping = Object.values(
+            protocol.interface.tokens(),
+          )
+            .flatMap((tokenArray) =>
+              Array.isArray(tokenArray) ? tokenArray : [],
+            )
+            .reduce((idMapping, token) => {
+              if (token.coinmarketcapApiId !== undefined) {
+                idMapping[token.symbol] = token.coinmarketcapApiId;
+              }
+              return idMapping;
+            }, {});
           coinMarketCapIdSet = {
             ...coinMarketCapIdSet,
-            ...protocol.interface.token2TokenIdMapping,
+            ...apiSymbolToIdMapping,
           };
         }
       }
     }
+
     coinMarketCapIdSet = {
       ...coinMarketCapIdSet,
       ...tokensAndCoinmarketcapIdsFromDropdownOptions,
