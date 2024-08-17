@@ -81,6 +81,7 @@ export class ApolloX extends BaseProtocol {
         usdDenominatedValue:
           (tokenPricesMappingTable[token.symbol] * pendingReward) /
           Math.pow(10, token.decimals),
+        decimals: token.decimals,
       };
     }
     return rewardBalance;

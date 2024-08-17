@@ -72,6 +72,8 @@ export class BasePortfolio {
             rewardsMappingTable[tokenSymbol]["usdDenominatedValue"] =
               (rewardsMappingTable[tokenSymbol]["usdDenominatedValue"] || 0) +
               rewardMetadata.usdDenominatedValue;
+            rewardsMappingTable[tokenSymbol]["decimals"] =
+              rewardMetadata.decimals;
           }
         }
       }
