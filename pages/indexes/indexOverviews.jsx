@@ -9,8 +9,11 @@ import { Button, Progress } from "antd";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
-import { getLocalizedCurrencyAndExchangeRate } from "../../utils/general";
-
+import {
+  getLocalizedCurrencyAndExchangeRate,
+  formatBalanceWithLocalizedCurrency,
+} from "../../utils/general";
+import APRComposition from "../views/components/APRComposition";
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -43,6 +46,8 @@ export default function IndexOverviews() {
   const [pendingRewards, setPendingRewards] = useState(0);
   const [currency, setCurrency] = useState("USD");
   const [exchangeRateWithUSD, setExchangeRateWithUSD] = useState(1);
+  const [usdBalanceLoading, setUsdBalanceLoading] = useState(false);
+  const [pendingRewardsLoading, setPendingRewardsLoading] = useState(false);
 
   const handleSetSelectedToken = useCallback((token) => {
     setSelectedToken(token);
@@ -128,34 +133,40 @@ export default function IndexOverviews() {
       return total + (entry.usdDenominatedValue || 0);
     }, 0);
   }
-  const formatBalanceWithLocalizedCurrency = (usdDenominatedValue) => {
-    return exchangeRateWithUSD * usdDenominatedValue < 0.01
-      ? `${currency} ${exchangeRateWithUSD * usdDenominatedValue}`
-      : `${currency} ${(exchangeRateWithUSD * usdDenominatedValue).toFixed(2)}`;
-  };
   useEffect(() => {
     if (!portfolioName || account === undefined) return;
     const fetchPortfolioAPR = async () => {
+      if (!portfolioHelper) return;
       const apr = await portfolioHelper.getPortfolioAPR();
       setPortfolioAPR((apr.portfolioAPR * 100).toFixed(2));
     };
+    fetchPortfolioAPR();
+  }, [portfolioName, account]);
+  useEffect(() => {
+    if (!portfolioName || account === undefined) return;
     const fetchUsdBalance = async () => {
+      setUsdBalanceLoading(true);
       const usdBalance = await portfolioHelper.usdBalanceOf(account.address);
       setUsdBalance(usdBalance);
       const pendingRewards = await portfolioHelper.pendingRewards(
         account.address,
         (progressPercentage) => setProgress(progressPercentage),
       );
-      setPendingRewards(sumUsdDenominatedValues(pendingRewards));
+      setPendingRewards(pendingRewards);
+      setUsdBalanceLoading(false);
     };
+    fetchUsdBalance();
+  }, [portfolioName, account]);
+  useEffect(() => {
+    if (!portfolioName || account === undefined) return;
     const fetchExchangeRateWithUSD = async () => {
+      setPendingRewardsLoading(true);
       const { currency, exchangeRateWithUSD } =
         await getLocalizedCurrencyAndExchangeRate();
       setCurrency(currency);
       setExchangeRateWithUSD(exchangeRateWithUSD);
+      setPendingRewardsLoading(false);
     };
-    fetchPortfolioAPR();
-    fetchUsdBalance();
     fetchExchangeRateWithUSD();
   }, [portfolioName, account]);
 
@@ -278,12 +289,14 @@ export default function IndexOverviews() {
                   <Button
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
                     onClick={() => handleAAWalletAction("zapOut")}
-                    loading={zapOutIsLoading}
+                    loading={zapOutIsLoading || usdBalanceLoading}
                     disabled={usdBalance === 0}
                   >
                     Zap Out{" "}
                     {formatBalanceWithLocalizedCurrency(
+                      exchangeRateWithUSD,
                       usdBalance * zapOutPercentage,
+                      currency,
                     )}
                   </Button>
                 </div>
@@ -291,11 +304,22 @@ export default function IndexOverviews() {
                   <Button
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
                     onClick={() => handleAAWalletAction("claimAndSwap")}
-                    loading={claimIsLoading}
-                    disabled={pendingRewards === 0}
+                    loading={claimIsLoading || pendingRewardsLoading}
+                    disabled={sumUsdDenominatedValues(pendingRewards) === 0}
                   >
-                    Claim {formatBalanceWithLocalizedCurrency(pendingRewards)}
+                    Claim{" "}
+                    {formatBalanceWithLocalizedCurrency(
+                      exchangeRateWithUSD,
+                      sumUsdDenominatedValues(pendingRewards),
+                      currency,
+                    )}
                   </Button>
+                  <APRComposition
+                    APRData={pendingRewards}
+                    mode="pendingRewards"
+                    currency={currency}
+                    exchangeRateWithUSD={exchangeRateWithUSD}
+                  />
                 </div>
                 {zapInIsLoading || zapOutIsLoading || claimIsLoading ? (
                   <Progress

@@ -100,6 +100,15 @@ export async function getLocalizedCurrencyAndExchangeRate() {
     exchangeRateWithUSD,
   };
 }
+export const formatBalanceWithLocalizedCurrency = (
+  exchangeRateWithUSD,
+  usdDenominatedValue,
+  currency,
+) => {
+  return exchangeRateWithUSD * usdDenominatedValue < 0.01
+    ? `${exchangeRateWithUSD * usdDenominatedValue} ${currency}`
+    : `${(exchangeRateWithUSD * usdDenominatedValue).toFixed(2)} ${currency}`;
+};
 
 async function getexchangeRateWithUSD(currency) {
   try {
