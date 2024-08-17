@@ -1,75 +1,85 @@
-import React, { useState, useCallback, useEffect, memo } from "react";
-import { Button, Space, Select } from "antd";
-import { useReadContract } from "thirdweb/react";
-import { balanceOf } from "thirdweb/extensions/erc20";
-import { getContract } from "thirdweb";
+import React, { useEffect, memo, useState } from "react";
+import { Button, Space } from "antd";
+import {
+  useWalletBalance,
+  useActiveWalletChain,
+  useActiveAccount,
+} from "thirdweb/react";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
-import { useActiveWalletChain } from "thirdweb/react";
 import { arbitrum } from "thirdweb/chains";
 import NumericInput from "./NumberInput";
 import { selectBefore } from "../../utils/contractInteractions";
 
 const TokenDropdownInput = memo(
-  ({
-    selectedToken,
-    setSelectedToken,
-    investmentAmount,
-    setInvestmentAmount,
-  }) => {
+  ({ selectedToken, setSelectedToken, setInvestmentAmount }) => {
+    const [localInvestmentAmount, setLocalInvestmentAmount] = useState("");
+    const tokenAddress = selectedToken?.split("-")[1];
+    const account = useActiveAccount();
     const chainId = useActiveWalletChain();
-    const contract = getContract({
-      client: THIRDWEB_CLIENT,
+    const { data, isLoading } = useWalletBalance({
       chain: arbitrum,
-      address: selectedToken,
-    });
-
-    const { data: chosenTokenBalance } = useReadContract({
-      contract: contract,
-      method: balanceOf,
+      address: account?.address,
+      client: THIRDWEB_CLIENT,
+      tokenAddress,
     });
 
     const handleInputChange = (eventValue) => {
-      setInvestmentAmount(Number(eventValue));
+      setLocalInvestmentAmount(eventValue);
+      setInvestmentAmount(eventValue);
     };
 
     const handleOnClickMax = () => {
-      const balance = chosenTokenBalance ? chosenTokenBalance.displayValue : "";
-      handleInputChange(balance);
+      if (data?.displayValue) {
+        setLocalInvestmentAmount(data.displayValue);
+        setInvestmentAmount(data.displayValue);
+      }
+    };
+
+    const handleTokenChange = (value) => {
+      setSelectedToken(value);
+      setLocalInvestmentAmount(""); // Reset the input when token changes
+      setInvestmentAmount(0); // Also reset the parent state
     };
 
     useEffect(() => {
-      if (selectedToken) {
-        // Fetch balance or any other necessary data when selectedToken changes
-      }
-    }, [selectedToken]);
+      // Reset the input when selectedToken changes
+      setLocalInvestmentAmount("");
+      setInvestmentAmount(0);
+    }, [selectedToken, setInvestmentAmount]);
+
+    useEffect(() => {}, [localInvestmentAmount]);
 
     return (
       <>
         <Space style={{ margin: "10px 0" }} role="crypto_input">
-          {selectBefore(
-            (value) => {
-              setSelectedToken(value);
-            },
-            chainId?.id,
-            selectedToken, // Pass the current selected token
-          )}
+          {selectBefore(handleTokenChange, chainId?.id, selectedToken)}
           <NumericInput
-            placeholder={`Balance: ${
-              chosenTokenBalance ? chosenTokenBalance.displayValue : 0
-            }`}
-            value={investmentAmount}
-            onChange={(value) => {
-              handleInputChange(value);
-            }}
+            placeholder={isLoading ? "Loading..." : "Enter amount"}
+            value={localInvestmentAmount}
+            onChange={handleInputChange}
           />
-          <Button type="primary" onClick={handleOnClickMax}>
+          <Button
+            type="primary"
+            onClick={handleOnClickMax}
+            disabled={isLoading || !data?.displayValue}
+          >
             Max
           </Button>
         </Space>
+        <div
+          style={{
+            marginTop: "5px",
+            fontSize: "0.9em",
+            color: "rgba(0, 0, 0, 0.45)",
+          }}
+        >
+          Balance: {isLoading ? "Loading..." : data?.displayValue || "0"}
+        </div>
       </>
     );
   },
 );
+
 TokenDropdownInput.displayName = "TokenDropdownInput";
 
 export default TokenDropdownInput;
