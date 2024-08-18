@@ -258,14 +258,14 @@ export default function RebalanceChart(props) {
     mode,
     portfolio_apr,
     color,
+    wording,
+    portfolioStrategyName,
   } = props;
   const [data, setData] = useState(defaultData);
   const [apr, setAPR] = useState(0);
-  const [finalValue, setFinalValue] = useState("Your Portfolio Chart");
+  const [finalValue, setFinalValue] = useState("");
   const [clicked, setClicked] = useState(false);
-  const { strategyMetadata, loading, error } = useSelector(
-    (state) => state.strategyMetadata,
-  );
+  const { strategyMetadata } = useSelector((state) => state.strategyMetadata);
   const account = useActiveAccount();
 
   const divSunBurst = {
@@ -284,12 +284,24 @@ export default function RebalanceChart(props) {
   useEffect(() => {
     async function fetchData() {
       if (mode === "portfolioStrategy") {
-        const portfolioHelper = getPortfolioHelper("AllWeatherPortfolio");
-        portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
-        const [chartData, totalAPR] =
-          convertPortfolioStrategyToChartData(portfolioHelper);
-        setData(chartData);
-        setAPR(totalAPR);
+        let portfolioHelper;
+        console.log("strategyMetadata", strategyMetadata);
+        if (portfolioStrategyName === "AllWeatherPortfolio") {
+          // TODO: about to deprecate
+          portfolioHelper = getPortfolioHelper(portfolioStrategyName);
+          portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
+          const [chartData, totalAPR] =
+            convertPortfolioStrategyToChartData(portfolioHelper);
+          setData(chartData);
+          setAPR(totalAPR);
+        } else {
+          portfolioHelper = getPortfolioHelper(portfolioStrategyName);
+          // portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
+          // const [chartData, totalAPR] =
+          //   convertPortfolioStrategyToChartData(portfolioHelper);
+          // setData(chartData);
+          // setAPR(totalAPR);
+        }
       } else {
         if (!rebalanceSuggestions || rebalanceSuggestions.length === 0) return;
         // set showCategory = true, to show its category. For instance, long_term_bond
@@ -360,9 +372,13 @@ export default function RebalanceChart(props) {
         height={props.windowWidth > 767 ? 500 : 300}
         width={props.windowWidth > 767 ? 500 : 300}
       >
-        {finalValue && (
+        {finalValue ? (
           <LabelSeries
             data={[{ x: 0, y: 0, label: finalValue, style: LABEL_STYLE }]}
+          />
+        ) : (
+          <LabelSeries
+            data={[{ x: 0, y: 0, label: wording, style: LABEL_STYLE }]}
           />
         )}
       </Sunburst>

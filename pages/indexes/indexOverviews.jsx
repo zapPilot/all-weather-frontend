@@ -2,6 +2,7 @@
 import BasePage from "../basePage.tsx";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import DecimalStep from "./DecimalStep";
+import RebalanceChart from "../views/RebalanceChart";
 import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
@@ -244,10 +245,14 @@ export default function IndexOverviews() {
           {/* Product image */}
           <div className="mt-10 lg:col-start-2 lg:row-span-2 lg:mt-0 lg:self-center">
             <div className="aspect-h-1 aspect-w-1 overflow-hidden rounded-lg">
-              <img
-                alt={product.imageAlt}
-                src={product.imageSrc}
-                className="h-full w-full object-cover object-center"
+              <RebalanceChart
+                suggestions={[]}
+                netWorth={100}
+                showCategory={true}
+                mode="portfolioStrategy"
+                color="black"
+                wording={portfolioName}
+                portfolioStrategyName={portfolioName}
               />
             </div>
           </div>

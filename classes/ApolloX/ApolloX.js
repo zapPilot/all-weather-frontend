@@ -35,7 +35,8 @@ export class ApolloX extends BaseProtocol {
     this.stakeFarmContract = getContract({
       client: THIRDWEB_CLIENT,
       // PancakeSwap Stake would change this address from time to time
-      address: "0x97E3384447B52A63374EBA93cb36e02a20633926",
+      // old address: "0x97E3384447B52A63374EBA93cb36e02a20633926",
+      address: "0xaA0DE632A4071642d72Ceb03577F5534ea196927",
       chain: arbitrum,
       abi: SmartChefInitializable,
     });

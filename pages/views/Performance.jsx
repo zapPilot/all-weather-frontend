@@ -176,6 +176,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
         showCategory={true}
         portfolio_apr={data?.portfolio_apr}
         color="white"
+        wording="Your Portfolio Chart"
       />
     </>
   );
