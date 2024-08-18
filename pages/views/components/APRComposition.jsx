@@ -9,12 +9,12 @@ const APRComposition = ({ APRData, mode, currency, exchangeRateWithUSD }) => {
         return (
           <div key={key}>
             <Image
-              src={`/tokenPictures/${key}.webp`}
+              src={`/tokenPictures/${value.symbol}.webp`}
               width={20}
               height={20}
               alt={key}
             />
-            {key}{" "}
+            {value.symbol}{" "}
             {formatBalanceWithLocalizedCurrency(
               exchangeRateWithUSD,
               value.usdDenominatedValue,

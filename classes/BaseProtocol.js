@@ -158,6 +158,7 @@ export default class BaseProtocol extends BaseUniswap {
       recipient,
       percentage,
       slippage,
+      tokenPricesMappingTable,
       updateProgress,
       customParams,
     );
@@ -174,11 +175,13 @@ export default class BaseProtocol extends BaseUniswap {
     recipient,
     outputToken,
     slippage,
+    tokenPricesMappingTable,
     updateProgress,
     existingInvestmentPositionsInThisChain,
   ) {
     const [claimTxns, claimedTokenAndBalance] = await this.claim(
       recipient,
+      tokenPricesMappingTable,
       updateProgress,
     );
     const txns = await this._afterZapOut(
@@ -190,7 +193,7 @@ export default class BaseProtocol extends BaseUniswap {
     );
     return [...claimTxns, ...txns];
   }
-  async claim(recipient) {
+  async claim(recipient, tokenPricesMappingTable, updateProgress) {
     throw new Error("Method 'claim()' must be implemented.");
   }
   async _beforeZapIn(
@@ -246,8 +249,11 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
   ) {
     let txns = [];
-    for (const [address, amount] of Object.entries(withdrawTokenAndBalance)) {
-      if (amount === 0) {
+    for (const [address, tokenMetadata] of Object.entries(
+      withdrawTokenAndBalance,
+    )) {
+      const amount = tokenMetadata.balance;
+      if (amount.toString() === "0" || amount === 0) {
         continue;
       }
       const tokenInstance = new ethers.Contract(address, ERC20_ABI, PROVIDER);
@@ -336,7 +342,14 @@ export default class BaseProtocol extends BaseUniswap {
   async customZapIn(amount) {
     throw new Error("Method 'customZapIn()' must be implemented.", amount);
   }
-  async customZapOut(amount) {
+  async customZapOut(
+    recipient,
+    percentage,
+    slippage,
+    tokenPricesMappingTable,
+    updateProgress,
+    customParams,
+  ) {
     throw new Error(
       "Method 'customZapOut()' must be implemented. Also need to take claim() into account.",
       amount,

@@ -5,7 +5,7 @@ import DecimalStep from "./DecimalStep";
 import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
-import { Button, Progress } from "antd";
+import { Button, Progress, ConfigProvider, Radio } from "antd";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
@@ -266,9 +266,43 @@ export default function IndexOverviews() {
                     <TokenDropdownInput
                       selectedToken={selectedToken}
                       setSelectedToken={handleSetSelectedToken}
-                      investmentAmount={investmentAmount}
                       setInvestmentAmount={handleSetInvestmentAmount}
                     />
+                    <ConfigProvider
+                      theme={{
+                        token: {
+                          colorPrimary: "#5DFDCB",
+                          colorTextLightSolid: "#000000",
+                        },
+                      }}
+                    >
+                      Slippage:
+                      <Radio.Group
+                        value={slippage}
+                        buttonStyle="solid"
+                        onChange={(e) => setSlippage(e.target.value)}
+                      >
+                        {[0.5, 1, 3, 5].map((slippageValue) => (
+                          <Radio.Button
+                            value={slippageValue}
+                            key={slippageValue}
+                          >
+                            {slippageValue}%
+                          </Radio.Button>
+                        ))}
+                      </Radio.Group>
+                      <span
+                        style={{
+                          marginTop: "5px",
+                          fontSize: "0.9em",
+                          color: "rgba(0, 0, 0, 0.45)",
+                        }}
+                      >
+                        Minimum Receive: $
+                        {investmentAmount * (1 - slippage / 100)}
+                      </span>
+                    </ConfigProvider>
+                    <div>Service Fee: $0 (will be 0.1% in the future)</div>
                   </fieldset>
                 </div>
                 <div className="mt-10">
@@ -276,6 +310,7 @@ export default function IndexOverviews() {
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
                     onClick={() => handleAAWalletAction("zapIn")}
                     loading={zapInIsLoading}
+                    disabled={investmentAmount === 0}
                   >
                     Zap In
                   </Button>
