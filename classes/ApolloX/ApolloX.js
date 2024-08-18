@@ -76,11 +76,13 @@ export class ApolloX extends BaseProtocol {
     )[0];
     let rewardBalance = {};
     for (const token of this.tokens().rewards) {
-      rewardBalance[token.symbol] = {
+      rewardBalance[token.address] = {
+        symbol: token.symbol,
         balance: pendingReward,
         usdDenominatedValue:
           (tokenPricesMappingTable[token.symbol] * pendingReward) /
           Math.pow(10, token.decimals),
+        decimals: token.decimals,
       };
     }
     return rewardBalance;
@@ -124,6 +126,7 @@ export class ApolloX extends BaseProtocol {
     recipient,
     percentage,
     slippage,
+    tokenPricesMappingTable,
     updateProgress,
     customParams,
   ) {
@@ -154,7 +157,11 @@ export class ApolloX extends BaseProtocol {
       ((amount / 1e18) * latestPrice * (100 - slippage)) / 100;
     // TODO: we might enable zap out to other token down the road
     const minOutAmount = Math.floor(estimatedZapOutUsdValue * 1e6);
-    const bestTokenAddressToZapOut = this._getTheBestTokenAddressToZapOut();
+    const [
+      symbolOfBestTokenToZapOut,
+      bestTokenAddressToZapOut,
+      decimalOfBestTokenToZapOut,
+    ] = this._getTheBestTokenAddressToZapOut();
     const burnTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "burnAlp", // <- this gets inferred from the contract
@@ -163,14 +170,21 @@ export class ApolloX extends BaseProtocol {
     const withdrawTokenAndBalance =
       await this._calculateWithdrawTokenAndBalance(
         recipient,
+        symbolOfBestTokenToZapOut,
         bestTokenAddressToZapOut,
+        decimalOfBestTokenToZapOut,
         minOutAmount,
+        tokenPricesMappingTable,
         updateProgress,
       );
     return [[withdrawTxn, approveAlpTxn, burnTxn], withdrawTokenAndBalance];
   }
-  async claim(recipient, updateProgress) {
-    const pendingRewards = await this.pendingRewards(recipient, updateProgress);
+  async claim(recipient, tokenPricesMappingTable, updateProgress) {
+    const pendingRewards = await this.pendingRewards(
+      recipient,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
     const claimTxn = prepareContractCall({
       contract: this.stakeFarmContract,
       method: "deposit",
@@ -217,17 +231,31 @@ export class ApolloX extends BaseProtocol {
   _getTheBestTokenAddressToZapOut() {
     // TODO: minor, but we can read the composition of ALP to get the cheapest token to zap in
     const usdcBridgedAddress = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8";
-    return usdcBridgedAddress;
+    return ["usdc.e", usdcBridgedAddress, 6];
   }
   async _calculateWithdrawTokenAndBalance(
     recipient,
+    symbolOfBestTokenToZapOut,
     bestTokenAddressToZapOut,
+    decimalOfBestTokenToZapOut,
     minOutAmount,
+    tokenPricesMappingTable,
     updateProgress,
   ) {
     let withdrawTokenAndBalance = {};
-    withdrawTokenAndBalance[bestTokenAddressToZapOut] = minOutAmount;
-    const pendingRewards = await this.pendingRewards(recipient, updateProgress);
+    withdrawTokenAndBalance[bestTokenAddressToZapOut] = {
+      symbol: symbolOfBestTokenToZapOut,
+      balance: minOutAmount,
+      usdDenominatedValue:
+        (tokenPricesMappingTable[symbolOfBestTokenToZapOut] * minOutAmount) /
+        Math.pow(10, decimalOfBestTokenToZapOut),
+      decimals: decimalOfBestTokenToZapOut,
+    };
+    const pendingRewards = await this.pendingRewards(
+      recipient,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
     withdrawTokenAndBalance = { ...withdrawTokenAndBalance, ...pendingRewards };
     return withdrawTokenAndBalance;
   }

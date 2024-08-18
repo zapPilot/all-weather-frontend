@@ -61,17 +61,22 @@ export class BasePortfolio {
             tokenPricesMappingTable,
             updateProgress,
           );
-          for (const [tokenSymbol, rewardMetadata] of Object.entries(rewards)) {
-            if (!rewardsMappingTable[tokenSymbol]) {
-              rewardsMappingTable[tokenSymbol] = {};
+          for (const [tokenAddress, rewardMetadata] of Object.entries(
+            rewards,
+          )) {
+            if (!rewardsMappingTable[tokenAddress]) {
+              rewardsMappingTable[tokenAddress] = {};
             }
-            rewardsMappingTable[tokenSymbol]["balance"] = (
-              rewardsMappingTable[tokenSymbol]["balance"] ||
+            rewardsMappingTable[tokenAddress]["balance"] = (
+              rewardsMappingTable[tokenAddress]["balance"] ||
               ethers.BigNumber.from(0)
             ).add(rewardMetadata.balance);
-            rewardsMappingTable[tokenSymbol]["usdDenominatedValue"] =
-              (rewardsMappingTable[tokenSymbol]["usdDenominatedValue"] || 0) +
+            rewardsMappingTable[tokenAddress]["usdDenominatedValue"] =
+              (rewardsMappingTable[tokenAddress]["usdDenominatedValue"] || 0) +
               rewardMetadata.usdDenominatedValue;
+            rewardsMappingTable[tokenAddress]["decimals"] =
+              rewardMetadata.decimals;
+            rewardsMappingTable[tokenAddress]["symbol"] = rewardMetadata.symbol;
           }
         }
       }
@@ -198,6 +203,7 @@ export class BasePortfolio {
               actionParams.account.address,
               actionParams.tokenOutAddress,
               actionParams.slippage,
+              actionParams.tokenPricesMappingTable,
               actionParams.updateProgress,
               this.existingInvestmentPositions[chain],
             );
