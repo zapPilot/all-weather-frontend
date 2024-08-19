@@ -7,11 +7,10 @@ export function getPortfolioHelper(
   let portfolioHelper: AllWeatherPortfolio | BasePortfolio;
   if (portfolioName === "AllWeatherPortfolio") {
     portfolioHelper = new AllWeatherPortfolio();
-  } else if (portfolioName === "StablecoinVault") {
+  } else if (portfolioName === "Stablecoin Vault") {
     portfolioHelper = new StablecoinVault();
   } else {
     return;
-    // throw new Error(`Invalid portfolio name`);
   }
   return portfolioHelper;
 }

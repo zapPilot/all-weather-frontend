@@ -126,6 +126,8 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
             showCategory={true}
             mode="portfolioStrategy"
             color="black"
+            wording="Your Portfolio Chart"
+            portfolioStrategyName="AllWeatherPortfolio"
           />
           <form className="mt-12">
             <TokenDropdownInput

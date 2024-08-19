@@ -2,6 +2,8 @@
 import BasePage from "../basePage.tsx";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import DecimalStep from "./DecimalStep";
+import Image from "next/image";
+import RebalanceChart from "../views/RebalanceChart";
 import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
@@ -41,7 +43,7 @@ export default function IndexOverviews() {
   const [slippage, setSlippage] = useState(1);
   const [zapOutPercentage, setZapOutPercentage] = useState(1);
   const [sliderValue, setSliderValue] = useState(100);
-  const [portfolioApr, setPortfolioAPR] = useState(20);
+  const [portfolioApr, setPortfolioAPR] = useState({ portfolioApr: 20 });
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
   const [currency, setCurrency] = useState("USD");
@@ -55,10 +57,11 @@ export default function IndexOverviews() {
   const handleSetInvestmentAmount = useCallback((amount) => {
     setInvestmentAmount(amount);
   }, []);
-  const portfolioHelper = useMemo(
-    () => getPortfolioHelper(portfolioName?.replace(" ", "")),
-    [portfolioName],
-  );
+  // const portfolioHelper = useMemo(
+  //   () => getPortfolioHelper(portfolioName?.replace(" ", "")),
+  //   [portfolioName],
+  // );
+  const portfolioHelper = getPortfolioHelper(portfolioName);
 
   const { mutate: sendBatchTransaction } = useSendBatchTransaction();
   const handleAAWalletAction = async (actionName) => {
@@ -136,9 +139,8 @@ export default function IndexOverviews() {
   useEffect(() => {
     if (!portfolioName || account === undefined) return;
     const fetchPortfolioAPR = async () => {
-      if (!portfolioHelper) return;
-      const apr = await portfolioHelper.getPortfolioAPR();
-      setPortfolioAPR((apr.portfolioAPR * 100).toFixed(2));
+      const portfolioAprDict = await portfolioHelper.getPortfolioAPR();
+      setPortfolioAPR(portfolioAprDict);
     };
     fetchPortfolioAPR();
   }, [portfolioName, account]);
@@ -216,7 +218,7 @@ export default function IndexOverviews() {
 
               <div className="flex items-center">
                 <p className="text-lg text-gray-900 sm:text-xl">
-                  APR: {portfolioApr}%
+                  APR: {(portfolioApr.portfolioAPR * 100).toFixed(2)}%
                 </p>
                 <a
                   href="#"
@@ -244,12 +246,109 @@ export default function IndexOverviews() {
           {/* Product image */}
           <div className="mt-10 lg:col-start-2 lg:row-span-2 lg:mt-0 lg:self-center">
             <div className="aspect-h-1 aspect-w-1 overflow-hidden rounded-lg">
-              <img
-                alt={product.imageAlt}
-                src={product.imageSrc}
-                className="h-full w-full object-cover object-center"
-              />
+              {portfolioHelper && (
+                <RebalanceChart
+                  suggestions={[]}
+                  netWorth={100}
+                  showCategory={true}
+                  mode="portfolioStrategy"
+                  color="black"
+                  wording={portfolioName}
+                  portfolioStrategyName={portfolioName}
+                />
+              )}
             </div>
+            Portfolio BreakDown
+            <section aria-labelledby="cart-heading">
+              <ul
+                role="list"
+                className="divide-y divide-gray-200 border-b border-t border-gray-200"
+              >
+                {portfolioHelper &&
+                  Object.entries(portfolioHelper.strategy).map(
+                    ([category, protocols]) => (
+                      <li key={category} className="flex py-6">
+                        <div className="ml-4 flex flex-1 flex-col sm:ml-6">
+                          <div>
+                            <div className="flex justify-between">
+                              <h4 className="text-sm">
+                                <a className="font-medium text-gray-700 hover:text-gray-800">
+                                  {category}:{" "}
+                                  {portfolioHelper.weightMapping[category] *
+                                    100}
+                                  %
+                                </a>
+                              </h4>
+                              <p className="ml-4 text-sm font-medium text-gray-900">
+                                $
+                                {(
+                                  portfolioHelper.weightMapping[category] *
+                                  investmentAmount
+                                ).toFixed(2)}
+                              </p>
+                            </div>
+                            {Object.entries(protocols).map(
+                              ([chain, protocolArray], index) => (
+                                <div key={`${chain}-${index}`}>
+                                  <p className="mt-1 text-sm text-gray-500 flex items-center">
+                                    <Image
+                                      src={`/chainPicturesWebp/${chain}.webp`}
+                                      alt={chain}
+                                      height={25}
+                                      width={25}
+                                    />
+                                    <span className="ml-2">{chain}</span>
+                                  </p>
+
+                                  {protocolArray.map((protocol, index) => (
+                                    <div
+                                      className="mt-1 text-sm text-gray-500 flex items-center justify-between"
+                                      key={`${protocol.interface.protocolName}-${index}`}
+                                    >
+                                      <div className="flex items-center">
+                                        <Image
+                                          src={`/projectPictures/${protocol.interface.protocolName}.webp`}
+                                          alt={protocol.interface.protocolName}
+                                          height={25}
+                                          width={25}
+                                        />
+                                        {protocol.interface.protocolName}
+                                        {protocol.interface.symbolList.map(
+                                          (symbol, index) => (
+                                            <Image
+                                              key={`${symbol}-${index}`}
+                                              src={`/tokenPictures/${symbol}.webp`}
+                                              alt={symbol}
+                                              height={20}
+                                              width={20}
+                                            />
+                                          ),
+                                        )}
+                                        {protocol.interface.symbolList.join(
+                                          "-",
+                                        )}
+                                      </div>
+                                      <span className="ml-4 text-sm font-medium text-gray-900">
+                                        APR:{" "}
+                                        {(
+                                          portfolioApr[
+                                            protocol.interface.uniqueId()
+                                          ]?.apr * 100
+                                        ).toFixed(2)}
+                                        %
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ),
+                            )}
+                          </div>
+                        </div>
+                      </li>
+                    ),
+                  )}
+              </ul>
+            </section>
           </div>
 
           {/* Product form */}
@@ -302,7 +401,7 @@ export default function IndexOverviews() {
                         {investmentAmount * (1 - slippage / 100)}
                       </span>
                     </ConfigProvider>
-                    <div>Service Fee: $0 (will be 0.1% in the future)</div>
+                    <div>Service Fee: $0 (will charge 0.1% in the future)</div>
                   </fieldset>
                 </div>
                 <div className="mt-10">
