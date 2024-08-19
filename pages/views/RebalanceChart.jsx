@@ -211,6 +211,37 @@ export function convertPortfolioStrategyToChartData(portfolioHelper) {
   return [result, totalAPR];
 }
 
+export async function convertPortfolioStrategyToChartDataV2(portfolioHelper) {
+  const portfolioAPRData = await portfolioHelper.getPortfolioAPR();
+  let result = { children: [] };
+  let idx = 0;
+  // need to refactor
+  let nameToColor = {};
+  for (const [category, protocols] of Object.entries(
+    portfolioHelper.strategy,
+  )) {
+    for (const protocolArray of Object.values(protocols)) {
+      for (const protocol of protocolArray) {
+        const weightedValue = protocol.weight * 100;
+        const keyForpoolsMetadata = protocol.interface.uniqueId();
+        const aprOfProtocol = portfolioAPRData[keyForpoolsMetadata]?.apr * 100;
+        const name = `${protocol.interface.toString()},APR: ${aprOfProtocol.toFixed(
+          2,
+        )}%`;
+        [nameToColor, idx] = _prepareSunburstData(
+          result,
+          nameToColor,
+          name,
+          idx,
+          category,
+          weightedValue,
+        );
+      }
+    }
+  }
+  return [result, portfolioAPRData.portfolioAPR];
+}
+
 export function _prepareSunburstData(
   result,
   nameToColor,
@@ -258,14 +289,14 @@ export default function RebalanceChart(props) {
     mode,
     portfolio_apr,
     color,
+    wording,
+    portfolioStrategyName,
   } = props;
   const [data, setData] = useState(defaultData);
   const [apr, setAPR] = useState(0);
-  const [finalValue, setFinalValue] = useState("Your Portfolio Chart");
+  const [finalValue, setFinalValue] = useState("");
   const [clicked, setClicked] = useState(false);
-  const { strategyMetadata, loading, error } = useSelector(
-    (state) => state.strategyMetadata,
-  );
+  const { strategyMetadata } = useSelector((state) => state.strategyMetadata);
   const account = useActiveAccount();
 
   const divSunBurst = {
@@ -284,12 +315,22 @@ export default function RebalanceChart(props) {
   useEffect(() => {
     async function fetchData() {
       if (mode === "portfolioStrategy") {
-        const portfolioHelper = getPortfolioHelper("AllWeatherPortfolio");
-        portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
-        const [chartData, totalAPR] =
-          convertPortfolioStrategyToChartData(portfolioHelper);
-        setData(chartData);
-        setAPR(totalAPR);
+        let portfolioHelper;
+        if (portfolioStrategyName === "AllWeatherPortfolio") {
+          // TODO: about to deprecate
+          portfolioHelper = getPortfolioHelper(portfolioStrategyName);
+          portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
+          const [chartData, totalAPR] =
+            convertPortfolioStrategyToChartData(portfolioHelper);
+          setData(chartData);
+          setAPR(totalAPR);
+        } else {
+          portfolioHelper = getPortfolioHelper(portfolioStrategyName);
+          const [chartData, totalAPR] =
+            await convertPortfolioStrategyToChartDataV2(portfolioHelper);
+          setData(chartData);
+          setAPR(totalAPR);
+        }
       } else {
         if (!rebalanceSuggestions || rebalanceSuggestions.length === 0) return;
         // set showCategory = true, to show its category. For instance, long_term_bond
@@ -360,13 +401,17 @@ export default function RebalanceChart(props) {
         height={props.windowWidth > 767 ? 500 : 300}
         width={props.windowWidth > 767 ? 500 : 300}
       >
-        {finalValue && (
+        {finalValue ? (
           <LabelSeries
             data={[{ x: 0, y: 0, label: finalValue, style: LABEL_STYLE }]}
           />
+        ) : (
+          <LabelSeries
+            data={[{ x: 0, y: 0, label: wording, style: LABEL_STYLE }]}
+          />
         )}
       </Sunburst>
-      <center style={LABEL_STYLE}>APR: {apr.toFixed(2)}%</center>
+      <center style={LABEL_STYLE}>APR: {apr?.toFixed(2)}%</center>
     </div>
   );
 }
