@@ -211,6 +211,37 @@ export function convertPortfolioStrategyToChartData(portfolioHelper) {
   return [result, totalAPR];
 }
 
+export async function convertPortfolioStrategyToChartDataV2(portfolioHelper) {
+  const portfolioAPRData = await portfolioHelper.getPortfolioAPR();
+  let result = { children: [] };
+  let idx = 0;
+  // need to refactor
+  let nameToColor = {};
+  for (const [category, protocols] of Object.entries(
+    portfolioHelper.strategy,
+  )) {
+    for (const protocolArray of Object.values(protocols)) {
+      for (const protocol of protocolArray) {
+        const weightedValue = protocol.weight * 100;
+        const keyForpoolsMetadata = protocol.interface.uniqueId();
+        const aprOfProtocol = portfolioAPRData[keyForpoolsMetadata]?.apr * 100;
+        const name = `${protocol.interface.toString()},APR: ${aprOfProtocol.toFixed(
+          2,
+        )}%`;
+        [nameToColor, idx] = _prepareSunburstData(
+          result,
+          nameToColor,
+          name,
+          idx,
+          category,
+          weightedValue,
+        );
+      }
+    }
+  }
+  return [result, portfolioAPRData.portfolioAPR];
+}
+
 export function _prepareSunburstData(
   result,
   nameToColor,
@@ -285,7 +316,6 @@ export default function RebalanceChart(props) {
     async function fetchData() {
       if (mode === "portfolioStrategy") {
         let portfolioHelper;
-        console.log("strategyMetadata", strategyMetadata);
         if (portfolioStrategyName === "AllWeatherPortfolio") {
           // TODO: about to deprecate
           portfolioHelper = getPortfolioHelper(portfolioStrategyName);
@@ -296,11 +326,10 @@ export default function RebalanceChart(props) {
           setAPR(totalAPR);
         } else {
           portfolioHelper = getPortfolioHelper(portfolioStrategyName);
-          // portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
-          // const [chartData, totalAPR] =
-          //   convertPortfolioStrategyToChartData(portfolioHelper);
-          // setData(chartData);
-          // setAPR(totalAPR);
+          const [chartData, totalAPR] =
+            await convertPortfolioStrategyToChartDataV2(portfolioHelper);
+          setData(chartData);
+          setAPR(totalAPR);
         }
       } else {
         if (!rebalanceSuggestions || rebalanceSuggestions.length === 0) return;
@@ -382,7 +411,7 @@ export default function RebalanceChart(props) {
           />
         )}
       </Sunburst>
-      <center style={LABEL_STYLE}>APR: {apr.toFixed(2)}%</center>
+      <center style={LABEL_STYLE}>APR: {apr?.toFixed(2)}%</center>
     </div>
   );
 }

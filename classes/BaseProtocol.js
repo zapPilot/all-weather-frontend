@@ -9,7 +9,7 @@ import { getTokenDecimal, approve } from "../utils/general";
 
 export default class BaseProtocol extends BaseUniswap {
   // arbitrum's Apollox is staked on PancakeSwap
-  constructor(chaindId, symbolList, mode, customParams) {
+  constructor(chain, chaindId, symbolList, mode, customParams) {
     super();
     this.protocolName = "placeholder";
     this.protocolVersion = "placeholder";
@@ -17,15 +17,25 @@ export default class BaseProtocol extends BaseUniswap {
     this.protocolContract = "placeholder";
     this.stakeFarmContract = "placeholder";
 
+    this.chain = chain;
     this.chainId = chaindId;
     this.symbolList = symbolList;
     this.mode = mode;
     this.customParams = customParams;
   }
   uniqueId() {
-    return `${this.chainId}/${this.protocolName}/${
+    return `${this.chain}/${this.protocolName}/${
       this.protocolVersion
     }/${this.symbolList.join("-")}`;
+  }
+  toString() {
+    // If the symbolList is too long, it will be truncated
+    const maxSymbols = 2; // Define the maximum number of symbols to show
+    const symbolList =
+      this.symbolList.length > maxSymbols
+        ? `${this.symbolList.slice(0, maxSymbols).join("-")}-...`
+        : this.symbolList.join("-");
+    return `${this.chain}/${this.protocolName}/${symbolList}`;
   }
   tokens() {
     throw new Error("Method 'tokens()' must be implemented.");

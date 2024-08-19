@@ -5,25 +5,14 @@ import axios from "axios";
 import { ethers } from "ethers";
 import { getTokenDecimal, approve } from "../utils/general";
 export class BasePortfolio {
-  constructor(strategy) {
+  constructor(strategy, weightMapping) {
     this.strategy = strategy;
     this.portfolioAPR = {};
     this.existingInvestmentPositions = {};
     this.assetAddressSetByChain = this._getAssetAddressSetByChain();
     this.uniqueTokenIdsForCurrentPrice =
       this._getUniqueTokenIdsForCurrentPrice();
-
-    this.weightMapping = {
-      // example:
-      //   long_term_bond: 0,
-      //   intermediate_term_bond: 0.25 * 2,
-      //   commodities: 0.1 * 2,
-      //   gold: 0.1 * 2,
-      //   large_cap_us_stocks: 0.12 * 2,
-      //   small_cap_us_stocks: 0.01 * 2,
-      //   non_us_developed_market_stocks: 0.02 * 2,
-      //   non_us_emerging_market_stocks: 0.01 * 2,
-    };
+    this.weightMapping = weightMapping;
   }
   async initialize() {
     this.existingInvestmentPositions =
@@ -92,9 +81,7 @@ export class BasePortfolio {
     );
     await Promise.all(
       allProtocols.map(async ({ chain, protocol }) => {
-        // const symbolList = protocol.interface.symbolList.join("+");
-        const sortedSymbolList = protocol.interface.symbolList.sort().join("-");
-        const poolUniqueKey = `${chain}/${protocol.interface.protocolName}/${protocol.interface.protocolVersion}/${sortedSymbolList}`;
+        const poolUniqueKey = protocol.interface.uniqueId();
         const url = `${process.env.NEXT_PUBLIC_API_URL}/pool/${poolUniqueKey}/apr`;
         try {
           const response = await fetch(url);
@@ -115,20 +102,10 @@ export class BasePortfolio {
     );
     return aprMappingTable;
   }
-  reuseFetchedDataFromRedux(slice) {
-    // get strategyMetadata data directly from the redux store. So that we don't need to run `initialize` function again
-    // this data is for SunBurst chart to visualize the data
-    this.portfolioAPR = slice;
-  }
   async getExistingInvestmentPositions() {
     throw new Error(
       "Method 'getExistingInvestmentPositions()' must be implemented.",
     );
-  }
-  reuseExistingInvestmentPositionsFromRedux(slice) {
-    // get strategyMetadata data directly from the redux store. So that we don't need to run `initialize` function again
-    // this data is for SunBurst chart to visualize the data
-    this.existingInvestmentPositions = slice;
   }
 
   async portfolioAction(actionName, actionParams) {
