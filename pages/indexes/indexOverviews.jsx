@@ -246,15 +246,17 @@ export default function IndexOverviews() {
           {/* Product image */}
           <div className="mt-10 lg:col-start-2 lg:row-span-2 lg:mt-0 lg:self-center">
             <div className="aspect-h-1 aspect-w-1 overflow-hidden rounded-lg">
-              <RebalanceChart
-                suggestions={[]}
-                netWorth={100}
-                showCategory={true}
-                mode="portfolioStrategy"
-                color="black"
-                wording={portfolioName}
-                portfolioStrategyName={portfolioName}
-              />
+              {portfolioHelper && (
+                <RebalanceChart
+                  suggestions={[]}
+                  netWorth={100}
+                  showCategory={true}
+                  mode="portfolioStrategy"
+                  color="black"
+                  wording={portfolioName}
+                  portfolioStrategyName={portfolioName}
+                />
+              )}
             </div>
             Portfolio BreakDown
             <section aria-labelledby="cart-heading">
