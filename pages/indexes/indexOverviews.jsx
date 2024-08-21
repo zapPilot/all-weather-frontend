@@ -340,7 +340,11 @@ export default function IndexOverviews() {
                                             (symbol, index) => (
                                               <Image
                                                 key={`${symbol}-${index}`}
-                                                src={`/tokenPictures/${symbol}.webp`}
+                                                // use usdc instead of usdc(bridged), aka, usdc.e for the image
+                                                src={`/tokenPictures/${symbol.replace(
+                                                  "(bridged)",
+                                                  "",
+                                                )}.webp`}
                                                 alt={symbol}
                                                 height={20}
                                                 width={20}
