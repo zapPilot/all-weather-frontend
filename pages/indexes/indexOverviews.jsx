@@ -26,8 +26,12 @@ export default function IndexOverviews() {
     imageAlt:
       "Model wearing light green backpack with black canvas straps and front zipper pouch.",
     breadcrumbs: [
-      { id: 1, name: "Indexes", href: "#" },
-      { id: 2, name: portfolioName, href: "#" },
+      { id: 1, name: "Indexes", href: "/indexes" },
+      {
+        id: 2,
+        name: portfolioName,
+        href: `/indexes/indexOverviews/?portfolioName=${portfolioName}`,
+      },
     ],
   };
 
