@@ -99,6 +99,7 @@ export default function Example() {
                     <td className="whitespace-nowrap px-2 py-4 text-sm font-medium text-white">
                       <p
                         className="max-w-64 sm:max-w-full truncate"
+                        role="address"
                       >
                         {address.address}
                       </p>
