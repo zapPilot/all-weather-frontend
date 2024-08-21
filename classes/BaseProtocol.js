@@ -6,6 +6,7 @@ import { ERC20_ABI } from "../node_modules/@etherspot/prime-sdk/dist/sdk/helpers
 import BaseUniswap from "./uniswapv3/BaseUniswap.js";
 import assert from "assert";
 import { getTokenDecimal, approve } from "../utils/general";
+import { walletActions } from "viem";
 
 export default class BaseProtocol extends BaseUniswap {
   // arbitrum's Apollox is staked on PancakeSwap
@@ -13,6 +14,7 @@ export default class BaseProtocol extends BaseUniswap {
     super();
     this.protocolName = "placeholder";
     this.protocolVersion = "placeholder";
+    this.assetDecimals = "placeholder";
     this.assetContract = "placeholder";
     this.protocolContract = "placeholder";
     this.stakeFarmContract = "placeholder";
@@ -22,6 +24,11 @@ export default class BaseProtocol extends BaseUniswap {
     this.symbolList = symbolList;
     this.mode = mode;
     this.customParams = customParams;
+    assert(chain !== undefined, "chain is not set");
+    assert(chaindId !== undefined, "chainId is not set");
+    assert(symbolList !== undefined, "symbolList is not set");
+    assert(mode !== undefined, "mode is not set");
+    assert(customParams !== undefined, "customParams is not set");
   }
   uniqueId() {
     return `${this.chain}/${this.protocolName}/${
@@ -46,6 +53,7 @@ export default class BaseProtocol extends BaseUniswap {
       this.protocolVersion !== "placeholder",
       "protocolVersion is not set",
     );
+    assert(this.assetDecimals !== "placeholder", "assetDecimals is not set");
     assert(typeof this.assetContract === "object", "assetContract is not set");
     assert(
       typeof this.protocolContract === "object",
@@ -84,17 +92,23 @@ export default class BaseProtocol extends BaseUniswap {
     existingInvestmentPositionsInThisChain,
   ) {
     if (this.mode === "single") {
-      const [beforeZapInTxns, bestTokenAddressToZapIn, amountToZapIn] =
-        await this._beforeZapIn(
-          inputTokenAddress,
-          investmentAmountInThisPosition,
-          slippage,
-          updateProgress,
-        );
+      const [
+        beforeZapInTxns,
+        bestTokenAddressToZapIn,
+        amountToZapIn,
+        bestTokenToZapInDecimal,
+      ] = await this._beforeZapIn(
+        recipient,
+        inputTokenAddress,
+        investmentAmountInThisPosition,
+        slippage,
+        updateProgress,
+      );
       const zapinTxns = await this.customZapIn(
         inputToken,
         bestTokenAddressToZapIn,
         amountToZapIn,
+        bestTokenToZapInDecimal,
         tokenPricesMappingTable,
         slippage,
         updateProgress,
@@ -207,6 +221,7 @@ export default class BaseProtocol extends BaseUniswap {
     throw new Error("Method 'claim()' must be implemented.");
   }
   async _beforeZapIn(
+    recipient,
     inputTokenAddress,
     investmentAmountInThisPosition,
     slippage,
@@ -220,14 +235,15 @@ export default class BaseProtocol extends BaseUniswap {
       PROVIDER,
     );
     const decimalsOfChosenToken = (await tokenInstance.functions.decimals())[0];
-    const bestTokenAddressToZapIn = this._getTheBestTokenAddressToZapIn();
+    const [bestTokenAddressToZapIn, bestTokenToZapInDecimal] =
+      this._getTheBestTokenAddressToZapIn();
     let amountToZapIn = ethers.utils.parseUnits(
       investmentAmountInThisPosition.toFixed(decimalsOfChosenToken),
       decimalsOfChosenToken,
     );
     if (inputTokenAddress !== bestTokenAddressToZapIn) {
       const [swapTxn, swapEstimateAmount] = await this._swap(
-        inputTokenAddress,
+        recipient,
         inputTokenAddress,
         bestTokenAddressToZapIn,
         amountToZapIn,
@@ -249,6 +265,7 @@ export default class BaseProtocol extends BaseUniswap {
       [...swapTxns, approveForZapInTxn],
       bestTokenAddressToZapIn,
       amountToZapIn,
+      bestTokenToZapInDecimal,
     ];
   }
   async _afterZapOut(
