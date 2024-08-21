@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import { vi, expect, describe, it } from "vitest";
 import { render, screen, fireEvent } from "./test-utils.tsx";
 import BundleIndex from "../pages/bundle/index.jsx";
@@ -53,8 +53,8 @@ vi.mock("thirdweb/react", async () => {
 // mock the fetch function
 global.fetch = vi.fn(() =>
   Promise.resolve({
-    json: () => Promise.resolve([{ address: "0x123" }, { address: "0x456" }])
-  })
+    json: () => Promise.resolve([{ address: "0x123" }, { address: "0x456" }]),
+  }),
 );
 
 // mock the address bundle component
@@ -73,15 +73,19 @@ function AddressBundle() {
     fetchData();
   }, []);
 
-  return loading ? <p>Loading...</p> : (
+  return loading ? (
+    <p>Loading...</p>
+  ) : (
     addresses.map((address, index) => (
-      <p key={index} role="address">{address.address}</p>
+      <p key={index} role="address">
+        {address.address}
+      </p>
     ))
   );
 }
 
-describe('Bundle Component', () => {
-  it('Connect Wallet', async () => {
+describe("Bundle Component", () => {
+  it("Connect Wallet", async () => {
     render(<BundleIndex />);
     // check if the connect button is rendered
     const connectButton = screen.getByRole("button", {
@@ -94,12 +98,16 @@ describe('Bundle Component', () => {
     expect(address).toBeInTheDocument();
   });
 
-  it('fetch bundle data', async () => {
-    render(<AddressBundle  />);
-    const addressElements = await screen.findAllByRole('address', {}, { timeout: 10000 });
+  it("fetch bundle data", async () => {
+    render(<AddressBundle />);
+    const addressElements = await screen.findAllByRole(
+      "address",
+      {},
+      { timeout: 10000 },
+    );
     addressElements.forEach((element) => {
       expect(element).toBeInTheDocument();
-      expect(['0x123', '0x456']).toContain(element.textContent.trim());
+      expect(["0x123", "0x456"]).toContain(element.textContent.trim());
     });
   });
 });
