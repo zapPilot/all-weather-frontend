@@ -96,6 +96,7 @@ export default function PopUp({ open, setOpen, addresses, setAddresses }) {
           >
             {alert ? (
               <Alert
+                className="mb-2"
                 message="Invalid address or subscribe to add more than 10 addresses"
                 type="error"
                 showIcon
@@ -104,6 +105,7 @@ export default function PopUp({ open, setOpen, addresses, setAddresses }) {
             ) : null}
             {duplicateAlert ? (
               <Alert
+                className="mb-2"
                 message="Address already exists"
                 type="error"
                 showIcon
@@ -134,7 +136,7 @@ export default function PopUp({ open, setOpen, addresses, setAddresses }) {
               <button
                 type="button"
                 onClick={handleAddAddress}
-                className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                className="w-full justify-center rounded-md bg-emerald-400 px-3 py-2 text-sm font-semibold text-black hover:bg-emerald-300"
               >
                 Add
               </button>
