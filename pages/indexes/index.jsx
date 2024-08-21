@@ -1,37 +1,14 @@
 import BasePage from "../basePage.tsx";
 import Link from "next/link";
-/*
-  This example requires some changes to your config:
-  
-  ```
-  // tailwind.config.js
-  module.exports = {
-    // ...
-    plugins: [
-      // ...
-      require('@tailwindcss/aspect-ratio'),
-    ],
-  }
-  ```
-*/
 const products = [
   {
     id: 1,
-    portfolioName: "All Weather Portfolio",
-    href: "#",
-    imageSrc: "/indexFunds/allWeatherPortfolio.png",
-    imageAlt: "All Weather Portfolio",
-    apr: "35%",
-    tvl: "$1000",
-  },
-  {
-    id: 2,
     portfolioName: "Stablecoin Vault",
-    href: "#",
-    imageSrc: "/indexFunds/allWeatherPortfolio.png",
+    href: "/indexes/indexOverviews/?portfolioName=Stablecoin+Vault",
+    imageSrc: "/indexFunds/stablecoinVault.png",
     imageAlt: "Stablecoin Vault",
     apr: "30%",
-    tvl: "$1000",
+    tvl: "upcoming",
   },
 ];
 
@@ -48,11 +25,13 @@ export default function Vaults() {
             {products.map((product) => (
               <div key={product.id} className="group relative">
                 <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-80">
-                  <img
-                    alt={product.imageAlt}
-                    src={product.imageSrc}
-                    className="h-full w-full object-cover object-center lg:h-full lg:w-full"
-                  />
+                  <a href={product.href}>
+                    <img
+                      alt={product.imageAlt}
+                      src={product.imageSrc}
+                      className="h-full w-full object-cover object-center lg:h-full lg:w-full"
+                    />
+                  </a>
                 </div>
                 <div className="mt-4 flex justify-between">
                   <div>
