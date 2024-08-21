@@ -11,15 +11,15 @@ import { approve } from "../../utils/general.js";
 import BaseProtocol from "../BaseProtocol.js";
 // For PancakeSwap Stake
 import SmartChefInitializable from "../../lib/contracts/PancakeSwap/SmartChefInitializable.json" assert { type: "json" };
-import { decimals } from "thirdweb/extensions/erc20";
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
-export class ApolloX extends BaseProtocol {
-  constructor(chaindId, symbolList, mode, customParams) {
-    super(chaindId, symbolList, mode, customParams);
+export class BaseApolloX extends BaseProtocol {
+  constructor(chain, chaindId, symbolList, mode, customParams) {
+    super(chain, chaindId, symbolList, mode, customParams);
     // arbitrum's Apollox is staked on PancakeSwap
     this.protocolName = "pancakeswap";
     this.protocolVersion = "0";
+    this.assetDecimals = 18;
     this.assetContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0xbc76b3fd0d18c7496c0b04aea0fe7c3ed0e4d9c9",
@@ -35,8 +35,7 @@ export class ApolloX extends BaseProtocol {
     this.stakeFarmContract = getContract({
       client: THIRDWEB_CLIENT,
       // PancakeSwap Stake would change this address from time to time
-      // old address: "0x97E3384447B52A63374EBA93cb36e02a20633926",
-      address: "0xaA0DE632A4071642d72Ceb03577F5534ea196927",
+      address: customParams.stakeFarmContractAddress,
       chain: arbitrum,
       abi: SmartChefInitializable,
     });
@@ -58,7 +57,7 @@ export class ApolloX extends BaseProtocol {
           symbol: "arb",
           coinmarketcapApiId: 11841,
           address: "0x912ce59144191c1204e64559fe8253a0e49e6548",
-          decimals: 18,
+          decimals: this.assetDecimals,
         },
       ],
     };
@@ -92,6 +91,7 @@ export class ApolloX extends BaseProtocol {
     inputToken,
     bestTokenAddressToZapIn,
     amountToZapIn,
+    bestTokenToZapInDecimal,
     tokenPricesMappingTable,
     slippage,
     updateProgress,
@@ -99,9 +99,12 @@ export class ApolloX extends BaseProtocol {
     const latestPrice = await this._fetchAlpPrice(updateProgress);
     // on Arbitrum, we don't stake and then put ALP to pancakeswap for higher APY
     const estimatedAlpAmount =
-      (tokenPricesMappingTable[inputToken] * amountToZapIn) / latestPrice;
+      ((tokenPricesMappingTable[inputToken] * amountToZapIn) /
+        Math.pow(10, bestTokenToZapInDecimal) /
+        latestPrice) *
+      Math.pow(10, this.assetDecimals);
     const minAlpAmount = Math.floor(
-      ((estimatedAlpAmount / latestPrice) * (100 - slippage)) / 100,
+      (estimatedAlpAmount * (100 - slippage)) / 100,
     );
     const mintTxn = prepareContractCall({
       contract: this.protocolContract,
@@ -112,7 +115,7 @@ export class ApolloX extends BaseProtocol {
       this.assetContract.address,
       this.stakeFarmContract.address,
       minAlpAmount,
-      18,
+      this.assetDecimals,
       updateProgress,
     );
     const depositTxn = prepareContractCall({
@@ -150,12 +153,15 @@ export class ApolloX extends BaseProtocol {
       this.assetContract.address,
       this.protocolContract.address,
       amount,
-      18,
+      this.assetDecimals,
       updateProgress,
     );
     const latestPrice = await this._fetchAlpPrice(updateProgress);
     const estimatedZapOutUsdValue =
-      ((amount / 1e18) * latestPrice * (100 - slippage)) / 100;
+      ((amount / Math.pow(10, this.assetDecimals)) *
+        latestPrice *
+        (100 - slippage)) /
+      100;
     // TODO: we might enable zap out to other token down the road
     const minOutAmount = Math.floor(estimatedZapOutUsdValue * 1e6);
     const [
@@ -203,7 +209,7 @@ export class ApolloX extends BaseProtocol {
       await stakeFarmContractInstance.functions.userInfo(recipient)
     ).amount;
     const latestAlpPrice = await this._fetchAlpPrice(() => {});
-    return (userInfo / 1e18) * latestAlpPrice;
+    return (userInfo / Math.pow(10, this.assetDecimals)) * latestAlpPrice;
   }
 
   async _fetchAlpPrice(updateProgress) {
@@ -227,7 +233,7 @@ export class ApolloX extends BaseProtocol {
   _getTheBestTokenAddressToZapIn() {
     // TODO: minor, but we can read the composition of ALP to get the cheapest token to zap in
     const usdcBridgedAddress = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8";
-    return usdcBridgedAddress;
+    return [usdcBridgedAddress, 6];
   }
   _getTheBestTokenAddressToZapOut() {
     // TODO: minor, but we can read the composition of ALP to get the cheapest token to zap in

@@ -28,6 +28,7 @@ export class BasePortfolio {
         protocolsInThisCategory,
       )) {
         for (const protocol of protocolsInThisChain) {
+          if (protocol.weight === 0) continue;
           const balance = await protocol.interface.usdBalanceOf(address);
           usdBalance += balance;
         }
@@ -45,6 +46,7 @@ export class BasePortfolio {
         protocolsInThisCategory,
       )) {
         for (const protocol of protocolsInThisChain) {
+          if (protocol.weight === 0) continue;
           const rewards = await protocol.interface.pendingRewards(
             recipient,
             tokenPricesMappingTable,
@@ -150,6 +152,9 @@ export class BasePortfolio {
         protocolsInThisCategory,
       )) {
         for (const protocol of protocols) {
+          if (protocol.weight === 0) {
+            continue;
+          }
           // make it concurrent!
           let txnsForThisProtocol;
           if (actionName === "zapIn") {

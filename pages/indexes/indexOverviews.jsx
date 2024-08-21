@@ -7,10 +7,11 @@ import RebalanceChart from "../views/RebalanceChart";
 import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
-import { Button, Progress, ConfigProvider, Radio } from "antd";
+import { Button, Progress, ConfigProvider, Radio, notification } from "antd";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
+import openNotificationWithIcon from "../../utils/notification.js";
 import {
   getLocalizedCurrencyAndExchangeRate,
   formatBalanceWithLocalizedCurrency,
@@ -50,7 +51,8 @@ export default function IndexOverviews() {
   const [exchangeRateWithUSD, setExchangeRateWithUSD] = useState(1);
   const [usdBalanceLoading, setUsdBalanceLoading] = useState(false);
   const [pendingRewardsLoading, setPendingRewardsLoading] = useState(false);
-
+  const [notificationAPI, notificationContextHolder] =
+    notification.useNotification();
   const handleSetSelectedToken = useCallback((token) => {
     setSelectedToken(token);
   }, []);
@@ -62,7 +64,6 @@ export default function IndexOverviews() {
   //   [portfolioName],
   // );
   const portfolioHelper = getPortfolioHelper(portfolioName);
-
   const { mutate: sendBatchTransaction } = useSendBatchTransaction();
   const handleAAWalletAction = async (actionName) => {
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
@@ -120,15 +121,29 @@ export default function IndexOverviews() {
       setClaimIsLoading(false);
     }
     // Call sendBatchTransaction and wait for the result
-    const result = await new Promise((resolve, reject) => {
-      sendBatchTransaction(txns.flat(Infinity), {
-        onSuccess: (data) => resolve(data),
-        onError: (error) => reject(error),
+    try {
+      await new Promise((resolve, reject) => {
+        sendBatchTransaction(txns.flat(Infinity), {
+          onSuccess: (data) => {
+            openNotificationWithIcon(
+              notificationAPI,
+              "success",
+              `${data.chain.blockExplorers[0].url}/tx/${data.transactionHash}`,
+            );
+            resolve(data); // Resolve the promise successfully
+          },
+          onError: (error) => {
+            reject(error); // Reject the promise with the error
+          },
+        });
       });
-    });
-
-    // Handle the successful result
-    console.log("Transaction successful:", result);
+    } catch (error) {
+      openNotificationWithIcon(
+        notificationAPI,
+        "error",
+        `Transaction failed: ${error.message}`,
+      );
+    }
   };
   // Function to sum up the usdDenominatedValue
   function sumUsdDenominatedValues(mapping) {
@@ -174,6 +189,7 @@ export default function IndexOverviews() {
 
   return (
     <BasePage>
+      {notificationContextHolder}
       <div className="bg-white">
         <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:grid lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8">
           {/* Product details */}
@@ -300,45 +316,53 @@ export default function IndexOverviews() {
                                     <span className="ml-2">{chain}</span>
                                   </p>
 
-                                  {protocolArray.map((protocol, index) => (
-                                    <div
-                                      className="mt-1 text-sm text-gray-500 flex items-center justify-between"
-                                      key={`${protocol.interface.protocolName}-${index}`}
-                                    >
-                                      <div className="flex items-center">
-                                        <Image
-                                          src={`/projectPictures/${protocol.interface.protocolName}.webp`}
-                                          alt={protocol.interface.protocolName}
-                                          height={25}
-                                          width={25}
-                                        />
-                                        {protocol.interface.protocolName}
-                                        {protocol.interface.symbolList.map(
-                                          (symbol, index) => (
-                                            <Image
-                                              key={`${symbol}-${index}`}
-                                              src={`/tokenPictures/${symbol}.webp`}
-                                              alt={symbol}
-                                              height={20}
-                                              width={20}
-                                            />
-                                          ),
-                                        )}
-                                        {protocol.interface.symbolList.join(
-                                          "-",
-                                        )}
+                                  {protocolArray.map((protocol, index) => {
+                                    // set weight to 0 for old protocols, these are protocols used to be the best choice but its reward decreased
+                                    // so we opt out of them
+                                    // need to keep them in the portfolio so users can zap out
+                                    if (protocol.weight === 0) return null;
+                                    return (
+                                      <div
+                                        className="mt-1 text-sm text-gray-500 flex items-center justify-between"
+                                        key={`${protocol.interface.protocolName}-${index}`}
+                                      >
+                                        <div className="flex items-center">
+                                          <Image
+                                            src={`/projectPictures/${protocol.interface.protocolName}.webp`}
+                                            alt={
+                                              protocol.interface.protocolName
+                                            }
+                                            height={25}
+                                            width={25}
+                                          />
+                                          {protocol.interface.protocolName}
+                                          {protocol.interface.symbolList.map(
+                                            (symbol, index) => (
+                                              <Image
+                                                key={`${symbol}-${index}`}
+                                                src={`/tokenPictures/${symbol}.webp`}
+                                                alt={symbol}
+                                                height={20}
+                                                width={20}
+                                              />
+                                            ),
+                                          )}
+                                          {protocol.interface.symbolList.join(
+                                            "-",
+                                          )}
+                                        </div>
+                                        <span className="ml-4 text-sm font-medium text-gray-900">
+                                          APR:{" "}
+                                          {(
+                                            portfolioApr[
+                                              protocol.interface.uniqueId()
+                                            ]?.apr * 100
+                                          ).toFixed(2)}
+                                          %
+                                        </span>
                                       </div>
-                                      <span className="ml-4 text-sm font-medium text-gray-900">
-                                        APR:{" "}
-                                        {(
-                                          portfolioApr[
-                                            protocol.interface.uniqueId()
-                                          ]?.apr * 100
-                                        ).toFixed(2)}
-                                        %
-                                      </span>
-                                    </div>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
                               ),
                             )}
@@ -404,6 +428,20 @@ export default function IndexOverviews() {
                     <div>Service Fee: $0 (will charge 0.1% in the future)</div>
                   </fieldset>
                 </div>
+                {(zapInIsLoading || zapOutIsLoading || claimIsLoading) &&
+                typeof progress === "number" ? (
+                  <Progress
+                    percent={progress.toFixed(2)}
+                    status={
+                      zapInIsLoading || zapOutIsLoading || claimIsLoading
+                        ? "active"
+                        : ""
+                    }
+                    size={[400, 10]}
+                    showInfo={true}
+                    format={(percent) => `${percent}% ${stepName}`}
+                  />
+                ) : null}
                 <div className="mt-10">
                   <Button
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
@@ -455,19 +493,21 @@ export default function IndexOverviews() {
                     exchangeRateWithUSD={exchangeRateWithUSD}
                   />
                 </div>
-                {zapInIsLoading || zapOutIsLoading || claimIsLoading ? (
-                  <Progress
-                    percent={progress.toFixed(2)}
-                    status={
-                      zapInIsLoading || zapOutIsLoading || claimIsLoading
-                        ? "active"
-                        : ""
-                    }
-                    size={[400, 10]}
-                    showInfo={true}
-                    format={(percent) => `${percent}% ${stepName}`}
-                  />
-                ) : null}
+                <div className="mt-10">
+                  <Button
+                    className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
+                    onClick={() => handleAAWalletAction("claimAndSwap")}
+                    loading={claimIsLoading || pendingRewardsLoading}
+                    disabled={sumUsdDenominatedValues(pendingRewards) === 0}
+                  >
+                    Unoptimized Positions{" "}
+                    {formatBalanceWithLocalizedCurrency(
+                      exchangeRateWithUSD,
+                      sumUsdDenominatedValues(pendingRewards),
+                      currency,
+                    )}
+                  </Button>
+                </div>
                 <div className="mt-6 text-center">
                   <a
                     href="https://all-weather.gitbook.io/all-weather-protocol/contracts-and-security/audits"
