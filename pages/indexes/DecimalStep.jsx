@@ -5,6 +5,12 @@ const DecimalStep = ({ depositBalance, setZapOutPercentage, currency }) => {
   const [inputValue, setInputValue] = useState(depositBalance);
   const [sliderValue, setSliderValue] = useState(100);
 
+  // Update inputValue when depositBalance changes
+  useEffect(() => {
+    setInputValue(depositBalance);
+    setSliderValue(100); // Reset slider to 100% when depositBalance changes
+  }, [depositBalance]);
+
   useEffect(() => {
     // Update slider when input changes
     const newSliderValue = (inputValue / depositBalance) * 100;
@@ -20,7 +26,7 @@ const DecimalStep = ({ depositBalance, setZapOutPercentage, currency }) => {
   };
 
   const onInputChange = (newValue) => {
-    if (isNaN(newValue) || newValue < 0) {
+    if (newValue === null || isNaN(newValue) || newValue < 0) {
       return;
     }
     const clampedValue = Math.min(newValue, depositBalance);
@@ -51,6 +57,7 @@ const DecimalStep = ({ depositBalance, setZapOutPercentage, currency }) => {
           formatter={(value) =>
             `${currency} ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
           }
+          parser={(value) => value.replace(/[^\d.]/g, "")}
         />
       </Col>
     </Row>
