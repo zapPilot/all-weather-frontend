@@ -47,7 +47,6 @@ export default function IndexOverviews() {
   const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(1);
   const [zapOutPercentage, setZapOutPercentage] = useState(1);
-  const [sliderValue, setSliderValue] = useState(100);
   const [portfolioApr, setPortfolioAPR] = useState({ portfolioApr: 20 });
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
@@ -462,9 +461,9 @@ export default function IndexOverviews() {
                 </div>
                 <div className="mt-10">
                   <DecimalStep
+                    depositBalance={usdBalance * exchangeRateWithUSD}
                     setZapOutPercentage={setZapOutPercentage}
-                    sliderValue={sliderValue}
-                    setSliderValue={setSliderValue}
+                    currency={currency}
                   />
                   <Button
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
