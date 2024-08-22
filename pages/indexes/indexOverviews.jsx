@@ -156,7 +156,7 @@ export default function IndexOverviews() {
     }, 0);
   }
   useEffect(() => {
-    if (!portfolioName || account === undefined) return;
+    if (!portfolioName) return;
     const fetchPortfolioAPR = async () => {
       const portfolioAprDict = await portfolioHelper.getPortfolioAPR();
       setPortfolioAPR(portfolioAprDict);
