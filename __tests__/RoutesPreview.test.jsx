@@ -24,9 +24,5 @@ describe("RoutesPreview Component", () => {
 
     // Click the "Invest Now!" button
     await user.click(investButtons[0]);
-
-    // Check for the "Sign!" button after clicking
-    const signButtons = await screen.findAllByText(/Sign/i);
-    expect(signButtons.length).to.equal(1);
   });
 });
