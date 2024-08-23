@@ -1,4 +1,4 @@
-import { Popover, Tag, Spin, ConfigProvider, Image } from "antd";
+import { Popover, Image } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { formatBalanceWithLocalizedCurrency } from "../../../utils/general";
 

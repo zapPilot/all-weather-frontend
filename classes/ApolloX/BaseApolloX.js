@@ -87,7 +87,7 @@ export class BaseApolloX extends BaseProtocol {
     }
     return rewardBalance;
   }
-  async customZapIn(
+  async customDeposit(
     inputToken,
     bestTokenAddressToZapIn,
     amountToZapIn,
@@ -125,14 +125,11 @@ export class BaseApolloX extends BaseProtocol {
     });
     return [mintTxn, approveAlpTxn, depositTxn];
   }
-
-  async customZapOut(
+  async customWithdrawAndClaim(
     recipient,
     percentage,
     slippage,
-    tokenPricesMappingTable,
     updateProgress,
-    customParams,
   ) {
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
@@ -174,19 +171,15 @@ export class BaseApolloX extends BaseProtocol {
       method: "burnAlp", // <- this gets inferred from the contract
       params: [bestTokenAddressToZapOut, amount, minOutAmount, recipient],
     });
-    const withdrawTokenAndBalance =
-      await this._calculateWithdrawTokenAndBalance(
-        recipient,
-        symbolOfBestTokenToZapOut,
-        bestTokenAddressToZapOut,
-        decimalOfBestTokenToZapOut,
-        minOutAmount,
-        tokenPricesMappingTable,
-        updateProgress,
-      );
-    return [[withdrawTxn, approveAlpTxn, burnTxn], withdrawTokenAndBalance];
+    return [
+      [withdrawTxn, approveAlpTxn, burnTxn],
+      symbolOfBestTokenToZapOut,
+      bestTokenAddressToZapOut,
+      decimalOfBestTokenToZapOut,
+      minOutAmount,
+    ];
   }
-  async claim(recipient, tokenPricesMappingTable, updateProgress) {
+  async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
     const pendingRewards = await this.pendingRewards(
       recipient,
       tokenPricesMappingTable,
@@ -239,31 +232,5 @@ export class BaseApolloX extends BaseProtocol {
     // TODO: minor, but we can read the composition of ALP to get the cheapest token to zap in
     const usdcBridgedAddress = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8";
     return ["usdc.e", usdcBridgedAddress, 6];
-  }
-  async _calculateWithdrawTokenAndBalance(
-    recipient,
-    symbolOfBestTokenToZapOut,
-    bestTokenAddressToZapOut,
-    decimalOfBestTokenToZapOut,
-    minOutAmount,
-    tokenPricesMappingTable,
-    updateProgress,
-  ) {
-    let withdrawTokenAndBalance = {};
-    withdrawTokenAndBalance[bestTokenAddressToZapOut] = {
-      symbol: symbolOfBestTokenToZapOut,
-      balance: minOutAmount,
-      usdDenominatedValue:
-        (tokenPricesMappingTable[symbolOfBestTokenToZapOut] * minOutAmount) /
-        Math.pow(10, decimalOfBestTokenToZapOut),
-      decimals: decimalOfBestTokenToZapOut,
-    };
-    const pendingRewards = await this.pendingRewards(
-      recipient,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    withdrawTokenAndBalance = { ...withdrawTokenAndBalance, ...pendingRewards };
-    return withdrawTokenAndBalance;
   }
 }

@@ -64,6 +64,7 @@ export default class BaseProtocol extends BaseUniswap {
       "assetContract is not set",
     );
   }
+
   zapInSteps(tokenInAddress) {
     // TODO: we can use `tokenInAddress` to dynamically determine the steps
     // if the user is using the best token to zap in, then the step would be less than others (no need to swap)
@@ -97,14 +98,14 @@ export default class BaseProtocol extends BaseUniswap {
         bestTokenAddressToZapIn,
         amountToZapIn,
         bestTokenToZapInDecimal,
-      ] = await this._beforeZapIn(
+      ] = await this._beforeDeposit(
         recipient,
         inputTokenAddress,
         investmentAmountInThisPosition,
         slippage,
         updateProgress,
       );
-      const zapinTxns = await this.customZapIn(
+      const zapinTxns = await this.customDeposit(
         inputToken,
         bestTokenAddressToZapIn,
         amountToZapIn,
@@ -178,22 +179,36 @@ export default class BaseProtocol extends BaseUniswap {
     customParams,
     existingInvestmentPositionsInThisChain,
   ) {
-    const [zapOutTxns, withdrawTokenAndBalance] = await this.customZapOut(
+    const [
+      withdrawTxns,
+      symbolOfBestTokenToZapOut,
+      bestTokenAddressToZapOut,
+      decimalOfBestTokenToZapOut,
+      minOutAmount,
+    ] = await this.customWithdrawAndClaim(
       recipient,
       percentage,
       slippage,
-      tokenPricesMappingTable,
       updateProgress,
-      customParams,
     );
-    const afterZapOutTxns = await this._afterZapOut(
+    const withdrawTokenAndBalance =
+      await this._calculateWithdrawTokenAndBalance(
+        recipient,
+        symbolOfBestTokenToZapOut,
+        bestTokenAddressToZapOut,
+        decimalOfBestTokenToZapOut,
+        minOutAmount,
+        tokenPricesMappingTable,
+        updateProgress,
+      );
+    const batchSwapTxns = await this._batchSwap(
       recipient,
       withdrawTokenAndBalance,
       outputToken,
       slippage,
       updateProgress,
     );
-    return [...zapOutTxns, ...afterZapOutTxns];
+    return [...withdrawTxns, ...batchSwapTxns];
   }
   async claimAndSwap(
     recipient,
@@ -203,12 +218,12 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
     existingInvestmentPositionsInThisChain,
   ) {
-    const [claimTxns, claimedTokenAndBalance] = await this.claim(
+    const [claimTxns, claimedTokenAndBalance] = await this.customClaim(
       recipient,
       tokenPricesMappingTable,
       updateProgress,
     );
-    const txns = await this._afterZapOut(
+    const txns = await this._batchSwap(
       recipient,
       claimedTokenAndBalance,
       outputToken,
@@ -217,10 +232,37 @@ export default class BaseProtocol extends BaseUniswap {
     );
     return [...claimTxns, ...txns];
   }
-  async claim(recipient, tokenPricesMappingTable, updateProgress) {
-    throw new Error("Method 'claim()' must be implemented.");
+  async customDeposit(
+    inputToken,
+    bestTokenAddressToZapIn,
+    amountToZapIn,
+    bestTokenToZapInDecimal,
+    tokenPricesMappingTable,
+    slippage,
+    updateProgress,
+  ) {
+    throw new Error("Method 'customDeposit()' must be implemented.", amount);
   }
-  async _beforeZapIn(
+  async customWithdrawAndClaim(
+    recipient,
+    percentage,
+    slippage,
+    updateProgress,
+  ) {
+    throw new Error("Method 'customWithdrawAndClaim()' must be implemented.");
+  }
+
+  async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
+    throw new Error("Method 'customClaim()' must be implemented.");
+  }
+
+  _getTheBestTokenAddressToZapIn() {
+    throw new Error(
+      "Method '_getTheBestTokenAddressToZapIn()' must be implemented.",
+    );
+  }
+
+  async _beforeDeposit(
     recipient,
     inputTokenAddress,
     investmentAmountInThisPosition,
@@ -268,7 +310,7 @@ export default class BaseProtocol extends BaseUniswap {
       bestTokenToZapInDecimal,
     ];
   }
-  async _afterZapOut(
+  async _batchSwap(
     recipient,
     withdrawTokenAndBalance,
     outputToken,
@@ -366,25 +408,42 @@ export default class BaseProtocol extends BaseUniswap {
       swapCallData["toAmount"],
     ];
   }
-  async customZapIn(amount) {
-    throw new Error("Method 'customZapIn()' must be implemented.", amount);
-  }
-  async customZapOut(
+  async _calculateWithdrawTokenAndBalance(
     recipient,
-    percentage,
-    slippage,
+    symbolOfBestTokenToZapOut,
+    bestTokenAddressToZapOut,
+    decimalOfBestTokenToZapOut,
+    minOutAmount,
     tokenPricesMappingTable,
     updateProgress,
-    customParams,
   ) {
-    throw new Error(
-      "Method 'customZapOut()' must be implemented. Also need to take claim() into account.",
-      amount,
+    let withdrawTokenAndBalance = {};
+    withdrawTokenAndBalance[bestTokenAddressToZapOut] = {
+      symbol: symbolOfBestTokenToZapOut,
+      balance: minOutAmount,
+      usdDenominatedValue:
+        (tokenPricesMappingTable[symbolOfBestTokenToZapOut] * minOutAmount) /
+        Math.pow(10, decimalOfBestTokenToZapOut),
+      decimals: decimalOfBestTokenToZapOut,
+    };
+    const pendingRewards = await this.pendingRewards(
+      recipient,
+      tokenPricesMappingTable,
+      updateProgress,
     );
-  }
-  _getTheBestTokenAddressToZapIn() {
-    throw new Error(
-      "Method '_getTheBestTokenAddressToZapIn()' must be implemented.",
-    );
+    for (const [address, metadata] of Object.entries(pendingRewards)) {
+      if (withdrawTokenAndBalance[address]) {
+        withdrawTokenAndBalance[address].balance = withdrawTokenAndBalance[
+          address
+        ].balance.add(metadata.balance);
+        withdrawTokenAndBalance[address].usdDenominatedValue =
+          (tokenPricesMappingTable[withdrawTokenAndBalance[metadata.symbol]] *
+            withdrawTokenAndBalance[address].balance) /
+          Math.pow(10, withdrawTokenAndBalance[address].decimals);
+      } else {
+        withdrawTokenAndBalance[address] = metadata;
+      }
+    }
+    return withdrawTokenAndBalance;
   }
 }
