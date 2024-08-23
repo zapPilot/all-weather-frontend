@@ -15,7 +15,7 @@ import { arbitrum } from "thirdweb/chains";
 import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import { encodeFunctionData } from "viem";
 import Image from "next/image";
-
+import Link from "next/link";
 interface RoutesPreviewProps {
   portfolioName: string;
 }
@@ -345,9 +345,9 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
         onClick={showLoading}
         role="invest_now"
       >
-        <a href="/indexes/indexOverviews/?portfolioName=Stablecoin+Vault">
+        <Link href="/indexes/indexOverviews/?portfolioName=Stablecoin+Vault">
           Invest Now!
-        </a>
+        </Link>
       </Button>
       {/* beautiful popup modal but need to deprecate it for now */}
       {/* <Modal open={open} onCancel={() => setOpen(false)} footer={<></>}>
