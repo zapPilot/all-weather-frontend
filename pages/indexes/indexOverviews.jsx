@@ -1,6 +1,6 @@
 "use client";
 import BasePage from "../basePage.tsx";
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import DecimalStep from "./DecimalStep";
 import Image from "next/image";
 import RebalanceChart from "../views/RebalanceChart";
@@ -500,7 +500,8 @@ export default function IndexOverviews() {
                     exchangeRateWithUSD={exchangeRateWithUSD}
                   />
                 </div>
-                <div className="mt-10">
+                {/* TODO: */}
+                {/* <div className="mt-10">
                   <Button
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
                     onClick={() => handleAAWalletAction("claimAndSwap")}
@@ -514,7 +515,7 @@ export default function IndexOverviews() {
                       currency,
                     )}
                   </Button>
-                </div>
+                </div> */}
                 <div className="mt-6 text-center">
                   <a
                     href="https://all-weather.gitbook.io/all-weather-protocol/contracts-and-security/audits"
