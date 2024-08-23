@@ -345,11 +345,14 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
         onClick={showLoading}
         role="invest_now"
       >
-        Invest Now!
+        <a href="/indexes/indexOverviews/?portfolioName=Stablecoin+Vault">
+          Invest Now!
+        </a>
       </Button>
-      <Modal open={open} onCancel={() => setOpen(false)} footer={<></>}>
+      {/* beautiful popup modal but need to deprecate it for now */}
+      {/* <Modal open={open} onCancel={() => setOpen(false)} footer={<></>}>
         <ModalContent />
-      </Modal>
+      </Modal> */}
     </>
   );
 };
