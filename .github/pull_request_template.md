@@ -7,3 +7,4 @@
 - [ ] Add test cases to all the changes you introduce
 - [ ] Update the documentation if necessary
 - [ ] Update ENV on fleek if necessary
+- [ ] Use $1 to test the entire pipeline

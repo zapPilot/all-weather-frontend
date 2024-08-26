@@ -101,7 +101,7 @@ export default function Example() {
             </p>
           </div>
           <p className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-gray-300">
-            Your Web3 S&P500
+            Your Intent-Driven Yield Aggregator
           </p>
 
           {/* xs to lg */}
