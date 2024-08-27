@@ -33,42 +33,49 @@ export const tokensForDropDown = [
   // "euroe",
   // "axlusdc",
 ];
-export const selectBefore = (handleChange, chainID, selectedToken) => (
-  <Select
-    onChange={handleChange}
-    value={selectedToken}
-    theme="light"
-    style={{ width: 100 }}
-  >
-    {tokens.props.pageProps.tokenList[String(chainID)]
-      ?.filter((option) =>
-        tokensForDropDown.some(
-          (symbol) => option.symbol.toLowerCase() === symbol && option.logoURI2,
-        ),
-      )
-      ?.map((option) => {
-        const keyAndValue = `${option.symbol}-${option.address}`;
-        return (
-          <Option key={keyAndValue} value={keyAndValue}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <Image
-                src={option.logoURI2}
-                width="20"
-                height="20"
-                alt={option.symbol}
-              />
-              <span style={{ marginLeft: 6 }}>{option.symbol}</span>
-            </div>
-          </Option>
-        );
-      })}
-  </Select>
-);
+export const selectBefore = (handleChange, chainID, selectedToken) => {
+  if (!chainID) {
+    // chaindID would be set once the user connects their wallet
+    chainID = 42161;
+  }
+  return (
+    <Select
+      onChange={handleChange}
+      value={selectedToken}
+      theme="light"
+      style={{ width: 100 }}
+    >
+      {tokens.props.pageProps.tokenList[String(chainID)]
+        ?.filter((option) =>
+          tokensForDropDown.some(
+            (symbol) =>
+              option.symbol.toLowerCase() === symbol && option.logoURI2,
+          ),
+        )
+        ?.map((option) => {
+          const keyAndValue = `${option.symbol}-${option.address}`;
+          return (
+            <Option key={keyAndValue} value={keyAndValue}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <Image
+                  src={option.logoURI2}
+                  width="20"
+                  height="20"
+                  alt={option.symbol}
+                />
+                <span style={{ marginLeft: 6 }}>{option.symbol}</span>
+              </div>
+            </Option>
+          );
+        })}
+    </Select>
+  );
+};
 
 export const getAggregatorData = async (
   chainID,
