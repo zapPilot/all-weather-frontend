@@ -17,6 +17,7 @@ import {
   formatBalanceWithLocalizedCurrency,
 } from "../../utils/general";
 import APRComposition from "../views/components/APRComposition";
+
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -62,12 +63,9 @@ export default function IndexOverviews() {
   const handleSetInvestmentAmount = useCallback((amount) => {
     setInvestmentAmount(amount);
   }, []);
-  // const portfolioHelper = useMemo(
-  //   () => getPortfolioHelper(portfolioName?.replace(" ", "")),
-  //   [portfolioName],
-  // );
   const portfolioHelper = getPortfolioHelper(portfolioName);
   const { mutate: sendBatchTransaction } = useSendBatchTransaction();
+
   const handleAAWalletAction = async (actionName) => {
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
     if (!tokenSymbolAndAddress) {
@@ -116,6 +114,7 @@ export default function IndexOverviews() {
         slippage,
       });
     }
+
     if (actionName === "zapIn") {
       setZapInIsLoading(false);
     } else if (actionName === "zapOut") {
@@ -189,7 +188,6 @@ export default function IndexOverviews() {
     };
     fetchExchangeRateWithUSD();
   }, [portfolioName, account]);
-
   return (
     <BasePage>
       {notificationContextHolder}
@@ -432,7 +430,21 @@ export default function IndexOverviews() {
                         {investmentAmount * (1 - slippage / 100)}
                       </span>
                     </ConfigProvider>
-                    <div>Service Fee: $0 (will charge 0.1% in the future)</div>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <Image
+                        src="/icon/gas-station.png"
+                        alt="gas fee"
+                        width={20}
+                        height={20}
+                      />
+                      : <s>${100}</s>{" "}
+                      <span style={{ fontWeight: "bold", color: "green" }}>
+                        Free
+                      </span>
+                      <span style={{ marginLeft: "5px" }}>
+                        Service Fee: $0 (will charge 0.1% in the future)
+                      </span>
+                    </div>
                   </fieldset>
                 </div>
                 {(zapInIsLoading || zapOutIsLoading || claimIsLoading) &&
@@ -486,12 +498,13 @@ export default function IndexOverviews() {
                     loading={claimIsLoading || pendingRewardsLoading}
                     disabled={sumUsdDenominatedValues(pendingRewards) === 0}
                   >
-                    Claim{" "}
+                    Dump{" "}
                     {formatBalanceWithLocalizedCurrency(
                       exchangeRateWithUSD,
                       sumUsdDenominatedValues(pendingRewards),
                       currency,
-                    )}
+                    )}{" "}
+                    Worth of Rewards to {selectedToken.split("-")[0]}
                   </Button>
                   <APRComposition
                     APRData={pendingRewards}

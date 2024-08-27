@@ -108,7 +108,9 @@ export default function ExampleUI() {
               >
                 All Weather Protocol
               </h1>
-              <h2 className="heading-subtitle">Your Web3 S&P 500</h2>
+              <h2 className="heading-subtitle">
+                Your Intent-Driven Yield Aggregator
+              </h2>
               <p className="heading-subtitle">Click Once, Diversify Forever!</p>
               <p className="heading-subtitle">
                 Enjoy Up to
