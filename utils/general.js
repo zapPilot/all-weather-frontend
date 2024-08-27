@@ -1,8 +1,9 @@
 import { ethers } from "ethers";
 import { arbitrum } from "thirdweb/chains";
 import { ERC20_ABI } from "../node_modules/@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
-import { encodeFunctionData } from "viem";
 import permanentPortfolioJson from "../lib/contracts/PermanentPortfolioLPToken.json" assert { type: "json" };
+import { prepareContractCall, getContract } from "thirdweb";
+import THIRDWEB_CLIENT from "../utils/thirdweb";
 
 export const PROVIDER = new ethers.providers.JsonRpcProvider(
   process.env.NEXT_PUBLIC_RPC_PROVIDER_URL,
@@ -75,21 +76,22 @@ export function approve(
     throw new Error("Spender address is null. Cannot proceed with approving.");
   }
   updateProgress("approve");
-  return {
-    chain: arbitrum,
-    to: tokenAddress,
-    data: encodeFunctionData({
+  return prepareContractCall({
+    contract: getContract({
+      client: THIRDWEB_CLIENT,
+      address: tokenAddress,
+      chain: arbitrum,
       abi: permanentPortfolioJson.abi,
-      functionName: "approve",
-      args: [
-        spenderAddress,
-        ethers.utils.parseUnits(
-          approvalAmount.toFixed(decimalsOfChosenToken),
-          decimalsOfChosenToken,
-        ),
-      ],
     }),
-  };
+    method: "approve", // <- this gets inferred from the contract
+    params: [
+      spenderAddress,
+      ethers.utils.parseUnits(
+        approvalAmount.toFixed(decimalsOfChosenToken),
+        decimalsOfChosenToken,
+      ),
+    ],
+  });
 }
 
 export async function getLocalizedCurrencyAndExchangeRate() {

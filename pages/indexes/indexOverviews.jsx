@@ -22,10 +22,6 @@ export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
   const product = {
-    description: "A diversified stablecoin vault",
-    imageSrc: "/indexFunds/allWeatherPortfolio.png",
-    imageAlt:
-      "Model wearing light green backpack with black canvas straps and front zipper pouch.",
     breadcrumbs: [
       { id: 1, name: "Indexes", href: "/indexes" },
       {
@@ -255,7 +251,9 @@ export default function IndexOverviews() {
               </div>
 
               <div className="mt-4 space-y-6">
-                <p className="text-base text-gray-500">{product.description}</p>
+                <p className="text-base text-gray-500">
+                  {portfolioHelper?.description()}
+                </p>
               </div>
             </section>
           </div>
@@ -419,7 +417,7 @@ export default function IndexOverviews() {
                           </Radio.Button>
                         ))}
                       </Radio.Group>
-                      <span
+                      <div
                         style={{
                           marginTop: "5px",
                           fontSize: "0.9em",
@@ -427,8 +425,11 @@ export default function IndexOverviews() {
                         }}
                       >
                         Minimum Receive: $
-                        {investmentAmount * (1 - slippage / 100)}
-                      </span>
+                        {investmentAmount * (1 - slippage / 100)}{", "}
+                        Refund to Your Wallet: $
+                        {investmentAmount * slippage / 100}
+                      </div>
+
                     </ConfigProvider>
                     <div style={{ display: "flex", alignItems: "center" }}>
                       <Image
@@ -437,7 +438,7 @@ export default function IndexOverviews() {
                         width={20}
                         height={20}
                       />
-                      : <s>${100}</s>{" "}
+                      :
                       <span style={{ fontWeight: "bold", color: "green" }}>
                         Free
                       </span>
