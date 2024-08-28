@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Menu, ConfigProvider } from "antd";
 import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
+import { ethers } from "ethers";
+import { ConfigProvider, notification, Menu } from "antd";
+import openNotificationWithIcon from "../../utils/notification.js";
 
 const items = [
   {
@@ -25,6 +27,9 @@ const items = [
 export default function NavBar({ mode }) {
   const router = useRouter();
   const [current, setCurrent] = useState(router.pathname);
+  const [notificationAPI, notificationContextHolder] =
+    notification.useNotification();
+
   const onClick = (e) => {
     setCurrent(e.key);
   };
@@ -36,9 +41,17 @@ export default function NavBar({ mode }) {
     }
   };
   const navigateToUrl = () => {
-    if (address.trim()) {
-      window.location.href = `/?address=${address}`;
+    const trimmedAddress = address.trim();
+    if (trimmedAddress && ethers.utils.isAddress(trimmedAddress)) {
+      window.location.href = `/?address=${trimmedAddress}`;
       setAddress("");
+    } else {
+      openNotificationWithIcon(
+        notificationAPI,
+        "Search Result",
+        "error",
+        `Invalid address: ${trimmedAddress}`,
+      );
     }
   };
   return (
@@ -57,6 +70,7 @@ export default function NavBar({ mode }) {
         },
       }}
     >
+      {notificationContextHolder}
       <Menu
         theme="dark"
         onClick={onClick}

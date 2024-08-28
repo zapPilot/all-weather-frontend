@@ -125,6 +125,7 @@ export default function IndexOverviews() {
           onSuccess: (data) => {
             openNotificationWithIcon(
               notificationAPI,
+              "Transaction Result",
               "success",
               `${data.chain.blockExplorers[0].url}/tx/${data.transactionHash}`,
             );
@@ -138,6 +139,7 @@ export default function IndexOverviews() {
     } catch (error) {
       openNotificationWithIcon(
         notificationAPI,
+        "Transaction Result",
         "error",
         `Transaction failed: ${error.message}`,
       );
