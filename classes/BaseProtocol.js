@@ -5,8 +5,9 @@ import { arbitrum } from "thirdweb/chains";
 import { ERC20_ABI } from "../node_modules/@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
 import BaseUniswap from "./uniswapv3/BaseUniswap.js";
 import assert from "assert";
+import THIRDWEB_CLIENT from "../utils/thirdweb";
 import { getTokenDecimal, approve } from "../utils/general";
-import { walletActions } from "viem";
+import { prepareTransaction } from "thirdweb";
 
 export default class BaseProtocol extends BaseUniswap {
   // arbitrum's Apollox is staked on PancakeSwap
@@ -400,11 +401,12 @@ export default class BaseProtocol extends BaseUniswap {
     }
     updateProgress(`swap ${fromTokenAddress} to ${toTokenAddress}`);
     return [
-      {
+      prepareTransaction({
         to: oneInchAddress,
-        data: swapCallData["data"],
         chain: arbitrum,
-      },
+        client: THIRDWEB_CLIENT,
+        data: swapCallData["data"],
+      }),
       swapCallData["toAmount"],
     ];
   }
