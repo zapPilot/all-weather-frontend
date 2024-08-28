@@ -425,11 +425,11 @@ export default function IndexOverviews() {
                         }}
                       >
                         Minimum Receive: $
-                        {investmentAmount * (1 - slippage / 100)}{", "}
+                        {investmentAmount * (1 - slippage / 100)}
+                        {", "}
                         Refund to Your Wallet: $
-                        {investmentAmount * slippage / 100}
+                        {(investmentAmount * slippage) / 100}
                       </div>
-
                     </ConfigProvider>
                     <div style={{ display: "flex", alignItems: "center" }}>
                       <Image
