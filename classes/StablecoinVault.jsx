@@ -2,6 +2,7 @@ import { BasePortfolio } from "./BasePortfolio";
 import { ApolloX20240806 } from "./ApolloX/ApolloX20240806";
 import { ApolloX20240813 } from "./ApolloX/ApolloX20240813";
 import { ApolloX20240820 } from "./ApolloX/ApolloX20240820";
+import ReactMarkdown from "react-markdown";
 export class StablecoinVault extends BasePortfolio {
   constructor() {
     super(
@@ -55,5 +56,18 @@ export class StablecoinVault extends BasePortfolio {
       },
     );
     this.validateStrategyWeights();
+  }
+  description() {
+    return (
+      <ReactMarkdown className="text-base text-gray-500">
+        {`
+    Where does the revenue come from?:
+    1. Liquidation fees from perpetual exchanges
+    2. Farming rewards from new protocols (non-sustainable)
+    3. Swap fees
+    4. Interest from lending
+    `}
+      </ReactMarkdown>
+    );
   }
 }

@@ -21,6 +21,9 @@ export class BasePortfolio {
         updateProgress,
       );
   }
+  description() {
+    throw new Error("Method 'description()' must be implemented.");
+  }
   async usdBalanceOf(address) {
     let usdBalance = 0;
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
