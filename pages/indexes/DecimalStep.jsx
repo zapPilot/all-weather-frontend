@@ -50,9 +50,10 @@ const DecimalStep = ({ depositBalance, setZapOutPercentage, currency }) => {
           max={depositBalance}
           style={{
             margin: "0 16px",
+            width: "200px", // Increase this value to make it wider
           }}
           step={1}
-          value={inputValue}
+          value={inputValue?.toFixed(0)}
           onChange={onInputChange}
           formatter={(value) =>
             `${currency} ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")

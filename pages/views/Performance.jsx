@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import { useWindowWidth } from "../../utils/chartUtils";
 import { useActiveAccount } from "thirdweb/react";
 import { useEffect, useState } from "react";
+import { formatBalanceWithLocalizedCurrency } from "../../utils/general";
 
 const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
   const windowWidth = useWindowWidth();
@@ -44,8 +45,8 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
     fetchExchangeRate();
     fetchCountry();
   }, []);
-  const calculateMonthlyEarnings = (deposit, apr, exchangeRate = 1) => {
-    return (((deposit * apr) / 100 / 12) * exchangeRate).toFixed(2);
+  const calculateMonthlyEarnings = (deposit, apr) => {
+    return ((deposit * apr) / 100 / 12).toFixed(2);
   };
   const colorLogic = (value, notSharpe = true) => {
     if (notSharpe === false) {
@@ -100,10 +101,16 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
             <Card>
               <Statistic
                 title="Net Worth"
-                value={`${data?.net_worth}`}
+                value={
+                  formatBalanceWithLocalizedCurrency(
+                    exchangeRates[currency],
+                    data?.net_worth,
+                    currency,
+                  )[1]
+                }
                 precision={0}
                 valueStyle={colorLogic(0)}
-                prefix="$"
+                prefix={currency}
               />
             </Card>
           </Col>
@@ -112,17 +119,15 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
               <Statistic
                 title="Monthly Interest"
                 value={
-                  currencyError === false
-                    ? calculateMonthlyEarnings(
-                        data?.net_worth,
-                        portfolioApr,
-                        exchangeRates[currency],
-                      )
-                    : calculateMonthlyEarnings(data?.net_worth, portfolioApr)
+                  formatBalanceWithLocalizedCurrency(
+                    exchangeRates[currency],
+                    calculateMonthlyEarnings(data?.net_worth, portfolioApr),
+                    currency,
+                  )[1]
                 }
                 precision={0}
                 valueStyle={colorLogic(0)}
-                prefix={`${currencyError === false ? currency : "USD"}`}
+                prefix={currency}
               />
             </Card>
           </Col>
@@ -130,10 +135,16 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
             <Card>
               <Statistic
                 title="Claimable Rewards"
-                value={data?.claimable_rewards}
+                value={
+                  formatBalanceWithLocalizedCurrency(
+                    exchangeRates[currency],
+                    data?.claimable_rewards,
+                    currency,
+                  )[1]
+                }
                 precision={2}
                 valueStyle={colorLogic(0)}
-                prefix="$"
+                prefix={currency}
               />
             </Card>
           </Col>
