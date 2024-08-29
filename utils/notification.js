@@ -1,6 +1,6 @@
-const openNotificationWithIcon = (api, type, msg) => {
+const openNotificationWithIcon = (api, title, type, msg) => {
   api[type]({
-    message: "Transaction Result",
+    message: title,
     description: msg,
     showProgress: true,
     pauseOnHover: true,
