@@ -532,20 +532,6 @@ export default function IndexOverviews() {
                     )}
                   </Button>
                 </div> */}
-                <div className="mt-6 text-center">
-                  <a
-                    href="https://all-weather.gitbook.io/all-weather-protocol/contracts-and-security/audits"
-                    className="group inline-flex text-base font-medium"
-                  >
-                    <ShieldCheckIcon
-                      aria-hidden="true"
-                      className="mr-2 h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
-                    />
-                    <span className="text-gray-500 hover:text-gray-700">
-                      Audited
-                    </span>
-                  </a>
-                </div>
               </form>
             </section>
           </div>
