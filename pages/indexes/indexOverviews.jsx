@@ -3,9 +3,9 @@ import BasePage from "../basePage.tsx";
 import { useState, useCallback, useEffect } from "react";
 import DecimalStep from "./DecimalStep";
 import Image from "next/image";
+import { useDispatch, useSelector } from "react-redux";
 import RebalanceChart from "../views/RebalanceChart";
 import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
-import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
 import { Button, Progress, ConfigProvider, Radio, notification } from "antd";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
@@ -17,6 +17,7 @@ import {
   formatBalanceWithLocalizedCurrency,
 } from "../../utils/general";
 import APRComposition from "../views/components/APRComposition";
+import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 
 export default function IndexOverviews() {
   const router = useRouter();
@@ -44,7 +45,6 @@ export default function IndexOverviews() {
   const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(1);
   const [zapOutPercentage, setZapOutPercentage] = useState(1);
-  const [portfolioApr, setPortfolioAPR] = useState({ portfolioApr: 20 });
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
   const [currency, setCurrency] = useState("USD");
@@ -61,6 +61,12 @@ export default function IndexOverviews() {
   }, []);
   const portfolioHelper = getPortfolioHelper(portfolioName);
   const { mutate: sendBatchTransaction } = useSendBatchTransaction();
+  const {
+    strategyMetadata: portfolioApr,
+    loading,
+    error,
+  } = useSelector((state) => state.strategyMetadata);
+  const dispatch = useDispatch();
 
   const handleAAWalletAction = async (actionName) => {
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
@@ -152,13 +158,11 @@ export default function IndexOverviews() {
     }, 0);
   }
   useEffect(() => {
-    if (!portfolioName) return;
-    const fetchPortfolioAPR = async () => {
-      const portfolioAprDict = await portfolioHelper.getPortfolioAPR();
-      setPortfolioAPR(portfolioAprDict);
-    };
-    fetchPortfolioAPR();
-  }, [portfolioName, account]);
+    if (Object.keys(portfolioApr).length === 0) {
+      dispatch(fetchStrategyMetadata());
+    }
+  }, [portfolioName]);
+
   useEffect(() => {
     if (!portfolioName || account === undefined) return;
     const fetchUsdBalance = async () => {
@@ -233,7 +237,7 @@ export default function IndexOverviews() {
 
               <div className="flex items-center">
                 <p className="text-lg text-gray-900 sm:text-xl">
-                  APR: {(portfolioApr.portfolioAPR * 100).toFixed(2)}%
+                  APR: {(portfolioApr?.portfolioAPR * 100).toFixed(2)}%
                 </p>
                 <a
                   href="#"

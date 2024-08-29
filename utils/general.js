@@ -107,7 +107,7 @@ export const formatBalanceWithLocalizedCurrency = (
   usdDenominatedValue,
   currency,
 ) => {
-  if (typeof (exchangeRateWithUSD * usdDenominatedValue) !== "number") {
+  if (isNaN(exchangeRateWithUSD * usdDenominatedValue)) {
     return [currency, 0];
   }
   return exchangeRateWithUSD * usdDenominatedValue < 0.01
