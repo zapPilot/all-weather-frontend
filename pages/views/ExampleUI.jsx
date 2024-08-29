@@ -38,7 +38,9 @@ export default function ExampleUI() {
   const searchWalletAddress = query.address;
 
   useEffect(() => {
-    dispatch(fetchStrategyMetadata());
+    if (Object.keys(strategyMetadata).length === 0) {
+      dispatch(fetchStrategyMetadata());
+    }
   }, []);
   useEffect(() => {
     if (!walletAddress) return;
@@ -112,7 +114,7 @@ export default function ExampleUI() {
                   {strategyLoading ? (
                     <Spin />
                   ) : (
-                    (strategyMetadata[1] * 100)?.toFixed(2)
+                    (strategyMetadata.portfolioAPR * 100)?.toFixed(2)
                   )}
                   %{" "}
                 </span>
