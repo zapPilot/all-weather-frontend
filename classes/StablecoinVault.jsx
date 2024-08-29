@@ -66,6 +66,8 @@ export class StablecoinVault extends BasePortfolio {
     2. Farming rewards from new protocols (non-sustainable)
     3. Swap fees
     4. Interest from lending
+
+    Lock-up Period: 2 days
     `}
       </ReactMarkdown>
     );
