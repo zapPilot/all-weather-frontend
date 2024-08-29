@@ -491,7 +491,7 @@ export default function IndexOverviews() {
                       exchangeRateWithUSD,
                       usdBalance * zapOutPercentage,
                       currency,
-                    )}
+                    ).join(" ")}
                   </Button>
                 </div>
                 <div className="mt-10">
@@ -506,7 +506,7 @@ export default function IndexOverviews() {
                       exchangeRateWithUSD,
                       sumUsdDenominatedValues(pendingRewards),
                       currency,
-                    )}{" "}
+                    ).join(" ")}{" "}
                     Worth of Rewards to {selectedToken.split("-")[0]}
                   </Button>
                   <APRComposition
