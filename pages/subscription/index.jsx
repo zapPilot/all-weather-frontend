@@ -101,7 +101,7 @@ export default function Example() {
             </p>
           </div>
           <p className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-gray-300">
-            Your Intent-Driven Yield Aggregator
+            Your Intent Centric Yield Aggregator
           </p>
 
           {/* xs to lg */}

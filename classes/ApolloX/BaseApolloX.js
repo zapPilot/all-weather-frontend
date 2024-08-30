@@ -88,6 +88,7 @@ export class BaseApolloX extends BaseProtocol {
     return rewardBalance;
   }
   async customDeposit(
+    recipient,
     inputToken,
     bestTokenAddressToZapIn,
     amountToZapIn,

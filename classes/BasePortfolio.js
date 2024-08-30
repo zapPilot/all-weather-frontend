@@ -174,7 +174,7 @@ export class BasePortfolio {
           } else if (actionName === "zapOut") {
             txnsForThisProtocol = await protocol.interface.zapOut(
               actionParams.account.address,
-              Number(actionParams.zapOutPercentage * protocol.weight),
+              Number(actionParams.zapOutPercentage),
               actionParams.tokenOutAddress,
               actionParams.slippage,
               actionParams.tokenPricesMappingTable,
