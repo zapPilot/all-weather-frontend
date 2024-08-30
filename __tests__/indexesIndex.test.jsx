@@ -9,7 +9,7 @@ const { useRouter, mockedRouterPush } = vi.hoisted(() => {
     mockedRouterPush,
   };
 });
-  
+
 vi.mock("next/navigation", async () => {
   const actual = await vi.importActual("next/navigation");
   return {

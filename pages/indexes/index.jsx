@@ -21,7 +21,10 @@ export default function Vaults() {
         </h1>
         <div className="mt-4 grid grid-cols-3 gap-3">
           {products.map((product) => (
-            <div key={product.id} className="bg-gray-800 p-4 border rounded border-transparent hover:border-emerald-400">
+            <div
+              key={product.id}
+              className="bg-gray-800 p-4 border rounded border-transparent hover:border-emerald-400"
+            >
               <Link
                 href={{
                   pathname: "/indexes/indexOverviews",
@@ -29,7 +32,9 @@ export default function Vaults() {
                 }}
               >
                 <div className="flex justify-between">
-                  <h2 className="text-xl text-white">{product.portfolioName}</h2>
+                  <h2 className="text-xl text-white">
+                    {product.portfolioName}
+                  </h2>
                   <img
                     alt={product.imageAlt}
                     src={product.imageSrc}
@@ -43,7 +48,9 @@ export default function Vaults() {
                   </div>
                   <div className="text-center">
                     <p className="text-gray-400">APR</p>
-                    <p className="text-3xl text-emerald-400" role="apr">{product.apr}</p>
+                    <p className="text-3xl text-emerald-400" role="apr">
+                      {product.apr}
+                    </p>
                   </div>
                 </div>
               </Link>
