@@ -43,7 +43,7 @@ export default function Vaults() {
                   </div>
                   <div className="text-center">
                     <p className="text-gray-400">APR</p>
-                    <p className="text-3xl text-emerald-400">{product.apr}</p>
+                    <p className="text-3xl text-emerald-400" role="apr">{product.apr}</p>
                   </div>
                 </div>
               </Link>
