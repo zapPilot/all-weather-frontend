@@ -2,6 +2,7 @@ import { BasePortfolio } from "./BasePortfolio";
 import { ApolloX20240806 } from "./ApolloX/ApolloX20240806";
 import { ApolloX20240813 } from "./ApolloX/ApolloX20240813";
 import { ApolloX20240820 } from "./ApolloX/ApolloX20240820";
+import { Vela } from "./Vela/Vela";
 import ReactMarkdown from "react-markdown";
 export class StablecoinVault extends BasePortfolio {
   constructor() {
@@ -46,7 +47,20 @@ export class StablecoinVault extends BasePortfolio {
                     "0xaA0DE632A4071642d72Ceb03577F5534ea196927",
                 },
               ),
-              weight: 1,
+              weight: 0.9,
+            },
+            {
+              interface: new Vela(
+                "arbitrum",
+                42161,
+                ["usdc", "gho"],
+                "single",
+                {
+                  stakeFarmContractAddress:
+                    "0xaA0DE632A4071642d72Ceb03577F5534ea196927",
+                },
+              ),
+              weight: 0.1,
             },
           ],
         },

@@ -100,7 +100,7 @@ export default function ExampleUI() {
                 All Weather Protocol
               </h1>
               <h2 className="heading-subtitle">
-                Your Intent-Driven Yield Aggregator
+                Your Intent Centric Yield Aggregator
               </h2>
               <p className="heading-subtitle">Click Once, Diversify Forever!</p>
               <p className="heading-subtitle">

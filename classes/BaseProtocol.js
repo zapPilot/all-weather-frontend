@@ -107,6 +107,7 @@ export default class BaseProtocol extends BaseUniswap {
         updateProgress,
       );
       const zapinTxns = await this.customDeposit(
+        recipient,
         inputToken,
         bestTokenAddressToZapIn,
         amountToZapIn,
@@ -234,6 +235,7 @@ export default class BaseProtocol extends BaseUniswap {
     return [...claimTxns, ...txns];
   }
   async customDeposit(
+    recipient,
     inputToken,
     bestTokenAddressToZapIn,
     amountToZapIn,
@@ -284,7 +286,9 @@ export default class BaseProtocol extends BaseUniswap {
       investmentAmountInThisPosition.toFixed(decimalsOfChosenToken),
       decimalsOfChosenToken,
     );
-    if (inputTokenAddress !== bestTokenAddressToZapIn) {
+    if (
+      inputTokenAddress.toLowerCase() !== bestTokenAddressToZapIn.toLowerCase()
+    ) {
       const [swapTxn, swapEstimateAmount] = await this._swap(
         recipient,
         inputTokenAddress,
