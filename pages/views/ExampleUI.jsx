@@ -1,7 +1,6 @@
 import React from "react";
 import { useEffect } from "react";
 import APRDetails from "./APRrelated.jsx";
-import { convertPortfolioStrategyToChartData } from "./RebalanceChart.jsx";
 import PortfolioMetaTab from "./PortfolioMetaTab";
 import { Row, Col, ConfigProvider } from "antd";
 import Image from "next/image";
@@ -9,7 +8,6 @@ import { useWindowHeight } from "../../utils/chartUtils";
 import styles from "../../styles/Home.module.css";
 import { useDispatch, useSelector } from "react-redux";
 import { useActiveAccount } from "thirdweb/react";
-import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import {
   fetchDataStart,
   fetchDataSuccess,
@@ -34,17 +32,15 @@ export default function ExampleUI() {
   const { strategyMetadata, strategyLoading, error } = useSelector(
     (state) => state.strategyMetadata,
   );
-  const portfolioHelper = React.useMemo(
-    () => getPortfolioHelper("AllWeatherPortfolio"),
-    [],
-  );
   const router = useRouter();
 
   const { query } = router;
   const searchWalletAddress = query.address;
 
   useEffect(() => {
-    dispatch(fetchStrategyMetadata());
+    if (Object.keys(strategyMetadata).length === 0) {
+      dispatch(fetchStrategyMetadata());
+    }
   }, []);
   useEffect(() => {
     if (!walletAddress) return;
@@ -54,11 +50,6 @@ export default function ExampleUI() {
     if (!walletAddress && !searchWalletAddress) return;
     fetchBundlePortfolio(false);
   }, [searchWalletAddress, walletAddress]);
-  useEffect(() => {
-    if (strategyMetadata && !strategyLoading) {
-      portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
-    }
-  }, [strategyMetadata, strategyLoading, portfolioHelper]);
   const fetchBundlePortfolio = (refresh) => {
     dispatch(fetchDataStart());
     axios
@@ -123,9 +114,7 @@ export default function ExampleUI() {
                   {strategyLoading ? (
                     <Spin />
                   ) : (
-                    convertPortfolioStrategyToChartData(
-                      portfolioHelper,
-                    )[1].toFixed(2)
+                    (strategyMetadata.portfolioAPR * 100)?.toFixed(2)
                   )}
                   %{" "}
                 </span>

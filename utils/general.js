@@ -107,9 +107,12 @@ export const formatBalanceWithLocalizedCurrency = (
   usdDenominatedValue,
   currency,
 ) => {
+  if (isNaN(exchangeRateWithUSD * usdDenominatedValue)) {
+    return [currency, 0];
+  }
   return exchangeRateWithUSD * usdDenominatedValue < 0.01
-    ? `${exchangeRateWithUSD * usdDenominatedValue} ${currency}`
-    : `${(exchangeRateWithUSD * usdDenominatedValue).toFixed(2)} ${currency}`;
+    ? [currency, exchangeRateWithUSD * usdDenominatedValue]
+    : [currency, (exchangeRateWithUSD * usdDenominatedValue).toFixed(2)];
 };
 
 async function getexchangeRateWithUSD(currency) {

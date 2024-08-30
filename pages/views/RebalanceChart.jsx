@@ -175,42 +175,6 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
   };
 }
 
-export function convertPortfolioStrategyToChartData(portfolioHelper) {
-  let result = { children: [] };
-  let idx = 0;
-  let totalAPR = 0;
-  // need to refactor
-  let nameToColor = {};
-  const strategy = portfolioHelper.getStrategyData(
-    "0x0000000000000000000000000000000000000000",
-  );
-  for (const [category, protocols] of Object.entries(strategy)) {
-    for (const [chain, protocolArray] of Object.entries(protocols)) {
-      for (const protocol of protocolArray) {
-        const weightedValue = protocol.weight * 100;
-        const poolName = protocol.interface.constructor.protocolName;
-        const sortedSymbolList = protocol.interface.symbolList.sort().join("-");
-        const keyForpoolsMetadata = `${chain}/${protocol.interface.constructor.protocolName}:${sortedSymbolList}`;
-        const aprOfProtocol =
-          portfolioHelper.strategyMetadata[keyForpoolsMetadata]?.value * 100;
-        totalAPR += aprOfProtocol * protocol.weight;
-        const name = `${poolName}:${sortedSymbolList},APR: ${aprOfProtocol.toFixed(
-          2,
-        )}%`;
-        [nameToColor, idx] = _prepareSunburstData(
-          result,
-          nameToColor,
-          name,
-          idx,
-          category,
-          weightedValue,
-        );
-      }
-    }
-  }
-  return [result, totalAPR];
-}
-
 export async function convertPortfolioStrategyToChartDataV2(portfolioHelper) {
   const portfolioAPRData = await portfolioHelper.getPortfolioAPR();
   let result = { children: [] };
