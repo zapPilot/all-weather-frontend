@@ -9,7 +9,7 @@ const products = [
     imageAlt: "Stablecoin Vault",
     apr: "30%",
     tvl: "upcoming",
-  }
+  },
 ];
 
 export default function Vaults() {

@@ -76,9 +76,10 @@ export class Vela extends BaseProtocol {
     const latestPrice = await this._fetchVlpPrice(updateProgress);
     // on Arbitrum, we don't stake and then put VLP to pancakeswap for higher APY
     const estimatedVlpAmount =
-      (tokenPricesMappingTable[inputToken] * amountToZapIn) /
-      Math.pow(10, bestTokenToZapInDecimal) /
-      latestPrice;
+      ((tokenPricesMappingTable[inputToken] * amountToZapIn) /
+        Math.pow(10, bestTokenToZapInDecimal) /
+        latestPrice) *
+      Math.pow(10, this.assetDecimals);
     const minVlpAmount = Math.floor(
       (estimatedVlpAmount * (100 - slippage)) / 100,
     );
