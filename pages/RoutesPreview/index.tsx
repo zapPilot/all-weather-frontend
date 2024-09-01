@@ -345,7 +345,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
         onClick={showLoading}
         role="invest_now"
       >
-        <Link href="/indexes/indexOverviews/?portfolioName=Stablecoin+Vault">
+        <Link href="/indexes">
           Invest Now!
         </Link>
       </Button>
