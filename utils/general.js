@@ -61,13 +61,7 @@ export async function getTokenDecimal(tokenAddress) {
   return (await tokenInstance.functions.decimals())[0];
 }
 
-export function approve(
-  tokenAddress,
-  spenderAddress,
-  amount,
-  decimalsOfChosenToken,
-  updateProgress,
-) {
+export function approve(tokenAddress, spenderAddress, amount, updateProgress) {
   const approvalAmount = Math.ceil(amount * APPROVAL_BUFFER);
   if (approvalAmount === 0) {
     throw new Error("Approval amount is 0. Cannot proceed with approving.");
@@ -84,13 +78,7 @@ export function approve(
       abi: permanentPortfolioJson.abi,
     }),
     method: "approve", // <- this gets inferred from the contract
-    params: [
-      spenderAddress,
-      ethers.utils.parseUnits(
-        approvalAmount.toFixed(decimalsOfChosenToken),
-        decimalsOfChosenToken,
-      ),
-    ],
+    params: [spenderAddress, approvalAmount],
   });
 }
 

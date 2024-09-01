@@ -144,8 +144,10 @@ export class BasePortfolio {
       const approveTxn = approve(
         actionParams.tokenInAddress,
         oneInchAddress,
-        actionParams.zapInAmount,
-        inputTokenDecimal,
+        ethers.utils.parseUnits(
+          actionParams.zapInAmount.toFixed(inputTokenDecimal),
+          inputTokenDecimal,
+        ),
         actionParams.updateProgress,
       );
       totalTxns.push(approveTxn);
@@ -225,7 +227,7 @@ export class BasePortfolio {
       for (const protocols of Object.values(protocolsInThisCategory)) {
         for (const protocol of protocols) {
           const apiSymbolToIdMapping = Object.values(
-            protocol.interface.tokens(),
+            protocol.interface.rewards(),
           )
             .flatMap((tokenArray) =>
               Array.isArray(tokenArray) ? tokenArray : [],

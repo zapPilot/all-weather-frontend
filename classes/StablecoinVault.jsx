@@ -53,7 +53,7 @@ export class StablecoinVault extends BasePortfolio {
               interface: new Vela(
                 "arbitrum",
                 42161,
-                ["usdc", "gho"],
+                ["usdc(bridged)"],
                 "single",
                 {
                   stakeFarmContractAddress:
