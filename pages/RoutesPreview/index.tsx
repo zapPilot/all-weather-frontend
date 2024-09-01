@@ -345,9 +345,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
         onClick={showLoading}
         role="invest_now"
       >
-        <Link href="/indexes">
-          Invest Now!
-        </Link>
+        <Link href="/indexes">Invest Now!</Link>
       </Button>
       {/* beautiful popup modal but need to deprecate it for now */}
       {/* <Modal open={open} onCancel={() => setOpen(false)} footer={<></>}>

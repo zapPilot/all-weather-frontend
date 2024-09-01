@@ -50,7 +50,7 @@ export class BaseApolloX extends BaseProtocol {
   claimAndSwapSteps() {
     return 3;
   }
-  tokens() {
+  rewards() {
     return {
       rewards: [
         {
@@ -75,7 +75,7 @@ export class BaseApolloX extends BaseProtocol {
       await stakeFarmContractInstance.functions.pendingReward(recipient)
     )[0];
     let rewardBalance = {};
-    for (const token of this.tokens().rewards) {
+    for (const token of this.rewards().rewards) {
       rewardBalance[token.address] = {
         symbol: token.symbol,
         balance: pendingReward,
@@ -100,9 +100,10 @@ export class BaseApolloX extends BaseProtocol {
     const latestPrice = await this._fetchAlpPrice(updateProgress);
     // on Arbitrum, we don't stake and then put ALP to pancakeswap for higher APY
     const estimatedAlpAmount =
-      (tokenPricesMappingTable[inputToken] * amountToZapIn) /
-      Math.pow(10, bestTokenToZapInDecimal) /
-      latestPrice;
+      ((tokenPricesMappingTable[inputToken] * amountToZapIn) /
+        Math.pow(10, bestTokenToZapInDecimal) /
+        latestPrice) *
+      Math.pow(10, this.assetDecimals);
     const minAlpAmount = Math.floor(
       (estimatedAlpAmount * (100 - slippage)) / 100,
     );
@@ -115,7 +116,6 @@ export class BaseApolloX extends BaseProtocol {
       this.assetContract.address,
       this.stakeFarmContract.address,
       minAlpAmount,
-      this.assetDecimals,
       updateProgress,
     );
     const depositTxn = prepareContractCall({
@@ -129,6 +129,7 @@ export class BaseApolloX extends BaseProtocol {
     recipient,
     percentage,
     slippage,
+    tokenPricesMappingTable,
     updateProgress,
   ) {
     const stakeFarmContractInstance = new ethers.Contract(
@@ -149,8 +150,10 @@ export class BaseApolloX extends BaseProtocol {
     const approveAlpTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
-      amount,
-      this.assetDecimals,
+      ethers.utils.parseUnits(
+        amount.toFixed(this.assetDecimals),
+        this.assetDecimals,
+      ),
       updateProgress,
     );
     const latestPrice = await this._fetchAlpPrice(updateProgress);
