@@ -8,54 +8,54 @@ const products = [
     imageSrc: "/indexFunds/stablecoinVault.png",
     imageAlt: "Stablecoin Vault",
     apr: "30%",
-    tvl: "upcoming",
+    tvl: "TBD",
   },
 ];
 
 export default function Vaults() {
   return (
     <BasePage>
-      <div className="bg-white">
-        <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:max-w-7xl lg:px-8">
-          <h2 className="text-2xl font-bold tracking-tight text-gray-900">
-            List of Index Funds
-          </h2>
-
-          <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
-            {products.map((product) => (
-              <div key={product.id} className="group relative">
-                <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-80">
-                  <a href={product.href}>
-                    <img
-                      alt={product.imageAlt}
-                      src={product.imageSrc}
-                      className="h-full w-full object-cover object-center lg:h-full lg:w-full"
-                    />
-                  </a>
+      <div className="px-4 py-8">
+        <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          List of Index Funds
+        </h1>
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          {products.map((product) => (
+            <div
+              key={product.id}
+              className="bg-gray-800 p-4 border rounded border-transparent hover:border-emerald-400"
+            >
+              <Link
+                href={{
+                  pathname: "/indexes/indexOverviews",
+                  query: { portfolioName: product.portfolioName },
+                }}
+              >
+                <div className="flex justify-between">
+                  <h2 className="text-xl text-white">
+                    {product.portfolioName}
+                  </h2>
+                  <img
+                    alt={product.imageAlt}
+                    src={product.imageSrc}
+                    className="w-24"
+                  />
                 </div>
-                <div className="mt-4 flex justify-between">
-                  <div>
-                    <h3 className="text-sm text-gray-700">
-                      <Link
-                        href={{
-                          pathname: "/indexes/indexOverviews",
-                          query: { portfolioName: product.portfolioName },
-                        }}
-                      >
-                        {product.portfolioName}
-                      </Link>
-                    </h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      TVL: {product.tvl}
+                <div className="mt-4 grid grid-cols-2 gap-4 divide-x divide-gray-400">
+                  <div className="text-center">
+                    <p className="text-gray-400">TVL</p>
+                    <p className="text-3xl text-white">{product.tvl}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-gray-400">APR</p>
+                    <p className="text-3xl text-emerald-400" role="apr">
+                      {product.apr}
                     </p>
                   </div>
-                  <p className="text-sm font-medium text-gray-900">
-                    APR: {product.apr}
-                  </p>
                 </div>
-              </div>
-            ))}
-          </div>
+              </Link>
+            </div>
+          ))}
         </div>
       </div>
     </BasePage>
