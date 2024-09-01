@@ -45,8 +45,8 @@ export default class BaseProtocol extends BaseUniswap {
         : this.symbolList.join("-");
     return `${this.chain}/${this.protocolName}/${symbolList}`;
   }
-  tokens() {
-    throw new Error("Method 'tokens()' must be implemented.");
+  rewards() {
+    throw new Error("Method 'rewards()' must be implemented.");
   }
   _checkIfParamsAreSet() {
     assert(this.protocolName !== "placeholder", "protocolName is not set");
@@ -191,6 +191,7 @@ export default class BaseProtocol extends BaseUniswap {
       recipient,
       percentage,
       slippage,
+      tokenPricesMappingTable,
       updateProgress,
     );
     const withdrawTokenAndBalance =
@@ -300,12 +301,10 @@ export default class BaseProtocol extends BaseUniswap {
       amountToZapIn = Math.floor((swapEstimateAmount * (100 - slippage)) / 100);
       swapTxns.push(swapTxn);
     }
-    const inputTokenDecimal = await getTokenDecimal(bestTokenAddressToZapIn);
     const approveForZapInTxn = approve(
       bestTokenAddressToZapIn,
       this.protocolContract.address,
       amountToZapIn,
-      inputTokenDecimal,
       updateProgress,
     );
     return [
@@ -330,15 +329,10 @@ export default class BaseProtocol extends BaseUniswap {
       if (amount.toString() === "0" || amount === 0) {
         continue;
       }
-      const tokenInstance = new ethers.Contract(address, ERC20_ABI, PROVIDER);
-      const decimalsOfChosenToken = (
-        await tokenInstance.functions.decimals()
-      )[0];
       const approveTxn = approve(
         address,
         oneInchAddress,
         amount,
-        decimalsOfChosenToken,
         updateProgress,
       );
       const swapTxnResult = await this._swap(
@@ -386,7 +380,7 @@ export default class BaseProtocol extends BaseUniswap {
     slippage,
     updateProgress,
   ) {
-    if (fromTokenAddress === toTokenAddress) {
+    if (fromTokenAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
       return;
     }
     const swapCallData = await fetch1InchSwapData(
