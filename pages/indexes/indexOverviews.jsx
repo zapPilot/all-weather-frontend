@@ -449,7 +449,7 @@ export default function IndexOverviews() {
                         Free
                       </span>
                       <span style={{ marginLeft: "5px" }}>
-                        Service Fee: $0 (will charge 0.1% in the future)
+                        Service Fee: $0 (will charge 0.099% in the future)
                       </span>
                     </div>
                   </fieldset>

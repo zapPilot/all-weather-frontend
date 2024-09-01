@@ -8,8 +8,8 @@ const products = [
     imageSrc: "/indexFunds/stablecoinVault.png",
     imageAlt: "Stablecoin Vault",
     apr: "30%",
-    tvl: "TBD",
-  },
+    tvl: "upcoming",
+  }
 ];
 
 export default function Vaults() {
