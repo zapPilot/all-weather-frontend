@@ -18,7 +18,7 @@ export class BaseApolloX extends BaseProtocol {
     super(chain, chaindId, symbolList, mode, customParams);
     // arbitrum's Apollox is staked on PancakeSwap
     this.protocolName = "pancakeswap";
-    this.protocolVersion = "0";
+    this.protocolVersion = "v3";
     this.assetDecimals = 18;
     this.assetContract = getContract({
       client: THIRDWEB_CLIENT,
@@ -100,10 +100,9 @@ export class BaseApolloX extends BaseProtocol {
     const latestPrice = await this._fetchAlpPrice(updateProgress);
     // on Arbitrum, we don't stake and then put ALP to pancakeswap for higher APY
     const estimatedAlpAmount =
-      ((tokenPricesMappingTable[inputToken] * amountToZapIn) /
-        Math.pow(10, bestTokenToZapInDecimal) /
-        latestPrice) *
-      Math.pow(10, this.assetDecimals);
+      (tokenPricesMappingTable[inputToken] * amountToZapIn) /
+      Math.pow(10, bestTokenToZapInDecimal) /
+      latestPrice;
     const minAlpAmount = Math.floor(
       (estimatedAlpAmount * (100 - slippage)) / 100,
     );
