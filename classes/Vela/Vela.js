@@ -43,7 +43,7 @@ export class Vela extends BaseProtocol {
     return 4;
   }
   zapOutSteps(tokenInAddress) {
-    return 5;
+    return 3;
   }
   claimAndSwapSteps() {
     return 3;
@@ -114,14 +114,6 @@ export class Vela extends BaseProtocol {
         )
       )[0] * percentage,
     );
-    console.log(
-      "vlpAmount",
-      vlpAmount,
-      await stakeFarmContractInstance.functions.getStakedAmount(
-        this.assetContract.address,
-        recipient,
-      )[0],
-    );
     const approveAlpTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
@@ -183,6 +175,7 @@ export class Vela extends BaseProtocol {
   }
 
   async _fetchVlpPrice(updateProgress) {
+    updateProgress("fetching VLP price");
     const protocolContractInstance = new ethers.Contract(
       this.protocolContract.address,
       Vault,
@@ -190,7 +183,6 @@ export class Vela extends BaseProtocol {
     );
     const vlpPrice =
       (await protocolContractInstance.functions.getVLPPrice()) / 1e5;
-    updateProgress("fetching VLP price");
     return vlpPrice;
   }
   _getTheBestTokenAddressToZapIn() {

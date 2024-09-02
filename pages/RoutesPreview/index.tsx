@@ -11,26 +11,19 @@ import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
 import styles from "../../styles/Home.module.css";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import { useSelector } from "react-redux";
+import Link from "next/link";
 import { arbitrum } from "thirdweb/chains";
 import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import { encodeFunctionData } from "viem";
 import Image from "next/image";
-import Link from "next/link";
 interface RoutesPreviewProps {
   portfolioName: string;
 }
 
 const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
-  const [open, setOpen] = React.useState<boolean>(false);
   const account = useActiveAccount();
   const { mutate: sendBatch } = useSendBatchTransaction();
   const [isHover, setIsHover] = React.useState(false);
-  const handleMouseEnter = () => {
-    setIsHover(true);
-  };
-  const handleMouseLeave = () => {
-    setIsHover(false);
-  };
   const { strategyMetadata, loading, error } = useSelector(
     (state) => state.strategyMetadata,
   );
@@ -60,7 +53,6 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
   }, [strategyMetadata, loading, portfolioHelper]);
 
   const showLoading = () => {
-    setOpen(true);
     setProgress(0);
   };
 
@@ -283,30 +275,7 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
                     </dd>
                   </div>
                 </dl>
-                <p className="mt-1 text-sm text-gray-500">
-                  <ConfigProvider
-                    theme={{
-                      token: {
-                        colorPrimary: "#5DFDCB",
-                        colorTextLightSolid: "#000000",
-                      },
-                    }}
-                  >
-                    Slippage:
-                    <Radio.Group
-                      value={slippage}
-                      buttonStyle="solid"
-                      onChange={(e) => setSlippage(e.target.value)}
-                    >
-                      {[0.5, 1, 3, 5].map((slippage) => (
-                        <Radio.Button value={slippage} key={slippage}>
-                          {slippage}%
-                        </Radio.Button>
-                      ))}
-                    </Radio.Group>
-                  </ConfigProvider>
-                  Service Fee: $0
-                </p>
+                <p className="mt-1 text-sm text-gray-500">Service Fee: $0</p>
               </div>
 
               <div className="mt-10">
@@ -347,10 +316,6 @@ const RoutesPreview: React.FC<RoutesPreviewProps> = ({ portfolioName }) => {
       >
         <Link href="/indexes">Invest Now!</Link>
       </Button>
-      {/* beautiful popup modal but need to deprecate it for now */}
-      {/* <Modal open={open} onCancel={() => setOpen(false)} footer={<></>}>
-        <ModalContent />
-      </Modal> */}
     </>
   );
 };
