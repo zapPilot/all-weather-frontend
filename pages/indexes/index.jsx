@@ -1,18 +1,35 @@
 import BasePage from "../basePage.tsx";
 import Link from "next/link";
-const products = [
-  {
-    id: 1,
-    portfolioName: "Stablecoin Vault",
-    href: "/indexes/indexOverviews/?portfolioName=Stablecoin+Vault",
-    imageSrc: "/indexFunds/stablecoinVault.png",
-    imageAlt: "Stablecoin Vault",
-    apr: "30%",
-    tvl: "upcoming",
-  },
-];
+import { useDispatch, useSelector } from "react-redux";
+import { useEffect } from "react";
+import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
+import { Spin } from "antd";
 
 export default function Vaults() {
+  const { strategyMetadata: vaultsMetadata } = useSelector(
+    (state) => state.strategyMetadata,
+  );
+  const dispatch = useDispatch();
+
+  const vaults = [
+    {
+      id: 1,
+      portfolioName: "Stablecoin Vault",
+      href: "/indexes/indexOverviews/?portfolioName=Stablecoin+Vault",
+      imageSrc: "/indexFunds/stablecoinVault.png",
+      imageAlt: "Stablecoin Vault",
+      apr:
+        (vaultsMetadata?.["Stablecoin Vault"]?.portfolioAPR * 100).toFixed(2) +
+        "%",
+      tvl: "upcoming",
+    },
+  ];
+  useEffect(() => {
+    if (Object.keys(vaultsMetadata).length === 0) {
+      dispatch(fetchStrategyMetadata());
+    }
+  }, []);
+
   return (
     <BasePage>
       <div className="px-4 py-8">
@@ -20,7 +37,7 @@ export default function Vaults() {
           List of Index Funds
         </h1>
         <div className="mt-4 grid grid-cols-3 gap-3">
-          {products.map((product) => (
+          {vaults.map((product) => (
             <div
               key={product.id}
               className="bg-gray-800 p-4 border rounded border-transparent hover:border-emerald-400"
@@ -49,7 +66,7 @@ export default function Vaults() {
                   <div className="text-center">
                     <p className="text-gray-400">APR</p>
                     <p className="text-3xl text-emerald-400" role="apr">
-                      {product.apr}
+                      {product.apr ? product.apr : <Spin />}
                     </p>
                   </div>
                 </div>

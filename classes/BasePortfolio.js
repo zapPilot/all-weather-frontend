@@ -121,7 +121,11 @@ export class BasePortfolio {
       Object.keys(this.assetAddressSetByChain).length;
     const updateProgress = (actionName) => {
       completedSteps++;
-      actionParams.progressCallback((completedSteps / totalSteps) * 100);
+      actionParams.progressCallback(
+        (completedSteps / totalSteps) * 100 > 100
+          ? 100
+          : (completedSteps / totalSteps) * 100,
+      );
       actionParams.progressStepNameCallback(actionName);
     };
     const tokenPricesMappingTable =
@@ -160,7 +164,7 @@ export class BasePortfolio {
           const protocolUsdBalance = await protocol.interface.usdBalanceOf(
             actionParams.account.address,
           );
-          if (protocol.weight === 0 || protocolUsdBalance < 0.1) {
+          if (protocol.weight === 0) {
             continue;
           }
           // make it concurrent!
@@ -176,7 +180,7 @@ export class BasePortfolio {
               actionParams.updateProgress,
               this.existingInvestmentPositions[chain],
             );
-          } else if (actionName === "zapOut") {
+          } else if (actionName === "zapOut" && protocolUsdBalance > 0.01) {
             txnsForThisProtocol = await protocol.interface.zapOut(
               actionParams.account.address,
               Number(actionParams.zapOutPercentage),
@@ -210,6 +214,7 @@ export class BasePortfolio {
     for (const [chain, lpTokens] of Object.entries(
       this.assetAddressSetByChain,
     )) {
+      updateProgress(`Fetching ${chain}\'s investment positions: ${lpTokens}`);
       const response = await fetch(
         `${
           process.env.NEXT_PUBLIC_API_URL
@@ -219,7 +224,6 @@ export class BasePortfolio {
       );
       const data = await response.json();
       existingInvestmentPositionsbyChain[chain] = data;
-      updateProgress(`Fetching ${chain}\'s investment positions: ${lpTokens}`);
     }
     return existingInvestmentPositionsbyChain;
   }
@@ -276,6 +280,7 @@ export class BasePortfolio {
     for (const [token, coinMarketCapId] of Object.entries(
       this.uniqueTokenIdsForCurrentPrice,
     )) {
+      updateProgress(`Fetching price for ${token}`);
       axios
         .get(
           `${process.env.NEXT_PUBLIC_API_URL}/token/${coinMarketCapId}/price`,
@@ -283,7 +288,6 @@ export class BasePortfolio {
         .then((result) => {
           tokenPricesMappingTable[token] = result.data.price;
         });
-      updateProgress(`Fetching price for ${token}`);
     }
     return tokenPricesMappingTable;
   }
@@ -311,6 +315,7 @@ export class BasePortfolio {
         protocolsInThisCategory,
       )) {
         for (const protocol of protocolsInThisChain) {
+          if (protocol.weight === 0) continue;
           if (actionName === "zapIn") {
             counts += protocol.interface.zapInSteps();
           } else if (actionName === "zapOut") {

@@ -42,13 +42,13 @@ export class BaseApolloX extends BaseProtocol {
     this._checkIfParamsAreSet();
   }
   zapInSteps(tokenInAddress) {
-    return 4;
+    return 3;
   }
   zapOutSteps(tokenInAddress) {
-    return 5;
+    return 3;
   }
   claimAndSwapSteps() {
-    return 3;
+    return 2;
   }
   rewards() {
     return {
@@ -63,13 +63,13 @@ export class BaseApolloX extends BaseProtocol {
     };
   }
   async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
+    updateProgress(
+      `fetching pending rewards from ${this.stakeFarmContract.address}`,
+    );
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       SmartChefInitializable,
       PROVIDER,
-    );
-    updateProgress(
-      `fetching pending rewards from ${this.stakeFarmContract.address}`,
     );
     const pendingReward = (
       await stakeFarmContractInstance.functions.pendingReward(recipient)
@@ -209,6 +209,7 @@ export class BaseApolloX extends BaseProtocol {
   }
 
   async _fetchAlpPrice(updateProgress) {
+    updateProgress("fetching ALP price");
     const response = await axios({
       method: "post",
       url: "https://www.apollox.finance/bapi/futures/v1/public/future/symbol/history-price",
@@ -223,7 +224,6 @@ export class BaseApolloX extends BaseProtocol {
       referrer: "https://www.apollox.finance/en/ALP",
     });
     const latestPrice = response.data.data[0].price;
-    updateProgress("fetching ALP price");
     return latestPrice;
   }
   _getTheBestTokenAddressToZapIn() {
