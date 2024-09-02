@@ -1,13 +1,14 @@
 import React from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import APRDetails from "./APRrelated.jsx";
 import PortfolioMetaTab from "./PortfolioMetaTab";
-import { Row, Col, ConfigProvider } from "antd";
+import { Row, Col, Button } from "antd";
 import Image from "next/image";
 import { useWindowHeight } from "../../utils/chartUtils";
 import styles from "../../styles/Home.module.css";
 import { useDispatch, useSelector } from "react-redux";
 import { useActiveAccount } from "thirdweb/react";
+import Link from "next/link";
 import {
   fetchDataStart,
   fetchDataSuccess,
@@ -18,12 +19,20 @@ import { walletAddressChanged } from "../../lib/features/subscriptionSlice";
 import axios from "axios";
 import { Spin } from "antd";
 import { useRouter } from "next/router";
-import RoutesPreview from "../RoutesPreview/index.tsx";
 import { timeAgo } from "../../utils/general";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ExampleUI() {
+  const [isHover, setIsHover] = useState(false);
+
+  const handleMouseEnter = () => {
+    setIsHover(true);
+  };
+  const handleMouseLeave = () => {
+    setIsHover(false);
+  };
+
   const windowHeight = useWindowHeight();
   const dispatch = useDispatch();
   const { data, loading } = useSelector((state) => state.api);
@@ -38,7 +47,10 @@ export default function ExampleUI() {
   const searchWalletAddress = query.address;
 
   useEffect(() => {
-    if (Object.keys(strategyMetadata["Stablecoin Vault"]).length === 0) {
+    if (
+      strategyMetadata === undefined ||
+      Object.keys(strategyMetadata).length === 0
+    ) {
       dispatch(fetchStrategyMetadata());
     }
   }, []);
@@ -112,30 +124,33 @@ export default function ExampleUI() {
                 >
                   {" "}
                   {strategyLoading ||
-                  isNaN(strategyMetadata["Stablecoin Vault"].portfolioAPR) ? (
+                  isNaN(strategyMetadata["Stablecoin Vault"]?.portfolioAPR) ? (
                     <Spin />
                   ) : (
                     (
-                      strategyMetadata["Stablecoin Vault"].portfolioAPR * 100
+                      strategyMetadata["Stablecoin Vault"]?.portfolioAPR * 100
                     )?.toFixed(2)
                   )}
                   %{" "}
                 </span>
                 APR
               </p>
-              <ConfigProvider
-                theme={{
-                  token: {
-                    colorPrimary: "#5DFDCB",
-                    colorPrimaryBorder: "#5DFDCB",
-                  },
-                }}
-              >
-                <RoutesPreview
-                  portfolioName="AllWeatherPortfolio"
-                  role="portfolio_in_transaction_preview"
-                />
-              </ConfigProvider>
+              <Link href="/indexes">
+                <Button
+                  type="primary"
+                  className={styles.btnInvest}
+                  style={
+                    isHover
+                      ? { backgroundColor: "#5DFDCB", color: "#000000" }
+                      : { backgroundColor: "transparent", color: "#5DFDCB" }
+                  }
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
+                  role="invest_now"
+                >
+                  Invest Now!
+                </Button>
+              </Link>
             </center>
           </div>
         </Col>
