@@ -38,7 +38,7 @@ export default function ExampleUI() {
   const searchWalletAddress = query.address;
 
   useEffect(() => {
-    if (Object.keys(strategyMetadata).length === 0) {
+    if (Object.keys(strategyMetadata["Stablecoin Vault"]).length === 0) {
       dispatch(fetchStrategyMetadata());
     }
   }, []);
@@ -111,10 +111,13 @@ export default function ExampleUI() {
                   data-testid="apr"
                 >
                   {" "}
-                  {strategyLoading || isNaN(strategyMetadata.portfolioAPR) ? (
+                  {strategyLoading ||
+                  isNaN(strategyMetadata["Stablecoin Vault"].portfolioAPR) ? (
                     <Spin />
                   ) : (
-                    (strategyMetadata.portfolioAPR * 100)?.toFixed(2)
+                    (
+                      strategyMetadata["Stablecoin Vault"].portfolioAPR * 100
+                    )?.toFixed(2)
                   )}
                   %{" "}
                 </span>

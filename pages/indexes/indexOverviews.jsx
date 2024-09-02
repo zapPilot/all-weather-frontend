@@ -158,7 +158,10 @@ export default function IndexOverviews() {
     }, 0);
   }
   useEffect(() => {
-    if (Object.keys(portfolioApr).length === 0) {
+    if (
+      portfolioApr[portfolioName] === undefined ||
+      Object.keys(portfolioApr).length === 0
+    ) {
       dispatch(fetchStrategyMetadata());
     }
   }, [portfolioName]);
@@ -237,7 +240,9 @@ export default function IndexOverviews() {
 
               <div className="flex items-center">
                 <p className="text-lg text-gray-900 sm:text-xl">
-                  APR: {(portfolioApr?.portfolioAPR * 100).toFixed(2)}%
+                  APR:{" "}
+                  {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}
+                  %
                 </p>
                 <a
                   href="#"
@@ -363,7 +368,7 @@ export default function IndexOverviews() {
                                         <span className="ml-4 text-sm font-medium text-gray-900">
                                           APR:{" "}
                                           {(
-                                            portfolioApr[
+                                            portfolioApr?.[portfolioName]?.[
                                               protocol.interface.uniqueId()
                                             ]?.apr * 100
                                           ).toFixed(2)}
