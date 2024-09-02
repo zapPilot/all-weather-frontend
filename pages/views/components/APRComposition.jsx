@@ -37,7 +37,7 @@ const APRComposition = ({ APRData, mode, currency, exchangeRateWithUSD }) => {
       title="Data Breakdown"
       trigger="hover"
     >
-      <InfoCircleOutlined />
+      <InfoCircleOutlined className="text-white"/>
     </Popover>
   );
 };

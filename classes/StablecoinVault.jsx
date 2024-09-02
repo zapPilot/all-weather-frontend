@@ -73,7 +73,7 @@ export class StablecoinVault extends BasePortfolio {
   }
   description() {
     return (
-      <ReactMarkdown className="text-base text-gray-500">
+      <ReactMarkdown className="text-gray-400">
         {`
     Where does the revenue come from?
     1. Liquidation fees from perpetual exchanges
