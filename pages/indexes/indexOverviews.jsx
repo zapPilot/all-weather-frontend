@@ -7,10 +7,18 @@ import { useDispatch, useSelector } from "react-redux";
 import RebalanceChart from "../views/RebalanceChart";
 import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { useRouter } from "next/router";
-import { Button, Progress, ConfigProvider, Radio, notification } from "antd";
+import {
+  Button,
+  Progress,
+  ConfigProvider,
+  Radio,
+  notification,
+  Modal,
+} from "antd";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
+
 import openNotificationWithIcon from "../../utils/notification.js";
 import {
   getLocalizedCurrencyAndExchangeRate,
@@ -37,6 +45,7 @@ export default function IndexOverviews() {
   const [selectedToken, setSelectedToken] = useState(
     "USDC-0xaf88d065e77c8cc2239327c5edb3a432268e5831",
   );
+
   const [investmentAmount, setInvestmentAmount] = useState(0);
   const [zapInIsLoading, setZapInIsLoading] = useState(false);
   const [zapOutIsLoading, setZapOutIsLoading] = useState(false);
@@ -51,6 +60,8 @@ export default function IndexOverviews() {
   const [exchangeRateWithUSD, setExchangeRateWithUSD] = useState(1);
   const [usdBalanceLoading, setUsdBalanceLoading] = useState(false);
   const [pendingRewardsLoading, setPendingRewardsLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
   const handleSetSelectedToken = useCallback((token) => {
@@ -69,6 +80,8 @@ export default function IndexOverviews() {
   const dispatch = useDispatch();
 
   const handleAAWalletAction = async (actionName) => {
+    setOpen(true);
+
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
     if (!tokenSymbolAndAddress) {
       alert("Please select a token");
@@ -151,6 +164,39 @@ export default function IndexOverviews() {
       );
     }
   };
+  function ModalContent() {
+    return (
+      <Modal
+        title="Transaction Preview"
+        open={open}
+        onCancel={() => setOpen(false)}
+        footer={<></>}
+      >
+        <div>
+          <p>Tips:</p>
+          <p>
+            1. Test with $5–$10 first, as signature verification isn&apos;t
+            available yet.
+          </p>
+          <p>2. This will be fixed in the next version.</p>
+          <p>3. Increase your slippage if the transaction fails.</p>
+        </div>
+
+        <Progress
+          percent={progress.toFixed(2)}
+          footer={<></>}
+          status={
+            zapInIsLoading || zapOutIsLoading || claimIsLoading ? "active" : ""
+          }
+          size={[400, 10]}
+          showInfo={true}
+          format={(percent) => `${percent}%`}
+        />
+        {stepName}
+      </Modal>
+    );
+  }
+
   // Function to sum up the usdDenominatedValue
   function sumUsdDenominatedValues(mapping) {
     return Object.values(mapping).reduce((total, entry) => {
@@ -158,7 +204,10 @@ export default function IndexOverviews() {
     }, 0);
   }
   useEffect(() => {
-    if (Object.keys(portfolioApr).length === 0) {
+    if (
+      portfolioApr[portfolioName] === undefined ||
+      Object.keys(portfolioApr).length === 0
+    ) {
       dispatch(fetchStrategyMetadata());
     }
   }, [portfolioName]);
@@ -171,7 +220,7 @@ export default function IndexOverviews() {
       setUsdBalance(usdBalance);
       const pendingRewards = await portfolioHelper.pendingRewards(
         account.address,
-        (progressPercentage) => setProgress(progressPercentage),
+        () => {},
       );
       setPendingRewards(pendingRewards);
       setUsdBalanceLoading(false);
@@ -193,6 +242,7 @@ export default function IndexOverviews() {
   return (
     <BasePage>
       {notificationContextHolder}
+      <ModalContent />
       <div className="px-4 py-8">
         <nav aria-label="Breadcrumb">
           <ol role="list" className="flex items-center space-x-2">
@@ -276,7 +326,7 @@ export default function IndexOverviews() {
                         buttonStyle="solid"
                         onChange={(e) => setSlippage(e.target.value)}
                       >
-                        {[0.1, 0.5, 1].map((slippageValue) => (
+                        {[0.5, 1, 3].map((slippageValue) => (
                           <Radio.Button
                             value={slippageValue}
                             key={slippageValue}

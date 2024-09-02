@@ -62,6 +62,7 @@ export async function getTokenDecimal(tokenAddress) {
 }
 
 export function approve(tokenAddress, spenderAddress, amount, updateProgress) {
+  updateProgress("approve");
   const approvalAmount = Math.ceil(amount * APPROVAL_BUFFER);
   if (approvalAmount === 0) {
     throw new Error("Approval amount is 0. Cannot proceed with approving.");
@@ -69,7 +70,6 @@ export function approve(tokenAddress, spenderAddress, amount, updateProgress) {
   if (spenderAddress === NULL_ADDRESS) {
     throw new Error("Spender address is null. Cannot proceed with approving.");
   }
-  updateProgress("approve");
   return prepareContractCall({
     contract: getContract({
       client: THIRDWEB_CLIENT,
