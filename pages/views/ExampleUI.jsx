@@ -111,7 +111,7 @@ export default function ExampleUI() {
                   data-testid="apr"
                 >
                   {" "}
-                  {strategyLoading ? (
+                  {strategyLoading || isNaN(strategyMetadata.portfolioAPR) ? (
                     <Spin />
                   ) : (
                     (strategyMetadata.portfolioAPR * 100)?.toFixed(2)
