@@ -383,6 +383,7 @@ export default class BaseProtocol extends BaseUniswap {
     if (fromTokenAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
       return;
     }
+    updateProgress(`swap ${fromTokenAddress} to ${toTokenAddress}`);
     const swapCallData = await fetch1InchSwapData(
       this.chainId,
       fromTokenAddress,
@@ -397,7 +398,6 @@ export default class BaseProtocol extends BaseUniswap {
     if (swapCallData["toAmount"] === 0) {
       throw new Error("To amount is 0. Cannot proceed with swapping.");
     }
-    updateProgress(`swap ${fromTokenAddress} to ${toTokenAddress}`);
     return [
       prepareTransaction({
         to: oneInchAddress,
