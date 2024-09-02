@@ -1,19 +1,11 @@
 import { expect, describe, it } from "vitest";
 import { render, screen } from "./test-utils";
-import RoutesPreview from "../pages/RoutesPreview";
+import ExampleUI from "../pages/views/ExampleUI";
 import userEvent from "@testing-library/user-event";
 
 describe("RoutesPreview Component", () => {
   it("Make sure there's Sign Button", async () => {
-    // Render the Dashboard component
-    render(
-      <RoutesPreview
-        portfolioName="AllWeatherPortfolio"
-        investmentAmount={10000}
-        chosenToken={""}
-        role="portfolio_in_transaction_preview"
-      />,
-    );
+    render(<ExampleUI />);
 
     // Check if "Invest Now!" button exists
     const investButtons = screen.getAllByText(/Invest Now!/i);
