@@ -43,7 +43,7 @@ export default function IndexOverviews() {
   const [claimIsLoading, setClaimIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [stepName, setStepName] = useState("");
-  const [slippage, setSlippage] = useState(1);
+  const [slippage, setSlippage] = useState(0.5);
   const [zapOutPercentage, setZapOutPercentage] = useState(1);
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
@@ -414,7 +414,7 @@ export default function IndexOverviews() {
                         buttonStyle="solid"
                         onChange={(e) => setSlippage(e.target.value)}
                       >
-                        {[0.5, 1, 3, 5].map((slippageValue) => (
+                        {[0.1, 0.5, 1].map((slippageValue) => (
                           <Radio.Button
                             value={slippageValue}
                             key={slippageValue}
