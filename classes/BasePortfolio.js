@@ -157,7 +157,10 @@ export class BasePortfolio {
         protocolsInThisCategory,
       )) {
         for (const protocol of protocols) {
-          if (protocol.weight === 0) {
+          const protocolUsdBalance = await protocol.interface.usdBalanceOf(
+            actionParams.account.address,
+          );
+          if (protocol.weight === 0 || protocolUsdBalance < 0.1) {
             continue;
           }
           // make it concurrent!

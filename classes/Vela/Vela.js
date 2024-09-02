@@ -106,12 +106,22 @@ export class Vela extends BaseProtocol {
       TokenFarm,
       PROVIDER,
     );
-    const vlpAmount = (
+    const vlpAmount = Math.floor(
+      (
+        await stakeFarmContractInstance.functions.getStakedAmount(
+          this.assetContract.address,
+          recipient,
+        )
+      )[0] * percentage,
+    );
+    console.log(
+      "vlpAmount",
+      vlpAmount,
       await stakeFarmContractInstance.functions.getStakedAmount(
         this.assetContract.address,
         recipient,
-      )
-    )[0];
+      )[0],
+    );
     const approveAlpTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
