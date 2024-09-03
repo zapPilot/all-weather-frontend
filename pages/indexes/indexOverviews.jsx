@@ -270,12 +270,15 @@ export default function IndexOverviews() {
             ))}
           </ol>
         </nav>
-        <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">{portfolioName}</h1>
+        <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl" role="vault">{portfolioName}</h1>
         <div className="w-2/4">
           <div className="mt-2 grid grid-cols-2 gap-2 divide-x divide-gray-400">
             <div>
               <p className="text-xl text-gray-400">
-                APR <span className="text-emerald-400">{(portfolioApr?.portfolioAPR * 100).toFixed(2)}%</span>
+                APR 
+                <span className="text-emerald-400" role="apr">
+                  {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}%
+                </span>
                 <a
                   href="#"
                   className="group inline-flex text-sm text-gray-400 hover:text-gray-300"
@@ -345,13 +348,7 @@ export default function IndexOverviews() {
                     </div>
                   </ConfigProvider>
                   <div className="mt-2 flex align-items-center">
-                    <Image
-                      src="/icon/gas-station.png"
-                      alt="gas fee"
-                      width={20}
-                      height={20}
-                    />
-                    :
+                    ⛽
                     <span className="text-emerald-400">
                       Free
                     </span>
@@ -585,7 +582,7 @@ export default function IndexOverviews() {
                                             <span className="text-gray-400">APR</span>
                                             <span className="text-emerald-400">
                                               {(
-                                                portfolioApr[
+                                                portfolioApr?.[portfolioName]?.[
                                                   protocol.interface.uniqueId()
                                                 ]?.apr * 100
                                               ).toFixed(2)}
