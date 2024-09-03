@@ -36,7 +36,7 @@ export default function Vaults() {
         <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
           List of Index Funds
         </h1>
-        <div className="mt-4 grid grid-cols-3 gap-3">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
           {vaults.map((product) => (
             <div
               key={product.id}
