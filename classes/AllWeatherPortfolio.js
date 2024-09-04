@@ -51,7 +51,7 @@ export class AllWeatherPortfolio extends React.Component {
       );
       const results = await Promise.all(
         allProtocols.map(async ({ chain, protocol }) => {
-          const symbolList = protocol.interface.symbolList.join("+");
+          const symbolList = protocol.interface.symbolList.join("-");
           const sortedSymbolList = protocol.interface.symbolList
             .sort()
             .join("-");
