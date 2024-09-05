@@ -1,11 +1,13 @@
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
+
 import {
   UnlockOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
   ExportOutlined,
 } from "@ant-design/icons";
+import ImageWithFallback from "../pages/basicComponents/ImageWithFallback";
 import { Tooltip } from "antd";
 
 export const columnMapping = (
@@ -64,21 +66,48 @@ export const columnMapping = (
               ) : null}
             </span>
           </Tooltip>
-          {protocolList.map((protocol) =>
-            protocol.slug === pool.name ? (
+          {(() => {
+            const matchingProtocol = protocolList.find(
+              (protocol) =>
+                pool.name
+                  .split(" ")[0]
+                  .toLowerCase()
+                  .includes(protocol.slug.split(" ")[0].toLowerCase()) ||
+                protocol.slug
+                  .split(" ")[0]
+                  .toLowerCase()
+                  .includes(pool.name.split(" ")[0].toLowerCase()) ||
+                protocol.slug
+                  .split("-")[0]
+                  .toLowerCase()
+                  .includes(pool.name.split(" ")[0].toLowerCase()) ||
+                pool.name
+                  .split(" ")[0]
+                  .toLowerCase()
+                  .includes(protocol.slug.split("-")[0].toLowerCase()) ||
+                pool.name
+                  .split("-")[0]
+                  .toLowerCase()
+                  .includes(protocol.slug.split(" ")[0].toLowerCase()) ||
+                protocol.slug
+                  .split(" ")[0]
+                  .toLowerCase()
+                  .includes(pool.name.split("-")[0].toLowerCase()),
+            );
+            return matchingProtocol ? (
               <button
                 type="button"
                 className="text-sm text-gray-400 shadow-sm hover:text-white"
                 onClick={() => {
-                  handleLinkButton(protocol.url);
+                  handleLinkButton(matchingProtocol.url);
                   setLinkModalOpen(true);
                 }}
-                key={protocol.slug}
+                key={matchingProtocol.slug}
               >
                 <ExportOutlined />
               </button>
-            ) : null,
-          )}
+            ) : null;
+          })()}
         </>
       );
     },
@@ -96,9 +125,8 @@ export const columnMapping = (
       return (
         <div className="flex items-center">
           {newCoins.map((token, index) => (
-            <Image
-              src={`/tokenPictures/${token.replace(/[()]/g, "")}.webp`}
-              alt={token}
+            <ImageWithFallback
+              token={token}
               height={20}
               width={20}
               key={index}
@@ -142,9 +170,9 @@ export const columnMapping = (
           </span>
           {apr.predictions.predictedClass === "Down" ? (
             <ArrowDownOutlined className="text-red-400 px-2" />
-          ) : (
+          ) : apr.predictions.predictedClass === "Up" ? (
             <ArrowUpOutlined className="text-green-400 px-2" />
-          )}
+          ) : null}
         </div>
       ) : (
         // for backward compatibility

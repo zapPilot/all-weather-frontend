@@ -1,8 +1,8 @@
-import { BasePortfolio } from "./BasePortfolio";
-import { ApolloX20240806 } from "./ApolloX/ApolloX20240806";
-import { ApolloX20240813 } from "./ApolloX/ApolloX20240813";
-import { ApolloX20240820 } from "./ApolloX/ApolloX20240820";
-import { Vela } from "./Vela/Vela";
+import { BasePortfolio } from "../BasePortfolio";
+import { ApolloX20240806 } from "../ApolloX/ApolloX20240806";
+import { ApolloX20240813 } from "../ApolloX/ApolloX20240813";
+import { ApolloX20240820 } from "../ApolloX/ApolloX20240820";
+import { Vela } from "../Vela/Vela";
 import ReactMarkdown from "react-markdown";
 export class StablecoinVault extends BasePortfolio {
   constructor() {

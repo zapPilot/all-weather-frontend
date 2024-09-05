@@ -50,6 +50,7 @@ export default function IndexOverviews() {
   const [zapInIsLoading, setZapInIsLoading] = useState(false);
   const [zapOutIsLoading, setZapOutIsLoading] = useState(false);
   const [claimIsLoading, setClaimIsLoading] = useState(false);
+  const [rebalanceIsLoading, setRebalanceIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(0.5);
@@ -93,13 +94,15 @@ export default function IndexOverviews() {
       setZapOutIsLoading(true);
     } else if (actionName === "claimAndSwap") {
       setClaimIsLoading(true);
+    } else if (actionName === "rebalance") {
+      setRebalanceIsLoading(true);
     }
     if (!account) return;
     const [tokenSymbol, tokenAddress] = tokenSymbolAndAddress.split("-");
     let txns;
     if (actionName === "zapIn") {
       txns = await portfolioHelper.portfolioAction("zapIn", {
-        account,
+        account: account.address,
         tokenInSymbol: tokenSymbol,
         tokenInAddress: tokenAddress,
         zapInAmount: Number(investmentAmount),
@@ -110,7 +113,7 @@ export default function IndexOverviews() {
       });
     } else if (actionName === "zapOut") {
       txns = await portfolioHelper.portfolioAction("zapOut", {
-        account,
+        account: account.address,
         tokenOutSymbol: tokenSymbol,
         tokenOutAddress: tokenAddress,
         zapOutPercentage: Number(zapOutPercentage),
@@ -121,8 +124,16 @@ export default function IndexOverviews() {
       });
     } else if (actionName === "claimAndSwap") {
       txns = await portfolioHelper.portfolioAction(actionName, {
-        account,
+        account: account.address,
         tokenOutAddress: tokenAddress,
+        progressCallback: (progressPercentage) =>
+          setProgress(progressPercentage),
+        progressStepNameCallback: (stepName) => setStepName(stepName),
+        slippage,
+      });
+    } else if (actionName === "rebalance") {
+      txns = await portfolioHelper.portfolioAction(actionName, {
+        account: account.address,
         progressCallback: (progressPercentage) =>
           setProgress(progressPercentage),
         progressStepNameCallback: (stepName) => setStepName(stepName),
@@ -136,6 +147,8 @@ export default function IndexOverviews() {
       setZapOutIsLoading(false);
     } else if (actionName === "claimAndSwap") {
       setClaimIsLoading(false);
+    } else if (actionName === "rebance") {
+      setRebalanceIsLoading(false);
     }
     // Call sendBatchTransaction and wait for the result
     try {
@@ -178,7 +191,7 @@ export default function IndexOverviews() {
             1. Test with $5–$10 first, as signature verification isn&apos;t
             available yet.
           </p>
-          <p>2. This will be fixed in the next version.</p>
+          <p>2. This feature will be available in the next version.</p>
           <p>3. Increase your slippage if the transaction fails.</p>
         </div>
 
@@ -465,18 +478,19 @@ export default function IndexOverviews() {
                 {/* <div className="mt-10">
                   <Button
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
-                    onClick={() => handleAAWalletAction("claimAndSwap")}
-                    loading={claimIsLoading || pendingRewardsLoading}
-                    disabled={sumUsdDenominatedValues(pendingRewards) === 0}
+                    onClick={() => handleAAWalletAction("rebalance")}
+                    // loading={claimIsLoading || pendingRewardsLoading}
+                    // disabled={sumUsdDenominatedValues(pendingRewards) === 0}
                   >
-                    Unoptimized Positions{" "}
+                    Rebalance
+                    {/* {" "}
                     {formatBalanceWithLocalizedCurrency(
                       exchangeRateWithUSD,
                       sumUsdDenominatedValues(pendingRewards),
                       currency,
-                    )}
+                    )} */}
                   </Button>
-                </div> */}
+                </div>
               </form>
             </div>
           </div>
