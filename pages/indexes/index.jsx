@@ -64,7 +64,7 @@ export default function Vaults() {
                   <img
                     alt={product.imageAlt}
                     src={product.imageSrc}
-                    className="w-24"
+                    className="h-8 w-auto"
                   />
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-4 divide-x divide-gray-400">

@@ -488,9 +488,9 @@ export default function IndexOverviews() {
                       exchangeRateWithUSD,
                       sumUsdDenominatedValues(pendingRewards),
                       currency,
-                    )} */}
+                    )} 
                   </Button>
-                </div>
+                </div>*/}
               </form>
             </div>
           </div>
