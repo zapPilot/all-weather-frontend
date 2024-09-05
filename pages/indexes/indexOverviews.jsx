@@ -270,14 +270,20 @@ export default function IndexOverviews() {
             ))}
           </ol>
         </nav>
-        <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl" role="vault">{portfolioName}</h1>
+        <h1
+          className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl"
+          role="vault"
+        >
+          {portfolioName}
+        </h1>
         <div className="w-2/4">
           <div className="mt-2 grid grid-cols-2 gap-2 divide-x divide-gray-400">
             <div>
               <p className="text-xl text-gray-400">
-                APR 
+                APR
                 <span className="text-emerald-400" role="apr">
-                  {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}%
+                  {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}
+                  %
                 </span>
                 <a
                   href="#"
@@ -298,9 +304,7 @@ export default function IndexOverviews() {
         <div className="mt-2 grid sm:grid-cols-2 lg:gap-x-8">
           <div>
             {/* Product details */}
-            <div>
-              {portfolioHelper?.description()}
-            </div>
+            <div>{portfolioHelper?.description()}</div>
             {/* Product form */}
             <div className="mt-2 bg-gray-800 p-4 rounded">
               <p className="text-xl font-semibold text-white">Input</p>
@@ -348,10 +352,7 @@ export default function IndexOverviews() {
                     </div>
                   </ConfigProvider>
                   <div className="mt-2 flex align-items-center">
-                    ⛽
-                    <span className="text-emerald-400">
-                      Free
-                    </span>
+                    ⛽<span className="text-emerald-400">Free</span>
                     <span className="text-gray-400">
                       , Service Fee: $0 (will charge 0.099% in the future)
                     </span>
@@ -495,7 +496,9 @@ export default function IndexOverviews() {
               )}
             </div>
             <div className="mt-2 bg-gray-800 p-4 rounded">
-              <p className="text-xl font-semibold text-white">Portfolio BreakDown</p>
+              <p className="text-xl font-semibold text-white">
+                Portfolio BreakDown
+              </p>
               <section aria-labelledby="cart-heading">
                 <ul
                   role="list"
@@ -553,7 +556,9 @@ export default function IndexOverviews() {
                                               height={25}
                                               width={25}
                                             />
-                                            <span className="text-gray-400 ml-2">{protocol.interface.protocolName}</span>
+                                            <span className="text-gray-400 ml-2">
+                                              {protocol.interface.protocolName}
+                                            </span>
                                           </div>
                                           <div className="mt-2 flex items-center">
                                             {protocol.interface.symbolList.map(
@@ -572,14 +577,16 @@ export default function IndexOverviews() {
                                                 />
                                               ),
                                             )}
-                                              <span className="text-gray-400 ml-1">
-                                                {protocol.interface.symbolList.join(
-                                                  "-",
-                                                )}
-                                              </span>
+                                            <span className="text-gray-400 ml-1">
+                                              {protocol.interface.symbolList.join(
+                                                "-",
+                                              )}
+                                            </span>
                                           </div>
                                           <div className="mt-2 flex justify-between">
-                                            <span className="text-gray-400">APR</span>
+                                            <span className="text-gray-400">
+                                              APR
+                                            </span>
                                             <span className="text-emerald-400">
                                               {(
                                                 portfolioApr?.[portfolioName]?.[
@@ -591,15 +598,15 @@ export default function IndexOverviews() {
                                           </div>
                                         </div>
                                       );
-                                      })}
-                                </div>
-                              ),
+                                    })}
+                                  </div>
+                                ),
                               )}
                             </div>
                           </div>
                         </li>
                       ),
-                  )}
+                    )}
                 </ul>
               </section>
             </div>
