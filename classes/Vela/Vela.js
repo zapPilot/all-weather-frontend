@@ -48,6 +48,9 @@ export class Vela extends BaseProtocol {
   claimAndSwapSteps() {
     return 3;
   }
+  rebalanceSteps() {
+    return 2;
+  }
   rewards() {
     return {
       rewards: [],
@@ -172,6 +175,14 @@ export class Vela extends BaseProtocol {
     )[0];
     const latestVlpPrice = await this._fetchVlpPrice(() => {});
     return (userBalance / Math.pow(10, this.assetDecimals)) * latestVlpPrice;
+  }
+  async assetBalanceOf(recipient) {
+    const assetContractInstance = new ethers.Contract(
+      this.assetContract.address,
+      Vault,
+      PROVIDER,
+    );
+    return (await assetContractInstance.functions.balanceOf(recipient))[0];
   }
 
   async _fetchVlpPrice(updateProgress) {
