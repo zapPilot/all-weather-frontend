@@ -197,7 +197,7 @@ export class BaseApolloX extends BaseProtocol {
     });
     return [[claimTxn], pendingRewards];
   }
-  async usdBalanceOf(recipient) {
+  async usdBalanceOf(recipient, tokenPricesMappingTable) {
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       SmartChefInitializable,

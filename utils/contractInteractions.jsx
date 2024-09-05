@@ -10,6 +10,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   usdc: 3408,
   usdt: 825,
   "usdc.e": 3408,
+  weth: 2396,
 };
 export const tokensForDropDown = [
   // "eth",
@@ -18,7 +19,7 @@ export const tokensForDropDown = [
   "usdt",
   "usdc.e",
   // "wbtc",
-  // "weth",
+  "weth",
   // "frax",
   // "wsteth",
   // "usds",

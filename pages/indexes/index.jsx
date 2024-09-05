@@ -23,6 +23,15 @@ export default function Vaults() {
         "%",
       tvl: "upcoming",
     },
+    {
+      id: 1,
+      portfolioName: "ETH Vault",
+      href: "/indexes/indexOverviews/?portfolioName=ETH+Vault",
+      imageSrc: "/tokenPictures/eth.webp",
+      imageAlt: "ETH Vault",
+      apr: (vaultsMetadata?.["ETH Vault"]?.portfolioAPR * 100).toFixed(2) + "%",
+      tvl: "upcoming",
+    },
   ];
   useEffect(() => {
     if (Object.keys(vaultsMetadata).length === 0) {

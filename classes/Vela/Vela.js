@@ -109,14 +109,15 @@ export class Vela extends BaseProtocol {
       TokenFarm,
       PROVIDER,
     );
-    const vlpAmount = Math.floor(
-      (
-        await stakeFarmContractInstance.functions.getStakedAmount(
-          this.assetContract.address,
-          recipient,
-        )
-      )[0] * percentage,
-    );
+
+    // Assuming 'percentage' is a float between 0 and 1
+    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
+    const stakedAmount =
+      await stakeFarmContractInstance.functions.getStakedAmount(
+        this.assetContract.address,
+        recipient,
+      )[0];
+    const vlpAmount = stakedAmount.mul(percentageBN).div(10000);
     const approveAlpTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
@@ -161,7 +162,7 @@ export class Vela extends BaseProtocol {
   async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
     return [[], {}];
   }
-  async usdBalanceOf(recipient) {
+  async usdBalanceOf(recipient, tokenPricesMappingTable) {
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       TokenFarm,
