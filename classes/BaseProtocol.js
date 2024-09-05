@@ -80,7 +80,7 @@ export default class BaseProtocol extends BaseUniswap {
   rebalanceSteps() {
     throw new Error("Method 'rebalanceSteps()' must be implemented.");
   }
-  async usdBalanceOf(address) {
+  async usdBalanceOf(address, tokenPricesMappingTable) {
     throw new Error("Method 'usdBalanceOf()' must be implemented.");
   }
   async assetBalanceOf(address) {

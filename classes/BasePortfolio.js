@@ -25,6 +25,10 @@ export class BasePortfolio {
     throw new Error("Method 'description()' must be implemented.");
   }
   async usdBalanceOf(address) {
+    const tokenPricesMappingTable = await this._getTokenPricesMappingTable(
+      () => {},
+    );
+
     let usdBalance = 0;
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const protocolsInThisChain of Object.values(
@@ -32,7 +36,10 @@ export class BasePortfolio {
       )) {
         for (const protocol of protocolsInThisChain) {
           if (protocol.weight === 0) continue;
-          const balance = await protocol.interface.usdBalanceOf(address);
+          const balance = await protocol.interface.usdBalanceOf(
+            address,
+            tokenPricesMappingTable,
+          );
           usdBalance += balance;
         }
       }
