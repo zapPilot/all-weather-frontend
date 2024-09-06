@@ -44,14 +44,11 @@ const DecimalStep = ({ depositBalance, setZapOutPercentage, currency }) => {
           step={1}
         />
       </Col>
-      <Col span={4}>
+      <Col span={12}>
         <InputNumber
           min={0}
           max={depositBalance}
-          style={{
-            margin: "0 16px",
-            width: "200px", // Increase this value to make it wider
-          }}
+          className="w-full"
           step={1}
           value={inputValue?.toFixed(0)}
           onChange={onInputChange}

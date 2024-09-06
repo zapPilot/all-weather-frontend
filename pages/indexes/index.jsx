@@ -21,7 +21,16 @@ export default function Vaults() {
       apr:
         (vaultsMetadata?.["Stablecoin Vault"]?.portfolioAPR * 100).toFixed(2) +
         "%",
-      tvl: "upcoming",
+      tvl: `$ ${vaultsMetadata?.["Stablecoin Vault"]?.portfolioTVL}`,
+    },
+    {
+      id: 1,
+      portfolioName: "ETH Vault",
+      href: "/indexes/indexOverviews/?portfolioName=ETH+Vault",
+      imageSrc: "/tokenPictures/eth.webp",
+      imageAlt: "ETH Vault",
+      apr: (vaultsMetadata?.["ETH Vault"]?.portfolioAPR * 100).toFixed(2) + "%",
+      tvl: `$ ${vaultsMetadata?.["ETH Vault"]?.portfolioTVL}`,
     },
   ];
   useEffect(() => {
@@ -36,7 +45,7 @@ export default function Vaults() {
         <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
           List of Index Funds
         </h1>
-        <div className="mt-4 grid grid-cols-3 gap-3">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
           {vaults.map((product) => (
             <div
               key={product.id}
@@ -55,7 +64,7 @@ export default function Vaults() {
                   <img
                     alt={product.imageAlt}
                     src={product.imageSrc}
-                    className="w-24"
+                    className="h-8 w-auto"
                   />
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-4 divide-x divide-gray-400">

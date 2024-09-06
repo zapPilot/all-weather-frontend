@@ -50,6 +50,7 @@ export default function IndexOverviews() {
   const [zapInIsLoading, setZapInIsLoading] = useState(false);
   const [zapOutIsLoading, setZapOutIsLoading] = useState(false);
   const [claimIsLoading, setClaimIsLoading] = useState(false);
+  const [rebalanceIsLoading, setRebalanceIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(0.5);
@@ -93,13 +94,15 @@ export default function IndexOverviews() {
       setZapOutIsLoading(true);
     } else if (actionName === "claimAndSwap") {
       setClaimIsLoading(true);
+    } else if (actionName === "rebalance") {
+      setRebalanceIsLoading(true);
     }
     if (!account) return;
     const [tokenSymbol, tokenAddress] = tokenSymbolAndAddress.split("-");
     let txns;
     if (actionName === "zapIn") {
       txns = await portfolioHelper.portfolioAction("zapIn", {
-        account,
+        account: account.address,
         tokenInSymbol: tokenSymbol,
         tokenInAddress: tokenAddress,
         zapInAmount: Number(investmentAmount),
@@ -110,7 +113,7 @@ export default function IndexOverviews() {
       });
     } else if (actionName === "zapOut") {
       txns = await portfolioHelper.portfolioAction("zapOut", {
-        account,
+        account: account.address,
         tokenOutSymbol: tokenSymbol,
         tokenOutAddress: tokenAddress,
         zapOutPercentage: Number(zapOutPercentage),
@@ -121,8 +124,16 @@ export default function IndexOverviews() {
       });
     } else if (actionName === "claimAndSwap") {
       txns = await portfolioHelper.portfolioAction(actionName, {
-        account,
+        account: account.address,
         tokenOutAddress: tokenAddress,
+        progressCallback: (progressPercentage) =>
+          setProgress(progressPercentage),
+        progressStepNameCallback: (stepName) => setStepName(stepName),
+        slippage,
+      });
+    } else if (actionName === "rebalance") {
+      txns = await portfolioHelper.portfolioAction(actionName, {
+        account: account.address,
         progressCallback: (progressPercentage) =>
           setProgress(progressPercentage),
         progressStepNameCallback: (stepName) => setStepName(stepName),
@@ -136,6 +147,8 @@ export default function IndexOverviews() {
       setZapOutIsLoading(false);
     } else if (actionName === "claimAndSwap") {
       setClaimIsLoading(false);
+    } else if (actionName === "rebance") {
+      setRebalanceIsLoading(false);
     }
     // Call sendBatchTransaction and wait for the result
     try {
@@ -178,7 +191,7 @@ export default function IndexOverviews() {
             1. Test with $5–$10 first, as signature verification isn&apos;t
             available yet.
           </p>
-          <p>2. This will be fixed in the next version.</p>
+          <p>2. This feature will be available in the next version.</p>
           <p>3. Increase your slippage if the transaction fails.</p>
         </div>
 
@@ -243,224 +256,93 @@ export default function IndexOverviews() {
     <BasePage>
       {notificationContextHolder}
       <ModalContent />
-      <div className="bg-white">
-        <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:grid lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8">
-          {/* Product details */}
-          <div className="lg:max-w-lg lg:self-end">
-            <nav aria-label="Breadcrumb">
-              <ol role="list" className="flex items-center space-x-2">
-                {product.breadcrumbs.map((breadcrumb, breadcrumbIdx) => (
-                  <li key={breadcrumb.id}>
-                    <div className="flex items-center text-sm">
-                      <a
-                        href={breadcrumb.href}
-                        className="font-medium text-gray-500 hover:text-gray-900"
-                      >
-                        {breadcrumb.name}
-                      </a>
-                      {breadcrumbIdx !== product.breadcrumbs.length - 1 ? (
-                        <svg
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                          aria-hidden="true"
-                          className="ml-2 h-5 w-5 flex-shrink-0 text-gray-300"
-                        >
-                          <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
-                        </svg>
-                      ) : null}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </nav>
-
-            <div className="mt-4">
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                {portfolioName}
-              </h1>
-            </div>
-
-            <section aria-labelledby="information-heading" className="mt-4">
-              <h2 id="information-heading" className="sr-only">
-                Product information
-              </h2>
-
-              <div className="flex items-center">
-                <p className="text-lg text-gray-900 sm:text-xl">
-                  APR:{" "}
+      <div className="px-4 py-8">
+        <nav aria-label="Breadcrumb">
+          <ol role="list" className="flex items-center space-x-2">
+            {product.breadcrumbs.map((breadcrumb, breadcrumbIdx) => (
+              <li key={breadcrumb.id}>
+                <div className="flex items-center text-sm">
+                  <a
+                    href={breadcrumb.href}
+                    className="font-medium text-gray-400 hover:text-gray-300"
+                  >
+                    {breadcrumb.name}
+                  </a>
+                  {breadcrumbIdx !== product.breadcrumbs.length - 1 ? (
+                    <svg
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      aria-hidden="true"
+                      className="ml-2 h-5 w-5 flex-shrink-0 text-gray-400"
+                    >
+                      <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+                    </svg>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </nav>
+        <h1
+          className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl"
+          role="vault"
+        >
+          {portfolioName}
+        </h1>
+        <div className="w-2/4">
+          <div className="mt-2 grid grid-cols-2 gap-2 divide-x divide-gray-400">
+            <div>
+              <p className="text-xl text-gray-400">
+                APR
+                <span className="text-emerald-400" role="apr">
                   {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}
                   %
-                </p>
+                </span>
                 <a
                   href="#"
-                  className="group inline-flex text-sm text-gray-500 hover:text-gray-700"
+                  className="group inline-flex text-sm text-gray-400 hover:text-gray-300"
                 >
                   <QuestionMarkCircleIcon
                     aria-hidden="true"
-                    className="ml-2 h-5 w-5 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
+                    className="ml-2 h-5 w-5 flex-shrink-0 text-gray-400 group-hover:text-gray-300"
                   />
                 </a>
-
-                <div className="ml-4 border-l border-gray-300 pl-4">
-                  <div className="flex items-center">
-                    <p className="ml-2 text-sm text-gray-500">TVL: upcoming</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-6">
-                <p className="text-base text-gray-500">
-                  {portfolioHelper?.description()}
-                </p>
-              </div>
-            </section>
-          </div>
-
-          {/* Product image */}
-          <div className="mt-10 lg:col-start-2 lg:row-span-2 lg:mt-0 lg:self-center">
-            <div className="aspect-h-1 aspect-w-1 overflow-hidden rounded-lg">
-              {portfolioHelper && (
-                <RebalanceChart
-                  suggestions={[]}
-                  netWorth={100}
-                  showCategory={true}
-                  mode="portfolioStrategy"
-                  color="black"
-                  wording={portfolioName}
-                  portfolioStrategyName={portfolioName}
-                />
-              )}
+              </p>
             </div>
-            Portfolio BreakDown
-            <section aria-labelledby="cart-heading">
-              <ul
-                role="list"
-                className="divide-y divide-gray-200 border-b border-t border-gray-200"
-              >
-                {portfolioHelper &&
-                  Object.entries(portfolioHelper.strategy).map(
-                    ([category, protocols]) => (
-                      <li key={category} className="flex py-6">
-                        <div className="ml-4 flex flex-1 flex-col sm:ml-6">
-                          <div>
-                            <div className="flex justify-between">
-                              <h4 className="text-sm">
-                                <a className="font-medium text-gray-700 hover:text-gray-800">
-                                  {category}:{" "}
-                                  {portfolioHelper.weightMapping[category] *
-                                    100}
-                                  %
-                                </a>
-                              </h4>
-                              <p className="ml-4 text-sm font-medium text-gray-900">
-                                $
-                                {(
-                                  portfolioHelper.weightMapping[category] *
-                                  investmentAmount
-                                ).toFixed(2)}
-                              </p>
-                            </div>
-                            {Object.entries(protocols).map(
-                              ([chain, protocolArray], index) => (
-                                <div key={`${chain}-${index}`}>
-                                  <p className="mt-1 text-sm text-gray-500 flex items-center">
-                                    <Image
-                                      src={`/chainPicturesWebp/${chain}.webp`}
-                                      alt={chain}
-                                      height={25}
-                                      width={25}
-                                    />
-                                    <span className="ml-2">{chain}</span>
-                                  </p>
-
-                                  {protocolArray.map((protocol, index) => {
-                                    // set weight to 0 for old protocols, these are protocols used to be the best choice but its reward decreased
-                                    // so we opt out of them
-                                    // need to keep them in the portfolio so users can zap out
-                                    if (protocol.weight === 0) return null;
-                                    return (
-                                      <div
-                                        className="mt-1 text-sm text-gray-500 flex items-center justify-between"
-                                        key={`${protocol.interface.protocolName}-${index}`}
-                                      >
-                                        <div className="flex items-center">
-                                          <Image
-                                            src={`/projectPictures/${protocol.interface.protocolName}.webp`}
-                                            alt={
-                                              protocol.interface.protocolName
-                                            }
-                                            height={25}
-                                            width={25}
-                                          />
-                                          {protocol.interface.protocolName}
-                                          {protocol.interface.symbolList.map(
-                                            (symbol, index) => (
-                                              <Image
-                                                key={`${symbol}-${index}`}
-                                                // use usdc instead of usdc(bridged), aka, usdc.e for the image
-                                                src={`/tokenPictures/${symbol.replace(
-                                                  "(bridged)",
-                                                  "",
-                                                )}.webp`}
-                                                alt={symbol}
-                                                height={20}
-                                                width={20}
-                                              />
-                                            ),
-                                          )}
-                                          {protocol.interface.symbolList.join(
-                                            "-",
-                                          )}
-                                        </div>
-                                        <span className="ml-4 text-sm font-medium text-gray-900">
-                                          APR:{" "}
-                                          {(
-                                            portfolioApr?.[portfolioName]?.[
-                                              protocol.interface.uniqueId()
-                                            ]?.apr * 100
-                                          ).toFixed(2)}
-                                          %
-                                        </span>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              ),
-                            )}
-                          </div>
-                        </div>
-                      </li>
-                    ),
-                  )}
-              </ul>
-            </section>
+            <div>
+              <p className="ml-2 text-xl text-gray-400">
+                TVL: $ {portfolioApr[portfolioName]?.portfolioTVL}
+              </p>
+            </div>
           </div>
-
-          {/* Product form */}
-          <div className="mt-10 lg:col-start-1 lg:row-start-2 lg:max-w-lg lg:self-start">
-            <section aria-labelledby="options-heading">
-              <h2 id="options-heading" className="sr-only">
-                Product options
-              </h2>
-
+        </div>
+        <div className="mt-2 grid sm:grid-cols-2 lg:gap-x-8">
+          <div>
+            {/* Product details */}
+            <div>{portfolioHelper?.description()}</div>
+            {/* Product form */}
+            <div className="mt-2 bg-gray-800 p-4 rounded">
+              <p className="text-xl font-semibold text-white">Input</p>
               <form>
-                <div className="sm:flex sm:justify-between">
+                <div>
                   {/* Size selector */}
-                  <fieldset>
+                  <div className="mt-2">
                     <TokenDropdownInput
                       selectedToken={selectedToken}
                       setSelectedToken={handleSetSelectedToken}
                       setInvestmentAmount={handleSetInvestmentAmount}
                     />
-                    <ConfigProvider
-                      theme={{
-                        token: {
-                          colorPrimary: "#5DFDCB",
-                          colorTextLightSolid: "#000000",
-                        },
-                      }}
-                    >
-                      Slippage:
+                  </div>
+                  <ConfigProvider
+                    theme={{
+                      token: {
+                        colorPrimary: "#5DFDCB",
+                        colorTextLightSolid: "#000000",
+                      },
+                    }}
+                  >
+                    <div className="mt-2 text-gray-400">
+                      <span>Slippage: </span>
                       <Radio.Group
                         value={slippage}
                         buttonStyle="solid"
@@ -475,107 +357,253 @@ export default function IndexOverviews() {
                           </Radio.Button>
                         ))}
                       </Radio.Group>
-                      <div
-                        style={{
-                          marginTop: "5px",
-                          fontSize: "0.9em",
-                          color: "rgba(0, 0, 0, 0.45)",
-                        }}
-                      >
-                        Minimum Receive: $
-                        {investmentAmount * (1 - slippage / 100)}
-                        {", "}
-                        Refund to Your Wallet: $
-                        {(investmentAmount * slippage) / 100}
-                      </div>
-                    </ConfigProvider>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <Image
-                        src="/icon/gas-station.png"
-                        alt="gas fee"
-                        width={20}
-                        height={20}
-                      />
-                      :
-                      <span style={{ fontWeight: "bold", color: "green" }}>
-                        Free
-                      </span>
-                      <span style={{ marginLeft: "5px" }}>
-                        Service Fee: $0 (will charge 0.099% in the future)
-                      </span>
                     </div>
-                  </fieldset>
+                    <div className="mt-2 text-gray-400">
+                      Minimum Receive: $
+                      {investmentAmount * (1 - slippage / 100)}
+                      {", "}
+                      Refund to Your Wallet: $
+                      {(investmentAmount * slippage) / 100}
+                    </div>
+                  </ConfigProvider>
+                  <div className="mt-2 flex align-items-center">
+                    ⛽<span className="text-emerald-400">Free</span>
+                    <span className="text-gray-400">
+                      , Service Fee: $0 (will charge 0.099% in the future)
+                    </span>
+                  </div>
                 </div>
-                <div className="mt-10">
-                  <Button
-                    className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
-                    onClick={() => handleAAWalletAction("zapIn")}
-                    loading={zapInIsLoading}
-                    disabled={investmentAmount === 0}
+                <div className="mt-2">
+                  <ConfigProvider
+                    theme={{
+                      token: {
+                        colorPrimary: "#34d399",
+                        colorBgContainerDisabled: "#9ca3af",
+                      },
+                    }}
                   >
-                    Zap In
-                  </Button>
+                    <Button
+                      className={"w-full"}
+                      type="primary"
+                      onClick={() => handleAAWalletAction("zapIn")}
+                      loading={zapInIsLoading}
+                      disabled={investmentAmount === 0}
+                    >
+                      Zap In
+                    </Button>
+                  </ConfigProvider>
                 </div>
-                <div className="mt-10">
-                  <DecimalStep
-                    depositBalance={usdBalance * exchangeRateWithUSD}
-                    setZapOutPercentage={setZapOutPercentage}
-                    currency={currency}
-                  />
-                  <Button
-                    className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
-                    onClick={() => handleAAWalletAction("zapOut")}
-                    loading={zapOutIsLoading || usdBalanceLoading}
-                    disabled={usdBalance === 0}
-                  >
-                    Zap Out{" "}
-                    {formatBalanceWithLocalizedCurrency(
-                      exchangeRateWithUSD,
-                      usdBalance * zapOutPercentage,
-                      currency,
-                    ).join(" ")}
-                  </Button>
-                </div>
-                <div className="mt-10">
-                  <Button
-                    className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
-                    onClick={() => handleAAWalletAction("claimAndSwap")}
-                    loading={claimIsLoading || pendingRewardsLoading}
-                    disabled={sumUsdDenominatedValues(pendingRewards) === 0}
-                  >
-                    Dump{" "}
-                    {formatBalanceWithLocalizedCurrency(
-                      exchangeRateWithUSD,
-                      sumUsdDenominatedValues(pendingRewards),
-                      currency,
-                    ).join(" ")}{" "}
-                    Worth of Rewards to {selectedToken.split("-")[0]}
-                  </Button>
-                  <APRComposition
-                    APRData={pendingRewards}
-                    mode="pendingRewards"
-                    currency={currency}
-                    exchangeRateWithUSD={exchangeRateWithUSD}
-                  />
-                </div>
+                <ConfigProvider
+                  theme={{
+                    token: {
+                      colorPrimary: "#9ca3af",
+                      colorBgContainerDisabled: "#9ca3af",
+                    },
+                  }}
+                >
+                  <div className="mt-4">
+                    <p className="text-xl font-semibold text-white">Output</p>
+                    <div className="mt-2">
+                      <DecimalStep
+                        depositBalance={usdBalance * exchangeRateWithUSD}
+                        setZapOutPercentage={setZapOutPercentage}
+                        currency={currency}
+                      />
+                    </div>
+                    <Button
+                      className={"mt-2 w-full"}
+                      type="primary"
+                      onClick={() => handleAAWalletAction("zapOut")}
+                      loading={zapOutIsLoading || usdBalanceLoading}
+                      disabled={usdBalance === 0}
+                    >
+                      Zap Out{" "}
+                      {formatBalanceWithLocalizedCurrency(
+                        exchangeRateWithUSD,
+                        usdBalance * zapOutPercentage,
+                        currency,
+                      ).join(" ")}
+                    </Button>
+                  </div>
+                  <div className="mt-4">
+                    <div className="flex items-baseline">
+                      <p className="text-xl font-semibold text-white me-1">
+                        Claim
+                      </p>
+                      <APRComposition
+                        APRData={pendingRewards}
+                        mode="pendingRewards"
+                        currency={currency}
+                        exchangeRateWithUSD={exchangeRateWithUSD}
+                      />
+                    </div>
+                    <Button
+                      className={"mt-2 w-full"}
+                      type="primary"
+                      onClick={() => handleAAWalletAction("claimAndSwap")}
+                      loading={claimIsLoading || pendingRewardsLoading}
+                      disabled={sumUsdDenominatedValues(pendingRewards) === 0}
+                    >
+                      Dump{" "}
+                      {formatBalanceWithLocalizedCurrency(
+                        exchangeRateWithUSD,
+                        sumUsdDenominatedValues(pendingRewards),
+                        currency,
+                      ).join(" ")}{" "}
+                      Worth of Rewards to {selectedToken.split("-")[0]}
+                    </Button>
+                  </div>
+                </ConfigProvider>
                 {/* TODO: */}
                 {/* <div className="mt-10">
                   <Button
                     className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
-                    onClick={() => handleAAWalletAction("claimAndSwap")}
-                    loading={claimIsLoading || pendingRewardsLoading}
-                    disabled={sumUsdDenominatedValues(pendingRewards) === 0}
+                    onClick={() => handleAAWalletAction("rebalance")}
+                    // loading={claimIsLoading || pendingRewardsLoading}
+                    // disabled={sumUsdDenominatedValues(pendingRewards) === 0}
                   >
-                    Unoptimized Positions{" "}
+                    Rebalance
+                    {/* {" "}
                     {formatBalanceWithLocalizedCurrency(
                       exchangeRateWithUSD,
                       sumUsdDenominatedValues(pendingRewards),
                       currency,
-                    )}
+                    )} 
                   </Button>
-                </div> */}
+                </div>*/}
               </form>
-            </section>
+            </div>
+          </div>
+          {/* Product image */}
+          <div className="p-4">
+            <div className="aspect-h-1 aspect-w-1 overflow-hidden">
+              {portfolioHelper && (
+                <RebalanceChart
+                  suggestions={[]}
+                  netWorth={100}
+                  showCategory={true}
+                  mode="portfolioStrategy"
+                  color="white"
+                  wording={portfolioName}
+                  portfolioStrategyName={portfolioName}
+                />
+              )}
+            </div>
+            <div className="mt-2 bg-gray-800 p-4 rounded">
+              <p className="text-xl font-semibold text-white">
+                Portfolio BreakDown
+              </p>
+              <section aria-labelledby="cart-heading">
+                <ul
+                  role="list"
+                  className="divide-y divide-gray-200 border-gray-200"
+                >
+                  {portfolioHelper &&
+                    Object.entries(portfolioHelper.strategy).map(
+                      ([category, protocols]) => (
+                        <li key={category} className="flex pt-4">
+                          <div className="flex flex-1 flex-col">
+                            <div>
+                              <div className="flex justify-between">
+                                <p className="text-sm text-gray-400">
+                                  {category}:{" "}
+                                  {portfolioHelper.weightMapping[category] *
+                                    100}
+                                  %
+                                </p>
+                                <p className="text-sm text-gray-400">
+                                  $
+                                  {(
+                                    portfolioHelper.weightMapping[category] *
+                                    investmentAmount
+                                  ).toFixed(2)}
+                                </p>
+                              </div>
+                              {Object.entries(protocols).map(
+                                ([chain, protocolArray], index) => (
+                                  <div key={`${chain}-${index}`}>
+                                    <div className="mt-2 text-sm text-gray-400 flex items-center">
+                                      <Image
+                                        src={`/chainPicturesWebp/${chain}.webp`}
+                                        alt={chain}
+                                        height={25}
+                                        width={25}
+                                      />
+                                      <span className="ml-2">{chain}</span>
+                                    </div>
+                                    {protocolArray.map((protocol, index) => {
+                                      // set weight to 0 for old protocols, these are protocols used to be the best choice but its reward decreased
+                                      // so we opt out of them
+                                      // need to keep them in the portfolio so users can zap out
+                                      if (protocol.weight === 0) return null;
+                                      return (
+                                        <div
+                                          className="mt-2 border-b border-gray-400"
+                                          key={`${protocol.interface.protocolName}-${index}`}
+                                        >
+                                          <div className="flex items-center">
+                                            <Image
+                                              src={`/projectPictures/${protocol.interface.protocolName}.webp`}
+                                              alt={
+                                                protocol.interface.protocolName
+                                              }
+                                              height={25}
+                                              width={25}
+                                            />
+                                            <span className="text-gray-400 ml-2">
+                                              {protocol.interface.protocolName}
+                                            </span>
+                                          </div>
+                                          <div className="mt-2 flex items-center">
+                                            {protocol.interface.symbolList.map(
+                                              (symbol, index) => (
+                                                <Image
+                                                  className="me-1"
+                                                  key={`${symbol}-${index}`}
+                                                  // use usdc instead of usdc(bridged), aka, usdc.e for the image
+                                                  src={`/tokenPictures/${symbol.replace(
+                                                    "(bridged)",
+                                                    "",
+                                                  )}.webp`}
+                                                  alt={symbol}
+                                                  height={20}
+                                                  width={20}
+                                                />
+                                              ),
+                                            )}
+                                            <span className="text-gray-400 ml-1">
+                                              {protocol.interface.symbolList.join(
+                                                "-",
+                                              )}
+                                            </span>
+                                          </div>
+                                          <div className="mt-2 flex justify-between">
+                                            <span className="text-gray-400">
+                                              APR
+                                            </span>
+                                            <span className="text-emerald-400">
+                                              {(
+                                                portfolioApr?.[portfolioName]?.[
+                                                  protocol.interface.uniqueId()
+                                                ]?.apr * 100
+                                              ).toFixed(2)}
+                                              %
+                                            </span>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ),
+                              )}
+                            </div>
+                          </div>
+                        </li>
+                      ),
+                    )}
+                </ul>
+              </section>
+            </div>
           </div>
         </div>
       </div>

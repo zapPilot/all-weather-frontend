@@ -25,6 +25,10 @@ export class BasePortfolio {
     throw new Error("Method 'description()' must be implemented.");
   }
   async usdBalanceOf(address) {
+    const tokenPricesMappingTable = await this._getTokenPricesMappingTable(
+      () => {},
+    );
+
     let usdBalance = 0;
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const protocolsInThisChain of Object.values(
@@ -32,14 +36,17 @@ export class BasePortfolio {
       )) {
         for (const protocol of protocolsInThisChain) {
           if (protocol.weight === 0) continue;
-          const balance = await protocol.interface.usdBalanceOf(address);
+          const balance = await protocol.interface.usdBalanceOf(
+            address,
+            tokenPricesMappingTable,
+          );
           usdBalance += balance;
         }
       }
     }
     return usdBalance;
   }
-  async pendingRewards(recipient, updateProgress) {
+  async pendingRewards(owner, updateProgress) {
     const tokenPricesMappingTable =
       await this._getTokenPricesMappingTable(updateProgress);
 
@@ -51,7 +58,7 @@ export class BasePortfolio {
         for (const protocol of protocolsInThisChain) {
           if (protocol.weight === 0) continue;
           const rewards = await protocol.interface.pendingRewards(
-            recipient,
+            owner,
             tokenPricesMappingTable,
             updateProgress,
           );
@@ -77,13 +84,14 @@ export class BasePortfolio {
     }
     return rewardsMappingTable;
   }
-  async getPortfolioAPR() {
+  async getPortfolioMetadata() {
     let aprMappingTable = {};
     const allProtocols = Object.values(this.strategy).flatMap((protocols) =>
       Object.entries(protocols).flatMap(([chain, protocolArray]) =>
         protocolArray.map((protocol) => ({ chain, protocol })),
       ),
     );
+    let totalTvl = 0;
     await Promise.all(
       allProtocols.map(async ({ chain, protocol }) => {
         const poolUniqueKey = protocol.interface.uniqueId();
@@ -94,7 +102,9 @@ export class BasePortfolio {
           aprMappingTable[poolUniqueKey] = {
             apr: data.value,
             weight: protocol.weight,
+            tvl: data.tvl,
           };
+          totalTvl += data.tvl;
         } catch (error) {
           console.error(`Error fetching data for ${url}:`, error);
           return null;
@@ -105,6 +115,9 @@ export class BasePortfolio {
       (sum, pool) => sum + pool.apr * pool.weight,
       0,
     );
+    aprMappingTable["portfolioTVL"] = totalTvl
+      .toFixed(2)
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     return aprMappingTable;
   }
   async getExistingInvestmentPositions() {
@@ -132,7 +145,7 @@ export class BasePortfolio {
       await this._getTokenPricesMappingTable(updateProgress);
     actionParams.tokenPricesMappingTable = tokenPricesMappingTable;
     actionParams.updateProgress = updateProgress;
-    return this._generateTxnsByAction(actionName, actionParams);
+    return await this._generateTxnsByAction(actionName, actionParams);
   }
   async getTokenPricesMappingTable() {
     throw new Error(
@@ -142,6 +155,8 @@ export class BasePortfolio {
   async _generateTxnsByAction(actionName, actionParams) {
     let totalTxns = [];
     if (actionName === "zapIn") {
+      // TODO(david): zap in's weight should take protocolUsdBalanceDictionary into account
+      // protocolUsdBalanceDictionary = await this._getProtocolUsdBalanceDictionary(owner)
       const inputTokenDecimal = await getTokenDecimal(
         actionParams.tokenInAddress,
       );
@@ -155,6 +170,13 @@ export class BasePortfolio {
         actionParams.updateProgress,
       );
       totalTxns.push(approveTxn);
+    } else if (actionName === "rebalance") {
+      return await this._generateRebalanceTxns(
+        actionParams.account,
+        actionParams.slippage,
+        actionParams.tokenPricesMappingTable,
+        actionParams.updateProgress,
+      );
     }
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const [chain, protocols] of Object.entries(
@@ -162,7 +184,8 @@ export class BasePortfolio {
       )) {
         for (const protocol of protocols) {
           const protocolUsdBalance = await protocol.interface.usdBalanceOf(
-            actionParams.account.address,
+            actionParams.account,
+            actionParams.tokenPricesMappingTable,
           );
           if (protocol.weight === 0) {
             continue;
@@ -171,7 +194,7 @@ export class BasePortfolio {
           let txnsForThisProtocol;
           if (actionName === "zapIn") {
             txnsForThisProtocol = await protocol.interface.zapIn(
-              actionParams.account.address,
+              actionParams.account,
               Number(actionParams.zapInAmount * protocol.weight),
               actionParams.tokenInSymbol,
               actionParams.tokenInAddress,
@@ -182,7 +205,7 @@ export class BasePortfolio {
             );
           } else if (actionName === "zapOut" && protocolUsdBalance > 0.01) {
             txnsForThisProtocol = await protocol.interface.zapOut(
-              actionParams.account.address,
+              actionParams.account,
               Number(actionParams.zapOutPercentage),
               actionParams.tokenOutAddress,
               actionParams.slippage,
@@ -190,11 +213,9 @@ export class BasePortfolio {
               actionParams.updateProgress,
               this.existingInvestmentPositions[chain],
             );
-          } else if (actionName === "rebalance") {
-            throw new Error("Method 'rebalance()' must be implemented.");
           } else if (actionName === "claimAndSwap") {
             txnsForThisProtocol = await protocol.interface.claimAndSwap(
-              actionParams.account.address,
+              actionParams.account,
               actionParams.tokenOutAddress,
               actionParams.slippage,
               actionParams.tokenPricesMappingTable,
@@ -209,6 +230,116 @@ export class BasePortfolio {
     return totalTxns;
   }
 
+  async _generateRebalanceTxns(
+    owner,
+    slippage,
+    tokenPricesMappingTable,
+    updateProgress,
+  ) {
+    // rebalace workflow:
+
+    // 1. get all of the current balance
+    // 2. calculate the best routes
+    //     1. use this.assetContract.address to compare with the desire allocation -> return a difference dictionary
+    //     2. calculate the routes for rebalancing
+    // 3. implement each other protocol's rebalance() function
+    //     1. if the asset address is the same,
+    // 4. pass routes data to each protocol's rebalance(), who's usd balance > threshold
+
+    // easier one:
+    // 1. zap out all of the protocol who's weight is 0
+    // 2. call zapIn function again.
+    // let protocolUsdBalanceDictionary = await this._getProtocolUsdBalanceDictionary(owner)
+    let txns = [];
+    // TODO(david): zap out to USDC might not be the best route
+    // but it's enough for now
+    let zapOutUsdcBalance = 0;
+    const usdcSymbol = "usdc";
+    const usdcAddressInThisChain = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
+    for (const protocolsInThisCategory of Object.values(this.strategy)) {
+      for (const [chain, protocols] of Object.entries(
+        protocolsInThisCategory,
+      )) {
+        for (const protocol of protocols) {
+          if (protocol.weight !== 0) continue;
+          const usdBalance = await protocol.interface.usdBalanceOf(
+            owner,
+            tokenPricesMappingTable,
+          );
+          if (usdBalance === 0) continue;
+          const zapOutTxn = await protocol.interface.zapOut(
+            owner,
+            1,
+            usdcAddressInThisChain,
+            slippage,
+            tokenPricesMappingTable,
+            updateProgress,
+            {},
+            this.existingInvestmentPositions[chain],
+          );
+          txns.push(zapOutTxn);
+          zapOutUsdcBalance += (usdBalance * (100 - slippage)) / 100;
+        }
+      }
+    }
+    return txns.concat(
+      await this._generateTxnsByAction("zapIn", {
+        account: owner,
+        tokenInSymbol: usdcSymbol,
+        tokenInAddress: usdcAddressInThisChain,
+        zapInAmount: zapOutUsdcBalance,
+        slippage,
+        tokenPricesMappingTable,
+        updateProgress,
+      }),
+    );
+  }
+
+  async _getProtocolUsdBalanceDictionary(owner) {
+    let existingPositions = {};
+    for (const protocolsInThisCategory of Object.values(this.strategy)) {
+      for (const [chain, protocols] of Object.entries(
+        protocolsInThisCategory,
+      )) {
+        for (const protocol of protocols) {
+          if (protocol.weight === 0) continue;
+          const protocolUsdBalance =
+            await protocol.interface.usdBalanceOf(owner);
+          if (existingPositions[chain] === undefined) {
+            existingPositions[chain] = {};
+          }
+          existingPositions[chain][protocol.interface.assetContract.address] =
+            protocolUsdBalance;
+        }
+      }
+    }
+    return existingPositions;
+  }
+
+  async _calProtocolAssetDustInWalletDictionary(owner) {
+    let result = {};
+    for (const protocolsInThisCategory of Object.values(this.strategy)) {
+      for (const [chain, protocols] of Object.entries(
+        protocolsInThisCategory,
+      )) {
+        for (const protocol of protocols) {
+          const assetBalance = await protocol.interface.assetBalanceOf(owner);
+          if (result[chain] === undefined) {
+            result[chain] = {};
+          }
+          result[chain][protocol.interface.assetContract.address] =
+            assetBalance;
+          // result[protocol.interface.assetContract.address] = assetBalance
+        }
+      }
+    }
+    return result;
+  }
+  _calRebalanceRoutes(
+    sortedPositions,
+    totalUsdBalance,
+    protocolAssetDustInWalletDictionary,
+  ) {}
   async _getExistingInvestmentPositionsByChain(address, updateProgress) {
     let existingInvestmentPositionsbyChain = {};
     for (const [chain, lpTokens] of Object.entries(
@@ -322,8 +453,12 @@ export class BasePortfolio {
             counts += protocol.interface.zapOutSteps();
           } else if (actionName === "claimAndSwap") {
             counts += protocol.interface.claimAndSwapSteps();
+          } else if (actionName === "rebalance") {
+            counts +=
+              protocol.interface.rebalanceSteps() +
+              protocol.interface.zapInSteps();
           } else {
-            throw new Error(`Method '${actionName}()' must be implemented.`);
+            throw new Error(`Action ${actionName} not supported`);
           }
         }
       }

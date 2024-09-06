@@ -1,8 +1,8 @@
-import { BasePortfolio } from "./BasePortfolio";
-import { ApolloX20240806 } from "./ApolloX/ApolloX20240806";
-import { ApolloX20240813 } from "./ApolloX/ApolloX20240813";
-import { ApolloX20240820 } from "./ApolloX/ApolloX20240820";
-import { Vela } from "./Vela/Vela";
+import { BasePortfolio } from "../BasePortfolio";
+import { ApolloX20240806 } from "../ApolloX/ApolloX20240806";
+import { ApolloX20240813 } from "../ApolloX/ApolloX20240813";
+import { ApolloX20240820 } from "../ApolloX/ApolloX20240820";
+import { Vela } from "../Vela/Vela";
 import ReactMarkdown from "react-markdown";
 export class StablecoinVault extends BasePortfolio {
   constructor() {
@@ -73,9 +73,9 @@ export class StablecoinVault extends BasePortfolio {
   }
   description() {
     return (
-      <ReactMarkdown className="text-base text-gray-500">
+      <ReactMarkdown className="text-gray-400">
         {`
-    Where does the revenue come from?
+    Where does the yield come from?
     1. Liquidation fees from perpetual exchanges
     2. Farming rewards from new protocols (non-sustainable)
     3. Swap fees

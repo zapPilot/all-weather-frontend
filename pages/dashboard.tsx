@@ -137,7 +137,7 @@ const Dashboard: NextPage = () => {
       [key: string]: any;
     }>({});
 
-  const defaultTopN = 3;
+  const defaultTopN = 5;
   const biggerTopN = 7;
   const queriesForAllWeather: queriesObj[] = [
     {

@@ -77,8 +77,14 @@ export default class BaseProtocol extends BaseUniswap {
   claimAndSwapSteps() {
     throw new Error("Method 'claimAndSwapSteps()' must be implemented.");
   }
-  async usdBalanceOf(address) {
+  rebalanceSteps() {
+    throw new Error("Method 'rebalanceSteps()' must be implemented.");
+  }
+  async usdBalanceOf(address, tokenPricesMappingTable) {
     throw new Error("Method 'usdBalanceOf()' must be implemented.");
+  }
+  async assetBalanceOf(address) {
+    throw new Error("Method 'assetBalanceOf()' must be implemented.");
   }
   async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
     throw new Error("Method 'pendingRewards()' must be implemented.");

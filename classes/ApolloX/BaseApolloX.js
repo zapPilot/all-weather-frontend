@@ -50,6 +50,9 @@ export class BaseApolloX extends BaseProtocol {
   claimAndSwapSteps() {
     return 2;
   }
+  rebalanceSteps() {
+    return 2;
+  }
   rewards() {
     return {
       rewards: [
@@ -137,10 +140,12 @@ export class BaseApolloX extends BaseProtocol {
       SmartChefInitializable,
       PROVIDER,
     );
-    const amount = Math.floor(
-      (await stakeFarmContractInstance.functions.userInfo(recipient)).amount *
-        percentage,
-    );
+    // Assuming 'percentage' is a float between 0 and 1
+    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
+
+    const userInfo =
+      await stakeFarmContractInstance.functions.userInfo(recipient);
+    const amount = userInfo.amount.mul(percentageBN).div(10000);
     const withdrawTxn = prepareContractCall({
       contract: this.stakeFarmContract,
       method: "withdraw",
@@ -150,10 +155,7 @@ export class BaseApolloX extends BaseProtocol {
     const approveAlpTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
-      ethers.utils.parseUnits(
-        amount.toFixed(this.assetDecimals),
-        this.assetDecimals,
-      ),
+      amount,
       updateProgress,
     );
     const latestPrice = await this._fetchAlpPrice(updateProgress);
@@ -195,7 +197,7 @@ export class BaseApolloX extends BaseProtocol {
     });
     return [[claimTxn], pendingRewards];
   }
-  async usdBalanceOf(recipient) {
+  async usdBalanceOf(recipient, tokenPricesMappingTable) {
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       SmartChefInitializable,
@@ -206,6 +208,14 @@ export class BaseApolloX extends BaseProtocol {
     ).amount;
     const latestAlpPrice = await this._fetchAlpPrice(() => {});
     return (userInfo / Math.pow(10, this.assetDecimals)) * latestAlpPrice;
+  }
+  async assetBalanceOf(recipient) {
+    const assetContractInstance = new ethers.Contract(
+      this.assetContract.address,
+      ApolloXABI,
+      PROVIDER,
+    );
+    return (await assetContractInstance.functions.balanceOf(recipient))[0];
   }
 
   async _fetchAlpPrice(updateProgress) {
