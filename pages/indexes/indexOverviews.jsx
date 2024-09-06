@@ -310,7 +310,9 @@ export default function IndexOverviews() {
               </p>
             </div>
             <div>
-              <p className="ml-2 text-xl text-gray-400">TVL upcoming</p>
+              <p className="ml-2 text-xl text-gray-400">
+                TVL: $ {portfolioApr[portfolioName]?.portfolioTVL}
+              </p>
             </div>
           </div>
         </div>

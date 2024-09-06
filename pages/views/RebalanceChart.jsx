@@ -176,7 +176,7 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
 }
 
 export async function convertPortfolioStrategyToChartDataV2(portfolioHelper) {
-  const portfolioAPRData = await portfolioHelper.getPortfolioAPR();
+  const portfolioAPRData = await portfolioHelper.getPortfolioMetadata();
   let result = { children: [] };
   let idx = 0;
   // need to refactor

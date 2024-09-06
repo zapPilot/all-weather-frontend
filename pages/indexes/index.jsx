@@ -21,7 +21,7 @@ export default function Vaults() {
       apr:
         (vaultsMetadata?.["Stablecoin Vault"]?.portfolioAPR * 100).toFixed(2) +
         "%",
-      tvl: "upcoming",
+      tvl: `$ ${vaultsMetadata?.["Stablecoin Vault"]?.portfolioTVL}`,
     },
     {
       id: 1,
@@ -30,7 +30,7 @@ export default function Vaults() {
       imageSrc: "/tokenPictures/eth.webp",
       imageAlt: "ETH Vault",
       apr: (vaultsMetadata?.["ETH Vault"]?.portfolioAPR * 100).toFixed(2) + "%",
-      tvl: "upcoming",
+      tvl: `$ ${vaultsMetadata?.["ETH Vault"]?.portfolioTVL}`,
     },
   ];
   useEffect(() => {

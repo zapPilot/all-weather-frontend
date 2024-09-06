@@ -84,13 +84,14 @@ export class BasePortfolio {
     }
     return rewardsMappingTable;
   }
-  async getPortfolioAPR() {
+  async getPortfolioMetadata() {
     let aprMappingTable = {};
     const allProtocols = Object.values(this.strategy).flatMap((protocols) =>
       Object.entries(protocols).flatMap(([chain, protocolArray]) =>
         protocolArray.map((protocol) => ({ chain, protocol })),
       ),
     );
+    let totalTvl = 0;
     await Promise.all(
       allProtocols.map(async ({ chain, protocol }) => {
         const poolUniqueKey = protocol.interface.uniqueId();
@@ -101,7 +102,9 @@ export class BasePortfolio {
           aprMappingTable[poolUniqueKey] = {
             apr: data.value,
             weight: protocol.weight,
+            tvl: data.tvl,
           };
+          totalTvl += data.tvl;
         } catch (error) {
           console.error(`Error fetching data for ${url}:`, error);
           return null;
@@ -112,6 +115,9 @@ export class BasePortfolio {
       (sum, pool) => sum + pool.apr * pool.weight,
       0,
     );
+    aprMappingTable["portfolioTVL"] = totalTvl
+      .toFixed(2)
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     return aprMappingTable;
   }
   async getExistingInvestmentPositions() {
