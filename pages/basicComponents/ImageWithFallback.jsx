@@ -3,9 +3,10 @@ import Image from "next/image";
 
 const ImageWithFallback = ({ token, height, width, key }) => {
   const [imgSrc, setImgSrc] = useState(
-    `/tokenPictures/${token?.replace(/[()]/g, "")}.webp`,
+    `/tokenPictures/${
+      token?.replace("lp ", "")?.replace(/[()]/g, "").split(" ")[0]
+    }.webp`,
   );
-
   return (
     <Image
       src={imgSrc}
