@@ -113,7 +113,12 @@ export class YearnV3Vault extends BaseProtocol {
     );
     const userBalance =
       await assetContractInstance.functions.balanceOf(recipient);
-    return (userBalance * tokenPricesMappingTable["weth"]) / 1e18;
+    const pricePerShare = await assetContractInstance.functions.pricePerShare();
+    return (
+      (((userBalance * tokenPricesMappingTable["weth"]) / 1e18) *
+        pricePerShare) /
+      1e18
+    );
   }
   async assetBalanceOf(recipient) {
     const assetContractInstance = new ethers.Contract(
