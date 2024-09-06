@@ -185,6 +185,7 @@ export class BasePortfolio {
         for (const protocol of protocols) {
           const protocolUsdBalance = await protocol.interface.usdBalanceOf(
             actionParams.account,
+            actionParams.tokenPricesMappingTable,
           );
           if (protocol.weight === 0) {
             continue;
@@ -261,7 +262,10 @@ export class BasePortfolio {
       )) {
         for (const protocol of protocols) {
           if (protocol.weight !== 0) continue;
-          const usdBalance = await protocol.interface.usdBalanceOf(owner);
+          const usdBalance = await protocol.interface.usdBalanceOf(
+            owner,
+            tokenPricesMappingTable,
+          );
           if (usdBalance === 0) continue;
           const zapOutTxn = await protocol.interface.zapOut(
             owner,

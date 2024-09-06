@@ -75,7 +75,7 @@ export class StablecoinVault extends BasePortfolio {
     return (
       <ReactMarkdown className="text-gray-400">
         {`
-    Where does the revenue come from?
+    Where does the yield come from?
     1. Liquidation fees from perpetual exchanges
     2. Farming rewards from new protocols (non-sustainable)
     3. Swap fees

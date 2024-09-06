@@ -30,11 +30,11 @@ export class EthVault extends BasePortfolio {
     return (
       <ReactMarkdown className="text-base text-gray-500">
         {`
-    Where does the revenue come from?
-    1. Liquidation fees from perpetual exchanges
-    2. Farming rewards from new protocols (non-sustainable)
-    3. Swap fees
-    4. Interest from lending
+    Where does the yield come from?
+    1. Ethereum staking rewards
+    2. Swap fees
+    3. Farming rewards from protocols (non-sustainable)
+    4. Trading of Principal Tokens (similar to zero-coupon bonds)
     `}
       </ReactMarkdown>
     );

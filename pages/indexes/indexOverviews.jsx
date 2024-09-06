@@ -373,28 +373,6 @@ export default function IndexOverviews() {
                     </span>
                   </div>
                 </div>
-                {(zapInIsLoading || zapOutIsLoading || claimIsLoading) &&
-                typeof progress === "number" ? (
-                  <ConfigProvider
-                    theme={{
-                      token: {
-                        colorText: "#9ca3af",
-                      },
-                    }}
-                  >
-                    <Progress
-                      percent={progress.toFixed(2)}
-                      status={
-                        zapInIsLoading || zapOutIsLoading || claimIsLoading
-                          ? "active"
-                          : ""
-                      }
-                      size={[400, 10]}
-                      showInfo={true}
-                      format={(percent) => `${percent}% ${stepName}`}
-                    />
-                  </ConfigProvider>
-                ) : null}
                 <div className="mt-2">
                   <ConfigProvider
                     theme={{
