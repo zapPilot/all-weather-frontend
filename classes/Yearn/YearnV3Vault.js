@@ -20,7 +20,7 @@ export class YearnV3Vault extends BaseProtocol {
       client: THIRDWEB_CLIENT,
       address: "0x86dF48f8DC91504D2B3E360d67513f094Dfa6C84",
       chain: arbitrum,
-      abi: ERC20_ABI,
+      abi: YearnV3,
     });
     this.protocolContract = getContract({
       client: THIRDWEB_CLIENT,
@@ -86,13 +86,20 @@ export class YearnV3Vault extends BaseProtocol {
     // Assuming 'percentage' is a float between 0 and 1
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
 
-    const balance = await assetContractInstance.functions.balanceOf(recipient);
+    const balance = (
+      await assetContractInstance.functions.balanceOf(recipient)
+    )[0];
     const amount = balance.mul(percentageBN).div(10000);
     const withdrawTxn = prepareContractCall({
       contract: this.assetContract,
       method: "withdraw",
       params: [amount, recipient, recipient],
     });
+    const [
+      symbolOfBestTokenToZapOut,
+      bestTokenAddressToZapOut,
+      decimalOfBestTokenToZapOut,
+    ] = this._getTheBestTokenAddressToZapOut();
 
     return [
       [withdrawTxn],
