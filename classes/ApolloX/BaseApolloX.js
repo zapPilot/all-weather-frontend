@@ -54,16 +54,14 @@ export class BaseApolloX extends BaseProtocol {
     return 2;
   }
   rewards() {
-    return {
-      rewards: [
-        {
-          symbol: "arb",
-          coinmarketcapApiId: 11841,
-          address: "0x912ce59144191c1204e64559fe8253a0e49e6548",
-          decimals: this.assetDecimals,
-        },
-      ],
-    };
+    return [
+      {
+        symbol: "arb",
+        coinmarketcapApiId: 11841,
+        address: "0x912ce59144191c1204e64559fe8253a0e49e6548",
+        decimals: this.assetDecimals,
+      },
+    ];
   }
   async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
     updateProgress(
@@ -236,7 +234,7 @@ export class BaseApolloX extends BaseProtocol {
     const latestPrice = response.data.data[0].price;
     return latestPrice;
   }
-  _getTheBestTokenAddressToZapIn() {
+  _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of ALP to get the cheapest token to zap in
     const usdcBridgedAddress = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8";
     return [usdcBridgedAddress, 6];

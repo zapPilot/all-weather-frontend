@@ -266,9 +266,14 @@ export default class BaseProtocol extends BaseUniswap {
     throw new Error("Method 'customClaim()' must be implemented.");
   }
 
-  _getTheBestTokenAddressToZapIn() {
+  _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     throw new Error(
       "Method '_getTheBestTokenAddressToZapIn()' must be implemented.",
+    );
+  }
+  _getTheBestTokenAddressToZapOut(inputToken, InputTokenDecimals) {
+    throw new Error(
+      "Method '_getTheBestTokenAddressToZapOut()' must be implemented.",
     );
   }
 
@@ -288,7 +293,10 @@ export default class BaseProtocol extends BaseUniswap {
     );
     const decimalsOfChosenToken = (await tokenInstance.functions.decimals())[0];
     const [bestTokenAddressToZapIn, bestTokenToZapInDecimal] =
-      this._getTheBestTokenAddressToZapIn();
+      this._getTheBestTokenAddressToZapIn(
+        inputTokenAddress,
+        decimalsOfChosenToken,
+      );
     let amountToZapIn = ethers.utils.parseUnits(
       investmentAmountInThisPosition.toFixed(decimalsOfChosenToken),
       decimalsOfChosenToken,
@@ -332,7 +340,7 @@ export default class BaseProtocol extends BaseUniswap {
       withdrawTokenAndBalance,
     )) {
       const amount = tokenMetadata.balance;
-      if (amount.toString() === "0" || amount === 0) {
+      if (amount.toString() === "0" || amount === 0 || tokenMetadata.vesting === true) {
         continue;
       }
       const approveTxn = approve(
@@ -438,6 +446,7 @@ export default class BaseProtocol extends BaseUniswap {
       updateProgress,
     );
     for (const [address, metadata] of Object.entries(pendingRewards)) {
+      console.log("_calculateWithdrawTokenAndBalance address", address, metadata)
       if (withdrawTokenAndBalance[address]) {
         withdrawTokenAndBalance[address].balance = withdrawTokenAndBalance[
           address

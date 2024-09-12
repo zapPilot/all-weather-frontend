@@ -47,9 +47,7 @@ export class YearnV3Vault extends BaseProtocol {
     return 4;
   }
   rewards() {
-    return {
-      rewards: [],
-    };
+    return [];
   }
   async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
     return {};
@@ -129,7 +127,7 @@ export class YearnV3Vault extends BaseProtocol {
     return (await assetContractInstance.functions.balanceOf(recipient))[0];
   }
 
-  _getTheBestTokenAddressToZapIn() {
+  _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
     const weth = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
     return [weth, 18];

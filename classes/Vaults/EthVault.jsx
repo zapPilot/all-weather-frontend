@@ -1,5 +1,6 @@
 import { BasePortfolio } from "../BasePortfolio";
 import { YearnV3Vault } from "../Yearn/YearnV3Vault";
+import { RsETHPool26Dec2024 } from "../Pendle/rsETHPool26Dec2024";
 import ReactMarkdown from "react-markdown";
 export class EthVault extends BasePortfolio {
   constructor() {
@@ -15,7 +16,17 @@ export class EthVault extends BasePortfolio {
                 "single",
                 {},
               ),
-              weight: 1,
+              weight: 0.01,
+            },
+            {
+              interface: new RsETHPool26Dec2024(
+                "arbitrum",
+                42161,
+                ["pt rseth 26dec2024-rseth"],
+                "single",
+                {},
+              ),
+              weight: 0.99,
             },
           ],
         },
