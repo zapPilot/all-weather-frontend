@@ -4,6 +4,7 @@ import ActionAddRemoveLiqV3 from "../../lib/contracts/Pendle/ActionAddRemoveLiqV
 import PendleBoosterSidechain from "../../lib/contracts/Pendle/PendleBoosterSidechain.json" assert { type: "json" };
 import EqbMinterSidechain from "../../lib/contracts/Pendle/EqbMinterSidechain.json" assert { type: "json" };
 import BaseRewardPool from "../../lib/contracts/Pendle/BaseRewardPool.json" assert { type: "json" };
+import XEqbToken from "../../lib/contracts/Equilibria/XEqbToken.json" assert { type: "json" };
 import { arbitrum } from "thirdweb/chains";
 import axios from "axios";
 import { ethers } from "ethers";
@@ -13,6 +14,7 @@ import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { approve } from "../../utils/general.js";
 import BaseProtocol from "../BaseProtocol.js";
+import { ERC20_ABI } from "@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 export class RsETHPool26Dec2024 extends BaseProtocol {
@@ -44,6 +46,18 @@ export class RsETHPool26Dec2024 extends BaseProtocol {
       chain: arbitrum,
       abi: PendleBoosterSidechain,
     });
+    this.eqbStakeFarmWithdrawContract = getContract({
+      client: THIRDWEB_CLIENT,
+      address: "0xc7517f481Cc0a645e63f870830A4B2e580421e32",
+      chain: arbitrum,
+      abi: PendleBoosterSidechain,
+    });
+    this.xEqbContract = getContract({
+      client: THIRDWEB_CLIENT,
+      address: this.XEQB_TOKEN_ADDR,
+      chain: arbitrum,
+      abi: XEqbToken,
+    });
 
     this.assetContractInstance = new ethers.Contract(
       this.assetContract.address,
@@ -59,7 +73,7 @@ export class RsETHPool26Dec2024 extends BaseProtocol {
     this._checkIfParamsAreSet();
   }
   zapInSteps(tokenInAddress) {
-    return 4;
+    return 3;
   }
   zapOutSteps(tokenInAddress) {
     return 3;
@@ -171,7 +185,7 @@ export class RsETHPool26Dec2024 extends BaseProtocol {
         (tokenPricesMappingTable["eqb"] * xeqbAmount) /
         Math.pow(10, xeqbMetadata.decimals),
       decimals: xeqbMetadata.decimals,
-      vesting: true
+      vesting: true,
     };
     // TODO: arbitrum incentive
     return rewardBalance;
@@ -232,56 +246,62 @@ export class RsETHPool26Dec2024 extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    // eqbZap.withdraw(pid, shares);
-
     // Assuming 'percentage' is a float between 0 and 1
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
-    const stakedAmount = (
-      await this.stakeFarmContractInstance.functions.getStakedAmount(
-        this.assetContract.address,
-        recipient,
-      )
-    )[0];
-    const vlpAmount = stakedAmount.mul(percentageBN).div(10000);
-    const approveAlpTxn = approve(
-      this.assetContract.address,
-      this.protocolContract.address,
-      vlpAmount,
+    const stakedAmount = await this.userBalanceOf(recipient);
+    const withdrawAmount = stakedAmount.mul(percentageBN).div(10000);
+    const approveEqbLPTxn = approve(
+      (
+        await this.stakeFarmContractInstance.functions.poolInfo(
+          this.pidOfEquilibria,
+        )
+      ).token,
+      this.eqbStakeFarmWithdrawContract.address,
+      withdrawAmount,
       updateProgress,
     );
 
     const withdrawTxn = prepareContractCall({
-      contract: this.stakeFarmContract,
-      method: "unstake",
-      params: [this.assetContract.address, vlpAmount],
+      contract: this.eqbStakeFarmWithdrawContract,
+      method: "withdraw",
+      params: [this.pidOfEquilibria, withdrawAmount],
     });
-
+    const approvePendleTxn = approve(
+      this.assetContract.address,
+      this.protocolContract.address,
+      withdrawAmount,
+      updateProgress,
+    );
     const [
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
     ] = this._getTheBestTokenAddressToZapOut();
-    const latestPrice = await this._fetchPendleAssetPrice(updateProgress);
-
-    const minOutAmount = Math.floor(
-      ((((vlpAmount / Math.pow(10, this.assetDecimals)) * latestPrice) /
-        tokenPricesMappingTable[symbolOfBestTokenToZapOut]) *
-        Math.pow(10, decimalOfBestTokenToZapOut) *
-        (100 - slippage)) /
-        100,
+    const zapOutResp = await axios.get(
+      `https://api-v2.pendle.finance/core/v1/sdk/42161/markets/${this.assetContract.address}/remove-liquidity`,
+      {
+        params: {
+          receiver: recipient,
+          // slippage from the website is 0.5 (means 0.5%), so we need to divide it by 100 and pass it to Pendle (0.005 = 0.5%)
+          slippage: slippage / 100,
+          enableAggregator: true,
+          tokenOut: bestTokenAddressToZapOut,
+          amountIn: withdrawAmount,
+        },
+      },
     );
 
     const burnTxn = prepareContractCall({
       contract: this.protocolContract,
-      method: "unstake",
-      params: [bestTokenAddressToZapOut, vlpAmount],
+      method: "removeLiquiditySingleToken",
+      params: zapOutResp.data.contractCallParams,
     });
     return [
-      [withdrawTxn, approveAlpTxn, burnTxn],
+      [approveEqbLPTxn, withdrawTxn, approvePendleTxn, burnTxn],
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
-      minOutAmount,
+      zapOutResp.data.contractCallParams[3].minTokenOut,
     ];
   }
   async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
@@ -290,22 +310,38 @@ export class RsETHPool26Dec2024 extends BaseProtocol {
       tokenPricesMappingTable,
       updateProgress,
     );
-    console.log("pendingRewards", pendingRewards)
     const claimTxn = prepareContractCall({
       contract: this.stakeFarmContract,
       method: "claimRewards",
       params: [this.pidOfEquilibria],
     });
-    return [[claimTxn], pendingRewards];
+    const maxRedeemDuration = 14515200;
+    const redeemTxn = prepareContractCall({
+      contract: this.xEqbContract,
+      method: "redeem",
+      params: [pendingRewards[this.XEQB_TOKEN_ADDR].balance, maxRedeemDuration],
+    });
+    return [[claimTxn], pendingRewards, redeemTxn];
   }
   async usdBalanceOf(recipient, tokenPricesMappingTable) {
-    const userBalance = (
-      await this.assetContractInstance.functions.balanceOf(recipient)
-    )[0];
+    const userBalance = await this.userBalanceOf(recipient);
     const latestPendleAssetPrice = await this._fetchPendleAssetPrice(() => {});
     return (
       (userBalance / Math.pow(10, this.assetDecimals)) * latestPendleAssetPrice
     );
+  }
+  async userBalanceOf(recipient) {
+    const rewardPool = (
+      await this.stakeFarmContractInstance.functions.poolInfo(
+        this.pidOfEquilibria,
+      )
+    ).rewardPool;
+    const eqbPendleLPInstance = new ethers.Contract(
+      rewardPool,
+      ERC20_ABI,
+      PROVIDER,
+    );
+    return (await eqbPendleLPInstance.functions.balanceOf(recipient))[0];
   }
   async assetBalanceOf(recipient) {
     return (await this.assetContractInstance.functions.balanceOf(recipient))[0];
@@ -326,8 +362,10 @@ export class RsETHPool26Dec2024 extends BaseProtocol {
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     return [inputToken, InputTokenDecimals];
   }
-  _getTheBestTokenAddressToZapOut(inputToken, InputTokenDecimals) {
-    return [inputToken, InputTokenDecimals];
+  _getTheBestTokenAddressToZapOut() {
+    // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
+    const weth = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
+    return ["weth", weth, 18];
   }
   _getRewardMetadata(address) {
     for (const rewardMetadata of this.rewards()) {

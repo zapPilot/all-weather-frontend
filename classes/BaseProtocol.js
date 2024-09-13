@@ -83,6 +83,9 @@ export default class BaseProtocol extends BaseUniswap {
   async usdBalanceOf(address, tokenPricesMappingTable) {
     throw new Error("Method 'usdBalanceOf()' must be implemented.");
   }
+  async userBalanceOf(address) {
+    throw new Error("Method 'userBalanceOf()' must be implemented.");
+  }
   async assetBalanceOf(address) {
     throw new Error("Method 'assetBalanceOf()' must be implemented.");
   }
@@ -340,7 +343,11 @@ export default class BaseProtocol extends BaseUniswap {
       withdrawTokenAndBalance,
     )) {
       const amount = tokenMetadata.balance;
-      if (amount.toString() === "0" || amount === 0 || tokenMetadata.vesting === true) {
+      if (
+        amount.toString() === "0" ||
+        amount === 0 ||
+        tokenMetadata.vesting === true
+      ) {
         continue;
       }
       const approveTxn = approve(
@@ -446,7 +453,6 @@ export default class BaseProtocol extends BaseUniswap {
       updateProgress,
     );
     for (const [address, metadata] of Object.entries(pendingRewards)) {
-      console.log("_calculateWithdrawTokenAndBalance address", address, metadata)
       if (withdrawTokenAndBalance[address]) {
         withdrawTokenAndBalance[address].balance = withdrawTokenAndBalance[
           address
