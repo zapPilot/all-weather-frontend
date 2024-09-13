@@ -24,7 +24,12 @@ export class EthVault extends BasePortfolio {
                 42161,
                 ["pt rseth 26dec2024-rseth"],
                 "single",
-                {},
+                {
+                  assetAddress: '0xcB471665BF23B2Ac6196D84D947490fd5571215f',
+                  symbolOfBestTokenToZapOut: 'weth',
+                  bestTokenAddressToZapOut: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
+                  decimalOfBestTokenToZapOut: 18
+                },
               ),
               weight: 0.99,
             },
