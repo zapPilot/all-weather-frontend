@@ -87,7 +87,6 @@ export class YearnV3Vault extends BaseProtocol {
     const balance = (
       await assetContractInstance.functions.balanceOf(recipient)
     )[0];
-    console.log("balance", balance, percentageBN, "in yearn");
     const amount = balance.mul(percentageBN).div(10000);
     const withdrawTxn = prepareContractCall({
       contract: this.assetContract,
@@ -99,6 +98,7 @@ export class YearnV3Vault extends BaseProtocol {
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
     ] = this._getTheBestTokenAddressToZapOut();
+
     return [
       [withdrawTxn],
       symbolOfBestTokenToZapOut,
