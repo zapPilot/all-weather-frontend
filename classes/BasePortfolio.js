@@ -364,18 +364,10 @@ export class BasePortfolio {
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const protocols of Object.values(protocolsInThisCategory)) {
         for (const protocol of protocols) {
-          const apiSymbolToIdMapping = Object.values(
-            protocol.interface.rewards(),
-          )
-            .flatMap((tokenArray) =>
-              Array.isArray(tokenArray) ? tokenArray : [],
-            )
-            .reduce((idMapping, token) => {
-              if (token.coinmarketcapApiId !== undefined) {
-                idMapping[token.symbol] = token.coinmarketcapApiId;
-              }
-              return idMapping;
-            }, {});
+          let apiSymbolToIdMapping = {};
+          for (const reward of protocol.interface.rewards()) {
+            apiSymbolToIdMapping[reward.symbol] = reward.coinmarketcapApiId;
+          }
           coinMarketCapIdSet = {
             ...coinMarketCapIdSet,
             ...apiSymbolToIdMapping,

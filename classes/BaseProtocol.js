@@ -83,6 +83,9 @@ export default class BaseProtocol extends BaseUniswap {
   async usdBalanceOf(address, tokenPricesMappingTable) {
     throw new Error("Method 'usdBalanceOf()' must be implemented.");
   }
+  async userBalanceOf(address) {
+    throw new Error("Method 'userBalanceOf()' must be implemented.");
+  }
   async assetBalanceOf(address) {
     throw new Error("Method 'assetBalanceOf()' must be implemented.");
   }
@@ -266,9 +269,14 @@ export default class BaseProtocol extends BaseUniswap {
     throw new Error("Method 'customClaim()' must be implemented.");
   }
 
-  _getTheBestTokenAddressToZapIn() {
+  _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     throw new Error(
       "Method '_getTheBestTokenAddressToZapIn()' must be implemented.",
+    );
+  }
+  _getTheBestTokenAddressToZapOut(inputToken, InputTokenDecimals) {
+    throw new Error(
+      "Method '_getTheBestTokenAddressToZapOut()' must be implemented.",
     );
   }
 
@@ -288,7 +296,10 @@ export default class BaseProtocol extends BaseUniswap {
     );
     const decimalsOfChosenToken = (await tokenInstance.functions.decimals())[0];
     const [bestTokenAddressToZapIn, bestTokenToZapInDecimal] =
-      this._getTheBestTokenAddressToZapIn();
+      this._getTheBestTokenAddressToZapIn(
+        inputTokenAddress,
+        decimalsOfChosenToken,
+      );
     let amountToZapIn = ethers.utils.parseUnits(
       investmentAmountInThisPosition.toFixed(decimalsOfChosenToken),
       decimalsOfChosenToken,
@@ -332,7 +343,11 @@ export default class BaseProtocol extends BaseUniswap {
       withdrawTokenAndBalance,
     )) {
       const amount = tokenMetadata.balance;
-      if (amount.toString() === "0" || amount === 0) {
+      if (
+        amount.toString() === "0" ||
+        amount === 0 ||
+        tokenMetadata.vesting === true
+      ) {
         continue;
       }
       const approveTxn = approve(

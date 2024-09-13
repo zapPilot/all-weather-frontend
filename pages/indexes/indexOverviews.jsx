@@ -3,6 +3,7 @@ import BasePage from "../basePage.tsx";
 import { useState, useCallback, useEffect } from "react";
 import DecimalStep from "./DecimalStep";
 import Image from "next/image";
+import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
 import RebalanceChart from "../views/RebalanceChart";
 import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
@@ -229,6 +230,8 @@ export default function IndexOverviews() {
     if (!portfolioName || account === undefined) return;
     const fetchUsdBalance = async () => {
       setUsdBalanceLoading(true);
+      setPendingRewardsLoading(true);
+
       const usdBalance = await portfolioHelper.usdBalanceOf(account.address);
       setUsdBalance(usdBalance);
       const pendingRewards = await portfolioHelper.pendingRewards(
@@ -236,19 +239,19 @@ export default function IndexOverviews() {
         () => {},
       );
       setPendingRewards(pendingRewards);
+
       setUsdBalanceLoading(false);
+      setPendingRewardsLoading(false);
     };
     fetchUsdBalance();
   }, [portfolioName, account]);
   useEffect(() => {
     if (!portfolioName || account === undefined) return;
     const fetchExchangeRateWithUSD = async () => {
-      setPendingRewardsLoading(true);
       const { currency, exchangeRateWithUSD } =
         await getLocalizedCurrencyAndExchangeRate();
       setCurrency(currency);
       setExchangeRateWithUSD(exchangeRateWithUSD);
-      setPendingRewardsLoading(false);
     };
     fetchExchangeRateWithUSD();
   }, [portfolioName, account]);
@@ -442,7 +445,7 @@ export default function IndexOverviews() {
                       type="primary"
                       onClick={() => handleAAWalletAction("claimAndSwap")}
                       loading={claimIsLoading || pendingRewardsLoading}
-                      disabled={sumUsdDenominatedValues(pendingRewards) === 0}
+                      disabled={sumUsdDenominatedValues(pendingRewards) < 1}
                     >
                       Dump{" "}
                       {formatBalanceWithLocalizedCurrency(
@@ -557,15 +560,14 @@ export default function IndexOverviews() {
                                           <div className="mt-2 flex items-center">
                                             {protocol.interface.symbolList.map(
                                               (symbol, index) => (
-                                                <Image
+                                                <ImageWithFallback
                                                   className="me-1"
                                                   key={`${symbol}-${index}`}
                                                   // use usdc instead of usdc(bridged), aka, usdc.e for the image
-                                                  src={`/tokenPictures/${symbol.replace(
+                                                  token={symbol.replace(
                                                     "(bridged)",
                                                     "",
-                                                  )}.webp`}
-                                                  alt={symbol}
+                                                  )}
                                                   height={20}
                                                   width={20}
                                                 />
