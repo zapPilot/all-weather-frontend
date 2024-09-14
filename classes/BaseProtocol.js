@@ -6,7 +6,7 @@ import { ERC20_ABI } from "../node_modules/@etherspot/prime-sdk/dist/sdk/helpers
 import BaseUniswap from "./uniswapv3/BaseUniswap.js";
 import assert from "assert";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
-import { getTokenDecimal, approve } from "../utils/general";
+import { approve } from "../utils/general";
 import { prepareTransaction } from "thirdweb";
 
 export default class BaseProtocol extends BaseUniswap {
@@ -318,14 +318,8 @@ export default class BaseProtocol extends BaseUniswap {
       amountToZapIn = Math.floor((swapEstimateAmount * (100 - slippage)) / 100);
       swapTxns.push(swapTxn);
     }
-    const approveForZapInTxn = approve(
-      bestTokenAddressToZapIn,
-      this.protocolContract.address,
-      amountToZapIn,
-      updateProgress,
-    );
     return [
-      [...swapTxns, approveForZapInTxn],
+      swapTxns,
       bestTokenAddressToZapIn,
       amountToZapIn,
       bestTokenToZapInDecimal,

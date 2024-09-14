@@ -24,10 +24,11 @@ export class BaseEquilibria extends BaseProtocol {
     this.protocolName = "equilibria";
     this.protocolVersion = "0";
     this.assetDecimals = 18;
-    this.pidOfEquilibria = 47;
+    this.pidOfEquilibria = customParams.pidOfEquilibria;
     this.PENDLE_TOKEN_ADDR = "0x0c880f6761f1af8d9aa9c466984b80dab9a8c9e8";
     this.EQB_TOKEN_ADDR = "0xbfbcfe8873fe28dfa25f1099282b088d52bbad9c";
     this.XEQB_TOKEN_ADDR = "0x96c4a48abdf781e9c931cfa92ec0167ba219ad8e";
+    this.OARB_TOKEN_ADDR = "0x03b611858f8e8913f8db7d9fdbf59e352b0c83e8";
     this.assetContract = getContract({
       client: THIRDWEB_CLIENT,
       address: customParams.assetAddress,
@@ -76,10 +77,10 @@ export class BaseEquilibria extends BaseProtocol {
     this._checkIfParamsAreSet();
   }
   zapInSteps(tokenInAddress) {
-    return 3;
+    return 2;
   }
   zapOutSteps(tokenInAddress) {
-    return 3;
+    return 5;
   }
   claimAndSwapSteps() {
     return 3;
@@ -93,6 +94,12 @@ export class BaseEquilibria extends BaseProtocol {
         symbol: "arb",
         coinmarketcapApiId: 11841,
         address: "0x912ce59144191c1204e64559fe8253a0e49e6548",
+        decimals: 18,
+      },
+      {
+        symbol: "oarb",
+        coinmarketcapApiId: 11841,
+        address: "0x03b611858f8E8913F8DB7d9fDBF59e352b0c83E8",
         decimals: 18,
       },
       {
@@ -144,6 +151,7 @@ export class BaseEquilibria extends BaseProtocol {
           (tokenPricesMappingTable[metadata.symbol] * earnedReward) /
           Math.pow(10, metadata.decimals),
         decimals: metadata.decimals,
+        vesting: this._checkIfVesting(reward),
       };
       if (reward.toLowerCase() == this.PENDLE_TOKEN_ADDR.toLowerCase()) {
         pendleAmount = earnedReward;
@@ -203,6 +211,13 @@ export class BaseEquilibria extends BaseProtocol {
     slippage,
     updateProgress,
   ) {
+    const approveForZapInTxn = approve(
+      bestTokenAddressToZapIn,
+      this.protocolContract.address,
+      amountToZapIn,
+      updateProgress,
+    );
+
     const resp = await axios.get(
       `https://api-v2.pendle.finance/core/v1/sdk/42161/markets/${this.assetContract.address}/add-liquidity`,
       {
@@ -240,7 +255,7 @@ export class BaseEquilibria extends BaseProtocol {
       method: "deposit",
       params: [this.pidOfEquilibria, minLPOutAmount, true],
     });
-    return [mintTxn, approveTxn, stakeTxn];
+    return [approveForZapInTxn, mintTxn, approveTxn, stakeTxn];
   }
   async customWithdrawAndClaim(
     recipient,
@@ -377,5 +392,11 @@ export class BaseEquilibria extends BaseProtocol {
       }
     }
     throw new Error(`Unknown reward ${address}`);
+  }
+  _checkIfVesting(reward) {
+    return [
+      this.OARB_TOKEN_ADDR.toLowerCase(),
+      this.XEQB_TOKEN_ADDR.toLowerCase(),
+    ].includes(reward.toLowerCase());
   }
 }

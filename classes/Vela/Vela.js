@@ -67,6 +67,13 @@ export class Vela extends BaseProtocol {
     slippage,
     updateProgress,
   ) {
+    const approveForZapInTxn = approve(
+      bestTokenAddressToZapIn,
+      this.protocolContract.address,
+      amountToZapIn,
+      updateProgress,
+    );
+
     const latestPrice = await this._fetchVlpPrice(updateProgress);
     // on Arbitrum, we don't stake and then put VLP to pancakeswap for higher APY
     const estimatedVlpAmount =
@@ -93,7 +100,7 @@ export class Vela extends BaseProtocol {
       method: "stake", // <- this gets inferred from the contract
       params: [this.assetContract.address, minVlpAmount],
     });
-    return [mintTxn, approveAlpTxn, stakeTxn];
+    return [approveForZapInTxn, mintTxn, approveAlpTxn, stakeTxn];
   }
   async customWithdrawAndClaim(
     recipient,
