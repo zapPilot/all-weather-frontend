@@ -76,7 +76,7 @@ export class BaseApolloX extends BaseProtocol {
       await stakeFarmContractInstance.functions.pendingReward(recipient)
     )[0];
     let rewardBalance = {};
-    for (const token of this.rewards().rewards) {
+    for (const token of this.rewards()) {
       rewardBalance[token.address] = {
         symbol: token.symbol,
         balance: pendingReward,
