@@ -115,9 +115,9 @@ export class BasePortfolio {
       (sum, pool) => sum + pool.apr * pool.weight,
       0,
     );
-    aprMappingTable["portfolioTVL"] = totalTvl
+    aprMappingTable["portfolioTVL"] = (totalTvl / 1000000)
       .toFixed(2)
-      .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      .concat("M");
     return aprMappingTable;
   }
   async getExistingInvestmentPositions() {

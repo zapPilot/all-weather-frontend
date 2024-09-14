@@ -4,7 +4,11 @@ import Image from "next/image";
 const ImageWithFallback = ({ token, height, width, key }) => {
   const [imgSrc, setImgSrc] = useState(
     `/tokenPictures/${
-      token?.replace("lp ", "")?.replace(/[()]/g, "").split(" ")[0]
+      token
+        ?.replace("lp ", "")
+        ?.replace("pt ", "")
+        ?.replace(/[()]/g, "")
+        .split(" ")[0]
     }.webp`,
   );
   return (
@@ -23,6 +27,7 @@ const ImageWithFallback = ({ token, height, width, key }) => {
           "matic",
           "pendle",
           "sol",
+          "dai",
         ]) {
           if (token.includes(commonToken)) {
             setImgSrc(`/tokenPictures/${commonToken}.webp`);

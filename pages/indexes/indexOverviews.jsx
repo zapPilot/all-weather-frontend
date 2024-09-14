@@ -236,13 +236,13 @@ export default function IndexOverviews() {
 
       const usdBalance = await portfolioHelper.usdBalanceOf(account.address);
       setUsdBalance(usdBalance);
+      setUsdBalanceLoading(false);
       const pendingRewards = await portfolioHelper.pendingRewards(
         account.address,
         () => {},
       );
       setPendingRewards(pendingRewards);
 
-      setUsdBalanceLoading(false);
       setPendingRewardsLoading(false);
     };
     fetchUsdBalance();
@@ -302,16 +302,14 @@ export default function IndexOverviews() {
                 <span className="text-emerald-400" role="apr">
                   {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}
                   %
-                </span>
-                <a
-                  href="#"
-                  className="group inline-flex text-sm text-gray-400 hover:text-gray-300"
-                >
-                  <QuestionMarkCircleIcon
-                    aria-hidden="true"
-                    className="ml-2 h-5 w-5 flex-shrink-0 text-gray-400 group-hover:text-gray-300"
-                  />
-                </a>
+                </span>{" "}
+                <APRComposition
+                  APRData={pendingRewards}
+                  mode="pendingRewards"
+                  currency={currency}
+                  exchangeRateWithUSD={exchangeRateWithUSD}
+                  pendingRewardsLoading={pendingRewardsLoading}
+                />
               </p>
             </div>
             <div>
@@ -440,6 +438,7 @@ export default function IndexOverviews() {
                         mode="pendingRewards"
                         currency={currency}
                         exchangeRateWithUSD={exchangeRateWithUSD}
+                        pendingRewardsLoading={pendingRewardsLoading}
                       />
                     </div>
                     <Button
