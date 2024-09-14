@@ -17,7 +17,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 
 import { Sunburst, LabelSeries } from "react-vis";
@@ -264,7 +264,6 @@ export default function RebalanceChart(props) {
   const account = useActiveAccount();
 
   const divSunBurst = {
-    margin: "0 auto",
     height: props.windowWidth > 767 ? 500 : 300,
     width: props.windowWidth > 767 ? 500 : 300,
   };
@@ -275,6 +274,15 @@ export default function RebalanceChart(props) {
     whitespace: "pre-wrap",
     color: color,
   };
+  const [hoveredItemIndex, setHoveredItemIndex] = useState(null);
+
+  const handleMouseEnter = useCallback((index) => () => {
+    setHoveredItemIndex(index);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredItemIndex(null);
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
@@ -326,56 +334,105 @@ export default function RebalanceChart(props) {
     return <AntdInstructions account={account} />;
   }
   return (
-    <div style={divSunBurst} role="sunburst-chart">
-      {
-        // wallet is not connected
-        account === undefined ? <ConfiguredConnectButton /> : null
-      }
-      <Sunburst
-        animation
-        hideRootNode
-        onValueMouseOver={(node) => {
-          if (clicked) {
-            return;
-          }
-          const path = getKeyPath(node).reverse();
-          const pathAsMap = path.reduce((res, row) => {
-            res[row] = true;
-            return res;
-          }, {});
-          setFinalValue(path[path.length - 1]);
-          setData(updateData(data, pathAsMap));
-        }}
-        onValueMouseOut={() => {
-          if (!clicked) {
-            setFinalValue(false);
-            setData(updateData(data, false));
-          }
-        }}
-        onValueClick={() => setClicked(!clicked)}
-        style={{
-          stroke: "#ddd",
-          strokeOpacity: 0.3,
-          strokeWidth: "0.5",
-        }}
-        colorType="literal"
-        getSize={(d) => d.value}
-        getColor={(d) => d.hex}
-        data={data}
-        height={props.windowWidth > 767 ? 500 : 300}
-        width={props.windowWidth > 767 ? 500 : 300}
+    <div className="bg-gray-800 mt-4 p-4">
+      <h4 className="text-xl font-semibold text-white">{wording}</h4>
+      <div
+        className="sm:flex items-center justify-around"
+        role="sunburst-chart"
       >
-        {finalValue ? (
-          <LabelSeries
-            data={[{ x: 0, y: 0, label: finalValue, style: LABEL_STYLE }]}
-          />
-        ) : (
-          <LabelSeries
-            data={[{ x: 0, y: 0, label: wording, style: LABEL_STYLE }]}
-          />
-        )}
-      </Sunburst>
-      <center style={LABEL_STYLE}>APR: {apr?.toFixed(2)}%</center>
+        {
+          // wallet is not connected
+          account === undefined ? <ConfiguredConnectButton /> : null
+        }
+        <Sunburst
+          animation
+          hideRootNode
+          onValueMouseOver={(node) => {
+            if (clicked) {
+              return;
+            }
+            const path = getKeyPath(node).reverse();
+            const pathAsMap = path.reduce((res, row) => {
+              res[row] = true;
+              return res;
+            }, {});
+            setFinalValue(path[path.length - 1]);
+            setData(updateData(data, pathAsMap));
+          }}
+          onValueMouseOut={() => {
+            if (!clicked) {
+              setFinalValue(false);
+              setData(updateData(data, false));
+            }
+          }}
+          onValueClick={() => setClicked(!clicked)}
+          style={{
+            stroke: "#ddd",
+            strokeOpacity: 0.3,
+            strokeWidth: "0.5",
+          }}
+          colorType="literal"
+          getSize={(d) => d.value}
+          getColor={(d) => d.hex}
+          data={data}
+          height={props.windowWidth > 767 ? 500 : 300}
+          width={props.windowWidth > 767 ? 500 : 300}
+        >
+          {finalValue ? (
+            <LabelSeries
+              data={[{ x: 0, y: 0, label: finalValue, style: LABEL_STYLE }]}
+            />
+          ) : (
+            <LabelSeries
+              data={[{ x: 0, y: 0, label: wording, style: LABEL_STYLE }]}
+            />
+          )}
+        </Sunburst>
+        <div className="mt-2 sm:mt-0">
+          {data.children[0].name !== "Loading..." ? (
+          data.children.map((item, index) => {
+              return (
+                <div key={index}>
+                  <div
+                    className="flex items-center justify-between mb-2"
+                    onMouseEnter={handleMouseEnter(index)}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    <div className="flex items-center">
+                      <div
+                        className="w-5 h-5 me-2 rounded"
+                        style={{ backgroundColor: item.hex }}
+                      ></div>
+                      <p className="me-2">{item.name.split(":")[0]}</p>
+                    </div>
+                      <p>{item.name.split(":")[1]}</p>
+                  </div>
+                  {hoveredItemIndex === index ? (
+                    <div className="absolute w-80 bg-gray-500 text-white p-2 rounded z-10">
+                      {item.children ? (
+                        item.children.map((subItem, subIndex) => (
+                          <div key={subIndex}>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center">
+                                <div
+                                  className="w-5 h-5 me-2 rounded flex-shrink-0"
+                                  style={{ backgroundColor: subItem.hex }}
+                                ></div>
+                                <p className="max-w-40">{subItem.name.split(",")[0]}</p>
+                              </div>
+                              <p>{subItem.name.split(",")[1]}</p>
+                            </div>
+                          </div>
+                        ))
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })
+          ) : null }
+        </div>
+      </div>
     </div>
   );
 }
