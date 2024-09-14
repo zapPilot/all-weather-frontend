@@ -19,7 +19,7 @@ const APRComposition = ({ APRData, mode, currency, exchangeRateWithUSD }) => {
               exchangeRateWithUSD,
               value.usdDenominatedValue,
               currency,
-            )}{" "}
+            ).join(" ")}{" "}
             <span style={{ fontSize: "12px", color: "grey" }}>
               {value.balance.toString() / Math.pow(10, value.decimals)}
             </span>

@@ -52,9 +52,7 @@ export class Vela extends BaseProtocol {
     return 2;
   }
   rewards() {
-    return {
-      rewards: [],
-    };
+    return [];
   }
   async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
     return {};
@@ -69,6 +67,13 @@ export class Vela extends BaseProtocol {
     slippage,
     updateProgress,
   ) {
+    const approveForZapInTxn = approve(
+      bestTokenAddressToZapIn,
+      this.protocolContract.address,
+      amountToZapIn,
+      updateProgress,
+    );
+
     const latestPrice = await this._fetchVlpPrice(updateProgress);
     // on Arbitrum, we don't stake and then put VLP to pancakeswap for higher APY
     const estimatedVlpAmount =
@@ -95,7 +100,7 @@ export class Vela extends BaseProtocol {
       method: "stake", // <- this gets inferred from the contract
       params: [this.assetContract.address, minVlpAmount],
     });
-    return [mintTxn, approveAlpTxn, stakeTxn];
+    return [approveForZapInTxn, mintTxn, approveAlpTxn, stakeTxn];
   }
   async customWithdrawAndClaim(
     recipient,
@@ -198,7 +203,7 @@ export class Vela extends BaseProtocol {
       (await protocolContractInstance.functions.getVLPPrice()) / 1e5;
     return vlpPrice;
   }
-  _getTheBestTokenAddressToZapIn() {
+  _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
     const usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
     return [usdcAddress, 6];

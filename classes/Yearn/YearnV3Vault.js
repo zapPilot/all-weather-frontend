@@ -8,6 +8,7 @@ import axiosRetry from "axios-retry";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import BaseProtocol from "../BaseProtocol.js";
+import { approve } from "../../utils/general";
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 export class YearnV3Vault extends BaseProtocol {
@@ -20,7 +21,7 @@ export class YearnV3Vault extends BaseProtocol {
       client: THIRDWEB_CLIENT,
       address: "0x86dF48f8DC91504D2B3E360d67513f094Dfa6C84",
       chain: arbitrum,
-      abi: ERC20_ABI,
+      abi: YearnV3,
     });
     this.protocolContract = getContract({
       client: THIRDWEB_CLIENT,
@@ -47,9 +48,7 @@ export class YearnV3Vault extends BaseProtocol {
     return 4;
   }
   rewards() {
-    return {
-      rewards: [],
-    };
+    return [];
   }
   async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
     return {};
@@ -64,12 +63,19 @@ export class YearnV3Vault extends BaseProtocol {
     slippage,
     updateProgress,
   ) {
+    const approveForZapInTxn = approve(
+      bestTokenAddressToZapIn,
+      this.protocolContract.address,
+      amountToZapIn,
+      updateProgress,
+    );
+
     const depositTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "deposit",
       params: [amountToZapIn, recipient],
     });
-    return [depositTxn];
+    return [approveForZapInTxn, depositTxn];
   }
   async customWithdrawAndClaim(
     recipient,
@@ -86,13 +92,20 @@ export class YearnV3Vault extends BaseProtocol {
     // Assuming 'percentage' is a float between 0 and 1
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
 
-    const balance = await assetContractInstance.functions.balanceOf(recipient);
+    const balance = (
+      await assetContractInstance.functions.balanceOf(recipient)
+    )[0];
     const amount = balance.mul(percentageBN).div(10000);
     const withdrawTxn = prepareContractCall({
       contract: this.assetContract,
       method: "withdraw",
       params: [amount, recipient, recipient],
     });
+    const [
+      symbolOfBestTokenToZapOut,
+      bestTokenAddressToZapOut,
+      decimalOfBestTokenToZapOut,
+    ] = this._getTheBestTokenAddressToZapOut();
 
     return [
       [withdrawTxn],
@@ -129,7 +142,7 @@ export class YearnV3Vault extends BaseProtocol {
     return (await assetContractInstance.functions.balanceOf(recipient))[0];
   }
 
-  _getTheBestTokenAddressToZapIn() {
+  _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
     const weth = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
     return [weth, 18];
