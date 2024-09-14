@@ -535,67 +535,76 @@ export default function IndexOverviews() {
                                       />
                                       <span className="ml-2">{chain}</span>
                                     </div>
-                                    {protocolArray.map((protocol, index) => {
-                                      // set weight to 0 for old protocols, these are protocols used to be the best choice but its reward decreased
-                                      // so we opt out of them
-                                      // need to keep them in the portfolio so users can zap out
-                                      if (protocol.weight === 0) return null;
-                                      return (
-                                        <div
-                                          className="mt-2 border-b border-gray-400"
-                                          key={`${protocol.interface.protocolName}-${index}`}
-                                        >
-                                          <div className="flex items-center">
-                                            <Image
-                                              src={`/projectPictures/${protocol.interface.protocolName}.webp`}
-                                              alt={
-                                                protocol.interface.protocolName
-                                              }
-                                              height={25}
-                                              width={25}
-                                            />
-                                            <span className="text-gray-400 ml-2">
-                                              {protocol.interface.protocolName}
-                                            </span>
-                                          </div>
-                                          <div className="mt-2 flex items-center">
-                                            {protocol.interface.symbolList.map(
-                                              (symbol, index) => (
-                                                <ImageWithFallback
-                                                  className="me-1"
-                                                  key={`${symbol}-${index}`}
-                                                  // use usdc instead of usdc(bridged), aka, usdc.e for the image
-                                                  token={symbol.replace(
-                                                    "(bridged)",
-                                                    "",
-                                                  )}
-                                                  height={20}
-                                                  width={20}
-                                                />
-                                              ),
-                                            )}
-                                            <span className="text-gray-400 ml-1">
-                                              {protocol.interface.symbolList.join(
-                                                "-",
+                                    {protocolArray
+                                      .sort((a, b) => b.weight - a.weight)
+                                      .map((protocol, index) => {
+                                        // set weight to 0 for old protocols, these are protocols used to be the best choice but its reward decreased
+                                        // so we opt out of them
+                                        // need to keep them in the portfolio so users can zap out
+                                        if (protocol.weight === 0) return null;
+                                        return (
+                                          <div
+                                            className="mt-2 border-b border-gray-400"
+                                            key={`${protocol.interface.protocolName}-${index}`}
+                                          >
+                                            <div className="flex items-center">
+                                              <Image
+                                                src={`/projectPictures/${protocol.interface.protocolName}.webp`}
+                                                alt={
+                                                  protocol.interface
+                                                    .protocolName
+                                                }
+                                                height={25}
+                                                width={25}
+                                              />
+                                              <span className="text-gray-400 ml-2">
+                                                {
+                                                  protocol.interface
+                                                    .protocolName
+                                                }
+                                                -{protocol.weight * 100}%
+                                              </span>
+                                            </div>
+                                            <div className="mt-2 flex items-center">
+                                              {protocol.interface.symbolList.map(
+                                                (symbol, index) => (
+                                                  <ImageWithFallback
+                                                    className="me-1"
+                                                    key={`${symbol}-${index}`}
+                                                    // use usdc instead of usdc(bridged), aka, usdc.e for the image
+                                                    token={symbol.replace(
+                                                      "(bridged)",
+                                                      "",
+                                                    )}
+                                                    height={20}
+                                                    width={20}
+                                                  />
+                                                ),
                                               )}
-                                            </span>
+                                              <span className="text-gray-400 ml-1">
+                                                {protocol.interface.symbolList.join(
+                                                  "-",
+                                                )}
+                                              </span>
+                                            </div>
+                                            <div className="mt-2 flex justify-between">
+                                              <span className="text-gray-400">
+                                                APR
+                                              </span>
+                                              <span className="text-emerald-400">
+                                                {(
+                                                  portfolioApr?.[
+                                                    portfolioName
+                                                  ]?.[
+                                                    protocol.interface.uniqueId()
+                                                  ]?.apr * 100
+                                                ).toFixed(2)}
+                                                %
+                                              </span>
+                                            </div>
                                           </div>
-                                          <div className="mt-2 flex justify-between">
-                                            <span className="text-gray-400">
-                                              APR
-                                            </span>
-                                            <span className="text-emerald-400">
-                                              {(
-                                                portfolioApr?.[portfolioName]?.[
-                                                  protocol.interface.uniqueId()
-                                                ]?.apr * 100
-                                              ).toFixed(2)}
-                                              %
-                                            </span>
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
+                                        );
+                                      })}
                                   </div>
                                 ),
                               )}
