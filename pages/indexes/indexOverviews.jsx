@@ -6,7 +6,6 @@ import Image from "next/image";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
 import RebalanceChart from "../views/RebalanceChart";
-import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { useRouter } from "next/router";
 import {
   Button,
@@ -52,16 +51,25 @@ export default function IndexOverviews() {
   const [zapOutIsLoading, setZapOutIsLoading] = useState(false);
   const [claimIsLoading, setClaimIsLoading] = useState(false);
   const [rebalanceIsLoading, setRebalanceIsLoading] = useState(false);
+
   const [progress, setProgress] = useState(0);
   const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(0.5);
   const [zapOutPercentage, setZapOutPercentage] = useState(1);
   const [usdBalance, setUsdBalance] = useState(0);
-  const [pendingRewards, setPendingRewards] = useState(0);
+  const [rebalancableUsdBalance, setRebalancableUsdBalance] = useState(0);
+
+  const [pendingRewards, setPendingRewards] = useState({});
+  const [protocolAssetDustInWallet, setProtocolAssetDustInWallet] = useState(
+    {},
+  );
   const [currency, setCurrency] = useState("USD");
   const [exchangeRateWithUSD, setExchangeRateWithUSD] = useState(1);
   const [usdBalanceLoading, setUsdBalanceLoading] = useState(false);
   const [pendingRewardsLoading, setPendingRewardsLoading] = useState(false);
+  const [rebalancableUsdBalanceLoading, setRebalancableUsdBalanceLoading] =
+    useState(false);
+
   const [open, setOpen] = useState(false);
 
   const [notificationAPI, notificationContextHolder] =
@@ -233,17 +241,32 @@ export default function IndexOverviews() {
     const fetchUsdBalance = async () => {
       setUsdBalanceLoading(true);
       setPendingRewardsLoading(true);
+      setRebalancableUsdBalanceLoading(true);
 
-      const usdBalance = await portfolioHelper.usdBalanceOf(account.address);
+      const usdBalance = await portfolioHelper.usdBalanceOf(
+        account.address,
+        false,
+      );
       setUsdBalance(usdBalance);
       setUsdBalanceLoading(false);
+
+      const rebalancableUsdBalance = await portfolioHelper.usdBalanceOf(
+        account.address,
+        true,
+      );
+      setRebalancableUsdBalance(rebalancableUsdBalance);
+      setRebalancableUsdBalanceLoading(false);
+
       const pendingRewards = await portfolioHelper.pendingRewards(
         account.address,
         () => {},
       );
       setPendingRewards(pendingRewards);
-
       setPendingRewardsLoading(false);
+
+      const dust =
+        await portfolioHelper.calProtocolAssetDustInWalletDictionary();
+      setProtocolAssetDustInWallet(dust);
     };
     fetchUsdBalance();
   }, [portfolioName, account]);
@@ -457,24 +480,35 @@ export default function IndexOverviews() {
                       Worth of Rewards to {selectedToken.split("-")[0]}
                     </Button>
                   </div>
+                  <div className="mt-4">
+                    <div className="flex items-baseline">
+                      <p className="text-xl font-semibold text-white me-1">
+                        Rebalance
+                      </p>
+                    </div>
+                    <Button
+                      className={"mt-2 w-full"}
+                      type="primary"
+                      onClick={() => handleAAWalletAction("rebalance")}
+                      loading={
+                        rebalanceIsLoading || rebalancableUsdBalanceLoading
+                      }
+                      disabled={
+                        rebalancableUsdBalance +
+                          sumUsdDenominatedValues(protocolAssetDustInWallet) ===
+                        0
+                      }
+                    >
+                      Rebalance{" "}
+                      {formatBalanceWithLocalizedCurrency(
+                        exchangeRateWithUSD,
+                        rebalancableUsdBalance +
+                          sumUsdDenominatedValues(protocolAssetDustInWallet),
+                        currency,
+                      ).join(" ")}
+                    </Button>
+                  </div>
                 </ConfigProvider>
-                {/* TODO: */}
-                {/* <div className="mt-10">
-                  <Button
-                    className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
-                    onClick={() => handleAAWalletAction("rebalance")}
-                    // loading={claimIsLoading || pendingRewardsLoading}
-                    // disabled={sumUsdDenominatedValues(pendingRewards) === 0}
-                  >
-                    Rebalance
-                    {/* {" "}
-                    {formatBalanceWithLocalizedCurrency(
-                      exchangeRateWithUSD,
-                      sumUsdDenominatedValues(pendingRewards),
-                      currency,
-                    )} 
-                  </Button>
-                </div>*/}
               </form>
             </div>
           </div>
