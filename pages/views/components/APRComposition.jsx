@@ -1,9 +1,17 @@
-import { Popover, Image } from "antd";
+import { Popover, Image, Spin } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { formatBalanceWithLocalizedCurrency } from "../../../utils/general";
-
-const APRComposition = ({ APRData, mode, currency, exchangeRateWithUSD }) => {
+const APRComposition = ({
+  APRData,
+  mode,
+  currency,
+  exchangeRateWithUSD,
+  pendingRewardsLoading,
+}) => {
   const renderContent = () => {
+    if (pendingRewardsLoading === true) {
+      return <Spin size="small" />;
+    }
     if (mode === "pendingRewards") {
       return Object.entries(APRData).map(([key, value]) => {
         return (

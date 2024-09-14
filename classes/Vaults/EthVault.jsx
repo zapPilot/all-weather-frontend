@@ -22,7 +22,7 @@ export class EthVault extends BasePortfolio {
               interface: new BaseEquilibria(
                 "arbitrum",
                 42161,
-                ["pt rseth 26dec2024-rseth"],
+                ["pt rseth 26dec2024", "rseth"],
                 "single",
                 {
                   assetAddress: "0xcB471665BF23B2Ac6196D84D947490fd5571215f",
@@ -39,7 +39,7 @@ export class EthVault extends BasePortfolio {
               interface: new BaseEquilibria(
                 "arbitrum",
                 42161,
-                ["unieth"],
+                ["pt bedrock unieth 26dec2024", "unieth"],
                 "single",
                 {
                   assetAddress: "0x279b44E48226d40Ec389129061cb0B56C5c09e46",

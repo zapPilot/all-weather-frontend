@@ -3,6 +3,7 @@ import { ApolloX20240806 } from "../ApolloX/ApolloX20240806";
 import { ApolloX20240813 } from "../ApolloX/ApolloX20240813";
 import { ApolloX20240820 } from "../ApolloX/ApolloX20240820";
 import { Vela } from "../Vela/Vela";
+import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import ReactMarkdown from "react-markdown";
 export class StablecoinVault extends BasePortfolio {
   constructor() {
@@ -47,7 +48,7 @@ export class StablecoinVault extends BasePortfolio {
                     "0xaA0DE632A4071642d72Ceb03577F5534ea196927",
                 },
               ),
-              weight: 0.9,
+              weight: 0.4,
             },
             {
               interface: new Vela(
@@ -61,6 +62,23 @@ export class StablecoinVault extends BasePortfolio {
                 },
               ),
               weight: 0.1,
+            },
+            {
+              interface: new BaseEquilibria(
+                "arbitrum",
+                42161,
+                ["dai", "pt gdai 27mar2025"],
+                "single",
+                {
+                  assetAddress: "0xA9104b8B6698979568852C30231871e28A482b3C",
+                  symbolOfBestTokenToZapOut: "usdc",
+                  bestTokenAddressToZapOut:
+                    "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8",
+                  decimalOfBestTokenToZapOut: 6,
+                  pidOfEquilibria: 48,
+                },
+              ),
+              weight: 0.5,
             },
           ],
         },
