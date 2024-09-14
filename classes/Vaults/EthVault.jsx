@@ -1,6 +1,6 @@
 import { BasePortfolio } from "../BasePortfolio";
 import { YearnV3Vault } from "../Yearn/YearnV3Vault";
-import { RsETHPool26Dec2024 } from "../Pendle/rsETHPool26Dec2024";
+import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import ReactMarkdown from "react-markdown";
 export class EthVault extends BasePortfolio {
   constructor() {
@@ -19,14 +19,38 @@ export class EthVault extends BasePortfolio {
               weight: 0.01,
             },
             {
-              interface: new RsETHPool26Dec2024(
+              interface: new BaseEquilibria(
                 "arbitrum",
                 42161,
                 ["pt rseth 26dec2024-rseth"],
                 "single",
-                {},
+                {
+                  assetAddress: "0xcB471665BF23B2Ac6196D84D947490fd5571215f",
+                  symbolOfBestTokenToZapOut: "weth",
+                  bestTokenAddressToZapOut:
+                    "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                  decimalOfBestTokenToZapOut: 18,
+                  pidOfEquilibria: 47,
+                },
               ),
-              weight: 0.99,
+              weight: 0.9,
+            },
+            {
+              interface: new BaseEquilibria(
+                "arbitrum",
+                42161,
+                ["unieth"],
+                "single",
+                {
+                  assetAddress: "0x279b44E48226d40Ec389129061cb0B56C5c09e46",
+                  symbolOfBestTokenToZapOut: "weth",
+                  bestTokenAddressToZapOut:
+                    "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                  decimalOfBestTokenToZapOut: 18,
+                  pidOfEquilibria: 44,
+                },
+              ),
+              weight: 0.09,
             },
           ],
         },

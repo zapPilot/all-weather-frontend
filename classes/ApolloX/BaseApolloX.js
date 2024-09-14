@@ -98,6 +98,13 @@ export class BaseApolloX extends BaseProtocol {
     slippage,
     updateProgress,
   ) {
+    const approveForZapInTxn = approve(
+      bestTokenAddressToZapIn,
+      this.protocolContract.address,
+      amountToZapIn,
+      updateProgress,
+    );
+
     const latestPrice = await this._fetchAlpPrice(updateProgress);
     // on Arbitrum, we don't stake and then put ALP to pancakeswap for higher APY
     const estimatedAlpAmount =
@@ -124,7 +131,7 @@ export class BaseApolloX extends BaseProtocol {
       method: "deposit", // <- this gets inferred from the contract
       params: [minAlpAmount],
     });
-    return [mintTxn, approveAlpTxn, depositTxn];
+    return [approveForZapInTxn, mintTxn, approveAlpTxn, depositTxn];
   }
   async customWithdrawAndClaim(
     recipient,

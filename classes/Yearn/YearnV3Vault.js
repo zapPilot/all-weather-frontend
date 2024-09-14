@@ -8,6 +8,7 @@ import axiosRetry from "axios-retry";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import BaseProtocol from "../BaseProtocol.js";
+import { approve } from "../../utils/general";
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 export class YearnV3Vault extends BaseProtocol {
@@ -62,12 +63,19 @@ export class YearnV3Vault extends BaseProtocol {
     slippage,
     updateProgress,
   ) {
+    const approveForZapInTxn = approve(
+      bestTokenAddressToZapIn,
+      this.protocolContract.address,
+      amountToZapIn,
+      updateProgress,
+    );
+
     const depositTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "deposit",
       params: [amountToZapIn, recipient],
     });
-    return [depositTxn];
+    return [approveForZapInTxn, depositTxn];
   }
   async customWithdrawAndClaim(
     recipient,

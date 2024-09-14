@@ -11,26 +11,27 @@ import { ethers } from "ethers";
 import { PROVIDER } from "../../utils/general.js";
 import axiosRetry from "axios-retry";
 import { getContract, prepareContractCall } from "thirdweb";
-import THIRDWEB_CLIENT from "../../utils/thirdweb";
+import THIRDWEB_CLIENT from "../../utils/thirdweb.js";
 import { approve } from "../../utils/general.js";
 import BaseProtocol from "../BaseProtocol.js";
 import { ERC20_ABI } from "@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
-export class RsETHPool26Dec2024 extends BaseProtocol {
+export class BaseEquilibria extends BaseProtocol {
   constructor(chain, chaindId, symbolList, mode, customParams) {
     super(chain, chaindId, symbolList, mode, customParams);
     // arbitrum's Apollox is staked on PancakeSwap
-    this.protocolName = "pendle";
+    this.protocolName = "equilibria";
     this.protocolVersion = "0";
     this.assetDecimals = 18;
-    this.pidOfEquilibria = 47;
+    this.pidOfEquilibria = customParams.pidOfEquilibria;
     this.PENDLE_TOKEN_ADDR = "0x0c880f6761f1af8d9aa9c466984b80dab9a8c9e8";
     this.EQB_TOKEN_ADDR = "0xbfbcfe8873fe28dfa25f1099282b088d52bbad9c";
     this.XEQB_TOKEN_ADDR = "0x96c4a48abdf781e9c931cfa92ec0167ba219ad8e";
+    this.OARB_TOKEN_ADDR = "0x03b611858f8e8913f8db7d9fdbf59e352b0c83e8";
     this.assetContract = getContract({
       client: THIRDWEB_CLIENT,
-      address: "0xcB471665BF23B2Ac6196D84D947490fd5571215f",
+      address: customParams.assetAddress,
       chain: arbitrum,
       abi: PendleMarketV3,
     });
@@ -70,13 +71,16 @@ export class RsETHPool26Dec2024 extends BaseProtocol {
       PROVIDER,
     );
 
+    this.symbolOfBestTokenToZapOut = customParams.symbolOfBestTokenToZapOut;
+    this.bestTokenAddressToZapOut = customParams.bestTokenAddressToZapOut;
+    this.decimalOfBestTokenToZapOut = customParams.decimalOfBestTokenToZapOut;
     this._checkIfParamsAreSet();
   }
   zapInSteps(tokenInAddress) {
-    return 3;
+    return 2;
   }
   zapOutSteps(tokenInAddress) {
-    return 3;
+    return 5;
   }
   claimAndSwapSteps() {
     return 3;
@@ -90,6 +94,12 @@ export class RsETHPool26Dec2024 extends BaseProtocol {
         symbol: "arb",
         coinmarketcapApiId: 11841,
         address: "0x912ce59144191c1204e64559fe8253a0e49e6548",
+        decimals: 18,
+      },
+      {
+        symbol: "oarb",
+        coinmarketcapApiId: 11841,
+        address: "0x03b611858f8E8913F8DB7d9fDBF59e352b0c83E8",
         decimals: 18,
       },
       {
@@ -141,6 +151,7 @@ export class RsETHPool26Dec2024 extends BaseProtocol {
           (tokenPricesMappingTable[metadata.symbol] * earnedReward) /
           Math.pow(10, metadata.decimals),
         decimals: metadata.decimals,
+        vesting: this._checkIfVesting(reward),
       };
       if (reward.toLowerCase() == this.PENDLE_TOKEN_ADDR.toLowerCase()) {
         pendleAmount = earnedReward;
@@ -200,6 +211,13 @@ export class RsETHPool26Dec2024 extends BaseProtocol {
     slippage,
     updateProgress,
   ) {
+    const approveForZapInTxn = approve(
+      bestTokenAddressToZapIn,
+      this.protocolContract.address,
+      amountToZapIn,
+      updateProgress,
+    );
+
     const resp = await axios.get(
       `https://api-v2.pendle.finance/core/v1/sdk/42161/markets/${this.assetContract.address}/add-liquidity`,
       {
@@ -237,7 +255,7 @@ export class RsETHPool26Dec2024 extends BaseProtocol {
       method: "deposit",
       params: [this.pidOfEquilibria, minLPOutAmount, true],
     });
-    return [mintTxn, approveTxn, stakeTxn];
+    return [approveForZapInTxn, mintTxn, approveTxn, stakeTxn];
   }
   async customWithdrawAndClaim(
     recipient,
@@ -374,5 +392,11 @@ export class RsETHPool26Dec2024 extends BaseProtocol {
       }
     }
     throw new Error(`Unknown reward ${address}`);
+  }
+  _checkIfVesting(reward) {
+    return [
+      this.OARB_TOKEN_ADDR.toLowerCase(),
+      this.XEQB_TOKEN_ADDR.toLowerCase(),
+    ].includes(reward.toLowerCase());
   }
 }
