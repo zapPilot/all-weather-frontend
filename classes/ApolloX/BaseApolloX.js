@@ -217,7 +217,7 @@ export class BaseApolloX extends BaseProtocol {
   async assetBalanceOf(recipient) {
     const assetContractInstance = new ethers.Contract(
       this.assetContract.address,
-      ApolloXABI,
+      ERC20_ABI,
       PROVIDER,
     );
     return (await assetContractInstance.functions.balanceOf(recipient))[0];

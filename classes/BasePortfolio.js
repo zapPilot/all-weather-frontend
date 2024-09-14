@@ -24,7 +24,7 @@ export class BasePortfolio {
   description() {
     throw new Error("Method 'description()' must be implemented.");
   }
-  async usdBalanceOf(address) {
+  async usdBalanceOf(address, rebalanceMode) {
     const tokenPricesMappingTable = await this._getTokenPricesMappingTable(
       () => {},
     );
@@ -35,7 +35,8 @@ export class BasePortfolio {
         protocolsInThisCategory,
       )) {
         for (const protocol of protocolsInThisChain) {
-          if (protocol.weight === 0) continue;
+          if (protocol.weight === 0 && rebalanceMode === false) continue;
+          if (rebalanceMode === true && protocol.weight !== 0) continue;
           const balance = await protocol.interface.usdBalanceOf(
             address,
             tokenPricesMappingTable,
@@ -277,7 +278,7 @@ export class BasePortfolio {
             {},
             this.existingInvestmentPositions[chain],
           );
-          txns.push(zapOutTxn);
+          txns.concat(zapOutTxn);
           zapOutUsdcBalance += (usdBalance * (100 - slippage)) / 100;
         }
       }
@@ -316,7 +317,7 @@ export class BasePortfolio {
     return existingPositions;
   }
 
-  async _calProtocolAssetDustInWalletDictionary(owner) {
+  async calProtocolAssetDustInWalletDictionary(owner) {
     let result = {};
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const [chain, protocols] of Object.entries(
@@ -329,17 +330,11 @@ export class BasePortfolio {
           }
           result[chain][protocol.interface.assetContract.address] =
             assetBalance;
-          // result[protocol.interface.assetContract.address] = assetBalance
         }
       }
     }
     return result;
   }
-  _calRebalanceRoutes(
-    sortedPositions,
-    totalUsdBalance,
-    protocolAssetDustInWalletDictionary,
-  ) {}
   async _getExistingInvestmentPositionsByChain(address, updateProgress) {
     let existingInvestmentPositionsbyChain = {};
     for (const [chain, lpTokens] of Object.entries(
