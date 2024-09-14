@@ -223,6 +223,9 @@ export class BasePortfolio {
               this.existingInvestmentPositions[chain],
             );
           }
+          if (!txnsForThisProtocol) {
+            continue;
+          }
           totalTxns = totalTxns.concat(txnsForThisProtocol);
         }
       }
