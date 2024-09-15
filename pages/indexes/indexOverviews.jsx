@@ -6,7 +6,7 @@ import Image from "next/image";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
 import RebalanceChart from "../views/RebalanceChart";
-import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
+import { ethers } from "ethers";
 import { useRouter } from "next/router";
 import {
   Button,
@@ -106,7 +106,7 @@ export default function IndexOverviews() {
         account: account.address,
         tokenInSymbol: tokenSymbol,
         tokenInAddress: tokenAddress,
-        zapInAmount: Number(investmentAmount),
+        zapInAmount: ethers.utils.parseEther(String(investmentAmount)),
         progressCallback: (progressPercentage) =>
           setProgress(progressPercentage),
         progressStepNameCallback: (stepName) => setStepName(stepName),
