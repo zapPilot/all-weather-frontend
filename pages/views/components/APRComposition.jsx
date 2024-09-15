@@ -1,6 +1,5 @@
 import { Popover, Image, Spin } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
-import { formatBalanceWithLocalizedCurrency } from "../../../utils/general";
 const APRComposition = ({
   APRData,
   mode,
@@ -22,12 +21,7 @@ const APRComposition = ({
               height={20}
               alt={key}
             />
-            {value.symbol}{" "}
-            {formatBalanceWithLocalizedCurrency(
-              exchangeRateWithUSD,
-              value.usdDenominatedValue,
-              currency,
-            ).join(" ")}{" "}
+            {value.symbol} {value.usdDenominatedValue}{" "}
             <span style={{ fontSize: "12px", color: "grey" }}>
               {value.balance.toString() / Math.pow(10, value.decimals)}
             </span>
