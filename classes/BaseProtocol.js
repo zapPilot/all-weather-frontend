@@ -300,10 +300,7 @@ export default class BaseProtocol extends BaseUniswap {
         inputTokenAddress,
         decimalsOfChosenToken,
       );
-    let amountToZapIn = ethers.utils.parseUnits(
-      investmentAmountInThisPosition.toFixed(decimalsOfChosenToken),
-      decimalsOfChosenToken,
-    );
+    let amountToZapIn = investmentAmountInThisPosition;
     if (
       inputTokenAddress.toLowerCase() !== bestTokenAddressToZapIn.toLowerCase()
     ) {
