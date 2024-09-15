@@ -277,9 +277,12 @@ export default function RebalanceChart(props) {
   };
   const [hoveredItemIndex, setHoveredItemIndex] = useState(null);
 
-  const handleMouseEnter = useCallback((index) => () => {
-    setHoveredItemIndex(index);
-  }, []);
+  const handleMouseEnter = useCallback(
+    (index) => () => {
+      setHoveredItemIndex(index);
+    },
+    [],
+  );
 
   const handleMouseLeave = useCallback(() => {
     setHoveredItemIndex(null);
@@ -390,48 +393,50 @@ export default function RebalanceChart(props) {
           )}
         </Sunburst>
         <div className="mt-2 sm:mt-0">
-          {data.children[0].name !== "Loading..." ? (
-          data.children.map((item, index) => {
-              return (
-                <div key={index}>
-                  <div
-                    className="flex items-center justify-between mb-2"
-                    onMouseEnter={handleMouseEnter(index)}
-                    onMouseLeave={handleMouseLeave}
-                  >
-                    <div className="flex items-center">
-                      <div
-                        className="w-5 h-5 me-2 rounded"
-                        style={{ backgroundColor: item.hex }}
-                      ></div>
-                      <p className="me-2">{item.name.split(":")[0]}</p>
-                    </div>
+          {data.children[0].name !== "Loading..."
+            ? data.children.map((item, index) => {
+                return (
+                  <div key={index}>
+                    <div
+                      className="flex items-center justify-between mb-2"
+                      onMouseEnter={handleMouseEnter(index)}
+                      onMouseLeave={handleMouseLeave}
+                    >
+                      <div className="flex items-center">
+                        <div
+                          className="w-5 h-5 me-2 rounded"
+                          style={{ backgroundColor: item.hex }}
+                        ></div>
+                        <p className="me-2">{item.name.split(":")[0]}</p>
+                      </div>
                       <p>{item.name.split(":")[1]}</p>
-                  </div>
-                  {hoveredItemIndex === index ? (
-                    <div className="absolute w-80 bg-gray-500 text-white p-2 rounded z-10">
-                      {item.children ? (
-                        item.children.map((subItem, subIndex) => (
-                          <div key={subIndex}>
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center">
-                                <div
-                                  className="w-5 h-5 me-2 rounded flex-shrink-0"
-                                  style={{ backgroundColor: subItem.hex }}
-                                ></div>
-                                <p className="max-w-40">{subItem.name.split(",")[0]}</p>
-                              </div>
-                              <p>{subItem.name.split(",")[1]}</p>
-                            </div>
-                          </div>
-                        ))
-                      ) : null}
                     </div>
-                  ) : null}
-                </div>
-              );
-            })
-          ) : null }
+                    {hoveredItemIndex === index ? (
+                      <div className="absolute w-80 bg-gray-500 text-white p-2 rounded z-10">
+                        {item.children
+                          ? item.children.map((subItem, subIndex) => (
+                              <div key={subIndex}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center">
+                                    <div
+                                      className="w-5 h-5 me-2 rounded flex-shrink-0"
+                                      style={{ backgroundColor: subItem.hex }}
+                                    ></div>
+                                    <p className="max-w-40">
+                                      {subItem.name.split(",")[0]}
+                                    </p>
+                                  </div>
+                                  <p>{subItem.name.split(",")[1]}</p>
+                                </div>
+                              </div>
+                            ))
+                          : null}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })
+            : null}
         </div>
       </div>
     </div>
@@ -445,9 +450,7 @@ const AntdInstructions = ({ account }) => {
   };
 
   return (
-    <div
-      className="bg-gray-800 mt-4 p-4"
-    >
+    <div className="bg-gray-800 mt-4 p-4">
       <div>
         <Title level={3}>1. Visualize Your Bundle</Title>
         <Paragraph>
@@ -476,7 +479,7 @@ const AntdInstructions = ({ account }) => {
               style={{ backgroundColor: "#5DFDCB" }}
               onClick={copyToClipboard}
             >
-              <CopyOutlined className="h-5 w-5 justify-center text-black"/>
+              <CopyOutlined className="h-5 w-5 justify-center text-black" />
             </button>
           </div>
         </Paragraph>

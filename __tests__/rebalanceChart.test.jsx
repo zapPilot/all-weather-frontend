@@ -43,7 +43,7 @@ global.fetch = vi.fn(() =>
           {
             name: "long_term_bond: 50%",
             children: [
-              { 
+              {
                 hex: "#f00",
                 name: "uniswap_v3_dai_usdc, APR: 50% PER: 50%",
                 value: 50,
@@ -54,7 +54,7 @@ global.fetch = vi.fn(() =>
           {
             name: "short_term_bond: 50%",
             children: [
-              { 
+              {
                 hex: "#0f0",
                 name: "1inch_dai_usdc, APR: 50% PER: 50%",
                 value: 50,
@@ -110,26 +110,28 @@ function RebalanceChartWording() {
                 ></div>
                 <p className="me-2">{item.name.split(":")[0]}</p>
               </div>
-                <p>{item.name.split(":")[1]}</p>
+              <p>{item.name.split(":")[1]}</p>
             </div>
             {hoveredItemIndex === index && (
               <div className="absolute w-80 bg-gray-500 text-white p-2 rounded z-10">
-                {item.children ? (
-                  item.children.map((subItem, subIndex) => (
-                    <div key={subIndex}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center">
-                          <div
-                            className="w-5 h-5 me-2 rounded flex-shrink-0"
-                            style={{ backgroundColor: subItem.hex }}
-                          ></div>
-                          <p className="max-w-40">{subItem.name.split(",")[0]}</p>
+                {item.children
+                  ? item.children.map((subItem, subIndex) => (
+                      <div key={subIndex}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            <div
+                              className="w-5 h-5 me-2 rounded flex-shrink-0"
+                              style={{ backgroundColor: subItem.hex }}
+                            ></div>
+                            <p className="max-w-40">
+                              {subItem.name.split(",")[0]}
+                            </p>
+                          </div>
+                          <p>{subItem.name.split(",")[1]}</p>
                         </div>
-                        <p>{subItem.name.split(",")[1]}</p>
                       </div>
-                    </div>
-                  ))
-                ) : null}
+                    ))
+                  : null}
               </div>
             )}
           </div>

@@ -179,7 +179,9 @@ export default function ExampleUI() {
         >
           {data ? (
             <div className="mt-4 ps-4">
-              <h4 className="text-xl font-semibold text-white">Current Portfolio Status Update</h4>
+              <h4 className="text-xl font-semibold text-white">
+                Current Portfolio Status Update
+              </h4>
               <div className="flex items-center my-1">
                 <span>
                   Data updated <b>{timeAgo(data.last_updated)}</b> ago
@@ -190,7 +192,7 @@ export default function ExampleUI() {
                   style={{ backgroundColor: "#5DFDCB" }}
                   onClick={() => fetchBundlePortfolio(true)}
                 >
-                  <ReloadOutlined className="h-5 w-5 justify-center text-black"/>
+                  <ReloadOutlined className="h-5 w-5 justify-center text-black" />
                 </button>
               </div>
               <span className="text-sm text-gray-500">
