@@ -67,13 +67,14 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
         theme={{
           components: {
             Statistic: {
-              titleFontSize: 16,
+              titleFontSize: 14,
             },
           },
           token: {
-            colorBgContainer: "transparent",
-            colorBorderSecondary: "#999999",
+            colorBgContainer: "rgb(31, 41, 55)",
+            colorBorderSecondary: "transparent",
             colorTextDescription: "white",
+            borderRadiusLG: "0",
           },
         }}
       >
@@ -86,7 +87,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
             8,
           ]}
         >
-          <Col xs={12} md={8}>
+          <Col xs={24} md={6}>
             <Card>
               <Statistic
                 title="Reward APR of Your Portfolio"
@@ -97,7 +98,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
               />
             </Card>
           </Col>
-          <Col xs={12} md={8}>
+          <Col xs={24} md={6}>
             <Card>
               <Statistic
                 title="Net Worth"
@@ -114,7 +115,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
               />
             </Card>
           </Col>
-          <Col xs={12} md={8}>
+          <Col xs={24} md={6}>
             <Card>
               <Statistic
                 title="Monthly Interest"
@@ -131,7 +132,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
               />
             </Card>
           </Col>
-          <Col xs={12} md={8}>
+          <Col xs={24} md={6}>
             <Card>
               <Statistic
                 title="Claimable Rewards"

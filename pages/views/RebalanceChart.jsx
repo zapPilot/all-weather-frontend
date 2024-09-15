@@ -17,7 +17,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 
 import { Sunburst, LabelSeries } from "react-vis";
@@ -26,7 +26,8 @@ import { Spin } from "antd";
 import { useSelector } from "react-redux";
 import { useActiveAccount } from "thirdweb/react";
 import Link from "next/link";
-import { Typography, Space, message } from "antd";
+import { Typography, message } from "antd";
+import { CopyOutlined } from "@ant-design/icons";
 import ConfiguredConnectButton from "../ConnectButton";
 const { Title, Paragraph, Text } = Typography;
 
@@ -264,7 +265,6 @@ export default function RebalanceChart(props) {
   const account = useActiveAccount();
 
   const divSunBurst = {
-    margin: "0 auto",
     height: props.windowWidth > 767 ? 500 : 300,
     width: props.windowWidth > 767 ? 500 : 300,
   };
@@ -275,6 +275,18 @@ export default function RebalanceChart(props) {
     whitespace: "pre-wrap",
     color: color,
   };
+  const [hoveredItemIndex, setHoveredItemIndex] = useState(null);
+
+  const handleMouseEnter = useCallback(
+    (index) => () => {
+      setHoveredItemIndex(index);
+    },
+    [],
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredItemIndex(null);
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
@@ -326,56 +338,107 @@ export default function RebalanceChart(props) {
     return <AntdInstructions account={account} />;
   }
   return (
-    <div style={divSunBurst} role="sunburst-chart">
-      {
-        // wallet is not connected
-        account === undefined ? <ConfiguredConnectButton /> : null
-      }
-      <Sunburst
-        animation
-        hideRootNode
-        onValueMouseOver={(node) => {
-          if (clicked) {
-            return;
-          }
-          const path = getKeyPath(node).reverse();
-          const pathAsMap = path.reduce((res, row) => {
-            res[row] = true;
-            return res;
-          }, {});
-          setFinalValue(path[path.length - 1]);
-          setData(updateData(data, pathAsMap));
-        }}
-        onValueMouseOut={() => {
-          if (!clicked) {
-            setFinalValue(false);
-            setData(updateData(data, false));
-          }
-        }}
-        onValueClick={() => setClicked(!clicked)}
-        style={{
-          stroke: "#ddd",
-          strokeOpacity: 0.3,
-          strokeWidth: "0.5",
-        }}
-        colorType="literal"
-        getSize={(d) => d.value}
-        getColor={(d) => d.hex}
-        data={data}
-        height={props.windowWidth > 767 ? 500 : 300}
-        width={props.windowWidth > 767 ? 500 : 300}
+    <div className="bg-gray-800 mt-4 p-4">
+      <h4 className="text-xl font-semibold text-white">{wording}</h4>
+      <div
+        className="sm:flex items-center justify-around"
+        role="sunburst-chart"
       >
-        {finalValue ? (
-          <LabelSeries
-            data={[{ x: 0, y: 0, label: finalValue, style: LABEL_STYLE }]}
-          />
-        ) : (
-          <LabelSeries
-            data={[{ x: 0, y: 0, label: wording, style: LABEL_STYLE }]}
-          />
-        )}
-      </Sunburst>
-      <center style={LABEL_STYLE}>APR: {apr?.toFixed(2)}%</center>
+        {
+          // wallet is not connected
+          account === undefined ? <ConfiguredConnectButton /> : null
+        }
+        <Sunburst
+          animation
+          hideRootNode
+          onValueMouseOver={(node) => {
+            if (clicked) {
+              return;
+            }
+            const path = getKeyPath(node).reverse();
+            const pathAsMap = path.reduce((res, row) => {
+              res[row] = true;
+              return res;
+            }, {});
+            setFinalValue(path[path.length - 1]);
+            setData(updateData(data, pathAsMap));
+          }}
+          onValueMouseOut={() => {
+            if (!clicked) {
+              setFinalValue(false);
+              setData(updateData(data, false));
+            }
+          }}
+          onValueClick={() => setClicked(!clicked)}
+          style={{
+            stroke: "#ddd",
+            strokeOpacity: 0.3,
+            strokeWidth: "0.5",
+          }}
+          colorType="literal"
+          getSize={(d) => d.value}
+          getColor={(d) => d.hex}
+          data={data}
+          height={props.windowWidth > 767 ? 500 : 300}
+          width={props.windowWidth > 767 ? 500 : 300}
+        >
+          {finalValue ? (
+            <LabelSeries
+              data={[{ x: 0, y: 0, label: finalValue, style: LABEL_STYLE }]}
+            />
+          ) : (
+            <LabelSeries
+              data={[{ x: 0, y: 0, label: wording, style: LABEL_STYLE }]}
+            />
+          )}
+        </Sunburst>
+        <div className="mt-2 sm:mt-0">
+          {data.children[0].name !== "Loading..."
+            ? data.children.map((item, index) => {
+                return (
+                  <div key={index}>
+                    <div
+                      className="flex items-center justify-between mb-2"
+                      onMouseEnter={handleMouseEnter(index)}
+                      onMouseLeave={handleMouseLeave}
+                    >
+                      <div className="flex items-center">
+                        <div
+                          className="w-5 h-5 me-2 rounded"
+                          style={{ backgroundColor: item.hex }}
+                        ></div>
+                        <p className="me-2">{item.name.split(":")[0]}</p>
+                      </div>
+                      <p>{item.name.split(":")[1]}</p>
+                    </div>
+                    {hoveredItemIndex === index ? (
+                      <div className="absolute w-80 bg-gray-500 text-white p-2 rounded z-10">
+                        {item.children
+                          ? item.children.map((subItem, subIndex) => (
+                              <div key={subIndex}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center">
+                                    <div
+                                      className="w-5 h-5 me-2 rounded flex-shrink-0"
+                                      style={{ backgroundColor: subItem.hex }}
+                                    ></div>
+                                    <p className="max-w-40">
+                                      {subItem.name.split(",")[0]}
+                                    </p>
+                                  </div>
+                                  <p>{subItem.name.split(",")[1]}</p>
+                                </div>
+                              </div>
+                            ))
+                          : null}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })
+            : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -387,11 +450,7 @@ const AntdInstructions = ({ account }) => {
   };
 
   return (
-    <Space
-      direction="vertical"
-      size="large"
-      style={{ display: "flex", maxWidth: 600, margin: "0 auto" }}
-    >
+    <div className="bg-gray-800 mt-4 p-4">
       <div>
         <Title level={3}>1. Visualize Your Bundle</Title>
         <Paragraph>
@@ -409,34 +468,22 @@ const AntdInstructions = ({ account }) => {
         <Paragraph>
           Please deposit assets into your AA wallet:
           <br />
-          <Space>
+          <div className="flex items-center mt-1">
             <Text code>{`${account.address.slice(
               0,
               6,
             )}...${account.address.slice(-4)}`}</Text>
             <button
               type="button"
-              className="rounded-full bg-indigo-600 p-1 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              className="ms-2 rounded-full p-1 text-white shadow-sm"
+              style={{ backgroundColor: "#5DFDCB" }}
               onClick={copyToClipboard}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="1.5"
-                stroke="currentColor"
-                class="size-6"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75"
-                />
-              </svg>
+              <CopyOutlined className="h-5 w-5 justify-center text-black" />
             </button>
-          </Space>
+          </div>
         </Paragraph>
       </div>
-    </Space>
+    </div>
   );
 };
