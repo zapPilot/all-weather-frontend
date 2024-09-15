@@ -157,16 +157,10 @@ export class BasePortfolio {
     if (actionName === "zapIn") {
       // TODO(david): zap in's weight should take protocolUsdBalanceDictionary into account
       // protocolUsdBalanceDictionary = await this._getProtocolUsdBalanceDictionary(owner)
-      const inputTokenDecimal = await getTokenDecimal(
-        actionParams.tokenInAddress,
-      );
       const approveTxn = approve(
         actionParams.tokenInAddress,
         oneInchAddress,
-        ethers.utils.parseUnits(
-          actionParams.zapInAmount.toFixed(inputTokenDecimal),
-          inputTokenDecimal,
-        ),
+        actionParams.zapInAmount,
         actionParams.updateProgress,
       );
       totalTxns.push(approveTxn);
@@ -193,9 +187,12 @@ export class BasePortfolio {
           // make it concurrent!
           let txnsForThisProtocol;
           if (actionName === "zapIn") {
+            const percentageBN = ethers.BigNumber.from(
+              Math.floor(protocol.weight * 10000),
+            );
             txnsForThisProtocol = await protocol.interface.zapIn(
               actionParams.account,
-              Number(actionParams.zapInAmount * protocol.weight),
+              actionParams.zapInAmount.mul(percentageBN).div(10000),
               actionParams.tokenInSymbol,
               actionParams.tokenInAddress,
               actionParams.slippage,
