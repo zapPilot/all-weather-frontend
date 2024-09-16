@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import APRDetails from "./APRrelated.jsx";
 import PortfolioMetaTab from "./PortfolioMetaTab";
 import { Row, Col, Button } from "antd";
+import { ReloadOutlined } from "@ant-design/icons";
 import Image from "next/image";
 import { useWindowHeight } from "../../utils/chartUtils";
 import styles from "../../styles/Home.module.css";
@@ -164,9 +165,7 @@ export default function ExampleUI() {
             offset: 3,
           }}
         >
-          <center>
-            <PortfolioMetaTab />
-          </center>
+          <PortfolioMetaTab />
         </Col>
         <Col
           xs={{
@@ -174,43 +173,37 @@ export default function ExampleUI() {
             offset: 0,
           }}
           md={{
-            span: 10,
-            offset: 7,
+            span: 18,
+            offset: 3,
           }}
         >
           {data ? (
-            <>
-              <span>
-                Data updated <b>{timeAgo(data.last_updated)}</b> ago
-              </span>
-              <button
-                type="button"
-                className="rounded-full bg-indigo-600 p-1 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                onClick={() => fetchBundlePortfolio(true)}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="size-6"
+            <div className="mt-4 ps-4">
+              <h4 className="text-xl font-semibold text-white">
+                Current Portfolio Status Update
+              </h4>
+              <div className="flex items-center my-1">
+                <span>
+                  Data updated <b>{timeAgo(data.last_updated)}</b> ago
+                </span>
+                <button
+                  type="button"
+                  className="ms-2 rounded-full p-1 text-white shadow-sm"
+                  style={{ backgroundColor: "#5DFDCB" }}
+                  onClick={() => fetchBundlePortfolio(true)}
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
-                  />
-                </svg>
-              </button>
-              <br />
+                  <ReloadOutlined className="h-5 w-5 justify-center text-black" />
+                </button>
+              </div>
               <span className="text-sm text-gray-500">
                 (quota: {data?.user_record_update_times_today.counts}/
                 {data?.user_record_update_times_today.limit})
               </span>
-            </>
+            </div>
           ) : null}
-          <APRDetails />
+          <div className="ps-4">
+            <APRDetails />
+          </div>
           {/* TODO(david): Use this historical chart to track portfolio's APR */}
           {/* {subscriptionStatus ? (
             <>

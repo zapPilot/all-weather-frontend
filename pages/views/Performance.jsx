@@ -3,49 +3,12 @@ import { ConfigProvider, Row, Col, Card, Statistic } from "antd";
 import RebalanceChart from "./RebalanceChart";
 import { useSelector } from "react-redux";
 import { useWindowWidth } from "../../utils/chartUtils";
-import { useActiveAccount } from "thirdweb/react";
-import { useEffect, useState } from "react";
-import { formatBalanceWithLocalizedCurrency } from "../../utils/general";
 
 const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
   const windowWidth = useWindowWidth();
   const { data } = useSelector((state) => state.api);
-  const account = useActiveAccount();
-  const [exchangeRates, setExchangeRates] = useState({});
-  const [currency, setCurrenty] = useState("USD");
-  const [currencyError, setCurrencyError] = useState(false);
-  useEffect(() => {
-    async function fetchExchangeRate() {
-      fetch("https://api.exchangerate-api.com/v4/latest/USD", {
-        // Replace with your API endpoint
-        method: "GET",
-      })
-        .then((response) => {
-          if (response.ok) {
-            return response.json();
-          }
-          throw response;
-        })
-        .then((data) => {
-          setExchangeRates(data.rates);
-        })
-        .catch((error) => {
-          setCurrencyError(error);
-        });
-    }
-    const fetchCountry = async () => {
-      try {
-        const response = await fetch("https://ipapi.co/json/");
-        const data = await response.json();
-        setCurrenty(data.currency);
-      } catch (error) {
-        setCurrencyError(true);
-      }
-    };
-    fetchExchangeRate();
-    fetchCountry();
-  }, []);
   const calculateMonthlyEarnings = (deposit, apr) => {
+    if (isNaN(deposit) || isNaN(apr)) return 0;
     return ((deposit * apr) / 100 / 12).toFixed(2);
   };
   const colorLogic = (value, notSharpe = true) => {
@@ -67,13 +30,14 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
         theme={{
           components: {
             Statistic: {
-              titleFontSize: 16,
+              titleFontSize: 14,
             },
           },
           token: {
-            colorBgContainer: "transparent",
-            colorBorderSecondary: "#999999",
+            colorBgContainer: "rgb(31, 41, 55)",
+            colorBorderSecondary: "transparent",
             colorTextDescription: "white",
+            borderRadiusLG: "0",
           },
         }}
       >
@@ -86,7 +50,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
             8,
           ]}
         >
-          <Col xs={12} md={8}>
+          <Col xs={24} md={6}>
             <Card>
               <Statistic
                 title="Reward APR of Your Portfolio"
@@ -97,54 +61,36 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
               />
             </Card>
           </Col>
-          <Col xs={12} md={8}>
+          <Col xs={24} md={6}>
             <Card>
               <Statistic
                 title="Net Worth"
-                value={
-                  formatBalanceWithLocalizedCurrency(
-                    exchangeRates[currency],
-                    data?.net_worth,
-                    currency,
-                  )[1]
-                }
+                value={data?.net_worth}
                 precision={0}
                 valueStyle={colorLogic(0)}
-                prefix={currency}
+                prefix="$"
               />
             </Card>
           </Col>
-          <Col xs={12} md={8}>
+          <Col xs={24} md={6}>
             <Card>
               <Statistic
                 title="Monthly Interest"
-                value={
-                  formatBalanceWithLocalizedCurrency(
-                    exchangeRates[currency],
-                    calculateMonthlyEarnings(data?.net_worth, portfolioApr),
-                    currency,
-                  )[1]
-                }
+                value={calculateMonthlyEarnings(data?.net_worth, portfolioApr)}
                 precision={0}
                 valueStyle={colorLogic(0)}
-                prefix={currency}
+                prefix="$"
               />
             </Card>
           </Col>
-          <Col xs={12} md={8}>
+          <Col xs={24} md={6}>
             <Card>
               <Statistic
                 title="Claimable Rewards"
-                value={
-                  formatBalanceWithLocalizedCurrency(
-                    exchangeRates[currency],
-                    data?.claimable_rewards,
-                    currency,
-                  )[1]
-                }
+                value={data?.claimable_rewards}
                 precision={2}
                 valueStyle={colorLogic(0)}
-                prefix={currency}
+                prefix="$"
               />
             </Card>
           </Col>
