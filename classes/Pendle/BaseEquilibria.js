@@ -187,7 +187,7 @@ export class BaseEquilibria extends BaseProtocol {
       decimals: eqbMetadata.decimals,
     };
 
-    const xeqbAmount = sumOfEqbAndXeqb - eqbAmount;
+    const xeqbAmount = sumOfEqbAndXeqb.sub(eqbAmount);
     const xeqbMetadata = this._getRewardMetadata(this.XEQB_TOKEN_ADDR);
     rewardBalance[this.XEQB_TOKEN_ADDR] = {
       symbol: xeqbMetadata.symbol,
