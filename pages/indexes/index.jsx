@@ -18,10 +18,10 @@ export default function Vaults() {
       href: "/indexes/indexOverviews/?portfolioName=Stablecoin+Vault",
       imageSrc: "/indexFunds/stablecoinVault.png",
       imageAlt: "Stablecoin Vault",
-      apr:
-        (vaultsMetadata?.["Stablecoin Vault"]?.portfolioAPR * 100).toFixed(2) +
-        "%",
-      tvl: `$ ${vaultsMetadata?.["Stablecoin Vault"]?.portfolioTVL}`,
+      apr: (vaultsMetadata?.["Stablecoin Vault"]?.portfolioAPR * 100).toFixed(
+        2,
+      ),
+      tvl: vaultsMetadata?.["Stablecoin Vault"]?.portfolioTVL,
     },
     {
       id: 1,
@@ -29,8 +29,8 @@ export default function Vaults() {
       href: "/indexes/indexOverviews/?portfolioName=ETH+Vault",
       imageSrc: "/tokenPictures/eth.webp",
       imageAlt: "ETH Vault",
-      apr: (vaultsMetadata?.["ETH Vault"]?.portfolioAPR * 100).toFixed(2) + "%",
-      tvl: `$ ${vaultsMetadata?.["ETH Vault"]?.portfolioTVL}`,
+      apr: (vaultsMetadata?.["ETH Vault"]?.portfolioAPR * 100).toFixed(2),
+      tvl: vaultsMetadata?.["ETH Vault"]?.portfolioTVL,
     },
   ];
   useEffect(() => {
@@ -70,12 +70,14 @@ export default function Vaults() {
                 <div className="mt-4 grid grid-cols-2 gap-4 divide-x divide-gray-400">
                   <div className="text-center">
                     <p className="text-gray-400">TVL</p>
-                    <p className="text-3xl text-white">{product.tvl}</p>
+                    <p className="text-3xl text-white">
+                      {product.tvl === undefined ? <Spin /> : product.tvl}
+                    </p>
                   </div>
                   <div className="text-center">
                     <p className="text-gray-400">APR</p>
                     <p className="text-3xl text-emerald-400" role="apr">
-                      {product.apr ? product.apr : <Spin />}
+                      {isNaN(product.apr) === true ? <Spin /> : product.apr}%
                     </p>
                   </div>
                 </div>

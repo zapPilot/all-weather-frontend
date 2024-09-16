@@ -21,10 +21,6 @@ import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 
 import openNotificationWithIcon from "../../utils/notification.js";
-import {
-  getLocalizedCurrencyAndExchangeRate,
-  formatBalanceWithLocalizedCurrency,
-} from "../../utils/general";
 import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 
@@ -247,16 +243,6 @@ export default function IndexOverviews() {
     };
     fetchUsdBalance();
   }, [portfolioName, account]);
-  useEffect(() => {
-    if (!portfolioName || account === undefined) return;
-    const fetchExchangeRateWithUSD = async () => {
-      const { currency, exchangeRateWithUSD } =
-        await getLocalizedCurrencyAndExchangeRate();
-      setCurrency(currency);
-      setExchangeRateWithUSD(exchangeRateWithUSD);
-    };
-    fetchExchangeRateWithUSD();
-  }, [portfolioName, account]);
   return (
     <BasePage>
       {notificationContextHolder}
@@ -420,12 +406,7 @@ export default function IndexOverviews() {
                       loading={zapOutIsLoading || usdBalanceLoading}
                       disabled={usdBalance === 0}
                     >
-                      Zap Out{" "}
-                      {formatBalanceWithLocalizedCurrency(
-                        exchangeRateWithUSD,
-                        usdBalance * zapOutPercentage,
-                        currency,
-                      ).join(" ")}
+                      Zap Out ${(usdBalance * zapOutPercentage).toFixed(2)}
                     </Button>
                   </div>
                   <div className="mt-4">
@@ -448,13 +429,8 @@ export default function IndexOverviews() {
                       loading={claimIsLoading || pendingRewardsLoading}
                       disabled={sumUsdDenominatedValues(pendingRewards) < 1}
                     >
-                      Dump{" "}
-                      {formatBalanceWithLocalizedCurrency(
-                        exchangeRateWithUSD,
-                        sumUsdDenominatedValues(pendingRewards),
-                        currency,
-                      ).join(" ")}{" "}
-                      Worth of Rewards to {selectedToken.split("-")[0]}
+                      Dump ${sumUsdDenominatedValues(pendingRewards)} Worth of
+                      Rewards to {selectedToken.split("-")[0]}
                     </Button>
                   </div>
                 </ConfigProvider>
