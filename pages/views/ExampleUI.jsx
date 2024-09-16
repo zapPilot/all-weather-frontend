@@ -128,8 +128,10 @@ export default function ExampleUI() {
                   isNaN(strategyMetadata["Stablecoin Vault"]?.portfolioAPR) ? (
                     <Spin />
                   ) : (
-                    (
-                      strategyMetadata["Stablecoin Vault"]?.portfolioAPR * 100
+                    Math.max(
+                      ...Object.values(strategyMetadata).map(
+                        (strategy) => strategy.portfolioAPR * 100,
+                      ),
                     )?.toFixed(2)
                   )}
                   %{" "}
