@@ -71,10 +71,10 @@ export class StablecoinVault extends BasePortfolio {
                 "single",
                 {
                   assetAddress: "0xA9104b8B6698979568852C30231871e28A482b3C",
-                  symbolOfBestTokenToZapOut: "usdc",
+                  symbolOfBestTokenToZapOut: "gdai",
                   bestTokenAddressToZapOut:
-                    "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8",
-                  decimalOfBestTokenToZapOut: 6,
+                    "0xd85E038593d7A098614721EaE955EC2022B9B91B",
+                  decimalOfBestTokenToZapOut: 18,
                   pidOfEquilibria: 48,
                 },
               ),

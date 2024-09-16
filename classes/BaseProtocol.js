@@ -288,7 +288,6 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
   ) {
     let swapTxns = [];
-
     const tokenInstance = new ethers.Contract(
       inputTokenAddress,
       ERC20_ABI,

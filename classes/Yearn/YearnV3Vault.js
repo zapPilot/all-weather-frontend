@@ -70,6 +70,7 @@ export class YearnV3Vault extends BaseProtocol {
       updateProgress,
     );
 
+    updateProgress("deposit");
     const depositTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "deposit",
