@@ -80,7 +80,7 @@ export class BaseEquilibria extends BaseProtocol {
     return 3;
   }
   zapOutSteps(tokenInAddress) {
-    return 6;
+    return 4;
   }
   claimAndSwapSteps() {
     return 3;
@@ -336,13 +336,8 @@ export class BaseEquilibria extends BaseProtocol {
       method: "claimRewards",
       params: [this.pidOfEquilibria],
     });
-    const maxRedeemDuration = 14515200;
-    const redeemTxn = prepareContractCall({
-      contract: this.xEqbContract,
-      method: "redeem",
-      params: [pendingRewards[this.XEQB_TOKEN_ADDR].balance, maxRedeemDuration],
-    });
-    return [[claimTxn], pendingRewards, redeemTxn];
+    const redeemTxn = this.customRedeemVestingRewards(pendingRewards);
+    return [[claimTxn, redeemTxn], pendingRewards];
   }
   async usdBalanceOf(recipient, tokenPricesMappingTable) {
     const userBalance = await this.userBalanceOf(recipient);
@@ -404,5 +399,14 @@ export class BaseEquilibria extends BaseProtocol {
       this.OARB_TOKEN_ADDR.toLowerCase(),
       this.XEQB_TOKEN_ADDR.toLowerCase(),
     ].includes(reward.toLowerCase());
+  }
+  customRedeemVestingRewards(pendingRewards) {
+    const maxRedeemDuration = 14515200;
+    const redeemTxn = prepareContractCall({
+      contract: this.xEqbContract,
+      method: "redeem",
+      params: [pendingRewards[this.XEQB_TOKEN_ADDR].balance, maxRedeemDuration],
+    });
+    return [redeemTxn];
   }
 }

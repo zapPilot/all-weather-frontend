@@ -119,6 +119,9 @@ export class YearnV3Vault extends BaseProtocol {
   async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
     return [[], {}];
   }
+  customRedeemVestingRewards(pendingRewards) {
+    return [];
+  }
   async usdBalanceOf(recipient, tokenPricesMappingTable) {
     const assetContractInstance = new ethers.Contract(
       this.assetContract.address,
