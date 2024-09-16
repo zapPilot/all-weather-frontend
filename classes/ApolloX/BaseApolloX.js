@@ -45,7 +45,7 @@ export class BaseApolloX extends BaseProtocol {
     return 3;
   }
   zapOutSteps(tokenInAddress) {
-    return 3;
+    return 2;
   }
   claimAndSwapSteps() {
     return 2;
@@ -202,6 +202,10 @@ export class BaseApolloX extends BaseProtocol {
     });
     return [[claimTxn], pendingRewards];
   }
+  customRedeemVestingRewards(pendingRewards) {
+    return [];
+  }
+
   async usdBalanceOf(recipient, tokenPricesMappingTable) {
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,

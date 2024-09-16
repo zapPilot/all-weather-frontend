@@ -54,7 +54,7 @@ export const selectBefore = (handleChange, chainID, selectedToken) => {
           ),
         )
         ?.map((option) => {
-          const keyAndValue = `${option.symbol}-${option.address}`;
+          const keyAndValue = `${option.symbol}-${option.address}-${option.decimals}`;
           return (
             <Option key={keyAndValue} value={keyAndValue}>
               <div

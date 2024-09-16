@@ -40,7 +40,7 @@ export default function IndexOverviews() {
 
   const account = useActiveAccount();
   const [selectedToken, setSelectedToken] = useState(
-    "USDC-0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+    "USDC-0xaf88d065e77c8cc2239327c5edb3a432268e5831-6",
   );
 
   const [investmentAmount, setInvestmentAmount] = useState(0);
@@ -95,14 +95,18 @@ export default function IndexOverviews() {
       setRebalanceIsLoading(true);
     }
     if (!account) return;
-    const [tokenSymbol, tokenAddress] = tokenSymbolAndAddress.split("-");
+    const [tokenSymbol, tokenAddress, tokenDecimals] =
+      tokenSymbolAndAddress.split("-");
     let txns;
     if (actionName === "zapIn") {
       txns = await portfolioHelper.portfolioAction("zapIn", {
         account: account.address,
         tokenInSymbol: tokenSymbol,
         tokenInAddress: tokenAddress,
-        zapInAmount: ethers.utils.parseEther(String(investmentAmount)),
+        zapInAmount: ethers.utils.parseUnits(
+          String(investmentAmount),
+          tokenDecimals,
+        ),
         progressCallback: (progressPercentage) =>
           setProgress(progressPercentage),
         progressStepNameCallback: (stepName) => setStepName(stepName),

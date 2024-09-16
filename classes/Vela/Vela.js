@@ -43,7 +43,7 @@ export class Vela extends BaseProtocol {
     return 4;
   }
   zapOutSteps(tokenInAddress) {
-    return 3;
+    return 2;
   }
   claimAndSwapSteps() {
     return 3;
@@ -167,6 +167,9 @@ export class Vela extends BaseProtocol {
   }
   async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
     return [[], {}];
+  }
+  customRedeemVestingRewards(pendingRewards) {
+    return [];
   }
   async usdBalanceOf(recipient, tokenPricesMappingTable) {
     const stakeFarmContractInstance = new ethers.Contract(
