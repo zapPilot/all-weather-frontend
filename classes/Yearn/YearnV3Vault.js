@@ -70,6 +70,7 @@ export class YearnV3Vault extends BaseProtocol {
       updateProgress,
     );
 
+    updateProgress("deposit");
     const depositTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "deposit",
@@ -117,6 +118,9 @@ export class YearnV3Vault extends BaseProtocol {
   }
   async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
     return [[], {}];
+  }
+  customRedeemVestingRewards(pendingRewards) {
+    return [];
   }
   async usdBalanceOf(recipient, tokenPricesMappingTable) {
     const assetContractInstance = new ethers.Contract(

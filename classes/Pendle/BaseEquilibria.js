@@ -77,10 +77,10 @@ export class BaseEquilibria extends BaseProtocol {
     this._checkIfParamsAreSet();
   }
   zapInSteps(tokenInAddress) {
-    return 2;
+    return 3;
   }
   zapOutSteps(tokenInAddress) {
-    return 5;
+    return 4;
   }
   claimAndSwapSteps() {
     return 3;
@@ -217,7 +217,7 @@ export class BaseEquilibria extends BaseProtocol {
       amountToZapIn,
       updateProgress,
     );
-
+    updateProgress("fetching Pendle's routing data");
     const resp = await axios.get(
       `https://api-v2.pendle.finance/core/v1/sdk/42161/markets/${this.assetContract.address}/add-liquidity`,
       {
@@ -232,6 +232,7 @@ export class BaseEquilibria extends BaseProtocol {
         },
       },
     );
+    updateProgress("prepare equilibria's contract call");
     const slippageBN = ethers.BigNumber.from(
       Math.floor((1 - slippage / 100) * 10000),
     );
@@ -250,6 +251,7 @@ export class BaseEquilibria extends BaseProtocol {
       updateProgress,
     );
 
+    updateProgress("prepare stake farm's contract call");
     const stakeTxn = prepareContractCall({
       contract: this.stakeFarmContract,
       method: "deposit",
@@ -295,6 +297,7 @@ export class BaseEquilibria extends BaseProtocol {
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
     ] = this._getTheBestTokenAddressToZapOut();
+    updateProgress("fetching Pendle's routing data");
     const zapOutResp = await axios.get(
       `https://api-v2.pendle.finance/core/v1/sdk/42161/markets/${this.assetContract.address}/remove-liquidity`,
       {
@@ -308,7 +311,7 @@ export class BaseEquilibria extends BaseProtocol {
         },
       },
     );
-
+    updateProgress("prepare equilibria's contract call");
     const burnTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "removeLiquiditySingleToken",
@@ -333,13 +336,8 @@ export class BaseEquilibria extends BaseProtocol {
       method: "claimRewards",
       params: [this.pidOfEquilibria],
     });
-    const maxRedeemDuration = 14515200;
-    const redeemTxn = prepareContractCall({
-      contract: this.xEqbContract,
-      method: "redeem",
-      params: [pendingRewards[this.XEQB_TOKEN_ADDR].balance, maxRedeemDuration],
-    });
-    return [[claimTxn], pendingRewards, redeemTxn];
+    const redeemTxn = this.customRedeemVestingRewards(pendingRewards);
+    return [[claimTxn, redeemTxn], pendingRewards];
   }
   async usdBalanceOf(recipient, tokenPricesMappingTable) {
     const userBalance = await this.userBalanceOf(recipient);
@@ -382,8 +380,11 @@ export class BaseEquilibria extends BaseProtocol {
   }
   _getTheBestTokenAddressToZapOut() {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
-    const weth = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
-    return ["weth", weth, 18];
+    return [
+      this.symbolOfBestTokenToZapOut,
+      this.bestTokenAddressToZapOut,
+      this.decimalOfBestTokenToZapOut,
+    ];
   }
   _getRewardMetadata(address) {
     for (const rewardMetadata of this.rewards()) {
@@ -398,5 +399,14 @@ export class BaseEquilibria extends BaseProtocol {
       this.OARB_TOKEN_ADDR.toLowerCase(),
       this.XEQB_TOKEN_ADDR.toLowerCase(),
     ].includes(reward.toLowerCase());
+  }
+  customRedeemVestingRewards(pendingRewards) {
+    const maxRedeemDuration = 14515200;
+    const redeemTxn = prepareContractCall({
+      contract: this.xEqbContract,
+      method: "redeem",
+      params: [pendingRewards[this.XEQB_TOKEN_ADDR].balance, maxRedeemDuration],
+    });
+    return [redeemTxn];
   }
 }

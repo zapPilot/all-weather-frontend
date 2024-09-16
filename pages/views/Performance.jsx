@@ -87,7 +87,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
             <Card>
               <Statistic
                 title="Claimable Rewards"
-                value={data?.claimable_rewards}
+                value={data?.claimable_rewards?.toFixed(2)}
                 precision={2}
                 valueStyle={colorLogic(0)}
                 prefix="$"

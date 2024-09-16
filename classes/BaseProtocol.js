@@ -203,7 +203,7 @@ export default class BaseProtocol extends BaseUniswap {
       tokenPricesMappingTable,
       updateProgress,
     );
-    const withdrawTokenAndBalance =
+    const [redeemTxns, withdrawTokenAndBalance] =
       await this._calculateWithdrawTokenAndBalance(
         recipient,
         symbolOfBestTokenToZapOut,
@@ -220,7 +220,11 @@ export default class BaseProtocol extends BaseUniswap {
       slippage,
       updateProgress,
     );
-    return [...withdrawTxns, ...batchSwapTxns];
+    if (redeemTxns.length === 0) {
+      return [...withdrawTxns, ...batchSwapTxns];
+    } else {
+      return [...withdrawTxns, ...redeemTxns, ...batchSwapTxns];
+    }
   }
   async claimAndSwap(
     recipient,
@@ -269,6 +273,12 @@ export default class BaseProtocol extends BaseUniswap {
     throw new Error("Method 'customClaim()' must be implemented.");
   }
 
+  customRedeemVestingRewards(pendingRewards) {
+    throw new Error(
+      "Method 'customRedeemVestingRewards()' must be implemented.",
+    );
+  }
+
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     throw new Error(
       "Method '_getTheBestTokenAddressToZapIn()' must be implemented.",
@@ -288,7 +298,6 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
   ) {
     let swapTxns = [];
-
     const tokenInstance = new ethers.Contract(
       inputTokenAddress,
       ERC20_ABI,
@@ -443,6 +452,7 @@ export default class BaseProtocol extends BaseUniswap {
       tokenPricesMappingTable,
       updateProgress,
     );
+    const redeemTxns = this.customRedeemVestingRewards(pendingRewards);
     for (const [address, metadata] of Object.entries(pendingRewards)) {
       if (withdrawTokenAndBalance[address]) {
         withdrawTokenAndBalance[address].balance = withdrawTokenAndBalance[
@@ -456,6 +466,6 @@ export default class BaseProtocol extends BaseUniswap {
         withdrawTokenAndBalance[address] = metadata;
       }
     }
-    return withdrawTokenAndBalance;
+    return [redeemTxns, withdrawTokenAndBalance];
   }
 }
