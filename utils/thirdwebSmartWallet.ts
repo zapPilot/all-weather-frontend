@@ -2,6 +2,7 @@ import { AllWeatherPortfolio } from "../classes/AllWeatherPortfolio";
 import { StablecoinVault } from "../classes/Vaults/StablecoinVault";
 import { EthVault } from "../classes/Vaults/EthVault";
 import { YearnVault } from "../classes/Vaults/Tests/YearnVault";
+import { EquilibriaETHVault } from "../classes/Vaults/Tests/EquilibriaETHVault";
 import { BasePortfolio } from "../classes/BasePortfolio";
 export function getPortfolioHelper(
   portfolioName: string,
@@ -14,7 +15,11 @@ export function getPortfolioHelper(
   } else if (portfolioName === "ETH Vault") {
     portfolioHelper = new EthVault();
   } else if (portfolioName === "Yearn Vault") {
+    // for testing
     portfolioHelper = new YearnVault();
+  } else if (portfolioName === "Equilibria ETH Vault") {
+    // for testing
+    portfolioHelper = new EquilibriaETHVault();
   } else {
     return;
   }
