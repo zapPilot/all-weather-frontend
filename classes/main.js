@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { toFixedString } from "../utils/general";
 export const generateIntentTxns = async (
   actionName,
   portfolioHelper,
@@ -19,7 +20,7 @@ export const generateIntentTxns = async (
       tokenInSymbol: tokenSymbol,
       tokenInAddress: tokenAddress,
       zapInAmount: ethers.utils.parseUnits(
-        String(investmentAmount),
+        toFixedString(investmentAmount, tokenDecimals),
         tokenDecimals,
       ),
       progressCallback: (progressPercentage) => setProgress(progressPercentage),
