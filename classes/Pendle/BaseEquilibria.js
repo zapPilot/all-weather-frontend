@@ -251,7 +251,7 @@ export class BaseEquilibria extends BaseProtocol {
       updateProgress,
     );
 
-    updateProgress("prepare stake farm's contract call");
+    updateProgress("prepare staking farm's contract call");
     const stakeTxn = prepareContractCall({
       contract: this.stakeFarmContract,
       method: "deposit",
