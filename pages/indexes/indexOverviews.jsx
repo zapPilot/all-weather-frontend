@@ -6,7 +6,6 @@ import Image from "next/image";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
 import RebalanceChart from "../views/RebalanceChart";
-import { ethers } from "ethers";
 import { useRouter } from "next/router";
 import {
   Button,
@@ -23,6 +22,7 @@ import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import openNotificationWithIcon from "../../utils/notification.js";
 import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
+import { generateIntentTxns } from "../../classes/main.js";
 
 export default function IndexOverviews() {
   const router = useRouter();
@@ -54,8 +54,6 @@ export default function IndexOverviews() {
   const [zapOutPercentage, setZapOutPercentage] = useState(1);
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
-  const [currency, setCurrency] = useState("USD");
-  const [exchangeRateWithUSD, setExchangeRateWithUSD] = useState(1);
   const [usdBalanceLoading, setUsdBalanceLoading] = useState(false);
   const [pendingRewardsLoading, setPendingRewardsLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -97,50 +95,19 @@ export default function IndexOverviews() {
     if (!account) return;
     const [tokenSymbol, tokenAddress, tokenDecimals] =
       tokenSymbolAndAddress.split("-");
-    let txns;
-    if (actionName === "zapIn") {
-      txns = await portfolioHelper.portfolioAction("zapIn", {
-        account: account.address,
-        tokenInSymbol: tokenSymbol,
-        tokenInAddress: tokenAddress,
-        zapInAmount: ethers.utils.parseUnits(
-          String(investmentAmount),
-          tokenDecimals,
-        ),
-        progressCallback: (progressPercentage) =>
-          setProgress(progressPercentage),
-        progressStepNameCallback: (stepName) => setStepName(stepName),
-        slippage,
-      });
-    } else if (actionName === "zapOut") {
-      txns = await portfolioHelper.portfolioAction("zapOut", {
-        account: account.address,
-        tokenOutSymbol: tokenSymbol,
-        tokenOutAddress: tokenAddress,
-        zapOutPercentage: Number(zapOutPercentage),
-        progressCallback: (progressPercentage) =>
-          setProgress(progressPercentage),
-        progressStepNameCallback: (stepName) => setStepName(stepName),
-        slippage,
-      });
-    } else if (actionName === "claimAndSwap") {
-      txns = await portfolioHelper.portfolioAction(actionName, {
-        account: account.address,
-        tokenOutAddress: tokenAddress,
-        progressCallback: (progressPercentage) =>
-          setProgress(progressPercentage),
-        progressStepNameCallback: (stepName) => setStepName(stepName),
-        slippage,
-      });
-    } else if (actionName === "rebalance") {
-      txns = await portfolioHelper.portfolioAction(actionName, {
-        account: account.address,
-        progressCallback: (progressPercentage) =>
-          setProgress(progressPercentage),
-        progressStepNameCallback: (stepName) => setStepName(stepName),
-        slippage,
-      });
-    }
+    const txns = await generateIntentTxns(
+      actionName,
+      portfolioHelper,
+      account.address,
+      tokenSymbol,
+      tokenAddress,
+      investmentAmount,
+      tokenDecimals,
+      zapOutPercentage,
+      setProgress,
+      setStepName,
+      slippage,
+    );
 
     if (actionName === "zapIn") {
       setZapInIsLoading(false);
@@ -296,8 +263,8 @@ export default function IndexOverviews() {
                 <APRComposition
                   APRData={pendingRewards}
                   mode="pendingRewards"
-                  currency={currency}
-                  exchangeRateWithUSD={exchangeRateWithUSD}
+                  currency="$"
+                  exchangeRateWithUSD={1}
                   pendingRewardsLoading={pendingRewardsLoading}
                 />
               </p>
@@ -398,9 +365,9 @@ export default function IndexOverviews() {
                     <p className="text-xl font-semibold text-white">Output</p>
                     <div className="mt-2">
                       <DecimalStep
-                        depositBalance={usdBalance * exchangeRateWithUSD}
+                        depositBalance={usdBalance}
                         setZapOutPercentage={setZapOutPercentage}
-                        currency={currency}
+                        currency="$"
                       />
                     </div>
                     <Button
@@ -421,8 +388,8 @@ export default function IndexOverviews() {
                       <APRComposition
                         APRData={pendingRewards}
                         mode="pendingRewards"
-                        currency={currency}
-                        exchangeRateWithUSD={exchangeRateWithUSD}
+                        currency="$"
+                        exchangeRateWithUSD={1}
                         pendingRewardsLoading={pendingRewardsLoading}
                       />
                     </div>
@@ -449,7 +416,7 @@ export default function IndexOverviews() {
                     Rebalance
                     {/* {" "}
                     {formatBalanceWithLocalizedCurrency(
-                      exchangeRateWithUSD,
+                      1,
                       sumUsdDenominatedValues(pendingRewards),
                       currency,
                     )} 
