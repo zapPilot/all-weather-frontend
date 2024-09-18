@@ -1,10 +1,9 @@
-import BasePage from "../basePage";
 import { useEffect, useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import PopUp from "./popUp";
 import Link from "next/link";
 
-export default function Example() {
+export default function Bundle() {
   const account = useActiveAccount();
   const [addresses, setAddresses] = useState([]);
   const [addressAcount, setAddressAccount] = useState(0);
@@ -46,7 +45,7 @@ export default function Example() {
   }, [addresses]);
 
   return (
-    <BasePage>
+    <>
       <div className="px-4 py-8">
         <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
           Bundle
@@ -158,6 +157,6 @@ export default function Example() {
           </div>
         </div>
       ) : null}
-    </BasePage>
+    </>
   );
 }

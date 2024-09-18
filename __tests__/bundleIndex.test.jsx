@@ -3,7 +3,7 @@ import { vi, expect, describe, it } from "vitest";
 import { render, screen, fireEvent } from "./test-utils.tsx";
 import BundleIndex from "../pages/bundle/index.jsx";
 
-const { useRouter, mockedRouterPush } = vi.hoisted(() => {
+const { useRouter } = vi.hoisted(() => {
   const mockedRouterPush = vi.fn();
   return {
     useRouter: () => ({ push: mockedRouterPush }),
@@ -25,28 +25,9 @@ vi.mock("thirdweb/react", async () => {
   let currentAddress = null; // mock current address
   const mockUseActiveAccount = vi.fn(() => ({ address: currentAddress }));
 
-  // mock ConnectButton component
-  const ConnectButton = () => {
-    // useState to store the button text
-    const [buttonText, setButtonText] = useState("Connect Wallet");
-
-    return (
-      <button
-        onClick={() => {
-          currentAddress = "0x123456789abcdef"; // mock connect wallet address
-          mockUseActiveAccount.mockReturnValue({ address: currentAddress });
-          setButtonText(currentAddress || "Connect Wallet"); // update button text
-        }}
-      >
-        {buttonText}
-      </button>
-    );
-  };
-
   return {
     ...actual,
     useActiveAccount: mockUseActiveAccount,
-    ConnectButton,
   };
 });
 
@@ -85,19 +66,6 @@ function AddressBundle() {
 }
 
 describe("Bundle Component", () => {
-  it("Connect Wallet", async () => {
-    render(<BundleIndex />);
-    // check if the connect button is rendered
-    const connectButton = screen.getByRole("button", {
-      name: "Connect Wallet",
-    });
-    fireEvent.click(connectButton);
-
-    // check if the address is rendered
-    const address = screen.getByText("0x123456789abcdef");
-    expect(address).toBeInTheDocument();
-  });
-
   it("fetch bundle data", async () => {
     render(<AddressBundle />);
     const addressElements = await screen.findAllByRole(

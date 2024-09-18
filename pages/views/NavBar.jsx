@@ -8,21 +8,31 @@ import openNotificationWithIcon from "../../utils/notification.js";
 
 const items = [
   {
-    label: <Link href="/">Portfolio</Link>,
-    key: "portfolio",
+    label: <Link href="/">Vaults</Link>,
+    key: "indexes",
   },
   {
-    label: <Link href="/bundle">Bundle</Link>,
-    key: "bundle",
+    label: <Link href="/profile">Profile</Link>,
+    key: "profile",
   },
   {
     label: <Link href="/vote">Pools</Link>,
     key: "vote",
   },
-  {
-    label: <Link href="/indexes">Indexes</Link>,
-    key: "indexes",
-  },
+  // {
+  //   label: "More",
+  //   key: "More",
+  //   children: [
+  //     {
+  //       label: <Link href="/vote">Pools</Link>,
+  //       key: "vote",
+  //     },
+  //     {
+  //       label: <Link href="/subscription">Subscription</Link>,
+  //       key: "subscription",
+  //     },
+  //   ],
+  // },
 ];
 export default function NavBar({ mode }) {
   const router = useRouter();

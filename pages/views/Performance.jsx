@@ -3,6 +3,9 @@ import { ConfigProvider, Row, Col, Card, Statistic } from "antd";
 import RebalanceChart from "./RebalanceChart";
 import { useSelector } from "react-redux";
 import { useWindowWidth } from "../../utils/chartUtils";
+import APRDetails from "./APRrelated.jsx";
+import { ReloadOutlined } from "@ant-design/icons";
+import { timeAgo } from "../../utils/general";
 
 const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
   const windowWidth = useWindowWidth();
@@ -135,6 +138,33 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
         color="white"
         wording="Your Portfolio Chart"
       />
+      {data ? (
+        <div className="mt-4 ps-4">
+          <h4 className="text-xl font-semibold text-white">
+            Current Portfolio Status Update
+          </h4>
+          <div className="flex items-center my-1">
+            <span>
+              Data updated <b>{timeAgo(data.last_updated)}</b> ago
+            </span>
+            <button
+              type="button"
+              className="ms-2 rounded-full p-1 text-white shadow-sm"
+              style={{ backgroundColor: "#5DFDCB" }}
+              onClick={() => fetchBundlePortfolio(true)}
+            >
+              <ReloadOutlined className="h-5 w-5 justify-center text-black" />
+            </button>
+          </div>
+          <span className="text-sm text-gray-500">
+            (quota: {data?.user_record_update_times_today.counts}/
+            {data?.user_record_update_times_today.limit})
+          </span>
+        </div>
+      ) : null}
+      <div className="ps-4">
+        <APRDetails />
+      </div>
     </>
   );
 };

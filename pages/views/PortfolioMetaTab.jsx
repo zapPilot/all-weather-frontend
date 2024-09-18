@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
+import Bundle from "../bundle";
 import { ConfigProvider, Tabs } from "antd";
-import Fees from "./Fees.jsx";
 import Performance from "./Performance.jsx";
-import Risks from "./Risks.jsx";
 import { useSelector } from "react-redux";
 
-const TabWordings = ["Performance"];
+const TabWordings = ["Performance", "Bundle"];
 
 const PortfolioMetaTab = () => {
   const [windowWidth, setWindowWidth] = useState(0);
@@ -94,10 +93,10 @@ const _getChildrenTab = (
         maxDrawdown={maxDrawdown}
       />
     );
+  } else if (wording === "Bundle") {
+    return <Bundle />;
   }
-  // else if (wording === "Fees") {
-  //   return <Fees />;
-  // } else if (wording === "Risks") {
+  // else if (wording === "Risks") {
   //   return <Risks />;
   // }
 };
