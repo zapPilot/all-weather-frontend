@@ -5,7 +5,6 @@ import DecimalStep from "./DecimalStep";
 import Image from "next/image";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
-import RebalanceChart from "../views/RebalanceChart";
 import { useRouter } from "next/router";
 import {
   Button,
@@ -427,19 +426,6 @@ export default function IndexOverviews() {
           </div>
           {/* Product image */}
           <div className="p-4">
-            <div className="aspect-h-1 aspect-w-1 overflow-hidden">
-              {portfolioHelper && (
-                <RebalanceChart
-                  suggestions={[]}
-                  netWorth={100}
-                  showCategory={true}
-                  mode="portfolioStrategy"
-                  color="white"
-                  wording={portfolioName}
-                  portfolioStrategyName={portfolioName}
-                />
-              )}
-            </div>
             <div className="mt-2 bg-gray-800 p-4 rounded">
               <p className="text-xl font-semibold text-white">
                 Portfolio BreakDown

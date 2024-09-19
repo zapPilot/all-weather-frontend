@@ -22,7 +22,7 @@ export default function ConfiguredConnectButton() {
       autoConnect={true}
       wallets={wallets}
       theme={"light"}
-      chains={[arbitrum, optimism]}
+      chains={[arbitrum]}
       accountAbstraction={{
         chain: arbitrum,
         sponsorGas: true,

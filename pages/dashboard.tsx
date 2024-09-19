@@ -149,7 +149,7 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: longTermBondFilterDict,
       unexpandable: unexpandable.long_term_bond,
       setUnexpandable: updateState,
-      chain_blacklist: ["cardano", "fantom", "ethereum"],
+      chain_blacklist: ["ethereum"],
       topN: defaultTopN,
     },
     {
@@ -172,7 +172,6 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: commoditiesFilterDict,
       unexpandable: unexpandable.commodities,
       setUnexpandable: updateState,
-      chain_blacklist: ["cardano", "fantom"],
       topN: defaultTopN,
     },
     {
@@ -184,7 +183,7 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: goldDataFilterDict,
       unexpandable: unexpandable.gold,
       setUnexpandable: updateState,
-      chain_blacklist: ["cardano", "fantom", "ethereum", "multiversx"],
+      chain_blacklist: ["ethereum"],
       topN: defaultTopN,
     },
     {

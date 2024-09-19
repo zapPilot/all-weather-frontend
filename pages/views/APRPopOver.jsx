@@ -38,14 +38,14 @@ const APRPopOver = () => {
         role="aprpopover"
         style={{ display: missingPools.length === 0 ? "none" : "block" }}
       >
-        Missing {missingPools.length} Pools
+        Missing APR data for {missingPools.length} Pools
         <WarningOutlined className="text-red-400 ms-2" />
       </p>
       {open && (
         <div className="grid grid-cols-1 gap-4">
           <p>
-            There might be some missing pools. Please allow at least 24 hours
-            for customer support to update the pool data.
+            Some pool data may be missing. Please allow up to 24 hours for
+            customer support to update the information.
           </p>
           {missingPools.map((pool) => {
             const poolJson = JSON.parse(pool.apr.debug);

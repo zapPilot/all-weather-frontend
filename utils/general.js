@@ -81,3 +81,44 @@ export function approve(tokenAddress, spenderAddress, amount, updateProgress) {
     params: [spenderAddress, approvalAmount],
   });
 }
+
+export function toFixedString(number, decimals) {
+  // Ensure number is a string and decimals is a non-negative integer
+  const numberStr = String(number);
+  decimals = Math.max(0, Math.floor(decimals));
+
+  // Split the number into integer and fractional parts
+  let [integerPart, fractionalPart = ""] = numberStr.split(".");
+
+  // Handle negative numbers
+  const isNegative = integerPart[0] === "-";
+  if (isNegative) {
+    integerPart = integerPart.slice(1);
+  }
+
+  // Pad or truncate fractional part
+  if (fractionalPart.length < decimals) {
+    fractionalPart = fractionalPart.padEnd(decimals, "0");
+  } else if (fractionalPart.length > decimals) {
+    // Round the fractional part
+    const rounded = Math.round(
+      Number(`0.${fractionalPart}`) * Math.pow(10, decimals),
+    );
+    fractionalPart = String(rounded).padStart(decimals, "0");
+
+    // Handle carrying over to integer part
+    if (fractionalPart.length > decimals) {
+      integerPart = String(BigInt(integerPart) + 1n);
+      fractionalPart = fractionalPart.slice(1);
+    }
+  }
+
+  // Combine parts
+  let result = integerPart;
+  if (decimals > 0) {
+    result += "." + fractionalPart;
+  }
+
+  // Add negative sign if necessary
+  return isNegative ? "-" + result : result;
+}
