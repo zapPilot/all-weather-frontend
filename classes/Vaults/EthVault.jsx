@@ -65,13 +65,16 @@ export class EthVault extends BasePortfolio {
     return (
       <ReactMarkdown className="text-base text-gray-500">
         {`
-    Where does the yield come from?
     1. Ethereum staking rewards
     2. Swap fees
-    3. Farming rewards from protocols (non-sustainable)
+    3. Farming rewards from protocols
+    (non-sustainable)
     4. Trading of Principal Tokens (similar to zero-coupon bonds)
     `}
       </ReactMarkdown>
     );
+  }
+  lockUpPeriod() {
+    return 0;
   }
 }

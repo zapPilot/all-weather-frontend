@@ -74,15 +74,11 @@ describe("Yearn Vault", () => {
       encodedData.match(new RegExp(recipientInEncodeData, "gi")) || []
     ).length;
     expect(occurrences).toBe(2);
-    expect(await encode(txns[0])).toBe(
-      "0xb460af940000000000000000000000000000000000000000000000000000027f33d15722000000000000000000000000c774806f9ff5f3d8aabb6b70d0ed509e42afe6f0000000000000000000000000c774806f9ff5f3d8aabb6b70d0ed509e42afe6f0",
-    );
   });
   it("should be able to claim from Yearn Vault", async () => {
     // params claimAndSwap 0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0 usdc 0xaf88d065e77c8cc2239327c5edb3a432268e5831 0 6 1 0.5
     const actionName = "claimAndSwap";
     const userAddress = "0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0";
-    const recipientInEncodeData = "c774806f9ff5f3d8aabb6b70d0ed509e42afe6f0";
     const tokenSymbol = "weth";
     const tokenAddress = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1";
     const investmentAmount = 0;

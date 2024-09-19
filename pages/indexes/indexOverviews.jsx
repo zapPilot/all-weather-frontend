@@ -1,3 +1,4 @@
+// copy from this Tailwind template: https://tailwindui.com/components/application-ui/page-examples/detail-screens
 "use client";
 import BasePage from "../basePage.tsx";
 import { useState, useCallback, useEffect } from "react";
@@ -13,6 +14,7 @@ import {
   Radio,
   notification,
   Modal,
+  Spin,
 } from "antd";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
@@ -22,7 +24,29 @@ import openNotificationWithIcon from "../../utils/notification.js";
 import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
-
+import {
+  Label,
+  Listbox,
+  ListboxButton,
+  ListboxOption,
+  ListboxOptions,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuItems,
+} from "@headlessui/react";
+import {
+  EllipsisVerticalIcon,
+  FaceFrownIcon,
+  FaceSmileIcon,
+  FireIcon,
+  HandThumbUpIcon,
+  HeartIcon,
+  PaperClipIcon,
+  XMarkIcon as XMarkIconMini,
+  CurrencyDollarIcon,
+} from "@heroicons/react/20/solid";
+import { CheckCircleIcon } from "@heroicons/react/24/solid";
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -56,6 +80,8 @@ export default function IndexOverviews() {
   const [usdBalanceLoading, setUsdBalanceLoading] = useState(false);
   const [pendingRewardsLoading, setPendingRewardsLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [selected, setSelected] = useState(moods[5]);
 
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
@@ -185,6 +211,9 @@ export default function IndexOverviews() {
       return total + (entry.usdDenominatedValue || 0);
     }, 0);
   }
+  function classNames(...classes) {
+    return classes.filter(Boolean).join(" ");
+  }
   useEffect(() => {
     if (
       portfolioApr[portfolioName] === undefined ||
@@ -217,72 +246,58 @@ export default function IndexOverviews() {
     <BasePage>
       {notificationContextHolder}
       <ModalContent />
-      <div className="px-4 py-8">
-        <nav aria-label="Breadcrumb">
-          <ol role="list" className="flex items-center space-x-2">
-            {product.breadcrumbs.map((breadcrumb, breadcrumbIdx) => (
-              <li key={breadcrumb.id}>
-                <div className="flex items-center text-sm">
-                  <a
-                    href={breadcrumb.href}
-                    className="font-medium text-gray-400 hover:text-gray-300"
-                  >
-                    {breadcrumb.name}
-                  </a>
-                  {breadcrumbIdx !== product.breadcrumbs.length - 1 ? (
-                    <svg
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                      aria-hidden="true"
-                      className="ml-2 h-5 w-5 flex-shrink-0 text-gray-400"
-                    >
-                      <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
-                    </svg>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ol>
-        </nav>
-        <h1
-          className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl"
-          role="vault"
-        >
-          {portfolioName}
-        </h1>
-        <div className="w-2/4">
-          <div className="mt-2 grid grid-cols-2 gap-2 divide-x divide-gray-400">
-            <div>
-              <p className="text-xl text-gray-400">
-                APR
-                <span className="text-emerald-400" role="apr">
-                  {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}
-                  %
-                </span>{" "}
-                <APRComposition
-                  APRData={pendingRewards}
-                  mode="pendingRewards"
-                  currency="$"
-                  exchangeRateWithUSD={1}
-                  pendingRewardsLoading={pendingRewardsLoading}
-                />
-              </p>
+      <main>
+        <header className="relative isolate pt-16">
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 -z-10 overflow-hidden"
+          >
+            <div className="absolute left-16 top-full -mt-16 transform-gpu opacity-50 blur-3xl xl:left-1/2 xl:-ml-80">
+              <div
+                style={{
+                  clipPath:
+                    "polygon(100% 38.5%, 82.6% 100%, 60.2% 37.7%, 52.4% 32.1%, 47.5% 41.8%, 45.2% 65.6%, 27.5% 23.4%, 0.1% 35.3%, 17.9% 0%, 27.7% 23.4%, 76.2% 2.5%, 74.2% 56%, 100% 38.5%)",
+                }}
+                className="aspect-[1154/678] w-[72.125rem] bg-gradient-to-br from-[#FF80B5] to-[#9089FC]"
+              />
             </div>
-            <div>
-              <p className="ml-2 text-xl text-gray-400">
-                TVL: $ {portfolioApr[portfolioName]?.portfolioTVL}
-              </p>
-            </div>
+            <div className="absolute inset-x-0 bottom-0 h-px bg-gray-900/5" />
           </div>
-        </div>
-        <div className="mt-2 grid sm:grid-cols-2 lg:gap-x-8">
-          <div>
-            {/* Product details */}
-            <div>{portfolioHelper?.description()}</div>
-            {/* Product form */}
-            <div className="mt-2 bg-gray-800 p-4 rounded">
-              <p className="text-xl font-semibold text-white">Input</p>
-              <form>
+
+          <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+            <div className="mx-auto flex max-w-2xl items-center justify-between gap-x-8 lg:mx-0 lg:max-w-none">
+              <div className="flex items-center gap-x-6">
+                <img
+                  alt=""
+                  src={`/indexFunds/${portfolioName}.webp`}
+                  className="h-16 w-16 flex-none rounded-full ring-1 ring-gray-900/10"
+                />
+                <h1>
+                  <div className="text-sm leading-6 text-gray-500">
+                    <span className="text-gray-300" role="vault">
+                      {portfolioName}
+                    </span>
+                  </div>
+                  <div
+                    className="mt-1 text-base font-semibold leading-6 text-white"
+                    role="apr"
+                  >
+                    TVL: $ {portfolioApr[portfolioName]?.portfolioTVL}, APR:{" "}
+                    {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(
+                      2,
+                    )}
+                    %{" "}
+                    <APRComposition
+                      APRData={pendingRewards}
+                      mode="pendingRewards"
+                      currency="$"
+                      exchangeRateWithUSD={1}
+                      pendingRewardsLoading={pendingRewardsLoading}
+                    />
+                  </div>
+                </h1>
+              </div>
+              <div className="flex items-center gap-x-4 sm:gap-x-6">
                 <div>
                   {/* Size selector */}
                   <div className="mt-2">
@@ -290,6 +305,11 @@ export default function IndexOverviews() {
                       selectedToken={selectedToken}
                       setSelectedToken={handleSetSelectedToken}
                       setInvestmentAmount={handleSetInvestmentAmount}
+                    />
+                    <DecimalStep
+                      depositBalance={usdBalance}
+                      setZapOutPercentage={setZapOutPercentage}
+                      currency="$"
                     />
                   </div>
                   <ConfigProvider
@@ -317,73 +337,123 @@ export default function IndexOverviews() {
                         ))}
                       </Radio.Group>
                     </div>
-                    <div className="mt-2 text-gray-400">
-                      Minimum Receive: $
-                      {investmentAmount * (1 - slippage / 100)}
-                      {", "}
-                      Refund to Your Wallet: $
-                      {(investmentAmount * slippage) / 100}
-                    </div>
                   </ConfigProvider>
                   <div className="mt-2 flex align-items-center">
                     ⛽<span className="text-emerald-400">Free</span>
                     <span className="text-gray-400">
-                      , Service Fee: $0 (will charge 0.099% in the future)
+                      , Performance Fee: 9.9%
                     </span>
                   </div>
                 </div>
-                <div className="mt-2">
-                  <ConfigProvider
-                    theme={{
-                      token: {
-                        colorPrimary: "#34d399",
-                        colorBgContainerDisabled: "#9ca3af",
-                      },
-                    }}
-                  >
-                    <Button
-                      className={"w-full"}
-                      type="primary"
-                      onClick={() => handleAAWalletAction("zapIn")}
-                      loading={zapInIsLoading}
-                      disabled={investmentAmount === 0}
-                    >
-                      Zap In
-                    </Button>
-                  </ConfigProvider>
-                </div>
-                <ConfigProvider
-                  theme={{
-                    token: {
-                      colorPrimary: "#9ca3af",
-                      colorBgContainerDisabled: "#9ca3af",
-                    },
-                  }}
+
+                <Button
+                  className="hidden text-sm font-semibold leading-6 text-white sm:block"
+                  onClick={() => handleAAWalletAction("zapOut")}
+                  loading={zapOutIsLoading || usdBalanceLoading}
+                  disabled={usdBalance === 0}
                 >
-                  <div className="mt-4">
-                    <p className="text-xl font-semibold text-white">Output</p>
-                    <div className="mt-2">
-                      <DecimalStep
-                        depositBalance={usdBalance}
-                        setZapOutPercentage={setZapOutPercentage}
-                        currency="$"
-                      />
-                    </div>
-                    <Button
-                      className={"mt-2 w-full"}
-                      type="primary"
-                      onClick={() => handleAAWalletAction("zapOut")}
-                      loading={zapOutIsLoading || usdBalanceLoading}
-                      disabled={usdBalance === 0}
-                    >
-                      Zap Out ${(usdBalance * zapOutPercentage).toFixed(2)}
-                    </Button>
+                  Withdraw
+                </Button>
+                <Button
+                  className="hidden text-sm font-semibold leading-6 text-gray-900 sm:block"
+                  onClick={() => handleAAWalletAction("claimAndSwap")}
+                  loading={claimIsLoading || pendingRewardsLoading}
+                >
+                  Dump ${" "}
+                  {sumUsdDenominatedValues(pendingRewards) > 0.01
+                    ? sumUsdDenominatedValues(pendingRewards).toFixed(2)
+                    : sumUsdDenominatedValues(pendingRewards)}{" "}
+                  Rewards
+                </Button>
+                <Button
+                  className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                  onClick={() => handleAAWalletAction("zapIn")}
+                  loading={zapInIsLoading}
+                  disabled={investmentAmount === 0}
+                >
+                  Zap In
+                </Button>
+                <Menu as="div" className="relative sm:hidden">
+                  <MenuButton className="-m-3 block p-3">
+                    <span className="sr-only">More</span>
+                    <EllipsisVerticalIcon
+                      aria-hidden="true"
+                      className="h-5 w-5 text-gray-500"
+                    />
+                  </MenuButton>
+
+                  <MenuItems
+                    transition
+                    className="absolute right-0 z-10 mt-0.5 w-32 origin-top-right rounded-md bg-gray-900 py-2 shadow-lg ring-1 ring-white/10 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
+                  >
+                    <MenuItem>
+                      <button
+                        type="button"
+                        className="block w-full px-3 py-1 text-left text-sm leading-6 text-white data-[focus]:bg-gray-800"
+                      >
+                        Copy URL
+                      </button>
+                    </MenuItem>
+                    <MenuItem>
+                      <a
+                        href="#"
+                        className="block px-3 py-1 text-sm leading-6 text-white data-[focus]:bg-gray-800"
+                      >
+                        Edit
+                      </a>
+                    </MenuItem>
+                  </MenuItems>
+                </Menu>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
+            {/* Invoice summary */}
+            <div className="lg:col-start-3 lg:row-end-1">
+              <h2 className="sr-only">Summary</h2>
+              <div className="rounded-lg bg-gray-800 shadow-sm ring-1 ring-white/10">
+                <dl className="flex flex-wrap">
+                  <div className="flex-auto pl-6 pt-6">
+                    <dt className="text-sm font-semibold leading-6 text-white">
+                      Your Deposits
+                    </dt>
+                    <dd className="mt-1 text-base font-semibold leading-6 text-white">
+                      {usdBalanceLoading === true ? (
+                        <Spin />
+                      ) : (
+                        `$${usdBalance.toFixed(2)}`
+                      )}
+                    </dd>
                   </div>
-                  <div className="mt-4">
-                    <div className="flex items-baseline">
-                      <p className="text-xl font-semibold text-white me-1">
-                        Claim
-                      </p>
+                  <div className="flex-none self-end px-6 pt-4">
+                    <dt className="sr-only">Status1</dt>
+                    <dd className="rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-600 ring-1 ring-inset ring-green-600/20">
+                      Rebalance
+                    </dd>
+                  </div>
+                  <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
+                    <dt className="flex-none">
+                      <span className="sr-only">
+                        Earned(Performance Fee deducted)
+                      </span>
+                      <CurrencyDollarIcon
+                        aria-hidden="true"
+                        className="h-6 w-5 text-gray-500"
+                      />
+                    </dt>
+                    <dd className="text-sm font-medium leading-6 text-white">
+                      Earned: WIP
+                      <div className="text-gray-500">
+                        Performance fee deducted
+                      </div>
+                    </dd>
+                  </div>
+                  <div className="mt-4 flex w-full flex-none gap-x-4 px-6">
+                    <dt className="flex-none">
+                      <span className="sr-only">Rewards</span>
                       <APRComposition
                         APRData={pendingRewards}
                         mode="pendingRewards"
@@ -391,167 +461,341 @@ export default function IndexOverviews() {
                         exchangeRateWithUSD={1}
                         pendingRewardsLoading={pendingRewardsLoading}
                       />
-                    </div>
-                    <Button
-                      className={"mt-2 w-full"}
-                      type="primary"
-                      onClick={() => handleAAWalletAction("claimAndSwap")}
-                      loading={claimIsLoading || pendingRewardsLoading}
-                      disabled={sumUsdDenominatedValues(pendingRewards) < 1}
-                    >
-                      Dump ${sumUsdDenominatedValues(pendingRewards)} Worth of
-                      Rewards to {selectedToken.split("-")[0]}
-                    </Button>
+                    </dt>
+                    <dd className="text-sm leading-6 text-white">
+                      Rewards: $
+                      {sumUsdDenominatedValues(pendingRewards) > 0.01
+                        ? sumUsdDenominatedValues(pendingRewards).toFixed(2)
+                        : sumUsdDenominatedValues(pendingRewards)}
+                    </dd>
                   </div>
-                </ConfigProvider>
-                {/* TODO: */}
-                {/* <div className="mt-10">
-                  <Button
-                    className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
-                    onClick={() => handleAAWalletAction("rebalance")}
-                    // loading={claimIsLoading || pendingRewardsLoading}
-                    // disabled={sumUsdDenominatedValues(pendingRewards) === 0}
-                  >
-                    Rebalance
-                    {/* {" "}
-                    {formatBalanceWithLocalizedCurrency(
-                      1,
-                      sumUsdDenominatedValues(pendingRewards),
-                      currency,
-                    )} 
-                  </Button>
-                </div>*/}
-              </form>
+                </dl>
+              </div>
             </div>
-          </div>
-          {/* Product image */}
-          <div className="p-4">
-            <div className="mt-2 bg-gray-800 p-4 rounded">
-              <p className="text-xl font-semibold text-white">
-                Portfolio BreakDown
-              </p>
-              <section aria-labelledby="cart-heading">
-                <ul
-                  role="list"
-                  className="divide-y divide-gray-200 border-gray-200"
-                >
-                  {portfolioHelper &&
-                    Object.entries(portfolioHelper.strategy).map(
-                      ([category, protocols]) => (
-                        <li key={category} className="flex pt-4">
-                          <div className="flex flex-1 flex-col">
-                            <div>
-                              <div className="flex justify-between">
-                                <p className="text-sm text-gray-400">
-                                  {category}:{" "}
-                                  {portfolioHelper.weightMapping[category] *
-                                    100}
-                                  %
-                                </p>
-                                <p className="text-sm text-gray-400">
-                                  $
-                                  {(
-                                    portfolioHelper.weightMapping[category] *
-                                    investmentAmount
-                                  ).toFixed(2)}
-                                </p>
-                              </div>
-                              {Object.entries(protocols).map(
-                                ([chain, protocolArray], index) => (
-                                  <div key={`${chain}-${index}`}>
-                                    <div className="mt-2 text-sm text-gray-400 flex items-center">
-                                      <Image
-                                        src={`/chainPicturesWebp/${chain}.webp`}
-                                        alt={chain}
-                                        height={25}
-                                        width={25}
-                                      />
-                                      <span className="ml-2">{chain}</span>
-                                    </div>
-                                    {protocolArray
-                                      .sort((a, b) => b.weight - a.weight)
-                                      .map((protocol, index) => {
-                                        // set weight to 0 for old protocols, these are protocols used to be the best choice but its reward decreased
-                                        // so we opt out of them
-                                        // need to keep them in the portfolio so users can zap out
-                                        if (protocol.weight === 0) return null;
-                                        return (
-                                          <div
-                                            className="mt-2 border-b border-gray-400"
-                                            key={`${protocol.interface.protocolName}-${index}`}
-                                          >
-                                            <div className="flex items-center">
-                                              <Image
-                                                src={`/projectPictures/${protocol.interface.protocolName}.webp`}
-                                                alt={
-                                                  protocol.interface
-                                                    .protocolName
-                                                }
-                                                height={25}
-                                                width={25}
-                                              />
-                                              <span className="text-gray-400 ml-2">
-                                                {
-                                                  protocol.interface
-                                                    .protocolName
-                                                }
-                                                -{protocol.weight * 100}%
-                                              </span>
-                                            </div>
-                                            <div className="mt-2 flex items-center">
-                                              {protocol.interface.symbolList.map(
-                                                (symbol, index) => (
-                                                  <ImageWithFallback
-                                                    className="me-1"
-                                                    key={`${symbol}-${index}`}
-                                                    // use usdc instead of usdc(bridged), aka, usdc.e for the image
-                                                    token={symbol.replace(
-                                                      "(bridged)",
-                                                      "",
-                                                    )}
-                                                    height={20}
-                                                    width={20}
-                                                  />
-                                                ),
-                                              )}
-                                              <span className="text-gray-400 ml-1">
-                                                {protocol.interface.symbolList.join(
-                                                  "-",
-                                                )}
-                                              </span>
-                                            </div>
-                                            <div className="mt-2 flex justify-between">
-                                              <span className="text-gray-400">
-                                                APR
-                                              </span>
-                                              <span className="text-emerald-400">
-                                                {(
-                                                  portfolioApr?.[
-                                                    portfolioName
-                                                  ]?.[
-                                                    protocol.interface.uniqueId()
-                                                  ]?.apr * 100
-                                                ).toFixed(2)}
-                                                %
-                                              </span>
-                                            </div>
-                                          </div>
-                                        );
-                                      })}
+
+            {/* Invoice */}
+            <div className="-mx-4 px-4 py-8 shadow-sm ring-1 ring-white/10 sm:mx-0 sm:rounded-lg sm:px-8 sm:pb-14 lg:col-span-2 lg:row-span-2 lg:row-end-2 xl:px-16 xl:pb-20 xl:pt-16">
+              <h2 className="text-base font-semibold leading-6 text-white">
+                Allocations
+              </h2>
+              {portfolioHelper &&
+                Object.entries(portfolioHelper.strategy).map(
+                  ([category, protocols]) =>
+                    Object.entries(protocols).map(
+                      ([chain, protocolArray], index) => (
+                        <div key={`${chain}-${index}`}>
+                          <table className="mt-16 w-full whitespace-nowrap text-left text-sm leading-6">
+                            <colgroup>
+                              <col className="w-full" />
+                              <col />
+                              <col />
+                              <col />
+                            </colgroup>
+                            <thead className="border-b border-gray-200 text-white">
+                              <tr>
+                                <th
+                                  scope="col"
+                                  className="px-0 py-3 font-semibold"
+                                >
+                                  <div className="flex items-center space-x-2">
+                                    <span>Protocols in</span>
+                                    <Image
+                                      src={`/chainPicturesWebp/${chain}.webp`}
+                                      alt={chain}
+                                      height={25}
+                                      width={25}
+                                    />
                                   </div>
-                                ),
-                              )}
-                            </div>
-                          </div>
-                        </li>
+                                </th>
+                                {/* <th
+                                        scope="col"
+                                        className="hidden py-3 pl-8 pr-0 text-right font-semibold sm:table-cell"
+                                      >
+                                        APR
+                                      </th> */}
+                                <th
+                                  scope="col"
+                                  className="py-3 pl-8 pr-0 text-right font-semibold"
+                                >
+                                  APR
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {protocolArray
+                                .sort((a, b) => b.weight - a.weight)
+                                .map((protocol, index) => {
+                                  // set weight to 0 for old protocols, these are protocols used to be the best choice but its reward decreased
+                                  // so we opt out of them
+                                  // need to keep them in the portfolio so users can zap out
+                                  if (protocol.weight === 0) return null;
+                                  return (
+                                    // {invoice.items.map((item) => (
+                                    <tr
+                                      key={index}
+                                      className="border-b border-gray-100"
+                                    >
+                                      <td className="max-w-0 px-0 py-5 align-top">
+                                        <div className="flex items-center space-x-2 truncate font-medium text-white">
+                                          <Image
+                                            src={`/projectPictures/${protocol.interface.protocolName}.webp`}
+                                            alt={
+                                              protocol.interface.protocolName
+                                            }
+                                            height={25}
+                                            width={25}
+                                          />
+                                          {protocol.interface.protocolName}-
+                                          {protocol.weight * 100}%
+                                        </div>
+                                        <div className="truncate text-gray-500">
+                                          <div className="mt-2 flex items-center">
+                                            {protocol.interface.symbolList.map(
+                                              (symbol, index) => (
+                                                <ImageWithFallback
+                                                  className="me-1"
+                                                  key={`${symbol}-${index}`}
+                                                  // use usdc instead of usdc(bridged), aka, usdc.e for the image
+                                                  token={symbol.replace(
+                                                    "(bridged)",
+                                                    "",
+                                                  )}
+                                                  height={20}
+                                                  width={20}
+                                                />
+                                              ),
+                                            )}
+                                            {protocol.interface.symbolList.join(
+                                              "-",
+                                            )}
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="py-5 pl-8 pr-0 text-right align-top tabular-nums text-white">
+                                        {(
+                                          portfolioApr?.[portfolioName]?.[
+                                            protocol.interface.uniqueId()
+                                          ]?.apr * 100
+                                        ).toFixed(2)}
+                                        %
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                            </tbody>
+                            <tfoot>
+                              <tr>
+                                <th
+                                  scope="row"
+                                  colSpan={3}
+                                  className="hidden px-0 pb-0 pt-6 text-right font-normal text-gray-300 sm:table-cell"
+                                >
+                                  Avg. APR
+                                </th>
+                                <td className="pb-0 pl-8 pr-0 pt-6 text-right tabular-nums text-white">
+                                  {(
+                                    portfolioApr[portfolioName]?.portfolioAPR *
+                                    100
+                                  ).toFixed(2)}
+                                  %
+                                </td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
                       ),
+                    ),
+                )}
+              <h2 className="text-base font-semibold leading-6 text-white">
+                Where Does the Yield Come from?
+              </h2>
+              <dl className="mt-6 grid grid-cols-1 text-sm leading-6 sm:grid-cols-2">
+                <div>{portfolioHelper?.description()}</div>
+                {portfolioHelper?.lockUpPeriod() !== 0 ? (
+                  <div className="sm:pr-4">
+                    <dt className="inline text-gray-500">Lock-up Period</dt>{" "}
+                    <dd className="inline text-gray-300">
+                      <time dateTime="2023-23-01">
+                        {portfolioHelper?.lockUpPeriod()} Days
+                      </time>
+                    </dd>
+                  </div>
+                ) : null}
+              </dl>
+            </div>
+            <div className="lg:col-start-3">
+              {/* Activity feed */}
+              <h2 className="text-sm font-semibold leading-6 text-white">
+                History
+              </h2>
+              <ul role="list" className="mt-6 space-y-6">
+                {activity.map((activityItem, activityItemIdx) => (
+                  <li key={activityItem.id} className="relative flex gap-x-4">
+                    <div
+                      className={classNames(
+                        activityItemIdx === activity.length - 1
+                          ? "h-6"
+                          : "-bottom-6",
+                        "absolute left-0 top-0 flex w-6 justify-center",
+                      )}
+                    >
+                      <div className="w-px bg-gray-200" />
+                    </div>
+                    {activityItem.type === "commented" ? (
+                      <>
+                        <img
+                          alt=""
+                          src={activityItem.person.imageUrl}
+                          className="relative mt-3 h-6 w-6 flex-none rounded-full bg-gray-800"
+                        />
+                        <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-gray-200">
+                          <div className="flex justify-between gap-x-4">
+                            <div className="py-0.5 text-xs leading-5 text-gray-500">
+                              <span className="font-medium text-white">
+                                {activityItem.person.name}
+                              </span>{" "}
+                              commented
+                            </div>
+                            <time
+                              dateTime={activityItem.dateTime}
+                              className="flex-none py-0.5 text-xs leading-5 text-gray-500"
+                            >
+                              {activityItem.date}
+                            </time>
+                          </div>
+                          <p className="text-sm leading-6 text-gray-500">
+                            {activityItem.comment}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-gray-900">
+                          {activityItem.type === "paid" ? (
+                            <CheckCircleIcon
+                              aria-hidden="true"
+                              className="h-6 w-6 text-indigo-600"
+                            />
+                          ) : (
+                            <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
+                          )}
+                        </div>
+                        <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500">
+                          <span className="font-medium text-white">
+                            {activityItem.person.name}
+                          </span>{" "}
+                          {activityItem.type} the invoice.
+                        </p>
+                        <time
+                          dateTime={activityItem.dateTime}
+                          className="flex-none py-0.5 text-xs leading-5 text-gray-500"
+                        >
+                          {activityItem.date}
+                        </time>
+                      </>
                     )}
-                </ul>
-              </section>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </BasePage>
   );
 }
+
+const activity = [
+  {
+    id: 1,
+    type: "created",
+    person: { name: "Chelsea Hagon" },
+    date: "7d ago",
+    dateTime: "2023-01-23T10:32",
+  },
+  {
+    id: 2,
+    type: "edited",
+    person: { name: "Chelsea Hagon" },
+    date: "6d ago",
+    dateTime: "2023-01-23T11:03",
+  },
+  {
+    id: 3,
+    type: "sent",
+    person: { name: "Chelsea Hagon" },
+    date: "6d ago",
+    dateTime: "2023-01-23T11:24",
+  },
+  {
+    id: 4,
+    type: "commented",
+    person: {
+      name: "Chelsea Hagon",
+      imageUrl:
+        "https://images.unsplash.com/photo-1550525811-e5869dd03032?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+    },
+    comment:
+      "Called client, they reassured me the invoice would be paid by the 25th.",
+    date: "3d ago",
+    dateTime: "2023-01-23T15:56",
+  },
+  {
+    id: 5,
+    type: "viewed",
+    person: { name: "Alex Curren" },
+    date: "2d ago",
+    dateTime: "2023-01-24T09:12",
+  },
+  {
+    id: 6,
+    type: "paid",
+    person: { name: "Alex Curren" },
+    date: "1d ago",
+    dateTime: "2023-01-24T09:20",
+  },
+];
+const moods = [
+  {
+    name: "Excited",
+    value: "excited",
+    icon: FireIcon,
+    iconColor: "text-white",
+    bgColor: "bg-red-500",
+  },
+  {
+    name: "Loved",
+    value: "loved",
+    icon: HeartIcon,
+    iconColor: "text-white",
+    bgColor: "bg-pink-400",
+  },
+  {
+    name: "Happy",
+    value: "happy",
+    icon: FaceSmileIcon,
+    iconColor: "text-white",
+    bgColor: "bg-green-400",
+  },
+  {
+    name: "Sad",
+    value: "sad",
+    icon: FaceFrownIcon,
+    iconColor: "text-white",
+    bgColor: "bg-yellow-400",
+  },
+  {
+    name: "Thumbsy",
+    value: "thumbsy",
+    icon: HandThumbUpIcon,
+    iconColor: "text-white",
+    bgColor: "bg-blue-500",
+  },
+  {
+    name: "I feel nothing",
+    value: null,
+    icon: XMarkIconMini,
+    iconColor: "text-gray-500",
+    bgColor: "bg-transparent",
+  },
+];

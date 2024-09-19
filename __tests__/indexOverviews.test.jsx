@@ -54,7 +54,7 @@ describe("IndexOverviews Component", () => {
     const indexesAprElements = await screen.findAllByRole("apr");
     indexesAprElements.forEach((element) => {
       // Check if the APR is correct
-      expect(element.textContent).toBe("5.00%");
+      expect(element.textContent.includes("APR: 5.00%")).toBe(true);
     });
   });
 });

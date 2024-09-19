@@ -1,9 +1,6 @@
 import React from "react";
 import { useEffect, useState } from "react";
-import APRDetails from "./APRrelated.jsx";
-import PortfolioMetaTab from "./PortfolioMetaTab";
 import { Row, Col, Button } from "antd";
-import { ReloadOutlined } from "@ant-design/icons";
 import Image from "next/image";
 import { useWindowHeight } from "../../utils/chartUtils";
 import styles from "../../styles/Home.module.css";
@@ -21,7 +18,6 @@ import axios from "axios";
 import { Spin } from "antd";
 import { useRouter } from "next/router";
 import Vaults from "../indexes/index.jsx";
-import { timeAgo } from "../../utils/general";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
