@@ -40,10 +40,10 @@ const APRComposition = ({
       title="Data Breakdown (cannot claim less than $1)"
       trigger="hover"
     >
-      <InfoCircleOutlined 
-                        aria-hidden="true"
-
-      className="h-6 w-5 text-gray-500" />
+      <InfoCircleOutlined
+        aria-hidden="true"
+        className="h-6 w-5 text-gray-500"
+      />
     </Popover>
   );
 };

@@ -102,7 +102,7 @@ export class StablecoinVault extends BasePortfolio {
       </ReactMarkdown>
     );
   }
-  lockUpPeriod(){
-    return 2
+  lockUpPeriod() {
+    return 2;
   }
 }

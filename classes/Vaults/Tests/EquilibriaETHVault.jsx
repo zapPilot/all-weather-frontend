@@ -45,7 +45,7 @@ export class EquilibriaETHVault extends BasePortfolio {
       </ReactMarkdown>
     );
   }
-  lockUpPeriod(){
-    return 0
+  lockUpPeriod() {
+    return 0;
   }
 }

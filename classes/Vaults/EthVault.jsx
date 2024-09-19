@@ -74,7 +74,7 @@ export class EthVault extends BasePortfolio {
       </ReactMarkdown>
     );
   }
-  lockUpPeriod(){
-    return 0
+  lockUpPeriod() {
+    return 0;
   }
 }

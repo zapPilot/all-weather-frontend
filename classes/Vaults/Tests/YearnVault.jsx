@@ -38,8 +38,7 @@ export class YearnVault extends BasePortfolio {
       </ReactMarkdown>
     );
   }
-  lockUpPeriod(){
-    return 0
+  lockUpPeriod() {
+    return 0;
   }
-
 }
