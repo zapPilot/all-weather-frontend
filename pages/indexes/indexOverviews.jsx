@@ -31,30 +31,16 @@ import { selectBefore } from "../../utils/contractInteractions";
 import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
-import {
-  Label,
-  Listbox,
-  ListboxButton,
-  ListboxOption,
-  ListboxOptions,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
-} from "@headlessui/react";
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import {
   EllipsisVerticalIcon,
-  FaceFrownIcon,
-  FaceSmileIcon,
-  FireIcon,
-  HandThumbUpIcon,
-  HeartIcon,
-  PaperClipIcon,
-  XMarkIcon as XMarkIconMini,
   CurrencyDollarIcon,
 } from "@heroicons/react/20/solid";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import { SettingOutlined } from "@ant-design/icons";
+import axios from "axios";
+import { timeAgo, unixToCustomFormat } from "../../utils/general";
+import tokens from "../views/components/tokens.json";
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -89,8 +75,7 @@ export default function IndexOverviews() {
   const [usdBalanceLoading, setUsdBalanceLoading] = useState(false);
   const [pendingRewardsLoading, setPendingRewardsLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selected, setSelected] = useState(moods[5]);
+  const [transacitonHistory, setTransactionHistory] = useState([]);
 
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
@@ -303,7 +288,6 @@ export default function IndexOverviews() {
       dispatch(fetchStrategyMetadata());
     }
   }, [portfolioName]);
-
   useEffect(() => {
     if (!portfolioName || account === undefined) return;
     const fetchUsdBalance = async () => {
@@ -323,6 +307,17 @@ export default function IndexOverviews() {
     };
     fetchUsdBalance();
   }, [portfolioName, account]);
+  useEffect(() => {
+    async function fetchTransactionHistory() {
+      const resp = await axios.get(
+        `${process.env.NEXT_PUBLIC_SDK_API_URL}/user/history_list?address=${account.address}&chain=arb`,
+      );
+      setTransactionHistory(resp.data.history_list);
+    }
+    if (account?.address === undefined) return;
+    fetchTransactionHistory();
+  }, [account]);
+
   return (
     <BasePage>
       {notificationContextHolder}
@@ -651,73 +646,100 @@ export default function IndexOverviews() {
                 History
               </h2>
               <ul role="list" className="mt-6 space-y-6">
-                {activity.map((activityItem, activityItemIdx) => (
-                  <li key={activityItem.id} className="relative flex gap-x-4">
-                    <div
-                      className={classNames(
-                        activityItemIdx === activity.length - 1
-                          ? "h-6"
-                          : "-bottom-6",
-                        "absolute left-0 top-0 flex w-6 justify-center",
-                      )}
-                    >
-                      <div className="w-px bg-gray-200" />
-                    </div>
-                    {activityItem.type === "commented" ? (
-                      <>
-                        <img
-                          alt=""
-                          src={activityItem.person.imageUrl}
-                          className="relative mt-3 h-6 w-6 flex-none rounded-full bg-gray-800"
-                        />
-                        <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-gray-200">
-                          <div className="flex justify-between gap-x-4">
-                            <div className="py-0.5 text-xs leading-5 text-gray-500">
-                              <span className="font-medium text-white">
-                                {activityItem.person.name}
-                              </span>{" "}
-                              commented
-                            </div>
-                            <time
-                              dateTime={activityItem.dateTime}
-                              className="flex-none py-0.5 text-xs leading-5 text-gray-500"
-                            >
-                              {activityItem.date}
-                            </time>
-                          </div>
-                          <p className="text-sm leading-6 text-gray-500">
-                            {activityItem.comment}
-                          </p>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-gray-900">
-                          {activityItem.type === "paid" ? (
-                            <CheckCircleIcon
-                              aria-hidden="true"
-                              className="h-6 w-6 text-indigo-600"
-                            />
+                {transacitonHistory.map((activityItem, activityItemIdx) => {
+                  // if (portfolioHelper.checkIfTxnBelongsToThisVault(activityItem) === false) return null;
+                  return (
+                    <li key={activityItem.id} className="relative flex gap-x-4">
+                      <div
+                        className={classNames(
+                          activityItemIdx === transacitonHistory.length - 1
+                            ? "h-6"
+                            : "-bottom-6",
+                          "absolute left-0 top-0 flex w-6 justify-center",
+                        )}
+                      >
+                        <div className="w-px bg-gray-200" />
+                      </div>
+                      <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-gray-900">
+                        {activityItem.type === "paid" ? (
+                          <CheckCircleIcon
+                            aria-hidden="true"
+                            className="h-6 w-6 text-indigo-600"
+                          />
+                        ) : (
+                          <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
+                        )}
+                      </div>
+                      <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500">
+                        <span className="font-medium text-white">
+                          {activityItem.sends?.[0]?.to_addr ===
+                            "0x0000000000000000000000000000000000000000" &&
+                          activityItem.receives.length > 1 ? (
+                            // "Withdraw"
+                            <span className="flex gap-1">
+                              <span className="text-orange-400">Withdraw </span>
+                              {activityItem.receives[0].amount}
+                              <ImageWithFallback
+                                token={tokens.props.pageProps.tokensSymbolsMap[
+                                  chainId.id
+                                ][
+                                  activityItem.receives[0].token_id
+                                ].toLowerCase()}
+                                height={20}
+                                width={20}
+                              />
+                            </span>
+                          ) : activityItem.sends.length === 1 &&
+                            activityItem.receives.length > 1 ? (
+                            <span className="flex gap-1">
+                              <span className="text-green-600">Deposit </span>
+                              {activityItem.sends[0].amount}
+                              <ImageWithFallback
+                                token={tokens.props.pageProps.tokensSymbolsMap[
+                                  chainId.id
+                                ][activityItem.sends[0].token_id].toLowerCase()}
+                                height={20}
+                                width={20}
+                              />
+                            </span>
+                          ) : activityItem.sends.length === 0 &&
+                            activityItem.receives.length > 1 &&
+                            activityItem.project_id === "arb_1inch" ? (
+                            <span className="flex gap-1">
+                              <span className="text-blue-400">Claim </span>
+                              {activityItem.receives[0].amount}
+                              <ImageWithFallback
+                                token={tokens.props.pageProps.tokensSymbolsMap[
+                                  chainId.id
+                                ][
+                                  activityItem.receives[0].token_id
+                                ].toLowerCase()}
+                                height={20}
+                                width={20}
+                              />
+                            </span>
                           ) : (
-                            <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
+                            <span className="text-red-600">Failed</span>
                           )}
-                        </div>
-                        <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500">
-                          <span className="font-medium text-white">
-                            {activityItem.person.name}
-                          </span>{" "}
-                          {activityItem.type} the invoice.
-                        </p>
-                        <time
-                          dateTime={activityItem.dateTime}
-                          className="flex-none py-0.5 text-xs leading-5 text-gray-500"
+                        </span>{" "}
+                        <a
+                          href={`https://arbitrum.blockscout.com/tx/${activityItem.id}`}
                         >
-                          {activityItem.date}
-                        </time>
-                      </>
-                    )}
-                  </li>
-                ))}
+                          tx:{" "}
+                          {activityItem.id.slice(0, 4) +
+                            "..." +
+                            activityItem.id.slice(-4)}
+                        </a>
+                      </p>
+                      <time
+                        dateTime={activityItem.dateTime}
+                        className="flex-none py-0.5 text-xs leading-5 text-gray-500"
+                      >
+                        {timeAgo(unixToCustomFormat(activityItem.time_at))}
+                      </time>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </div>
@@ -726,98 +748,3 @@ export default function IndexOverviews() {
     </BasePage>
   );
 }
-
-const activity = [
-  {
-    id: 1,
-    type: "created",
-    person: { name: "Chelsea Hagon" },
-    date: "7d ago",
-    dateTime: "2023-01-23T10:32",
-  },
-  {
-    id: 2,
-    type: "edited",
-    person: { name: "Chelsea Hagon" },
-    date: "6d ago",
-    dateTime: "2023-01-23T11:03",
-  },
-  {
-    id: 3,
-    type: "sent",
-    person: { name: "Chelsea Hagon" },
-    date: "6d ago",
-    dateTime: "2023-01-23T11:24",
-  },
-  {
-    id: 4,
-    type: "commented",
-    person: {
-      name: "Chelsea Hagon",
-      imageUrl:
-        "https://images.unsplash.com/photo-1550525811-e5869dd03032?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    },
-    comment:
-      "Called client, they reassured me the invoice would be paid by the 25th.",
-    date: "3d ago",
-    dateTime: "2023-01-23T15:56",
-  },
-  {
-    id: 5,
-    type: "viewed",
-    person: { name: "Alex Curren" },
-    date: "2d ago",
-    dateTime: "2023-01-24T09:12",
-  },
-  {
-    id: 6,
-    type: "paid",
-    person: { name: "Alex Curren" },
-    date: "1d ago",
-    dateTime: "2023-01-24T09:20",
-  },
-];
-const moods = [
-  {
-    name: "Excited",
-    value: "excited",
-    icon: FireIcon,
-    iconColor: "text-white",
-    bgColor: "bg-red-500",
-  },
-  {
-    name: "Loved",
-    value: "loved",
-    icon: HeartIcon,
-    iconColor: "text-white",
-    bgColor: "bg-pink-400",
-  },
-  {
-    name: "Happy",
-    value: "happy",
-    icon: FaceSmileIcon,
-    iconColor: "text-white",
-    bgColor: "bg-green-400",
-  },
-  {
-    name: "Sad",
-    value: "sad",
-    icon: FaceFrownIcon,
-    iconColor: "text-white",
-    bgColor: "bg-yellow-400",
-  },
-  {
-    name: "Thumbsy",
-    value: "thumbsy",
-    icon: HandThumbUpIcon,
-    iconColor: "text-white",
-    bgColor: "bg-blue-500",
-  },
-  {
-    name: "I feel nothing",
-    value: null,
-    icon: XMarkIconMini,
-    iconColor: "text-gray-500",
-    bgColor: "bg-transparent",
-  },
-];

@@ -133,7 +133,7 @@ describe("Equilibria ETH Vault", () => {
     expect(txns.length).toBe(6);
 
     // claim
-    expect(txns[0].to).toBe("0x4D32C8Ff2fACC771eC7Efc70d6A8468bC30C26bF");
+    expect(txns[0].to).toBe("0xc7517f481Cc0a645e63f870830A4B2e580421e32");
     // redeem xEqbContract
     expect(txns[1][0].to).toBe("0x96c4a48abdf781e9c931cfa92ec0167ba219ad8e");
     // approve and swap * 2
