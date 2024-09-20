@@ -48,7 +48,7 @@ export class StablecoinVault extends BasePortfolio {
                     "0xaA0DE632A4071642d72Ceb03577F5534ea196927",
                 },
               ),
-              weight: 0.4,
+              weight: 0.6,
             },
             {
               interface: new Vela(
@@ -61,7 +61,7 @@ export class StablecoinVault extends BasePortfolio {
                     "0xaA0DE632A4071642d72Ceb03577F5534ea196927",
                 },
               ),
-              weight: 0.1,
+              weight: 0.2,
             },
             {
               interface: new BaseEquilibria(
@@ -78,7 +78,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 48,
                 },
               ),
-              weight: 0.5,
+              weight: 0.2,
             },
           ],
         },

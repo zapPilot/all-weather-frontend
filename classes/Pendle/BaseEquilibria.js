@@ -1,10 +1,10 @@
 import PendleMarketV3 from "../../lib/contracts/Pendle/PendleMarketV3.json" assert { type: "json" };
-import ActionMiscV3 from "../../lib/contracts/Pendle/ActionMiscV3.json" assert { type: "json" };
 import ActionAddRemoveLiqV3 from "../../lib/contracts/Pendle/ActionAddRemoveLiqV3.json" assert { type: "json" };
 import PendleBoosterSidechain from "../../lib/contracts/Pendle/PendleBoosterSidechain.json" assert { type: "json" };
 import EqbMinterSidechain from "../../lib/contracts/Pendle/EqbMinterSidechain.json" assert { type: "json" };
 import BaseRewardPool from "../../lib/contracts/Pendle/BaseRewardPool.json" assert { type: "json" };
 import XEqbToken from "../../lib/contracts/Equilibria/XEqbToken.json" assert { type: "json" };
+import EqbZap from "../../lib/contracts/Equilibria/EqbZap.json" assert { type: "json" };
 import { arbitrum } from "thirdweb/chains";
 import axios from "axios";
 import { ethers } from "ethers";
@@ -51,7 +51,7 @@ export class BaseEquilibria extends BaseProtocol {
       client: THIRDWEB_CLIENT,
       address: "0xc7517f481Cc0a645e63f870830A4B2e580421e32",
       chain: arbitrum,
-      abi: PendleBoosterSidechain,
+      abi: EqbZap,
     });
     this.xEqbContract = getContract({
       client: THIRDWEB_CLIENT,
@@ -332,9 +332,9 @@ export class BaseEquilibria extends BaseProtocol {
       updateProgress,
     );
     const claimTxn = prepareContractCall({
-      contract: this.stakeFarmContract,
+      contract: this.eqbStakeFarmWithdrawContract,
       method: "claimRewards",
-      params: [this.pidOfEquilibria],
+      params: [[this.pidOfEquilibria]],
     });
     const redeemTxn = this.customRedeemVestingRewards(pendingRewards);
     return [[claimTxn, redeemTxn], pendingRewards];

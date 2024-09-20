@@ -1,5 +1,4 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-const SDK_API_URL = process.env.NEXT_PUBLIC_SDK_API_URL;
 
 export const portfolioContractAddress =
   "0xD188492217F09D18f2B0ecE3F8948015981e961a";
@@ -49,40 +48,6 @@ export async function fetch1InchSwapData(
     throw new Error("fromTokenAddress and toTokenAddress are the same");
   }
   const url = `${API_URL}/the_best_swap_data?chainId=${chainId}&fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount.toString()}&fromAddress=${fromAddress}&slippage=${slippage}&provider=1inch`;
-  const retryLimit = 3;
-  const retryStatusCodes = [429, 500, 502, 503, 504];
-
-  for (let attempt = 0; attempt < retryLimit; attempt++) {
-    try {
-      const res = await fetch(url);
-
-      if (!res.ok && !retryStatusCodes.includes(res.status)) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
-      if (res.ok) {
-        return res.json(); // This parses the JSON body for you
-      }
-    } catch (error) {
-      if (attempt === retryLimit - 1) {
-        throw error; // Re-throw the error on the last attempt
-      }
-    }
-
-    // Delay before retrying; you can adjust the delay as needed
-    await new Promise((resolve) => setTimeout(resolve, (attempt + 1) * 3000));
-  }
-  throw new Error("Failed to fetch data after retries");
-}
-
-export async function getPendleZapInData(
-  chainId,
-  poolAddress,
-  amount,
-  slippage,
-  tokenInAddress,
-) {
-  const url = `${SDK_API_URL}/pendle/zapIn?chainId=${chainId}&poolAddress=${poolAddress}&amount=${amount.toString()}&slippage=${slippage}&tokenInAddress=${tokenInAddress}`;
   const retryLimit = 3;
   const retryStatusCodes = [429, 500, 502, 503, 504];
 
