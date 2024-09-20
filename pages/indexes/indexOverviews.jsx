@@ -19,10 +19,11 @@ import {
   Dropdown,
 } from "antd";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
-import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
+import { useActiveAccount, useSendBatchTransaction, useActiveWalletChain } from "thirdweb/react";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 
 import openNotificationWithIcon from "../../utils/notification.js";
+import { selectBefore } from "../../utils/contractInteractions";
 import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
@@ -65,6 +66,7 @@ export default function IndexOverviews() {
   };
 
   const account = useActiveAccount();
+  const chainId = useActiveWalletChain();
   const [selectedToken, setSelectedToken] = useState(
     "USDC-0xaf88d065e77c8cc2239327c5edb3a432268e5831-6",
   );
@@ -181,22 +183,70 @@ export default function IndexOverviews() {
     {
       key: '1',
       label: 'Zap In',
-      children: <p className="text-white">abc</p>,
+      children:
+      <div>
+        <TokenDropdownInput
+          selectedToken={selectedToken}
+          setSelectedToken={handleSetSelectedToken}
+          setInvestmentAmount={handleSetInvestmentAmount}
+        />
+        <Button
+          type="primary"
+          className="w-full mt-2"
+          onClick={() => handleAAWalletAction("zapIn")}
+          loading={zapInIsLoading}
+          disabled={investmentAmount === 0}
+        >
+          Zap In
+        </Button>
+      </div>,
     },
     {
       key: '2',
       label: 'Zap Out',
-      children: 'Content of Tab Pane 2',
+      children:
+      <div>
+        <DecimalStep
+          selectedToken={selectedToken}
+          setSelectedToken={handleSetSelectedToken}
+          depositBalance={usdBalance}
+          setZapOutPercentage={setZapOutPercentage}
+          currency="$"
+        />
+        <Button
+          type="primary"
+          className="w-full"
+          onClick={() => handleAAWalletAction("zapOut")}
+          loading={zapOutIsLoading || usdBalanceLoading}
+          disabled={usdBalance === 0}
+        >
+          Withdraw
+        </Button>
+      </div>,
     },
     {
       key: '3',
-      label: 'Claim',
-      children: 'Content of Tab Pane 3',
+      label: 'Dump',
+      children:
+      <div>
+        {selectBefore(handleSetSelectedToken, chainId?.id, selectedToken)}
+        <Button
+          type="primary"
+          className="w-full mt-2"
+          onClick={() => handleAAWalletAction("claimAndSwap")}
+          loading={claimIsLoading || pendingRewardsLoading}
+        >
+          Dump ${" "}
+          {sumUsdDenominatedValues(pendingRewards) > 0.01
+            ? sumUsdDenominatedValues(pendingRewards).toFixed(2)
+            : sumUsdDenominatedValues(pendingRewards)}{" "}
+          Rewards
+        </Button>
+      </div>,
     },
   ];
 
   function ModalContent() {
-    console.log("open", open);
     return (
       <Modal
         title="Transaction Preview"
@@ -284,7 +334,7 @@ export default function IndexOverviews() {
                   clipPath:
                     "polygon(100% 38.5%, 82.6% 100%, 60.2% 37.7%, 52.4% 32.1%, 47.5% 41.8%, 45.2% 65.6%, 27.5% 23.4%, 0.1% 35.3%, 17.9% 0%, 27.7% 23.4%, 76.2% 2.5%, 74.2% 56%, 100% 38.5%)",
                 }}
-                className="aspect-[1154/678] w-[72.125rem] bg-gradient-to-br from-[#FF80B5] to-[#9089FC]"
+                className="aspect-[1154/678] w-[72.125rem] bg-gradient-to-br from-[#5dfdcb] to-[#5dfdcb]"
               />
             </div>
             <div className="absolute inset-x-0 bottom-0 h-px bg-gray-900/5" />
@@ -347,143 +397,66 @@ export default function IndexOverviews() {
           </div>
         </header>
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-
-          <Tabs
-            className="text-white"
-            defaultActiveKey="1"
-            items={items}
-            onChange={onChange}
-          />
           <div
-            className="flex items-center justify-center rounded-full bg-gray-800 text-gray-400 rounded-full"
+            className="mb-8 p-4 ring-1 ring-white/10 sm:rounded-lg relative"
           >
-            <div
-              className="me-2"
+            <ConfigProvider
+              theme={{
+                components: {
+                },
+                token: {
+                  colorBgContainerDisabled: "rgb(156, 163, 175)",
+                },
+              }}
             >
-              {slippage}%
-            </div>
-            <Dropdown
-              dropdownRender={() => (
-                <div className="bg-white text-black rounded-xl p-4 shadow-lg space-y-4 pb-6">
-                  <p>Max Slippage: </p>
-                  <Radio.Group
-                    value={slippage}
-                    buttonStyle="solid"
-                    size="small"
-                    onChange={(e) => setSlippage(e.target.value)}
-                  >
-                    {[0.5, 1, 3].map((slippageValue) => (
-                      <Radio.Button
-                        value={slippageValue}
-                        key={slippageValue}
-                      >
-                        {slippageValue}%
-                      </Radio.Button>
-                    ))}
-                  </Radio.Group>
-                </div>
-              )}
-              trigger={['click']}
-            >
-              <a
-                className="text-white"
-                onClick={(e) => e.preventDefault()}
-              >
-                <SettingOutlined />
-              </a>
-            </Dropdown>
-          </div>
-          <div className="flex items-center gap-x-4 sm:gap-x-6">
-            <div>
-              {/* Size selector */}
-              <div className="mt-2">
-                <TokenDropdownInput
-                  selectedToken={selectedToken}
-                  setSelectedToken={handleSetSelectedToken}
-                  setInvestmentAmount={handleSetInvestmentAmount}
+              <Tabs
+                  className="text-white"
+                  defaultActiveKey="1"
+                  items={items}
+                  onChange={onChange}
                 />
-                <DecimalStep
-                  depositBalance={usdBalance}
-                  setZapOutPercentage={setZapOutPercentage}
-                  currency="$"
-                />
-              </div>
-              <ConfigProvider
-                theme={{
-                  token: {
-                    colorPrimary: "#5DFDCB",
-                    colorTextLightSolid: "#000000",
-                  },
-                }}
+            </ConfigProvider>
+            <div className="w-16 flex items-center justify-center rounded-full bg-gray-800 text-gray-400 rounded-full absolute top-7 right-4">
+              <span className="me-2">
+                {slippage}%
+              </span>
+              <Dropdown
+                dropdownRender={() => (
+                  <div className="bg-gray-700 text-white rounded-xl p-4 shadow-lg space-y-4 pb-6">
+                    <p>Max Slippage: </p>
+                    <Radio.Group
+                      value={slippage}
+                      buttonStyle="solid"
+                      size="small"
+                      onChange={(e) => setSlippage(e.target.value)}
+                    >
+                      {[0.5, 1, 3].map((slippageValue) => (
+                        <Radio.Button
+                          value={slippageValue}
+                          key={slippageValue}
+                        >
+                          {slippageValue}%
+                        </Radio.Button>
+                      ))}
+                    </Radio.Group>
+                  </div>
+                )}
+                trigger={['click']}
               >
-                
-              </ConfigProvider>
-              <div className="mt-2 flex align-items-center">
-                ⛽<span className="text-emerald-400">Free</span>
-                <span className="text-gray-400">
-                  , Performance Fee: 9.9%
-                </span>
-              </div>
-            </div>
-
-              <Button
-                className="hidden text-sm font-semibold leading-6 text-white sm:block"
-                onClick={() => handleAAWalletAction("zapOut")}
-                loading={zapOutIsLoading || usdBalanceLoading}
-                disabled={usdBalance === 0}
-              >
-                Withdraw
-              </Button>
-              <Button
-                className="hidden text-sm font-semibold leading-6 text-gray-900 sm:block"
-                onClick={() => handleAAWalletAction("claimAndSwap")}
-                loading={claimIsLoading || pendingRewardsLoading}
-              >
-                Dump ${" "}
-                {sumUsdDenominatedValues(pendingRewards) > 0.01
-                  ? sumUsdDenominatedValues(pendingRewards).toFixed(2)
-                  : sumUsdDenominatedValues(pendingRewards)}{" "}
-                Rewards
-              </Button>
-              <Button
-                className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                onClick={() => handleAAWalletAction("zapIn")}
-                loading={zapInIsLoading}
-                disabled={investmentAmount === 0}
-              >
-                Zap In
-              </Button>
-              <Menu as="div" className="relative sm:hidden">
-                <MenuButton className="-m-3 block p-3">
-                  <span className="sr-only">More</span>
-                  <EllipsisVerticalIcon
-                    aria-hidden="true"
-                    className="h-5 w-5 text-gray-500"
-                  />
-                </MenuButton>
-
-                <MenuItems
-                  transition
-                  className="absolute right-0 z-10 mt-0.5 w-32 origin-top-right rounded-md bg-gray-900 py-2 shadow-lg ring-1 ring-white/10 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
+                <a
+                  className="text-white"
+                  onClick={(e) => e.preventDefault()}
                 >
-                  <MenuItem>
-                    <button
-                      type="button"
-                      className="block w-full px-3 py-1 text-left text-sm leading-6 text-white data-[focus]:bg-gray-800"
-                    >
-                      Copy URL
-                    </button>
-                  </MenuItem>
-                  <MenuItem>
-                    <a
-                      href="#"
-                      className="block px-3 py-1 text-sm leading-6 text-white data-[focus]:bg-gray-800"
-                    >
-                      Edit
-                    </a>
-                  </MenuItem>
-                </MenuItems>
-              </Menu>
+                  <SettingOutlined />
+                </a>
+              </Dropdown>
+            </div>
+            <div className="mt-2 flex align-items-center">
+              ⛽<span className="text-emerald-400">Free</span>
+              <span className="text-gray-400">
+                , Performance Fee: 9.9%
+              </span>
+            </div>
           </div>
           <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
             {/* Invoice summary */}
