@@ -51,7 +51,7 @@ const TokenDropdownInput = memo(
 
     return (
       <>
-        <Space role="crypto_input">
+        <Space.Compact role="crypto_input">
           {selectBefore(handleTokenChange, chainId?.id, selectedToken)}
           <NumericInput
             placeholder={isLoading ? "Loading..." : "Enter amount"}
@@ -65,7 +65,7 @@ const TokenDropdownInput = memo(
           >
             Max
           </Button>
-        </Space>
+        </Space.Compact>
         <div className="mt-2 text-sm text-gray-400">
           Balance: {isLoading ? "Loading..." : data?.displayValue || "0"}
         </div>
