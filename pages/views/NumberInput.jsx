@@ -19,20 +19,16 @@ const NumericInputComponent = (props) => {
     onChange(valueTemp.replace(/0*(\d+)/, "$1"));
   };
   return (
-    <Tooltip
-      trigger={["focus"]}
-      placement="topLeft"
-      overlayClassName="numeric-input"
-    >
-      <Input
-        {...props}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        placeholder={placeholder}
-        maxLength={16}
-        addonBefore={addonBefore}
-      />
-    </Tooltip>
+    <Input
+      className="rounded-md py-0 border-[#d9d9d9]"
+      {...props}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      placeholder={placeholder}
+      maxLength={16}
+      addonBefore={addonBefore}
+      style={{ width: "50%" }}
+    />
   );
 };
 
@@ -40,9 +36,6 @@ const NumericInput = (props) => {
   const { value, onChange, placeholder, addonBefore } = props;
   return (
     <NumericInputComponent
-      style={{
-        width: 200,
-      }}
       value={value}
       onChange={onChange}
       placeholder={placeholder}
