@@ -27,6 +27,7 @@ const NumericInputComponent = (props) => {
       placeholder={placeholder}
       maxLength={16}
       addonBefore={addonBefore}
+      style={{ width: "50%" }}
     />
   );
 };
@@ -35,9 +36,6 @@ const NumericInput = (props) => {
   const { value, onChange, placeholder, addonBefore } = props;
   return (
     <NumericInputComponent
-      style={{
-        width: 200,
-      }}
       value={value}
       onChange={onChange}
       placeholder={placeholder}

@@ -44,7 +44,7 @@ export const selectBefore = (handleChange, chainID, selectedToken) => {
       onChange={handleChange}
       value={selectedToken}
       theme="light"
-      style={{ width: 100 }}
+      style={{ width: 110 }}
     >
       {tokens.props.pageProps.tokenList[String(chainID)]
         ?.filter((option) =>
