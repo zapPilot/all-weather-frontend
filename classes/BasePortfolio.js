@@ -4,6 +4,7 @@ import { oneInchAddress } from "../utils/oneInch";
 import axios from "axios";
 import { ethers } from "ethers";
 import { getTokenDecimal, approve } from "../utils/general";
+import { initPickerPanelToken } from "antd/es/date-picker/style";
 export class BasePortfolio {
   constructor(strategy, weightMapping) {
     this.strategy = strategy;
@@ -151,6 +152,29 @@ export class BasePortfolio {
     throw new Error(
       "Method 'getTokenPricesMappingTable()' must be implemented.",
     );
+  }
+  checkIfTxnBelongsToThisVault(txn) {
+    let hits = 0;
+    let tokenSet = new Set();
+    for (const protocolsInThisCategory of Object.values(this.strategy)) {
+      for (const protocolsInThisChain of Object.values(
+        protocolsInThisCategory,
+      )) {
+        for (const protocol of protocolsInThisChain) {
+          Object.values(protocol.interface.customParams).forEach((address) => {
+            if (typeof address === "string" && address.startsWith("0x")) {
+              tokenSet.add(address.toLowerCase());
+            }
+          });
+        }
+      }
+    }
+    for (const receive of txn.receives) {
+      if (tokenSet.has(receive.token_id.toLowerCase())) {
+        hits++;
+      }
+    }
+    return hits > 0;
   }
   async _generateTxnsByAction(actionName, actionParams) {
     let totalTxns = [];
