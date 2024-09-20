@@ -19,7 +19,11 @@ import {
   Dropdown,
 } from "antd";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
-import { useActiveAccount, useSendBatchTransaction, useActiveWalletChain } from "thirdweb/react";
+import {
+  useActiveAccount,
+  useSendBatchTransaction,
+  useActiveWalletChain,
+} from "thirdweb/react";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 
 import openNotificationWithIcon from "../../utils/notification.js";
@@ -50,7 +54,7 @@ import {
   CurrencyDollarIcon,
 } from "@heroicons/react/20/solid";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
-import { SettingOutlined } from '@ant-design/icons';
+import { SettingOutlined } from "@ant-design/icons";
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -179,68 +183,71 @@ export default function IndexOverviews() {
   const onChange = (key) => {};
   const items = [
     {
-      key: '1',
-      label: 'Zap In',
-      children:
-      <div>
-        <TokenDropdownInput
-          selectedToken={selectedToken}
-          setSelectedToken={handleSetSelectedToken}
-          setInvestmentAmount={handleSetInvestmentAmount}
-        />
-        <Button
-          type="primary"
-          className="w-full mt-2"
-          onClick={() => handleAAWalletAction("zapIn")}
-          loading={zapInIsLoading}
-          disabled={investmentAmount === 0}
-        >
-          Zap In
-        </Button>
-      </div>,
+      key: "1",
+      label: "Zap In",
+      children: (
+        <div>
+          <TokenDropdownInput
+            selectedToken={selectedToken}
+            setSelectedToken={handleSetSelectedToken}
+            setInvestmentAmount={handleSetInvestmentAmount}
+          />
+          <Button
+            type="primary"
+            className="w-full mt-2"
+            onClick={() => handleAAWalletAction("zapIn")}
+            loading={zapInIsLoading}
+            disabled={investmentAmount === 0}
+          >
+            Zap In
+          </Button>
+        </div>
+      ),
     },
     {
-      key: '2',
-      label: 'Zap Out',
-      children:
-      <div>
-        <DecimalStep
-          selectedToken={selectedToken}
-          setSelectedToken={handleSetSelectedToken}
-          depositBalance={usdBalance}
-          setZapOutPercentage={setZapOutPercentage}
-          currency="$"
-        />
-        <Button
-          type="primary"
-          className="w-full"
-          onClick={() => handleAAWalletAction("zapOut")}
-          loading={zapOutIsLoading || usdBalanceLoading}
-          disabled={usdBalance === 0}
-        >
-          Withdraw
-        </Button>
-      </div>,
+      key: "2",
+      label: "Zap Out",
+      children: (
+        <div>
+          <DecimalStep
+            selectedToken={selectedToken}
+            setSelectedToken={handleSetSelectedToken}
+            depositBalance={usdBalance}
+            setZapOutPercentage={setZapOutPercentage}
+            currency="$"
+          />
+          <Button
+            type="primary"
+            className="w-full"
+            onClick={() => handleAAWalletAction("zapOut")}
+            loading={zapOutIsLoading || usdBalanceLoading}
+            disabled={usdBalance === 0}
+          >
+            Withdraw
+          </Button>
+        </div>
+      ),
     },
     {
-      key: '3',
-      label: 'Dump',
-      children:
-      <div>
-        {selectBefore(handleSetSelectedToken, chainId?.id, selectedToken)}
-        <Button
-          type="primary"
-          className="w-full mt-2"
-          onClick={() => handleAAWalletAction("claimAndSwap")}
-          loading={claimIsLoading || pendingRewardsLoading}
-        >
-          Dump ${" "}
-          {sumUsdDenominatedValues(pendingRewards) > 0.01
-            ? sumUsdDenominatedValues(pendingRewards).toFixed(2)
-            : sumUsdDenominatedValues(pendingRewards)}{" "}
-          Rewards
-        </Button>
-      </div>,
+      key: "3",
+      label: "Dump",
+      children: (
+        <div>
+          {selectBefore(handleSetSelectedToken, chainId?.id, selectedToken)}
+          <Button
+            type="primary"
+            className="w-full mt-2"
+            onClick={() => handleAAWalletAction("claimAndSwap")}
+            loading={claimIsLoading || pendingRewardsLoading}
+          >
+            Dump ${" "}
+            {sumUsdDenominatedValues(pendingRewards) > 0.01
+              ? sumUsdDenominatedValues(pendingRewards).toFixed(2)
+              : sumUsdDenominatedValues(pendingRewards)}{" "}
+            Rewards
+          </Button>
+        </div>
+      ),
     },
   ];
 
@@ -345,33 +352,19 @@ export default function IndexOverviews() {
                   src={`/indexFunds/${portfolioName}.webp`}
                   className="h-8 w-8 rounded-full me-2"
                 />
-                <h1
-                  className="text-2xl font-bold text-white"
-                  role="vault"
-                >
+                <h1 className="text-2xl font-bold text-white" role="vault">
                   {portfolioName}
                 </h1>
               </div>
-              <div
-                className="flex items-center gap-x-8 text-white"
-              >
+              <div className="flex items-center gap-x-8 text-white">
                 <div className="text-center">
-                  <p
-                    className="text-2xl font-bold"
-                  >
+                  <p className="text-2xl font-bold">
                     $ {portfolioApr[portfolioName]?.portfolioTVL}
                   </p>
-                  <p
-                    className="font-medium"
-                  >
-                    TVL
-                  </p>
+                  <p className="font-medium">TVL</p>
                 </div>
                 <div className="text-center">
-                  <p
-                    className="text-2xl font-bold"
-                    role="apr"
-                  >
+                  <p className="text-2xl font-bold" role="apr">
                     {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(
                       2,
                     )}
@@ -384,40 +377,31 @@ export default function IndexOverviews() {
                       pendingRewardsLoading={pendingRewardsLoading}
                     />
                   </p>
-                  <p
-                    className="font-medium"
-                  >
-                    APR
-                  </p>
+                  <p className="font-medium">APR</p>
                 </div>
               </div>
             </div>
           </div>
         </header>
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <div
-            className="mb-8 p-4 ring-1 ring-white/10 sm:rounded-lg relative"
-          >
+          <div className="mb-8 p-4 ring-1 ring-white/10 sm:rounded-lg relative">
             <ConfigProvider
               theme={{
-                components: {
-                },
+                components: {},
                 token: {
                   colorBgContainerDisabled: "rgb(156, 163, 175)",
                 },
               }}
             >
               <Tabs
-                  className="text-white"
-                  defaultActiveKey="1"
-                  items={items}
-                  onChange={onChange}
-                />
+                className="text-white"
+                defaultActiveKey="1"
+                items={items}
+                onChange={onChange}
+              />
             </ConfigProvider>
             <div className="w-16 flex items-center justify-center rounded-full bg-gray-800 text-gray-400 rounded-full absolute top-7 right-4">
-              <span className="me-2">
-                {slippage}%
-              </span>
+              <span className="me-2">{slippage}%</span>
               <Dropdown
                 dropdownRender={() => (
                   <div className="bg-gray-700 text-white rounded-xl p-4 shadow-lg space-y-4 pb-6">
@@ -429,31 +413,23 @@ export default function IndexOverviews() {
                       onChange={(e) => setSlippage(e.target.value)}
                     >
                       {[0.5, 1, 3].map((slippageValue) => (
-                        <Radio.Button
-                          value={slippageValue}
-                          key={slippageValue}
-                        >
+                        <Radio.Button value={slippageValue} key={slippageValue}>
                           {slippageValue}%
                         </Radio.Button>
                       ))}
                     </Radio.Group>
                   </div>
                 )}
-                trigger={['click']}
+                trigger={["click"]}
               >
-                <a
-                  className="text-white"
-                  onClick={(e) => e.preventDefault()}
-                >
+                <a className="text-white" onClick={(e) => e.preventDefault()}>
                   <SettingOutlined />
                 </a>
               </Dropdown>
             </div>
             <div className="mt-2 flex align-items-center">
               ⛽<span className="text-emerald-400">Free</span>
-              <span className="text-gray-400">
-                , Performance Fee: 9.9%
-              </span>
+              <span className="text-gray-400">, Performance Fee: 9.9%</span>
             </div>
           </div>
           <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">

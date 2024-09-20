@@ -3,7 +3,13 @@ import { useState, useEffect } from "react";
 import { selectBefore } from "../../utils/contractInteractions";
 import { useActiveWalletChain } from "thirdweb/react";
 
-const DecimalStep = ({ depositBalance, setZapOutPercentage, currency, selectedToken, setSelectedToken }) => {
+const DecimalStep = ({
+  depositBalance,
+  setZapOutPercentage,
+  currency,
+  selectedToken,
+  setSelectedToken,
+}) => {
   const [inputValue, setInputValue] = useState(depositBalance);
   const [sliderValue, setSliderValue] = useState(100);
   const chainId = useActiveWalletChain();
@@ -40,7 +46,7 @@ const DecimalStep = ({ depositBalance, setZapOutPercentage, currency, selectedTo
   };
 
   return (
-    <> 
+    <>
       <Space.Compact>
         {selectBefore(handleTokenChange, chainId?.id, selectedToken)}
         <InputNumber
