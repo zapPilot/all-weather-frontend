@@ -1,9 +1,15 @@
-import { Col, InputNumber, Row, Slider } from "antd";
+import { Space, InputNumber, Row, Slider } from "antd";
 import { useState, useEffect } from "react";
+import { selectBefore } from "../../utils/contractInteractions";
+import { useActiveWalletChain } from "thirdweb/react";
 
-const DecimalStep = ({ depositBalance, setZapOutPercentage, currency }) => {
+const DecimalStep = ({ depositBalance, setZapOutPercentage, currency, selectedToken, setSelectedToken }) => {
   const [inputValue, setInputValue] = useState(depositBalance);
   const [sliderValue, setSliderValue] = useState(100);
+  const chainId = useActiveWalletChain();
+  const handleTokenChange = (value) => {
+    setSelectedToken(value);
+  };
 
   // Update inputValue when depositBalance changes
   useEffect(() => {
@@ -34,21 +40,12 @@ const DecimalStep = ({ depositBalance, setZapOutPercentage, currency }) => {
   };
 
   return (
-    <Row>
-      <Col span={12}>
-        <Slider
-          min={0}
-          max={100}
-          onChange={onSliderChange}
-          value={sliderValue}
-          step={1}
-        />
-      </Col>
-      <Col span={12}>
+    <> 
+      <Space.Compact>
+        {selectBefore(handleTokenChange, chainId?.id, selectedToken)}
         <InputNumber
           min={0}
           max={depositBalance}
-          className="w-full"
           step={1}
           value={inputValue?.toFixed(0)}
           onChange={onInputChange}
@@ -57,8 +54,15 @@ const DecimalStep = ({ depositBalance, setZapOutPercentage, currency }) => {
           }
           parser={(value) => value.replace(/[^\d.]/g, "")}
         />
-      </Col>
-    </Row>
+      </Space.Compact>
+      <Slider
+        min={0}
+        max={100}
+        onChange={onSliderChange}
+        value={sliderValue}
+        step={1}
+      />
+    </>
   );
 };
 
