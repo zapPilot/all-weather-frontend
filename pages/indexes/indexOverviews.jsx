@@ -176,9 +176,7 @@ export default function IndexOverviews() {
     }
   };
 
-  const onChange = (key) => {
-    console.log(key);
-  };
+  const onChange = (key) => {};
   const items = [
     {
       key: '1',
