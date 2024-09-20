@@ -1,5 +1,6 @@
 import { Popover, Image, Spin } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
+
 const APRComposition = ({
   APRData,
   mode,
@@ -39,7 +40,10 @@ const APRComposition = ({
       title="Data Breakdown (cannot claim less than $1)"
       trigger="hover"
     >
-      <InfoCircleOutlined className="text-white" />
+      <InfoCircleOutlined
+        aria-hidden="true"
+        className="h-6 w-5 text-gray-500"
+      />
     </Popover>
   );
 };
