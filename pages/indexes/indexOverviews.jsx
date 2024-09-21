@@ -15,38 +15,32 @@ import {
   notification,
   Modal,
   Spin,
+  Tabs,
+  Dropdown,
 } from "antd";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
-import { useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
+import {
+  useActiveAccount,
+  useSendBatchTransaction,
+  useActiveWalletChain,
+} from "thirdweb/react";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 
 import openNotificationWithIcon from "../../utils/notification.js";
+import { selectBefore } from "../../utils/contractInteractions";
 import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
-import {
-  Label,
-  Listbox,
-  ListboxButton,
-  ListboxOption,
-  ListboxOptions,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
-} from "@headlessui/react";
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import {
   EllipsisVerticalIcon,
-  FaceFrownIcon,
-  FaceSmileIcon,
-  FireIcon,
-  HandThumbUpIcon,
-  HeartIcon,
-  PaperClipIcon,
-  XMarkIcon as XMarkIconMini,
   CurrencyDollarIcon,
 } from "@heroicons/react/20/solid";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
+import { SettingOutlined } from "@ant-design/icons";
+import axios from "axios";
+import { timeAgo, unixToCustomFormat } from "../../utils/general";
+import tokens from "../views/components/tokens.json";
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -62,6 +56,7 @@ export default function IndexOverviews() {
   };
 
   const account = useActiveAccount();
+  const chainId = useActiveWalletChain();
   const [selectedToken, setSelectedToken] = useState(
     "USDC-0xaf88d065e77c8cc2239327c5edb3a432268e5831-6",
   );
@@ -80,8 +75,7 @@ export default function IndexOverviews() {
   const [usdBalanceLoading, setUsdBalanceLoading] = useState(false);
   const [pendingRewardsLoading, setPendingRewardsLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selected, setSelected] = useState(moods[5]);
+  const [transacitonHistory, setTransactionHistory] = useState([]);
 
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
@@ -170,6 +164,78 @@ export default function IndexOverviews() {
       );
     }
   };
+
+  const onChange = (key) => {};
+  const items = [
+    {
+      key: "1",
+      label: "Zap In",
+      children: (
+        <div>
+          <TokenDropdownInput
+            selectedToken={selectedToken}
+            setSelectedToken={handleSetSelectedToken}
+            setInvestmentAmount={handleSetInvestmentAmount}
+          />
+          <Button
+            type="primary"
+            className="w-full mt-2"
+            onClick={() => handleAAWalletAction("zapIn")}
+            loading={zapInIsLoading}
+            disabled={investmentAmount === 0}
+          >
+            Zap In
+          </Button>
+        </div>
+      ),
+    },
+    {
+      key: "2",
+      label: "Zap Out",
+      children: (
+        <div>
+          <DecimalStep
+            selectedToken={selectedToken}
+            setSelectedToken={handleSetSelectedToken}
+            depositBalance={usdBalance}
+            setZapOutPercentage={setZapOutPercentage}
+            currency="$"
+          />
+          <Button
+            type="primary"
+            className="w-full"
+            onClick={() => handleAAWalletAction("zapOut")}
+            loading={zapOutIsLoading || usdBalanceLoading}
+            disabled={usdBalance === 0}
+          >
+            Withdraw
+          </Button>
+        </div>
+      ),
+    },
+    {
+      key: "3",
+      label: "Dump",
+      children: (
+        <div>
+          {selectBefore(handleSetSelectedToken, chainId?.id, selectedToken)}
+          <Button
+            type="primary"
+            className="w-full mt-2"
+            onClick={() => handleAAWalletAction("claimAndSwap")}
+            loading={claimIsLoading || pendingRewardsLoading}
+          >
+            Dump ${" "}
+            {sumUsdDenominatedValues(pendingRewards) > 0.01
+              ? sumUsdDenominatedValues(pendingRewards).toFixed(2)
+              : sumUsdDenominatedValues(pendingRewards)}{" "}
+            Rewards
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   function ModalContent() {
     return (
       <Modal
@@ -222,7 +288,6 @@ export default function IndexOverviews() {
       dispatch(fetchStrategyMetadata());
     }
   }, [portfolioName]);
-
   useEffect(() => {
     if (!portfolioName || account === undefined) return;
     const fetchUsdBalance = async () => {
@@ -242,6 +307,17 @@ export default function IndexOverviews() {
     };
     fetchUsdBalance();
   }, [portfolioName, account]);
+  useEffect(() => {
+    async function fetchTransactionHistory() {
+      const resp = await axios.get(
+        `${process.env.NEXT_PUBLIC_SDK_API_URL}/user/history_list?address=${account.address}&chain=arb`,
+      );
+      setTransactionHistory(resp.data.history_list);
+    }
+    if (account?.address === undefined) return;
+    fetchTransactionHistory();
+  }, [account]);
+
   return (
     <BasePage>
       {notificationContextHolder}
@@ -258,35 +334,36 @@ export default function IndexOverviews() {
                   clipPath:
                     "polygon(100% 38.5%, 82.6% 100%, 60.2% 37.7%, 52.4% 32.1%, 47.5% 41.8%, 45.2% 65.6%, 27.5% 23.4%, 0.1% 35.3%, 17.9% 0%, 27.7% 23.4%, 76.2% 2.5%, 74.2% 56%, 100% 38.5%)",
                 }}
-                className="aspect-[1154/678] w-[72.125rem] bg-gradient-to-br from-[#FF80B5] to-[#9089FC]"
+                className="aspect-[1154/678] w-[72.125rem] bg-gradient-to-br from-[#5dfdcb] to-[#5dfdcb]"
               />
             </div>
             <div className="absolute inset-x-0 bottom-0 h-px bg-gray-900/5" />
           </div>
-
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-            <div className="mx-auto flex max-w-2xl items-center justify-between gap-x-8 lg:mx-0 lg:max-w-none">
-              <div className="flex items-center gap-x-6">
+            <div className="flex items-center justify-between gap-x-6">
+              <div className="flex items-center">
                 <img
                   alt=""
                   src={`/indexFunds/${portfolioName}.webp`}
-                  className="h-16 w-16 flex-none rounded-full ring-1 ring-gray-900/10"
+                  className="h-8 w-8 rounded-full me-2"
                 />
-                <h1>
-                  <div className="text-sm leading-6 text-gray-500">
-                    <span className="text-gray-300" role="vault">
-                      {portfolioName}
-                    </span>
-                  </div>
-                  <div
-                    className="mt-1 text-base font-semibold leading-6 text-white"
-                    role="apr"
-                  >
-                    TVL: $ {portfolioApr[portfolioName]?.portfolioTVL}, APR:{" "}
+                <h1 className="text-2xl font-bold text-white" role="vault">
+                  {portfolioName}
+                </h1>
+              </div>
+              <div className="flex items-center gap-x-8 text-white">
+                <div className="text-center">
+                  <p className="text-2xl font-bold">
+                    $ {portfolioApr[portfolioName]?.portfolioTVL}
+                  </p>
+                  <p className="font-medium">TVL</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold" role="apr">
                     {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(
                       2,
                     )}
-                    %{" "}
+                    %
                     <APRComposition
                       APRData={pendingRewards}
                       mode="pendingRewards"
@@ -294,122 +371,62 @@ export default function IndexOverviews() {
                       exchangeRateWithUSD={1}
                       pendingRewardsLoading={pendingRewardsLoading}
                     />
-                  </div>
-                </h1>
-              </div>
-              <div className="flex items-center gap-x-4 sm:gap-x-6">
-                <div>
-                  {/* Size selector */}
-                  <div className="mt-2">
-                    <TokenDropdownInput
-                      selectedToken={selectedToken}
-                      setSelectedToken={handleSetSelectedToken}
-                      setInvestmentAmount={handleSetInvestmentAmount}
-                    />
-                    <DecimalStep
-                      depositBalance={usdBalance}
-                      setZapOutPercentage={setZapOutPercentage}
-                      currency="$"
-                    />
-                  </div>
-                  <ConfigProvider
-                    theme={{
-                      token: {
-                        colorPrimary: "#5DFDCB",
-                        colorTextLightSolid: "#000000",
-                      },
-                    }}
-                  >
-                    <div className="mt-2 text-gray-400">
-                      <span>Slippage: </span>
-                      <Radio.Group
-                        value={slippage}
-                        buttonStyle="solid"
-                        onChange={(e) => setSlippage(e.target.value)}
-                      >
-                        {[0.5, 1, 3].map((slippageValue) => (
-                          <Radio.Button
-                            value={slippageValue}
-                            key={slippageValue}
-                          >
-                            {slippageValue}%
-                          </Radio.Button>
-                        ))}
-                      </Radio.Group>
-                    </div>
-                  </ConfigProvider>
-                  <div className="mt-2 flex align-items-center">
-                    ⛽<span className="text-emerald-400">Free</span>
-                    <span className="text-gray-400">
-                      , Performance Fee: 9.9%
-                    </span>
-                  </div>
+                  </p>
+                  <p className="font-medium">APR</p>
                 </div>
-
-                <Button
-                  className="hidden text-sm font-semibold leading-6 text-white sm:block"
-                  onClick={() => handleAAWalletAction("zapOut")}
-                  loading={zapOutIsLoading || usdBalanceLoading}
-                  disabled={usdBalance === 0}
-                >
-                  Withdraw
-                </Button>
-                <Button
-                  className="hidden text-sm font-semibold leading-6 text-gray-900 sm:block"
-                  onClick={() => handleAAWalletAction("claimAndSwap")}
-                  loading={claimIsLoading || pendingRewardsLoading}
-                >
-                  Dump ${" "}
-                  {sumUsdDenominatedValues(pendingRewards) > 0.01
-                    ? sumUsdDenominatedValues(pendingRewards).toFixed(2)
-                    : sumUsdDenominatedValues(pendingRewards)}{" "}
-                  Rewards
-                </Button>
-                <Button
-                  className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                  onClick={() => handleAAWalletAction("zapIn")}
-                  loading={zapInIsLoading}
-                  disabled={investmentAmount === 0}
-                >
-                  Zap In
-                </Button>
-                <Menu as="div" className="relative sm:hidden">
-                  <MenuButton className="-m-3 block p-3">
-                    <span className="sr-only">More</span>
-                    <EllipsisVerticalIcon
-                      aria-hidden="true"
-                      className="h-5 w-5 text-gray-500"
-                    />
-                  </MenuButton>
-
-                  <MenuItems
-                    transition
-                    className="absolute right-0 z-10 mt-0.5 w-32 origin-top-right rounded-md bg-gray-900 py-2 shadow-lg ring-1 ring-white/10 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
-                  >
-                    <MenuItem>
-                      <button
-                        type="button"
-                        className="block w-full px-3 py-1 text-left text-sm leading-6 text-white data-[focus]:bg-gray-800"
-                      >
-                        Copy URL
-                      </button>
-                    </MenuItem>
-                    <MenuItem>
-                      <a
-                        href="#"
-                        className="block px-3 py-1 text-sm leading-6 text-white data-[focus]:bg-gray-800"
-                      >
-                        Edit
-                      </a>
-                    </MenuItem>
-                  </MenuItems>
-                </Menu>
               </div>
             </div>
           </div>
         </header>
-
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="mb-8 p-4 ring-1 ring-white/10 sm:rounded-lg relative">
+            <ConfigProvider
+              theme={{
+                components: {},
+                token: {
+                  colorBgContainerDisabled: "rgb(156, 163, 175)",
+                },
+              }}
+            >
+              <Tabs
+                className="text-white"
+                defaultActiveKey="1"
+                items={items}
+                onChange={onChange}
+              />
+            </ConfigProvider>
+            <div className="w-16 flex items-center justify-center rounded-full bg-gray-800 text-gray-400 rounded-full absolute top-7 right-4">
+              <span className="me-2">{slippage}%</span>
+              <Dropdown
+                dropdownRender={() => (
+                  <div className="bg-gray-700 text-white rounded-xl p-4 shadow-lg space-y-4 pb-6">
+                    <p>Max Slippage: </p>
+                    <Radio.Group
+                      value={slippage}
+                      buttonStyle="solid"
+                      size="small"
+                      onChange={(e) => setSlippage(e.target.value)}
+                    >
+                      {[0.5, 1, 3].map((slippageValue) => (
+                        <Radio.Button value={slippageValue} key={slippageValue}>
+                          {slippageValue}%
+                        </Radio.Button>
+                      ))}
+                    </Radio.Group>
+                  </div>
+                )}
+                trigger={["click"]}
+              >
+                <a className="text-white" onClick={(e) => e.preventDefault()}>
+                  <SettingOutlined />
+                </a>
+              </Dropdown>
+            </div>
+            <div className="mt-2 flex align-items-center">
+              ⛽<span className="text-emerald-400">Free</span>
+              <span className="text-gray-400">, Performance Fee: 9.9%</span>
+            </div>
+          </div>
           <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
             {/* Invoice summary */}
             <div className="lg:col-start-3 lg:row-end-1">
@@ -629,73 +646,100 @@ export default function IndexOverviews() {
                 History
               </h2>
               <ul role="list" className="mt-6 space-y-6">
-                {activity.map((activityItem, activityItemIdx) => (
-                  <li key={activityItem.id} className="relative flex gap-x-4">
-                    <div
-                      className={classNames(
-                        activityItemIdx === activity.length - 1
-                          ? "h-6"
-                          : "-bottom-6",
-                        "absolute left-0 top-0 flex w-6 justify-center",
-                      )}
-                    >
-                      <div className="w-px bg-gray-200" />
-                    </div>
-                    {activityItem.type === "commented" ? (
-                      <>
-                        <img
-                          alt=""
-                          src={activityItem.person.imageUrl}
-                          className="relative mt-3 h-6 w-6 flex-none rounded-full bg-gray-800"
-                        />
-                        <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-gray-200">
-                          <div className="flex justify-between gap-x-4">
-                            <div className="py-0.5 text-xs leading-5 text-gray-500">
-                              <span className="font-medium text-white">
-                                {activityItem.person.name}
-                              </span>{" "}
-                              commented
-                            </div>
-                            <time
-                              dateTime={activityItem.dateTime}
-                              className="flex-none py-0.5 text-xs leading-5 text-gray-500"
-                            >
-                              {activityItem.date}
-                            </time>
-                          </div>
-                          <p className="text-sm leading-6 text-gray-500">
-                            {activityItem.comment}
-                          </p>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-gray-900">
-                          {activityItem.type === "paid" ? (
-                            <CheckCircleIcon
-                              aria-hidden="true"
-                              className="h-6 w-6 text-indigo-600"
-                            />
+                {transacitonHistory.map((activityItem, activityItemIdx) => {
+                  // if (portfolioHelper.checkIfTxnBelongsToThisVault(activityItem) === false) return null;
+                  return (
+                    <li key={activityItem.id} className="relative flex gap-x-4">
+                      <div
+                        className={classNames(
+                          activityItemIdx === transacitonHistory.length - 1
+                            ? "h-6"
+                            : "-bottom-6",
+                          "absolute left-0 top-0 flex w-6 justify-center",
+                        )}
+                      >
+                        <div className="w-px bg-gray-200" />
+                      </div>
+                      <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-gray-900">
+                        {activityItem.type === "paid" ? (
+                          <CheckCircleIcon
+                            aria-hidden="true"
+                            className="h-6 w-6 text-indigo-600"
+                          />
+                        ) : (
+                          <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
+                        )}
+                      </div>
+                      <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500">
+                        <span className="font-medium text-white">
+                          {activityItem.sends?.[0]?.to_addr ===
+                            "0x0000000000000000000000000000000000000000" &&
+                          activityItem.receives.length > 1 ? (
+                            // "Withdraw"
+                            <span className="flex gap-1">
+                              <span className="text-orange-400">Withdraw </span>
+                              {activityItem.receives[0].amount}
+                              <ImageWithFallback
+                                token={tokens.props.pageProps.tokensSymbolsMap[
+                                  chainId.id
+                                ][
+                                  activityItem.receives[0].token_id
+                                ].toLowerCase()}
+                                height={20}
+                                width={20}
+                              />
+                            </span>
+                          ) : activityItem.sends.length === 1 &&
+                            activityItem.receives.length > 1 ? (
+                            <span className="flex gap-1">
+                              <span className="text-green-600">Deposit </span>
+                              {activityItem.sends[0].amount}
+                              <ImageWithFallback
+                                token={tokens.props.pageProps.tokensSymbolsMap[
+                                  chainId.id
+                                ][activityItem.sends[0].token_id].toLowerCase()}
+                                height={20}
+                                width={20}
+                              />
+                            </span>
+                          ) : activityItem.sends.length === 0 &&
+                            activityItem.receives.length > 1 &&
+                            activityItem.project_id === "arb_1inch" ? (
+                            <span className="flex gap-1">
+                              <span className="text-blue-400">Claim </span>
+                              {activityItem.receives[0].amount}
+                              <ImageWithFallback
+                                token={tokens.props.pageProps.tokensSymbolsMap[
+                                  chainId.id
+                                ][
+                                  activityItem.receives[0].token_id
+                                ].toLowerCase()}
+                                height={20}
+                                width={20}
+                              />
+                            </span>
                           ) : (
-                            <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
+                            <span className="text-red-600">Failed</span>
                           )}
-                        </div>
-                        <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500">
-                          <span className="font-medium text-white">
-                            {activityItem.person.name}
-                          </span>{" "}
-                          {activityItem.type} the invoice.
-                        </p>
-                        <time
-                          dateTime={activityItem.dateTime}
-                          className="flex-none py-0.5 text-xs leading-5 text-gray-500"
+                        </span>{" "}
+                        <a
+                          href={`https://arbitrum.blockscout.com/tx/${activityItem.id}`}
                         >
-                          {activityItem.date}
-                        </time>
-                      </>
-                    )}
-                  </li>
-                ))}
+                          tx:{" "}
+                          {activityItem.id.slice(0, 4) +
+                            "..." +
+                            activityItem.id.slice(-4)}
+                        </a>
+                      </p>
+                      <time
+                        dateTime={activityItem.dateTime}
+                        className="flex-none py-0.5 text-xs leading-5 text-gray-500"
+                      >
+                        {timeAgo(unixToCustomFormat(activityItem.time_at))}
+                      </time>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </div>
@@ -704,98 +748,3 @@ export default function IndexOverviews() {
     </BasePage>
   );
 }
-
-const activity = [
-  {
-    id: 1,
-    type: "created",
-    person: { name: "Chelsea Hagon" },
-    date: "7d ago",
-    dateTime: "2023-01-23T10:32",
-  },
-  {
-    id: 2,
-    type: "edited",
-    person: { name: "Chelsea Hagon" },
-    date: "6d ago",
-    dateTime: "2023-01-23T11:03",
-  },
-  {
-    id: 3,
-    type: "sent",
-    person: { name: "Chelsea Hagon" },
-    date: "6d ago",
-    dateTime: "2023-01-23T11:24",
-  },
-  {
-    id: 4,
-    type: "commented",
-    person: {
-      name: "Chelsea Hagon",
-      imageUrl:
-        "https://images.unsplash.com/photo-1550525811-e5869dd03032?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    },
-    comment:
-      "Called client, they reassured me the invoice would be paid by the 25th.",
-    date: "3d ago",
-    dateTime: "2023-01-23T15:56",
-  },
-  {
-    id: 5,
-    type: "viewed",
-    person: { name: "Alex Curren" },
-    date: "2d ago",
-    dateTime: "2023-01-24T09:12",
-  },
-  {
-    id: 6,
-    type: "paid",
-    person: { name: "Alex Curren" },
-    date: "1d ago",
-    dateTime: "2023-01-24T09:20",
-  },
-];
-const moods = [
-  {
-    name: "Excited",
-    value: "excited",
-    icon: FireIcon,
-    iconColor: "text-white",
-    bgColor: "bg-red-500",
-  },
-  {
-    name: "Loved",
-    value: "loved",
-    icon: HeartIcon,
-    iconColor: "text-white",
-    bgColor: "bg-pink-400",
-  },
-  {
-    name: "Happy",
-    value: "happy",
-    icon: FaceSmileIcon,
-    iconColor: "text-white",
-    bgColor: "bg-green-400",
-  },
-  {
-    name: "Sad",
-    value: "sad",
-    icon: FaceFrownIcon,
-    iconColor: "text-white",
-    bgColor: "bg-yellow-400",
-  },
-  {
-    name: "Thumbsy",
-    value: "thumbsy",
-    icon: HandThumbUpIcon,
-    iconColor: "text-white",
-    bgColor: "bg-blue-500",
-  },
-  {
-    name: "I feel nothing",
-    value: null,
-    icon: XMarkIconMini,
-    iconColor: "text-gray-500",
-    bgColor: "bg-transparent",
-  },
-];

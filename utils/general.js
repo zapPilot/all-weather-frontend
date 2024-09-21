@@ -12,12 +12,46 @@ const APPROVAL_BUFFER = 1.1;
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 export function timeAgo(dateString) {
-  if (!dateString || dateString?.split(" ") === undefined) return "";
+  if (!dateString || typeof dateString !== "string") {
+    console.error("Invalid date string provided:", dateString);
+    return "Invalid date";
+  }
+
   // Parse the input date string
   const [datePart, timePart] = dateString.split(" ");
-  const [month, day, year] = datePart.split("/");
-  let [hours, minutes, seconds] = timePart.split(":");
+  if (!datePart || !timePart) {
+    console.error("Date string in unexpected format:", dateString);
+    return "Invalid date format";
+  }
+
+  const [day, month, year] = datePart.split("/").map(Number);
+  const [hours, minutes, seconds] = timePart.split(":").map(Number);
+
+  if (
+    isNaN(day) ||
+    isNaN(month) ||
+    isNaN(year) ||
+    isNaN(hours) ||
+    isNaN(minutes) ||
+    isNaN(seconds)
+  ) {
+    console.error("Date parts are not valid numbers:", {
+      day,
+      month,
+      year,
+      hours,
+      minutes,
+      seconds,
+    });
+    return "Invalid date components";
+  }
+
+  // Note: month is 0-indexed in JavaScript Date
   const date = new Date(year, month - 1, day, hours, minutes, seconds);
+  if (isNaN(date.getTime())) {
+    console.error("Invalid date created:", date);
+    return "Invalid date";
+  }
 
   // Get the current time
   const now = new Date();
@@ -25,37 +59,31 @@ export function timeAgo(dateString) {
   // Calculate the difference in milliseconds
   const diffInMs = now - date;
 
+  if (diffInMs < 0) {
+    console.error("Date is in the future:", dateString, "Current date:", now);
+    return "Future date";
+  }
+
   // Convert milliseconds to various time units
-  seconds = Math.floor(diffInMs / 1000);
-  minutes = Math.floor(seconds / 60);
-  hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-  const weeks = Math.floor(days / 7);
-  const months = Math.floor(days / 30);
-  const years = Math.floor(days / 365);
+  const secondsDiff = Math.floor(diffInMs / 1000);
+  const minutesDiff = Math.floor(secondsDiff / 60);
+  const hoursDiff = Math.floor(minutesDiff / 60);
+  const daysDiff = Math.floor(hoursDiff / 24);
+  const weeksDiff = Math.floor(daysDiff / 7);
+  const monthsDiff = Math.floor(daysDiff / 30);
+  const yearsDiff = Math.floor(daysDiff / 365);
 
   // Create a readable string
-  let timeAgoString = "";
-
-  if (years > 0) {
-    timeAgoString = `${years} year${years > 1 ? "s" : ""}`;
-  } else if (months > 0) {
-    timeAgoString = `${months} month${months > 1 ? "s" : ""}`;
-  } else if (weeks > 0) {
-    timeAgoString = `${weeks} week${weeks > 1 ? "s" : ""}`;
-  } else if (days > 0) {
-    timeAgoString = `${days} day${days > 1 ? "s" : ""}`;
-  } else if (hours > 0) {
-    timeAgoString = `${hours} hour${hours > 1 ? "s" : ""}`;
-  } else if (minutes > 0) {
-    timeAgoString = `${minutes} minute${minutes > 1 ? "s" : ""}`;
-  } else {
-    timeAgoString = `${seconds} second${seconds > 1 ? "s" : ""}`;
-  }
-  // Return the string with the timing part bold
-  return timeAgoString;
+  if (yearsDiff > 0) return `${yearsDiff} year${yearsDiff > 1 ? "s" : ""} ago`;
+  if (monthsDiff > 0)
+    return `${monthsDiff} month${monthsDiff > 1 ? "s" : ""} ago`;
+  if (weeksDiff > 0) return `${weeksDiff} week${weeksDiff > 1 ? "s" : ""} ago`;
+  if (daysDiff > 0) return `${daysDiff} day${daysDiff > 1 ? "s" : ""} ago`;
+  if (hoursDiff > 0) return `${hoursDiff} hour${hoursDiff > 1 ? "s" : ""} ago`;
+  if (minutesDiff > 0)
+    return `${minutesDiff} minute${minutesDiff > 1 ? "s" : ""} ago`;
+  return `${secondsDiff} second${secondsDiff > 1 ? "s" : ""} ago`;
 }
-
 export async function getTokenDecimal(tokenAddress) {
   const tokenInstance = new ethers.Contract(tokenAddress, ERC20_ABI, PROVIDER);
   return (await tokenInstance.functions.decimals())[0];
@@ -121,4 +149,16 @@ export function toFixedString(number, decimals) {
 
   // Add negative sign if necessary
   return isNegative ? "-" + result : result;
+}
+
+export function unixToCustomFormat(unixTimestamp) {
+  const date = new Date(unixTimestamp * 1000); // Convert to milliseconds
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are zero-indexed
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 }
