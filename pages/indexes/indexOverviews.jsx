@@ -215,7 +215,7 @@ export default function IndexOverviews() {
     },
     {
       key: "3",
-      label: "Dump",
+      label: "Dump Rewards",
       children: (
         <div>
           {selectBefore(handleSetSelectedToken, chainId?.id, selectedToken)}
@@ -344,7 +344,7 @@ export default function IndexOverviews() {
               <div className="flex items-center">
                 <img
                   alt=""
-                  src={`/indexFunds/${portfolioName}.webp`}
+                  src={`/indexFunds/${portfolioName.toLowerCase()}.webp`}
                   className="h-8 w-8 rounded-full me-2"
                 />
                 <h1 className="text-2xl font-bold text-white" role="vault">

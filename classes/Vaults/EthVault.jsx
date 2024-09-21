@@ -69,7 +69,8 @@ export class EthVault extends BasePortfolio {
     2. Swap fees
     3. Farming rewards from protocols
     (non-sustainable)
-    4. Trading of Principal Tokens (similar to zero-coupon bonds)
+    4. Trading of Principal Tokens
+    (similar to zero-coupon bonds)
     `}
       </ReactMarkdown>
     );
