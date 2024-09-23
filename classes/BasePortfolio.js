@@ -2,9 +2,8 @@ import { tokensAndCoinmarketcapIdsFromDropdownOptions } from "../utils/contractI
 import assert from "assert";
 import { oneInchAddress } from "../utils/oneInch";
 import axios from "axios";
-import { ethers } from "ethers";
 import { getTokenDecimal, approve } from "../utils/general";
-import { initPickerPanelToken } from "antd/es/date-picker/style";
+import { ethers } from "ethers";
 export class BasePortfolio {
   constructor(strategy, weightMapping) {
     this.strategy = strategy;
@@ -45,7 +44,8 @@ export class BasePortfolio {
         }
       }
     }
-    return usdBalance;
+    const pendingRewards = await this.pendingRewards(address, () => {});
+    return usdBalance + this.sumUsdDenominatedValues(pendingRewards);
   }
   async pendingRewards(owner, updateProgress) {
     const tokenPricesMappingTable =
@@ -85,6 +85,13 @@ export class BasePortfolio {
     }
     return rewardsMappingTable;
   }
+  // Function to sum up the usdDenominatedValue
+  sumUsdDenominatedValues(mapping) {
+    return Object.values(mapping).reduce((total, entry) => {
+      return total + (entry.usdDenominatedValue || 0);
+    }, 0);
+  }
+
   async getPortfolioMetadata() {
     let aprMappingTable = {};
     const allProtocols = Object.values(this.strategy).flatMap((protocols) =>
@@ -152,29 +159,6 @@ export class BasePortfolio {
     throw new Error(
       "Method 'getTokenPricesMappingTable()' must be implemented.",
     );
-  }
-  checkIfTxnBelongsToThisVault(txn) {
-    let hits = 0;
-    let tokenSet = new Set();
-    for (const protocolsInThisCategory of Object.values(this.strategy)) {
-      for (const protocolsInThisChain of Object.values(
-        protocolsInThisCategory,
-      )) {
-        for (const protocol of protocolsInThisChain) {
-          Object.values(protocol.interface.customParams).forEach((address) => {
-            if (typeof address === "string" && address.startsWith("0x")) {
-              tokenSet.add(address.toLowerCase());
-            }
-          });
-        }
-      }
-    }
-    for (const receive of txn.receives) {
-      if (tokenSet.has(receive.token_id.toLowerCase())) {
-        hits++;
-      }
-    }
-    return hits > 0;
   }
   async _generateTxnsByAction(actionName, actionParams) {
     let totalTxns = [];

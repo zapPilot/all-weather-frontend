@@ -56,10 +56,7 @@ export class StablecoinVault extends BasePortfolio {
                 42161,
                 ["usdc(bridged)"],
                 "single",
-                {
-                  stakeFarmContractAddress:
-                    "0xaA0DE632A4071642d72Ceb03577F5534ea196927",
-                },
+                {},
               ),
               weight: 0.2,
             },

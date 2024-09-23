@@ -7,6 +7,7 @@ import Image from "next/image";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
+import TransacitonHistory from "./transacitonHistory.jsx";
 import {
   Button,
   Progress,
@@ -25,36 +26,17 @@ import {
   useActiveWalletChain,
 } from "thirdweb/react";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
-
+import axios from "axios";
 import openNotificationWithIcon from "../../utils/notification.js";
 import { selectBefore } from "../../utils/contractInteractions";
 import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
-import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
-import {
-  EllipsisVerticalIcon,
-  CurrencyDollarIcon,
-} from "@heroicons/react/20/solid";
-import { CheckCircleIcon } from "@heroicons/react/24/solid";
+import { CurrencyDollarIcon } from "@heroicons/react/20/solid";
 import { SettingOutlined } from "@ant-design/icons";
-import axios from "axios";
-import { timeAgo, unixToCustomFormat } from "../../utils/general";
-import tokens from "../views/components/tokens.json";
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
-  const product = {
-    breadcrumbs: [
-      { id: 1, name: "Indexes", href: "/indexes" },
-      {
-        id: 2,
-        name: portfolioName,
-        href: `/indexes/indexOverviews/?portfolioName=${portfolioName}`,
-      },
-    ],
-  };
-
   const account = useActiveAccount();
   const chainId = useActiveWalletChain();
   const [selectedToken, setSelectedToken] = useState(
@@ -74,8 +56,8 @@ export default function IndexOverviews() {
   const [pendingRewards, setPendingRewards] = useState(0);
   const [usdBalanceLoading, setUsdBalanceLoading] = useState(false);
   const [pendingRewardsLoading, setPendingRewardsLoading] = useState(false);
+  const [principalBalance, setPrincipalBalance] = useState({});
   const [open, setOpen] = useState(false);
-  const [transacitonHistory, setTransactionHistory] = useState([]);
 
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
@@ -141,7 +123,27 @@ export default function IndexOverviews() {
     try {
       await new Promise((resolve, reject) => {
         sendBatchTransaction(txns.flat(Infinity), {
-          onSuccess: (data) => {
+          onSuccess: async (data) => {
+            await axios({
+              method: "post",
+              url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
+              headers: {
+                "Content-Type": "application/json",
+              },
+              data: {
+                user_api_key: "placeholder",
+                tx_hash: data.transactionHash,
+                address: account.address,
+                metadata: JSON.stringify({
+                  portfolioName,
+                  actionName,
+                  tokenSymbol,
+                  investmentAmount,
+                  zapOutAmount: usdBalance * zapOutPercentage,
+                  timestamp: Math.floor(Date.now() / 1000),
+                }),
+              },
+            });
             openNotificationWithIcon(
               notificationAPI,
               "Transaction Result",
@@ -215,7 +217,7 @@ export default function IndexOverviews() {
     },
     {
       key: "3",
-      label: "Dump Rewards",
+      label: "Convert Rewards",
       children: (
         <div>
           {selectBefore(handleSetSelectedToken, chainId?.id, selectedToken)}
@@ -225,11 +227,13 @@ export default function IndexOverviews() {
             onClick={() => handleAAWalletAction("claimAndSwap")}
             loading={claimIsLoading || pendingRewardsLoading}
           >
-            Dump ${" "}
-            {sumUsdDenominatedValues(pendingRewards) > 0.01
-              ? sumUsdDenominatedValues(pendingRewards).toFixed(2)
-              : sumUsdDenominatedValues(pendingRewards)}{" "}
-            Rewards
+            Convert ${" "}
+            {portfolioHelper?.sumUsdDenominatedValues(pendingRewards) > 0.01
+              ? portfolioHelper
+                  ?.sumUsdDenominatedValues(pendingRewards)
+                  .toFixed(2)
+              : portfolioHelper?.sumUsdDenominatedValues(pendingRewards)}{" "}
+            Rewards to {selectedToken.split("-")[0]}
           </Button>
         </div>
       ),
@@ -271,15 +275,6 @@ export default function IndexOverviews() {
     );
   }
 
-  // Function to sum up the usdDenominatedValue
-  function sumUsdDenominatedValues(mapping) {
-    return Object.values(mapping).reduce((total, entry) => {
-      return total + (entry.usdDenominatedValue || 0);
-    }, 0);
-  }
-  function classNames(...classes) {
-    return classes.filter(Boolean).join(" ");
-  }
   useEffect(() => {
     if (
       portfolioApr[portfolioName] === undefined ||
@@ -307,16 +302,6 @@ export default function IndexOverviews() {
     };
     fetchUsdBalance();
   }, [portfolioName, account]);
-  useEffect(() => {
-    async function fetchTransactionHistory() {
-      const resp = await axios.get(
-        `${process.env.NEXT_PUBLIC_SDK_API_URL}/user/history_list?address=${account.address}&chain=arb`,
-      );
-      setTransactionHistory(resp.data.history_list);
-    }
-    if (account?.address === undefined) return;
-    fetchTransactionHistory();
-  }, [account]);
 
   return (
     <BasePage>
@@ -344,7 +329,7 @@ export default function IndexOverviews() {
               <div className="flex items-center">
                 <img
                   alt=""
-                  src={`/indexFunds/${portfolioName.toLowerCase()}.webp`}
+                  src={`/indexFunds/${portfolioName?.toLowerCase()}.webp`}
                   className="h-8 w-8 rounded-full me-2"
                 />
                 <h1 className="text-2xl font-bold text-white" role="vault">
@@ -435,7 +420,7 @@ export default function IndexOverviews() {
                 <dl className="flex flex-wrap">
                   <div className="flex-auto pl-6 pt-6">
                     <dt className="text-sm font-semibold leading-6 text-white">
-                      Your Deposits
+                      Your Balance
                     </dt>
                     <dd className="mt-1 text-base font-semibold leading-6 text-white">
                       {usdBalanceLoading === true ? (
@@ -446,15 +431,27 @@ export default function IndexOverviews() {
                     </dd>
                   </div>
                   <div className="flex-none self-end px-6 pt-4">
-                    <dt className="sr-only">Status1</dt>
+                    <dt className="sr-only">Rebalance</dt>
                     <dd className="rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-600 ring-1 ring-inset ring-green-600/20">
-                      Rebalance
+                      Rebalance (wip)
+                    </dd>
+                  </div>
+                  <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
+                    <dt className="flex-none">
+                      <span className="sr-only">Principal</span>
+                      <CurrencyDollarIcon
+                        aria-hidden="true"
+                        className="h-6 w-5 text-gray-500"
+                      />
+                    </dt>
+                    <dd className="text-sm font-medium leading-6 text-white">
+                      Principal: ${principalBalance?.usd}
                     </dd>
                   </div>
                   <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
                     <dt className="flex-none">
                       <span className="sr-only">
-                        Earned(Performance Fee deducted)
+                        Earned(Performance fee deducted, no fee if no earnings.)
                       </span>
                       <CurrencyDollarIcon
                         aria-hidden="true"
@@ -462,9 +459,22 @@ export default function IndexOverviews() {
                       />
                     </dt>
                     <dd className="text-sm font-medium leading-6 text-white">
-                      Earned: WIP
+                      Earned:
+                      {usdBalanceLoading ? (
+                        <Spin />
+                      ) : (
+                        <span
+                          className={
+                            usdBalance - principalBalance.usd >= 0
+                              ? "text-green-500"
+                              : "text-red-500"
+                          }
+                        >
+                          ${(usdBalance - principalBalance?.usd).toFixed(2)}
+                        </span>
+                      )}
                       <div className="text-gray-500">
-                        Performance fee deducted
+                      Performance fee deducted, no fee if no earnings
                       </div>
                     </dd>
                   </div>
@@ -481,9 +491,15 @@ export default function IndexOverviews() {
                     </dt>
                     <dd className="text-sm leading-6 text-white">
                       Rewards: $
-                      {sumUsdDenominatedValues(pendingRewards) > 0.01
-                        ? sumUsdDenominatedValues(pendingRewards).toFixed(2)
-                        : sumUsdDenominatedValues(pendingRewards)}
+                      {portfolioHelper?.sumUsdDenominatedValues(
+                        pendingRewards,
+                      ) > 0.01
+                        ? portfolioHelper
+                            ?.sumUsdDenominatedValues(pendingRewards)
+                            .toFixed(2)
+                        : portfolioHelper?.sumUsdDenominatedValues(
+                            pendingRewards,
+                          )}
                     </dd>
                   </div>
                 </dl>
@@ -646,100 +662,7 @@ export default function IndexOverviews() {
                 History
               </h2>
               <ul role="list" className="mt-6 space-y-6">
-                {transacitonHistory.map((activityItem, activityItemIdx) => {
-                  // if (portfolioHelper.checkIfTxnBelongsToThisVault(activityItem) === false) return null;
-                  return (
-                    <li key={activityItem.id} className="relative flex gap-x-4">
-                      <div
-                        className={classNames(
-                          activityItemIdx === transacitonHistory.length - 1
-                            ? "h-6"
-                            : "-bottom-6",
-                          "absolute left-0 top-0 flex w-6 justify-center",
-                        )}
-                      >
-                        <div className="w-px bg-gray-200" />
-                      </div>
-                      <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-gray-900">
-                        {activityItem.type === "paid" ? (
-                          <CheckCircleIcon
-                            aria-hidden="true"
-                            className="h-6 w-6 text-indigo-600"
-                          />
-                        ) : (
-                          <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
-                        )}
-                      </div>
-                      <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500">
-                        <span className="font-medium text-white">
-                          {activityItem.sends?.[0]?.to_addr ===
-                            "0x0000000000000000000000000000000000000000" &&
-                          activityItem.receives.length > 1 ? (
-                            // "Withdraw"
-                            <span className="flex gap-1">
-                              <span className="text-orange-400">Withdraw </span>
-                              {activityItem.receives[0].amount}
-                              <ImageWithFallback
-                                token={tokens.props.pageProps.tokensSymbolsMap[
-                                  chainId.id
-                                ][
-                                  activityItem.receives[0].token_id
-                                ].toLowerCase()}
-                                height={20}
-                                width={20}
-                              />
-                            </span>
-                          ) : activityItem.sends.length === 1 &&
-                            activityItem.receives.length > 1 ? (
-                            <span className="flex gap-1">
-                              <span className="text-green-600">Deposit </span>
-                              {activityItem.sends[0].amount}
-                              <ImageWithFallback
-                                token={tokens.props.pageProps.tokensSymbolsMap[
-                                  chainId.id
-                                ][activityItem.sends[0].token_id].toLowerCase()}
-                                height={20}
-                                width={20}
-                              />
-                            </span>
-                          ) : activityItem.sends.length === 0 &&
-                            activityItem.receives.length > 1 &&
-                            activityItem.project_id === "arb_1inch" ? (
-                            <span className="flex gap-1">
-                              <span className="text-blue-400">Claim </span>
-                              {activityItem.receives[0].amount}
-                              <ImageWithFallback
-                                token={tokens.props.pageProps.tokensSymbolsMap[
-                                  chainId.id
-                                ][
-                                  activityItem.receives[0].token_id
-                                ].toLowerCase()}
-                                height={20}
-                                width={20}
-                              />
-                            </span>
-                          ) : (
-                            <span className="text-red-600">Failed</span>
-                          )}
-                        </span>{" "}
-                        <a
-                          href={`https://arbitrum.blockscout.com/tx/${activityItem.id}`}
-                        >
-                          tx:{" "}
-                          {activityItem.id.slice(0, 4) +
-                            "..." +
-                            activityItem.id.slice(-4)}
-                        </a>
-                      </p>
-                      <time
-                        dateTime={activityItem.dateTime}
-                        className="flex-none py-0.5 text-xs leading-5 text-gray-500"
-                      >
-                        {timeAgo(unixToCustomFormat(activityItem.time_at))}
-                      </time>
-                    </li>
-                  );
-                })}
+                <TransacitonHistory setPrincipalBalance={setPrincipalBalance} />
               </ul>
             </div>
           </div>
