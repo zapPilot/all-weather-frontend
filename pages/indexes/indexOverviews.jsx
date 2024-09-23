@@ -474,7 +474,7 @@ export default function IndexOverviews() {
                         </span>
                       )}
                       <div className="text-gray-500">
-                      Performance fee deducted, no fee if no earnings
+                        Performance fee deducted, no fee if no earnings
                       </div>
                     </dd>
                   </div>

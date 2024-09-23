@@ -2,20 +2,17 @@
 "use client";
 import { useState, useEffect } from "react";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
-import {
-  useActiveAccount,
-  useActiveWalletChain
-} from "thirdweb/react";
+import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import axios from "axios";
 import { timeAgo, unixToCustomFormat } from "../../utils/general";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { useRouter } from "next/router";
 
-export default function TransacitonHistory({setPrincipalBalance}) {
-    const router = useRouter();
-    const { portfolioName } = router.query;
-  
+export default function TransacitonHistory({ setPrincipalBalance }) {
+  const router = useRouter();
+  const { portfolioName } = router.query;
+
   const [transacitonHistoryData, setTransactionHistoryData] = useState([]);
   const account = useActiveAccount();
   const chainId = useActiveWalletChain();
@@ -24,18 +21,22 @@ export default function TransacitonHistory({setPrincipalBalance}) {
   useEffect(() => {
     async function fetchTransactionHistory() {
       const resp = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/transaction/category/${account.address}`
+        `${process.env.NEXT_PUBLIC_API_URL}/transaction/category/${account.address}`,
       );
       setTransactionHistoryData(resp.data.transactions);
       for (const txn of resp.data.transactions) {
-        if (txn.metadata.portfolioName !== portfolioName ) continue;
-        const principalSymbol = txn.metadata.tokenSymbol.includes('usd') ? 'usd' : txn.metadata.tokenSymbol
+        if (txn.metadata.portfolioName !== portfolioName) continue;
+        const principalSymbol = txn.metadata.tokenSymbol.includes("usd")
+          ? "usd"
+          : txn.metadata.tokenSymbol;
         if (txn.metadata.actionName === "zapIn") {
           setPrincipalBalance((prev) => {
-            const investmentAmount = parseFloat(txn.metadata.investmentAmount) || 0;
+            const investmentAmount =
+              parseFloat(txn.metadata.investmentAmount) || 0;
             return {
               ...prev,
-              [principalSymbol]: (prev[principalSymbol] || 0) + investmentAmount
+              [principalSymbol]:
+                (prev[principalSymbol] || 0) + investmentAmount,
             };
           });
         } else if (txn.metadata.actionName === "zapOut") {
@@ -43,7 +44,7 @@ export default function TransacitonHistory({setPrincipalBalance}) {
             const zapOutAmount = parseFloat(txn.metadata.zapOutAmount) || 0;
             return {
               ...prev,
-              [principalSymbol]: (prev[principalSymbol] || 0) - zapOutAmount
+              [principalSymbol]: (prev[principalSymbol] || 0) - zapOutAmount,
             };
           });
         }
@@ -83,7 +84,7 @@ export default function TransacitonHistory({setPrincipalBalance}) {
             </div>
             <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500">
               <span className="font-medium text-white">
-                {activityItem.metadata.actionName === 'zapIn' ? (
+                {activityItem.metadata.actionName === "zapIn" ? (
                   <span className="flex gap-1">
                     <span className="text-green-600">Deposit </span>
                     {activityItem.metadata.investmentAmount}
@@ -92,9 +93,8 @@ export default function TransacitonHistory({setPrincipalBalance}) {
                       height={20}
                       width={20}
                     />
-                  </span>)
-                   : activityItem.metadata.actionName === 'zapOut' ? (
-                  
+                  </span>
+                ) : activityItem.metadata.actionName === "zapOut" ? (
                   <span className="flex gap-1">
                     <span className="text-orange-400">Withdraw </span>
                     {activityItem.metadata.zapOutAmount}
@@ -104,13 +104,17 @@ export default function TransacitonHistory({setPrincipalBalance}) {
                       width={20}
                     />
                   </span>
-                )  :  (
+                ) : (
                   <span className="flex gap-1">
-                    <span className="text-blue-400">{activityItem.metadata.actionName}</span>
-                  </span>)
-              }
+                    <span className="text-blue-400">
+                      {activityItem.metadata.actionName}
+                    </span>
+                  </span>
+                )}
               </span>{" "}
-              <a href={`https://arbitrum.blockscout.com/tx/${activityItem.tx_hash}`}>
+              <a
+                href={`https://arbitrum.blockscout.com/tx/${activityItem.tx_hash}`}
+              >
                 tx:{" "}
                 {activityItem.tx_hash.slice(0, 4) +
                   "..." +
