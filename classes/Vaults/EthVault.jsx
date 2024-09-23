@@ -1,5 +1,4 @@
 import { BasePortfolio } from "../BasePortfolio";
-import { YearnV3Vault } from "../Yearn/YearnV3Vault";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import ReactMarkdown from "react-markdown";
 export class EthVault extends BasePortfolio {
@@ -8,16 +7,6 @@ export class EthVault extends BasePortfolio {
       {
         long_term_bond: {
           arbitrum: [
-            {
-              interface: new YearnV3Vault(
-                "arbitrum",
-                42161,
-                ["eth"],
-                "single",
-                {},
-              ),
-              weight: 0.01,
-            },
             {
               interface: new BaseEquilibria(
                 "arbitrum",
@@ -33,7 +22,7 @@ export class EthVault extends BasePortfolio {
                   pidOfEquilibria: 47,
                 },
               ),
-              weight: 0.9,
+              weight: 0.5,
             },
             {
               interface: new BaseEquilibria(
@@ -50,7 +39,7 @@ export class EthVault extends BasePortfolio {
                   pidOfEquilibria: 44,
                 },
               ),
-              weight: 0.09,
+              weight: 0.5,
             },
           ],
         },
