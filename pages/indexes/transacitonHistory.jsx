@@ -2,57 +2,67 @@
 "use client";
 import { useState, useEffect } from "react";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
-import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
+import { useActiveAccount } from "thirdweb/react";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import axios from "axios";
 import { timeAgo, unixToCustomFormat } from "../../utils/general";
-import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { useRouter } from "next/router";
 
-export default function TransacitonHistory({ setPrincipalBalance }) {
+export default function TransacitonHistory({
+  setPrincipalBalance,
+  tokenPricesMappingTable,
+}) {
   const router = useRouter();
   const { portfolioName } = router.query;
 
   const [transacitonHistoryData, setTransactionHistoryData] = useState([]);
   const account = useActiveAccount();
-  const chainId = useActiveWalletChain();
 
-  const portfolioHelper = getPortfolioHelper(portfolioName);
   useEffect(() => {
     async function fetchTransactionHistory() {
       const resp = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/transaction/category/${account.address}`,
       );
       setTransactionHistoryData(resp.data.transactions);
+      let principalBalance = {};
       for (const txn of resp.data.transactions) {
         if (txn.metadata.portfolioName !== portfolioName) continue;
         const principalSymbol = txn.metadata.tokenSymbol.includes("usd")
           ? "usd"
           : txn.metadata.tokenSymbol;
         if (txn.metadata.actionName === "zapIn") {
-          setPrincipalBalance((prev) => {
-            const investmentAmount =
-              parseFloat(txn.metadata.investmentAmount) || 0;
-            return {
-              ...prev,
-              [principalSymbol]:
-                (prev[principalSymbol] || 0) + investmentAmount,
-            };
-          });
+          const investmentAmount =
+            parseFloat(txn.metadata.investmentAmount) || 0;
+          principalBalance = {
+            ...principalBalance,
+            [principalSymbol]:
+              (principalBalance[principalSymbol] || 0) + investmentAmount,
+          };
         } else if (txn.metadata.actionName === "zapOut") {
-          setPrincipalBalance((prev) => {
-            const zapOutAmount = parseFloat(txn.metadata.zapOutAmount) || 0;
-            return {
-              ...prev,
-              [principalSymbol]: (prev[principalSymbol] || 0) - zapOutAmount,
-            };
-          });
+          const zapOutAmount = parseFloat(txn.metadata.zapOutAmount) || 0;
+          principalBalance = {
+            ...principalBalance,
+            [principalSymbol]:
+              (principalBalance[principalSymbol] || 0) + zapOutAmount,
+          };
         }
+      }
+      if (Object.values(tokenPricesMappingTable).length === 0) return;
+      if (portfolioName === "ETH Vault") {
+        const ethPrincipalBalance =
+          (principalBalance["weth"] || 0) +
+          (principalBalance["usd"] || 0) / tokenPricesMappingTable["weth"];
+        setPrincipalBalance(ethPrincipalBalance);
+      } else if (portfolioName === "Stablecoin Vault") {
+        const usdPrincipalBalance =
+          (principalBalance["usd"] || 0) +
+          (principalBalance["weth"] || 0) * tokenPricesMappingTable["weth"];
+        setPrincipalBalance(usdPrincipalBalance);
       }
     }
     if (account?.address === undefined) return;
     fetchTransactionHistory();
-  }, [account]);
+  }, [account, tokenPricesMappingTable]);
   function classNames(...classes) {
     return classes.filter(Boolean).join(" ");
   }
