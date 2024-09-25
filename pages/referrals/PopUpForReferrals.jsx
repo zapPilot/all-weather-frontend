@@ -7,11 +7,11 @@ import {
 } from "@headlessui/react";
 import { WalletIcon } from "@heroicons/react/20/solid";
 import { ethers } from "ethers";
-import { Alert } from "antd";
 import { useActiveAccount } from "thirdweb/react";
-import { useSelector } from "react-redux";
+import openNotificationWithIcon from "../../utils/notification.js";
+import { notification } from "antd";
 
-export default function PopUp({
+export default function PopUpForReferrals({
   open,
   setOpen,
   addresses,
@@ -19,67 +19,69 @@ export default function PopUp({
   wording,
 }) {
   const [inputValue, setInputValue] = useState("");
-  const [alert, setAlert] = useState(false);
-  const [duplicateAlert, setDuplicateAlert] = useState(false);
   const inputValueRef = useRef(inputValue);
-  const addressesRef = useRef(addresses);
   const account = useActiveAccount();
-  const subscriptionStatus = useSelector(
-    (state) => state.subscriptionStatus.subscriptionStatus,
-  );
+  const [notificationAPI, notificationContextHolder] =
+    notification.useNotification();
 
   useEffect(() => {
     inputValueRef.current = inputValue;
   }, [inputValue]);
 
-  const updateBundle = async () => {
+  const addReferrer = async (currentInputValue) => {
     try {
       const response = await fetch(
         `${
-          process.env.NEXT_PUBLIC_API_URL
-        }/bundle/${account.address.toLowerCase()}`,
+          process.env.NEXT_PUBLIC_SDK_API_URL
+        }/referral/${account.address.toLowerCase()}/referrer`,
         {
-          method: "PUT",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            addresses: addressesRef.current.map((item) => item.address),
+            referrer: currentInputValue.toLowerCase(),
           }),
         },
       );
-      await response.json();
+      const resp = await response.json();
+      if (response.ok) {
+        openNotificationWithIcon(
+          notificationAPI,
+          "Referral Program",
+          "success",
+          "Successfully add referrer, happy earning",
+        );
+      } else {
+        openNotificationWithIcon(
+          notificationAPI,
+          "Referral Program",
+          "error",
+          `Failed: ${resp.status}`,
+        );
+      }
     } catch (error) {
-      console.error(error);
+      openNotificationWithIcon(
+        notificationAPI,
+        "Referral Program",
+        "error",
+        `Failed: ${error.message}`,
+      );
     }
   };
 
   const handleAddAddress = async () => {
-    setAlert(false);
-    setDuplicateAlert(false);
-
-    if (addresses.length >= 10 && subscriptionStatus === true) {
-      setAlert(true);
-      return;
-    }
     const currentInputValue = inputValueRef.current;
     if (ethers.utils.isAddress(currentInputValue)) {
-      // Check if the address already exists (case-insensitive)
-      const isDuplicate = addresses.some(
-        (addr) =>
-          addr.address.toLowerCase() === currentInputValue.toLowerCase(),
-      );
-      if (!isDuplicate) {
-        addressesRef.current = [...addresses, { address: currentInputValue }];
-        setAddresses([...addresses, { address: currentInputValue }]);
-        await updateBundle();
-        setInputValue("");
-        setOpen(false);
-      } else {
-        setDuplicateAlert(true);
-      }
+      await addReferrer(currentInputValue);
+      setInputValue("");
     } else {
-      setAlert(true);
+      openNotificationWithIcon(
+        notificationAPI,
+        "Referral Program",
+        "error",
+        `Invalid Address: ${currentInputValue}`,
+      );
     }
   };
 
@@ -89,6 +91,7 @@ export default function PopUp({
       onClose={() => setOpen(false)}
       className="relative z-10"
     >
+      {notificationContextHolder}
       <DialogBackdrop
         transition
         className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in"
@@ -100,24 +103,6 @@ export default function PopUp({
             transition
             className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all data-[closed]:translate-y-4 data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in sm:my-8 sm:w-full sm:max-w-sm sm:p-6 data-[closed]:sm:translate-y-0 data-[closed]:sm:scale-95"
           >
-            {alert ? (
-              <Alert
-                className="mb-2"
-                message="Invalid address or subscribe to add more than 10 addresses"
-                type="error"
-                showIcon
-                closable
-              />
-            ) : null}
-            {duplicateAlert ? (
-              <Alert
-                className="mb-2"
-                message="Address already exists"
-                type="error"
-                showIcon
-                closable
-              />
-            ) : null}
             <div>
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
                 <WalletIcon
