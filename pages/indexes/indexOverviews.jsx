@@ -664,21 +664,21 @@ export default function IndexOverviews() {
                       ),
                     ),
                 )}
+              {portfolioHelper?.lockUpPeriod() !== 0 ? (
+                <div className="sm:pr-4">
+                  <dt className="inline text-gray-500">Lock-up Period</dt>{" "}
+                  <dd className="inline text-gray-300">
+                    <time dateTime="2023-23-01">
+                      {portfolioHelper?.lockUpPeriod()} Days
+                    </time>
+                  </dd>
+                </div>
+              ) : null}
               <h2 className="text-base font-semibold leading-6 text-white">
                 Where Does the Yield Come from?
               </h2>
               <dl className="mt-6 grid grid-cols-1 text-sm leading-6 sm:grid-cols-2">
                 <div>{portfolioHelper?.description()}</div>
-                {portfolioHelper?.lockUpPeriod() !== 0 ? (
-                  <div className="sm:pr-4">
-                    <dt className="inline text-gray-500">Lock-up Period</dt>{" "}
-                    <dd className="inline text-gray-300">
-                      <time dateTime="2023-23-01">
-                        {portfolioHelper?.lockUpPeriod()} Days
-                      </time>
-                    </dd>
-                  </div>
-                ) : null}
               </dl>
             </div>
             <div className="lg:col-start-3">
