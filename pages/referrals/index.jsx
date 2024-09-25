@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import PopUpForReferrals from "./PopUpForReferrals";
 import BasePage from "../basePage";
-import CopyableReferralButton from "./CopyableReferralButton";
+import CopyableReferralButton from "./CopyableReferralButton.jsx";
 import { useRouter } from "next/router";
 import { notification } from "antd";
 import openNotificationWithIcon from "../../utils/notification.js";
