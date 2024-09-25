@@ -24,8 +24,14 @@ export class BasePortfolio {
   description() {
     throw new Error("Method 'description()' must be implemented.");
   }
+  denomination() {
+    throw new Error("Method 'denomination()' must be implemented.");
+  }
+  lockUpPeriod() {
+    throw new Error("Method 'lockUpPeriod()' must be implemented.");
+  }
   async usdBalanceOf(address) {
-    const tokenPricesMappingTable = await this._getTokenPricesMappingTable(
+    const tokenPricesMappingTable = await this.getTokenPricesMappingTable(
       () => {},
     );
 
@@ -49,7 +55,7 @@ export class BasePortfolio {
   }
   async pendingRewards(owner, updateProgress) {
     const tokenPricesMappingTable =
-      await this._getTokenPricesMappingTable(updateProgress);
+      await this.getTokenPricesMappingTable(updateProgress);
 
     let rewardsMappingTable = {};
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
@@ -150,15 +156,10 @@ export class BasePortfolio {
       actionParams.progressStepNameCallback(actionName);
     };
     const tokenPricesMappingTable =
-      await this._getTokenPricesMappingTable(updateProgress);
+      await this.getTokenPricesMappingTable(updateProgress);
     actionParams.tokenPricesMappingTable = tokenPricesMappingTable;
     actionParams.updateProgress = updateProgress;
     return await this._generateTxnsByAction(actionName, actionParams);
-  }
-  async getTokenPricesMappingTable() {
-    throw new Error(
-      "Method 'getTokenPricesMappingTable()' must be implemented.",
-    );
   }
   async _generateTxnsByAction(actionName, actionParams) {
     let totalTxns = [];
@@ -406,7 +407,7 @@ export class BasePortfolio {
     }
     return assetAddressSetByChain;
   }
-  async _getTokenPricesMappingTable(updateProgress) {
+  async getTokenPricesMappingTable(updateProgress) {
     let tokenPricesMappingTable = {};
     for (const [token, coinMarketCapId] of Object.entries(
       this.uniqueTokenIdsForCurrentPrice,

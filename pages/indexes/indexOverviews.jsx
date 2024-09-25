@@ -32,7 +32,7 @@ import { selectBefore } from "../../utils/contractInteractions";
 import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
-import { CurrencyDollarIcon } from "@heroicons/react/20/solid";
+import { CurrencyDollarIcon, BanknotesIcon } from "@heroicons/react/20/solid";
 import { SettingOutlined } from "@ant-design/icons";
 export default function IndexOverviews() {
   const router = useRouter();
@@ -56,8 +56,9 @@ export default function IndexOverviews() {
   const [pendingRewards, setPendingRewards] = useState(0);
   const [usdBalanceLoading, setUsdBalanceLoading] = useState(false);
   const [pendingRewardsLoading, setPendingRewardsLoading] = useState(false);
-  const [principalBalance, setPrincipalBalance] = useState({});
+  const [principalBalance, setPrincipalBalance] = useState(0);
   const [open, setOpen] = useState(false);
+  const [tokenPricesMappingTable, setTokenPricesMappingTable] = useState({});
 
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
@@ -227,7 +228,7 @@ export default function IndexOverviews() {
             onClick={() => handleAAWalletAction("claimAndSwap")}
             loading={claimIsLoading || pendingRewardsLoading}
           >
-            Convert ${" "}
+            Convert $
             {portfolioHelper?.sumUsdDenominatedValues(pendingRewards) > 0.01
               ? portfolioHelper
                   ?.sumUsdDenominatedValues(pendingRewards)
@@ -292,6 +293,11 @@ export default function IndexOverviews() {
       const usdBalance = await portfolioHelper.usdBalanceOf(account.address);
       setUsdBalance(usdBalance);
       setUsdBalanceLoading(false);
+
+      const tokenPricesMappingTable =
+        await portfolioHelper.getTokenPricesMappingTable(() => {});
+      setTokenPricesMappingTable(tokenPricesMappingTable);
+
       const pendingRewards = await portfolioHelper.pendingRewards(
         account.address,
         () => {},
@@ -423,8 +429,19 @@ export default function IndexOverviews() {
                       Your Balance
                     </dt>
                     <dd className="mt-1 text-base font-semibold leading-6 text-white">
-                      {usdBalanceLoading === true ? (
+                      {usdBalanceLoading === true ||
+                      Object.values(tokenPricesMappingTable).length === 0 ? (
                         <Spin />
+                      ) : portfolioName === "ETH Vault" ? (
+                        <>
+                          ${usdBalance.toFixed(2)}
+                          <div className="text-gray-500">
+                            {portfolioHelper?.denomination()}
+                            {(
+                              usdBalance / tokenPricesMappingTable["weth"]
+                            ).toFixed(2)}
+                          </div>
+                        </>
                       ) : (
                         `$${usdBalance.toFixed(2)}`
                       )}
@@ -439,13 +456,14 @@ export default function IndexOverviews() {
                   <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
                     <dt className="flex-none">
                       <span className="sr-only">Principal</span>
-                      <CurrencyDollarIcon
+                      <BanknotesIcon
                         aria-hidden="true"
                         className="h-6 w-5 text-gray-500"
                       />
                     </dt>
                     <dd className="text-sm font-medium leading-6 text-white">
-                      Principal: ${principalBalance?.usd}
+                      Principal: {portfolioHelper?.denomination()}
+                      {principalBalance?.toFixed(2)}
                     </dd>
                   </div>
                   <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
@@ -459,20 +477,27 @@ export default function IndexOverviews() {
                       />
                     </dt>
                     <dd className="text-sm font-medium leading-6 text-white">
-                      Earned:
-                      {usdBalanceLoading ? (
+                      PnL: WIP
+                      {/* TODO(David): uncomment this part once we have take asset price into account */}
+                      {/* {usdBalanceLoading || Object.values(tokenPricesMappingTable).length ===0 ? (
                         <Spin />
                       ) : (
                         <span
                           className={
-                            usdBalance - principalBalance.usd >= 0
-                              ? "text-green-500"
-                              : "text-red-500"
+                            usdBalance - principalBalance < 0 || usdBalance / tokenPricesMappingTable["weth"] - principalBalance < 0
+                              ? "text-red-500"
+                              : "text-green-500"
                           }
                         >
-                          ${(usdBalance - principalBalance?.usd).toFixed(2)}
+                          {portfolioHelper?.denomination()}{
+                            portfolioName === 'ETH Vault' ? (
+                              usdBalance / tokenPricesMappingTable["weth"] - principalBalance
+                            ).toFixed(2) : (
+                              usdBalance - principalBalance
+                            ).toFixed(2)
+                          }
                         </span>
-                      )}
+                      )} */}
                       <div className="text-gray-500">
                         Performance fee deducted, no fee if no earnings
                       </div>
@@ -662,7 +687,10 @@ export default function IndexOverviews() {
                 History
               </h2>
               <ul role="list" className="mt-6 space-y-6">
-                <TransacitonHistory setPrincipalBalance={setPrincipalBalance} />
+                <TransacitonHistory
+                  setPrincipalBalance={setPrincipalBalance}
+                  tokenPricesMappingTable={tokenPricesMappingTable}
+                />
               </ul>
             </div>
           </div>

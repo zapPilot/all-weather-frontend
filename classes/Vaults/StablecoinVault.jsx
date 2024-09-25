@@ -99,6 +99,9 @@ export class StablecoinVault extends BasePortfolio {
       </ReactMarkdown>
     );
   }
+  denomination() {
+    return "$";
+  }
   lockUpPeriod() {
     return 2;
   }
