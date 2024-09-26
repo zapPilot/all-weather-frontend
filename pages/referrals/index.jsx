@@ -158,7 +158,7 @@ export default function Referrals() {
                         className="max-w-64 sm:max-w-full truncate"
                         role="address"
                       >
-                        {address.referrer}
+                        {address.referee}
                       </p>
                     </td>
                     <td className="whitespace-nowrap px-2 py-4 text-sm text-white">
