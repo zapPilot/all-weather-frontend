@@ -19,20 +19,27 @@ const items = [
     label: <Link href="/vote">Pools</Link>,
     key: "vote",
   },
-  // {
-  //   label: "More",
-  //   key: "More",
-  //   children: [
-  //     {
-  //       label: <Link href="/vote">Pools</Link>,
-  //       key: "vote",
-  //     },
-  //     {
-  //       label: <Link href="/subscription">Subscription</Link>,
-  //       key: "subscription",
-  //     },
-  //   ],
-  // },
+  {
+    label: "More",
+    key: "More",
+    children: [
+      {
+        label: <Link href="/referrals">Referrals</Link>,
+        key: "referrals",
+      },
+      {
+        label: (
+          <a
+            href="https://all-weather.gitbook.io/all-weather-protocol"
+            target="_blank"
+          >
+            Docs
+          </a>
+        ),
+        key: "docs",
+      },
+    ],
+  },
 ];
 export default function NavBar({ mode }) {
   const router = useRouter();

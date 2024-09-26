@@ -64,6 +64,9 @@ export class EthVault extends BasePortfolio {
       </ReactMarkdown>
     );
   }
+  denomination() {
+    return "Ξ";
+  }
   lockUpPeriod() {
     return 0;
   }
