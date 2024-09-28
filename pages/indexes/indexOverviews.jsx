@@ -139,7 +139,7 @@ export default function IndexOverviews() {
                   portfolioName,
                   actionName,
                   tokenSymbol,
-                  investmentAmount,
+                  investmentAmount: investmentAmount * (1 - slippage / 100),
                   zapOutAmount: usdBalance * zapOutPercentage,
                   timestamp: Math.floor(Date.now() / 1000),
                 }),
@@ -209,7 +209,7 @@ export default function IndexOverviews() {
             className="w-full"
             onClick={() => handleAAWalletAction("zapOut")}
             loading={zapOutIsLoading || usdBalanceLoading}
-            disabled={usdBalance === 0}
+            disabled={usdBalance < 0.01}
           >
             Withdraw
           </Button>
@@ -448,9 +448,9 @@ export default function IndexOverviews() {
                     </dd>
                   </div>
                   <div className="flex-none self-end px-6 pt-4">
-                    <dt className="sr-only">Rebalance</dt>
+                    <dt className="sr-only">Rebalance & Reinvest</dt>
                     <dd className="rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-600 ring-1 ring-inset ring-green-600/20">
-                      Rebalance (wip)
+                      Rebalance & Reinvest (wip)
                     </dd>
                   </div>
                   <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
@@ -477,27 +477,30 @@ export default function IndexOverviews() {
                       />
                     </dt>
                     <dd className="text-sm font-medium leading-6 text-white">
-                      PnL: WIP
-                      {/* TODO(David): uncomment this part once we have take asset price into account */}
-                      {/* {usdBalanceLoading || Object.values(tokenPricesMappingTable).length ===0 ? (
+                      PnL:
+                      {usdBalanceLoading ||
+                      Object.values(tokenPricesMappingTable).length === 0 ? (
                         <Spin />
                       ) : (
                         <span
                           className={
-                            usdBalance - principalBalance < 0 || usdBalance / tokenPricesMappingTable["weth"] - principalBalance < 0
+                            usdBalance - principalBalance < 0 ||
+                            usdBalance / tokenPricesMappingTable["weth"] -
+                              principalBalance <
+                              0
                               ? "text-red-500"
                               : "text-green-500"
                           }
                         >
-                          {portfolioHelper?.denomination()}{
-                            portfolioName === 'ETH Vault' ? (
-                              usdBalance / tokenPricesMappingTable["weth"] - principalBalance
-                            ).toFixed(2) : (
-                              usdBalance - principalBalance
-                            ).toFixed(2)
-                          }
+                          {portfolioHelper?.denomination()}
+                          {portfolioName === "ETH Vault"
+                            ? (
+                                usdBalance / tokenPricesMappingTable["weth"] -
+                                principalBalance
+                              ).toFixed(2)
+                            : (usdBalance - principalBalance).toFixed(2)}
                         </span>
-                      )} */}
+                      )}
                       <div className="text-gray-500">
                         Performance fee deducted, no fee if no earnings
                       </div>
@@ -516,15 +519,17 @@ export default function IndexOverviews() {
                     </dt>
                     <dd className="text-sm leading-6 text-white">
                       Rewards: $
-                      {portfolioHelper?.sumUsdDenominatedValues(
-                        pendingRewards,
-                      ) > 0.01
-                        ? portfolioHelper
-                            ?.sumUsdDenominatedValues(pendingRewards)
-                            .toFixed(2)
-                        : portfolioHelper?.sumUsdDenominatedValues(
-                            pendingRewards,
-                          )}
+                      {pendingRewardsLoading === true ? (
+                        <Spin />
+                      ) : portfolioHelper?.sumUsdDenominatedValues(
+                          pendingRewards,
+                        ) > 0.01 ? (
+                        portfolioHelper
+                          ?.sumUsdDenominatedValues(pendingRewards)
+                          .toFixed(2)
+                      ) : (
+                        portfolioHelper?.sumUsdDenominatedValues(pendingRewards)
+                      )}
                     </dd>
                   </div>
                 </dl>

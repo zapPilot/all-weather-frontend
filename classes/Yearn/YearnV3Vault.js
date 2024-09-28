@@ -107,7 +107,6 @@ export class YearnV3Vault extends BaseProtocol {
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
     ] = this._getTheBestTokenAddressToZapOut();
-
     return [
       [withdrawTxn],
       symbolOfBestTokenToZapOut,
