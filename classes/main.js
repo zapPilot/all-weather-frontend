@@ -13,6 +13,8 @@ export const generateIntentTxns = async (
   setProgress,
   setStepName,
   slippage,
+  shouldClaimRewards,
+  performanceFee,
 ) => {
   let txns;
   if (actionName === "zapIn") {
@@ -27,6 +29,7 @@ export const generateIntentTxns = async (
       progressCallback: (progressPercentage) => setProgress(progressPercentage),
       progressStepNameCallback: (stepName) => setStepName(stepName),
       slippage,
+      shouldClaimRewards,
     });
   } else if (actionName === "zapOut") {
     txns = await portfolioHelper.portfolioAction("zapOut", {
@@ -37,6 +40,8 @@ export const generateIntentTxns = async (
       progressCallback: (progressPercentage) => setProgress(progressPercentage),
       progressStepNameCallback: (stepName) => setStepName(stepName),
       slippage,
+      shouldClaimRewards,
+      performanceFee,
     });
   } else if (actionName === "claimAndSwap") {
     txns = await portfolioHelper.portfolioAction(actionName, {
@@ -52,6 +57,8 @@ export const generateIntentTxns = async (
       progressCallback: (progressPercentage) => setProgress(progressPercentage),
       progressStepNameCallback: (stepName) => setStepName(stepName),
       slippage,
+      shouldClaimRewards,
+      performanceFee,
     });
   }
   return txns;

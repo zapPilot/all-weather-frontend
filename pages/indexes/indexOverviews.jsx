@@ -8,6 +8,7 @@ import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
 import TransacitonHistory from "./transacitonHistory.jsx";
+import { PERFORMANCE_FEE_RATE } from "../../utils/performanceFee.js";
 import {
   Button,
   Progress,
@@ -34,6 +35,7 @@ import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.
 import { generateIntentTxns } from "../../classes/main.js";
 import { CurrencyDollarIcon, BanknotesIcon } from "@heroicons/react/20/solid";
 import { SettingOutlined } from "@ant-design/icons";
+import { sum } from "lodash";
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -97,6 +99,11 @@ export default function IndexOverviews() {
     if (!account) return;
     const [tokenSymbol, tokenAddress, tokenDecimals] =
       tokenSymbolAndAddress.split("-");
+    const shouldClaimRewards =
+      portfolioHelper?.sumUsdDenominatedValues(pendingRewards) >= 1;
+    const currentPnL = calculatePnL(portfolioName);
+    const performanceFee =
+      currentPnL < 0 ? 0 : currentPnL * PERFORMANCE_FEE_RATE;
     const txns = await generateIntentTxns(
       actionName,
       portfolioHelper,
@@ -105,10 +112,12 @@ export default function IndexOverviews() {
       tokenAddress,
       investmentAmount,
       tokenDecimals,
-      zapOutPercentage,
+      Math.max(1, zapOutPercentage + performanceFee / usdBalance),
       setProgress,
       setStepName,
       slippage,
+      shouldClaimRewards,
+      performanceFee,
     );
 
     if (actionName === "zapIn") {
@@ -139,9 +148,19 @@ export default function IndexOverviews() {
                   portfolioName,
                   actionName,
                   tokenSymbol,
-                  investmentAmount,
+                  investmentAmount: investmentAmount * (1 - slippage / 100),
                   zapOutAmount: usdBalance * zapOutPercentage,
                   timestamp: Math.floor(Date.now() / 1000),
+                  PnL: currentPnL,
+                  performanceFee,
+                  performanceFeeActionName:
+                    actionName === "zapIn" || actionName === "claimAndSwap"
+                      ? "unchargedPerformanceFee"
+                      : "performanceFee",
+                  principalAppreciation:
+                    usdBalance -
+                    principalBalance -
+                    sumUsdDenominatedValues(pendingRewards),
                 }),
               },
             });
@@ -209,7 +228,7 @@ export default function IndexOverviews() {
             className="w-full"
             onClick={() => handleAAWalletAction("zapOut")}
             loading={zapOutIsLoading || usdBalanceLoading}
-            disabled={usdBalance === 0}
+            disabled={usdBalance === 0 || usdBalance * zapOutPercentage < 1}
           >
             Withdraw
           </Button>
@@ -227,6 +246,9 @@ export default function IndexOverviews() {
             className="w-full mt-2"
             onClick={() => handleAAWalletAction("claimAndSwap")}
             loading={claimIsLoading || pendingRewardsLoading}
+            disabled={
+              portfolioHelper?.sumUsdDenominatedValues(pendingRewards) < 1
+            }
           >
             Convert $
             {portfolioHelper?.sumUsdDenominatedValues(pendingRewards) > 0.01
@@ -234,7 +256,7 @@ export default function IndexOverviews() {
                   ?.sumUsdDenominatedValues(pendingRewards)
                   .toFixed(2)
               : portfolioHelper?.sumUsdDenominatedValues(pendingRewards)}{" "}
-            Rewards to {selectedToken.split("-")[0]}
+            Rewards to {selectedToken.split("-")[0]} (Minimum claim: $1)
           </Button>
         </div>
       ),
@@ -274,6 +296,13 @@ export default function IndexOverviews() {
         {stepName}
       </Modal>
     );
+  }
+
+  function calculatePnL(portfolioName) {
+    if (portfolioName === "ETH Vault") {
+      return usdBalance / tokenPricesMappingTable["weth"] - principalBalance;
+    }
+    return usdBalance - principalBalance;
   }
 
   useEffect(() => {
@@ -448,9 +477,9 @@ export default function IndexOverviews() {
                     </dd>
                   </div>
                   <div className="flex-none self-end px-6 pt-4">
-                    <dt className="sr-only">Rebalance</dt>
+                    <dt className="sr-only">Rebalance & Reinvest</dt>
                     <dd className="rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-600 ring-1 ring-inset ring-green-600/20">
-                      Rebalance (wip)
+                      Rebalance & Reinvest (wip)
                     </dd>
                   </div>
                   <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
@@ -477,27 +506,29 @@ export default function IndexOverviews() {
                       />
                     </dt>
                     <dd className="text-sm font-medium leading-6 text-white">
-                      PnL: WIP
-                      {/* TODO(David): uncomment this part once we have take asset price into account */}
-                      {/* {usdBalanceLoading || Object.values(tokenPricesMappingTable).length ===0 ? (
+                      PnL:
+                      {usdBalanceLoading ||
+                      Object.values(tokenPricesMappingTable).length === 0 ? (
                         <Spin />
                       ) : (
                         <span
                           className={
-                            usdBalance - principalBalance < 0 || usdBalance / tokenPricesMappingTable["weth"] - principalBalance < 0
+                            calculatePnL(portfolioName) < 0
                               ? "text-red-500"
                               : "text-green-500"
                           }
                         >
-                          {portfolioHelper?.denomination()}{
-                            portfolioName === 'ETH Vault' ? (
-                              usdBalance / tokenPricesMappingTable["weth"] - principalBalance
-                            ).toFixed(2) : (
-                              usdBalance - principalBalance
-                            ).toFixed(2)
-                          }
+                          {((profitAndLoss) =>
+                            profitAndLoss > 0
+                              ? (
+                                  profitAndLoss *
+                                  (1 - PERFORMANCE_FEE_RATE)
+                                ).toFixed(2)
+                              : profitAndLoss.toFixed(2))(
+                            calculatePnL(portfolioName),
+                          )}
                         </span>
-                      )} */}
+                      )}
                       <div className="text-gray-500">
                         Performance fee deducted, no fee if no earnings
                       </div>

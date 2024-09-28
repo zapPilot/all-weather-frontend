@@ -4,6 +4,8 @@ import { oneInchAddress } from "../utils/oneInch";
 import axios from "axios";
 import { getTokenDecimal, approve } from "../utils/general";
 import { ethers } from "ethers";
+
+const PERFORMANCE_FEE_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 export class BasePortfolio {
   constructor(strategy, weightMapping) {
     this.strategy = strategy;
@@ -142,10 +144,13 @@ export class BasePortfolio {
 
   async portfolioAction(actionName, actionParams) {
     let completedSteps = 0;
-    const totalSteps =
+    let totalSteps =
       this._countProtocolStepsWithThisAction(actionName) +
       Object.keys(this.uniqueTokenIdsForCurrentPrice).length +
       Object.keys(this.assetAddressSetByChain).length;
+    if (actionParams.performanceFee > 0) {
+      totalSteps += 1;
+    }
     const updateProgress = (actionName) => {
       completedSteps++;
       actionParams.progressCallback(
@@ -179,6 +184,7 @@ export class BasePortfolio {
         actionParams.slippage,
         actionParams.tokenPricesMappingTable,
         actionParams.updateProgress,
+        actionParams.shouldClaimRewards,
       );
     }
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
@@ -209,7 +215,18 @@ export class BasePortfolio {
               actionParams.updateProgress,
               this.existingInvestmentPositions[chain],
             );
-          } else if (actionName === "zapOut" && protocolUsdBalance > 0.01) {
+            if (actionParams.shouldClaimRewards === true) {
+              const claimTxns = await protocol.interface.claimAndSwap(
+                actionParams.account,
+                actionParams.tokenInAddress,
+                actionParams.slippage,
+                actionParams.tokenPricesMappingTable,
+                actionParams.updateProgress,
+                this.existingInvestmentPositions[chain],
+              );
+              txnsForThisProtocol = txnsForThisProtocol.concat(claimTxns);
+            }
+          } else if (actionName === "zapOut") {
             txnsForThisProtocol = await protocol.interface.zapOut(
               actionParams.account,
               Number(actionParams.zapOutPercentage),
@@ -219,6 +236,17 @@ export class BasePortfolio {
               actionParams.updateProgress,
               this.existingInvestmentPositions[chain],
             );
+            if (actionParams.shouldClaimRewards === true) {
+              const claimTxns = await protocol.interface.claimAndSwap(
+                actionParams.account,
+                actionParams.tokenOutAddress,
+                actionParams.slippage,
+                actionParams.tokenPricesMappingTable,
+                actionParams.updateProgress,
+                this.existingInvestmentPositions[chain],
+              );
+              txnsForThisProtocol = txnsForThisProtocol.concat(claimTxns);
+            }
           } else if (actionName === "claimAndSwap") {
             txnsForThisProtocol = await protocol.interface.claimAndSwap(
               actionParams.account,
@@ -236,6 +264,15 @@ export class BasePortfolio {
         }
       }
     }
+    if (actionName === "zapOut" && actionParams.performanceFee > 0) {
+      const performanceFeeTxns = this._generatePerformanceFeeTxn(
+        actionParams.performanceFee,
+        actionParams.tokenOutSymbol,
+        actionParams.tokenOutAddress,
+        actionParams.tokenPricesMappingTable,
+      );
+      totalTxns = totalTxns.concat(performanceFeeTxns);
+    }
     return totalTxns;
   }
 
@@ -244,6 +281,7 @@ export class BasePortfolio {
     slippage,
     tokenPricesMappingTable,
     updateProgress,
+    shouldClaimRewards,
   ) {
     // rebalace workflow:
 
@@ -287,10 +325,38 @@ export class BasePortfolio {
             this.existingInvestmentPositions[chain],
           );
           txns.push(zapOutTxn);
+          console.log("txns of rebalancing", txns);
+          throw new Error(
+            "txns.push(zapOutTxn) is weird, shouldn't we use concat?",
+          );
+          if (shouldClaimRewards === true) {
+            const claimTxns = await protocol.interface.claimAndSwap(
+              actionParams.account,
+              usdcAddressInThisChain,
+              slippage,
+              tokenPricesMappingTable,
+              updateProgress,
+              this.existingInvestmentPositions[chain],
+            );
+
+            txns = txns.concat(claimTxns);
+          }
           zapOutUsdcBalance += (usdBalance * (100 - slippage)) / 100;
         }
       }
     }
+    if (actionParams.performanceFee > 0) {
+      const performanceFeeTxns = this._generatePerformanceFeeTxn(
+        actionParams.performanceFee,
+        usdcSymbol,
+        usdcAddressInThisChain,
+        actionParams.tokenPricesMappingTable,
+      );
+      txns = txns.concat(performanceFeeTxns);
+    }
+    throw new Error(
+      "we need to substract the performance fee from the following zapIn Amount",
+    );
     return txns.concat(
       await this._generateTxnsByAction("zapIn", {
         account: owner,
@@ -449,15 +515,20 @@ export class BasePortfolio {
         for (const protocol of protocolsInThisChain) {
           if (protocol.weight === 0) continue;
           if (actionName === "zapIn") {
-            counts += protocol.interface.zapInSteps();
+            counts +=
+              protocol.interface.zapInSteps() +
+              protocol.interface.claimAndSwapSteps();
           } else if (actionName === "zapOut") {
-            counts += protocol.interface.zapOutSteps();
+            counts +=
+              protocol.interface.zapOutSteps() +
+              protocol.interface.claimAndSwapSteps();
           } else if (actionName === "claimAndSwap") {
             counts += protocol.interface.claimAndSwapSteps();
           } else if (actionName === "rebalance") {
             counts +=
               protocol.interface.rebalanceSteps() +
-              protocol.interface.zapInSteps();
+              protocol.interface.zapInSteps() +
+              protocol.interface.claimAndSwapSteps();
           } else {
             throw new Error(`Action ${actionName} not supported`);
           }
@@ -465,5 +536,25 @@ export class BasePortfolio {
       }
     }
     return counts;
+  }
+  _generatePerformanceFeeTxn(
+    performanceFee,
+    tokenOutSymbol,
+    tokenOutAddress,
+    tokenPricesMappingTable,
+  ) {
+    const decimals = getTokenDecimal(tokenOutAddress);
+    const amountForThisToken =
+      performanceFee / tokenPricesMappingTable[tokenOutSymbol];
+    const performanceFeeBN = ethers.utils.parseUnits(
+      String(amountForThisToken),
+      decimals,
+    );
+    const performanceFeeTxn = prepareContractCall({
+      tokenOutAddress,
+      method: "function transfer(address to, uint256 value)",
+      params: [PERFORMANCE_FEE_ADDRESS, performanceFeeBN],
+    });
+    return [performanceFeeTxn];
   }
 }

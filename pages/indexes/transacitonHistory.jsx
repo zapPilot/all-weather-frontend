@@ -18,6 +18,22 @@ export default function TransacitonHistory({
   const [transacitonHistoryData, setTransactionHistoryData] = useState([]);
   const account = useActiveAccount();
 
+  function getPrincipalSymbol(txn) {
+    const principalSymbol = txn.metadata.tokenSymbol.includes("usd")
+      ? "usd"
+      : txn.metadata.tokenSymbol;
+    return principalSymbol;
+  }
+  function updatePrincipalMappingTable(
+    principalBalance,
+    principalSymbol,
+    amount,
+  ) {
+    return {
+      ...principalBalance,
+      [principalSymbol]: (principalBalance[principalSymbol] || 0) + amount,
+    };
+  }
   useEffect(() => {
     async function fetchTransactionHistory() {
       const resp = await axios.get(
@@ -27,23 +43,46 @@ export default function TransacitonHistory({
       let principalBalance = {};
       for (const txn of resp.data.transactions) {
         if (txn.metadata.portfolioName !== portfolioName) continue;
-        const principalSymbol = txn.metadata.tokenSymbol.includes("usd")
-          ? "usd"
-          : txn.metadata.tokenSymbol;
+        const principalSymbol = getPrincipalSymbol(txn);
+        const principalAppreciationUsdDenominated =
+          txn.metadata.principalAppreciation || 0;
+        const symbolOfPrincipalAppreciation = "usd";
+        const performanceFee = parseFloat(txn.metadata.performanceFee) || 0;
+
+        // how do I record principalAppreciation for USDC/ETH or pendle in the future?
         if (txn.metadata.actionName === "zapIn") {
           const investmentAmount =
             parseFloat(txn.metadata.investmentAmount) || 0;
-          principalBalance = {
-            ...principalBalance,
-            [principalSymbol]:
-              (principalBalance[principalSymbol] || 0) + investmentAmount,
-          };
+          principalBalance = updatePrincipalMappingTable(
+            principalBalance,
+            principalSymbol,
+            investmentAmount,
+          );
+          principalBalance = updatePrincipalMappingTable(
+            principalBalance,
+            "usd",
+            -performanceFee,
+          );
         } else if (txn.metadata.actionName === "zapOut") {
           const zapOutAmount = parseFloat(txn.metadata.zapOutAmount) || 0;
+          principalBalance = updatePrincipalMappingTable(
+            principalBalance,
+            principalSymbol,
+            -zapOutAmount,
+          );
+        } else if (txn.metadata.actionName === "claimAndSwap") {
           principalBalance = {
             ...principalBalance,
             [principalSymbol]:
-              (principalBalance[principalSymbol] || 0) + zapOutAmount,
+              (principalBalance[principalSymbol] || 0) - performanceFee,
+          };
+        } else if (
+          txn.metadata.performanceFeeActionName === "unchargedPerformanceFee"
+        ) {
+          principalBalance = {
+            ...principalBalance,
+            [principalSymbol]:
+              (principalBalance[principalSymbol] || 0) - performanceFee,
           };
         }
       }
@@ -53,11 +92,24 @@ export default function TransacitonHistory({
           (principalBalance["weth"] || 0) +
           (principalBalance["usd"] || 0) / tokenPricesMappingTable["weth"];
         setPrincipalBalance(ethPrincipalBalance);
-      } else if (portfolioName === "Stablecoin Vault") {
-        const usdPrincipalBalance =
+      } else {
+        // todo: handle other portfolio types
+        const totalBalance =
           (principalBalance["usd"] || 0) +
-          (principalBalance["weth"] || 0) * tokenPricesMappingTable["weth"];
-        setPrincipalBalance(usdPrincipalBalance);
+          Object.keys(principalBalance)
+            .filter((token) => token !== "usd")
+            .reduce(
+              (sum, token) =>
+                sum +
+                (principalBalance[token] || 0) *
+                  (tokenPricesMappingTable[token] || 0),
+              0,
+            );
+
+        // const usdPrincipalBalance =
+        //   (principalBalance["usd"] || 0) +
+        //   (principalBalance["weth"] || 0) * tokenPricesMappingTable["weth"];
+        setPrincipalBalance(totalBalance);
       }
     }
     if (account?.address === undefined) return;
