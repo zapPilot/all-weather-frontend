@@ -43,7 +43,7 @@ export default function TransacitonHistory({
           principalBalance = {
             ...principalBalance,
             [principalSymbol]:
-              (principalBalance[principalSymbol] || 0) + zapOutAmount,
+              (principalBalance[principalSymbol] || 0) - zapOutAmount,
           };
         }
       }

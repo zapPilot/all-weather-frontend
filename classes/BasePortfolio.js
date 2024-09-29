@@ -209,7 +209,7 @@ export class BasePortfolio {
               actionParams.updateProgress,
               this.existingInvestmentPositions[chain],
             );
-          } else if (actionName === "zapOut" && protocolUsdBalance > 0.01) {
+          } else if (actionName === "zapOut") {
             txnsForThisProtocol = await protocol.interface.zapOut(
               actionParams.account,
               Number(actionParams.zapOutPercentage),
