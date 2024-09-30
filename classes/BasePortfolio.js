@@ -513,9 +513,7 @@ export class BasePortfolio {
     zapOutPercentage,
   ) {
     const portfolioUsdBalance = await this.usdBalanceOf(userAddress);
-    const tokenOutUsdBalance =
-      (portfolioUsdBalance / tokenPricesMappingTable[tokenOutSymbol]) *
-      zapOutPercentage;
+    const tokenOutUsdBalance = portfolioUsdBalance * zapOutPercentage;
     const swapFeeUsd = tokenOutUsdBalance * this.swapFeeRate();
     const tokenOutDecimals = await getTokenDecimal(tokenOutAddress);
     const swapFeeBalance = ethers.utils.parseUnits(
