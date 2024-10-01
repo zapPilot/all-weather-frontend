@@ -4,6 +4,12 @@ import { oneInchAddress } from "../utils/oneInch";
 import axios from "axios";
 import { getTokenDecimal, approve } from "../utils/general";
 import { ethers } from "ethers";
+import { getContract, prepareContractCall } from "thirdweb";
+import THIRDWEB_CLIENT from "../utils/thirdweb";
+import { arbitrum } from "thirdweb/chains";
+import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
+
+const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 export class BasePortfolio {
   constructor(strategy, weightMapping) {
     this.strategy = strategy;
@@ -98,6 +104,13 @@ export class BasePortfolio {
     }, 0);
   }
 
+  mulSwapFeeRate(inputBigBumber) {
+    return inputBigBumber.mul(299).div(100000);
+  }
+
+  swapFeeRate() {
+    return 0.00299;
+  }
   async getPortfolioMetadata() {
     let aprMappingTable = {};
     const allProtocols = Object.values(this.strategy).flatMap((protocols) =>
@@ -161,18 +174,31 @@ export class BasePortfolio {
     actionParams.updateProgress = updateProgress;
     return await this._generateTxnsByAction(actionName, actionParams);
   }
+
   async _generateTxnsByAction(actionName, actionParams) {
     let totalTxns = [];
     if (actionName === "zapIn") {
       // TODO(david): zap in's weight should take protocolUsdBalanceDictionary into account
       // protocolUsdBalanceDictionary = await this._getProtocolUsdBalanceDictionary(owner)
+      const transferAmount = this.mulSwapFeeRate(actionParams.zapInAmount);
+      actionParams.zapInAmount = actionParams.zapInAmount.sub(transferAmount);
       const approveTxn = approve(
         actionParams.tokenInAddress,
         oneInchAddress,
         actionParams.zapInAmount,
         actionParams.updateProgress,
       );
-      totalTxns.push(approveTxn);
+      const swapFeeTxn = prepareContractCall({
+        contract: getContract({
+          client: THIRDWEB_CLIENT,
+          address: actionParams.tokenInAddress,
+          chain: arbitrum,
+          abi: ERC20_ABI,
+        }),
+        method: "transfer",
+        params: [PROTOCOL_TREASURY_ADDRESS, transferAmount],
+      });
+      totalTxns = totalTxns.concat([approveTxn, swapFeeTxn]);
     } else if (actionName === "rebalance") {
       return await this._generateRebalanceTxns(
         actionParams.account,
@@ -186,10 +212,6 @@ export class BasePortfolio {
         protocolsInThisCategory,
       )) {
         for (const protocol of protocols) {
-          const protocolUsdBalance = await protocol.interface.usdBalanceOf(
-            actionParams.account,
-            actionParams.tokenPricesMappingTable,
-          );
           if (protocol.weight === 0) {
             continue;
           }
@@ -209,7 +231,7 @@ export class BasePortfolio {
               actionParams.updateProgress,
               this.existingInvestmentPositions[chain],
             );
-          } else if (actionName === "zapOut" && protocolUsdBalance > 0.01) {
+          } else if (actionName === "zapOut") {
             txnsForThisProtocol = await protocol.interface.zapOut(
               actionParams.account,
               Number(actionParams.zapOutPercentage),
@@ -235,6 +257,17 @@ export class BasePortfolio {
           totalTxns = totalTxns.concat(txnsForThisProtocol);
         }
       }
+    }
+    if (actionName === "zapOut") {
+      totalTxns.push(
+        await this._swapFeeTxnForZapOut(
+          actionParams.account,
+          actionParams.tokenOutAddress,
+          actionParams.tokenOutSymbol,
+          actionParams.tokenPricesMappingTable,
+          actionParams.zapOutPercentage,
+        ),
+      );
     }
     return totalTxns;
   }
@@ -408,11 +441,17 @@ export class BasePortfolio {
     return assetAddressSetByChain;
   }
   async getTokenPricesMappingTable(updateProgress) {
-    let tokenPricesMappingTable = {};
+    let tokenPricesMappingTable = {
+      usdc: 1,
+      usdt: 1,
+      dai: 1,
+      frax: 1,
+    };
     for (const [token, coinMarketCapId] of Object.entries(
       this.uniqueTokenIdsForCurrentPrice,
     )) {
       updateProgress(`Fetching price for ${token}`);
+      if (["usdc", "usdt", "dai", "frax"].includes(token)) continue;
       axios
         .get(
           `${process.env.NEXT_PUBLIC_API_URL}/token/${coinMarketCapId}/price`,
@@ -465,5 +504,34 @@ export class BasePortfolio {
       }
     }
     return counts;
+  }
+  async _swapFeeTxnForZapOut(
+    userAddress,
+    tokenOutAddress,
+    tokenOutSymbol,
+    tokenPricesMappingTable,
+    zapOutPercentage,
+  ) {
+    const portfolioUsdBalance = await this.usdBalanceOf(userAddress);
+    const tokenOutUsdBalance = portfolioUsdBalance * zapOutPercentage;
+    const swapFeeUsd = tokenOutUsdBalance * this.swapFeeRate();
+    const tokenOutDecimals = await getTokenDecimal(tokenOutAddress);
+    const swapFeeBalance = ethers.utils.parseUnits(
+      (swapFeeUsd / tokenPricesMappingTable[tokenOutSymbol]).toFixed(
+        tokenOutDecimals,
+      ),
+      tokenOutDecimals,
+    );
+    const swapFeeTxn = prepareContractCall({
+      contract: getContract({
+        client: THIRDWEB_CLIENT,
+        address: tokenOutAddress,
+        chain: arbitrum,
+        abi: ERC20_ABI,
+      }),
+      method: "transfer",
+      params: [PROTOCOL_TREASURY_ADDRESS, swapFeeBalance],
+    });
+    return swapFeeTxn;
   }
 }

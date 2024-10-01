@@ -4,6 +4,7 @@ import BasePage from "../basePage.tsx";
 import { useState, useCallback, useEffect } from "react";
 import DecimalStep from "./DecimalStep";
 import Image from "next/image";
+import Link from "next/link";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
@@ -18,6 +19,7 @@ import {
   Spin,
   Tabs,
   Dropdown,
+  Popover,
 } from "antd";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import {
@@ -33,7 +35,7 @@ import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
 import { CurrencyDollarIcon, BanknotesIcon } from "@heroicons/react/20/solid";
-import { SettingOutlined } from "@ant-design/icons";
+import { SettingOutlined, InfoCircleOutlined } from "@ant-design/icons";
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -110,7 +112,6 @@ export default function IndexOverviews() {
       setStepName,
       slippage,
     );
-
     if (actionName === "zapIn") {
       setZapInIsLoading(false);
     } else if (actionName === "zapOut") {
@@ -139,7 +140,9 @@ export default function IndexOverviews() {
                   portfolioName,
                   actionName,
                   tokenSymbol,
-                  investmentAmount,
+                  investmentAmount:
+                    investmentAmount *
+                    (1 - slippage / 100 - portfolioHelper.swapFeeRate()),
                   zapOutAmount: usdBalance * zapOutPercentage,
                   timestamp: Math.floor(Date.now() / 1000),
                 }),
@@ -209,7 +212,7 @@ export default function IndexOverviews() {
             className="w-full"
             onClick={() => handleAAWalletAction("zapOut")}
             loading={zapOutIsLoading || usdBalanceLoading}
-            disabled={usdBalance === 0}
+            disabled={usdBalance < 0.01}
           >
             Withdraw
           </Button>
@@ -240,6 +243,22 @@ export default function IndexOverviews() {
       ),
     },
   ];
+
+  const yieldContent = (
+    <>
+      {portfolioHelper?.description()}
+      <br />
+      Click{" "}
+      <Link
+        href="https://all-weather.gitbook.io/all-weather-protocol"
+        target="_blank"
+        className="text-blue-400"
+      >
+        here
+      </Link>{" "}
+      for more information
+    </>
+  );
 
   function ModalContent() {
     return (
@@ -415,7 +434,9 @@ export default function IndexOverviews() {
             </div>
             <div className="mt-2 flex align-items-center">
               ⛽<span className="text-emerald-400">Free</span>
-              <span className="text-gray-400">, Performance Fee: 9.9%</span>
+              <span className="text-gray-400">
+                , Transaction Fee: {portfolioHelper?.swapFeeRate() * 100}%
+              </span>
             </div>
           </div>
           <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
@@ -448,9 +469,9 @@ export default function IndexOverviews() {
                     </dd>
                   </div>
                   <div className="flex-none self-end px-6 pt-4">
-                    <dt className="sr-only">Rebalance</dt>
+                    <dt className="sr-only">Rebalance & Reinvest</dt>
                     <dd className="rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-600 ring-1 ring-inset ring-green-600/20">
-                      Rebalance (wip)
+                      Rebalance & Reinvest (wip)
                     </dd>
                   </div>
                   <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
@@ -477,27 +498,35 @@ export default function IndexOverviews() {
                       />
                     </dt>
                     <dd className="text-sm font-medium leading-6 text-white">
-                      PnL: WIP
-                      {/* TODO(David): uncomment this part once we have take asset price into account */}
-                      {/* {usdBalanceLoading || Object.values(tokenPricesMappingTable).length ===0 ? (
+                      PnL:
+                      {usdBalanceLoading ||
+                      Object.values(tokenPricesMappingTable).length === 0 ? (
                         <Spin />
                       ) : (
                         <span
                           className={
-                            usdBalance - principalBalance < 0 || usdBalance / tokenPricesMappingTable["weth"] - principalBalance < 0
-                              ? "text-red-500"
-                              : "text-green-500"
+                            portfolioName === "Stablecoin Vault"
+                              ? usdBalance - principalBalance < 0
+                                ? "text-red-500"
+                                : "text-green-500"
+                              : portfolioName === "ETH Vault"
+                              ? usdBalance / tokenPricesMappingTable["weth"] -
+                                  principalBalance <
+                                0
+                                ? "text-red-500"
+                                : "text-green-500"
+                              : "text-white"
                           }
                         >
-                          {portfolioHelper?.denomination()}{
-                            portfolioName === 'ETH Vault' ? (
-                              usdBalance / tokenPricesMappingTable["weth"] - principalBalance
-                            ).toFixed(2) : (
-                              usdBalance - principalBalance
-                            ).toFixed(2)
-                          }
+                          {portfolioHelper?.denomination()}
+                          {portfolioName === "ETH Vault"
+                            ? (
+                                usdBalance / tokenPricesMappingTable["weth"] -
+                                principalBalance
+                              ).toFixed(2)
+                            : (usdBalance - principalBalance).toFixed(2)}
                         </span>
-                      )} */}
+                      )}
                       <div className="text-gray-500">
                         Performance fee deducted, no fee if no earnings
                       </div>
@@ -516,15 +545,17 @@ export default function IndexOverviews() {
                     </dt>
                     <dd className="text-sm leading-6 text-white">
                       Rewards: $
-                      {portfolioHelper?.sumUsdDenominatedValues(
-                        pendingRewards,
-                      ) > 0.01
-                        ? portfolioHelper
-                            ?.sumUsdDenominatedValues(pendingRewards)
-                            .toFixed(2)
-                        : portfolioHelper?.sumUsdDenominatedValues(
-                            pendingRewards,
-                          )}
+                      {pendingRewardsLoading === true ? (
+                        <Spin />
+                      ) : portfolioHelper?.sumUsdDenominatedValues(
+                          pendingRewards,
+                        ) > 0.01 ? (
+                        portfolioHelper
+                          ?.sumUsdDenominatedValues(pendingRewards)
+                          .toFixed(2)
+                      ) : (
+                        portfolioHelper?.sumUsdDenominatedValues(pendingRewards)
+                      )}
                     </dd>
                   </div>
                 </dl>
@@ -551,10 +582,7 @@ export default function IndexOverviews() {
                             </colgroup>
                             <thead className="border-b border-gray-200 text-white">
                               <tr>
-                                <th
-                                  scope="col"
-                                  className="px-0 py-3 font-semibold"
-                                >
+                                <th scope="col" className="py-3 font-semibold">
                                   <div className="flex items-center space-x-2">
                                     <span>Protocols in</span>
                                     <Image
@@ -565,17 +593,18 @@ export default function IndexOverviews() {
                                     />
                                   </div>
                                 </th>
-                                {/* <th
-                                        scope="col"
-                                        className="hidden py-3 pl-8 pr-0 text-right font-semibold sm:table-cell"
-                                      >
-                                        APR
-                                      </th> */}
                                 <th
                                   scope="col"
-                                  className="py-3 pl-8 pr-0 text-right font-semibold"
+                                  className="py-3 text-right font-semibold"
                                 >
-                                  APR
+                                  <span>APR</span>
+                                  <Popover
+                                    content={yieldContent}
+                                    title="Source of Yield"
+                                    trigger="hover"
+                                  >
+                                    <InfoCircleOutlined className="ms-2 text-gray-500" />
+                                  </Popover>
                                 </th>
                               </tr>
                             </thead>
@@ -645,12 +674,11 @@ export default function IndexOverviews() {
                               <tr>
                                 <th
                                   scope="row"
-                                  colSpan={3}
-                                  className="hidden px-0 pb-0 pt-6 text-right font-normal text-gray-300 sm:table-cell"
+                                  className="pt-6 font-semibold text-white"
                                 >
                                   Avg. APR
                                 </th>
-                                <td className="pb-0 pl-8 pr-0 pt-6 text-right tabular-nums text-white">
+                                <td className="pt-6 font-semibold text-right text-white">
                                   {(
                                     portfolioApr[portfolioName]?.portfolioAPR *
                                     100
@@ -674,12 +702,6 @@ export default function IndexOverviews() {
                   </dd>
                 </div>
               ) : null}
-              <h2 className="text-base font-semibold leading-6 text-white">
-                Where Does the Yield Come from?
-              </h2>
-              <dl className="mt-6 grid grid-cols-1 text-sm leading-6 sm:grid-cols-2">
-                <div>{portfolioHelper?.description()}</div>
-              </dl>
             </div>
             <div className="lg:col-start-3">
               {/* Activity feed */}
