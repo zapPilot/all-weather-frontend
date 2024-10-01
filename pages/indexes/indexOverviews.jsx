@@ -254,10 +254,10 @@ export default function IndexOverviews() {
         className="text-blue-400"
       >
         here
-      </Link>
-      {" "}for more information
+      </Link>{" "}
+      for more information
     </>
-  )
+  );
 
   function ModalContent() {
     return (
@@ -574,10 +574,7 @@ export default function IndexOverviews() {
                             </colgroup>
                             <thead className="border-b border-gray-200 text-white">
                               <tr>
-                                <th
-                                  scope="col"
-                                  className="py-3 font-semibold"
-                                >
+                                <th scope="col" className="py-3 font-semibold">
                                   <div className="flex items-center space-x-2">
                                     <span>Protocols in</span>
                                     <Image
@@ -598,7 +595,7 @@ export default function IndexOverviews() {
                                     title="Source of Yield"
                                     trigger="hover"
                                   >
-                                    <InfoCircleOutlined className="ms-2 text-gray-500"/>
+                                    <InfoCircleOutlined className="ms-2 text-gray-500" />
                                   </Popover>
                                 </th>
                               </tr>
