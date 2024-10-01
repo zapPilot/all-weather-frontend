@@ -4,6 +4,7 @@ import BasePage from "../basePage.tsx";
 import { useState, useCallback, useEffect } from "react";
 import DecimalStep from "./DecimalStep";
 import Image from "next/image";
+import Link from "next/link";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
@@ -18,6 +19,7 @@ import {
   Spin,
   Tabs,
   Dropdown,
+  Popover,
 } from "antd";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import {
@@ -33,7 +35,7 @@ import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
 import { CurrencyDollarIcon, BanknotesIcon } from "@heroicons/react/20/solid";
-import { SettingOutlined } from "@ant-design/icons";
+import { SettingOutlined, InfoCircleOutlined } from "@ant-design/icons";
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -240,6 +242,22 @@ export default function IndexOverviews() {
       ),
     },
   ];
+
+  const yieldContent = (
+    <>
+      {portfolioHelper?.description()}
+      <br />
+      Click{" "}
+      <Link
+        href="https://all-weather.gitbook.io/all-weather-protocol"
+        target="_blank"
+        className="text-blue-400"
+      >
+        here
+      </Link>{" "}
+      for more information
+    </>
+  );
 
   function ModalContent() {
     return (
@@ -556,10 +574,7 @@ export default function IndexOverviews() {
                             </colgroup>
                             <thead className="border-b border-gray-200 text-white">
                               <tr>
-                                <th
-                                  scope="col"
-                                  className="px-0 py-3 font-semibold"
-                                >
+                                <th scope="col" className="py-3 font-semibold">
                                   <div className="flex items-center space-x-2">
                                     <span>Protocols in</span>
                                     <Image
@@ -570,17 +585,18 @@ export default function IndexOverviews() {
                                     />
                                   </div>
                                 </th>
-                                {/* <th
-                                        scope="col"
-                                        className="hidden py-3 pl-8 pr-0 text-right font-semibold sm:table-cell"
-                                      >
-                                        APR
-                                      </th> */}
                                 <th
                                   scope="col"
-                                  className="py-3 pl-8 pr-0 text-right font-semibold"
+                                  className="py-3 text-right font-semibold"
                                 >
-                                  APR
+                                  <span>APR</span>
+                                  <Popover
+                                    content={yieldContent}
+                                    title="Source of Yield"
+                                    trigger="hover"
+                                  >
+                                    <InfoCircleOutlined className="ms-2 text-gray-500" />
+                                  </Popover>
                                 </th>
                               </tr>
                             </thead>
@@ -650,12 +666,11 @@ export default function IndexOverviews() {
                               <tr>
                                 <th
                                   scope="row"
-                                  colSpan={3}
-                                  className="hidden px-0 pb-0 pt-6 text-right font-normal text-gray-300 sm:table-cell"
+                                  className="pt-6 font-semibold text-white"
                                 >
                                   Avg. APR
                                 </th>
-                                <td className="pb-0 pl-8 pr-0 pt-6 text-right tabular-nums text-white">
+                                <td className="pt-6 font-semibold text-right text-white">
                                   {(
                                     portfolioApr[portfolioName]?.portfolioAPR *
                                     100
@@ -679,12 +694,6 @@ export default function IndexOverviews() {
                   </dd>
                 </div>
               ) : null}
-              <h2 className="text-base font-semibold leading-6 text-white">
-                Where Does the Yield Come from?
-              </h2>
-              <dl className="mt-6 grid grid-cols-1 text-sm leading-6 sm:grid-cols-2">
-                <div>{portfolioHelper?.description()}</div>
-              </dl>
             </div>
             <div className="lg:col-start-3">
               {/* Activity feed */}

@@ -88,7 +88,7 @@ export class StablecoinVault extends BasePortfolio {
   }
   description() {
     return (
-      <ReactMarkdown className="text-gray-400">
+      <ReactMarkdown>
         {`
     1. Liquidation fees from perpetual exchanges
     2. Farming rewards from new protocols
