@@ -30,25 +30,29 @@ describe("Equilibria ETH Vault", () => {
       setStepName,
       slippage,
     );
-    expect(txns.length).toBe(5);
+    expect(txns.length).toBe(6);
     expect(await encode(txns[0])).toBe(
-      "0x095ea7b30000000000000000000000001111111254eeb25477b68fb85ed929f73a9605820000000000000000000000000000000000000000000000000f43fc2c04ee0080",
+      "0x095ea7b30000000000000000000000001111111254eeb25477b68fb85ed929f73a9605820000000000000000000000000000000000000000000000000f384cd808437080",
     );
     expect(await encode(txns[1])).toBe(
-      "0x095ea7b3000000000000000000000000888888888889758f76e7103c6cbf23abbf58f9460000000000000000000000000000000000000000000000000f43fc2c04ee0080",
+      "0xa9059cbb0000000000000000000000002ecbc6f229fed06044cdb0dd772437a30190cd50000000000000000000000000000000000000000000000000000a9f639fe0e000",
+    );
+
+    expect(await encode(txns[2])).toBe(
+      "0x095ea7b3000000000000000000000000888888888889758f76e7103c6cbf23abbf58f9460000000000000000000000000000000000000000000000000f384cd808437080",
     );
     expect(
-      (await encode(txns[2])).includes(
+      (await encode(txns[3])).includes(
         "c774806f9ff5f3d8aabb6b70d0ed509e42afe6f0",
       ),
     ).toBe(true);
-    expect(txns[3].to).toBe("0x279b44E48226d40Ec389129061cb0B56C5c09e46");
+    expect(txns[4].to).toBe("0x279b44E48226d40Ec389129061cb0B56C5c09e46");
     expect(
-      (await encode(txns[3])).includes(
+      (await encode(txns[4])).includes(
         "4d32c8ff2facc771ec7efc70d6a8468bc30c26bf",
       ),
     ).toBe(true);
-    expect(txns[4].to).toBe("0x4D32C8Ff2fACC771eC7Efc70d6A8468bC30C26bF");
+    expect(txns[5].to).toBe("0x4D32C8Ff2fACC771eC7Efc70d6A8468bC30C26bF");
   });
   it("should be able to zap-out Equilibria's ETH Vault", async () => {
     const actionName = "zapOut";
@@ -76,7 +80,7 @@ describe("Equilibria ETH Vault", () => {
       setStepName,
       slippage,
     );
-    expect(txns.length).toBe(9);
+    expect(txns.length).toBe(10);
     expect(
       (await encode(txns[0])).includes(
         "c7517f481cc0a645e63f870830a4b2e580421e32",

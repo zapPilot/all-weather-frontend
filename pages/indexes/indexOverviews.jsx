@@ -112,7 +112,6 @@ export default function IndexOverviews() {
       setStepName,
       slippage,
     );
-
     if (actionName === "zapIn") {
       setZapInIsLoading(false);
     } else if (actionName === "zapOut") {
@@ -141,7 +140,9 @@ export default function IndexOverviews() {
                   portfolioName,
                   actionName,
                   tokenSymbol,
-                  investmentAmount: investmentAmount * (1 - slippage / 100),
+                  investmentAmount:
+                    investmentAmount *
+                    (1 - slippage / 100 - portfolioHelper.swapFeeRate()),
                   zapOutAmount: usdBalance * zapOutPercentage,
                   timestamp: Math.floor(Date.now() / 1000),
                 }),
@@ -433,7 +434,9 @@ export default function IndexOverviews() {
             </div>
             <div className="mt-2 flex align-items-center">
               ⛽<span className="text-emerald-400">Free</span>
-              <span className="text-gray-400">, Performance Fee: 9.9%</span>
+              <span className="text-gray-400">
+                , Transaction Fee: {portfolioHelper?.swapFeeRate() * 100}%
+              </span>
             </div>
           </div>
           <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
@@ -502,12 +505,17 @@ export default function IndexOverviews() {
                       ) : (
                         <span
                           className={
-                            usdBalance - principalBalance < 0 ||
-                            usdBalance / tokenPricesMappingTable["weth"] -
-                              principalBalance <
-                              0
-                              ? "text-red-500"
-                              : "text-green-500"
+                            portfolioName === "Stablecoin Vault"
+                              ? usdBalance - principalBalance < 0
+                                ? "text-red-500"
+                                : "text-green-500"
+                              : portfolioName === "ETH Vault"
+                              ? usdBalance / tokenPricesMappingTable["weth"] -
+                                  principalBalance <
+                                0
+                                ? "text-red-500"
+                                : "text-green-500"
+                              : "text-white"
                           }
                         >
                           {portfolioHelper?.denomination()}
