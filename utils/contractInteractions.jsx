@@ -55,6 +55,7 @@ export const selectBefore = (handleChange, chainID, selectedToken) => {
     <>
       <Button
         onClick={showModal}
+        role="select-token-button"
       >
         <div className="flex items-center">
           {tokens.props.pageProps.tokenList[String(chainID)]
