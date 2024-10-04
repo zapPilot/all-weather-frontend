@@ -8,18 +8,20 @@ import { Modal } from "antd";
 // mock tokens
 const tokens = [
   {
-    "symbol": "USDC",
-    "address": "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
-    "value": "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
-    "logoURI2": "https://tokens.1inch.io/0xaf88d065e77c8cc2239327c5edb3a432268e5831.png",
+    symbol: "USDC",
+    address: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+    value: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+    logoURI2:
+      "https://tokens.1inch.io/0xaf88d065e77c8cc2239327c5edb3a432268e5831.png",
   },
   {
-    "symbol": "USDT",
-    "address": "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
-    "value": "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
-    "logoURI2": "https://tokens.1inch.io/0xdac17f958d2ee523a2206206994597c13d831ec7.png",
+    symbol: "USDT",
+    address: "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
+    value: "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
+    logoURI2:
+      "https://tokens.1inch.io/0xdac17f958d2ee523a2206206994597c13d831ec7.png",
   },
-]
+];
 
 const ModalComponent = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,7 +35,9 @@ const ModalComponent = () => {
 
   return (
     <div>
-      <button onClick={showModal} role="select-token-button">USDC</button>
+      <button onClick={showModal} role="select-token-button">
+        USDC
+      </button>
       <Modal
         title="Basic Modal"
         open={isModalOpen}
@@ -46,7 +50,11 @@ const ModalComponent = () => {
         {isModalOpen && (
           <div>
             {tokens.map((token) => (
-              <button key={token.address} value={`${token.symbol}-${token.address}-6`} type="button">
+              <button
+                key={token.address}
+                value={`${token.symbol}-${token.address}-6`}
+                type="button"
+              >
                 <div>
                   <img alt={token.symbol} src={token.logoURI2} />
                   <span>{token.symbol}</span>
@@ -68,7 +76,7 @@ describe("select button click", () => {
 
     // Click the button to open the modal
     fireEvent.click(selectTokenButton);
-    
+
     // Check if the modal is opened
     expect(screen.getByText("Basic Modal")).toBeInTheDocument();
   });
