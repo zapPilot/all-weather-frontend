@@ -392,7 +392,11 @@ export default function IndexOverviews() {
           <div className="mb-8 p-4 ring-1 ring-white/10 sm:rounded-lg relative">
             <ConfigProvider
               theme={{
-                components: {},
+                components: {
+                  Tabs: {
+                    horizontalItemGutter: 16,
+                  },
+                },
                 token: {
                   colorBgContainerDisabled: "rgb(156, 163, 175)",
                 },
