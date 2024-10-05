@@ -36,7 +36,7 @@ export const tokensForDropDown = [
   // "axlusdc",
 ];
 export const selectBefore = (handleChange, chainID, selectedToken) => {
-  const selectSymbol = selectedToken.split("-")[0];
+  const selectSymbol = selectedToken?.split("-")[0];
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const showModal = () => {
