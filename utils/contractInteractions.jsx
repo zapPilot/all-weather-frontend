@@ -63,7 +63,11 @@ export const selectBefore = (handleChange, chainID, selectedToken) => {
               ),
             )
             ?.map((option) => {
-              if (selectSymbol && option.symbol && option.symbol.toLowerCase() === selectSymbol.toLowerCase()) {
+              if (
+                selectSymbol &&
+                option.symbol &&
+                option.symbol.toLowerCase() === selectSymbol.toLowerCase()
+              ) {
                 return (
                   <Image
                     src={option.logoURI2}
