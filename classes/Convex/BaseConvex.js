@@ -1,5 +1,6 @@
 import CurveStableSwapNG from "../../lib/contracts/Curve/CurveStableSwapNG.json" assert { type: "json" };
 import Booster from "../../lib/contracts/Convex/Booster.json" assert { type: "json" };
+import ConvexRewardPool from "../../lib/contracts/Convex/ConvexRewardPool.json" assert { type: "json" };
 import { arbitrum } from "thirdweb/chains";
 import axios from "axios";
 import { ethers } from "ethers";
@@ -9,7 +10,7 @@ import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import BaseProtocol from "../BaseProtocol.js";
 import { approve } from "../../utils/general";
-import { type } from "os";
+import ERC20_ABI from "../../lib/contracts/ERC20.json" assert { type: "json" };
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 export class BaseConvex extends BaseProtocol {
@@ -17,17 +18,17 @@ export class BaseConvex extends BaseProtocol {
     super(chain, chaindId, symbolList, mode, customParams);
     this.protocolName = "convex";
     this.protocolVersion = "0";
-    this.pid = 34;
-    this.assetDecimals = 18;
+    this.pid = this.customParams.pid;
+    this.assetDecimals = this.customParams.assetDecimals;
     this.assetContract = getContract({
       client: THIRDWEB_CLIENT,
-      address: "0x096A8865367686290639bc50bF8D85C0110d9Fea",
+      address: this.customParams.assetAddress,
       chain: arbitrum,
       abi: CurveStableSwapNG,
     });
     this.protocolContract = getContract({
       client: THIRDWEB_CLIENT,
-      address: "0x096A8865367686290639bc50bF8D85C0110d9Fea",
+      address: this.customParams.protocolAddress,
       chain: arbitrum,
       abi: CurveStableSwapNG,
     });
@@ -37,6 +38,12 @@ export class BaseConvex extends BaseProtocol {
       address: "0xF403C135812408BFbE8713b5A23a04b3D48AAE31",
       chain: arbitrum,
       abi: Booster,
+    });
+    this.convexRewardPoolContract = getContract({
+      client: THIRDWEB_CLIENT,
+      address: customParams.convexRewardPool,
+      chain: arbitrum,
+      abi: ConvexRewardPool,
     });
     this._checkIfParamsAreSet();
   }
@@ -50,10 +57,54 @@ export class BaseConvex extends BaseProtocol {
     return 2;
   }
   rewards() {
-    return [];
+    return [
+      {
+        symbol: "crv",
+        coinmarketcapApiId: 6538,
+        address: "0x11cDb42B0EB46D95f990BeDD4695A6e3fA034978",
+        decimals: this.assetDecimals,
+      },
+      {
+        symbol: "cvx",
+        coinmarketcapApiId: 9903,
+        address: "0xaAFcFD42c9954C6689ef1901e03db742520829c5",
+        decimals: this.assetDecimals,
+      },
+    ];
   }
   async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
-    return {};
+    let rewardBalance = {};
+    updateProgress(
+      `fetching pending rewards from ${this.stakeFarmContract.address}`,
+    );
+    const stakeFarmContractInstance = new ethers.Contract(
+      this.convexRewardPoolContract.address,
+      ConvexRewardPool,
+      PROVIDER,
+    );
+    const rewardLength =
+      await stakeFarmContractInstance.functions.rewardLength();
+    const rewards = this.rewards();
+    for (let index = 0; index < rewardLength; index++) {
+      const reward_address = (
+        await stakeFarmContractInstance.functions.rewards(index)
+      ).reward_token;
+      const reward_balance = (
+        await stakeFarmContractInstance.functions.claimable_reward(
+          reward_address,
+          recipient,
+        )
+      )[0];
+      rewardBalance[reward_address] = {
+        symbol: rewards[index].symbol,
+        balance: reward_balance,
+        usdDenominatedValue:
+          (tokenPricesMappingTable[rewards[index].symbol] * reward_balance) /
+          Math.pow(10, rewards[index].decimals),
+        decimals: rewards[index].decimals,
+      };
+    }
+    return rewardBalance;
   }
   async customDepositLP(
     recipient,
@@ -104,74 +155,88 @@ export class BaseConvex extends BaseProtocol {
     });
     return [approveTxns, depositTxn, approveForStakingTxn, stakeTxn];
   }
-  async customWithdrawAndClaim(
+  async customWithdrawLPAndClaim(
     recipient,
     percentage,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    const stakeFarmContractInstance = new ethers.Contract(
-      this.stakeFarmContract.address,
-      YearnV3,
+    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
+    const stakeBalance = await this.stakeBalanceOf(recipient, updateProgress);
+    const amount = stakeBalance.mul(percentageBN).div(10000);
+    const unstakeTxn = prepareContractCall({
+      contract: this.convexRewardPoolContract,
+      method: "withdraw",
+      params: [amount, false],
+    });
+
+    const protocolContractInstance = new ethers.Contract(
+      this.protocolContract.address,
+      CurveStableSwapNG,
       PROVIDER,
     );
-    // Assuming 'percentage' is a float between 0 and 1
-    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
-
-    const balance = (
-      await stakeFarmContractInstance.functions.userInfo(this.pid, recipient)
+    updateProgress("Getting LP balances");
+    const [token_a_balance, token_b_balance] = (
+      await protocolContractInstance.functions.get_balances()
     )[0];
-    const amount = balance.mul(percentageBN).div(10000);
-    const unstakeTxn = prepareContractCall({
-      contract: this.stakeFarmContract,
-      method: "withdraw",
-      params: [this.pid, amount],
-    });
+    const ratio = token_a_balance / token_a_balance.add(token_b_balance);
+    const minimumWithdrawAmount_a = this.mul_with_slippage_in_bignumber_format(
+      amount * ratio,
+      slippage,
+    );
+    const minimumWithdrawAmount_b = this.mul_with_slippage_in_bignumber_format(
+      amount * (1 - ratio),
+      slippage,
+    );
+    const minPairAmounts = [minimumWithdrawAmount_a, minimumWithdrawAmount_b];
     const withdrawTxn = prepareContractCall({
-      contract: this.assetContract,
-      method: "withdraw",
-      params: [amount],
+      contract: this.protocolContract,
+      method: "remove_liquidity",
+      params: [amount, minPairAmounts],
     });
-
-    const [
-      symbolOfBestTokenToZapOut,
-      bestTokenAddressToZapOut,
-      decimalOfBestTokenToZapOut,
-    ] = this._getTheBestTokenAddressToZapOut();
+    const [claimTxn, _] = await this.customClaim(
+      recipient,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
+    const tokenMetadatas = this._getLPTokenPairesToZapIn();
     return [
-      [unstakeTxn, withdrawTxn],
-      symbolOfBestTokenToZapOut,
-      bestTokenAddressToZapOut,
-      decimalOfBestTokenToZapOut,
-      amount,
+      [unstakeTxn, withdrawTxn, claimTxn],
+      tokenMetadatas,
+      minPairAmounts,
     ];
   }
   async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
-    return [[], {}];
+    const pendingRewards = await this.pendingRewards(
+      recipient,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
+    const claimTxn = prepareContractCall({
+      contract: this.convexRewardPoolContract,
+      method: "function getReward(address _account)",
+      params: [recipient],
+    });
+    return [[claimTxn], pendingRewards];
   }
   customRedeemVestingRewards(pendingRewards) {
     return [];
   }
   async usdBalanceOf(recipient, tokenPricesMappingTable) {
-    const assetContractInstance = new ethers.Contract(
-      this.assetContract.address,
-      CurveStableSwapNG,
+    const lpBalance = await this.stakeBalanceOf(recipient, () => {});
+    const lpPrice = this._calculateLpPrice();
+    return (lpBalance * lpPrice) / Math.pow(10, this.assetDecimals);
+  }
+  async stakeBalanceOf(recipient, updateProgress) {
+    const rewardPoolContractInstance = new ethers.Contract(
+      this.convexRewardPoolContract.address,
+      ERC20_ABI,
       PROVIDER,
     );
-    const userBalance =
-      await assetContractInstance.functions.balanceOf(recipient);
-    return (userBalance * tokenPricesMappingTable["usdc"]) / 1e6;
+    updateProgress("Getting stake balance");
+    return (await rewardPoolContractInstance.functions.balanceOf(recipient))[0];
   }
-  async assetBalanceOf(recipient) {
-    const assetContractInstance = new ethers.Contract(
-      this.assetContract.address,
-      CurveStableSwapNG,
-      PROVIDER,
-    );
-    return (await assetContractInstance.functions.balanceOf(recipient))[0];
-  }
-
   _getLPTokenPairesToZapIn() {
     return [
       ["usde", "0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34", 18],

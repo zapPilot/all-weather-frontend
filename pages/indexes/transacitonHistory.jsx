@@ -27,9 +27,11 @@ export default function TransacitonHistory({
       let principalBalance = {};
       for (const txn of resp.data.transactions) {
         if (txn.metadata.portfolioName !== portfolioName) continue;
-        const principalSymbol = txn.metadata.tokenSymbol.includes("usd")
-          ? "usd"
-          : txn.metadata.tokenSymbol;
+        const principalSymbol =
+          txn.metadata.tokenSymbol.includes("usd") ||
+          txn.metadata.tokenSymbol.includes("dai")
+            ? "usd"
+            : txn.metadata.tokenSymbol;
         if (txn.metadata.actionName === "zapIn") {
           const investmentAmount =
             parseFloat(txn.metadata.investmentAmount) || 0;

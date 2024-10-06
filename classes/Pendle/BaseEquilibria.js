@@ -268,7 +268,7 @@ export class BaseEquilibria extends BaseProtocol {
   ) {
     // Assuming 'percentage' is a float between 0 and 1
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
-    const stakedAmount = await this.userBalanceOf(recipient);
+    const stakedAmount = await this.stakeBalanceOf(recipient);
     const withdrawAmount = stakedAmount.mul(percentageBN).div(10000);
     const approveEqbLPTxn = approve(
       (
@@ -340,13 +340,13 @@ export class BaseEquilibria extends BaseProtocol {
     return [[claimTxn, redeemTxn], pendingRewards];
   }
   async usdBalanceOf(recipient, tokenPricesMappingTable) {
-    const userBalance = await this.userBalanceOf(recipient);
+    const userBalance = await this.stakeBalanceOf(recipient);
     const latestPendleAssetPrice = await this._fetchPendleAssetPrice(() => {});
     return (
       (userBalance / Math.pow(10, this.assetDecimals)) * latestPendleAssetPrice
     );
   }
-  async userBalanceOf(recipient) {
+  async stakeBalanceOf(recipient) {
     const rewardPool = (
       await this.stakeFarmContractInstance.functions.poolInfo(
         this.pidOfEquilibria,
