@@ -490,15 +490,18 @@ export default function IndexOverviews() {
                       />
                     </dt>
                     <dd className="text-sm font-medium leading-6 text-white">
-                      Principal: {portfolioHelper?.denomination()}
-                      {principalBalance?.toFixed(2)}
+                      Principal:
+                      {usdBalanceLoading ? (
+                        <Spin />
+                      ) : (
+                        `${portfolioHelper?.denomination()}${principalBalance?.toFixed(
+                          2,
+                        )}`
+                      )}
                     </dd>
                   </div>
                   <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
                     <dt className="flex-none">
-                      <span className="sr-only">
-                        Earned(Performance fee deducted, no fee if no earnings.)
-                      </span>
                       <CurrencyDollarIcon
                         aria-hidden="true"
                         className="h-6 w-5 text-gray-500"
@@ -534,9 +537,6 @@ export default function IndexOverviews() {
                             : (usdBalance - principalBalance).toFixed(2)}
                         </span>
                       )}
-                      <div className="text-gray-500">
-                        Performance fee deducted, no fee if no earnings
-                      </div>
                     </dd>
                   </div>
                   <div className="mt-4 flex w-full flex-none gap-x-4 px-6">
