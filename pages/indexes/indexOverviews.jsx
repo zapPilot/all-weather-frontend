@@ -230,6 +230,9 @@ export default function IndexOverviews() {
             className="w-full mt-2"
             onClick={() => handleAAWalletAction("claimAndSwap")}
             loading={claimIsLoading || pendingRewardsLoading}
+            disabled={
+              portfolioHelper?.sumUsdDenominatedValues(pendingRewards) < 1
+            }
           >
             Convert $
             {portfolioHelper?.sumUsdDenominatedValues(pendingRewards) > 0.01

@@ -83,11 +83,16 @@ export default class BaseProtocol extends BaseUniswap {
   async usdBalanceOf(address, tokenPricesMappingTable) {
     throw new Error("Method 'usdBalanceOf()' must be implemented.");
   }
-  async userBalanceOf(address) {
-    throw new Error("Method 'userBalanceOf()' must be implemented.");
+  async stakeBalanceOf(address) {
+    throw new Error("Method 'stakeBalanceOf()' must be implemented.");
   }
-  async assetBalanceOf(address) {
-    throw new Error("Method 'assetBalanceOf()' must be implemented.");
+  async assetBalanceOf(recipient) {
+    const assetContractInstance = new ethers.Contract(
+      this.assetContract.address,
+      CurveStableSwapNG,
+      PROVIDER,
+    );
+    return (await assetContractInstance.functions.balanceOf(recipient))[0];
   }
   async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
     throw new Error("Method 'pendingRewards()' must be implemented.");
@@ -127,57 +132,23 @@ export default class BaseProtocol extends BaseUniswap {
       );
       return beforeZapInTxns.concat(zapinTxns);
     } else if (this.mode === "LP") {
-      // TODO: should meet all tokens listed in allowedZapInTokens
-      throw new Error("Not implemented yet.");
-      //   // TODO: it's just a pseudo code
-      //   let txns = [];
-      //   const [amountForToken0, amountForToken1] =
-      //     this.calculateTokenAmountsForLPV2(
-      //       inputToken,
-      //       investmentAmountInThisPosition,
-      //       tokenPricesMappingTable,
-      //       decimalsOfToken0,
-      //       decimalsOfToken1,
-      //       minPrice,
-      //       maxPrice,
-      //     );
-      //   const [swap0Txn, swap0EstimateAmount] = await this._swap(
-      //     chosenToken,
-      //     this.token0,
-      //     ethers.utils.parseUnits(
-      //       amountForToken0.toFixed(decimalsOfChosenToken),
-      //       decimalsOfChosenToken,
-      //     ),
-      //     slippage,
-      //   );
-      //   const [swap1Txn, swap1EstimateAmount] = await this._swap(
-      //     chosenToken,
-      //     this.token1,
-      //     ethers.utils.parseUnits(
-      //       amountForToken1.toFixed(decimalsOfChosenToken),
-      //       decimalsOfChosenToken,
-      //     ),
-      //     slippage,
-      //   );
-      //   txns.push(swap0Txn, swap1Txn);
-      //   for (const [token, amount] of [
-      //     [this.token0, swap0EstimateAmount],
-      //     [this.token1, swap1EstimateAmount],
-      //   ]) {
-      //     const approveForCreateLpTxn = this._approve(
-      //       token,
-      //       liquidityManager,
-      //       amount,
-      //     );
-      //     txns.push(approveForCreateLpTxn);
-      //   }
-      //   const mintOrIncreaseTxn = this._mintLPOrIncreaseLiquidity(
-      //     swap0EstimateAmount,
-      //     swap1EstimateAmount,
-      //   );
-      //   txns.push(mintOrIncreaseTxn);
-      //   const finalTxns = this._customCallback(txns);
-      //   return finalTxns;
+      const [beforeZapInTxns, tokenAmetadata, tokenBmetadata] =
+        await this._beforeDepositLP(
+          recipient,
+          inputTokenAddress,
+          investmentAmountInThisPosition,
+          slippage,
+          updateProgress,
+        );
+      const zapinTxns = await this.customDepositLP(
+        recipient,
+        tokenAmetadata,
+        tokenBmetadata,
+        tokenPricesMappingTable,
+        slippage,
+        updateProgress,
+      );
+      return beforeZapInTxns.concat(zapinTxns);
     }
   }
   async zapOut(
@@ -190,29 +161,57 @@ export default class BaseProtocol extends BaseUniswap {
     customParams,
     existingInvestmentPositionsInThisChain,
   ) {
-    const [
-      withdrawTxns,
-      symbolOfBestTokenToZapOut,
-      bestTokenAddressToZapOut,
-      decimalOfBestTokenToZapOut,
-      minOutAmount,
-    ] = await this.customWithdrawAndClaim(
-      recipient,
-      percentage,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    const [redeemTxns, withdrawTokenAndBalance] =
-      await this._calculateWithdrawTokenAndBalance(
-        recipient,
+    let withdrawTxns = [];
+    let redeemTxns = [];
+    let withdrawTokenAndBalance = {};
+    if (this.mode === "single") {
+      const [
+        withdrawTxnsForSingle,
         symbolOfBestTokenToZapOut,
         bestTokenAddressToZapOut,
         decimalOfBestTokenToZapOut,
         minOutAmount,
+      ] = await this.customWithdrawAndClaim(
+        recipient,
+        percentage,
+        slippage,
         tokenPricesMappingTable,
         updateProgress,
       );
+      const [redeemTxnsForSingle, withdrawTokenAndBalanceForSingle] =
+        await this._calculateWithdrawTokenAndBalance(
+          recipient,
+          symbolOfBestTokenToZapOut,
+          bestTokenAddressToZapOut,
+          decimalOfBestTokenToZapOut,
+          minOutAmount,
+          tokenPricesMappingTable,
+          updateProgress,
+        );
+      withdrawTxns = withdrawTxnsForSingle;
+      redeemTxns = redeemTxnsForSingle;
+      withdrawTokenAndBalance = withdrawTokenAndBalanceForSingle;
+    } else if (this.mode === "LP") {
+      const [withdrawLPTxns, tokenMetadatas, minPairAmounts] =
+        await this.customWithdrawLPAndClaim(
+          recipient,
+          percentage,
+          slippage,
+          tokenPricesMappingTable,
+          updateProgress,
+        );
+      const [redeemTxnsFromLP, withdrawTokenAndBalanceFromLP] =
+        await this._calculateWithdrawLPTokenAndBalance(
+          recipient,
+          tokenMetadatas,
+          minPairAmounts,
+          tokenPricesMappingTable,
+          updateProgress,
+        );
+      withdrawTxns = withdrawLPTxns;
+      redeemTxns = redeemTxnsFromLP;
+      withdrawTokenAndBalance = withdrawTokenAndBalanceFromLP;
+    }
     const batchSwapTxns = await this._batchSwap(
       recipient,
       withdrawTokenAndBalance,
@@ -268,6 +267,14 @@ export default class BaseProtocol extends BaseUniswap {
   ) {
     throw new Error("Method 'customWithdrawAndClaim()' must be implemented.");
   }
+  async customWithdrawLPAndClaim(
+    recipient,
+    percentage,
+    slippage,
+    updateProgress,
+  ) {
+    throw new Error("Method 'customWithdrawLPAndClaim()' must be implemented.");
+  }
 
   async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
     throw new Error("Method 'customClaim()' must be implemented.");
@@ -284,12 +291,17 @@ export default class BaseProtocol extends BaseUniswap {
       "Method '_getTheBestTokenAddressToZapIn()' must be implemented.",
     );
   }
+  _getLPTokenPairesToZapIn() {
+    throw new Error("Method '_getLPTokenPairesToZapIn()' must be implemented.");
+  }
   _getTheBestTokenAddressToZapOut(inputToken, InputTokenDecimals) {
     throw new Error(
       "Method '_getTheBestTokenAddressToZapOut()' must be implemented.",
     );
   }
-
+  _getLPTokenAddressesToZapOut() {
+    return this._getLPTokenPairesToZapIn();
+  }
   async _beforeDeposit(
     recipient,
     inputTokenAddress,
@@ -330,6 +342,64 @@ export default class BaseProtocol extends BaseUniswap {
       amountToZapIn,
       bestTokenToZapInDecimal,
     ];
+  }
+  async _beforeDepositLP(
+    recipient,
+    inputTokenAddress,
+    investmentAmountInThisPosition,
+    slippage,
+    updateProgress,
+  ) {
+    let swappedTokenMetadatas = [];
+    let swapTxns = [];
+    const tokenMetadatas = this._getLPTokenPairesToZapIn();
+    const lpTokenRatio = this._calculateTokenAmountsForLP(tokenMetadatas);
+    const sumOfLPTokenRatio = lpTokenRatio.reduce(
+      (acc, value) => acc.add(value),
+      ethers.BigNumber.from(0),
+    );
+    if (tokenMetadatas.length !== 2) {
+      throw new Error(
+        `Currently only support 2 tokens in LP, but got ${tokenMetadatas.length}`,
+      );
+    }
+    for (const [
+      index,
+      [bestTokenSymbol, bestTokenAddressToZapIn, bestTokenToZapInDecimal],
+    ] of tokenMetadatas.entries()) {
+      let amountToZapIn;
+      if (
+        inputTokenAddress.toLowerCase() !==
+        bestTokenAddressToZapIn.toLowerCase()
+      ) {
+        const [swapTxn, swapEstimateAmount] = await this._swap(
+          recipient,
+          inputTokenAddress,
+          bestTokenAddressToZapIn,
+          investmentAmountInThisPosition
+            .mul(lpTokenRatio[index])
+            .div(sumOfLPTokenRatio),
+          slippage,
+          updateProgress,
+        );
+        amountToZapIn = ethers.BigNumber.from(
+          String(
+            Math.floor(
+              (ethers.BigNumber.from(swapEstimateAmount) * (100 - slippage)) /
+                100,
+            ),
+          ),
+        );
+        swapTxns.push(swapTxn);
+      }
+      swappedTokenMetadatas.push([
+        bestTokenSymbol,
+        bestTokenAddressToZapIn,
+        bestTokenToZapInDecimal,
+        amountToZapIn,
+      ]);
+    }
+    return [swapTxns, swappedTokenMetadatas[0], swappedTokenMetadatas[1]];
   }
   async _batchSwap(
     recipient,
@@ -467,5 +537,64 @@ export default class BaseProtocol extends BaseUniswap {
       }
     }
     return [redeemTxns, withdrawTokenAndBalance];
+  }
+  async _calculateWithdrawLPTokenAndBalance(
+    recipient,
+    tokenMetadatas,
+    minPairAmounts,
+    tokenPricesMappingTable,
+    updateProgress,
+  ) {
+    let withdrawTokenAndBalance = {};
+    for (const [index, tokenMetadata] of tokenMetadatas.entries()) {
+      const [
+        symbolOfBestTokenToZapOut,
+        bestTokenAddressToZapOut,
+        decimalOfBestTokenToZapOut,
+      ] = tokenMetadata;
+      const minOutAmount = minPairAmounts[index];
+      if (minOutAmount.toString() === "0" || minOutAmount === 0) {
+        continue;
+      }
+      withdrawTokenAndBalance[bestTokenAddressToZapOut] = {
+        symbol: symbolOfBestTokenToZapOut,
+        balance: minOutAmount,
+        usdDenominatedValue:
+          (tokenPricesMappingTable[symbolOfBestTokenToZapOut] * minOutAmount) /
+          Math.pow(10, decimalOfBestTokenToZapOut),
+        decimals: decimalOfBestTokenToZapOut,
+      };
+    }
+    const pendingRewards = await this.pendingRewards(
+      recipient,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
+    const redeemTxns = this.customRedeemVestingRewards(pendingRewards);
+    for (const [address, metadata] of Object.entries(pendingRewards)) {
+      if (withdrawTokenAndBalance[address]) {
+        withdrawTokenAndBalance[address].balance = withdrawTokenAndBalance[
+          address
+        ].balance.add(metadata.balance);
+        withdrawTokenAndBalance[address].usdDenominatedValue =
+          (tokenPricesMappingTable[withdrawTokenAndBalance[metadata.symbol]] *
+            withdrawTokenAndBalance[address].balance) /
+          Math.pow(10, withdrawTokenAndBalance[address].decimals);
+      } else {
+        withdrawTokenAndBalance[address] = metadata;
+      }
+    }
+    return [redeemTxns, withdrawTokenAndBalance];
+  }
+  _calculateTokenAmountsForLP(tokenMetadatas) {
+    throw new Error(
+      'Method "_calculateTokenAmountsForLP()" must be implemented.',
+    );
+  }
+  mul_with_slippage_in_bignumber_format(amount, slippage) {
+    const slippageBN = ethers.BigNumber.from(slippage * 100);
+    return ethers.BigNumber.from(String(Math.floor(amount)))
+      .mul(10000 - slippageBN)
+      .div(10000);
   }
 }

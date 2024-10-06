@@ -3,6 +3,7 @@ import { ApolloX20240806 } from "../ApolloX/ApolloX20240806";
 import { ApolloX20240813 } from "../ApolloX/ApolloX20240813";
 import { ApolloX20240820 } from "../ApolloX/ApolloX20240820";
 import { Vela } from "../Vela/Vela";
+import { BaseConvex } from "../Convex/BaseConvex";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import ReactMarkdown from "react-markdown";
 export class StablecoinVault extends BasePortfolio {
@@ -48,7 +49,7 @@ export class StablecoinVault extends BasePortfolio {
                     "0xaA0DE632A4071642d72Ceb03577F5534ea196927",
                 },
               ),
-              weight: 0.6,
+              weight: 0.2,
             },
             {
               interface: new Vela(
@@ -75,7 +76,24 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 48,
                 },
               ),
-              weight: 0.2,
+              weight: 0.1,
+            },
+            {
+              interface: new BaseConvex(
+                "arbitrum",
+                42161,
+                ["usde", "usdx"],
+                "LP",
+                {
+                  pid: 34,
+                  assetDecimals: 18,
+                  assetAddress: "0x096A8865367686290639bc50bF8D85C0110d9Fea",
+                  protocolAddress: "0x096A8865367686290639bc50bF8D85C0110d9Fea",
+                  convexRewardPool:
+                    "0xe062e302091f44d7483d9D6e0Da9881a0817E2be",
+                },
+              ),
+              weight: 0.5,
             },
           ],
         },

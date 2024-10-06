@@ -446,6 +446,8 @@ export class BasePortfolio {
       usdt: 1,
       dai: 1,
       frax: 1,
+      usde: 1,
+      susd: 1,
     };
     for (const [token, coinMarketCapId] of Object.entries(
       this.uniqueTokenIdsForCurrentPrice,
