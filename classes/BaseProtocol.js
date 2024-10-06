@@ -367,7 +367,10 @@ export default class BaseProtocol extends BaseUniswap {
       index,
       [bestTokenSymbol, bestTokenAddressToZapIn, bestTokenToZapInDecimal],
     ] of tokenMetadatas.entries()) {
-      let amountToZapIn;
+      // if inputTokenAddress is one of the bestTokenAddressToZapIn, then we don't need to swap
+      let amountToZapIn = investmentAmountInThisPosition
+        .mul(lpTokenRatio[index])
+        .div(sumOfLPTokenRatio);
       if (
         inputTokenAddress.toLowerCase() !==
         bestTokenAddressToZapIn.toLowerCase()
@@ -376,9 +379,7 @@ export default class BaseProtocol extends BaseUniswap {
           recipient,
           inputTokenAddress,
           bestTokenAddressToZapIn,
-          investmentAmountInThisPosition
-            .mul(lpTokenRatio[index])
-            .div(sumOfLPTokenRatio),
+          amountToZapIn,
           slippage,
           updateProgress,
         );
