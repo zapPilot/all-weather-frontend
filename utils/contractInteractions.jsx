@@ -1,4 +1,5 @@
-import { Select } from "antd";
+import React, { useState } from "react";
+import { Select, Button, Modal, ConfigProvider } from "antd";
 import { fetch1InchSwapData } from "./oneInch";
 import tokens from "../pages/views/components/tokens.json";
 import { portfolioVaults } from "./oneInch";
@@ -11,13 +12,15 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   usdt: 825,
   "usdc.e": 3408,
   weth: 2396,
+  dai: 4943,
 };
 export const tokensForDropDown = [
   // "eth",
   // "usdc.e",
   "usdc",
-  "usdt",
   "usdc.e",
+  "usdt",
+  "dai",
   // "wbtc",
   "weth",
   // "frax",
@@ -35,46 +38,114 @@ export const tokensForDropDown = [
   // "axlusdc",
 ];
 export const selectBefore = (handleChange, chainID, selectedToken) => {
+  const selectSymbol = selectedToken?.split("-")[0];
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const showModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCancel = () => {
+    setIsModalOpen(false);
+  };
+
   if (!chainID) {
     // chaindID would be set once the user connects their wallet
     chainID = 42161;
   }
   return (
-    <Select
-      onChange={handleChange}
-      value={selectedToken}
-      theme="light"
-      style={{ width: 110 }}
-    >
-      {tokens.props.pageProps.tokenList[String(chainID)]
-        ?.filter((option) =>
-          tokensForDropDown.some(
-            (symbol) =>
-              option.symbol.toLowerCase() === symbol && option.logoURI2,
-          ),
-        )
-        ?.map((option) => {
-          const keyAndValue = `${option.symbol}-${option.address}-${option.decimals}`;
-          return (
-            <Option key={keyAndValue} value={keyAndValue}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                <Image
-                  src={option.logoURI2}
-                  width="20"
-                  height="20"
-                  alt={option.symbol}
-                />
-                <span style={{ marginLeft: 6 }}>{option.symbol}</span>
-              </div>
-            </Option>
-          );
-        })}
-    </Select>
+    <>
+      <Button onClick={showModal} role="select-token-button">
+        <div className="flex items-center">
+          {tokens.props.pageProps.tokenList[String(chainID)]
+            ?.filter((option) =>
+              tokensForDropDown.some(
+                (symbol) =>
+                  option.symbol.toLowerCase() === symbol && option.logoURI2,
+              ),
+            )
+            ?.map((option) => {
+              if (
+                selectSymbol &&
+                option.symbol &&
+                option.symbol.toLowerCase() === selectSymbol.toLowerCase()
+              ) {
+                return (
+                  <Image
+                    src={option.logoURI2}
+                    width="20"
+                    height="20"
+                    alt={option.symbol}
+                  />
+                );
+              }
+            })}
+          <span className="ms-2">{selectSymbol}</span>
+        </div>
+      </Button>
+      <ConfigProvider
+        theme={{
+          components: {
+            Modal: {
+              contentBg: "#1f2937",
+              headerBg: "#1f2937",
+              titleColor: "#ffffff",
+            },
+            Button: {
+              textHoverBg: "#334155",
+            },
+          },
+          token: {
+            colorText: "#ffffff",
+            colorFillSecondary: "#334155",
+          },
+        }}
+      >
+        <Modal
+          title="Basic Modal"
+          open={isModalOpen}
+          onCancel={handleCancel}
+          footer={null}
+          closable={false}
+          centered
+        >
+          {tokens.props.pageProps.tokenList[String(chainID)]
+            ?.filter((option) =>
+              tokensForDropDown.some(
+                (symbol) =>
+                  option.symbol.toLowerCase() === symbol && option.logoURI2,
+              ),
+            )
+            ?.map((option) => {
+              const keyAndValue = `${option.symbol}-${option.address}-${option.decimals}`;
+              return (
+                <Button
+                  type="text"
+                  key={keyAndValue}
+                  value={keyAndValue}
+                  onClick={() => {
+                    handleChange(keyAndValue);
+                    handleCancel();
+                  }}
+                  size="large"
+                  className="mb-2"
+                  block
+                >
+                  <div className="flex items-center">
+                    <Image
+                      src={option.logoURI2}
+                      width="24"
+                      height="24"
+                      alt={option.symbol}
+                    />
+                    <span className="ms-2">{option.symbol}</span>
+                  </div>
+                </Button>
+              );
+            })}
+        </Modal>
+      </ConfigProvider>
+    </>
   );
 };
 
