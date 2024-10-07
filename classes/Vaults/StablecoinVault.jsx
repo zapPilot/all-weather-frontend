@@ -91,6 +91,24 @@ export class StablecoinVault extends BasePortfolio {
                   protocolAddress: "0x096A8865367686290639bc50bF8D85C0110d9Fea",
                   convexRewardPool:
                     "0xe062e302091f44d7483d9D6e0Da9881a0817E2be",
+                  lpTokens: [
+                    ["usde", "0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34", 18],
+                    ["susd", "0xb2f30a7c980f052f02563fb518dcc39e6bf38175", 18],
+                  ],
+                  rewards: [
+                    {
+                      symbol: "crv",
+                      coinmarketcapApiId: 6538,
+                      address: "0x11cDb42B0EB46D95f990BeDD4695A6e3fA034978",
+                      decimals: 18,
+                    },
+                    {
+                      symbol: "cvx",
+                      coinmarketcapApiId: 9903,
+                      address: "0xaAFcFD42c9954C6689ef1901e03db742520829c5",
+                      decimals: 18,
+                    },
+                  ],
                 },
               ),
               weight: 0.5,

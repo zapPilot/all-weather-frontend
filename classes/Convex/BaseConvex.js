@@ -57,20 +57,7 @@ export class BaseConvex extends BaseProtocol {
     return 2;
   }
   rewards() {
-    return [
-      {
-        symbol: "crv",
-        coinmarketcapApiId: 6538,
-        address: "0x11cDb42B0EB46D95f990BeDD4695A6e3fA034978",
-        decimals: this.assetDecimals,
-      },
-      {
-        symbol: "cvx",
-        coinmarketcapApiId: 9903,
-        address: "0xaAFcFD42c9954C6689ef1901e03db742520829c5",
-        decimals: this.assetDecimals,
-      },
-    ];
+    return this.customParams.rewards;
   }
   async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
     let rewardBalance = {};
@@ -238,10 +225,7 @@ export class BaseConvex extends BaseProtocol {
     return (await rewardPoolContractInstance.functions.balanceOf(recipient))[0];
   }
   _getLPTokenPairesToZapIn() {
-    return [
-      ["usde", "0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34", 18],
-      ["susd", "0xb2f30a7c980f052f02563fb518dcc39e6bf38175", 18],
-    ];
+    return this.customParams.lpTokens;
   }
   _calculateTokenAmountsForLP(tokenMetadatas) {
     return [1, 1];

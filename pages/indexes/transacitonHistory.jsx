@@ -44,8 +44,7 @@ export default function TransacitonHistory({
           const zapOutAmount = parseFloat(txn.metadata.zapOutAmount) || 0;
           principalBalance = {
             ...principalBalance,
-            [principalSymbol]:
-              (principalBalance[principalSymbol] || 0) - zapOutAmount,
+            ["usd"]: (principalBalance["usd"] || 0) - zapOutAmount,
           };
         }
       }
@@ -108,8 +107,8 @@ export default function TransacitonHistory({
                   </span>
                 ) : activityItem.metadata.actionName === "zapOut" ? (
                   <span className="flex gap-1">
-                    <span className="text-orange-400">Withdraw </span>
-                    {activityItem.metadata.zapOutAmount}
+                    <span className="text-orange-400">Withdraw </span>$
+                    {activityItem.metadata.zapOutAmount.toFixed(2)} worth of
                     <ImageWithFallback
                       token={activityItem.metadata.tokenSymbol}
                       height={20}
