@@ -186,14 +186,6 @@ export class Vela extends BaseProtocol {
     const latestVlpPrice = await this._fetchVlpPrice(() => {});
     return (userBalance / Math.pow(10, this.assetDecimals)) * latestVlpPrice;
   }
-  async assetBalanceOf(recipient) {
-    const assetContractInstance = new ethers.Contract(
-      this.assetContract.address,
-      Vault,
-      PROVIDER,
-    );
-    return (await assetContractInstance.functions.balanceOf(recipient))[0];
-  }
 
   async _fetchVlpPrice(updateProgress) {
     updateProgress("fetching VLP price");
