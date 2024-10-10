@@ -5,6 +5,7 @@ import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.
 import { Spin } from "antd";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { useActiveAccount } from "thirdweb/react";
+import ImageWithFallback from "../basicComponents/ImageWithFallback";
 
 export default function Vaults() {
   const account = useActiveAccount();
@@ -23,7 +24,7 @@ export default function Vaults() {
       id: 1,
       portfolioName: "Stablecoin Vault",
       href: "/indexes/indexOverviews/?portfolioName=Stablecoin+Vault",
-      imageSrc: "/indexFunds/stablecoinVault.png",
+      imageSrc: "/tokenPictures/usdc.webp",
       imageAlt: "Stablecoin Vault",
       apr: vaultsMetadata?.["Stablecoin Vault"]?.portfolioAPR * 100,
       tvl: vaultsMetadata?.["Stablecoin Vault"]?.portfolioTVL,
@@ -98,10 +99,12 @@ export default function Vaults() {
           continue;
         }
         if (vault.portfolioHelper === undefined) continue;
-        const usdBalance = await vault.portfolioHelper.usdBalanceOf(
+        const [_, usdBalanceDict] = await vault.portfolioHelper.usdBalanceOf(
           account.address,
         );
-        usdBalances[vault.portfolioName] = usdBalance.toFixed(2);
+        usdBalances[vault.portfolioName] = Object.values(usdBalanceDict)
+          .reduce((a, b) => a + b, 0)
+          .toFixed(2);
       }
       setUsdBalances(usdBalances);
     }
@@ -129,10 +132,13 @@ export default function Vaults() {
                       />
                     )}
                 </h2>
-                <img
-                  alt={product.imageAlt}
-                  src={product.imageSrc}
+                <ImageWithFallback
                   className="h-8 w-auto"
+                  key={product.imageSrc}
+                  // use usdc instead of usdc(bridged), aka, usdc.e for the image
+                  token={product.imageSrc.replace("(bridged)", "")}
+                  height={20}
+                  width={20}
                 />
               </div>
               <div className="mt-4 grid grid-cols-2 gap-4 divide-x divide-gray-400">

@@ -28,6 +28,7 @@ import {
   useActiveWalletChain,
 } from "thirdweb/react";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
+import { formatBalance } from "../../utils/general.js";
 import axios from "axios";
 import openNotificationWithIcon from "../../utils/notification.js";
 import { selectBefore } from "../../utils/contractInteractions";
@@ -56,8 +57,16 @@ export default function IndexOverviews() {
   const [zapOutPercentage, setZapOutPercentage] = useState(1);
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
+  const [rebalancableUsdBalance, setRebalancableUsdBalance] = useState(0);
+  const [protocolAssetDustInWallet, setProtocolAssetDustInWallet] = useState(
+    {},
+  );
+
   const [usdBalanceLoading, setUsdBalanceLoading] = useState(false);
   const [pendingRewardsLoading, setPendingRewardsLoading] = useState(false);
+  const [rebalancableUsdBalanceLoading, setRebalancableUsdBalanceLoading] =
+    useState(false);
+
   const [principalBalance, setPrincipalBalance] = useState(0);
   const [open, setOpen] = useState(false);
   const [tokenPricesMappingTable, setTokenPricesMappingTable] = useState({});
@@ -111,6 +120,7 @@ export default function IndexOverviews() {
       setProgress,
       setStepName,
       slippage,
+      rebalancableUsdBalance,
     );
     if (actionName === "zapIn") {
       setZapInIsLoading(false);
@@ -166,7 +176,10 @@ export default function IndexOverviews() {
         notificationAPI,
         "Transaction Result",
         "error",
-        `Transaction failed: ${error.message}`,
+        `Transaction failed\n
+        1. Probably out of gas\n
+        2. Or still in the lock-up period\n
+        ${error.message}`,
       );
     }
   };
@@ -235,11 +248,9 @@ export default function IndexOverviews() {
             }
           >
             Convert $
-            {portfolioHelper?.sumUsdDenominatedValues(pendingRewards) > 0.01
-              ? portfolioHelper
-                  ?.sumUsdDenominatedValues(pendingRewards)
-                  .toFixed(2)
-              : portfolioHelper?.sumUsdDenominatedValues(pendingRewards)}{" "}
+            {formatBalance(
+              portfolioHelper?.sumUsdDenominatedValues(pendingRewards),
+            )}{" "}
             Rewards to {selectedToken.split("-")[0]}
           </Button>
         </div>
@@ -311,22 +322,44 @@ export default function IndexOverviews() {
     const fetchUsdBalance = async () => {
       setUsdBalanceLoading(true);
       setPendingRewardsLoading(true);
+      setRebalancableUsdBalanceLoading(true);
 
-      const usdBalance = await portfolioHelper.usdBalanceOf(account.address);
+      console.time("usdBalanceOf");
+      const [usdBalance, usdBalanceDict] = await portfolioHelper.usdBalanceOf(
+        account.address,
+      );
+      console.timeEnd("usdBalanceOf");
+
       setUsdBalance(usdBalance);
       setUsdBalanceLoading(false);
+      setRebalancableUsdBalance(usdBalanceDict);
+      console.log("usdBalanceDict", usdBalanceDict);
+      setRebalancableUsdBalanceLoading(false);
 
+      console.time("getTokenPricesMappingTable");
       const tokenPricesMappingTable =
         await portfolioHelper.getTokenPricesMappingTable(() => {});
+      console.timeEnd("getTokenPricesMappingTable");
+
       setTokenPricesMappingTable(tokenPricesMappingTable);
 
+      console.time("pendingRewards");
       const pendingRewards = await portfolioHelper.pendingRewards(
         account.address,
         () => {},
       );
-      setPendingRewards(pendingRewards);
+      console.timeEnd("pendingRewards");
 
+      setPendingRewards(pendingRewards);
       setPendingRewardsLoading(false);
+
+      console.time("calProtocolAssetDustInWalletDictionary");
+      const dust = await portfolioHelper.calProtocolAssetDustInWalletDictionary(
+        account.address,
+      );
+      console.timeEnd("calProtocolAssetDustInWalletDictionary");
+
+      setProtocolAssetDustInWallet(dust);
     };
     fetchUsdBalance();
   }, [portfolioName, account]);
@@ -476,11 +509,50 @@ export default function IndexOverviews() {
                     </dd>
                   </div>
                   <div className="flex-none self-end px-6 pt-4">
-                    <dt className="sr-only">Rebalance & Reinvest</dt>
-                    <dd className="rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-600 ring-1 ring-inset ring-green-600/20">
-                      Rebalance & Reinvest (wip)
-                    </dd>
+                    <Button
+                      className="w-full mt-2"
+                      type="primary"
+                      onClick={() => handleAAWalletAction("rebalance")}
+                      loading={
+                        rebalanceIsLoading || rebalancableUsdBalanceLoading
+                      }
+                      disabled={
+                        Object.values(rebalancableUsdBalance).reduce(
+                          (sum, { usdBalance, weightDiff }) => {
+                            return weightDiff >=
+                              portfolioHelper.rebalanceThreshold()
+                              ? sum + usdBalance
+                              : sum;
+                          },
+                          0,
+                        ) +
+                          portfolioHelper?.sumUsdDenominatedValues(
+                            pendingRewards,
+                          ) >
+                        0
+                      }
+                    >
+                      Rebalance & Reinvest $
+                      {formatBalance(
+                        Object.values(rebalancableUsdBalance).reduce(
+                          (sum, { usdBalance, weightDiff }) => {
+                            return weightDiff >=
+                              portfolioHelper.rebalanceThreshold()
+                              ? sum + usdBalance * weightDiff
+                              : sum;
+                          },
+                          0,
+                        ) +
+                          portfolioHelper?.sumUsdDenominatedValues(
+                            pendingRewards,
+                          ),
+                      )}
+                    </Button>
                   </div>
+                  1. No need to rebalance if the difference is less than 5% 2.
+                  these funds are not earning{" "}
+                  {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}
+                  % APR
                   <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
                     <dt className="flex-none">
                       <span className="sr-only">Principal</span>
@@ -554,14 +626,12 @@ export default function IndexOverviews() {
                       Rewards: $
                       {pendingRewardsLoading === true ? (
                         <Spin />
-                      ) : portfolioHelper?.sumUsdDenominatedValues(
-                          pendingRewards,
-                        ) > 0.01 ? (
-                        portfolioHelper
-                          ?.sumUsdDenominatedValues(pendingRewards)
-                          .toFixed(2)
                       ) : (
-                        portfolioHelper?.sumUsdDenominatedValues(pendingRewards)
+                        formatBalance(
+                          portfolioHelper?.sumUsdDenominatedValues(
+                            pendingRewards,
+                          ),
+                        )
                       )}
                     </dd>
                   </div>

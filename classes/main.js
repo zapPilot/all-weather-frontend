@@ -13,6 +13,7 @@ export const generateIntentTxns = async (
   setProgress,
   setStepName,
   slippage,
+  rebalancableUsdBalance,
 ) => {
   let txns;
   if (actionName === "zapIn") {
@@ -52,6 +53,7 @@ export const generateIntentTxns = async (
       progressCallback: (progressPercentage) => setProgress(progressPercentage),
       progressStepNameCallback: (stepName) => setStepName(stepName),
       slippage,
+      rebalancableUsdBalance,
     });
   }
   return txns;

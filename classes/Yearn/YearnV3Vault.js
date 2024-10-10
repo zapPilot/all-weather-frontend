@@ -136,14 +136,6 @@ export class YearnV3Vault extends BaseProtocol {
       1e18
     );
   }
-  async assetBalanceOf(recipient) {
-    const assetContractInstance = new ethers.Contract(
-      this.assetContract.address,
-      Vault,
-      PROVIDER,
-    );
-    return (await assetContractInstance.functions.balanceOf(recipient))[0];
-  }
 
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in

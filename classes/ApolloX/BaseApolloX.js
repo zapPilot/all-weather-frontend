@@ -218,14 +218,6 @@ export class BaseApolloX extends BaseProtocol {
     const latestAlpPrice = await this._fetchAlpPrice(() => {});
     return (userInfo / Math.pow(10, this.assetDecimals)) * latestAlpPrice;
   }
-  async assetBalanceOf(recipient) {
-    const assetContractInstance = new ethers.Contract(
-      this.assetContract.address,
-      ApolloXABI,
-      PROVIDER,
-    );
-    return (await assetContractInstance.functions.balanceOf(recipient))[0];
-  }
 
   async _fetchAlpPrice(updateProgress) {
     updateProgress("fetching ALP price");

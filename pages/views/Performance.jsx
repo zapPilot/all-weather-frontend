@@ -1,15 +1,27 @@
 import React from "react";
 import { ConfigProvider, Row, Col, Card, Statistic } from "antd";
 import RebalanceChart from "./RebalanceChart";
-import { useSelector } from "react-redux";
 import { useWindowWidth } from "../../utils/chartUtils";
 import APRDetails from "./APRrelated.jsx";
 import { ReloadOutlined } from "@ant-design/icons";
+import { useDispatch, useSelector } from "react-redux";
 import { timeAgo } from "../../utils/general";
+import axios from "axios";
+import {
+  fetchDataStart,
+  fetchDataSuccess,
+  fetchDataFailure,
+} from "../../lib/features/apiSlice";
+import { useRouter } from "next/router";
 
 const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
   const windowWidth = useWindowWidth();
   const { data } = useSelector((state) => state.api);
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const { query } = router;
+  const searchWalletAddress = query.address;
+
   const calculateMonthlyEarnings = (deposit, apr) => {
     if (isNaN(deposit) || isNaN(apr)) return 0;
     return ((deposit * apr) / 100 / 12).toFixed(2);
@@ -27,6 +39,21 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
       return { color: value < 0 ? "#FF6347" : "#5DFDCB" };
     }
   };
+  const fetchBundlePortfolio = (refresh) => {
+    dispatch(fetchDataStart());
+    axios
+      .get(
+        `${process.env.NEXT_PUBLIC_API_URL}/bundle_portfolio/${
+          searchWalletAddress === undefined
+            ? walletAddress
+            : searchWalletAddress.toLowerCase().trim().replace("/", "")
+        }?refresh=${refresh}`,
+      )
+      .then((response) => response.data)
+      .then((data) => dispatch(fetchDataSuccess(data)))
+      .catch((error) => dispatch(fetchDataFailure(error.toString())));
+  };
+
   return (
     <>
       <ConfigProvider
