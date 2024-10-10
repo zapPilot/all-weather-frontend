@@ -513,19 +513,24 @@ export default function IndexOverviews() {
                       className="w-full mt-2"
                       type="primary"
                       onClick={() => handleAAWalletAction("rebalance")}
-                      // loading={
-                      //   rebalanceIsLoading || rebalancableUsdBalanceLoading
-                      // }
-                      // disabled={
-                      //   (Object.values(rebalancableUsdBalance)
-                      //   .reduce((sum, { usdBalance, weightDiff }) => {
-                      //     return weightDiff >= portfolioHelper.rebalanceThreshold() ? sum + usdBalance : sum;
-                      //   }, 0)+ portfolioHelper?.sumUsdDenominatedValues(
-                      //     pendingRewards,
-                      //   )) /
-                      //     usdBalance <
-                      //   0.05
-                      // }
+                      loading={
+                        rebalanceIsLoading || rebalancableUsdBalanceLoading
+                      }
+                      disabled={
+                        Object.values(rebalancableUsdBalance).reduce(
+                          (sum, { usdBalance, weightDiff }) => {
+                            return weightDiff >=
+                              portfolioHelper.rebalanceThreshold()
+                              ? sum + usdBalance
+                              : sum;
+                          },
+                          0,
+                        ) +
+                          portfolioHelper?.sumUsdDenominatedValues(
+                            pendingRewards,
+                          ) >
+                        0
+                      }
                     >
                       Rebalance & Reinvest $
                       {formatBalance(

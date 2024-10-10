@@ -344,10 +344,7 @@ export class BasePortfolio {
           if (usdBalance === 0) continue;
           if (protocol.weight === 0) {
             zapOutPercentage = 1;
-          } else if (
-            rebalancableUsdBalance[protocolClassName].weightDiff >
-            this.rebalanceThreshold()
-          ) {
+          } else if (rebalancableUsdBalance[protocolClassName].weightDiff > 0) {
             zapOutPercentage =
               rebalancableUsdBalance[protocolClassName].weightDiff;
           } else {
@@ -387,10 +384,10 @@ export class BasePortfolio {
       if (key === "pendingRewards") {
         continue;
       }
-      if (-protocolMetadata.weightDiff > this.rebalanceThreshold()) {
+      if (protocolMetadata.weightDiff < 0) {
         const protocol = protocolMetadata.protocol;
         const percentageBN = ethers.BigNumber.from(
-          Math.floor(protocol.weightDiff * 10000),
+          Math.floor(-protocolMetadata.weightDiff * 10000),
         );
         // some protocol's zap-in has a minimum limit
         if (zapInAmount.mul(percentageBN).div(10000) < 100000) continue;
