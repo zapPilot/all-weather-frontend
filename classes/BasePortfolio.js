@@ -207,6 +207,7 @@ export class BasePortfolio {
 
   async _generateTxnsByAction(actionName, actionParams) {
     let totalTxns = [];
+    let portfolioUsdBalance = 0;
     if (actionName === "zapIn") {
       // TODO(david): zap in's weight should take protocolUsdBalanceDictionary into account
       // protocolUsdBalanceDictionary = await this._getProtocolUsdBalanceDictionary(owner)
@@ -237,6 +238,11 @@ export class BasePortfolio {
         actionParams.updateProgress,
         actionParams.rebalancableUsdBalance,
       );
+    } else if (actionName === "zapOut") {
+      portfolioUsdBalance = (await this.usdBalanceOf(actionParams.account))[0];
+      if (portfolioUsdBalance === 0) {
+        return [];
+      }
     }
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const [chain, protocols] of Object.entries(
@@ -292,11 +298,11 @@ export class BasePortfolio {
     if (actionName === "zapOut") {
       totalTxns.push(
         await this._swapFeeTxnForZapOut(
-          actionParams.account,
           actionParams.tokenOutAddress,
           actionParams.tokenOutSymbol,
           actionParams.tokenPricesMappingTable,
           actionParams.zapOutPercentage,
+          portfolioUsdBalance,
         ),
       );
     }
@@ -573,13 +579,12 @@ export class BasePortfolio {
     return counts;
   }
   async _swapFeeTxnForZapOut(
-    userAddress,
     tokenOutAddress,
     tokenOutSymbol,
     tokenPricesMappingTable,
     zapOutPercentage,
+    portfolioUsdBalance,
   ) {
-    const portfolioUsdBalance = await this.usdBalanceOf(userAddress);
     const tokenOutUsdBalance = portfolioUsdBalance * zapOutPercentage;
     const swapFeeUsd = tokenOutUsdBalance * this.swapFeeRate();
     const tokenOutDecimals = await getTokenDecimal(tokenOutAddress);
