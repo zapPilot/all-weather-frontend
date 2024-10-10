@@ -57,15 +57,18 @@ export default function IndexOverviews() {
   const [zapOutPercentage, setZapOutPercentage] = useState(1);
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
-  const [rebalancableUsdBalance, setRebalancableUsdBalance] = useState(0);
+  const [rebalancableUsdBalanceDict, setrebalancableUsdBalanceDict] =
+    useState(0);
   const [protocolAssetDustInWallet, setProtocolAssetDustInWallet] = useState(
     {},
   );
 
   const [usdBalanceLoading, setUsdBalanceLoading] = useState(false);
   const [pendingRewardsLoading, setPendingRewardsLoading] = useState(false);
-  const [rebalancableUsdBalanceLoading, setRebalancableUsdBalanceLoading] =
-    useState(false);
+  const [
+    rebalancableUsdBalanceDictLoading,
+    setrebalancableUsdBalanceDictLoading,
+  ] = useState(false);
 
   const [principalBalance, setPrincipalBalance] = useState(0);
   const [open, setOpen] = useState(false);
@@ -120,7 +123,7 @@ export default function IndexOverviews() {
       setProgress,
       setStepName,
       slippage,
-      rebalancableUsdBalance,
+      rebalancableUsdBalanceDict,
     );
     if (actionName === "zapIn") {
       setZapInIsLoading(false);
@@ -322,7 +325,7 @@ export default function IndexOverviews() {
     const fetchUsdBalance = async () => {
       setUsdBalanceLoading(true);
       setPendingRewardsLoading(true);
-      setRebalancableUsdBalanceLoading(true);
+      setrebalancableUsdBalanceDictLoading(true);
 
       console.time("usdBalanceOf");
       const [usdBalance, usdBalanceDict] = await portfolioHelper.usdBalanceOf(
@@ -332,9 +335,9 @@ export default function IndexOverviews() {
 
       setUsdBalance(usdBalance);
       setUsdBalanceLoading(false);
-      setRebalancableUsdBalance(usdBalanceDict);
+      setrebalancableUsdBalanceDict(usdBalanceDict);
       console.log("usdBalanceDict", usdBalanceDict);
-      setRebalancableUsdBalanceLoading(false);
+      setrebalancableUsdBalanceDictLoading(false);
 
       console.time("getTokenPricesMappingTable");
       const tokenPricesMappingTable =
@@ -514,10 +517,10 @@ export default function IndexOverviews() {
                       type="primary"
                       onClick={() => handleAAWalletAction("rebalance")}
                       loading={
-                        rebalanceIsLoading || rebalancableUsdBalanceLoading
+                        rebalanceIsLoading || rebalancableUsdBalanceDictLoading
                       }
                       disabled={
-                        Object.values(rebalancableUsdBalance).reduce(
+                        Object.values(rebalancableUsdBalanceDict).reduce(
                           (sum, { usdBalance, weightDiff }) => {
                             return weightDiff >=
                               portfolioHelper.rebalanceThreshold()
@@ -534,7 +537,7 @@ export default function IndexOverviews() {
                     >
                       Rebalance & Reinvest $
                       {formatBalance(
-                        Object.values(rebalancableUsdBalance).reduce(
+                        Object.values(rebalancableUsdBalanceDict).reduce(
                           (sum, { usdBalance, weightDiff }) => {
                             return weightDiff >=
                               portfolioHelper.rebalanceThreshold()
@@ -710,7 +713,7 @@ export default function IndexOverviews() {
                                             width={25}
                                           />
                                           {protocol.interface.protocolName}-
-                                          {protocol.weight * 100}%
+                                          {(protocol.weight * 100).toFixed(0)}%
                                         </div>
                                         <div className="truncate text-gray-500">
                                           <div className="mt-2 flex items-center">

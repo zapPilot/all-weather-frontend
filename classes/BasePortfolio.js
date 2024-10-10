@@ -56,7 +56,7 @@ export class BasePortfolio {
             tokenPricesMappingTable,
           );
           usdBalance += balance;
-          usdBalanceDict[protocol.interface.constructor.name] = {
+          usdBalanceDict[protocol.interface.uniqueId()] = {
             usdBalance: balance,
             weight: protocol.weight,
             symbol: protocol.interface.symbolList,
@@ -76,7 +76,7 @@ export class BasePortfolio {
         protocolsInThisCategory,
       )) {
         for (const protocol of protocolsInThisChain) {
-          const protocolClassName = protocol.interface.constructor.name;
+          const protocolClassName = protocol.interface.uniqueId();
           const currentWeight =
             isNaN(usdBalanceDict[protocolClassName].usdBalance) === true
               ? 0
@@ -236,7 +236,7 @@ export class BasePortfolio {
         actionParams.slippage,
         actionParams.tokenPricesMappingTable,
         actionParams.updateProgress,
-        actionParams.rebalancableUsdBalance,
+        actionParams.rebalancableUsdBalanceDict,
       );
     } else if (actionName === "zapOut") {
       portfolioUsdBalance = (await this.usdBalanceOf(actionParams.account))[0];
@@ -314,7 +314,7 @@ export class BasePortfolio {
     slippage,
     tokenPricesMappingTable,
     updateProgress,
-    rebalancableUsdBalance,
+    rebalancableUsdBalanceDict,
   ) {
     // rebalace workflow:
 
@@ -345,14 +345,16 @@ export class BasePortfolio {
             owner,
             tokenPricesMappingTable,
           );
-          const protocolClassName = protocol.interface.constructor.name;
+          const protocolClassName = protocol.interface.uniqueId();
           let zapOutPercentage;
           if (usdBalance === 0) continue;
           if (protocol.weight === 0) {
             zapOutPercentage = 1;
-          } else if (rebalancableUsdBalance[protocolClassName].weightDiff > 0) {
+          } else if (
+            rebalancableUsdBalanceDict[protocolClassName]?.weightDiff > 0
+          ) {
             zapOutPercentage =
-              rebalancableUsdBalance[protocolClassName].weightDiff;
+              rebalancableUsdBalanceDict[protocolClassName].weightDiff;
           } else {
             continue;
           }
@@ -385,7 +387,7 @@ export class BasePortfolio {
     );
     txns = txns.concat(approveTxn);
     for (const [key, protocolMetadata] of Object.entries(
-      rebalancableUsdBalance,
+      rebalancableUsdBalanceDict,
     )) {
       if (key === "pendingRewards") {
         continue;
