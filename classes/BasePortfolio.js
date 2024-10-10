@@ -36,28 +36,58 @@ export class BasePortfolio {
   lockUpPeriod() {
     throw new Error("Method 'lockUpPeriod()' must be implemented.");
   }
+  rebalanceThreshold() {
+    return 0.05;
+  }
   async usdBalanceOf(address) {
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable(
       () => {},
     );
 
     let usdBalance = 0;
+    let usdBalanceDict = {};
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const protocolsInThisChain of Object.values(
         protocolsInThisCategory,
       )) {
         for (const protocol of protocolsInThisChain) {
-          if (protocol.weight === 0) continue;
           const balance = await protocol.interface.usdBalanceOf(
             address,
             tokenPricesMappingTable,
           );
           usdBalance += balance;
+          usdBalanceDict[protocol.interface.constructor.name] = {
+            usdBalance: balance,
+            weight: protocol.weight,
+            symbol: protocol.interface.symbolList,
+          };
         }
       }
     }
     const pendingRewards = await this.pendingRewards(address, () => {});
-    return usdBalance + this.sumUsdDenominatedValues(pendingRewards);
+    const rewardUsdBalance = this.sumUsdDenominatedValues(pendingRewards);
+    usdBalanceDict["pendingRewards"] = {
+      usdBalance: rewardUsdBalance,
+      weightDiff: 1,
+    };
+    usdBalance += rewardUsdBalance;
+    for (const protocolsInThisCategory of Object.values(this.strategy)) {
+      for (const protocolsInThisChain of Object.values(
+        protocolsInThisCategory,
+      )) {
+        for (const protocol of protocolsInThisChain) {
+          const protocolClassName = protocol.interface.constructor.name;
+          const currentWeight =
+            isNaN(usdBalanceDict[protocolClassName].usdBalance) === true
+              ? 0
+              : usdBalanceDict[protocolClassName].usdBalance / usdBalance;
+          const weightDiff = currentWeight - protocol.weight;
+          usdBalanceDict[protocolClassName].weightDiff = weightDiff;
+          usdBalanceDict[protocolClassName].protocol = protocol;
+        }
+      }
+    }
+    return [usdBalance, usdBalanceDict];
   }
   async pendingRewards(owner, updateProgress) {
     const tokenPricesMappingTable =
@@ -177,6 +207,7 @@ export class BasePortfolio {
 
   async _generateTxnsByAction(actionName, actionParams) {
     let totalTxns = [];
+    let portfolioUsdBalance = 0;
     if (actionName === "zapIn") {
       // TODO(david): zap in's weight should take protocolUsdBalanceDictionary into account
       // protocolUsdBalanceDictionary = await this._getProtocolUsdBalanceDictionary(owner)
@@ -205,7 +236,13 @@ export class BasePortfolio {
         actionParams.slippage,
         actionParams.tokenPricesMappingTable,
         actionParams.updateProgress,
+        actionParams.rebalancableUsdBalance,
       );
+    } else if (actionName === "zapOut") {
+      portfolioUsdBalance = (await this.usdBalanceOf(actionParams.account))[0];
+      if (portfolioUsdBalance === 0) {
+        return [];
+      }
     }
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const [chain, protocols] of Object.entries(
@@ -261,11 +298,11 @@ export class BasePortfolio {
     if (actionName === "zapOut") {
       totalTxns.push(
         await this._swapFeeTxnForZapOut(
-          actionParams.account,
           actionParams.tokenOutAddress,
           actionParams.tokenOutSymbol,
           actionParams.tokenPricesMappingTable,
           actionParams.zapOutPercentage,
+          portfolioUsdBalance,
         ),
       );
     }
@@ -277,6 +314,7 @@ export class BasePortfolio {
     slippage,
     tokenPricesMappingTable,
     updateProgress,
+    rebalancableUsdBalance,
   ) {
     // rebalace workflow:
 
@@ -303,15 +341,24 @@ export class BasePortfolio {
         protocolsInThisCategory,
       )) {
         for (const protocol of protocols) {
-          if (protocol.weight !== 0) continue;
           const usdBalance = await protocol.interface.usdBalanceOf(
             owner,
             tokenPricesMappingTable,
           );
+          const protocolClassName = protocol.interface.constructor.name;
+          let zapOutPercentage;
           if (usdBalance === 0) continue;
-          const zapOutTxn = await protocol.interface.zapOut(
+          if (protocol.weight === 0) {
+            zapOutPercentage = 1;
+          } else if (rebalancableUsdBalance[protocolClassName].weightDiff > 0) {
+            zapOutPercentage =
+              rebalancableUsdBalance[protocolClassName].weightDiff;
+          } else {
+            continue;
+          }
+          const zapOutTxns = await protocol.interface.zapOut(
             owner,
-            1,
+            zapOutPercentage,
             usdcAddressInThisChain,
             slippage,
             tokenPricesMappingTable,
@@ -319,22 +366,52 @@ export class BasePortfolio {
             {},
             this.existingInvestmentPositions[chain],
           );
-          txns.push(zapOutTxn);
-          zapOutUsdcBalance += (usdBalance * (100 - slippage)) / 100;
+          txns = txns.concat(zapOutTxns);
+          zapOutUsdcBalance +=
+            (usdBalance * zapOutPercentage * (100 - slippage)) / 100;
         }
       }
     }
-    return txns.concat(
-      await this._generateTxnsByAction("zapIn", {
-        account: owner,
-        tokenInSymbol: usdcSymbol,
-        tokenInAddress: usdcAddressInThisChain,
-        zapInAmount: zapOutUsdcBalance,
-        slippage,
-        tokenPricesMappingTable,
-        updateProgress,
-      }),
+    const zapInAmount = ethers.utils.parseUnits(
+      zapOutUsdcBalance.toFixed(6),
+      6,
     );
+
+    const approveTxn = approve(
+      usdcAddressInThisChain,
+      oneInchAddress,
+      zapInAmount,
+      () => {},
+    );
+    txns = txns.concat(approveTxn);
+    for (const [key, protocolMetadata] of Object.entries(
+      rebalancableUsdBalance,
+    )) {
+      if (key === "pendingRewards") {
+        continue;
+      }
+      if (protocolMetadata.weightDiff < 0) {
+        const protocol = protocolMetadata.protocol;
+        const percentageBN = ethers.BigNumber.from(
+          Math.floor(-protocolMetadata.weightDiff * 10000),
+        );
+        // some protocol's zap-in has a minimum limit
+        if (zapInAmount.mul(percentageBN).div(10000) < 100000) continue;
+        txns = txns.concat(
+          await protocol.interface.zapIn(
+            owner,
+            zapInAmount.mul(percentageBN).div(10000),
+            usdcSymbol,
+            usdcAddressInThisChain,
+            slippage,
+            tokenPricesMappingTable,
+            updateProgress,
+            this.existingInvestmentPositions["arbitrum"],
+          ),
+        );
+      }
+    }
+    return txns;
   }
 
   async _getProtocolUsdBalanceDictionary(owner) {
@@ -358,7 +435,7 @@ export class BasePortfolio {
     return existingPositions;
   }
 
-  async _calProtocolAssetDustInWalletDictionary(owner) {
+  async calProtocolAssetDustInWalletDictionary(owner) {
     let result = {};
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const [chain, protocols] of Object.entries(
@@ -371,17 +448,11 @@ export class BasePortfolio {
           }
           result[chain][protocol.interface.assetContract.address] =
             assetBalance;
-          // result[protocol.interface.assetContract.address] = assetBalance
         }
       }
     }
     return result;
   }
-  _calRebalanceRoutes(
-    sortedPositions,
-    totalUsdBalance,
-    protocolAssetDustInWalletDictionary,
-  ) {}
   async _getExistingInvestmentPositionsByChain(address, updateProgress) {
     let existingInvestmentPositionsbyChain = {};
     for (const [chain, lpTokens] of Object.entries(
@@ -508,13 +579,12 @@ export class BasePortfolio {
     return counts;
   }
   async _swapFeeTxnForZapOut(
-    userAddress,
     tokenOutAddress,
     tokenOutSymbol,
     tokenPricesMappingTable,
     zapOutPercentage,
+    portfolioUsdBalance,
   ) {
-    const portfolioUsdBalance = await this.usdBalanceOf(userAddress);
     const tokenOutUsdBalance = portfolioUsdBalance * zapOutPercentage;
     const swapFeeUsd = tokenOutUsdBalance * this.swapFeeRate();
     const tokenOutDecimals = await getTokenDecimal(tokenOutAddress);

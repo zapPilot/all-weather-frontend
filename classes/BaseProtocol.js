@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import { fetch1InchSwapData, oneInchAddress } from "../utils/oneInch.js";
 import { PROVIDER } from "../utils/general.js";
 import { arbitrum } from "thirdweb/chains";
-import { ERC20_ABI } from "../node_modules/@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
+import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import BaseUniswap from "./uniswapv3/BaseUniswap.js";
 import assert from "assert";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
@@ -89,10 +89,13 @@ export default class BaseProtocol extends BaseUniswap {
   async assetBalanceOf(recipient) {
     const assetContractInstance = new ethers.Contract(
       this.assetContract.address,
-      CurveStableSwapNG,
+      ERC20_ABI,
       PROVIDER,
     );
-    return (await assetContractInstance.functions.balanceOf(recipient))[0];
+    const balance = (
+      await assetContractInstance.functions.balanceOf(recipient)
+    )[0];
+    return balance;
   }
   async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
     throw new Error("Method 'pendingRewards()' must be implemented.");

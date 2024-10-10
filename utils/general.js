@@ -162,3 +162,7 @@ export function unixToCustomFormat(unixTimestamp) {
 
   return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 }
+
+export const formatBalance = (balance) => {
+  return balance > 0.01 ? balance.toFixed(2) : balance;
+};

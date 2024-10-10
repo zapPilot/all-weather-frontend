@@ -359,9 +359,6 @@ export class BaseEquilibria extends BaseProtocol {
     );
     return (await eqbPendleLPInstance.functions.balanceOf(recipient))[0];
   }
-  async assetBalanceOf(recipient) {
-    return (await this.assetContractInstance.functions.balanceOf(recipient))[0];
-  }
 
   async _fetchPendleAssetPrice(updateProgress) {
     updateProgress("fetching Pendle's asset price");
