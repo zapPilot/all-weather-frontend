@@ -44,89 +44,104 @@ export class BasePortfolio {
       () => {},
     );
 
-    let usdBalance = 0;
-    let usdBalanceDict = {};
-    for (const protocolsInThisCategory of Object.values(this.strategy)) {
-      for (const protocolsInThisChain of Object.values(
-        protocolsInThisCategory,
-      )) {
-        for (const protocol of protocolsInThisChain) {
-          const balance = await protocol.interface.usdBalanceOf(
-            address,
-            tokenPricesMappingTable,
-          );
-          usdBalance += balance;
-          usdBalanceDict[protocol.interface.uniqueId()] = {
-            usdBalance: balance,
-            weight: protocol.weight,
-            symbol: protocol.interface.symbolList,
-          };
-        }
-      }
-    }
-    const pendingRewards = await this.pendingRewards(address, () => {});
-    const rewardUsdBalance = this.sumUsdDenominatedValues(pendingRewards);
-    usdBalanceDict["pendingRewards"] = {
-      usdBalance: rewardUsdBalance,
-      weightDiff: 1,
+    // Flatten the strategy structure and create balance calculation promises
+    const balancePromises = Object.values(this.strategy)
+      .flatMap((category) => Object.values(category))
+      .flat()
+      .map((protocol) =>
+        protocol.interface
+          .usdBalanceOf(address, tokenPricesMappingTable)
+          .then((balance) => ({ protocol, balance })),
+      );
+
+    // Add the pending rewards promise
+    const pendingRewardsPromise = this.pendingRewards(address, () => {}).then(
+      (pendingRewards) => ({
+        rewardUsdBalance: this.sumUsdDenominatedValues(pendingRewards),
+      }),
+    );
+
+    // Wait for all promises to resolve
+    const [balanceResults, { rewardUsdBalance }] = await Promise.all([
+      Promise.all(balancePromises),
+      pendingRewardsPromise,
+    ]);
+
+    let usdBalance = rewardUsdBalance;
+    const usdBalanceDict = {
+      pendingRewards: {
+        usdBalance: rewardUsdBalance,
+        weightDiff: 1,
+      },
     };
-    usdBalance += rewardUsdBalance;
-    for (const protocolsInThisCategory of Object.values(this.strategy)) {
-      for (const protocolsInThisChain of Object.values(
-        protocolsInThisCategory,
-      )) {
-        for (const protocol of protocolsInThisChain) {
-          const protocolClassName = protocol.interface.uniqueId();
-          const currentWeight =
-            isNaN(usdBalanceDict[protocolClassName].usdBalance) === true
-              ? 0
-              : usdBalanceDict[protocolClassName].usdBalance / usdBalance;
-          const weightDiff = currentWeight - protocol.weight;
-          usdBalanceDict[protocolClassName].weightDiff = weightDiff;
-          usdBalanceDict[protocolClassName].protocol = protocol;
-        }
+
+    // Process balance results
+    for (const { protocol, balance } of balanceResults) {
+      usdBalance += balance;
+      const protocolClassName = protocol.interface.uniqueId();
+      usdBalanceDict[protocolClassName] = {
+        usdBalance: balance,
+        weight: protocol.weight,
+        symbol: protocol.interface.symbolList,
+        protocol: protocol,
+      };
+    }
+
+    // Calculate weight differences
+    for (const [protocolClassName, data] of Object.entries(usdBalanceDict)) {
+      if (protocolClassName !== "pendingRewards") {
+        const currentWeight = isNaN(data.usdBalance)
+          ? 0
+          : data.usdBalance / usdBalance;
+        data.weightDiff = currentWeight - data.weight;
       }
     }
+
     return [usdBalance, usdBalanceDict];
   }
   async pendingRewards(owner, updateProgress) {
     const tokenPricesMappingTable =
       await this.getTokenPricesMappingTable(updateProgress);
 
-    let rewardsMappingTable = {};
-    for (const protocolsInThisCategory of Object.values(this.strategy)) {
-      for (const protocolsInThisChain of Object.values(
-        protocolsInThisCategory,
-      )) {
-        for (const protocol of protocolsInThisChain) {
-          if (protocol.weight === 0) continue;
-          const rewards = await protocol.interface.pendingRewards(
-            owner,
-            tokenPricesMappingTable,
-            updateProgress,
-          );
-          for (const [tokenAddress, rewardMetadata] of Object.entries(
-            rewards,
-          )) {
-            if (!rewardsMappingTable[tokenAddress]) {
-              rewardsMappingTable[tokenAddress] = {};
-            }
-            rewardsMappingTable[tokenAddress]["balance"] = (
-              rewardsMappingTable[tokenAddress]["balance"] ||
-              ethers.BigNumber.from(0)
-            ).add(rewardMetadata.balance);
-            rewardsMappingTable[tokenAddress]["usdDenominatedValue"] =
-              (rewardsMappingTable[tokenAddress]["usdDenominatedValue"] || 0) +
-              rewardMetadata.usdDenominatedValue;
-            rewardsMappingTable[tokenAddress]["decimals"] =
-              rewardMetadata.decimals;
-            rewardsMappingTable[tokenAddress]["symbol"] = rewardMetadata.symbol;
-          }
+    // Flatten the strategy structure and create pending rewards calculation promises
+    const rewardsPromises = Object.values(this.strategy)
+      .flatMap((category) => Object.values(category))
+      .flat()
+      .filter((protocol) => protocol.weight !== 0)
+      .map((protocol) =>
+        protocol.interface.pendingRewards(
+          owner,
+          tokenPricesMappingTable,
+          updateProgress,
+        ),
+      );
+
+    // Wait for all promises to resolve
+    const allRewards = await Promise.all(rewardsPromises);
+
+    // Combine all rewards
+    const rewardsMappingTable = allRewards.reduce((acc, rewards) => {
+      for (const [tokenAddress, rewardMetadata] of Object.entries(rewards)) {
+        if (!acc[tokenAddress]) {
+          acc[tokenAddress] = {
+            balance: ethers.BigNumber.from(0),
+            usdDenominatedValue: 0,
+            decimals: rewardMetadata.decimals,
+            symbol: rewardMetadata.symbol,
+          };
         }
+        acc[tokenAddress].balance = acc[tokenAddress].balance.add(
+          rewardMetadata.balance,
+        );
+        acc[tokenAddress].usdDenominatedValue +=
+          rewardMetadata.usdDenominatedValue;
       }
-    }
+      return acc;
+    }, {});
+
     return rewardsMappingTable;
   }
+
   // Function to sum up the usdDenominatedValue
   sumUsdDenominatedValues(mapping) {
     return Object.values(mapping).reduce((total, entry) => {
@@ -142,41 +157,55 @@ export class BasePortfolio {
     return 0.00299;
   }
   async getPortfolioMetadata() {
-    let aprMappingTable = {};
-    const allProtocols = Object.values(this.strategy).flatMap((protocols) =>
-      Object.entries(protocols).flatMap(([chain, protocolArray]) =>
+    const allProtocols = Object.values(this.strategy)
+      .flatMap((protocols) => Object.entries(protocols))
+      .flatMap(([chain, protocolArray]) =>
         protocolArray.map((protocol) => ({ chain, protocol })),
-      ),
+      );
+
+    const fetchPoolData = async ({ protocol }) => {
+      const poolUniqueKey = protocol.interface.uniqueId();
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/pool/${poolUniqueKey}/apr`;
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        return {
+          poolUniqueKey,
+          apr: data.value,
+          weight: protocol.weight,
+          tvl: data.tvl,
+        };
+      } catch (error) {
+        console.error(`Error fetching data for ${url}:`, error);
+        return null;
+      }
+    };
+
+    const poolDataResults = await Promise.all(allProtocols.map(fetchPoolData));
+
+    const aprMappingTable = poolDataResults.reduce((acc, result) => {
+      if (result) {
+        const { poolUniqueKey, ...data } = result;
+        acc[poolUniqueKey] = data;
+      }
+      return acc;
+    }, {});
+
+    const totalTvl = Object.values(aprMappingTable).reduce(
+      (sum, pool) => sum + pool.tvl,
+      0,
     );
-    let totalTvl = 0;
-    await Promise.all(
-      allProtocols.map(async ({ chain, protocol }) => {
-        const poolUniqueKey = protocol.interface.uniqueId();
-        const url = `${process.env.NEXT_PUBLIC_API_URL}/pool/${poolUniqueKey}/apr`;
-        try {
-          const response = await fetch(url);
-          const data = await response.json();
-          aprMappingTable[poolUniqueKey] = {
-            apr: data.value,
-            weight: protocol.weight,
-            tvl: data.tvl,
-          };
-          totalTvl += data.tvl;
-        } catch (error) {
-          console.error(`Error fetching data for ${url}:`, error);
-          return null;
-        }
-      }),
-    );
+
     aprMappingTable["portfolioAPR"] = Object.values(aprMappingTable).reduce(
       (sum, pool) => sum + pool.apr * pool.weight,
       0,
     );
-    aprMappingTable["portfolioTVL"] = (totalTvl / 1000000)
-      .toFixed(2)
-      .concat("M");
+
+    aprMappingTable["portfolioTVL"] = `${(totalTvl / 1000000).toFixed(2)}M`;
+
     return aprMappingTable;
   }
+
   async getExistingInvestmentPositions() {
     throw new Error(
       "Method 'getExistingInvestmentPositions()' must be implemented.",
@@ -417,61 +446,74 @@ export class BasePortfolio {
   }
 
   async _getProtocolUsdBalanceDictionary(owner) {
-    let existingPositions = {};
-    for (const protocolsInThisCategory of Object.values(this.strategy)) {
-      for (const [chain, protocols] of Object.entries(
-        protocolsInThisCategory,
-      )) {
-        for (const protocol of protocols) {
-          if (protocol.weight === 0) continue;
-          const protocolUsdBalance =
-            await protocol.interface.usdBalanceOf(owner);
-          if (existingPositions[chain] === undefined) {
-            existingPositions[chain] = {};
-          }
-          existingPositions[chain][protocol.interface.assetContract.address] =
-            protocolUsdBalance;
-        }
-      }
-    }
-    return existingPositions;
-  }
+    const protocolPromises = Object.values(this.strategy)
+      .flatMap((category) => Object.entries(category))
+      .flatMap(([chain, protocols]) =>
+        protocols
+          .filter((protocol) => protocol.weight !== 0)
+          .map(async (protocol) => {
+            const protocolUsdBalance =
+              await protocol.interface.usdBalanceOf(owner);
+            return {
+              chain,
+              address: protocol.interface.assetContract.address,
+              protocolUsdBalance,
+            };
+          }),
+      );
 
+    const results = await Promise.all(protocolPromises);
+
+    return results.reduce((acc, { chain, address, protocolUsdBalance }) => {
+      if (!acc[chain]) acc[chain] = {};
+      acc[chain][address] = protocolUsdBalance;
+      return acc;
+    }, {});
+  }
   async calProtocolAssetDustInWalletDictionary(owner) {
-    let result = {};
-    for (const protocolsInThisCategory of Object.values(this.strategy)) {
-      for (const [chain, protocols] of Object.entries(
-        protocolsInThisCategory,
-      )) {
-        for (const protocol of protocols) {
+    const protocolPromises = Object.values(this.strategy)
+      .flatMap((category) => Object.entries(category))
+      .flatMap(([chain, protocols]) =>
+        protocols.map(async (protocol) => {
           const assetBalance = await protocol.interface.assetBalanceOf(owner);
-          if (result[chain] === undefined) {
-            result[chain] = {};
-          }
-          result[chain][protocol.interface.assetContract.address] =
-            assetBalance;
-        }
-      }
-    }
-    return result;
+          return {
+            chain,
+            address: protocol.interface.assetContract.address,
+            assetBalance,
+          };
+        }),
+      );
+
+    const results = await Promise.all(protocolPromises);
+
+    return results.reduce((acc, { chain, address, assetBalance }) => {
+      if (!acc[chain]) acc[chain] = {};
+      acc[chain][address] = assetBalance;
+      return acc;
+    }, {});
   }
   async _getExistingInvestmentPositionsByChain(address, updateProgress) {
-    let existingInvestmentPositionsbyChain = {};
-    for (const [chain, lpTokens] of Object.entries(
-      this.assetAddressSetByChain,
-    )) {
-      updateProgress(`Fetching ${chain}\'s investment positions: ${lpTokens}`);
-      const response = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_URL
-        }/${address}/nft/tvl_highest?token_addresses=${Array.from(
-          lpTokens,
-        ).join("+")}&chain=${chain}`,
-      );
-      const data = await response.json();
-      existingInvestmentPositionsbyChain[chain] = data;
-    }
-    return existingInvestmentPositionsbyChain;
+    const chainPromises = Object.entries(this.assetAddressSetByChain).map(
+      async ([chain, lpTokens]) => {
+        updateProgress(`Fetching ${chain}'s investment positions: ${lpTokens}`);
+        const response = await fetch(
+          `${
+            process.env.NEXT_PUBLIC_API_URL
+          }/${address}/nft/tvl_highest?token_addresses=${Array.from(
+            lpTokens,
+          ).join("+")}&chain=${chain}`,
+        );
+        const data = await response.json();
+        return { chain, data };
+      },
+    );
+
+    const results = await Promise.all(chainPromises);
+
+    return results.reduce((acc, { chain, data }) => {
+      acc[chain] = data;
+      return acc;
+    }, {});
   }
 
   _getUniqueTokenIdsForCurrentPrice() {
