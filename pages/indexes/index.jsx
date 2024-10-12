@@ -121,19 +121,19 @@ export default function Vaults() {
           >
             <Link href={product.href}>
               <div className="flex justify-between">
-                <h2 className="text-xl text-white flex items-center gap-2">
+                <h2 className="text-xl text-white me-2">
                   <span>{product.portfolioName}</span>
                   {product.portfolioName === "Build Your Own Vault with" &&
                     protocolName !== "" && (
                       <img
                         alt={protocolName}
                         src={`/projectPictures/${protocolName}.webp`}
-                        className="h-8 w-auto"
+                        className="h-8 inline-block rounded-full ms-2"
                       />
                     )}
                 </h2>
                 <ImageWithFallback
-                  className="h-8 w-auto"
+                  className="h-8 w-auto rounded-full"
                   key={product.imageSrc}
                   // use usdc instead of usdc(bridged), aka, usdc.e for the image
                   token={product.imageSrc.replace("(bridged)", "")}
