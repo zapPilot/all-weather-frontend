@@ -524,7 +524,8 @@ export default function IndexOverviews() {
                         type="primary"
                         onClick={() => handleAAWalletAction("rebalance")}
                         loading={
-                          rebalanceIsLoading || rebalancableUsdBalanceDictLoading
+                          rebalanceIsLoading ||
+                          rebalancableUsdBalanceDictLoading
                         }
                         disabled={
                           Object.values(rebalancableUsdBalanceDict).reduce(
