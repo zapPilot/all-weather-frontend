@@ -4,11 +4,9 @@ import { useEffect, useState } from "react";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { Spin } from "antd";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
-import { useActiveAccount } from "thirdweb/react";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 
 export default function Vaults() {
-  const account = useActiveAccount();
   const { strategyMetadata: vaultsMetadata } = useSelector(
     (state) => state.strategyMetadata,
   );
@@ -17,8 +15,6 @@ export default function Vaults() {
   const [apr, setApr] = useState(0);
   const [diyToken, setDIYToken] = useState("");
   const [protocolName, setProtocolName] = useState("");
-  const [usdBalances, setUsdBalances] = useState({});
-  const [earnedDict, setEarnedDict] = useState({});
   const vaults = [
     {
       id: 1,
@@ -89,27 +85,6 @@ export default function Vaults() {
 
     fetchDefaultPools();
   }, []);
-  useEffect(() => {
-    if (account?.address === undefined) return;
-    async function fetchBalances() {
-      let usdBalances = {};
-      for (const vault of vaults) {
-        if (vault.portfolioName === "Build Your Own Vault with") {
-          usdBalances["Build Your Own Vault with"] = "?";
-          continue;
-        }
-        if (vault.portfolioHelper === undefined) continue;
-        const [_, usdBalanceDict] = await vault.portfolioHelper.usdBalanceOf(
-          account.address,
-        );
-        usdBalances[vault.portfolioName] = Object.values(usdBalanceDict)
-          .reduce((a, b) => a + b.usdBalance, 0)
-          .toFixed(2);
-      }
-      setUsdBalances(usdBalances);
-    }
-    fetchBalances();
-  }, [account, vaults]);
 
   return (
     <div className="px-4 py-8">
@@ -157,24 +132,6 @@ export default function Vaults() {
                       product.apr.toFixed(2)
                     )}
                     %
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-4 divide-x divide-gray-400">
-                <div className="text-center">
-                  <p className="text-gray-400">User Deposits</p>
-                  <p className="text-3xl text-white">
-                    {usdBalances[product.portfolioName] === undefined ? (
-                      <Spin />
-                    ) : (
-                      `$${usdBalances[product.portfolioName]}`
-                    )}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-400">Earned</p>
-                  <p className="text-3xl text-emerald-400" role="apr">
-                    $?
                   </p>
                 </div>
               </div>

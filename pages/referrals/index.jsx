@@ -37,6 +37,7 @@ export default function Referrals() {
         }
 
         setLoading(false);
+        return data;
       } catch (error) {
         openNotificationWithIcon(
           notificationAPI,
@@ -46,10 +47,6 @@ export default function Referrals() {
         );
       }
     };
-    fetchData();
-  }, [account]);
-
-  useEffect(() => {
     const addReferrer = async (currentInputValue) => {
       try {
         if (!account) return;
@@ -95,7 +92,8 @@ export default function Referrals() {
         );
       }
     };
-    if (!router.isReady) return;
+    const referralData = fetchData();
+    if (!router.isReady || referralData.referrer !== "") return;
 
     const { referrer: referrerParam } = router.query;
     if (referrerParam) {
