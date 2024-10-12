@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 
-const ImageWithFallback = ({ token, height, width, key }) => {
+const ImageWithFallback = ({ token, height, width, key, className }) => {
   const [imgSrc, setImgSrc] = useState(
     `/tokenPictures/${
       token
@@ -18,6 +18,7 @@ const ImageWithFallback = ({ token, height, width, key }) => {
       height={height}
       width={width}
       key={key}
+      className={className}
       onError={() => {
         for (const commonToken of [
           "btc",

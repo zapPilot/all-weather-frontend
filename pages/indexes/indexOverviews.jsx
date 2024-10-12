@@ -509,45 +509,53 @@ export default function IndexOverviews() {
                     </dd>
                   </div>
                   <div className="flex-none self-end px-6 pt-4">
-                    <Button
-                      className="w-full mt-2"
-                      type="primary"
-                      onClick={() => handleAAWalletAction("rebalance")}
-                      loading={
-                        rebalanceIsLoading || rebalancableUsdBalanceLoading
-                      }
-                      disabled={
-                        Object.values(rebalancableUsdBalance).reduce(
-                          (sum, { usdBalance, weightDiff }) => {
-                            return weightDiff >=
-                              portfolioHelper.rebalanceThreshold()
-                              ? sum + usdBalance
-                              : sum;
-                          },
-                          0,
-                        ) +
-                          portfolioHelper?.sumUsdDenominatedValues(
-                            pendingRewards,
-                          ) >
-                        0
-                      }
+                    <ConfigProvider
+                      theme={{
+                        token: {
+                          colorBgContainerDisabled: "rgb(156, 163, 175)",
+                        },
+                      }}
                     >
-                      Rebalance & Reinvest $
-                      {formatBalance(
-                        Object.values(rebalancableUsdBalance).reduce(
-                          (sum, { usdBalance, weightDiff }) => {
-                            return weightDiff >=
-                              portfolioHelper.rebalanceThreshold()
-                              ? sum + usdBalance * weightDiff
-                              : sum;
-                          },
-                          0,
-                        ) +
-                          portfolioHelper?.sumUsdDenominatedValues(
-                            pendingRewards,
-                          ),
-                      )}
-                    </Button>
+                      <Button
+                        className="w-full mt-2"
+                        type="primary"
+                        onClick={() => handleAAWalletAction("rebalance")}
+                        loading={
+                          rebalanceIsLoading || rebalancableUsdBalanceLoading
+                        }
+                        disabled={
+                          Object.values(rebalancableUsdBalance).reduce(
+                            (sum, { usdBalance, weightDiff }) => {
+                              return weightDiff >=
+                                portfolioHelper.rebalanceThreshold()
+                                ? sum + usdBalance
+                                : sum;
+                            },
+                            0,
+                          ) +
+                            portfolioHelper?.sumUsdDenominatedValues(
+                              pendingRewards,
+                            ) >
+                          0
+                        }
+                      >
+                        Rebalance & Reinvest $
+                        {formatBalance(
+                          Object.values(rebalancableUsdBalance).reduce(
+                            (sum, { usdBalance, weightDiff }) => {
+                              return weightDiff >=
+                                portfolioHelper.rebalanceThreshold()
+                                ? sum + usdBalance * weightDiff
+                                : sum;
+                            },
+                            0,
+                          ) +
+                            portfolioHelper?.sumUsdDenominatedValues(
+                              pendingRewards,
+                            ),
+                        )}
+                      </Button>
+                    </ConfigProvider>
                   </div>
                   1. No need to rebalance if the difference is less than 5% 2.
                   these funds are not earning{" "}
