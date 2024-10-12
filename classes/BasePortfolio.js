@@ -156,6 +156,12 @@ export class BasePortfolio {
   swapFeeRate() {
     return 0.00299;
   }
+  mulReferralFeeRate(inputBigBumber) {
+    return inputBigBumber.mul(7).div(10);
+  }
+  referralFeeRate() {
+    return 0.7;
+  }
   async getPortfolioMetadata() {
     const allProtocols = Object.values(this.strategy)
       .flatMap((protocols) => Object.entries(protocols))

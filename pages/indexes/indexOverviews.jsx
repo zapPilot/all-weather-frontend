@@ -158,6 +158,8 @@ export default function IndexOverviews() {
                     (1 - slippage / 100 - portfolioHelper.swapFeeRate()),
                   zapOutAmount: usdBalance * zapOutPercentage,
                   timestamp: Math.floor(Date.now() / 1000),
+                  swapFeeRate: portfolioHelper.swapFeeRate(),
+                  referralFeeRate: portfolioHelper.referralFeeRate(),
                 }),
               },
             });
@@ -539,7 +541,7 @@ export default function IndexOverviews() {
                           ) +
                             portfolioHelper?.sumUsdDenominatedValues(
                               pendingRewards,
-                            ) >
+                            ) <
                           0
                         }
                       >
@@ -561,7 +563,6 @@ export default function IndexOverviews() {
                       </Button>
                     </ConfigProvider>
                   </div>
-                  1. No need to rebalance if the difference is less than 5% 2.
                   these funds are not earning{" "}
                   {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}
                   % APR
