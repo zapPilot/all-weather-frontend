@@ -80,6 +80,5 @@ describe("Stablecoin Vault", () => {
       slippage,
       rebalancableUsdBalanceDictDict,
     );
-    console.log(txns);
   });
 });
