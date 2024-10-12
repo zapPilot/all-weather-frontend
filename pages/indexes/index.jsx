@@ -103,7 +103,7 @@ export default function Vaults() {
           account.address,
         );
         usdBalances[vault.portfolioName] = Object.values(usdBalanceDict)
-          .reduce((a, b) => a + b, 0)
+          .reduce((a, b) => a + b.usdBalance, 0)
           .toFixed(2);
       }
       setUsdBalances(usdBalances);
