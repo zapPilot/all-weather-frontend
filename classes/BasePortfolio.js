@@ -78,23 +78,28 @@ export class BasePortfolio {
     // Process balance results
     for (const { protocol, balance } of balanceResults) {
       usdBalance += balance;
-      const protocolClassName = protocol.interface.uniqueId();
-      usdBalanceDict[protocolClassName] = {
+      const protocolUniqueId = protocol.interface.uniqueId();
+      usdBalanceDict[protocolUniqueId] = {
         usdBalance: balance,
         weight: protocol.weight,
         symbol: protocol.interface.symbolList,
         protocol: protocol,
+        zapOutPercentage: 0,
       };
     }
 
     // Calculate weight differences
     let negativeWeigtDiffSum = 0;
-    for (const [protocolClassName, data] of Object.entries(usdBalanceDict)) {
-      if (protocolClassName !== "pendingRewards") {
+    for (const [protocolUniqueId, data] of Object.entries(usdBalanceDict)) {
+      if (protocolUniqueId !== "pendingRewards") {
         const currentWeight = isNaN(data.usdBalance)
           ? 0
           : data.usdBalance / usdBalance;
         data.weightDiff = currentWeight - data.weight;
+        if (data.weightDiff > this.rebalanceThreshold()) {
+          data.zapOutPercentage =
+            ((currentWeight - data.weight) * usdBalance) / data.usdBalance;
+        }
         if (data.weightDiff < 0) {
           negativeWeigtDiffSum += data.weightDiff;
         }
@@ -394,10 +399,10 @@ export class BasePortfolio {
           if (protocol.weight === 0) {
             zapOutPercentage = 1;
           } else if (
-            rebalancableUsdBalanceDict[protocolClassName]?.weightDiff > 0
+            rebalancableUsdBalanceDict[protocolClassName]?.zapOutPercentage > 0
           ) {
             zapOutPercentage =
-              rebalancableUsdBalanceDict[protocolClassName].weightDiff;
+              rebalancableUsdBalanceDict[protocolClassName].zapOutPercentage;
           } else {
             continue;
           }
@@ -421,7 +426,6 @@ export class BasePortfolio {
       zapOutUsdcBalance.toFixed(6),
       6,
     );
-    console.log("rebalance", zapInAmount.toString());
     const approveTxn = approve(
       usdcAddressInThisChain,
       oneInchAddress,
@@ -437,11 +441,6 @@ export class BasePortfolio {
       }
       if (protocolMetadata.weightDiff < 0) {
         const protocol = protocolMetadata.protocol;
-        console.log(
-          key,
-          protocolMetadata.weightDiff,
-          protocolMetadata.negativeWeigtDiffSum,
-        );
         const percentageBN = ethers.BigNumber.from(
           Math.floor(
             (-protocolMetadata.weightDiff /
@@ -451,7 +450,6 @@ export class BasePortfolio {
         );
         // some protocol's zap-in has a minimum limit
         if (zapInAmount.mul(percentageBN).div(10000) < 100000) continue;
-        console.log(key, zapInAmount.mul(percentageBN).div(10000).toString());
         txns = txns.concat(
           await protocol.interface.zapIn(
             owner,

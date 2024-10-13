@@ -174,7 +174,6 @@ export default function Referrals() {
         };
       });
     }
-    console.log("referees", referees);
     for (const { referee } of referees) {
       fetchTransactionHistory(referee);
     }

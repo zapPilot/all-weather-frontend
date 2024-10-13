@@ -124,7 +124,9 @@ export class BaseConvex extends BaseProtocol {
       _min_mint_amount = _min_mint_amount.add(amountToZapIn);
     }
     _min_mint_amount = Math.floor(
-      (_min_mint_amount * (100 - slippage)) / 100 / this._calculateLpPrice(),
+      (_min_mint_amount * (100 - slippage)) /
+        100 /
+        this._calculateLpPrice(tokenPricesMappingTable),
     );
     const depositTxn = prepareContractCall({
       contract: this.protocolContract,
@@ -215,7 +217,7 @@ export class BaseConvex extends BaseProtocol {
   }
   async usdBalanceOf(recipient, tokenPricesMappingTable) {
     const lpBalance = await this.stakeBalanceOf(recipient, () => {});
-    const lpPrice = this._calculateLpPrice();
+    const lpPrice = this._calculateLpPrice(tokenPricesMappingTable);
     return (lpBalance * lpPrice) / Math.pow(10, this.assetDecimals);
   }
   async stakeBalanceOf(recipient, updateProgress) {
@@ -233,8 +235,8 @@ export class BaseConvex extends BaseProtocol {
   _calculateTokenAmountsForLP(tokenMetadatas) {
     return [1, 1];
   }
-  _calculateLpPrice() {
+  _calculateLpPrice(tokenPricesMappingTable) {
     // TODO(david): Implement this
-    return 1;
+    return tokenPricesMappingTable["weth"];
   }
 }

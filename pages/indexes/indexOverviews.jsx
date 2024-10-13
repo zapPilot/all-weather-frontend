@@ -314,6 +314,21 @@ export default function IndexOverviews() {
     );
   }
 
+  const getRebalanceReinvestUsdAmount = () => {
+    return (
+      Object.values(rebalancableUsdBalanceDict).reduce(
+        (sum, { usdBalance, zapOutPercentage }) => {
+          return zapOutPercentage > 0
+            ? sum + usdBalance * zapOutPercentage
+            : sum;
+        },
+        0,
+      ) *
+        2 +
+      portfolioHelper?.sumUsdDenominatedValues(pendingRewards)
+    );
+  };
+
   useEffect(() => {
     if (
       portfolioApr[portfolioName] === undefined ||
@@ -329,40 +344,30 @@ export default function IndexOverviews() {
       setPendingRewardsLoading(true);
       setrebalancableUsdBalanceDictLoading(true);
 
-      console.time("usdBalanceOf");
+      const tokenPricesMappingTable =
+        await portfolioHelper.getTokenPricesMappingTable(() => {});
+      setTokenPricesMappingTable(tokenPricesMappingTable);
+
       const [usdBalance, usdBalanceDict] = await portfolioHelper.usdBalanceOf(
         account.address,
       );
-      console.timeEnd("usdBalanceOf");
 
       setUsdBalance(usdBalance);
       setUsdBalanceLoading(false);
       setrebalancableUsdBalanceDict(usdBalanceDict);
-      console.log("usdBalanceDict", usdBalanceDict);
       setrebalancableUsdBalanceDictLoading(false);
 
-      console.time("getTokenPricesMappingTable");
-      const tokenPricesMappingTable =
-        await portfolioHelper.getTokenPricesMappingTable(() => {});
-      console.timeEnd("getTokenPricesMappingTable");
-
-      setTokenPricesMappingTable(tokenPricesMappingTable);
-
-      console.time("pendingRewards");
       const pendingRewards = await portfolioHelper.pendingRewards(
         account.address,
         () => {},
       );
-      console.timeEnd("pendingRewards");
 
       setPendingRewards(pendingRewards);
       setPendingRewardsLoading(false);
 
-      console.time("calProtocolAssetDustInWalletDictionary");
       const dust = await portfolioHelper.calProtocolAssetDustInWalletDictionary(
         account.address,
       );
-      console.timeEnd("calProtocolAssetDustInWalletDictionary");
 
       setProtocolAssetDustInWallet(dust);
     };
@@ -530,36 +535,12 @@ export default function IndexOverviews() {
                           rebalancableUsdBalanceDictLoading
                         }
                         disabled={
-                          Object.values(rebalancableUsdBalanceDict).reduce(
-                            (sum, { usdBalance, weightDiff }) => {
-                              return weightDiff >=
-                                portfolioHelper.rebalanceThreshold()
-                                ? sum + usdBalance
-                                : sum;
-                            },
-                            0,
-                          ) +
-                            portfolioHelper?.sumUsdDenominatedValues(
-                              pendingRewards,
-                            ) <
-                          0
+                          getRebalanceReinvestUsdAmount() / usdBalance <
+                          portfolioHelper?.rebalanceThreshold()
                         }
                       >
-                        Rebalance & Reinvest $
-                        {formatBalance(
-                          Object.values(rebalancableUsdBalanceDict).reduce(
-                            (sum, { usdBalance, weightDiff }) => {
-                              return weightDiff >=
-                                portfolioHelper.rebalanceThreshold()
-                                ? sum + usdBalance * weightDiff
-                                : sum;
-                            },
-                            0,
-                          ) +
-                            portfolioHelper?.sumUsdDenominatedValues(
-                              pendingRewards,
-                            ),
-                        )}
+                        Rebalance & Reinvest (Portfolio Drift: $
+                        {formatBalance(getRebalanceReinvestUsdAmount())})
                       </Button>
                     </ConfigProvider>
                   </div>
