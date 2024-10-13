@@ -126,59 +126,59 @@ export default function IndexOverviews() {
         slippage,
         rebalancableUsdBalanceDict,
       );
-    // Call sendBatchTransaction and wait for the result
-    try {
-      await new Promise((resolve, reject) => {
-        sendBatchTransaction(txns.flat(Infinity), {
-          onSuccess: async (data) => {
-            await axios({
-              method: "post",
-              url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
-              headers: {
-                "Content-Type": "application/json",
-              },
-              data: {
-                user_api_key: "placeholder",
-                tx_hash: data.transactionHash,
-                address: account.address,
-                metadata: JSON.stringify({
-                  portfolioName,
-                  actionName,
-                  tokenSymbol,
-                  investmentAmount:
-                    investmentAmount *
-                    (1 - slippage / 100 - portfolioHelper.swapFeeRate()),
-                  zapOutAmount: usdBalance * zapOutPercentage,
-                  timestamp: Math.floor(Date.now() / 1000),
-                  swapFeeRate: portfolioHelper.swapFeeRate(),
-                  referralFeeRate: portfolioHelper.referralFeeRate(),
-                }),
-              },
-            });
-            openNotificationWithIcon(
-              notificationAPI,
-              "Transaction Result",
-              "success",
-              `${data.chain.blockExplorers[0].url}/tx/${data.transactionHash}`,
-            );
-            resolve(data); // Resolve the promise successfully
-          },
-          onError: (error) => {
-            reject(error); // Reject the promise with the error
-          },
+      // Call sendBatchTransaction and wait for the result
+      try {
+        await new Promise((resolve, reject) => {
+          sendBatchTransaction(txns.flat(Infinity), {
+            onSuccess: async (data) => {
+              await axios({
+                method: "post",
+                url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                data: {
+                  user_api_key: "placeholder",
+                  tx_hash: data.transactionHash,
+                  address: account.address,
+                  metadata: JSON.stringify({
+                    portfolioName,
+                    actionName,
+                    tokenSymbol,
+                    investmentAmount:
+                      investmentAmount *
+                      (1 - slippage / 100 - portfolioHelper.swapFeeRate()),
+                    zapOutAmount: usdBalance * zapOutPercentage,
+                    timestamp: Math.floor(Date.now() / 1000),
+                    swapFeeRate: portfolioHelper.swapFeeRate(),
+                    referralFeeRate: portfolioHelper.referralFeeRate(),
+                  }),
+                },
+              });
+              openNotificationWithIcon(
+                notificationAPI,
+                "Transaction Result",
+                "success",
+                `${data.chain.blockExplorers[0].url}/tx/${data.transactionHash}`,
+              );
+              resolve(data); // Resolve the promise successfully
+            },
+            onError: (error) => {
+              reject(error); // Reject the promise with the error
+            },
+          });
         });
-      });
-    } catch (error) {
-      openNotificationWithIcon(
-        notificationAPI,
-        "Transaction Result",
-        "error",
-        `Transaction failed\n
+      } catch (error) {
+        openNotificationWithIcon(
+          notificationAPI,
+          "Transaction Result",
+          "error",
+          `Transaction failed\n
         1. Probably out of gas\n
         2. Or still in the lock-up period\n
         ${error.message}`,
-      );
-    }
+        );
+      }
     } catch (error) {
       console.log(error);
       console.log(error);
@@ -188,7 +188,7 @@ export default function IndexOverviews() {
         "Generate Transaction Error",
         "error",
         error.message,
-      )
+      );
     }
     if (actionName === "zapIn") {
       setZapInIsLoading(false);

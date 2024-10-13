@@ -240,7 +240,7 @@ export class BaseConvex extends BaseProtocol {
     // TODO(david): need to calculate the correct LP price
     if (this.pid === 34) {
       // it's a stablecoin pool
-      return 1
+      return 1;
     } else if (this.pid === 28) {
       // it's a ETH pool
       return tokenPricesMappingTable["weth"];
