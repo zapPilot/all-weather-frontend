@@ -91,7 +91,7 @@ export async function getTokenDecimal(tokenAddress) {
 
 export function approve(tokenAddress, spenderAddress, amount, updateProgress) {
   updateProgress(`approve spending amount to ${spenderAddress}`);
-  const approvalAmount = Math.ceil(amount * APPROVAL_BUFFER);
+  const approvalAmount = amount;
   if (approvalAmount === 0) {
     throw new Error("Approval amount is 0. Cannot proceed with approving.");
   }

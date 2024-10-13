@@ -160,24 +160,6 @@ export default function Vaults() {
                   </p>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-4 divide-x divide-gray-400">
-                <div className="text-center">
-                  <p className="text-gray-400">User Deposits</p>
-                  <p className="text-3xl text-white">
-                    {usdBalances[product.portfolioName] === undefined ? (
-                      <Spin />
-                    ) : (
-                      `$${usdBalances[product.portfolioName]}`
-                    )}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-400">Earned</p>
-                  <p className="text-3xl text-emerald-400" role="apr">
-                    $?
-                  </p>
-                </div>
-              </div>
             </Link>
           </div>
         ))}

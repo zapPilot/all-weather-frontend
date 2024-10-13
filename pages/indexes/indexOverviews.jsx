@@ -111,79 +111,94 @@ export default function IndexOverviews() {
     if (!account) return;
     const [tokenSymbol, tokenAddress, tokenDecimals] =
       tokenSymbolAndAddress.split("-");
-    const txns = await generateIntentTxns(
-      actionName,
-      portfolioHelper,
-      account.address,
-      tokenSymbol,
-      tokenAddress,
-      investmentAmount,
-      tokenDecimals,
-      zapOutPercentage,
-      setProgress,
-      setStepName,
-      slippage,
-      rebalancableUsdBalanceDict,
-    );
+    try {
+      const txns = await generateIntentTxns(
+        actionName,
+        portfolioHelper,
+        account.address,
+        tokenSymbol,
+        tokenAddress,
+        investmentAmount,
+        tokenDecimals,
+        zapOutPercentage,
+        setProgress,
+        setStepName,
+        slippage,
+        rebalancableUsdBalanceDict,
+      );
+      // Call sendBatchTransaction and wait for the result
+      try {
+        await new Promise((resolve, reject) => {
+          sendBatchTransaction(txns.flat(Infinity), {
+            onSuccess: async (data) => {
+              await axios({
+                method: "post",
+                url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                data: {
+                  user_api_key: "placeholder",
+                  tx_hash: data.transactionHash,
+                  address: account.address,
+                  metadata: JSON.stringify({
+                    portfolioName,
+                    actionName,
+                    tokenSymbol,
+                    investmentAmount:
+                      investmentAmount *
+                      (1 - slippage / 100 - portfolioHelper.swapFeeRate()),
+                    zapOutAmount: usdBalance * zapOutPercentage,
+                    timestamp: Math.floor(Date.now() / 1000),
+                    swapFeeRate: portfolioHelper.swapFeeRate(),
+                    referralFeeRate: portfolioHelper.referralFeeRate(),
+                  }),
+                },
+              });
+              openNotificationWithIcon(
+                notificationAPI,
+                "Transaction Result",
+                "success",
+                `${data.chain.blockExplorers[0].url}/tx/${data.transactionHash}`,
+              );
+              resolve(data); // Resolve the promise successfully
+            },
+            onError: (error) => {
+              reject(error); // Reject the promise with the error
+            },
+          });
+        });
+      } catch (error) {
+        openNotificationWithIcon(
+          notificationAPI,
+          "Transaction Result",
+          "error",
+          `Transaction failed\n
+        1. Probably out of gas\n
+        2. Or still in the lock-up period\n
+        ${error.message}`,
+        );
+      }
+    } catch (error) {
+      const errorMsg =
+        error.name === "AxiosError"
+          ? error.response?.data?.message
+          : error.message;
+      openNotificationWithIcon(
+        notificationAPI,
+        "Generate Transaction Error",
+        "error",
+        errorMsg,
+      );
+    }
     if (actionName === "zapIn") {
       setZapInIsLoading(false);
     } else if (actionName === "zapOut") {
       setZapOutIsLoading(false);
     } else if (actionName === "claimAndSwap") {
       setClaimIsLoading(false);
-    } else if (actionName === "rebance") {
+    } else if (actionName === "rebalance") {
       setRebalanceIsLoading(false);
-    }
-    // Call sendBatchTransaction and wait for the result
-    try {
-      await new Promise((resolve, reject) => {
-        sendBatchTransaction(txns.flat(Infinity), {
-          onSuccess: async (data) => {
-            await axios({
-              method: "post",
-              url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
-              headers: {
-                "Content-Type": "application/json",
-              },
-              data: {
-                user_api_key: "placeholder",
-                tx_hash: data.transactionHash,
-                address: account.address,
-                metadata: JSON.stringify({
-                  portfolioName,
-                  actionName,
-                  tokenSymbol,
-                  investmentAmount:
-                    investmentAmount *
-                    (1 - slippage / 100 - portfolioHelper.swapFeeRate()),
-                  zapOutAmount: usdBalance * zapOutPercentage,
-                  timestamp: Math.floor(Date.now() / 1000),
-                }),
-              },
-            });
-            openNotificationWithIcon(
-              notificationAPI,
-              "Transaction Result",
-              "success",
-              `${data.chain.blockExplorers[0].url}/tx/${data.transactionHash}`,
-            );
-            resolve(data); // Resolve the promise successfully
-          },
-          onError: (error) => {
-            reject(error); // Reject the promise with the error
-          },
-        });
-      });
-    } catch (error) {
-      openNotificationWithIcon(
-        notificationAPI,
-        "Transaction Result",
-        "error",
-        `Transaction failed\n
-        1. Probably out of gas\n
-        2. Or still in the lock-up period\n
-        ${error.message}`,
-      );
     }
   };
 
@@ -312,6 +327,21 @@ export default function IndexOverviews() {
     );
   }
 
+  const getRebalanceReinvestUsdAmount = () => {
+    return (
+      Object.values(rebalancableUsdBalanceDict).reduce(
+        (sum, { usdBalance, zapOutPercentage }) => {
+          return zapOutPercentage > 0
+            ? sum + usdBalance * zapOutPercentage
+            : sum;
+        },
+        0,
+      ) *
+        2 +
+      portfolioHelper?.sumUsdDenominatedValues(pendingRewards)
+    );
+  };
+
   useEffect(() => {
     if (
       portfolioApr[portfolioName] === undefined ||
@@ -327,40 +357,30 @@ export default function IndexOverviews() {
       setPendingRewardsLoading(true);
       setrebalancableUsdBalanceDictLoading(true);
 
-      console.time("usdBalanceOf");
+      const tokenPricesMappingTable =
+        await portfolioHelper.getTokenPricesMappingTable(() => {});
+      setTokenPricesMappingTable(tokenPricesMappingTable);
+
       const [usdBalance, usdBalanceDict] = await portfolioHelper.usdBalanceOf(
         account.address,
       );
-      console.timeEnd("usdBalanceOf");
 
       setUsdBalance(usdBalance);
       setUsdBalanceLoading(false);
       setrebalancableUsdBalanceDict(usdBalanceDict);
-      console.log("usdBalanceDict", usdBalanceDict);
       setrebalancableUsdBalanceDictLoading(false);
 
-      console.time("getTokenPricesMappingTable");
-      const tokenPricesMappingTable =
-        await portfolioHelper.getTokenPricesMappingTable(() => {});
-      console.timeEnd("getTokenPricesMappingTable");
-
-      setTokenPricesMappingTable(tokenPricesMappingTable);
-
-      console.time("pendingRewards");
       const pendingRewards = await portfolioHelper.pendingRewards(
         account.address,
         () => {},
       );
-      console.timeEnd("pendingRewards");
 
       setPendingRewards(pendingRewards);
       setPendingRewardsLoading(false);
 
-      console.time("calProtocolAssetDustInWalletDictionary");
       const dust = await portfolioHelper.calProtocolAssetDustInWalletDictionary(
         account.address,
       );
-      console.timeEnd("calProtocolAssetDustInWalletDictionary");
 
       setProtocolAssetDustInWallet(dust);
     };
@@ -528,40 +548,15 @@ export default function IndexOverviews() {
                           rebalancableUsdBalanceDictLoading
                         }
                         disabled={
-                          Object.values(rebalancableUsdBalanceDict).reduce(
-                            (sum, { usdBalance, weightDiff }) => {
-                              return weightDiff >=
-                                portfolioHelper.rebalanceThreshold()
-                                ? sum + usdBalance
-                                : sum;
-                            },
-                            0,
-                          ) +
-                            portfolioHelper?.sumUsdDenominatedValues(
-                              pendingRewards,
-                            ) >
-                          0
+                          getRebalanceReinvestUsdAmount() / usdBalance <
+                          portfolioHelper?.rebalanceThreshold()
                         }
                       >
-                        Rebalance & Reinvest $
-                        {formatBalance(
-                          Object.values(rebalancableUsdBalanceDict).reduce(
-                            (sum, { usdBalance, weightDiff }) => {
-                              return weightDiff >=
-                                portfolioHelper.rebalanceThreshold()
-                                ? sum + usdBalance * weightDiff
-                                : sum;
-                            },
-                            0,
-                          ) +
-                            portfolioHelper?.sumUsdDenominatedValues(
-                              pendingRewards,
-                            ),
-                        )}
+                        Rebalance & Reinvest (Portfolio Drift: $
+                        {formatBalance(getRebalanceReinvestUsdAmount())})
                       </Button>
                     </ConfigProvider>
                   </div>
-                  1. No need to rebalance if the difference is less than 5% 2.
                   these funds are not earning{" "}
                   {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}
                   % APR
