@@ -180,14 +180,15 @@ export default function IndexOverviews() {
         );
       }
     } catch (error) {
-      console.log(error);
-      console.log(error);
-      console.log(error);
+      const errorMsg =
+        error.name === "AxiosError"
+          ? error.response?.data?.message
+          : error.message;
       openNotificationWithIcon(
         notificationAPI,
         "Generate Transaction Error",
         "error",
-        error.message,
+        errorMsg,
       );
     }
     if (actionName === "zapIn") {
