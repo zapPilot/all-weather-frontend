@@ -111,29 +111,21 @@ export default function IndexOverviews() {
     if (!account) return;
     const [tokenSymbol, tokenAddress, tokenDecimals] =
       tokenSymbolAndAddress.split("-");
-    const txns = await generateIntentTxns(
-      actionName,
-      portfolioHelper,
-      account.address,
-      tokenSymbol,
-      tokenAddress,
-      investmentAmount,
-      tokenDecimals,
-      zapOutPercentage,
-      setProgress,
-      setStepName,
-      slippage,
-      rebalancableUsdBalanceDict,
-    );
-    if (actionName === "zapIn") {
-      setZapInIsLoading(false);
-    } else if (actionName === "zapOut") {
-      setZapOutIsLoading(false);
-    } else if (actionName === "claimAndSwap") {
-      setClaimIsLoading(false);
-    } else if (actionName === "rebalance") {
-      setRebalanceIsLoading(false);
-    }
+    try {
+      const txns = await generateIntentTxns(
+        actionName,
+        portfolioHelper,
+        account.address,
+        tokenSymbol,
+        tokenAddress,
+        investmentAmount,
+        tokenDecimals,
+        zapOutPercentage,
+        setProgress,
+        setStepName,
+        slippage,
+        rebalancableUsdBalanceDict,
+      );
     // Call sendBatchTransaction and wait for the result
     try {
       await new Promise((resolve, reject) => {
@@ -186,6 +178,26 @@ export default function IndexOverviews() {
         2. Or still in the lock-up period\n
         ${error.message}`,
       );
+    }
+    } catch (error) {
+      console.log(error);
+      console.log(error);
+      console.log(error);
+      openNotificationWithIcon(
+        notificationAPI,
+        "Generate Transaction Error",
+        "error",
+        error.message,
+      )
+    }
+    if (actionName === "zapIn") {
+      setZapInIsLoading(false);
+    } else if (actionName === "zapOut") {
+      setZapOutIsLoading(false);
+    } else if (actionName === "claimAndSwap") {
+      setClaimIsLoading(false);
+    } else if (actionName === "rebalance") {
+      setRebalanceIsLoading(false);
     }
   };
 
