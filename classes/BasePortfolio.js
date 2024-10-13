@@ -88,15 +88,23 @@ export class BasePortfolio {
     }
 
     // Calculate weight differences
+    let negativeWeigtDiffSum = 0;
     for (const [protocolClassName, data] of Object.entries(usdBalanceDict)) {
       if (protocolClassName !== "pendingRewards") {
         const currentWeight = isNaN(data.usdBalance)
           ? 0
           : data.usdBalance / usdBalance;
         data.weightDiff = currentWeight - data.weight;
+        if (data.weightDiff < 0) {
+          negativeWeigtDiffSum += data.weightDiff;
+        }
       }
     }
-
+    for (const data of Object.values(usdBalanceDict)) {
+      if (negativeWeigtDiffSum < 0) {
+        data.negativeWeigtDiffSum = Math.abs(negativeWeigtDiffSum);
+      }
+    }
     return [usdBalance, usdBalanceDict];
   }
   async pendingRewards(owner, updateProgress) {
@@ -330,7 +338,7 @@ export class BasePortfolio {
       }
     }
     if (actionName === "zapOut") {
-      totalTxns.push(
+      totalTxns = totalTxns.concat(
         await this._swapFeeTxnsForZapOut(
           actionParams.account,
           actionParams.tokenOutAddress,
@@ -413,7 +421,7 @@ export class BasePortfolio {
       zapOutUsdcBalance.toFixed(6),
       6,
     );
-
+    console.log("rebalance", zapInAmount.toString());
     const approveTxn = approve(
       usdcAddressInThisChain,
       oneInchAddress,
@@ -429,11 +437,21 @@ export class BasePortfolio {
       }
       if (protocolMetadata.weightDiff < 0) {
         const protocol = protocolMetadata.protocol;
+        console.log(
+          key,
+          protocolMetadata.weightDiff,
+          protocolMetadata.negativeWeigtDiffSum,
+        );
         const percentageBN = ethers.BigNumber.from(
-          Math.floor(-protocolMetadata.weightDiff * 10000),
+          Math.floor(
+            (-protocolMetadata.weightDiff /
+              protocolMetadata.negativeWeigtDiffSum) *
+              10000,
+          ),
         );
         // some protocol's zap-in has a minimum limit
         if (zapInAmount.mul(percentageBN).div(10000) < 100000) continue;
+        console.log(key, zapInAmount.mul(percentageBN).div(10000).toString());
         txns = txns.concat(
           await protocol.interface.zapIn(
             owner,

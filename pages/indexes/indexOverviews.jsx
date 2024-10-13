@@ -131,7 +131,7 @@ export default function IndexOverviews() {
       setZapOutIsLoading(false);
     } else if (actionName === "claimAndSwap") {
       setClaimIsLoading(false);
-    } else if (actionName === "rebance") {
+    } else if (actionName === "rebalance") {
       setRebalanceIsLoading(false);
     }
     // Call sendBatchTransaction and wait for the result
