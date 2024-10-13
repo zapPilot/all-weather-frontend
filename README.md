@@ -46,3 +46,18 @@ You can start editing the page by modifying `pages/index.tsx`. The page auto-upd
 ## TO-DO
 
 need a linter like this one <https://github.com/david30907d/all-weather-scaffold/actions/runs/5637981937/job/15271636819>
+
+## For Devs
+
+### How to Integrate New Protocols
+
+1. Development:
+   1. Inherit from [BaseProtocol.js](./classes/BaseProtocol.js)
+   2. Add your new protocol class to an existing vault (like [EthVault](./classes/Vaults/EthVault.jsx)) or create a new one
+      - Tip: While developing, comment out other protocols in the vault to speed up bundled transactions
+   3. Integrate into the Vault: [./utils/thirdwebSmartWallet.ts](./utils/thirdwebSmartWallet.ts)
+   4. Add your new vault to the [landing page](./pages/indexes/index.jsx)
+   5. Test on the frontend-side
+2. Testing:
+   1. Create a test vault containing only your protocol, similar to [this example](https://github.com/all-weather-protocol/all-weather-frontend/blob/main/utils/thirdwebSmartWallet.ts#L17-L22)
+   2. Copy existing test cases from [./**tests**/intent](./__tests__/intent/) and modify them for your protocol

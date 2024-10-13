@@ -78,7 +78,8 @@ export class BasePortfolio {
     // Process balance results
     for (const { protocol, balance } of balanceResults) {
       usdBalance += balance;
-      const protocolUniqueId = protocol.interface.uniqueId();
+      const protocolUniqueId =
+        protocol.interface.uniqueId() + protocol.interface.constructor.name;
       usdBalanceDict[protocolUniqueId] = {
         usdBalance: balance,
         weight: protocol.weight,
@@ -393,7 +394,8 @@ export class BasePortfolio {
             owner,
             tokenPricesMappingTable,
           );
-          const protocolClassName = protocol.interface.uniqueId();
+          const protocolClassName =
+            protocol.interface.uniqueId() + protocol.interface.constructor.name;
           let zapOutPercentage;
           if (usdBalance === 0) continue;
           if (protocol.weight === 0) {
