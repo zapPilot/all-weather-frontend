@@ -124,7 +124,9 @@ export class BaseConvex extends BaseProtocol {
       _min_mint_amount = _min_mint_amount.add(amountToZapIn);
     }
     _min_mint_amount = Math.floor(
-      (_min_mint_amount * (100 - slippage)) / 100 / this._calculateLpPrice(),
+      (_min_mint_amount * (100 - slippage)) /
+        100 /
+        this._calculateLpPrice(tokenPricesMappingTable),
     );
     const depositTxn = prepareContractCall({
       contract: this.protocolContract,
@@ -134,8 +136,9 @@ export class BaseConvex extends BaseProtocol {
     const approveForStakingTxn = approve(
       this.assetContract.address,
       this.stakeFarmContract.address,
-      // use 1.1 to make sure we have approved enough, and depositAll of Convex will use the exact amount
-      Math.floor(_min_mint_amount * 1.1),
+      // TODO(David): not sure why _min_mint_amount cannot be used here
+      // here's the failed txn: https://dashboard.tenderly.co/davidtnfsh/project/tx/arbitrum/0x822f5f426de88d1890f8836e825f52a70d22f5bcd8665125a83755eb947a4d88?trace=0.4.0.0.0.0.18.1
+      ethers.constants.MaxUint256,
       updateProgress,
     );
     const stakeTxn = prepareContractCall({
@@ -215,7 +218,7 @@ export class BaseConvex extends BaseProtocol {
   }
   async usdBalanceOf(recipient, tokenPricesMappingTable) {
     const lpBalance = await this.stakeBalanceOf(recipient, () => {});
-    const lpPrice = this._calculateLpPrice();
+    const lpPrice = this._calculateLpPrice(tokenPricesMappingTable);
     return (lpBalance * lpPrice) / Math.pow(10, this.assetDecimals);
   }
   async stakeBalanceOf(recipient, updateProgress) {
@@ -233,8 +236,15 @@ export class BaseConvex extends BaseProtocol {
   _calculateTokenAmountsForLP(tokenMetadatas) {
     return [1, 1];
   }
-  _calculateLpPrice() {
-    // TODO(david): Implement this
-    return 1;
+  _calculateLpPrice(tokenPricesMappingTable) {
+    // TODO(david): need to calculate the correct LP price
+    if (this.pid === 34) {
+      // it's a stablecoin pool
+      return 1;
+    } else if (this.pid === 28) {
+      // it's a ETH pool
+      return tokenPricesMappingTable["weth"];
+    }
+    throw new Error("Not implemented");
   }
 }

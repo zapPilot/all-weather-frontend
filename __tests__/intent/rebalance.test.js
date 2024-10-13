@@ -1,5 +1,5 @@
 // File: tokenTransfer.test.js
-import { describe, it, expect } from "vitest";
+import { describe, it } from "vitest";
 import { generateIntentTxns } from "../../classes/main.js";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { Vela } from "../../classes/Vela/Vela";
@@ -22,6 +22,7 @@ describe("Stablecoin Vault", () => {
     const rebalancableUsdBalanceDictDict = {
       "arbitrum/convex/0/usde-usdx": {
         weightDiff: -0.5,
+        negativeWeigtDiffSum: 1,
         protocol: {
           interface: new BaseConvex("arbitrum", 42161, ["usde", "usdx"], "LP", {
             pid: 34,
@@ -49,10 +50,12 @@ describe("Stablecoin Vault", () => {
             ],
           }),
           weight: 0.5,
+          zapOutPercentage: 0.5,
         },
       },
       "arbitrum/vela/0/usdc(bridged)": {
         weightDiff: 0.5,
+        negativeWeigtDiffSum: 1,
         protocol: {
           interface: new Vela(
             "arbitrum",
@@ -80,6 +83,5 @@ describe("Stablecoin Vault", () => {
       slippage,
       rebalancableUsdBalanceDictDict,
     );
-    console.log(txns);
   });
 });

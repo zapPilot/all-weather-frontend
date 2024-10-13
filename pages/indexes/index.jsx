@@ -121,19 +121,19 @@ export default function Vaults() {
           >
             <Link href={product.href}>
               <div className="flex justify-between">
-                <h2 className="text-xl text-white flex items-center gap-2">
+                <h2 className="text-xl text-white me-2">
                   <span>{product.portfolioName}</span>
                   {product.portfolioName === "Build Your Own Vault with" &&
                     protocolName !== "" && (
                       <img
                         alt={protocolName}
                         src={`/projectPictures/${protocolName}.webp`}
-                        className="h-8 w-auto"
+                        className="h-8 inline-block rounded-full ms-2"
                       />
                     )}
                 </h2>
                 <ImageWithFallback
-                  className="h-8 w-auto"
+                  className="h-8 w-auto rounded-full"
                   key={product.imageSrc}
                   // use usdc instead of usdc(bridged), aka, usdc.e for the image
                   token={product.imageSrc.replace("(bridged)", "")}
@@ -157,24 +157,6 @@ export default function Vaults() {
                       product.apr.toFixed(2)
                     )}
                     %
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-4 divide-x divide-gray-400">
-                <div className="text-center">
-                  <p className="text-gray-400">User Deposits</p>
-                  <p className="text-3xl text-white">
-                    {usdBalances[product.portfolioName] === undefined ? (
-                      <Spin />
-                    ) : (
-                      `$${usdBalances[product.portfolioName]}`
-                    )}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-400">Earned</p>
-                  <p className="text-3xl text-emerald-400" role="apr">
-                    $?
                   </p>
                 </div>
               </div>
