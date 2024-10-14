@@ -67,6 +67,12 @@ describe("Stablecoin Vault", () => {
           weight: 0.5,
         },
       },
+      pendingRewards: {
+        usdBalance: 1,
+        pendingRewardsDict: {
+          usdc: 1,
+        },
+      },
     };
     const portfolioHelper = getPortfolioHelper("Stablecoin Vault");
     const txns = await generateIntentTxns(
