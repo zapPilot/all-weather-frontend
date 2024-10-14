@@ -552,7 +552,9 @@ export default function IndexOverviews() {
                     <ul className="mt-3 text-white">
                       <li>
                         these funds are not earning{" "}
-                        {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}
+                        {(
+                          portfolioApr[portfolioName]?.portfolioAPR * 100
+                        ).toFixed(2)}
                         % APR
                       </li>
                     </ul>
@@ -656,7 +658,10 @@ export default function IndexOverviews() {
                             <table className="mt-3 w-full whitespace-nowrap text-left text-sm leading-6">
                               <thead className="border-b border-gray-200 text-white">
                                 <tr>
-                                  <th scope="col" className="py-3 font-semibold">
+                                  <th
+                                    scope="col"
+                                    className="py-3 font-semibold"
+                                  >
                                     <div className="flex items-center space-x-2">
                                       <span>Protocols in</span>
                                       <Image
@@ -710,7 +715,10 @@ export default function IndexOverviews() {
                                             />
                                             <span>
                                               {protocol.interface.protocolName}-
-                                              {(protocol.weight * 100).toFixed(0)}%
+                                              {(protocol.weight * 100).toFixed(
+                                                0,
+                                              )}
+                                              %
                                             </span>
                                           </div>
                                           <div className="truncate text-gray-500">
@@ -758,8 +766,8 @@ export default function IndexOverviews() {
                                   </th>
                                   <td className="pt-6 font-semibold text-right text-green-500">
                                     {(
-                                      portfolioApr[portfolioName]?.portfolioAPR *
-                                      100
+                                      portfolioApr[portfolioName]
+                                        ?.portfolioAPR * 100
                                     ).toFixed(2)}
                                     %
                                   </td>
