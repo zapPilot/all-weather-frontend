@@ -369,13 +369,7 @@ export default function IndexOverviews() {
       setUsdBalanceLoading(false);
       setrebalancableUsdBalanceDict(usdBalanceDict);
       setrebalancableUsdBalanceDictLoading(false);
-
-      const pendingRewards = await portfolioHelper.pendingRewards(
-        account.address,
-        () => {},
-      );
-
-      setPendingRewards(pendingRewards);
+      setPendingRewards(usdBalanceDict.pendingRewards.pendingRewardsDict);
       setPendingRewardsLoading(false);
 
       const dust = await portfolioHelper.calProtocolAssetDustInWalletDictionary(
