@@ -1,5 +1,5 @@
 import React from "react";
-import { Input, Tooltip } from "antd";
+import { Input } from "antd";
 const NumericInputComponent = (props) => {
   const { value, onChange, placeholder, addonBefore } = props;
   const handleChange = (e) => {
@@ -25,7 +25,7 @@ const NumericInputComponent = (props) => {
       onChange={handleChange}
       onBlur={handleBlur}
       placeholder={placeholder}
-      maxLength={16}
+      maxLength={8}
       addonBefore={addonBefore}
       style={{ width: "50%" }}
     />
