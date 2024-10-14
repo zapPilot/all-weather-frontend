@@ -10,6 +10,7 @@ import { arbitrum } from "thirdweb/chains";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
+const REWARD_SLIPPAGE = 0.8;
 export class BasePortfolio {
   constructor(strategy, weightMapping) {
     this.strategy = strategy;
@@ -58,20 +59,20 @@ export class BasePortfolio {
     const pendingRewardsPromise = this.pendingRewards(address, () => {}).then(
       (pendingRewards) => ({
         rewardUsdBalance: this.sumUsdDenominatedValues(pendingRewards),
+        pendingRewardsDict: pendingRewards,
       }),
     );
 
     // Wait for all promises to resolve
-    const [balanceResults, { rewardUsdBalance }] = await Promise.all([
-      Promise.all(balancePromises),
-      pendingRewardsPromise,
-    ]);
+    const [balanceResults, { rewardUsdBalance, pendingRewardsDict }] =
+      await Promise.all([Promise.all(balancePromises), pendingRewardsPromise]);
 
     let usdBalance = rewardUsdBalance;
     const usdBalanceDict = {
       pendingRewards: {
         usdBalance: rewardUsdBalance,
         weightDiff: 1,
+        pendingRewardsDict,
       },
     };
 
@@ -85,7 +86,7 @@ export class BasePortfolio {
         weight: protocol.weight,
         symbol: protocol.interface.symbolList,
         protocol: protocol,
-        zapOutPercentage: 0,
+        zapOutPercentage: protocol.weight === 0 ? 1 : undefined,
       };
     }
 
@@ -398,9 +399,7 @@ export class BasePortfolio {
             protocol.interface.uniqueId() + protocol.interface.constructor.name;
           let zapOutPercentage;
           if (usdBalance === 0) continue;
-          if (protocol.weight === 0) {
-            zapOutPercentage = 1;
-          } else if (
+          if (
             rebalancableUsdBalanceDict[protocolClassName]?.zapOutPercentage > 0
           ) {
             zapOutPercentage =
@@ -425,7 +424,10 @@ export class BasePortfolio {
       }
     }
     const zapInAmount = ethers.utils.parseUnits(
-      zapOutUsdcBalance.toFixed(6),
+      (
+        (zapOutUsdcBalance * (100 - slippage)) / 100 +
+        rebalancableUsdBalanceDict.pendingRewards.usdBalance * REWARD_SLIPPAGE
+      ).toFixed(6),
       6,
     );
     const approveTxn = approve(
