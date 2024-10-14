@@ -386,14 +386,9 @@ export default class BaseProtocol extends BaseUniswap {
           slippage,
           updateProgress,
         );
-        amountToZapIn = ethers.BigNumber.from(
-          String(
-            Math.floor(
-              (ethers.BigNumber.from(swapEstimateAmount) * (100 - slippage)) /
-                100,
-            ),
-          ),
-        );
+        amountToZapIn = ethers.BigNumber.from(swapEstimateAmount)
+          .mul((100 - slippage) * 10000)
+          .div(100 * 10000);
         swapTxns.push(swapTxn);
       }
       swappedTokenMetadatas.push([
