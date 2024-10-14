@@ -83,21 +83,21 @@ export default function TransacitonHistory({
             >
               <div className="w-px bg-gray-200" />
             </div>
-            <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-gray-900">
+            <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-black">
               {activityItem.type === "paid" ? (
                 <CheckCircleIcon
                   aria-hidden="true"
                   className="h-6 w-6 text-indigo-600"
                 />
               ) : (
-                <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
+                <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300"></div>
               )}
             </div>
             <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500">
               <span className="font-medium text-white">
                 {activityItem.metadata.actionName === "zapIn" ? (
                   <span className="flex gap-1">
-                    <span className="text-green-600">Deposit </span>
+                    <span className="text-green-500">Deposit </span>
                     {activityItem.metadata.investmentAmount}
                     <ImageWithFallback
                       token={activityItem.metadata.tokenSymbol}
@@ -107,7 +107,7 @@ export default function TransacitonHistory({
                   </span>
                 ) : activityItem.metadata.actionName === "zapOut" ? (
                   <span className="flex gap-1">
-                    <span className="text-orange-400">Withdraw </span>$
+                    <span className="text-orange-500">Withdraw </span>$
                     {activityItem.metadata.zapOutAmount.toFixed(2)} worth of
                     <ImageWithFallback
                       token={activityItem.metadata.tokenSymbol}
@@ -117,7 +117,7 @@ export default function TransacitonHistory({
                   </span>
                 ) : (
                   <span className="flex gap-1">
-                    <span className="text-blue-400">
+                    <span className="text-blue-500">
                       {activityItem.metadata.actionName}
                     </span>
                   </span>

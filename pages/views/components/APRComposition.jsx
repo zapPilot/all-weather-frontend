@@ -42,7 +42,7 @@ const APRComposition = ({
     >
       <InfoCircleOutlined
         aria-hidden="true"
-        className="h-6 w-5 text-gray-500"
+        className="h-6 w-5 text-gray-500 ms-1"
       />
     </Popover>
   );
