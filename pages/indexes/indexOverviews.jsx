@@ -386,7 +386,7 @@ export default function IndexOverviews() {
       {notificationContextHolder}
       <ModalContent />
       <main>
-        <header className="relative isolate pt-16">
+        <header className="relative isolate pt-6">
           <div
             aria-hidden="true"
             className="absolute inset-0 -z-10 overflow-hidden"
@@ -403,7 +403,7 @@ export default function IndexOverviews() {
             <div className="absolute inset-x-0 bottom-0 h-px bg-gray-900/5" />
           </div>
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between gap-x-6">
+            <div className="sm:flex items-center justify-between gap-x-6">
               <div className="flex items-center">
                 <img
                   alt=""
@@ -414,7 +414,7 @@ export default function IndexOverviews() {
                   {portfolioName}
                 </h1>
               </div>
-              <div className="flex items-center gap-x-8 text-white">
+              <div className="flex items-center justify-between sm:justify-normal gap-x-8 text-white mt-3 sm:mt-0">
                 <div className="text-center">
                   <p className="text-2xl font-bold">
                     $ {portfolioApr[portfolioName]?.portfolioTVL}
@@ -441,8 +441,8 @@ export default function IndexOverviews() {
             </div>
           </div>
         </header>
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="mb-8 p-4 ring-1 ring-white/10 sm:rounded-lg relative">
+        <div className="mx-auto max-w-7xl p-6">
+          <div className="mb-8 p-4 ring-1 ring-white/10 rounded-lg relative">
             <ConfigProvider
               theme={{
                 components: {
@@ -499,7 +499,6 @@ export default function IndexOverviews() {
           <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
             {/* Invoice summary */}
             <div className="lg:col-start-3 lg:row-end-1">
-              <h2 className="sr-only">Summary</h2>
               <div className="rounded-lg bg-gray-800 shadow-sm ring-1 ring-white/10">
                 <dl className="flex flex-wrap">
                   <div className="flex-auto pl-6 pt-6">
@@ -525,7 +524,7 @@ export default function IndexOverviews() {
                       )}
                     </dd>
                   </div>
-                  <div className="flex-none self-end px-6 pt-4">
+                  <div className="flex-none self-end px-6 pt-4 w-full">
                     <ConfigProvider
                       theme={{
                         token: {
@@ -550,20 +549,23 @@ export default function IndexOverviews() {
                         {formatBalance(getRebalanceReinvestUsdAmount())})
                       </Button>
                     </ConfigProvider>
+                    <ul className="mt-3 text-white">
+                      <li>
+                        these funds are not earning{" "}
+                        {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}
+                        % APR
+                      </li>
+                    </ul>
                   </div>
-                  these funds are not earning{" "}
-                  {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}
-                  % APR
                   <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
                     <dt className="flex-none">
-                      <span className="sr-only">Principal</span>
                       <BanknotesIcon
                         aria-hidden="true"
                         className="h-6 w-5 text-gray-500"
                       />
                     </dt>
                     <dd className="text-sm font-medium leading-6 text-white">
-                      Principal:
+                      Principal:{" "}
                       {usdBalanceLoading ? (
                         <Spin />
                       ) : (
@@ -581,7 +583,7 @@ export default function IndexOverviews() {
                       />
                     </dt>
                     <dd className="text-sm font-medium leading-6 text-white">
-                      PnL:
+                      PnL:{" "}
                       {usdBalanceLoading ||
                       Object.values(tokenPricesMappingTable).length === 0 ? (
                         <Spin />
@@ -612,9 +614,8 @@ export default function IndexOverviews() {
                       )}
                     </dd>
                   </div>
-                  <div className="mt-4 flex w-full flex-none gap-x-4 px-6">
+                  <div className="my-4 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
                     <dt className="flex-none">
-                      <span className="sr-only">Rewards</span>
                       <APRComposition
                         APRData={pendingRewards}
                         mode="pendingRewards"
@@ -641,145 +642,145 @@ export default function IndexOverviews() {
             </div>
 
             {/* Invoice */}
-            <div className="-mx-4 px-4 py-8 shadow-sm ring-1 ring-white/10 sm:mx-0 sm:rounded-lg sm:px-8 sm:pb-14 lg:col-span-2 lg:row-span-2 lg:row-end-2 xl:px-16 xl:pb-20 xl:pt-16">
-              <h2 className="text-base font-semibold leading-6 text-white">
-                Allocations
-              </h2>
-              {portfolioHelper &&
-                Object.entries(portfolioHelper.strategy).map(
-                  ([category, protocols]) =>
-                    Object.entries(protocols).map(
-                      ([chain, protocolArray], index) => (
-                        <div key={`${chain}-${index}`}>
-                          <table className="mt-16 w-full whitespace-nowrap text-left text-sm leading-6">
-                            <colgroup>
-                              <col className="w-full" />
-                              <col />
-                              <col />
-                              <col />
-                            </colgroup>
-                            <thead className="border-b border-gray-200 text-white">
-                              <tr>
-                                <th scope="col" className="py-3 font-semibold">
-                                  <div className="flex items-center space-x-2">
-                                    <span>Protocols in</span>
-                                    <Image
-                                      src={`/chainPicturesWebp/${chain}.webp`}
-                                      alt={chain}
-                                      height={25}
-                                      width={25}
-                                    />
-                                  </div>
-                                </th>
-                                <th
-                                  scope="col"
-                                  className="py-3 text-right font-semibold"
-                                >
-                                  <span>APR</span>
-                                  <Popover
-                                    content={yieldContent}
-                                    title="Source of Yield"
-                                    trigger="hover"
+            <div className="lg:col-span-2 lg:row-span-2 lg:row-end-2">
+              <div className="rounded-lg bg-gray-800 shadow-sm ring-1 ring-white/10 p-6">
+                <h2 className="text-base font-semibold leading-6 text-white">
+                  Allocations
+                </h2>
+                {portfolioHelper &&
+                  Object.entries(portfolioHelper.strategy).map(
+                    ([category, protocols]) =>
+                      Object.entries(protocols).map(
+                        ([chain, protocolArray], index) => (
+                          <div key={`${chain}-${index}`}>
+                            <table className="mt-3 w-full whitespace-nowrap text-left text-sm leading-6">
+                              <thead className="border-b border-gray-200 text-white">
+                                <tr>
+                                  <th scope="col" className="py-3 font-semibold">
+                                    <div className="flex items-center space-x-2">
+                                      <span>Protocols in</span>
+                                      <Image
+                                        src={`/chainPicturesWebp/${chain}.webp`}
+                                        alt={chain}
+                                        height={25}
+                                        width={25}
+                                        className="rounded-full"
+                                      />
+                                    </div>
+                                  </th>
+                                  <th
+                                    scope="col"
+                                    className="py-3 text-right font-semibold"
                                   >
-                                    <InfoCircleOutlined className="ms-2 text-gray-500" />
-                                  </Popover>
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {protocolArray
-                                .sort((a, b) => b.weight - a.weight)
-                                .map((protocol, index) => {
-                                  // set weight to 0 for old protocols, these are protocols used to be the best choice but its reward decreased
-                                  // so we opt out of them
-                                  // need to keep them in the portfolio so users can zap out
-                                  if (protocol.weight === 0) return null;
-                                  return (
-                                    // {invoice.items.map((item) => (
-                                    <tr
-                                      key={index}
-                                      className="border-b border-gray-100"
+                                    <span>APR</span>
+                                    <Popover
+                                      content={yieldContent}
+                                      title="Source of Yield"
+                                      trigger="hover"
                                     >
-                                      <td className="max-w-0 px-0 py-5 align-top">
-                                        <div className="flex items-center space-x-2 truncate font-medium text-white">
-                                          <Image
-                                            src={`/projectPictures/${protocol.interface.protocolName}.webp`}
-                                            alt={
-                                              protocol.interface.protocolName
-                                            }
-                                            height={25}
-                                            width={25}
-                                          />
-                                          {protocol.interface.protocolName}-
-                                          {(protocol.weight * 100).toFixed(0)}%
-                                        </div>
-                                        <div className="truncate text-gray-500">
-                                          <div className="mt-2 flex items-center">
-                                            {protocol.interface.symbolList.map(
-                                              (symbol, index) => (
-                                                <ImageWithFallback
-                                                  className="me-1"
-                                                  key={`${symbol}-${index}`}
-                                                  // use usdc instead of usdc(bridged), aka, usdc.e for the image
-                                                  token={symbol.replace(
-                                                    "(bridged)",
-                                                    "",
-                                                  )}
-                                                  height={20}
-                                                  width={20}
-                                                />
-                                              ),
-                                            )}
-                                            {protocol.interface.symbolList.join(
-                                              "-",
-                                            )}
+                                      <InfoCircleOutlined className="ms-2 text-gray-500" />
+                                    </Popover>
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {protocolArray
+                                  .sort((a, b) => b.weight - a.weight)
+                                  .map((protocol, index) => {
+                                    // set weight to 0 for old protocols, these are protocols used to be the best choice but its reward decreased
+                                    // so we opt out of them
+                                    // need to keep them in the portfolio so users can zap out
+                                    if (protocol.weight === 0) return null;
+                                    return (
+                                      // {invoice.items.map((item) => (
+                                      <tr
+                                        key={index}
+                                        className="border-b border-gray-100"
+                                      >
+                                        <td className="max-w-0 px-0 py-5 align-top">
+                                          <div className="flex items-center space-x-2 truncate font-medium text-white">
+                                            <Image
+                                              src={`/projectPictures/${protocol.interface.protocolName}.webp`}
+                                              alt={
+                                                protocol.interface.protocolName
+                                              }
+                                              height={25}
+                                              width={25}
+                                              className="rounded-full"
+                                            />
+                                            <span>
+                                              {protocol.interface.protocolName}-
+                                              {(protocol.weight * 100).toFixed(0)}%
+                                            </span>
                                           </div>
-                                        </div>
-                                      </td>
-                                      <td className="py-5 pl-8 pr-0 text-right align-top tabular-nums text-white">
-                                        {(
-                                          portfolioApr?.[portfolioName]?.[
-                                            protocol.interface.uniqueId()
-                                          ]?.apr * 100
-                                        ).toFixed(2)}
-                                        %
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                            </tbody>
-                            <tfoot>
-                              <tr>
-                                <th
-                                  scope="row"
-                                  className="pt-6 font-semibold text-white"
-                                >
-                                  Avg. APR
-                                </th>
-                                <td className="pt-6 font-semibold text-right text-white">
-                                  {(
-                                    portfolioApr[portfolioName]?.portfolioAPR *
-                                    100
-                                  ).toFixed(2)}
-                                  %
-                                </td>
-                              </tr>
-                            </tfoot>
-                          </table>
-                        </div>
+                                          <div className="truncate text-gray-500">
+                                            <div className="mt-2 flex items-center">
+                                              {protocol.interface.symbolList.map(
+                                                (symbol, index) => (
+                                                  <ImageWithFallback
+                                                    className="me-1 rounded-full"
+                                                    key={`${symbol}-${index}`}
+                                                    // use usdc instead of usdc(bridged), aka, usdc.e for the image
+                                                    token={symbol.replace(
+                                                      "(bridged)",
+                                                      "",
+                                                    )}
+                                                    height={20}
+                                                    width={20}
+                                                  />
+                                                ),
+                                              )}
+                                              {protocol.interface.symbolList.join(
+                                                "-",
+                                              )}
+                                            </div>
+                                          </div>
+                                        </td>
+                                        <td className="py-5 pl-8 pr-0 text-right align-top tabular-nums text-white">
+                                          {(
+                                            portfolioApr?.[portfolioName]?.[
+                                              protocol.interface.uniqueId()
+                                            ]?.apr * 100
+                                          ).toFixed(2)}
+                                          %
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                              </tbody>
+                              <tfoot>
+                                <tr>
+                                  <th
+                                    scope="row"
+                                    className="pt-6 font-semibold text-white"
+                                  >
+                                    Avg. APR
+                                  </th>
+                                  <td className="pt-6 font-semibold text-right text-green-500">
+                                    {(
+                                      portfolioApr[portfolioName]?.portfolioAPR *
+                                      100
+                                    ).toFixed(2)}
+                                    %
+                                  </td>
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
+                        ),
                       ),
-                    ),
-                )}
-              {portfolioHelper?.lockUpPeriod() !== 0 ? (
-                <div className="sm:pr-4">
-                  <dt className="inline text-gray-500">Lock-up Period</dt>{" "}
-                  <dd className="inline text-gray-300">
-                    <time dateTime="2023-23-01">
-                      {portfolioHelper?.lockUpPeriod()} Days
-                    </time>
-                  </dd>
-                </div>
-              ) : null}
+                  )}
+                {portfolioHelper?.lockUpPeriod() !== 0 ? (
+                  <div>
+                    <dt className="inline text-gray-500">Lock-up Period</dt>{" "}
+                    <dd className="inline text-red-500">
+                      <time dateTime="2023-23-01">
+                        {portfolioHelper?.lockUpPeriod()} Days
+                      </time>
+                    </dd>
+                  </div>
+                ) : null}
+              </div>
             </div>
             <div className="lg:col-start-3">
               {/* Activity feed */}
