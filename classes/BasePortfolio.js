@@ -90,7 +90,7 @@ export class BasePortfolio {
         symbol: protocol.interface.symbolList,
         protocol: protocol,
         zapOutPercentage: protocol.weight === 0 ? 1 : undefined,
-        APR: portfolioAprDict[protocol.interface.uniqueId()].apr * 100,
+        APR: portfolioAprDict?.[protocol.interface.uniqueId()]?.apr * 100,
       };
     }
 
