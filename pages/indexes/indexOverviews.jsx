@@ -340,9 +340,7 @@ export default function IndexOverviews() {
             : sum;
         },
         0,
-      ) *
-        2 +
-      portfolioHelper?.sumUsdDenominatedValues(pendingRewards)
+      ) + portfolioHelper?.sumUsdDenominatedValues(pendingRewards)
     );
   };
   const calCurrentAPR = (rebalancableUsdBalanceDict) =>
@@ -374,7 +372,6 @@ export default function IndexOverviews() {
         account.address,
         portfolioApr[portfolioName],
       );
-
       setUsdBalance(usdBalance);
       setUsdBalanceLoading(false);
       setrebalancableUsdBalanceDict(usdBalanceDict);
@@ -591,7 +588,7 @@ export default function IndexOverviews() {
                         portfolioApr[portfolioName]?.portfolioAPR * 100 ? (
                           <>
                             ${formatBalance(getRebalanceReinvestUsdAmount())}{" "}
-                            has outperformed. It's time to rebalance and take
+                            has outperformed. It\'s time to rebalance and take
                             the profit!
                           </>
                         ) : (
