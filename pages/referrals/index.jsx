@@ -184,11 +184,9 @@ export default function Referrals() {
   return (
     <BasePage>
       {notificationContextHolder}
-      {JSON.stringify(referralFeeDict)}
-      {JSON.stringify(referralFeeTxns)}
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-          Referrals
+          Referrals – Earn 70% of the transaction fee with each referral{" "}
         </h1>
         <p className="text-xl text-gray-400">
           - {addressAccount} {addressAccount > 1 ? "referrals" : "referral"}

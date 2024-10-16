@@ -35,7 +35,11 @@ import { selectBefore } from "../../utils/contractInteractions";
 import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
-import { CurrencyDollarIcon, BanknotesIcon } from "@heroicons/react/20/solid";
+import {
+  CurrencyDollarIcon,
+  BanknotesIcon,
+  ArrowTopRightOnSquareIcon,
+} from "@heroicons/react/20/solid";
 import { SettingOutlined, InfoCircleOutlined } from "@ant-design/icons";
 export default function IndexOverviews() {
   const router = useRouter();
@@ -341,7 +345,11 @@ export default function IndexOverviews() {
       portfolioHelper?.sumUsdDenominatedValues(pendingRewards)
     );
   };
-
+  const calCurrentAPR = (rebalancableUsdBalanceDict) =>
+    Object.values(rebalancableUsdBalanceDict).reduce(
+      (sum, { currentWeight, APR }) => currentWeight * APR + sum,
+      0,
+    );
   useEffect(() => {
     if (
       portfolioApr[portfolioName] === undefined ||
@@ -352,6 +360,7 @@ export default function IndexOverviews() {
   }, [portfolioName]);
   useEffect(() => {
     if (!portfolioName || account === undefined) return;
+    if (portfolioApr[portfolioName] === undefined) return;
     const fetchUsdBalance = async () => {
       setUsdBalanceLoading(true);
       setPendingRewardsLoading(true);
@@ -363,6 +372,7 @@ export default function IndexOverviews() {
 
       const [usdBalance, usdBalanceDict] = await portfolioHelper.usdBalanceOf(
         account.address,
+        portfolioApr[portfolioName],
       );
 
       setUsdBalance(usdBalance);
@@ -379,7 +389,7 @@ export default function IndexOverviews() {
       setProtocolAssetDustInWallet(dust);
     };
     fetchUsdBalance();
-  }, [portfolioName, account]);
+  }, [portfolioName, account, portfolioApr]);
 
   return (
     <BasePage>
@@ -505,23 +515,30 @@ export default function IndexOverviews() {
                     <dt className="text-sm font-semibold leading-6 text-white">
                       Your Balance
                     </dt>
-                    <dd className="mt-1 text-base font-semibold leading-6 text-white">
-                      {usdBalanceLoading === true ||
-                      Object.values(tokenPricesMappingTable).length === 0 ? (
-                        <Spin />
-                      ) : portfolioName === "ETH Vault" ? (
-                        <>
-                          ${usdBalance.toFixed(2)}
-                          <div className="text-gray-500">
-                            {portfolioHelper?.denomination()}
-                            {(
-                              usdBalance / tokenPricesMappingTable["weth"]
-                            ).toFixed(2)}
-                          </div>
-                        </>
-                      ) : (
-                        `$${usdBalance.toFixed(2)}`
-                      )}
+                    <dd className="mt-1 text-base font-semibold leading-6 text-white flex">
+                      <span class="mr-2">
+                        {usdBalanceLoading === true ||
+                        Object.values(tokenPricesMappingTable).length === 0 ? (
+                          <Spin />
+                        ) : portfolioName === "ETH Vault" ? (
+                          <>
+                            ${usdBalance.toFixed(2)}
+                            <div className="text-gray-500">
+                              {portfolioHelper?.denomination()}
+                              {(
+                                usdBalance / tokenPricesMappingTable["weth"]
+                              ).toFixed(2)}
+                            </div>
+                          </>
+                        ) : (
+                          `$${usdBalance.toFixed(2)}`
+                        )}
+                      </span>
+                      <a
+                        href={`https://debank.com/profile/${account?.address}`}
+                      >
+                        <ArrowTopRightOnSquareIcon className="h-6 w-5 text-gray-500" />
+                      </a>
                     </dd>
                   </div>
                   <div className="flex-none self-end px-6 pt-4 w-full">
@@ -545,17 +562,52 @@ export default function IndexOverviews() {
                           portfolioHelper?.rebalanceThreshold()
                         }
                       >
-                        Rebalance & Reinvest (Portfolio Drift: $
-                        {formatBalance(getRebalanceReinvestUsdAmount())})
+                        {calCurrentAPR(rebalancableUsdBalanceDict) >
+                        portfolioApr[portfolioName]?.portfolioAPR * 100 ? (
+                          "Take Profit"
+                        ) : (
+                          <>
+                            Boost APR from{" "}
+                            <span className="text-red-500">
+                              {calCurrentAPR(
+                                rebalancableUsdBalanceDict,
+                              ).toFixed(2)}
+                              %{" "}
+                            </span>
+                            to{" "}
+                            <span className="text-green-400">
+                              {(
+                                portfolioApr[portfolioName]?.portfolioAPR * 100
+                              ).toFixed(2)}
+                              %
+                            </span>
+                          </>
+                        )}
                       </Button>
                     </ConfigProvider>
                     <ul className="mt-3 text-white">
                       <li>
-                        these funds are not earning{" "}
-                        {(
-                          portfolioApr[portfolioName]?.portfolioAPR * 100
-                        ).toFixed(2)}
-                        % APR
+                        {calCurrentAPR(rebalancableUsdBalanceDict) >
+                        portfolioApr[portfolioName]?.portfolioAPR * 100 ? (
+                          <>
+                            ${formatBalance(getRebalanceReinvestUsdAmount())}{" "}
+                            has outperformed. It's time to rebalance and take
+                            the profit!
+                          </>
+                        ) : (
+                          <>
+                            {formatBalance(getRebalanceReinvestUsdAmount())} is
+                            currently earning you{" "}
+                            {calCurrentAPR(rebalancableUsdBalanceDict).toFixed(
+                              2,
+                            )}
+                            % APR, rebalance to boost it to{" "}
+                            {(
+                              portfolioApr[portfolioName]?.portfolioAPR * 100
+                            ).toFixed(2)}
+                            % APR!
+                          </>
+                        )}
                       </li>
                     </ul>
                   </div>
@@ -606,7 +658,9 @@ export default function IndexOverviews() {
                           }
                         >
                           {portfolioHelper?.denomination()}
-                          {portfolioName === "ETH Vault"
+                          {usdBalance === 0
+                            ? 0
+                            : portfolioName === "ETH Vault"
                             ? (
                                 usdBalance / tokenPricesMappingTable["weth"] -
                                 principalBalance
