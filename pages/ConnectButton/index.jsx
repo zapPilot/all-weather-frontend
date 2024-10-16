@@ -12,7 +12,7 @@ export default function ConfiguredConnectButton() {
     walletConnect(),
     inAppWallet({
       auth: {
-        options: ["email", "google", "apple", "facebook"],
+        options: ["google", "telegram", "x", "passkey", "facebook", "apple"],
       },
     }),
   ];
