@@ -588,8 +588,8 @@ export default function IndexOverviews() {
                         portfolioApr[portfolioName]?.portfolioAPR * 100 ? (
                           <>
                             ${formatBalance(getRebalanceReinvestUsdAmount())}{" "}
-                            has outperformed. It\'s time to rebalance and take
-                            the profit!
+                            has outperformed. It&apos;s time to rebalance and
+                            take the profit!
                           </>
                         ) : (
                           <>
