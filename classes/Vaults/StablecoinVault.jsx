@@ -93,6 +93,23 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 45,
                 },
               ),
+              weight: 0,
+            },
+            {
+              interface: new BaseEquilibria(
+                "arbitrum",
+                42161,
+                ["ausdc", "pt ausdc 26dec2024"],
+                "single",
+                {
+                  assetAddress: "0x875F154f4eC93255bEAEA9367c3AdF71Cdcb4Cc0",
+                  symbolOfBestTokenToZapOut: "ausdc",
+                  bestTokenAddressToZapOut:
+                    "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+                  decimalOfBestTokenToZapOut: 6,
+                  pidOfEquilibria: 43,
+                },
+              ),
               weight: 0.05,
             },
             {
