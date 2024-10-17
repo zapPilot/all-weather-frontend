@@ -101,6 +101,7 @@ export default function Vaults() {
         if (vault.portfolioHelper === undefined) continue;
         const [_, usdBalanceDict] = await vault.portfolioHelper.usdBalanceOf(
           account.address,
+          vaultsMetadata,
         );
         usdBalances[vault.portfolioName] = Object.values(usdBalanceDict)
           .reduce((a, b) => a + b.usdBalance, 0)
