@@ -40,7 +40,7 @@ export class BasePortfolio {
   rebalanceThreshold() {
     return 0.05;
   }
-  async usdBalanceOf(address) {
+  async usdBalanceOf(address, portfolioAprDict) {
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable(
       () => {},
     );
@@ -73,6 +73,9 @@ export class BasePortfolio {
         usdBalance: rewardUsdBalance,
         weightDiff: 1,
         pendingRewardsDict,
+        weight: 0,
+        APR: 0,
+        currentWeight: 0,
       },
     };
 
@@ -87,6 +90,7 @@ export class BasePortfolio {
         symbol: protocol.interface.symbolList,
         protocol: protocol,
         zapOutPercentage: protocol.weight === 0 ? 1 : undefined,
+        APR: portfolioAprDict?.[protocol.interface.uniqueId()]?.apr * 100,
       };
     }
 
@@ -98,6 +102,7 @@ export class BasePortfolio {
           ? 0
           : data.usdBalance / usdBalance;
         data.weightDiff = currentWeight - data.weight;
+        data.currentWeight = currentWeight;
         if (data.weightDiff > this.rebalanceThreshold()) {
           data.zapOutPercentage =
             ((currentWeight - data.weight) * usdBalance) / data.usdBalance;
