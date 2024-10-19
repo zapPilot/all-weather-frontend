@@ -533,6 +533,7 @@ export default function IndexOverviews() {
                       </span>
                       <a
                         href={`https://debank.com/profile/${account?.address}`}
+                        target="_blank"
                       >
                         <ArrowTopRightOnSquareIcon className="h-6 w-5 text-gray-500" />
                       </a>

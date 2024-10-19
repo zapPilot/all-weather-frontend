@@ -11,7 +11,7 @@ import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
-export class BasePortfolio {
+export class BasePortfolio1 {
   constructor(strategy, weightMapping) {
     this.strategy = strategy;
     this.portfolioAPR = {};
@@ -347,18 +347,6 @@ export class BasePortfolio {
           totalTxns = totalTxns.concat(txnsForThisProtocol);
         }
       }
-    }
-    if (actionName === "zapOut") {
-      totalTxns = totalTxns.concat(
-        await this._swapFeeTxnsForZapOut(
-          actionParams.account,
-          actionParams.tokenOutAddress,
-          actionParams.tokenOutSymbol,
-          actionParams.tokenPricesMappingTable,
-          actionParams.zapOutPercentage,
-          portfolioUsdBalance,
-        ),
-      );
     }
     return totalTxns;
   }

@@ -1,6 +1,7 @@
 import { AllWeatherPortfolio } from "../classes/AllWeatherPortfolio";
 import { StablecoinVault } from "../classes/Vaults/StablecoinVault";
 import { EthVault } from "../classes/Vaults/EthVault";
+import { gDaiVault } from "../classes/Vaults/gDaiVault";
 import { YearnVault } from "../classes/Vaults/Tests/YearnVault";
 import { EquilibriaETHVault } from "../classes/Vaults/Tests/EquilibriaETHVault";
 import { BasePortfolio } from "../classes/BasePortfolio";
@@ -14,6 +15,9 @@ export function getPortfolioHelper(
     portfolioHelper = new StablecoinVault();
   } else if (portfolioName === "ETH Vault") {
     portfolioHelper = new EthVault();
+  } else if (portfolioName === "gDAI") {
+    // TODO(david): can remove gDAI vault once our Eugene has zap out
+    portfolioHelper = new gDaiVault();
   } else if (portfolioName === "Yearn Vault") {
     // for testing
     portfolioHelper = new YearnVault();
