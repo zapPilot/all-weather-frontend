@@ -26,6 +26,7 @@ import {
   useActiveAccount,
   useSendBatchTransaction,
   useActiveWalletChain,
+  useWalletBalance,
 } from "thirdweb/react";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { formatBalance } from "../../utils/general.js";
@@ -41,6 +42,8 @@ import {
   ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/20/solid";
 import { SettingOutlined, InfoCircleOutlined } from "@ant-design/icons";
+import { arbitrum } from "thirdweb/chains";
+import THIRDWEB_CLIENT from "../../utils/thirdweb";
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -77,7 +80,6 @@ export default function IndexOverviews() {
   const [principalBalance, setPrincipalBalance] = useState(0);
   const [open, setOpen] = useState(false);
   const [tokenPricesMappingTable, setTokenPricesMappingTable] = useState({});
-
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
   const handleSetSelectedToken = useCallback((token) => {
@@ -207,6 +209,16 @@ export default function IndexOverviews() {
   };
 
   const onChange = (key) => {};
+
+  const tokenAddress = selectedToken?.split("-")[1];
+  const { data: walletBalanceData, isLoading: walletBalanceLoading } = useWalletBalance({
+    chain: arbitrum,
+    address: account?.address,
+    client: THIRDWEB_CLIENT,
+    tokenAddress,
+  });
+  const [tokenBalance, setTokenBalance] = useState(0);
+
   const items = [
     {
       key: "1",
@@ -223,7 +235,7 @@ export default function IndexOverviews() {
             className="w-full mt-2"
             onClick={() => handleAAWalletAction("zapIn")}
             loading={zapInIsLoading}
-            disabled={investmentAmount === 0}
+            disabled={Number(investmentAmount) === 0 || Number(investmentAmount) > tokenBalance}
           >
             Zap In
           </Button>
@@ -388,6 +400,11 @@ export default function IndexOverviews() {
     fetchUsdBalance();
   }, [portfolioName, account, portfolioApr]);
 
+  useEffect(() => {
+    const balance = walletBalanceData?.displayValue;
+    setTokenBalance(balance);
+  }, [selectedToken, walletBalanceData, investmentAmount]);
+  
   return (
     <BasePage>
       {notificationContextHolder}
