@@ -211,12 +211,13 @@ export default function IndexOverviews() {
   const onChange = (key) => {};
 
   const tokenAddress = selectedToken?.split("-")[1];
-  const { data: walletBalanceData, isLoading: walletBalanceLoading } = useWalletBalance({
-    chain: arbitrum,
-    address: account?.address,
-    client: THIRDWEB_CLIENT,
-    tokenAddress,
-  });
+  const { data: walletBalanceData, isLoading: walletBalanceLoading } =
+    useWalletBalance({
+      chain: arbitrum,
+      address: account?.address,
+      client: THIRDWEB_CLIENT,
+      tokenAddress,
+    });
   const [tokenBalance, setTokenBalance] = useState(0);
 
   const items = [
@@ -235,7 +236,10 @@ export default function IndexOverviews() {
             className="w-full mt-2"
             onClick={() => handleAAWalletAction("zapIn")}
             loading={zapInIsLoading}
-            disabled={Number(investmentAmount) === 0 || Number(investmentAmount) > tokenBalance}
+            disabled={
+              Number(investmentAmount) === 0 ||
+              Number(investmentAmount) > tokenBalance
+            }
           >
             Zap In
           </Button>
@@ -404,7 +408,7 @@ export default function IndexOverviews() {
     const balance = walletBalanceData?.displayValue;
     setTokenBalance(balance);
   }, [selectedToken, walletBalanceData, investmentAmount]);
-  
+
   return (
     <BasePage>
       {notificationContextHolder}

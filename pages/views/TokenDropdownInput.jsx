@@ -69,13 +69,18 @@ const TokenDropdownInput = memo(
         <div className="mt-2 text-sm">
           Balance:{" "}
           <span
-            className={localInvestmentAmount > data?.displayValue ? "text-red-400" : "text-gray-400"}
+            className={
+              localInvestmentAmount > data?.displayValue
+                ? "text-red-400"
+                : "text-gray-400"
+            }
           >
             {isLoading ? "Loading..." : data?.displayValue || "0"}
           </span>
           {localInvestmentAmount > data?.displayValue && (
             <p className="text-red-400">
-              Please send more tokens to your AA Wallet to continue.<br/>
+              Please send more tokens to your AA Wallet to continue.
+              <br />
               Click on the top-right corner to get your AA Wallet address.
             </p>
           )}
