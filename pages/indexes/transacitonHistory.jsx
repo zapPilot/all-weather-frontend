@@ -125,6 +125,7 @@ export default function TransacitonHistory({
               </span>{" "}
               <a
                 href={`https://arbitrum.blockscout.com/tx/${activityItem.tx_hash}`}
+                target="_blank"
               >
                 tx:{" "}
                 {activityItem.tx_hash.slice(0, 4) +
