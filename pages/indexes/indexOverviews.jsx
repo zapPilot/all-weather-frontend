@@ -215,7 +215,6 @@ export default function IndexOverviews() {
     setTabKey(key);
   };
 
-
   const tokenAddress = selectedToken?.split("-")[1];
   const { data: walletBalanceData, isLoading: walletBalanceLoading } =
     useWalletBalance({
