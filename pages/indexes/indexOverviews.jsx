@@ -211,8 +211,10 @@ export default function IndexOverviews() {
     }
   };
 
-  const onChange = (key) => {};
-  setTabKey(key);
+  const onChange = (key) => {
+    setTabKey(key);
+  };
+
 
   const tokenAddress = selectedToken?.split("-")[1];
   const { data: walletBalanceData, isLoading: walletBalanceLoading } =
