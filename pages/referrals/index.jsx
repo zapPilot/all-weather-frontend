@@ -289,6 +289,7 @@ export default function Referrals() {
                                   <a
                                     href={`https://arbitrum.blockscout.com/tx/${txn.tx_hash}`}
                                     className="text-sm font-medium leading-6 text-indigo-600 hover:text-indigo-500"
+                                    target="_blank"
                                   >
                                     View
                                     <span className="hidden sm:inline">

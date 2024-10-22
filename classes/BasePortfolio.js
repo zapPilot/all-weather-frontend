@@ -265,19 +265,13 @@ export class BasePortfolio {
     if (actionName === "zapIn") {
       // TODO(david): zap in's weight should take protocolUsdBalanceDictionary into account
       // protocolUsdBalanceDictionary = await this._getProtocolUsdBalanceDictionary(owner)
-      const transferAmount = this.mulSwapFeeRate(actionParams.zapInAmount);
-      actionParams.zapInAmount = actionParams.zapInAmount.sub(transferAmount);
       const approveTxn = approve(
         actionParams.tokenInAddress,
         oneInchAddress,
         actionParams.zapInAmount,
         actionParams.updateProgress,
       );
-      const swapFeeTxns = await this._getSwapFeeTxnsForZapIn(
-        actionParams,
-        transferAmount,
-      );
-      totalTxns = totalTxns.concat([approveTxn, ...swapFeeTxns]);
+      totalTxns = totalTxns.concat([approveTxn]);
     } else if (actionName === "rebalance") {
       return await this._generateRebalanceTxns(
         actionParams.account,
@@ -440,7 +434,16 @@ export class BasePortfolio {
       zapInAmount,
       () => {},
     );
-    txns = txns.concat(approveTxn);
+    const transferAmount = this.mulSwapFeeRate(zapInAmount);
+    const zapInAmountAfterFee = zapInAmount.sub(transferAmount);
+    const rebalanceFeeTxns = await this._getSwapFeeTxnsForZapIn(
+      {
+        account: owner,
+        tokenInAddress: usdcAddressInThisChain,
+      },
+      transferAmount,
+    );
+    txns = txns.concat(approveTxn, ...rebalanceFeeTxns);
     for (const [key, protocolMetadata] of Object.entries(
       rebalancableUsdBalanceDict,
     )) {
@@ -457,11 +460,11 @@ export class BasePortfolio {
           ),
         );
         // some protocol's zap-in has a minimum limit
-        if (zapInAmount.mul(percentageBN).div(10000) < 100000) continue;
+        if (zapInAmountAfterFee.mul(percentageBN).div(10000) < 100000) continue;
         txns = txns.concat(
           await protocol.interface.zapIn(
             owner,
-            zapInAmount.mul(percentageBN).div(10000),
+            zapInAmountAfterFee.mul(percentageBN).div(10000),
             usdcSymbol,
             usdcAddressInThisChain,
             slippage,

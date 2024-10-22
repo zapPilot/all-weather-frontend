@@ -9,6 +9,7 @@ import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
 import TransacitonHistory from "./transacitonHistory.jsx";
+import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
 import {
   Button,
   Progress,
@@ -80,6 +81,8 @@ export default function IndexOverviews() {
   const [principalBalance, setPrincipalBalance] = useState(0);
   const [open, setOpen] = useState(false);
   const [tokenPricesMappingTable, setTokenPricesMappingTable] = useState({});
+  const [tabKey, setTabKey] = useState("");
+
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
   const handleSetSelectedToken = useCallback((token) => {
@@ -208,7 +211,9 @@ export default function IndexOverviews() {
     }
   };
 
-  const onChange = (key) => {};
+  const onChange = (key) => {
+    setTabKey(key);
+  };
 
   const tokenAddress = selectedToken?.split("-")[1];
   const { data: walletBalanceData, isLoading: walletBalanceLoading } =
@@ -519,9 +524,11 @@ export default function IndexOverviews() {
             </div>
             <div className="mt-2 flex align-items-center">
               ⛽<span className="text-emerald-400">Free</span>
-              <span className="text-gray-400">
-                , Transaction Fee: {portfolioHelper?.swapFeeRate() * 100}%
-              </span>
+              {tabKey === "2" ? (
+                <span className="text-gray-400">
+                  , Transaction Fee: {portfolioHelper?.swapFeeRate() * 100}%
+                </span>
+              ) : null}
             </div>
           </div>
           <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
@@ -606,6 +613,10 @@ export default function IndexOverviews() {
                     </ConfigProvider>
                     <ul className="mt-3 text-white">
                       <li>
+                        <div className="text-gray-400">
+                          Transaction Fee:{" "}
+                          {portfolioHelper?.swapFeeRate() * 100}%
+                        </div>
                         {calCurrentAPR(rebalancableUsdBalanceDict) >
                         portfolioApr[portfolioName]?.portfolioAPR * 100 ? (
                           <>
@@ -770,7 +781,6 @@ export default function IndexOverviews() {
                                     // need to keep them in the portfolio so users can zap out
                                     if (protocol.weight === 0) return null;
                                     return (
-                                      // {invoice.items.map((item) => (
                                       <tr
                                         key={index}
                                         className="border-b border-gray-100"
@@ -862,6 +872,7 @@ export default function IndexOverviews() {
                   </div>
                 ) : null}
               </div>
+              <HistoricalDataChart portfolioName={portfolioName} />
             </div>
             <div className="lg:col-start-3">
               {/* Activity feed */}
