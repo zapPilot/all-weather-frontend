@@ -9,6 +9,7 @@ import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
 import TransacitonHistory from "./transacitonHistory.jsx";
+import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
 import {
   Button,
   Progress,
@@ -870,6 +871,7 @@ export default function IndexOverviews() {
                   </div>
                 ) : null}
               </div>
+              <HistoricalDataChart portfolioName={portfolioName} />
             </div>
             <div className="lg:col-start-3">
               {/* Activity feed */}

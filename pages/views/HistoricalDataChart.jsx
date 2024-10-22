@@ -9,7 +9,7 @@ const Line = dynamic(
     ssr: false,
   },
 );
-const HistoricalDataChart = () => {
+const HistoricalDataChart = ({ portfolioName }) => {
   const [data, setData] = useState([]);
   const [userAddress, setUserAddress] = useState("");
   const account = useActiveAccount();
@@ -26,7 +26,9 @@ const HistoricalDataChart = () => {
   }, [address, userAddress]);
 
   const asyncFetch = () => {
-    fetch(`${process.env.NEXT_PUBLIC_SDK_API_URL}/apr/historical-data`)
+    fetch(
+      `${process.env.NEXT_PUBLIC_SDK_API_URL}/apr/${portfolioName}/historical-data`,
+    )
       .then((response) => response.json())
       .then((json) => setData(json))
       .catch((error) => {
