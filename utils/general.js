@@ -164,5 +164,5 @@ export function unixToCustomFormat(unixTimestamp) {
 }
 
 export const formatBalance = (balance) => {
-  return balance > 0.01 ? balance.toFixed(2) : balance;
+  return balance >= 0.01 ? "$" + balance.toFixed(2) : "< $0.01";
 };
