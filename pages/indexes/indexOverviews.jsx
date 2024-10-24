@@ -290,7 +290,7 @@ export default function IndexOverviews() {
               portfolioHelper?.sumUsdDenominatedValues(pendingRewards) < 1
             }
           >
-            Convert $
+            Convert
             {formatBalance(
               portfolioHelper?.sumUsdDenominatedValues(pendingRewards),
             )}{" "}
@@ -620,9 +620,9 @@ export default function IndexOverviews() {
                         {calCurrentAPR(rebalancableUsdBalanceDict) >
                         portfolioApr[portfolioName]?.portfolioAPR * 100 ? (
                           <>
-                            ${formatBalance(getRebalanceReinvestUsdAmount())}{" "}
-                            has outperformed. It&apos;s time to rebalance and
-                            take the profit!
+                            {formatBalance(getRebalanceReinvestUsdAmount())} has
+                            outperformed. It&apos;s time to rebalance and take
+                            the profit!
                           </>
                         ) : (
                           <>
@@ -711,7 +711,7 @@ export default function IndexOverviews() {
                       />
                     </dt>
                     <dd className="text-sm leading-6 text-white">
-                      Rewards: $
+                      Rewards:{" "}
                       {pendingRewardsLoading === true ? (
                         <Spin />
                       ) : (
