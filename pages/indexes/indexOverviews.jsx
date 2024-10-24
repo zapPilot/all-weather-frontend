@@ -10,6 +10,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
 import TransacitonHistory from "./transacitonHistory.jsx";
 import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
+import ConfiguredConnectButton from "../ConnectButton";
 import {
   Button,
   Progress,
@@ -236,18 +237,22 @@ export default function IndexOverviews() {
             setSelectedToken={handleSetSelectedToken}
             setInvestmentAmount={handleSetInvestmentAmount}
           />
-          <Button
-            type="primary"
-            className="w-full mt-2"
-            onClick={() => handleAAWalletAction("zapIn")}
-            loading={zapInIsLoading}
-            disabled={
-              Number(investmentAmount) === 0 ||
-              Number(investmentAmount) > tokenBalance
-            }
-          >
-            Zap In
-          </Button>
+          {account === undefined ? (
+            <ConfiguredConnectButton />
+          ) : (
+            <Button
+              type="primary"
+              className="w-full mt-2"
+              onClick={() => handleAAWalletAction("zapIn")}
+              loading={zapInIsLoading}
+              disabled={
+                Number(investmentAmount) === 0 ||
+                Number(investmentAmount) > tokenBalance
+              }
+            >
+              Zap In
+            </Button>
+          )}
         </div>
       ),
     },
@@ -263,15 +268,19 @@ export default function IndexOverviews() {
             setZapOutPercentage={setZapOutPercentage}
             currency="$"
           />
-          <Button
-            type="primary"
-            className="w-full"
-            onClick={() => handleAAWalletAction("zapOut")}
-            loading={zapOutIsLoading || usdBalanceLoading}
-            disabled={usdBalance < 0.01}
-          >
-            Withdraw
-          </Button>
+          {account === undefined ? (
+            <ConfiguredConnectButton />
+          ) : (
+            <Button
+              type="primary"
+              className="w-full"
+              onClick={() => handleAAWalletAction("zapOut")}
+              loading={zapOutIsLoading || usdBalanceLoading}
+              disabled={usdBalance < 0.01}
+            >
+              Withdraw
+            </Button>
+          )}
         </div>
       ),
     },
@@ -281,21 +290,25 @@ export default function IndexOverviews() {
       children: (
         <div>
           {selectBefore(handleSetSelectedToken, chainId?.id, selectedToken)}
-          <Button
-            type="primary"
-            className="w-full mt-2"
-            onClick={() => handleAAWalletAction("claimAndSwap")}
-            loading={claimIsLoading || pendingRewardsLoading}
-            disabled={
-              portfolioHelper?.sumUsdDenominatedValues(pendingRewards) < 1
-            }
-          >
-            Convert
-            {formatBalance(
-              portfolioHelper?.sumUsdDenominatedValues(pendingRewards),
-            )}{" "}
-            Rewards to {selectedToken.split("-")[0]}
-          </Button>
+          {account === undefined ? (
+            <ConfiguredConnectButton />
+          ) : (
+            <Button
+              type="primary"
+              className="w-full mt-2"
+              onClick={() => handleAAWalletAction("claimAndSwap")}
+              loading={claimIsLoading || pendingRewardsLoading}
+              disabled={
+                portfolioHelper?.sumUsdDenominatedValues(pendingRewards) < 1
+              }
+            >
+              Convert
+              {formatBalance(
+                portfolioHelper?.sumUsdDenominatedValues(pendingRewards),
+              )}{" "}
+              Rewards to {selectedToken.split("-")[0]}
+            </Button>
+          )}
         </div>
       ),
     },
