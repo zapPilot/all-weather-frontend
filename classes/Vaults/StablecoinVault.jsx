@@ -49,7 +49,7 @@ export class StablecoinVault extends BasePortfolio {
                     "0xaA0DE632A4071642d72Ceb03577F5534ea196927",
                 },
               ),
-              weight: 0.2,
+              weight: 0,
             },
             {
               interface: new Vela(
@@ -59,7 +59,7 @@ export class StablecoinVault extends BasePortfolio {
                 "single",
                 {},
               ),
-              weight: 0.2,
+              weight: 0.4,
             },
             {
               interface: new BaseEquilibria(
