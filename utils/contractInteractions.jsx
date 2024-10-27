@@ -72,6 +72,7 @@ export const selectBefore = (handleChange, chainID, selectedToken) => {
               ) {
                 return (
                   <Image
+                    key={option.symbol}
                     src={option.logoURI2}
                     width="20"
                     height="20"

@@ -148,7 +148,15 @@ export default function TransacitonHistory({
         {Object.entries(tokenDict).map(([symbol, amount]) => {
           return (
             <span key={symbol} className="flex gap-1">
-              {amount.toFixed(2)}
+              {activityItem.metadata.actionName === "zapOut" ? "$" : ""}
+              {symbol.includes("eth") && amount >= 0.0001
+                ? amount.toFixed(4)
+                : symbol.includes("eth") && amount < 0.0001
+                ? "< 0.0001"
+                : amount > 0.01
+                ? amount.toFixed(2)
+                : "< 0.01"}{" "}
+              {activityItem.metadata.actionName === "zapOut" ? "worth of" : ""}
               <ImageWithFallback token={symbol} height={20} width={20} />
             </span>
           );
@@ -165,7 +173,10 @@ export default function TransacitonHistory({
       {transacitonHistoryData.map((activityItem, activityItemIdx) => {
         if (activityItem.metadata.portfolioName !== portfolioName) return null;
         return (
-          <li key={activityItem.id} className="relative flex gap-x-4">
+          <li
+            key={activityItem.id + activityItemIdx}
+            className="relative flex gap-x-4"
+          >
             <div
               className={classNames(
                 activityItemIdx === transacitonHistoryData.length - 1
