@@ -20,6 +20,31 @@ export default function TransacitonHistory({
 
   useEffect(() => {
     async function fetchTransactionHistory() {
+      // here's the sample data of txn
+      // {
+      //   "gotRefundData": {
+      //     "0xaf88d065e77c8cc2239327c5edb3a432268e5831": {
+      //       "amount": 8.149597999999997,
+      //       "symbol": "usdc"
+      //     },
+      //     "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8": {
+      //       "amount": 0.0006669999999999732,
+      //       "symbol": "usdc"
+      //     }
+      //   },
+      //   "metadata": {
+      //     "actionName": "zapOut",
+      //     "investmentAmount": 0,
+      //     "portfolioName": "Stablecoin Vault",
+      //     "referralFeeRate": 0.7,
+      //     "swapFeeRate": 0.00299,
+      //     "timestamp": 1729756193,
+      //     "tokenSymbol": "usdc",
+      //     "zapOutAmount": 1.0000000000000002
+      //   },
+      //   "tx_hash": "0x5d41e027678cb6fdc6fa9aac2631af15d222a62d47fcf98af6458ab736372156",
+      //   "user_address": "0x210050bB080155AEc4EAE79a2aAC5fe78FD738E1"
+      // }
       const resp = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/transaction/category/${account.address}`,
       );
@@ -27,11 +52,7 @@ export default function TransacitonHistory({
       let principalBalance = {};
       for (const txn of resp.data.transactions) {
         if (txn.metadata.portfolioName !== portfolioName) continue;
-        const principalSymbol =
-          txn.metadata.tokenSymbol.includes("usd") ||
-          txn.metadata.tokenSymbol.includes("dai")
-            ? "usd"
-            : txn.metadata.tokenSymbol;
+        const principalSymbol = refineSymbol(txn.metadata.tokenSymbol);
         if (txn.metadata.actionName === "zapIn") {
           const investmentAmount =
             parseFloat(txn.metadata.investmentAmount) || 0;
@@ -46,6 +67,15 @@ export default function TransacitonHistory({
             ...principalBalance,
             ["usd"]: (principalBalance["usd"] || 0) - zapOutAmount,
           };
+        }
+        if (["zapOut", "rebalance"].includes(txn.metadata.actionName)) {
+          for (const tokenMetadata of Object.values(txn.gotRefundData)) {
+            const symbol = refineSymbol(tokenMetadata.symbol);
+            principalBalance = {
+              ...principalBalance,
+              [symbol]: (principalBalance[symbol] || 0) + tokenMetadata.amount,
+            };
+          }
         }
       }
       if (Object.values(tokenPricesMappingTable).length === 0) return;
@@ -64,6 +94,69 @@ export default function TransacitonHistory({
     if (account?.address === undefined) return;
     fetchTransactionHistory();
   }, [account, tokenPricesMappingTable]);
+  function refineSymbol(tokenSymbol) {
+    return tokenSymbol.includes("usd") || tokenSymbol.includes("dai")
+      ? "usd"
+      : tokenSymbol;
+  }
+  function rendersingleTransaction(activityItem) {
+    const tokenDict = {};
+    if (["zapOut", "rebalance"].includes(activityItem.metadata.actionName)) {
+      for (const tokenMetadata of Object.values(activityItem.gotRefundData)) {
+        const symbol = refineSymbol(tokenMetadata.symbol);
+        tokenDict[symbol] = (tokenDict[symbol] || 0) + tokenMetadata.amount;
+      }
+    }
+    const actionAmount =
+      activityItem.metadata.actionName === "zapIn"
+        ? parseFloat(activityItem.metadata.investmentAmount)
+        : activityItem.metadata.actionName === "zapOut"
+        ? parseFloat(activityItem.metadata.zapOutAmount)
+        : 0;
+    const actionTokenSymbol = activityItem.metadata.tokenSymbol;
+    if (actionAmount) {
+      tokenDict[actionTokenSymbol] =
+        (tokenDict[actionTokenSymbol] || 0) + actionAmount;
+    }
+    let tokenSum = Object.values(tokenDict).reduce((acc, amount) => {
+      acc += amount;
+      return acc;
+    }, 0);
+    const actionLabel =
+      activityItem.metadata.actionName === "zapIn"
+        ? "Deposit"
+        : activityItem.metadata.actionName === "zapOut"
+        ? "Withdraw"
+        : activityItem.metadata.actionName === "rebalance"
+        ? `rebalance ${
+            tokenSum > 0 ? "(refund)" : tokenSum < 0 ? "(cost)" : ""
+          }`
+        : activityItem.metadata.actionName;
+    return (
+      <span className="flex gap-1">
+        <span
+          className={classNames(
+            activityItem.metadata.actionName === "zapIn"
+              ? "text-green-500"
+              : activityItem.metadata.actionName === "zapOut"
+              ? "text-orange-500"
+              : "text-blue-500",
+          )}
+        >
+          {actionLabel}
+        </span>
+        {Object.entries(tokenDict).map(([symbol, amount]) => {
+          return (
+            <span key={symbol} className="flex gap-1">
+              {amount.toFixed(2)}
+              <ImageWithFallback token={symbol} height={20} width={20} />
+            </span>
+          );
+        })}
+      </span>
+    );
+  }
+
   function classNames(...classes) {
     return classes.filter(Boolean).join(" ");
   }
@@ -95,33 +188,7 @@ export default function TransacitonHistory({
             </div>
             <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500">
               <span className="font-medium text-white">
-                {activityItem.metadata.actionName === "zapIn" ? (
-                  <span className="flex gap-1">
-                    <span className="text-green-500">Deposit </span>
-                    {activityItem.metadata.investmentAmount}
-                    <ImageWithFallback
-                      token={activityItem.metadata.tokenSymbol}
-                      height={20}
-                      width={20}
-                    />
-                  </span>
-                ) : activityItem.metadata.actionName === "zapOut" ? (
-                  <span className="flex gap-1">
-                    <span className="text-orange-500">Withdraw </span>$
-                    {activityItem.metadata.zapOutAmount.toFixed(2)} worth of
-                    <ImageWithFallback
-                      token={activityItem.metadata.tokenSymbol}
-                      height={20}
-                      width={20}
-                    />
-                  </span>
-                ) : (
-                  <span className="flex gap-1">
-                    <span className="text-blue-500">
-                      {activityItem.metadata.actionName}
-                    </span>
-                  </span>
-                )}
+                {rendersingleTransaction(activityItem)}
               </span>{" "}
               <a
                 href={`https://arbitrum.blockscout.com/tx/${activityItem.tx_hash}`}

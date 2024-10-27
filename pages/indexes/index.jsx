@@ -52,16 +52,6 @@ export default function Vaults() {
       apr,
       tvl: (tvl / 1000000).toFixed(2).concat("M"),
     },
-    {
-      id: 4,
-      portfolioName: "gDAI",
-      href: "/indexes/indexOverviews/?portfolioName=gDAI",
-      imageSrc: "/tokenPictures/gdai.webp",
-      imageAlt: "gDAI",
-      apr: vaultsMetadata?.["gDAI"]?.portfolioAPR * 100,
-      tvl: vaultsMetadata?.["gDAI"]?.portfolioTVL,
-      portfolioHelper: getPortfolioHelper("gDAI"),
-    },
   ];
 
   useEffect(() => {
