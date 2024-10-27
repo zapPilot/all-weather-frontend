@@ -318,8 +318,11 @@ export default function IndexOverviews() {
   );
 
   function ModalContent() {
+    // remove the transition animation effect, still need to figure out that re-render issue
     return (
       <Modal
+        transitionName=""
+        maskTransitionName=""
         title="Transaction Preview"
         open={open}
         onCancel={() => setOpen(false)}
