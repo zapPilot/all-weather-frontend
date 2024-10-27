@@ -135,7 +135,7 @@ export default function Vaults() {
                 </h2>
                 <ImageWithFallback
                   className="h-8 w-auto rounded-full"
-                  key={product.imageSrc}
+                  domKey={product.imageSrc}
                   // use usdc instead of usdc(bridged), aka, usdc.e for the image
                   token={product.imageSrc.replace("(bridged)", "")}
                   height={20}

@@ -838,7 +838,7 @@ export default function IndexOverviews() {
                                                 (symbol, index) => (
                                                   <ImageWithFallback
                                                     className="me-1 rounded-full"
-                                                    key={`${symbol}-${index}`}
+                                                    domKey={`${symbol}-${index}`}
                                                     // use usdc instead of usdc(bridged), aka, usdc.e for the image
                                                     token={symbol.replace(
                                                       "(bridged)",

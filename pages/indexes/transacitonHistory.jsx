@@ -157,7 +157,12 @@ export default function TransacitonHistory({
                 ? amount.toFixed(2)
                 : "< 0.01"}{" "}
               {activityItem.metadata.actionName === "zapOut" ? "worth of" : ""}
-              <ImageWithFallback token={symbol} height={20} width={20} />
+              <ImageWithFallback
+                token={symbol}
+                height={20}
+                width={20}
+                domKey={`${symbol}-${amount}`}
+              />
             </span>
           );
         })}
@@ -173,10 +178,7 @@ export default function TransacitonHistory({
       {transacitonHistoryData.map((activityItem, activityItemIdx) => {
         if (activityItem.metadata.portfolioName !== portfolioName) return null;
         return (
-          <li
-            key={activityItem.id + activityItemIdx}
-            className="relative flex gap-x-4"
-          >
+          <li key={activityItemIdx} className="relative flex gap-x-4">
             <div
               className={classNames(
                 activityItemIdx === transacitonHistoryData.length - 1
