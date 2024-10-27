@@ -41,6 +41,7 @@ import {
   CurrencyDollarIcon,
   BanknotesIcon,
   ArrowTopRightOnSquareIcon,
+  UserCircleIcon,
 } from "@heroicons/react/20/solid";
 import { SettingOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { arbitrum } from "thirdweb/chains";
@@ -171,6 +172,8 @@ export default function IndexOverviews() {
                 `${data.chain.blockExplorers[0].url}/tx/${data.transactionHash}`,
               );
               resolve(data); // Resolve the promise successfully
+              // TODO(chris): only refresh the needed portion of the page. E.g. transaction history, balance, etc.
+              window.location.reload();
             },
             onError: (error) => {
               reject(error); // Reject the promise with the error
@@ -318,8 +321,11 @@ export default function IndexOverviews() {
   );
 
   function ModalContent() {
+    // remove the transition animation effect, still need to figure out that re-render issue
     return (
       <Modal
+        transitionName=""
+        maskTransitionName=""
         title="Transaction Preview"
         open={open}
         onCancel={() => setOpen(false)}
@@ -388,7 +394,6 @@ export default function IndexOverviews() {
       const tokenPricesMappingTable =
         await portfolioHelper.getTokenPricesMappingTable(() => {});
       setTokenPricesMappingTable(tokenPricesMappingTable);
-
       const [usdBalance, usdBalanceDict] = await portfolioHelper.usdBalanceOf(
         account.address,
         portfolioApr[portfolioName],
@@ -456,8 +461,12 @@ export default function IndexOverviews() {
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold" role="apr">
-                    {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(
-                      2,
+                    {loading === true ? (
+                      <Spin />
+                    ) : (
+                      (portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(
+                        2,
+                      )
                     )}
                     %
                     <APRComposition
@@ -643,6 +652,23 @@ export default function IndexOverviews() {
                   </div>
                   <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
                     <dt className="flex-none">
+                      <UserCircleIcon
+                        aria-hidden="true"
+                        className="h-6 w-5 text-gray-500"
+                      />
+                    </dt>
+                    <dd className="text-sm font-medium leading-6 text-white">
+                      <Link
+                        href={`/profile?address=${account?.address}`}
+                        target="_blank"
+                        className="text-blue-400"
+                      >
+                        Check Your Portfolio
+                      </Link>{" "}
+                    </dd>
+                  </div>
+                  <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
+                    <dt className="flex-none">
                       <BanknotesIcon
                         aria-hidden="true"
                         className="h-6 w-5 text-gray-500"
@@ -650,12 +676,14 @@ export default function IndexOverviews() {
                     </dt>
                     <dd className="text-sm font-medium leading-6 text-white">
                       Principal:{" "}
-                      {usdBalanceLoading ? (
+                      {usdBalanceLoading && principalBalance === 0 ? (
                         <Spin />
                       ) : (
-                        `${portfolioHelper?.denomination()}${principalBalance?.toFixed(
-                          2,
-                        )}`
+                        `${portfolioHelper?.denomination()}${
+                          principalBalance > 0.01
+                            ? principalBalance?.toFixed(2)
+                            : "< 0.01"
+                        }`
                       )}
                     </dd>
                   </div>
