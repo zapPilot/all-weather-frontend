@@ -202,7 +202,7 @@ export default function Referrals() {
           )}
           - Total Referral Fee{" "}
           {Object.entries(referralFeeDict || {}).map(
-            ([tokenSymbol, referralFee]) => (
+            ([tokenSymbol, referralFee], idx) => (
               <div
                 key={tokenSymbol}
                 style={{
@@ -212,7 +212,12 @@ export default function Referrals() {
                 }}
               >
                 <span style={{ marginRight: "8px" }}>{referralFee}</span>
-                <ImageWithFallback token={tokenSymbol} height={20} width={20} />
+                <ImageWithFallback
+                  token={tokenSymbol}
+                  height={20}
+                  width={20}
+                  domKey={idx}
+                />
               </div>
             ),
           )}
@@ -256,7 +261,7 @@ export default function Referrals() {
                               <div className="absolute inset-y-0 left-0 -z-10 w-screen border-b border-gray-200 bg-emerald-400" />
                             </th>
                           </tr>
-                          {txns.map((txn) => (
+                          {txns.map((txn, idx) => (
                             <tr key={txn.tx_hash}>
                               <td className="relative py-5 pr-6">
                                 <div className="flex gap-x-6">
@@ -269,6 +274,7 @@ export default function Referrals() {
                                         token={txn.tokenSymbol}
                                         height={20}
                                         width={20}
+                                        domKey={idx}
                                       />
                                     </div>
                                   </div>
@@ -361,7 +367,7 @@ export default function Referrals() {
                     <td className="whitespace-nowrap px-2 py-4 text-sm text-white">
                       {Object.entries(
                         referralFeeByTokenByReferee[address.referee] || {},
-                      ).map(([tokenSymbol, referralFee]) => (
+                      ).map(([tokenSymbol, referralFee], idx) => (
                         <div
                           key={tokenSymbol}
                           style={{
@@ -377,6 +383,7 @@ export default function Referrals() {
                             token={tokenSymbol}
                             height={20}
                             width={20}
+                            domKey={idx}
                           />
                         </div>
                       ))}

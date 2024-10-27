@@ -124,12 +124,12 @@ export const columnMapping = (
       }
       return (
         <div className="flex items-center">
-          {newCoins.map((token, index) => (
+          {newCoins.map(([token, index], idx) => (
             <ImageWithFallback
               token={token}
               height={20}
               width={20}
-              key={index}
+              domKey={idx}
             />
           ))}
           <span className="text-white px-2">
