@@ -103,7 +103,7 @@ export default function TransacitonHistory({
     const tokenDict = {};
     if (["zapOut", "rebalance"].includes(activityItem.metadata.actionName)) {
       for (const tokenMetadata of Object.values(activityItem.gotRefundData)) {
-        const symbol = refineSymbol(tokenMetadata.symbol);
+        const symbol = tokenMetadata.symbol;
         tokenDict[symbol] = (tokenDict[symbol] || 0) + tokenMetadata.amount;
       }
     }
@@ -133,40 +133,43 @@ export default function TransacitonHistory({
           }`
         : activityItem.metadata.actionName;
     return (
-      <span className="flex gap-1">
-        <span
-          className={classNames(
-            activityItem.metadata.actionName === "zapIn"
-              ? "text-green-500"
-              : activityItem.metadata.actionName === "zapOut"
-              ? "text-orange-500"
-              : "text-blue-500",
-          )}
-        >
-          {actionLabel}
-        </span>
+      <div className="flex flex-col gap-1">
+        <div className="flex gap-1">
+          <span
+            className={classNames(
+              activityItem.metadata.actionName === "zapIn"
+                ? "text-green-500"
+                : activityItem.metadata.actionName === "zapOut"
+                ? "text-orange-500"
+                : "text-blue-500",
+            )}
+          >
+            {actionLabel}
+          </span>
+        </div>
         {Object.entries(tokenDict).map(([symbol, amount]) => {
           return (
-            <span key={symbol} className="flex gap-1">
-              {activityItem.metadata.actionName === "zapOut" ? "$" : ""}
+            <div key={symbol} className="flex gap-1 items-center">
+              {activityItem.metadata.actionName === "zapOut" && "$"}
               {symbol.includes("eth") && amount >= 0.0001
                 ? amount.toFixed(4)
                 : symbol.includes("eth") && amount < 0.0001
                 ? "< 0.0001"
                 : amount > 0.01
                 ? amount.toFixed(2)
-                : "< 0.01"}{" "}
-              {activityItem.metadata.actionName === "zapOut" ? "worth of" : ""}
+                : "< 0.01"}
+              {activityItem.metadata.actionName === "zapOut" && " worth of "}
               <ImageWithFallback
                 token={symbol}
                 height={20}
                 width={20}
                 domKey={`${symbol}-${amount}`}
               />
-            </span>
+              {symbol}
+            </div>
           );
         })}
-      </span>
+      </div>
     );
   }
 

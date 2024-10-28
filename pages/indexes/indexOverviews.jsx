@@ -848,20 +848,22 @@ export default function IndexOverviews() {
                                           <div className="truncate text-gray-500">
                                             <div className="mt-2 flex items-center">
                                               {protocol.interface.symbolList.map(
-                                                ([symbol, index], idx) => (
-                                                  <ImageWithFallback
-                                                    key={idx}
-                                                    className="me-1 rounded-full"
-                                                    domKey={`${symbol}-${index}`}
-                                                    // use usdc instead of usdc(bridged), aka, usdc.e for the image
-                                                    token={symbol.replace(
-                                                      "(bridged)",
-                                                      "",
-                                                    )}
-                                                    height={20}
-                                                    width={20}
-                                                  />
-                                                ),
+                                                (symbol, idx) => {
+                                                  return (
+                                                    <ImageWithFallback
+                                                      key={idx}
+                                                      className="me-1 rounded-full"
+                                                      domKey={`${symbol}-${index}`}
+                                                      // use usdc instead of usdc(bridged), aka, usdc.e for the image
+                                                      token={symbol.replace(
+                                                        "(bridged)",
+                                                        "",
+                                                      )}
+                                                      height={20}
+                                                      width={20}
+                                                    />
+                                                  );
+                                                },
                                               )}
                                               {protocol.interface.symbolList.join(
                                                 "-",
