@@ -124,7 +124,7 @@ export const columnMapping = (
       }
       return (
         <div className="flex items-center">
-          {newCoins.map(([token, index], idx) => (
+          {newCoins.map((token, idx) => (
             <ImageWithFallback
               token={token}
               height={20}

@@ -1,11 +1,10 @@
 import React, { useState } from "react";
-import { Select, Button, Modal, ConfigProvider } from "antd";
+import { Button, Modal, ConfigProvider } from "antd";
 import { fetch1InchSwapData } from "./oneInch";
 import tokens from "../pages/views/components/tokens.json";
 import { portfolioVaults } from "./oneInch";
 import axios from "axios";
 import Image from "next/image";
-const { Option } = Select;
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   usdc: 3408,
@@ -13,6 +12,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   "usdc.e": 3408,
   weth: 2396,
   dai: 4943,
+  usde: 29470,
 };
 export const tokensForDropDown = [
   // "eth",
@@ -23,6 +23,7 @@ export const tokensForDropDown = [
   "dai",
   // "wbtc",
   "weth",
+  "usde",
   // "frax",
   // "wsteth",
   // "usds",
