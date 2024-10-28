@@ -45,14 +45,14 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
         </Content>
         <Footer className={styles.footer}>
           <a
-            href="https://all-weather-portfolio.webflow.io/"
+            href="https://all-weather-protocol.webflow.io/"
             rel="noopener noreferrer"
             target="_blank"
           >
             <span className="fi fi-rr-home"></span>
           </a>
           <a
-            href="https://all-weather.gitbook.io/all-weather-protocol/"
+            href="https://all-weather-protocol.gitbook.io/all-weather-protocol"
             rel="noopener noreferrer"
             target="_blank"
           >
