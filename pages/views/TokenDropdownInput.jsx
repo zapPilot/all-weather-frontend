@@ -24,7 +24,7 @@ const TokenDropdownInput = memo(
     });
 
     const handleInputChange = (eventValue) => {
-      setLocalInvestmentAmount(eventValue);
+      setLocalInvestmentAmount(parseFloat(eventValue) || 0);
       setInvestmentAmount(eventValue);
     };
 
@@ -70,14 +70,14 @@ const TokenDropdownInput = memo(
           Balance:{" "}
           <span
             className={
-              localInvestmentAmount > data?.displayValue
+              localInvestmentAmount > parseFloat(data?.displayValue)
                 ? "text-red-400"
                 : "text-gray-400"
             }
           >
             {isLoading ? "Loading..." : data?.displayValue || "0"}
           </span>
-          {localInvestmentAmount > data?.displayValue && (
+          {localInvestmentAmount > parseFloat(data?.displayValue) && (
             <p className="text-red-400">
               Please send more tokens to your AA Wallet to continue.
               <br />

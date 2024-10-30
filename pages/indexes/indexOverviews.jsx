@@ -7,6 +7,13 @@ import Image from "next/image";
 import Link from "next/link";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
+import {
+  Dialog,
+  DialogBackdrop,
+  DialogPanel,
+  DialogTitle,
+} from "@headlessui/react";
+import { CheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
 import TransacitonHistory from "./transacitonHistory.jsx";
 import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
@@ -82,6 +89,8 @@ export default function IndexOverviews() {
 
   const [principalBalance, setPrincipalBalance] = useState(0);
   const [open, setOpen] = useState(false);
+  const [finishedTxn, setFinishedTxn] = useState(false);
+  const [txnLink, setTxnLink] = useState("");
   const [tokenPricesMappingTable, setTokenPricesMappingTable] = useState({});
   const [tabKey, setTabKey] = useState("");
 
@@ -173,8 +182,10 @@ export default function IndexOverviews() {
                 `${data.chain.blockExplorers[0].url}/tx/${data.transactionHash}`,
               );
               resolve(data); // Resolve the promise successfully
-              // TODO(chris): only refresh the needed portion of the page. E.g. transaction history, balance, etc.
-              window.location.reload();
+              setFinishedTxn(true);
+              setTxnLink(
+                `${data.chain.blockExplorers[0].url}/tx/${data.transactionHash}`,
+              );
             },
             onError: (error) => {
               reject(error); // Reject the promise with the error
@@ -339,34 +350,85 @@ export default function IndexOverviews() {
       <Modal
         transitionName=""
         maskTransitionName=""
-        title="Transaction Preview"
+        title={
+          finishedTxn === false ? "Transaction Preview" : "Transaction Result"
+        }
         open={open}
-        onCancel={() => setOpen(false)}
+        onCancel={() => {
+          setOpen(false);
+          if (finishedTxn) {
+            window.location.reload();
+          }
+        }}
         footer={<></>}
       >
-        <div>
-          <p>Tips:</p>
-          <p>
-            1. Test with $5–$10 first, as signature verification isn&apos;t
-            available yet.
-          </p>
-          <p>
-            2. Transaction simulation will be available in the next version.
-          </p>
-          <p>3. Increase your slippage if the transaction fails.</p>
-        </div>
+        {finishedTxn === false ? (
+          <>
+            <div>
+              <p>Tips:</p>
+              <p>
+                1. Test with $5–$10 first, as signature verification isn&apos;t
+                available yet.
+              </p>
+              <p>
+                2. Transaction simulation will be available in the next version.
+              </p>
+              <p>3. Increase your slippage if the transaction fails.</p>
+            </div>
 
-        <Progress
-          percent={progress.toFixed(2)}
-          footer={<></>}
-          status={
-            zapInIsLoading || zapOutIsLoading || claimIsLoading ? "active" : ""
-          }
-          size={[400, 10]}
-          showInfo={true}
-          format={(percent) => `${percent}%`}
-        />
-        {stepName}
+            <Progress
+              percent={progress.toFixed(2)}
+              footer={<></>}
+              status={
+                zapInIsLoading || zapOutIsLoading || claimIsLoading
+                  ? "active"
+                  : ""
+              }
+              size={[400, 10]}
+              showInfo={true}
+              format={(percent) => `${percent}%`}
+            />
+            {stepName}
+          </>
+        ) : (
+          <>
+            <div className="flex flex-col items-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                <CheckIcon
+                  aria-hidden="true"
+                  className="h-6 w-6 text-green-600"
+                />
+              </div>
+              <div className="mt-3 text-center sm:mt-5">
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">
+                    🎉 Success! Click Once 🌟, Yield Forever 🌿
+                  </p>
+                  <a
+                    href={txnLink}
+                    target="_blank"
+                    className="flex justify-center mt-2"
+                  >
+                    <ArrowTopRightOnSquareIcon className="h-6 w-5 text-gray-500" />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 sm:mt-6 flex justify-center">
+              <button
+                type="button"
+                onClick={() =>
+                  window.open("https://t.me/all_weather_protocol_bot", "_blank")
+                }
+                className="inline-flex items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+              >
+                Subscribe for Rebalance Notifications
+                <span className="fi fi-brands-telegram ml-2"></span>
+              </button>
+            </div>
+          </>
+        )}
       </Modal>
     );
   }
