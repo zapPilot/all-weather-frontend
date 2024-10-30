@@ -8,14 +8,14 @@ import {
   getBasicColumnsForSuggestionsTable,
   getExpandableColumnsForSuggestionsTable,
   columnMapping,
-} from "../utils/tableExpansionUtils";
+} from "../utils/tableExpansionUtils.jsx";
 import { useState, useEffect } from "react";
-import LinkModal from "./views/components/LinkModal";
+import LinkModal from "./views/components/LinkModal.jsx";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
-import { walletAddressChanged } from "../lib/features/subscriptionSlice";
-import TableComponent, { ExpandTableComponent } from "./views/PoolsTable";
-import { useWindowWidth } from "../utils/chartUtils";
+import { walletAddressChanged } from "../lib/features/subscriptionSlice.js";
+import TableComponent, { ExpandTableComponent } from "./views/PoolsTable.jsx";
+import { useWindowWidth } from "../utils/chartUtils.js";
 import { useActiveAccount } from "thirdweb/react";
 
 interface Pools {

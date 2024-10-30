@@ -1,5 +1,5 @@
 import BasePage from "../basePage";
-import AllWeatherPools from "../AllWeatherPools";
+import AllWeatherPools from "../CustomizedPools";
 import { Col } from "antd";
 
 export default function Vote() {
