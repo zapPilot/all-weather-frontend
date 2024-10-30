@@ -38,6 +38,10 @@ const items = [
         ),
         key: "docs",
       },
+      {
+        label: <Link href="/allweatherpools">All Weather Pools</Link>,
+        key: "all_weather_pools",
+      },
     ],
   },
 ];
