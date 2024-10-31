@@ -8,7 +8,7 @@ import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 import { arbitrum } from "thirdweb/chains";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
-
+import ReactMarkdown from "react-markdown";
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 export class BasePortfolio {
@@ -29,8 +29,19 @@ export class BasePortfolio {
       );
   }
   description() {
-    throw new Error("Method 'description()' must be implemented.");
+    return (
+      <ReactMarkdown>
+        {`
+    1. Liquidation fees from perpetual exchanges
+    2. Farming rewards from new protocols
+    (non-sustainable)
+    3. Swap fees
+    4. Interest from lending
+    `}
+      </ReactMarkdown>
+    );
   }
+
   denomination() {
     throw new Error("Method 'denomination()' must be implemented.");
   }

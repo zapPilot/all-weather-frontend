@@ -82,13 +82,23 @@ export default function TransacitonHistory({
       if (portfolioName === "ETH Vault") {
         const ethPrincipalBalance =
           (principalBalance["weth"] || 0) +
-          (principalBalance["usd"] || 0) / tokenPricesMappingTable["weth"];
+          (principalBalance["usd"] || 0) / tokenPricesMappingTable["weth"] +
+          ((principalBalance["wbtc"] || 0) * tokenPricesMappingTable["wbtc"]) /
+            tokenPricesMappingTable["weth"];
         setPrincipalBalance(ethPrincipalBalance);
       } else if (portfolioName === "Stablecoin Vault") {
         const usdPrincipalBalance =
           (principalBalance["usd"] || 0) +
           (principalBalance["weth"] || 0) * tokenPricesMappingTable["weth"];
         setPrincipalBalance(usdPrincipalBalance);
+      } else if (portfolioName === "BTC Vault") {
+        const btcPrincipalBalance =
+          (principalBalance["wbtc"] || 0) +
+          (principalBalance["usd"] || 0) / tokenPricesMappingTable["wbtc"] +
+          ((principalBalance["weth"] || 0) * tokenPricesMappingTable["weth"]) /
+            tokenPricesMappingTable["wbtc"];
+
+        setPrincipalBalance(btcPrincipalBalance);
       }
     }
     if (account?.address === undefined) return;
@@ -151,13 +161,7 @@ export default function TransacitonHistory({
           return (
             <div key={symbol} className="flex gap-1 items-center">
               {activityItem.metadata.actionName === "zapOut" && "$"}
-              {symbol.includes("eth") && amount >= 0.0001
-                ? amount.toFixed(4)
-                : symbol.includes("eth") && amount < 0.0001
-                ? "< 0.0001"
-                : amount > 0.01
-                ? amount.toFixed(2)
-                : "< 0.01"}
+              {amount > 0.01 ? amount.toFixed(2) : "< 0.01"}
               {activityItem.metadata.actionName === "zapOut" && " worth of "}
               <ImageWithFallback
                 token={symbol}

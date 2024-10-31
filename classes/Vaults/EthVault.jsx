@@ -1,6 +1,5 @@
 import { BasePortfolio } from "../BasePortfolio";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
-import ReactMarkdown from "react-markdown";
 import { BaseConvex } from "../Convex/BaseConvex";
 export class EthVault extends BasePortfolio {
   constructor() {
@@ -95,20 +94,6 @@ export class EthVault extends BasePortfolio {
       },
     );
     this.validateStrategyWeights();
-  }
-  description() {
-    return (
-      <ReactMarkdown className="text-base text-gray-500">
-        {`
-    1. Ethereum staking rewards
-    2. Swap fees
-    3. Farming rewards from protocols
-    (non-sustainable)
-    4. Trading of Principal Tokens
-    (similar to zero-coupon bonds)
-    `}
-      </ReactMarkdown>
-    );
   }
   denomination() {
     return "Ξ";

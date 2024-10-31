@@ -22,16 +22,6 @@ export default function Vaults() {
   const vaults = [
     {
       id: 1,
-      portfolioName: "Stablecoin Vault",
-      href: "/indexes/indexOverviews/?portfolioName=Stablecoin+Vault",
-      imageSrc: "/tokenPictures/usdc.webp",
-      imageAlt: "Stablecoin Vault",
-      apr: vaultsMetadata?.["Stablecoin Vault"]?.portfolioAPR * 100,
-      tvl: vaultsMetadata?.["Stablecoin Vault"]?.portfolioTVL,
-      portfolioHelper: getPortfolioHelper("Stablecoin Vault"),
-    },
-    {
-      id: 2,
       portfolioName: "ETH Vault",
       href: "/indexes/indexOverviews/?portfolioName=ETH+Vault",
       imageSrc: "/indexFunds/eth vault.webp",
@@ -41,7 +31,27 @@ export default function Vaults() {
       portfolioHelper: getPortfolioHelper("ETH Vault"),
     },
     {
+      id: 2,
+      portfolioName: "Stablecoin Vault",
+      href: "/indexes/indexOverviews/?portfolioName=Stablecoin+Vault",
+      imageSrc: "/tokenPictures/usdc.webp",
+      imageAlt: "Stablecoin Vault",
+      apr: vaultsMetadata?.["Stablecoin Vault"]?.portfolioAPR * 100,
+      tvl: vaultsMetadata?.["Stablecoin Vault"]?.portfolioTVL,
+      portfolioHelper: getPortfolioHelper("Stablecoin Vault"),
+    },
+    {
       id: 3,
+      portfolioName: "BTC Vault",
+      href: "/indexes/indexOverviews/?portfolioName=BTC+Vault",
+      imageSrc: "/tokenPictures/btc.webp",
+      imageAlt: "BTC Vault",
+      apr: vaultsMetadata?.["BTC Vault"]?.portfolioAPR * 100,
+      tvl: vaultsMetadata?.["BTC Vault"]?.portfolioTVL,
+      portfolioHelper: getPortfolioHelper("BTC Vault"),
+    },
+    {
+      id: 4,
       portfolioName: "Build Your Own Vault with",
       href: "/vote",
       imageSrc:
