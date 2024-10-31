@@ -4,19 +4,18 @@ import type { NextPage } from "next";
 import Image from "next/image";
 import { Spin, Button } from "antd";
 import { useWindowHeight } from "../utils/chartUtils.js";
-import Link from "next/link";
 import {
   getBasicColumnsForSuggestionsTable,
   getExpandableColumnsForSuggestionsTable,
   columnMapping,
-} from "../utils/tableExpansionUtils";
+} from "../utils/tableExpansionUtils.jsx";
 import { useState, useEffect } from "react";
-import LinkModal from "./views/components/LinkModal";
+import LinkModal from "./views/components/LinkModal.jsx";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
-import { walletAddressChanged } from "../lib/features/subscriptionSlice";
-import TableComponent, { ExpandTableComponent } from "./views/PoolsTable";
-import { useWindowWidth } from "../utils/chartUtils";
+import { walletAddressChanged } from "../lib/features/subscriptionSlice.js";
+import TableComponent, { ExpandTableComponent } from "./views/PoolsTable.jsx";
+import { useWindowWidth } from "../utils/chartUtils.js";
 import { useActiveAccount } from "thirdweb/react";
 
 interface Pools {
@@ -44,7 +43,7 @@ interface queriesObj {
   chain_whitelist?: string[];
 }
 
-const Dashboard: NextPage = () => {
+const AllWeatherPools: NextPage = () => {
   const userApiKey = "placeholder";
   const account = useActiveAccount();
   const walletAddress = account?.address;
@@ -91,7 +90,6 @@ const Dashboard: NextPage = () => {
   const [non_us_emerging_market_stocks, set_non_us_emerging_market_stocks] =
     useState<Pools[] | null>(null);
   const [airdrop, set_airdrop] = useState<Pools[] | null>(null);
-  const [btc, setBtc] = useState<Pools[] | null>(null);
 
   const [longTermBondFilterDict, setLongTermBondFilterDict] = useState([]);
   const [intermediateTermBondFilterDict, setIntermediateTermBondFilterDict] =
@@ -111,7 +109,6 @@ const Dashboard: NextPage = () => {
     setNon_us_emerging_market_stocksFilterDict,
   ] = useState([]);
   const [airdropFilterDict, setAirdropFilterDict] = useState([]);
-  const [btcFilterDict, setBtcFilterDict] = useState([]);
 
   // states for unexpandable
   const [unexpandable, setUnexpandable] = useState<{ [key: string]: boolean }>({
@@ -144,8 +141,7 @@ const Dashboard: NextPage = () => {
   const biggerTopN = 7;
   const queriesForAllWeather: queriesObj[] = [
     {
-      img: "/tokenPictures/eth.webp",
-      wording: "ETH",
+      wording: "Long Term Bond (40%)",
       category: "long_term_bond",
       setStateMethod: setLongTermBond,
       state: longTermBond,
@@ -157,8 +153,29 @@ const Dashboard: NextPage = () => {
       topN: defaultTopN,
     },
     {
-      img: "/tokenPictures/usdc.webp",
-      wording: "Stablecoins",
+      wording: "Intermediate Term Bond (15%)",
+      category: "intermediate_term_bond",
+      setStateMethod: setIntermediateTermBond,
+      state: intermediateTermBond,
+      setUniqueQueryTokens: setIntermediateTermBondFilterDict,
+      uniqueQueryTokens: intermediateTermBondFilterDict,
+      unexpandable: unexpandable.intermediate_term_bond,
+      setUnexpandable: updateState,
+      topN: defaultTopN,
+    },
+    {
+      wording: "Commodities (7.5%)",
+      category: "commodities",
+      setStateMethod: setCommodities,
+      state: commodities,
+      setUniqueQueryTokens: setCommoditiesFilterDict,
+      uniqueQueryTokens: commoditiesFilterDict,
+      unexpandable: unexpandable.commodities,
+      setUnexpandable: updateState,
+      topN: defaultTopN,
+    },
+    {
+      wording: "Gold (7.5%)",
       category: "gold",
       setStateMethod: setGoldData,
       state: goldData,
@@ -170,17 +187,60 @@ const Dashboard: NextPage = () => {
       topN: defaultTopN,
     },
     {
-      img: "/tokenPictures/btc.webp",
-      wording: "BTC",
-      category: "btc",
-      setStateMethod: setBtc,
-      state: btc,
-      setUniqueQueryTokens: setBtcFilterDict,
-      uniqueQueryTokens: btcFilterDict,
-      unexpandable: unexpandable.btc,
+      wording: "Large Cap US Stocks (18%)",
+      category: "large_cap_us_stocks",
+      setStateMethod: set_large_cap_us_stocks,
+      state: large_cap_us_stocks,
+      setUniqueQueryTokens: setLarge_cap_us_stocksFilterDict,
+      uniqueQueryTokens: large_cap_us_stocksFilterDict,
+      unexpandable: unexpandable.large_cap_us_stocks,
       setUnexpandable: updateState,
-      chain_blacklist: ["ethereum"],
       topN: defaultTopN,
+    },
+    {
+      wording: "Small Cap US Stocks (3%)",
+      category: "small_cap_us_stocks",
+      setStateMethod: set_small_cap_us_stocks,
+      state: small_cap_us_stocks,
+      setUniqueQueryTokens: setSmall_cap_us_stocksFilterDict,
+      uniqueQueryTokens: small_cap_us_stocksFilterDict,
+      unexpandable: unexpandable.small_cap_us_stocks,
+      setUnexpandable: updateState,
+      topN: defaultTopN,
+    },
+    {
+      wording: "Non US Developed Market Stocks (6%)",
+      category: "non_us_developed_market_stocks",
+      setStateMethod: set_non_us_developed_market_stocks,
+      state: non_us_developed_market_stocks,
+      setUniqueQueryTokens: setNon_us_developed_market_stocksFilterDict,
+      uniqueQueryTokens: non_us_developed_market_stocksFilterDict,
+      unexpandable: unexpandable.non_us_developed_market_stocks,
+      setUnexpandable: updateState,
+      topN: defaultTopN,
+    },
+    {
+      wording: "Non US Emerging Market Stocks (3%)",
+      category: "non_us_emerging_market_stocks",
+      setStateMethod: set_non_us_emerging_market_stocks,
+      state: non_us_emerging_market_stocks,
+      setUniqueQueryTokens: setNon_us_emerging_market_stocksFilterDict,
+      uniqueQueryTokens: non_us_emerging_market_stocksFilterDict,
+      unexpandable: unexpandable.non_us_emerging_market_stocks,
+      setUnexpandable: updateState,
+      topN: defaultTopN,
+    },
+    {
+      wording: "Airdrop",
+      category: "airdrop",
+      setStateMethod: set_airdrop,
+      state: airdrop,
+      setUniqueQueryTokens: setAirdropFilterDict,
+      uniqueQueryTokens: airdropFilterDict,
+      unexpandable: unexpandable.airdrop,
+      setUnexpandable: updateState,
+      chain_whitelist: ["linea", "scroll"],
+      topN: biggerTopN,
     },
   ];
 
@@ -348,9 +408,40 @@ const Dashboard: NextPage = () => {
       <div style={divBetterPools}>
         <center>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            🔥 Top APR Farming Pools
+            Vote for the Better Pools
           </h1>
         </center>
+        <div className="mt-2">
+          <p className="text-xl text-gray-400">
+            Tokens in Current Portfolio: {uniqueTokens.size}
+          </p>
+          <div>
+            {Array.from(uniqueTokens).map((token: unknown, index) => (
+              <Image
+                key={index}
+                // @ts-ignore
+                src={`/tokenPictures/${token.replace(/[()]/g, "")}.webp`}
+                alt={token as string}
+                className="inline-block"
+                height={20}
+                width={20}
+              />
+            ))}
+          </div>
+        </div>
+        <Button
+          type="primary"
+          onClick={() =>
+            requestAnimationFrame(() => {
+              // JSON.parse(JSON.stringify means deep copy
+              setPortfolioCompositionForReRender(
+                JSON.parse(JSON.stringify(portfolioComposition)),
+              );
+            })
+          }
+        >
+          Visualize
+        </Button>
         <>
           {Object.values(queriesForAllWeather).map((categoryMetaData) => {
             return (
@@ -361,19 +452,12 @@ const Dashboard: NextPage = () => {
                 {" "}
                 {/* Make sure to provide a unique key for each item */}
                 <h2 className="my-2 text-xl font-bold">
-                  <Link
+                  <a
                     href={`#${categoryMetaData.category}`}
                     onClick={() => handleScroll(categoryMetaData.category)}
-                    className="flex items-center gap-2"
                   >
-                    <Image
-                      src={categoryMetaData.img}
-                      width={50}
-                      height={50}
-                      alt={categoryMetaData.wording}
-                    />
                     {categoryMetaData.wording}
-                  </Link>
+                  </a>
                 </h2>
                 {categoryMetaData.state === null ? (
                   <div
@@ -417,4 +501,4 @@ const Dashboard: NextPage = () => {
   );
 };
 
-export default Dashboard;
+export default AllWeatherPools;
