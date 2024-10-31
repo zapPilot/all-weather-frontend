@@ -784,6 +784,12 @@ export default function IndexOverviews() {
                                 0
                                 ? "text-red-500"
                                 : "text-green-500"
+                              : portfolioName === "BTC Vault"
+                              ? usdBalance / tokenPricesMappingTable["wbtc"] -
+                                  principalBalance <
+                                0
+                                ? "text-red-500"
+                                : "text-green-500"
                               : "text-white"
                           }
                         >
@@ -793,6 +799,11 @@ export default function IndexOverviews() {
                             : portfolioName === "ETH Vault"
                             ? (
                                 usdBalance / tokenPricesMappingTable["weth"] -
+                                principalBalance
+                              ).toFixed(2)
+                            : portfolioName === "BTC Vault"
+                            ? (
+                                usdBalance / tokenPricesMappingTable["wbtc"] -
                                 principalBalance
                               ).toFixed(2)
                             : (usdBalance - principalBalance).toFixed(2)}
@@ -815,11 +826,13 @@ export default function IndexOverviews() {
                       {pendingRewardsLoading === true ? (
                         <Spin />
                       ) : (
-                        formatBalance(
-                          portfolioHelper?.sumUsdDenominatedValues(
-                            pendingRewards,
-                          ),
-                        )
+                        <span className="text-green-500">
+                          {formatBalance(
+                            portfolioHelper?.sumUsdDenominatedValues(
+                              pendingRewards,
+                            ),
+                          )}
+                        </span>
                       )}
                     </dd>
                   </div>
