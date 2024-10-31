@@ -5,7 +5,6 @@ import { ApolloX20240820 } from "../ApolloX/ApolloX20240820";
 import { Vela } from "../Vela/Vela";
 import { BaseConvex } from "../Convex/BaseConvex";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
-import ReactMarkdown from "react-markdown";
 export class StablecoinVault extends BasePortfolio {
   constructor() {
     super(
@@ -172,19 +171,6 @@ export class StablecoinVault extends BasePortfolio {
       },
     );
     this.validateStrategyWeights();
-  }
-  description() {
-    return (
-      <ReactMarkdown>
-        {`
-    1. Liquidation fees from perpetual exchanges
-    2. Farming rewards from new protocols
-    (non-sustainable)
-    3. Swap fees
-    4. Interest from lending
-    `}
-      </ReactMarkdown>
-    );
   }
   denomination() {
     return "$";

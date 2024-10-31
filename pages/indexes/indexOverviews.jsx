@@ -7,12 +7,6 @@ import Image from "next/image";
 import Link from "next/link";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Dialog,
-  DialogBackdrop,
-  DialogPanel,
-  DialogTitle,
-} from "@headlessui/react";
 import { CheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
 import TransacitonHistory from "./transacitonHistory.jsx";
