@@ -878,6 +878,15 @@ export default function IndexOverviews() {
                               <tbody>
                                 {protocolArray
                                   .sort((a, b) => b.weight - a.weight)
+                                  .sort(
+                                    (a, b) =>
+                                      portfolioApr?.[portfolioName]?.[
+                                        b.interface.uniqueId()
+                                      ]?.apr -
+                                      portfolioApr?.[portfolioName]?.[
+                                        a.interface.uniqueId()
+                                      ]?.apr,
+                                  )
                                   .map((protocol, index) => {
                                     // set weight to 0 for old protocols, these are protocols used to be the best choice but its reward decreased
                                     // so we opt out of them

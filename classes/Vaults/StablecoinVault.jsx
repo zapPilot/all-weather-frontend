@@ -59,7 +59,7 @@ export class StablecoinVault extends BasePortfolio {
                 "single",
                 {},
               ),
-              weight: 0.4,
+              weight: 0.25,
             },
             {
               interface: new BaseEquilibria(
@@ -93,7 +93,24 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 45,
                 },
               ),
-              weight: 0.05,
+              weight: 0.25,
+            },
+            {
+              interface: new BaseEquilibria(
+                "arbitrum",
+                42161,
+                ["usdc", "pt dusdc 26jun2025"],
+                "single",
+                {
+                  assetAddress: "0x0bD6890b3Bb15f16430546147734b254d0B03059",
+                  symbolOfBestTokenToZapOut: "dusdc",
+                  bestTokenAddressToZapOut:
+                    "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+                  decimalOfBestTokenToZapOut: 6,
+                  pidOfEquilibria: 52,
+                },
+              ),
+              weight: 0.25,
             },
             {
               interface: new BaseEquilibria(
@@ -145,7 +162,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.55,
+              weight: 0.25,
             },
           ],
         },
