@@ -13,6 +13,8 @@ import {
   fetchDataFailure,
 } from "../../lib/features/apiSlice";
 import { useRouter } from "next/router";
+import { useActiveAccount } from "thirdweb/react";
+import HistoricalGenericDataChart from "./HistoricalGenericDataChart";
 
 const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
   const windowWidth = useWindowWidth();
@@ -21,6 +23,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
   const router = useRouter();
   const { query } = router;
   const searchWalletAddress = query.address;
+  const account = useActiveAccount();
 
   const calculateMonthlyEarnings = (deposit, apr) => {
     if (isNaN(deposit) || isNaN(apr)) return 0;
@@ -165,6 +168,23 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
         color="white"
         wording="Your Portfolio Chart"
       />
+      <center>
+        <a
+          className="text-xl font-semibold text-white"
+          href="#historical-balances"
+        >
+          Historical Balances
+        </a>
+      </center>
+
+      {account?.address && (
+        <HistoricalGenericDataChart
+          apiUrl={`${process.env.NEXT_PUBLIC_SDK_API_URL}/balances/${account.address}/history`}
+          dataTransformCallback={(response) => response.json()}
+          yLabel={"usd_value"}
+        />
+      )}
+
       {data ? (
         <div className="mt-4 ps-4">
           <h4 className="text-xl font-semibold text-white">
