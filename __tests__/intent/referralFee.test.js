@@ -7,7 +7,7 @@ import { encode } from "thirdweb";
 describe("Referral Fee Module", () => {
   // it("should not charge fee for zap-in", async () => {
   //   const actionName = "zapIn";
-  //   const userAddress = "0x210050bB080155AEc4EAE79a2aAC5fe78FD738E1";
+  //   const userAddress = "0x04B79E6394a8200DF40d1b7fb2eC310B2e45D232";
   //   const tokenSymbol = "weth";
   //   const tokenAddress = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1";
   //   const investmentAmount = 1;
@@ -40,7 +40,7 @@ describe("Referral Fee Module", () => {
   // });
   it("should charge fee for zap-out", async () => {
     const actionName = "zapOut";
-    const userAddress = "0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0";
+    const userAddress = "0x04B79E6394a8200DF40d1b7fb2eC310B2e45D232";
     const tokenSymbol = "weth";
     const tokenAddress = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1";
     const investmentAmount = 1;
