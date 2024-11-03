@@ -591,9 +591,19 @@ export default class BaseProtocol extends BaseUniswap {
     );
   }
   mul_with_slippage_in_bignumber_format(amount, slippage) {
-    const slippageBN = ethers.BigNumber.from(slippage * 100);
-    return ethers.BigNumber.from(String(Math.floor(amount)))
-      .mul(10000 - slippageBN)
+    // Convert amount to BigNumber if it isn't already
+    const amountBN = ethers.BigNumber.isBigNumber(amount)
+      ? amount
+      : ethers.BigNumber.from(String(amount));
+
+    // Convert slippage to basis points (e.g., 0.5% -> 50)
+    const slippageBasisPoints = ethers.BigNumber.from(
+      Math.floor(slippage * 100),
+    );
+
+    // Calculate (amount * (10000 - slippageBasisPoints)) / 10000
+    return amountBN
+      .mul(ethers.BigNumber.from(10000).sub(slippageBasisPoints))
       .div(10000);
   }
 }

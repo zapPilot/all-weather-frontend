@@ -24,6 +24,7 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
   const { query } = router;
   const searchWalletAddress = query.address;
   const account = useActiveAccount();
+  const walletAddress = account?.address;
 
   const calculateMonthlyEarnings = (deposit, apr) => {
     if (isNaN(deposit) || isNaN(apr)) return 0;
@@ -53,7 +54,9 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
         }?refresh=${refresh}`,
       )
       .then((response) => response.data)
-      .then((data) => dispatch(fetchDataSuccess(data)))
+      .then((data) => {
+        dispatch(fetchDataSuccess(data));
+      })
       .catch((error) => dispatch(fetchDataFailure(error.toString())));
   };
 
@@ -163,7 +166,6 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
         rebalanceSuggestions={data?.suggestions}
         netWorth={data?.net_worth}
         windowWidth={windowWidth}
-        showCategory={true}
         portfolio_apr={data?.portfolio_apr}
         color="white"
         wording="Your Portfolio Chart"
