@@ -44,6 +44,7 @@ import {
   BanknotesIcon,
   ArrowTopRightOnSquareIcon,
   UserCircleIcon,
+  ChartBarIcon,
 } from "@heroicons/react/20/solid";
 import { SettingOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { arbitrum } from "thirdweb/chains";
@@ -811,6 +812,24 @@ export default function IndexOverviews() {
                       )}
                     </dd>
                   </div>
+                  <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
+                    <dt className="flex-none">
+                      <ChartBarIcon
+                        aria-hidden="true"
+                        className="h-6 w-5 text-gray-500"
+                      />
+                    </dt>
+                    <dd className="text-sm font-medium leading-6 text-white">
+                      <Link
+                        href={`/profile/#historical-balances?address=${account?.address}`}
+                        target="_blank"
+                        className="text-blue-400"
+                      >
+                        Historical Balances
+                      </Link>{" "}
+                    </dd>
+                  </div>
+
                   <div className="my-4 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
                     <dt className="flex-none">
                       <APRComposition
