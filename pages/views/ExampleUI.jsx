@@ -135,14 +135,16 @@ export default function ExampleUI() {
                   isNaN(strategyMetadata["Stablecoin Vault"]?.portfolioAPR) ? (
                     <Spin />
                   ) : (
-                    maxAPR
+                    (
+                      strategyMetadata["Stablecoin Vault"]?.portfolioAPR * 100
+                    ).toFixed(2)
                   )}
                   %{" "}
                 </span>
                 APR
               </p>
               <Link
-                href={`/indexes/indexOverviews/?portfolioName=${portfolioName}`}
+                href={`/indexes/indexOverviews?portfolioName=Stablecoin+Vault`}
               >
                 <Button
                   type="primary"
