@@ -40,6 +40,16 @@ const DefaultValue = {
     },
   ],
 };
+const CategoryTranslation = {
+  long_term_bond: "ETH",
+  intermediate_term_bond: "Zero-Coupon Bond",
+  commodities: "Non Financial App",
+  gold: "Stablecoins",
+  large_cap_us_stocks: "Large Market Cap",
+  small_cap_us_stocks: "Small Market Cap",
+  non_us_developed_market_stocks: "Non EVM Large Market Cap",
+  non_us_emerging_market_stocks: "Non EVM Small Market Cap",
+};
 /**
  * Recursively work backwards from highlighted node to find path of valud nodes
  * @param {Object} node - the current node being considered
@@ -111,7 +121,7 @@ const colorList = [
   "#E74C3C",
   "#ECF0F1",
 ];
-function createChartData(rebalanceSuggestions, netWorth, showCategory) {
+function createChartData(rebalanceSuggestions, netWorth) {
   if (!rebalanceSuggestions || rebalanceSuggestions.length === 0) return;
   let aggregatedBalanceDict = {};
   let uniqueIdToMetaDataMapping = {};
@@ -131,26 +141,12 @@ function createChartData(rebalanceSuggestions, netWorth, showCategory) {
       ((value / netWorth) * 100).toFixed(2),
     ]),
   );
-  if (!showCategory) {
-    const aggregatedArray = Object.entries(aggregatedBalanceDict).sort(
-      (a, b) => b[1] - a[1],
-    );
-    return {
-      children: aggregatedArray.map(([uniqueId, value], idx) => {
-        return {
-          name: `${uniqueId.split("/")[0]} ${
-            uniqueId.split("/")[uniqueId.split("/").length - 1]
-          }, APR: ${uniqueIdToMetaDataMapping[uniqueId]}% PER: ${value}%`,
-          hex: colorList[idx],
-          value,
-        };
-      }),
-    };
-  }
   return {
     children: rebalanceSuggestions.map((categoryObj, idx) => {
       return {
-        name: `${categoryObj.category}: ${getPercentage(
+        name: `${
+          CategoryTranslation[categoryObj.category] || categoryObj.category
+        }: ${getPercentage(
           categoryObj.sum_of_this_category_in_the_portfolio,
           netWorth,
         )}%`,
@@ -264,10 +260,6 @@ export default function RebalanceChart(props) {
   const { strategyMetadata } = useSelector((state) => state.strategyMetadata);
   const account = useActiveAccount();
 
-  const divSunBurst = {
-    height: props.windowWidth > 767 ? 500 : 300,
-    width: props.windowWidth > 767 ? 500 : 300,
-  };
   const LABEL_STYLE = {
     fontSize: "16px",
     textAnchor: "middle",

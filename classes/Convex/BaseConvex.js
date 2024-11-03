@@ -173,13 +173,17 @@ export class BaseConvex extends BaseProtocol {
     const [token_a_balance, token_b_balance] = (
       await protocolContractInstance.functions.get_balances()
     )[0];
-    const ratio = token_a_balance / token_a_balance.add(token_b_balance);
+    const ratio = token_a_balance
+      .mul(ethers.constants.WeiPerEther)
+      .div(token_a_balance.add(token_b_balance));
     const minimumWithdrawAmount_a = this.mul_with_slippage_in_bignumber_format(
-      amount * ratio,
+      amount.mul(ratio).div(ethers.constants.WeiPerEther),
       slippage,
     );
     const minimumWithdrawAmount_b = this.mul_with_slippage_in_bignumber_format(
-      amount * (1 - ratio),
+      amount
+        .mul(ethers.constants.WeiPerEther.sub(ratio))
+        .div(ethers.constants.WeiPerEther),
       slippage,
     );
     const minPairAmounts = [minimumWithdrawAmount_a, minimumWithdrawAmount_b];
