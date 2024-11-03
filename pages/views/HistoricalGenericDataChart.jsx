@@ -26,9 +26,15 @@ const HistoricalGenericDataChart = ({
       .catch((error) => {
         console.log("fetch HistoricalGenericDataChart data failed", error);
       });
-    console.log("data", data);
   };
-
+  if (data.length === 0) {
+    // need to zap in at least once to get the data
+    return (
+      <div style={{ textAlign: "center", padding: "20px" }}>
+        <p>Need at least one deposit transaction to get the data</p>
+      </div>
+    );
+  }
   const config = {
     data,
     padding: "auto",
