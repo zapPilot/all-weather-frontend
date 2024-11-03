@@ -24,7 +24,7 @@ export default function Vaults() {
       id: 1,
       portfolioName: "ETH Vault",
       href: "/indexes/indexOverviews/?portfolioName=ETH+Vault",
-      imageSrc: "/indexFunds/eth vault.webp",
+      imageSrc: "eth",
       imageAlt: "ETH Vault",
       apr: vaultsMetadata?.["ETH Vault"]?.portfolioAPR * 100,
       tvl: vaultsMetadata?.["ETH Vault"]?.portfolioTVL,
@@ -34,7 +34,7 @@ export default function Vaults() {
       id: 2,
       portfolioName: "Stablecoin Vault",
       href: "/indexes/indexOverviews/?portfolioName=Stablecoin+Vault",
-      imageSrc: "/tokenPictures/usdc.webp",
+      imageSrc: "usdc",
       imageAlt: "Stablecoin Vault",
       apr: vaultsMetadata?.["Stablecoin Vault"]?.portfolioAPR * 100,
       tvl: vaultsMetadata?.["Stablecoin Vault"]?.portfolioTVL,
@@ -44,7 +44,7 @@ export default function Vaults() {
       id: 3,
       portfolioName: "BTC Vault",
       href: "/indexes/indexOverviews/?portfolioName=BTC+Vault",
-      imageSrc: "/tokenPictures/btc.webp",
+      imageSrc: "btc",
       imageAlt: "BTC Vault",
       apr: vaultsMetadata?.["BTC Vault"]?.portfolioAPR * 100,
       tvl: vaultsMetadata?.["BTC Vault"]?.portfolioTVL,
@@ -54,10 +54,7 @@ export default function Vaults() {
       id: 4,
       portfolioName: "Build Your Own Vault with",
       href: "/vote",
-      imageSrc:
-        diyToken === ""
-          ? "/indexes/indexOverviews/?portfolioName=Stablecoin+Vault"
-          : `/tokenPictures/${diyToken}.webp`,
+      imageSrc: `/tokenPictures/${diyToken}.webp`,
       imageAlt: "Build Your Own Vault",
       apr,
       tvl: (tvl / 1000000).toFixed(2).concat("M"),
