@@ -16,7 +16,7 @@ const HistoricalGenericDataChart = ({
 
   useEffect(() => {
     asyncFetch();
-  }, []);
+  }, [apiUrl]);
 
   const asyncFetch = () => {
     fetch(apiUrl)
