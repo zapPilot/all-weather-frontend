@@ -208,4 +208,36 @@ export class Vela extends BaseProtocol {
     const usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
     return ["usdc", usdcAddress, 6];
   }
+  async lockUpPeriod(address) {
+    try {
+      const stakeFarmContractInstance = new ethers.Contract(
+        this.stakeFarmContract.address,
+        TokenFarm,
+        PROVIDER,
+      );
+      const userStakedInfo = await stakeFarmContractInstance.functions.userStakedInfo(
+        address,
+        "0xC5b2D9FDa8A82E8DcECD5e9e6e99b78a9188eB05",
+      );
+      const cooldownDuration = await stakeFarmContractInstance.cooldownDuration();
+      const amount = userStakedInfo.amount;
+      const startTimestamp = userStakedInfo.startTimestamp;
+      // if user has staked, we can calculate the lock-up period
+      if (!amount.isZero()) {
+        const startTimestampValue = startTimestamp.toNumber();
+        const cooldownDurationValue = cooldownDuration.toNumber();
+        let lockUpPeriod = 0;
+        // if the cooldown period has passed, lock-up period is 0
+        startTimestamp > cooldownDuration ?
+          lockUpPeriod = 0 :
+          lockUpPeriod = cooldownDurationValue - startTimestampValue;
+          return lockUpPeriod
+      } else {
+        return 0;
+      }
+    } catch (error) {
+      console.error("Error fetching lock-up period:", error);
+      return 0;
+    }
+  }
 }

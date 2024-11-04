@@ -596,4 +596,7 @@ export default class BaseProtocol extends BaseUniswap {
       .mul(10000 - slippageBN)
       .div(10000);
   }
+  async lockUpPeriod(address) {
+    throw new Error("Method 'lockUpPeriod()' must be implemented.");
+  }
 }

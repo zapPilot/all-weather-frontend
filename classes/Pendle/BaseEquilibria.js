@@ -406,4 +406,7 @@ export class BaseEquilibria extends BaseProtocol {
     });
     return [redeemTxn];
   }
+  async lockUpPeriod() {
+    return 0;
+  }
 }

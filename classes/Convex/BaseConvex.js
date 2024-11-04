@@ -247,4 +247,7 @@ export class BaseConvex extends BaseProtocol {
     }
     throw new Error("Not implemented");
   }
+  async lockUpPeriod() {
+    return 0;
+  }
 }
