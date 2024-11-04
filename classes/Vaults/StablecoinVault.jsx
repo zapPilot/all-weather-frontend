@@ -6,7 +6,7 @@ import { Vela } from "../Vela/Vela";
 import { BaseConvex } from "../Convex/BaseConvex";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 export class StablecoinVault extends BasePortfolio {
-  constructor() {
+  constructor(address) {
     super(
       {
         gold: {
@@ -59,6 +59,7 @@ export class StablecoinVault extends BasePortfolio {
                 {},
               ),
               weight: 0.25,
+              address,
             },
             {
               interface: new BaseEquilibria(
@@ -175,11 +176,11 @@ export class StablecoinVault extends BasePortfolio {
   denomination() {
     return "$";
   }
-  async lockUpPeriod() {
+  async lockUpPeriod(address) {
     // Get lockUpPeriods from all protocols
     const lockUpPeriodsPromises = this.strategy.gold.arbitrum.map((protocol) => {
       if (protocol.interface.lockUpPeriod) {
-        return protocol.interface.lockUpPeriod();
+        return protocol.interface.lockUpPeriod(address);
       } else {
         return Promise.resolve(0);
       }
