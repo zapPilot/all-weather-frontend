@@ -16,7 +16,7 @@ import { useRouter } from "next/router";
 import { useActiveAccount } from "thirdweb/react";
 import HistoricalGenericDataChart from "./HistoricalGenericDataChart";
 
-const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
+const Performance = ({ portfolioApr }) => {
   const windowWidth = useWindowWidth();
   const { data } = useSelector((state) => state.api);
   const dispatch = useDispatch();

@@ -88,9 +88,6 @@ const _getChildrenTab = (
     return (
       <Performance
         portfolioApr={portfolioApr}
-        sharpeRatio={sharpeRatio}
-        ROI={ROI}
-        maxDrawdown={maxDrawdown}
       />
     );
   } else if (wording === "Bundle") {
