@@ -972,12 +972,19 @@ export default function IndexOverviews() {
                                           </div>
                                         </td>
                                         <td className="py-5 pl-8 pr-0 text-right align-top tabular-nums text-white">
-                                          {(
+                                          {isNaN(
                                             portfolioApr?.[portfolioName]?.[
                                               protocol.interface.uniqueId()
-                                            ]?.apr * 100
-                                          ).toFixed(2)}
-                                          %
+                                            ]?.apr * 100,
+                                          ) ? (
+                                            <Spin />
+                                          ) : (
+                                            `${(
+                                              portfolioApr?.[portfolioName]?.[
+                                                protocol.interface.uniqueId()
+                                              ]?.apr * 100 || 0
+                                            ).toFixed(2)}%`
+                                          )}
                                         </td>
                                       </tr>
                                     );
@@ -992,11 +999,14 @@ export default function IndexOverviews() {
                                     Avg. APR
                                   </th>
                                   <td className="pt-6 font-semibold text-right text-green-500">
-                                    {(
-                                      portfolioApr[portfolioName]
-                                        ?.portfolioAPR * 100
-                                    ).toFixed(2)}
-                                    %
+                                    {loading ? (
+                                      <Spin />
+                                    ) : (
+                                      `${(
+                                        (portfolioApr[portfolioName]
+                                          ?.portfolioAPR || 0) * 100
+                                      ).toFixed(2)}%`
+                                    )}
                                   </td>
                                 </tr>
                               </tfoot>

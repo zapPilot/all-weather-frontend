@@ -64,7 +64,7 @@ export default function NavBar({ mode }) {
   const navigateToUrl = () => {
     const trimmedAddress = address.trim();
     if (trimmedAddress && ethers.utils.isAddress(trimmedAddress)) {
-      window.location.href = `/?address=${trimmedAddress}`;
+      window.location.href = `/profile?address=${trimmedAddress}`;
       setAddress("");
     } else {
       openNotificationWithIcon(

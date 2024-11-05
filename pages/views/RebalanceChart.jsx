@@ -325,7 +325,11 @@ export default function RebalanceChart(props) {
         <Spin size="large" />
       </center>
     ); // Loading
-  } else if (rebalanceSuggestions && rebalanceSuggestions.length === 0) {
+  } else if (
+    rebalanceSuggestions &&
+    rebalanceSuggestions.length === 0 &&
+    account?.address !== undefined
+  ) {
     // wallet is connected but no data
     return <AntdInstructions account={account} />;
   }
