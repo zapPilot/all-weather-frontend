@@ -85,11 +85,7 @@ const _getChildrenTab = (
   },
 ) => {
   if (wording === "Performance") {
-    return (
-      <Performance
-        portfolioApr={portfolioApr}
-      />
-    );
+    return <Performance portfolioApr={portfolioApr} />;
   } else if (wording === "Bundle") {
     return <Bundle />;
   }
