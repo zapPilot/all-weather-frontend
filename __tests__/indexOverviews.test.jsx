@@ -67,9 +67,12 @@ const mockPortfolioHelper = {
   swapFeeRate: vi.fn().mockReturnValue(0.00299),
   denomination: vi.fn().mockReturnValue("$"),
   getTokenPricesMappingTable: vi.fn().mockResolvedValue({}),
-  usdBalanceOf: vi
-    .fn()
-    .mockResolvedValue([0, { pendingRewards: { pendingRewardsDict: {} } }]),
+  usdBalanceOf: vi.fn().mockResolvedValue(
+    Object.assign([0, { pendingRewards: { pendingRewardsDict: {} } }], {
+      0: 0,
+      1: { pendingRewards: { pendingRewardsDict: {} } }
+    })
+  ),
   calProtocolAssetDustInWalletDictionary: vi.fn().mockResolvedValue({}),
   strategy: {
     Lending: {
