@@ -70,8 +70,8 @@ const mockPortfolioHelper = {
   usdBalanceOf: vi.fn().mockResolvedValue(
     Object.assign([0, { pendingRewards: { pendingRewardsDict: {} } }], {
       0: 0,
-      1: { pendingRewards: { pendingRewardsDict: {} } }
-    })
+      1: { pendingRewards: { pendingRewardsDict: {} } },
+    }),
   ),
   calProtocolAssetDustInWalletDictionary: vi.fn().mockResolvedValue({}),
   strategy: {
