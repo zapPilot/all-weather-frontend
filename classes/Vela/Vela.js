@@ -215,25 +215,29 @@ export class Vela extends BaseProtocol {
         TokenFarm,
         PROVIDER,
       );
-      const userStakedInfo =
-        await stakeFarmContractInstance.functions.userStakedInfo(
-          address,
-          "0xC5b2D9FDa8A82E8DcECD5e9e6e99b78a9188eB05",
-        );
-      const cooldownDuration =
-        await stakeFarmContractInstance.cooldownDuration();
+      const userStakedInfo = await stakeFarmContractInstance.functions.userStakedInfo(
+        address,
+        this.assetContract.address,
+      );
+      const cooldownDuration = await stakeFarmContractInstance.cooldownDuration();
       const amount = userStakedInfo.amount;
       const startTimestamp = userStakedInfo.startTimestamp;
       // if user has staked, we can calculate the lock-up period
       if (!amount.isZero()) {
         const startTimestampValue = startTimestamp.toNumber();
         const cooldownDurationValue = cooldownDuration.toNumber();
+        const currentTimestamp = Math.floor(Date.now() / 1000);
         let lockUpPeriod = 0;
-        // if the cooldown period has passed, lock-up period is 0
-        startTimestamp > cooldownDuration
-          ? (lockUpPeriod = 0)
-          : (lockUpPeriod = cooldownDurationValue - startTimestampValue);
-        return lockUpPeriod;
+        const elapsedTime = currentTimestamp - startTimestampValue;
+
+        // if elapsedTime
+        if (elapsedTime > cooldownDurationValue) {
+          lockUpPeriod = 0;
+        } else {
+          lockUpPeriod = cooldownDurationValue - elapsedTime;
+        }
+
+        return lockUpPeriod; // 返回以秒为单位的时间长度
       } else {
         return 0;
       }
