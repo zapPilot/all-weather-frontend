@@ -215,11 +215,13 @@ export class Vela extends BaseProtocol {
         TokenFarm,
         PROVIDER,
       );
-      const userStakedInfo = await stakeFarmContractInstance.functions.userStakedInfo(
-        address,
-        "0xC5b2D9FDa8A82E8DcECD5e9e6e99b78a9188eB05",
-      );
-      const cooldownDuration = await stakeFarmContractInstance.cooldownDuration();
+      const userStakedInfo =
+        await stakeFarmContractInstance.functions.userStakedInfo(
+          address,
+          "0xC5b2D9FDa8A82E8DcECD5e9e6e99b78a9188eB05",
+        );
+      const cooldownDuration =
+        await stakeFarmContractInstance.cooldownDuration();
       const amount = userStakedInfo.amount;
       const startTimestamp = userStakedInfo.startTimestamp;
       // if user has staked, we can calculate the lock-up period
@@ -228,10 +230,10 @@ export class Vela extends BaseProtocol {
         const cooldownDurationValue = cooldownDuration.toNumber();
         let lockUpPeriod = 0;
         // if the cooldown period has passed, lock-up period is 0
-        startTimestamp > cooldownDuration ?
-          lockUpPeriod = 0 :
-          lockUpPeriod = cooldownDurationValue - startTimestampValue;
-          return lockUpPeriod
+        startTimestamp > cooldownDuration
+          ? (lockUpPeriod = 0)
+          : (lockUpPeriod = cooldownDurationValue - startTimestampValue);
+        return lockUpPeriod;
       } else {
         return 0;
       }

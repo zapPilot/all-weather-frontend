@@ -39,10 +39,10 @@ vi.mock("react-redux", async () => {
       strategyMetadata: {
         "Stablecoin Vault": {
           portfolioAPR: 0.05,
-        }
+        },
       },
       loading: false,
-      error: null
+      error: null,
     })),
   };
 });
@@ -67,35 +67,37 @@ const mockPortfolioHelper = {
   swapFeeRate: vi.fn().mockReturnValue(0.00299),
   denomination: vi.fn().mockReturnValue("$"),
   getTokenPricesMappingTable: vi.fn().mockResolvedValue({}),
-  usdBalanceOf: vi.fn().mockResolvedValue([0, { pendingRewards: { pendingRewardsDict: {} } }]),
+  usdBalanceOf: vi
+    .fn()
+    .mockResolvedValue([0, { pendingRewards: { pendingRewardsDict: {} } }]),
   calProtocolAssetDustInWalletDictionary: vi.fn().mockResolvedValue({}),
   strategy: {
-    "Lending": {
-      "Ethereum": [
+    Lending: {
+      Ethereum: [
         {
           weight: 0.5,
           interface: {
             protocolName: "Aave",
             symbolList: ["USDC", "USDT"],
-            uniqueId: () => "aave-eth"
-          }
+            uniqueId: () => "aave-eth",
+          },
         },
         {
           weight: 0.5,
           interface: {
             protocolName: "Compound",
             symbolList: ["USDC"],
-            uniqueId: () => "compound-eth"
-          }
-        }
-      ]
-    }
-  }
+            uniqueId: () => "compound-eth",
+          },
+        },
+      ],
+    },
+  },
 };
 
 // mock getPortfolioHelper
 vi.mock("../utils/thirdwebSmartWallet.ts", () => ({
-  getPortfolioHelper: () => mockPortfolioHelper
+  getPortfolioHelper: () => mockPortfolioHelper,
 }));
 
 describe("IndexOverviews Component", () => {
@@ -125,26 +127,30 @@ describe("IndexOverviews Component", () => {
     render(<IndexOverviews />, {
       preloadedState: {
         account: {
-          address: "0x123456789abcdef"
+          address: "0x123456789abcdef",
         },
         strategyMetadata: {
           loading: false,
           error: null,
           strategyMetadata: {
             "Stablecoin Vault": {
-              portfolioAPR: 0.05
-            }
-          }
-        }
-      }
+              portfolioAPR: 0.05,
+            },
+          },
+        },
+      },
     });
-    const lockUpPeriods = await screen.findAllByRole("lockUpPeriod", {}, { timeout: 1000 });
+    const lockUpPeriods = await screen.findAllByRole(
+      "lockUpPeriod",
+      {},
+      { timeout: 1000 },
+    );
     lockUpPeriods.forEach((element) => {
-      expect(element.textContent).toBe('Unlocked');
+      expect(element.textContent).toBe("Unlocked");
     });
   });
 
-  it('should show remaining time when lockUpPeriod is greater than 0', async () => {
+  it("should show remaining time when lockUpPeriod is greater than 0", async () => {
     // reset mockPortfolioHelper lockUpPeriod
     mockPortfolioHelper.lockUpPeriod.mockReset();
     mockPortfolioHelper.lockUpPeriod.mockImplementation(async () => {
@@ -155,30 +161,30 @@ describe("IndexOverviews Component", () => {
     const { unmount } = render(<IndexOverviews />, {
       preloadedState: {
         account: {
-          address: "0x123456789abcdef"
+          address: "0x123456789abcdef",
         },
         strategyMetadata: {
           loading: false,
           error: null,
           strategyMetadata: {
             "Stablecoin Vault": {
-              portfolioAPR: 0.05
-            }
-          }
-        }
-      }
+              portfolioAPR: 0.05,
+            },
+          },
+        },
+      },
     });
 
     // wait for state update
     await waitFor(
       () => {
         const lockUpPeriods = screen.getAllByRole("lockUpPeriod");
-        expect(lockUpPeriods[0].textContent.trim()).toBe('2 d');
+        expect(lockUpPeriods[0].textContent.trim()).toBe("2 d");
       },
       {
         timeout: 2000,
-        interval: 100
-      }
+        interval: 100,
+      },
     );
 
     // unmount component

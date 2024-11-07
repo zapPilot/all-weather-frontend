@@ -468,8 +468,10 @@ export default function IndexOverviews() {
         account.address,
         portfolioApr[portfolioName],
       );
-      const portfolioLockUpPeriod = await portfolioHelper.lockUpPeriod(account.address);
-      setLockUpPeriod(portfolioLockUpPeriod)
+      const portfolioLockUpPeriod = await portfolioHelper.lockUpPeriod(
+        account.address,
+      );
+      setLockUpPeriod(portfolioLockUpPeriod);
       setUsdBalance(usdBalance);
       setUsdBalanceLoading(false);
       setrebalancableUsdBalanceDict(usdBalanceDict);
@@ -485,8 +487,7 @@ export default function IndexOverviews() {
     };
     fetchUsdBalance();
   }, [portfolioName, account, portfolioApr]);
-  useEffect(() => {
-  }, [lockUpPeriod]);
+  useEffect(() => {}, [lockUpPeriod]);
   useEffect(() => {
     const balance = walletBalanceData?.displayValue;
     setTokenBalance(balance);
@@ -990,25 +991,25 @@ export default function IndexOverviews() {
                         ),
                       ),
                   )}
-                  <div>
-                    <span className="text-gray-500">Lock-up Period</span>{" "}
-                      {loading === true ? (
-                        <Spin />
-                      ) : (
-                        typeof lockUpPeriod === 'number' ? (
-                          lockUpPeriod === 0 ? (
-                            <span className="text-green-500" role="lockUpPeriod">Unlocked</span>
-                          ) : (
-                            <span className="text-red-500" role="lockUpPeriod">
-                              {Math.floor(lockUpPeriod / 86400)} d {" "}
-                              {Math.ceil((lockUpPeriod % 86400) / 3600)
-                                ? Math.ceil((lockUpPeriod % 86400) / 3600) + "h"
-                                : null}
-                            </span>
-                          )
-                        ) : null    
-                      )}
-                  </div>
+                <div>
+                  <span className="text-gray-500">Lock-up Period</span>{" "}
+                  {loading === true ? (
+                    <Spin />
+                  ) : typeof lockUpPeriod === "number" ? (
+                    lockUpPeriod === 0 ? (
+                      <span className="text-green-500" role="lockUpPeriod">
+                        Unlocked
+                      </span>
+                    ) : (
+                      <span className="text-red-500" role="lockUpPeriod">
+                        {Math.floor(lockUpPeriod / 86400)} d{" "}
+                        {Math.ceil((lockUpPeriod % 86400) / 3600)
+                          ? Math.ceil((lockUpPeriod % 86400) / 3600) + "h"
+                          : null}
+                      </span>
+                    )
+                  ) : null}
+                </div>
               </div>
               <HistoricalDataChart portfolioName={portfolioName} />
             </div>
