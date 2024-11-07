@@ -2,7 +2,7 @@ import { BasePortfolio } from "../BasePortfolio";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import { BaseConvex } from "../Convex/BaseConvex";
 export class EthVault extends BasePortfolio {
-  constructor() {
+  constructor(address) {
     super(
       {
         long_term_bond: {
@@ -97,9 +97,6 @@ export class EthVault extends BasePortfolio {
   }
   denomination() {
     return "Ξ";
-  }
-  lockUpPeriod() {
-    return 0;
   }
   async lockUpPeriod(address) {
     // Get lockUpPeriods from all protocols

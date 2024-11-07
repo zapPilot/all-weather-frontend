@@ -35,7 +35,21 @@ export class BtcVault extends BasePortfolio {
   denomination() {
     return "₿";
   }
-  lockUpPeriod() {
-    return 0;
+  async lockUpPeriod(address) {
+    // Get lockUpPeriods from all protocols
+    const lockUpPeriodsPromises = this.strategy.gold.arbitrum.map(
+      (protocol) => {
+        if (protocol.interface.lockUpPeriod) {
+          return protocol.interface.lockUpPeriod(address);
+        } else {
+          return Promise.resolve(0);
+        }
+      },
+    );
+    // Wait for all lockUpPeriods to resolve
+    const lockUpPeriodsArray = await Promise.all(lockUpPeriodsPromises);
+    // Get the maximum lockUpPeriod
+    const lockUpPeriods = Math.max(...lockUpPeriodsArray);
+    return lockUpPeriods;
   }
 }

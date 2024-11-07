@@ -45,7 +45,7 @@ export class BasePortfolio {
   denomination() {
     throw new Error("Method 'denomination()' must be implemented.");
   }
-  async lockUpPeriod() {
+  async lockUpPeriod(address) {
     let maxLockUpPeriod = 0;
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const protocols of Object.values(protocolsInThisCategory)) {
@@ -56,7 +56,7 @@ export class BasePortfolio {
           if (typeof protocol.lockUpPeriod !== "function") {
             throw new Error("Method 'lockUpPeriod()' must be implemented.");
           }
-          const lockUpPeriod = await protocol.lockUpPeriod();
+          const lockUpPeriod = await protocol.lockUpPeriod(address);
           maxLockUpPeriod = Math.max(maxLockUpPeriod, lockUpPeriod);
         }
       }
