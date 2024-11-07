@@ -215,11 +215,13 @@ export class Vela extends BaseProtocol {
         TokenFarm,
         PROVIDER,
       );
-      const userStakedInfo = await stakeFarmContractInstance.functions.userStakedInfo(
-        address,
-        this.assetContract.address,
-      );
-      const cooldownDuration = await stakeFarmContractInstance.cooldownDuration();
+      const userStakedInfo =
+        await stakeFarmContractInstance.functions.userStakedInfo(
+          address,
+          this.assetContract.address,
+        );
+      const cooldownDuration =
+        await stakeFarmContractInstance.cooldownDuration();
       const amount = userStakedInfo.amount;
       const startTimestamp = userStakedInfo.startTimestamp;
       // if user has staked, we can calculate the lock-up period
