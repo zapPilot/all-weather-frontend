@@ -50,11 +50,11 @@ export class YearnV3Vault extends BaseProtocol {
   rewards() {
     return [];
   }
-  async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
+  async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     return {};
   }
   async customDeposit(
-    recipient,
+    owner,
     inputToken,
     bestTokenAddressToZapIn,
     amountToZapIn,
@@ -74,12 +74,12 @@ export class YearnV3Vault extends BaseProtocol {
     const depositTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "deposit",
-      params: [amountToZapIn, recipient],
+      params: [amountToZapIn, owner],
     });
     return [approveForZapInTxn, depositTxn];
   }
   async customWithdrawAndClaim(
-    recipient,
+    owner,
     percentage,
     slippage,
     tokenPricesMappingTable,
@@ -93,14 +93,12 @@ export class YearnV3Vault extends BaseProtocol {
     // Assuming 'percentage' is a float between 0 and 1
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
 
-    const balance = (
-      await assetContractInstance.functions.balanceOf(recipient)
-    )[0];
+    const balance = (await assetContractInstance.functions.balanceOf(owner))[0];
     const amount = balance.mul(percentageBN).div(10000);
     const withdrawTxn = prepareContractCall({
       contract: this.assetContract,
       method: "withdraw",
-      params: [amount, recipient, recipient],
+      params: [amount, owner, owner],
     });
     const [
       symbolOfBestTokenToZapOut,
@@ -115,20 +113,19 @@ export class YearnV3Vault extends BaseProtocol {
       amount,
     ];
   }
-  async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
+  async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     return [[], {}];
   }
   customRedeemVestingRewards(pendingRewards) {
     return [];
   }
-  async usdBalanceOf(recipient, tokenPricesMappingTable) {
+  async usdBalanceOf(owner, tokenPricesMappingTable) {
     const assetContractInstance = new ethers.Contract(
       this.assetContract.address,
       YearnV3,
       PROVIDER,
     );
-    const userBalance =
-      await assetContractInstance.functions.balanceOf(recipient);
+    const userBalance = await assetContractInstance.functions.balanceOf(owner);
     const pricePerShare = await assetContractInstance.functions.pricePerShare();
     return (
       (((userBalance * tokenPricesMappingTable["weth"]) / 1e18) *
@@ -136,7 +133,6 @@ export class YearnV3Vault extends BaseProtocol {
       1e18
     );
   }
-
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
     const weth = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
