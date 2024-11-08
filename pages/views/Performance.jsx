@@ -13,14 +13,21 @@ import {
   fetchDataFailure,
 } from "../../lib/features/apiSlice";
 import { useRouter } from "next/router";
+import { useActiveAccount } from "thirdweb/react";
+import HistoricalGenericDataChart from "./HistoricalGenericDataChart";
 
-const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
+const Performance = ({ portfolioApr }) => {
   const windowWidth = useWindowWidth();
   const { data } = useSelector((state) => state.api);
   const dispatch = useDispatch();
   const router = useRouter();
   const { query } = router;
-  const searchWalletAddress = query.address;
+  const searchWalletAddress = query.address
+    ?.toLowerCase()
+    ?.trim()
+    ?.replace("/", "");
+  const account = useActiveAccount();
+  const walletAddress = account?.address;
 
   const calculateMonthlyEarnings = (deposit, apr) => {
     if (isNaN(deposit) || isNaN(apr)) return 0;
@@ -46,11 +53,13 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
         `${process.env.NEXT_PUBLIC_API_URL}/bundle_portfolio/${
           searchWalletAddress === undefined
             ? walletAddress
-            : searchWalletAddress.toLowerCase().trim().replace("/", "")
+            : searchWalletAddress
         }?refresh=${refresh}`,
       )
       .then((response) => response.data)
-      .then((data) => dispatch(fetchDataSuccess(data)))
+      .then((data) => {
+        dispatch(fetchDataSuccess(data));
+      })
       .catch((error) => dispatch(fetchDataFailure(error.toString())));
   };
 
@@ -160,11 +169,31 @@ const Performance = ({ portfolioApr, sharpeRatio, ROI, maxDrawdown }) => {
         rebalanceSuggestions={data?.suggestions}
         netWorth={data?.net_worth}
         windowWidth={windowWidth}
-        showCategory={true}
         portfolio_apr={data?.portfolio_apr}
         color="white"
         wording="Your Portfolio Chart"
       />
+      <center>
+        <a
+          className="text-xl font-semibold text-white"
+          href="#historical-balances"
+        >
+          Historical Balances
+        </a>
+      </center>
+
+      {account?.address && (
+        <HistoricalGenericDataChart
+          apiUrl={`${process.env.NEXT_PUBLIC_SDK_API_URL}/balances/${
+            searchWalletAddress === undefined
+              ? walletAddress
+              : searchWalletAddress
+          }/history`}
+          dataTransformCallback={(response) => response.json()}
+          yLabel={"usd_value"}
+        />
+      )}
+
       {data ? (
         <div className="mt-4 ps-4">
           <h4 className="text-xl font-semibold text-white">

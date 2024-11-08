@@ -63,7 +63,7 @@ export class BaseApolloX extends BaseProtocol {
       },
     ];
   }
-  async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
+  async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     updateProgress(
       `fetching pending rewards from ${this.stakeFarmContract.address}`,
     );
@@ -73,7 +73,7 @@ export class BaseApolloX extends BaseProtocol {
       PROVIDER,
     );
     const pendingReward = (
-      await stakeFarmContractInstance.functions.pendingReward(recipient)
+      await stakeFarmContractInstance.functions.pendingReward(owner)
     )[0];
     let rewardBalance = {};
     for (const token of this.rewards()) {
@@ -89,7 +89,7 @@ export class BaseApolloX extends BaseProtocol {
     return rewardBalance;
   }
   async customDeposit(
-    recipient,
+    owner,
     inputToken,
     bestTokenAddressToZapIn,
     amountToZapIn,
@@ -120,21 +120,11 @@ export class BaseApolloX extends BaseProtocol {
       method: "mintAlp", // <- this gets inferred from the contract
       params: [bestTokenAddressToZapIn, amountToZapIn, minAlpAmount, false],
     });
-    const approveAlpTxn = approve(
-      this.assetContract.address,
-      this.stakeFarmContract.address,
-      minAlpAmount,
-      updateProgress,
-    );
-    const depositTxn = prepareContractCall({
-      contract: this.stakeFarmContract,
-      method: "deposit", // <- this gets inferred from the contract
-      params: [minAlpAmount],
-    });
-    return [approveForZapInTxn, mintTxn, approveAlpTxn, depositTxn];
+    const stakeTxns = await this._stake(minAlpAmount, updateProgress);
+    return [approveForZapInTxn, mintTxn, ...stakeTxns];
   }
   async customWithdrawAndClaim(
-    recipient,
+    owner,
     percentage,
     slippage,
     tokenPricesMappingTable,
@@ -148,8 +138,7 @@ export class BaseApolloX extends BaseProtocol {
     // Assuming 'percentage' is a float between 0 and 1
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
 
-    const userInfo =
-      await stakeFarmContractInstance.functions.userInfo(recipient);
+    const userInfo = await stakeFarmContractInstance.functions.userInfo(owner);
     const amount = userInfo.amount.mul(percentageBN).div(10000);
     const withdrawTxn = prepareContractCall({
       contract: this.stakeFarmContract,
@@ -179,7 +168,7 @@ export class BaseApolloX extends BaseProtocol {
     const burnTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "burnAlp", // <- this gets inferred from the contract
-      params: [bestTokenAddressToZapOut, amount, minOutAmount, recipient],
+      params: [bestTokenAddressToZapOut, amount, minOutAmount, owner],
     });
     return [
       [withdrawTxn, approveAlpTxn, burnTxn],
@@ -189,9 +178,9 @@ export class BaseApolloX extends BaseProtocol {
       minOutAmount,
     ];
   }
-  async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
+  async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     const pendingRewards = await this.pendingRewards(
-      recipient,
+      owner,
       tokenPricesMappingTable,
       updateProgress,
     );
@@ -206,19 +195,20 @@ export class BaseApolloX extends BaseProtocol {
     return [];
   }
 
-  async usdBalanceOf(recipient, tokenPricesMappingTable) {
+  async usdBalanceOf(owner, tokenPricesMappingTable) {
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       SmartChefInitializable,
       PROVIDER,
     );
-    const userInfo = (
-      await stakeFarmContractInstance.functions.userInfo(recipient)
-    ).amount;
+    const userInfo = (await stakeFarmContractInstance.functions.userInfo(owner))
+      .amount;
     const latestAlpPrice = await this._fetchAlpPrice(() => {});
     return (userInfo / Math.pow(10, this.assetDecimals)) * latestAlpPrice;
   }
-
+  async assetUsdPrice() {
+    return await this._fetchAlpPrice(() => {});
+  }
   async _fetchAlpPrice(updateProgress) {
     updateProgress("fetching ALP price");
     const response = await axios({
@@ -249,5 +239,19 @@ export class BaseApolloX extends BaseProtocol {
   }
   async lockUpPeriod() {
     return 0;
+  }
+  _stake(amount, updateProgress) {
+    const approveAlpTxn = approve(
+      this.assetContract.address,
+      this.stakeFarmContract.address,
+      amount,
+      updateProgress,
+    );
+    const depositTxn = prepareContractCall({
+      contract: this.stakeFarmContract,
+      method: "deposit", // <- this gets inferred from the contract
+      params: [amount],
+    });
+    return [approveAlpTxn, depositTxn];
   }
 }

@@ -122,7 +122,7 @@ export class BaseEquilibria extends BaseProtocol {
       },
     ];
   }
-  async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
+  async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     let rewardBalance = {};
     updateProgress("checking pending rewards");
     const rewardPool = (
@@ -141,7 +141,7 @@ export class BaseEquilibria extends BaseProtocol {
     let pendleAmount;
     for (const reward of rewards) {
       const earnedReward = (
-        await rewardPoolContractInstance.functions.earned(recipient, reward)
+        await rewardPoolContractInstance.functions.earned(owner, reward)
       )[0];
       const metadata = this._getRewardMetadata(reward);
       rewardBalance[reward] = {
@@ -202,7 +202,7 @@ export class BaseEquilibria extends BaseProtocol {
     return rewardBalance;
   }
   async customDeposit(
-    recipient,
+    owner,
     inputToken,
     bestTokenAddressToZapIn,
     amountToZapIn,
@@ -222,7 +222,7 @@ export class BaseEquilibria extends BaseProtocol {
       `https://api-v2.pendle.finance/core/v1/sdk/42161/markets/${this.assetContract.address}/add-liquidity`,
       {
         params: {
-          receiver: recipient,
+          receiver: owner,
           // slippage from the website is 0.5 (means 0.5%), so we need to divide it by 100 and pass it to Pendle (0.005 = 0.5%)
           slippage: slippage / 100,
           enableAggregator: true,
@@ -244,90 +244,13 @@ export class BaseEquilibria extends BaseProtocol {
       method: "addLiquiditySingleToken",
       params: resp.data.contractCallParams,
     });
-    const approveTxn = approve(
-      this.assetContract.address,
-      this.stakeFarmContract.address,
-      minLPOutAmount,
-      updateProgress,
-    );
-
-    updateProgress("prepare staking farm's contract call");
-    const stakeTxn = prepareContractCall({
-      contract: this.stakeFarmContract,
-      method: "deposit",
-      params: [this.pidOfEquilibria, minLPOutAmount, true],
-    });
-    return [approveForZapInTxn, mintTxn, approveTxn, stakeTxn];
+    const stakeTxns = await this._stake(minLPOutAmount, updateProgress);
+    return [approveForZapInTxn, mintTxn, ...stakeTxns];
   }
-  async customWithdrawAndClaim(
-    recipient,
-    percentage,
-    slippage,
-    tokenPricesMappingTable,
-    updateProgress,
-  ) {
-    // Assuming 'percentage' is a float between 0 and 1
-    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
-    const stakedAmount = await this.stakeBalanceOf(recipient);
-    const withdrawAmount = stakedAmount.mul(percentageBN).div(10000);
-    const approveEqbLPTxn = approve(
-      (
-        await this.stakeFarmContractInstance.functions.poolInfo(
-          this.pidOfEquilibria,
-        )
-      ).token,
-      this.eqbStakeFarmWithdrawContract.address,
-      withdrawAmount,
-      updateProgress,
-    );
 
-    const withdrawTxn = prepareContractCall({
-      contract: this.eqbStakeFarmWithdrawContract,
-      method: "withdraw",
-      params: [this.pidOfEquilibria, withdrawAmount],
-    });
-    const approvePendleTxn = approve(
-      this.assetContract.address,
-      this.protocolContract.address,
-      withdrawAmount,
-      updateProgress,
-    );
-    const [
-      symbolOfBestTokenToZapOut,
-      bestTokenAddressToZapOut,
-      decimalOfBestTokenToZapOut,
-    ] = this._getTheBestTokenAddressToZapOut();
-    updateProgress("fetching Pendle's routing data");
-    const zapOutResp = await axios.get(
-      `https://api-v2.pendle.finance/core/v1/sdk/42161/markets/${this.assetContract.address}/remove-liquidity`,
-      {
-        params: {
-          receiver: recipient,
-          // slippage from the website is 0.5 (means 0.5%), so we need to divide it by 100 and pass it to Pendle (0.005 = 0.5%)
-          slippage: slippage / 100,
-          enableAggregator: true,
-          tokenOut: bestTokenAddressToZapOut,
-          amountIn: withdrawAmount,
-        },
-      },
-    );
-    updateProgress("prepare equilibria's contract call");
-    const burnTxn = prepareContractCall({
-      contract: this.protocolContract,
-      method: "removeLiquiditySingleToken",
-      params: zapOutResp.data.contractCallParams,
-    });
-    return [
-      [approveEqbLPTxn, withdrawTxn, approvePendleTxn, burnTxn],
-      symbolOfBestTokenToZapOut,
-      bestTokenAddressToZapOut,
-      decimalOfBestTokenToZapOut,
-      zapOutResp.data.contractCallParams[3].minTokenOut,
-    ];
-  }
-  async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
+  async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     const pendingRewards = await this.pendingRewards(
-      recipient,
+      owner,
       tokenPricesMappingTable,
       updateProgress,
     );
@@ -339,14 +262,19 @@ export class BaseEquilibria extends BaseProtocol {
     const redeemTxn = this.customRedeemVestingRewards(pendingRewards);
     return [[claimTxn, redeemTxn], pendingRewards];
   }
-  async usdBalanceOf(recipient, tokenPricesMappingTable) {
-    const userBalance = await this.stakeBalanceOf(recipient);
+
+  async usdBalanceOf(owner, tokenPricesMappingTable) {
+    const userBalance = await this.stakeBalanceOf(owner);
     const latestPendleAssetPrice = await this._fetchPendleAssetPrice(() => {});
     return (
       (userBalance / Math.pow(10, this.assetDecimals)) * latestPendleAssetPrice
     );
   }
-  async stakeBalanceOf(recipient) {
+  async assetUsdPrice() {
+    return await this._fetchPendleAssetPrice(() => {});
+  }
+
+  async stakeBalanceOf(owner) {
     const rewardPool = (
       await this.stakeFarmContractInstance.functions.poolInfo(
         this.pidOfEquilibria,
@@ -357,7 +285,7 @@ export class BaseEquilibria extends BaseProtocol {
       ERC20_ABI,
       PROVIDER,
     );
-    return (await eqbPendleLPInstance.functions.balanceOf(recipient))[0];
+    return (await eqbPendleLPInstance.functions.balanceOf(owner))[0];
   }
 
   async _fetchPendleAssetPrice(updateProgress) {
@@ -408,5 +336,89 @@ export class BaseEquilibria extends BaseProtocol {
   }
   async lockUpPeriod() {
     return 0;
+  async _stake(amount, updateProgress) {
+    const approveTxn = approve(
+      this.assetContract.address,
+      this.stakeFarmContract.address,
+      amount,
+      updateProgress,
+    );
+
+    updateProgress("prepare staking farm's contract call");
+    const stakeTxn = prepareContractCall({
+      contract: this.stakeFarmContract,
+      method: "deposit",
+      params: [this.pidOfEquilibria, amount, true],
+    });
+    return [approveTxn, stakeTxn];
+  }
+  async _unstake(owner, percentage, updateProgress) {
+    // Assuming 'percentage' is a float between 0 and 1
+    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
+    const stakedAmount = await this.stakeBalanceOf(owner);
+    const withdrawAmount = stakedAmount.mul(percentageBN).div(10000);
+    const approveEqbLPTxn = approve(
+      (
+        await this.stakeFarmContractInstance.functions.poolInfo(
+          this.pidOfEquilibria,
+        )
+      ).token,
+      this.eqbStakeFarmWithdrawContract.address,
+      withdrawAmount,
+      updateProgress,
+    );
+
+    const withdrawTxn = prepareContractCall({
+      contract: this.eqbStakeFarmWithdrawContract,
+      method: "withdraw",
+      params: [this.pidOfEquilibria, withdrawAmount],
+    });
+    return [[approveEqbLPTxn, withdrawTxn], withdrawAmount];
+  }
+  async _withdrawAndClaim(
+    owner,
+    amount,
+    slippage,
+    tokenPricesMappingTable,
+    updateProgress,
+  ) {
+    const approvePendleTxn = approve(
+      this.assetContract.address,
+      this.protocolContract.address,
+      amount,
+      updateProgress,
+    );
+    const [
+      symbolOfBestTokenToZapOut,
+      bestTokenAddressToZapOut,
+      decimalOfBestTokenToZapOut,
+    ] = this._getTheBestTokenAddressToZapOut();
+    updateProgress("fetching Pendle's routing data");
+    const zapOutResp = await axios.get(
+      `https://api-v2.pendle.finance/core/v1/sdk/42161/markets/${this.assetContract.address}/remove-liquidity`,
+      {
+        params: {
+          receiver: owner,
+          // slippage from the website is 0.5 (means 0.5%), so we need to divide it by 100 and pass it to Pendle (0.005 = 0.5%)
+          slippage: slippage / 100,
+          enableAggregator: true,
+          tokenOut: bestTokenAddressToZapOut,
+          amountIn: amount,
+        },
+      },
+    );
+    updateProgress("prepare equilibria's contract call");
+    const burnTxn = prepareContractCall({
+      contract: this.protocolContract,
+      method: "removeLiquiditySingleToken",
+      params: zapOutResp.data.contractCallParams,
+    });
+    return [
+      [approvePendleTxn, burnTxn],
+      symbolOfBestTokenToZapOut,
+      bestTokenAddressToZapOut,
+      decimalOfBestTokenToZapOut,
+      zapOutResp.data.contractCallParams[3].minTokenOut,
+    ];
   }
 }

@@ -8,6 +8,7 @@ import Link from "next/link";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
 import { CheckIcon } from "@heroicons/react/24/outline";
+import { Input } from "antd";
 import { useRouter } from "next/router";
 import TransacitonHistory from "./transacitonHistory.jsx";
 import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
@@ -44,10 +45,13 @@ import {
   BanknotesIcon,
   ArrowTopRightOnSquareIcon,
   UserCircleIcon,
+  ChartBarIcon,
 } from "@heroicons/react/20/solid";
 import { SettingOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { arbitrum } from "thirdweb/chains";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
+import { isAddress } from "ethers/lib/utils";
+
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -61,15 +65,17 @@ export default function IndexOverviews() {
   const [zapInIsLoading, setZapInIsLoading] = useState(false);
   const [zapOutIsLoading, setZapOutIsLoading] = useState(false);
   const [claimIsLoading, setClaimIsLoading] = useState(false);
+  const [transferLoading, setTransferLoading] = useState(false);
   const [rebalanceIsLoading, setRebalanceIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(0.5);
-  const [zapOutPercentage, setZapOutPercentage] = useState(1);
+  const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
   const [rebalancableUsdBalanceDict, setrebalancableUsdBalanceDict] =
     useState(0);
+  const [recipient, setRecipient] = useState("");
   const [protocolAssetDustInWallet, setProtocolAssetDustInWallet] = useState(
     {},
   );
@@ -91,6 +97,8 @@ export default function IndexOverviews() {
 
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
+  const [recipientError, setRecipientError] = useState(false);
+
   const handleSetSelectedToken = useCallback((token) => {
     setSelectedToken(token);
   }, []);
@@ -122,6 +130,12 @@ export default function IndexOverviews() {
       setClaimIsLoading(true);
     } else if (actionName === "rebalance") {
       setRebalanceIsLoading(true);
+    } else if (actionName === "transfer") {
+      setTransferLoading(true);
+    } else if (actionName === "stake") {
+      setZapInIsLoading(true);
+    } else {
+      throw new Error(`Invalid action name: ${actionName}`);
     }
     if (!account) return;
     const [tokenSymbol, tokenAddress, tokenDecimals] =
@@ -140,6 +154,8 @@ export default function IndexOverviews() {
         setStepName,
         slippage,
         rebalancableUsdBalanceDict,
+        recipient,
+        protocolAssetDustInWallet.arbitrum,
       );
       // Call sendBatchTransaction and wait for the result
       try {
@@ -164,6 +180,7 @@ export default function IndexOverviews() {
                       investmentAmount *
                       (1 - slippage / 100 - portfolioHelper.swapFeeRate()),
                     zapOutAmount: usdBalance * zapOutPercentage,
+                    rebalanceAmount: getRebalanceReinvestUsdAmount(),
                     timestamp: Math.floor(Date.now() / 1000),
                     swapFeeRate: portfolioHelper.swapFeeRate(),
                     referralFeeRate: portfolioHelper.referralFeeRate(),
@@ -193,9 +210,10 @@ export default function IndexOverviews() {
           "Transaction Result",
           "error",
           `Transaction failed\n
+          error:${error.message}\n
         1. Probably out of gas\n
-        2. Or still in the lock-up period\n
-        ${error.message}`,
+        2. Or still in the lock-up period
+        `,
         );
       }
     } catch (error) {
@@ -218,6 +236,8 @@ export default function IndexOverviews() {
       setClaimIsLoading(false);
     } else if (actionName === "rebalance") {
       setRebalanceIsLoading(false);
+    } else if (actionName === "stake") {
+      setZapInIsLoading(false);
     }
   };
 
@@ -248,6 +268,25 @@ export default function IndexOverviews() {
           />
           {account === undefined ? (
             <ConfiguredConnectButton />
+          ) : Object.values(protocolAssetDustInWallet?.arbitrum || {}).some(
+              (protocolObj) => protocolObj.assetBalance > 0,
+            ) ? (
+            <Button
+              type="primary"
+              className="w-full mt-2"
+              onClick={() => handleAAWalletAction("stake")}
+              disabled={usdBalanceLoading}
+            >
+              {`Stake Available Assets ($${Object.values(
+                protocolAssetDustInWallet?.arbitrum || {},
+              )
+                .reduce(
+                  (sum, protocolObj) =>
+                    sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
+                  0,
+                )
+                .toFixed(2)})`}
+            </Button>
           ) : (
             <Button
               type="primary"
@@ -285,7 +324,7 @@ export default function IndexOverviews() {
               className="w-full"
               onClick={() => handleAAWalletAction("zapOut")}
               loading={zapOutIsLoading || usdBalanceLoading}
-              disabled={usdBalance < 0.01}
+              disabled={usdBalance < 0.01 || zapOutPercentage === 0}
             >
               Withdraw
             </Button>
@@ -316,6 +355,45 @@ export default function IndexOverviews() {
                 portfolioHelper?.sumUsdDenominatedValues(pendingRewards),
               )}{" "}
               Rewards to {selectedToken.split("-")[0]}
+            </Button>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "4",
+      label: "Transfer",
+      children: (
+        <div>
+          <DecimalStep
+            selectedToken={selectedToken}
+            setSelectedToken={handleSetSelectedToken}
+            depositBalance={usdBalance}
+            setZapOutPercentage={setZapOutPercentage}
+            currency="$"
+          />
+          <Input
+            status={recipientError ? "error" : ""}
+            placeholder="Recipient Address"
+            onChange={(e) => validateRecipient(e.target.value)}
+            value={recipient}
+          />
+          {recipientError && (
+            <div className="text-red-500 text-sm mt-1">
+              Please enter a valid Ethereum address different from your own
+            </div>
+          )}
+          {account === undefined ? (
+            <ConfiguredConnectButton />
+          ) : (
+            <Button
+              type="primary"
+              className="w-full"
+              onClick={() => handleAAWalletAction("transfer")}
+              // loading={transferLoading || usdBalanceLoading}
+              disabled={usdBalance < 0.01 || recipientError}
+            >
+              Transfer
             </Button>
           )}
         </div>
@@ -482,7 +560,6 @@ export default function IndexOverviews() {
       const dust = await portfolioHelper.calProtocolAssetDustInWalletDictionary(
         account.address,
       );
-
       setProtocolAssetDustInWallet(dust);
     };
     fetchUsdBalance();
@@ -492,6 +569,16 @@ export default function IndexOverviews() {
     const balance = walletBalanceData?.displayValue;
     setTokenBalance(balance);
   }, [selectedToken, walletBalanceData, investmentAmount]);
+
+  const validateRecipient = (address) => {
+    if (address === account?.address) {
+      setRecipientError(true);
+      return;
+    }
+    const isValid = isAddress(address);
+    setRecipientError(!isValid);
+    setRecipient(address);
+  };
 
   return (
     <BasePage>
@@ -729,23 +816,6 @@ export default function IndexOverviews() {
                   </div>
                   <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
                     <dt className="flex-none">
-                      <UserCircleIcon
-                        aria-hidden="true"
-                        className="h-6 w-5 text-gray-500"
-                      />
-                    </dt>
-                    <dd className="text-sm font-medium leading-6 text-white">
-                      <Link
-                        href={`/profile?address=${account?.address}`}
-                        target="_blank"
-                        className="text-blue-400"
-                      >
-                        Check Your Portfolio
-                      </Link>{" "}
-                    </dd>
-                  </div>
-                  <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
-                    <dt className="flex-none">
                       <BanknotesIcon
                         aria-hidden="true"
                         className="h-6 w-5 text-gray-500"
@@ -816,6 +886,24 @@ export default function IndexOverviews() {
                       )}
                     </dd>
                   </div>
+                  <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
+                    <dt className="flex-none">
+                      <ChartBarIcon
+                        aria-hidden="true"
+                        className="h-6 w-5 text-gray-500"
+                      />
+                    </dt>
+                    <dd className="text-sm font-medium leading-6 text-white">
+                      <Link
+                        href={`/profile/#historical-balances?address=${account?.address}`}
+                        target="_blank"
+                        className="text-blue-400"
+                      >
+                        Historical Balances
+                      </Link>{" "}
+                    </dd>
+                  </div>
+
                   <div className="my-4 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
                     <dt className="flex-none">
                       <APRComposition
@@ -958,12 +1046,19 @@ export default function IndexOverviews() {
                                           </div>
                                         </td>
                                         <td className="py-5 pl-8 pr-0 text-right align-top tabular-nums text-white">
-                                          {(
+                                          {isNaN(
                                             portfolioApr?.[portfolioName]?.[
                                               protocol.interface.uniqueId()
-                                            ]?.apr * 100
-                                          ).toFixed(2)}
-                                          %
+                                            ]?.apr * 100,
+                                          ) ? (
+                                            <Spin />
+                                          ) : (
+                                            `${(
+                                              portfolioApr?.[portfolioName]?.[
+                                                protocol.interface.uniqueId()
+                                              ]?.apr * 100 || 0
+                                            ).toFixed(2)}%`
+                                          )}
                                         </td>
                                       </tr>
                                     );
@@ -978,11 +1073,14 @@ export default function IndexOverviews() {
                                     Avg. APR
                                   </th>
                                   <td className="pt-6 font-semibold text-right text-green-500">
-                                    {(
-                                      portfolioApr[portfolioName]
-                                        ?.portfolioAPR * 100
-                                    ).toFixed(2)}
-                                    %
+                                    {loading ? (
+                                      <Spin />
+                                    ) : (
+                                      `${(
+                                        (portfolioApr[portfolioName]
+                                          ?.portfolioAPR || 0) * 100
+                                      ).toFixed(2)}%`
+                                    )}
                                   </td>
                                 </tr>
                               </tfoot>

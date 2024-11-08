@@ -54,11 +54,11 @@ export class InterportArbitrumUsdc extends BaseProtocol {
   rewards() {
     return [];
   }
-  async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
+  async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     return {};
   }
   async customDeposit(
-    recipient,
+    owner,
     inputToken,
     bestTokenAddressToZapIn,
     amountToZapIn,
@@ -88,7 +88,7 @@ export class InterportArbitrumUsdc extends BaseProtocol {
     return [approveForZapInTxn, depositTxn];
   }
   async customWithdrawAndClaim(
-    recipient,
+    owner,
     percentage,
     slippage,
     tokenPricesMappingTable,
@@ -103,7 +103,7 @@ export class InterportArbitrumUsdc extends BaseProtocol {
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
 
     const balance = (
-      await stakeFarmContractInstance.functions.userInfo(this.pid, recipient)
+      await stakeFarmContractInstance.functions.userInfo(this.pid, owner)
     )[0];
     const amount = balance.mul(percentageBN).div(10000);
     const unstakeTxn = prepareContractCall({
@@ -130,20 +130,19 @@ export class InterportArbitrumUsdc extends BaseProtocol {
       amount,
     ];
   }
-  async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
+  async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     return [[], {}];
   }
   customRedeemVestingRewards(pendingRewards) {
     return [];
   }
-  async usdBalanceOf(recipient, tokenPricesMappingTable) {
+  async usdBalanceOf(owner, tokenPricesMappingTable) {
     const assetContractInstance = new ethers.Contract(
       this.assetContract.address,
       Vault,
       PROVIDER,
     );
-    const userBalance =
-      await assetContractInstance.functions.balanceOf(recipient);
+    const userBalance = await assetContractInstance.functions.balanceOf(owner);
     return (userBalance * tokenPricesMappingTable["usdc"]) / 1e6;
   }
 

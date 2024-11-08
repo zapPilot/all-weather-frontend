@@ -8,82 +8,37 @@ import THIRDWEB_CLIENT from "../utils/thirdweb";
 export const PROVIDER = new ethers.providers.JsonRpcProvider(
   process.env.NEXT_PUBLIC_RPC_PROVIDER_URL,
 );
-const APPROVAL_BUFFER = 1.1;
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
-
 export function timeAgo(dateString) {
-  if (!dateString || typeof dateString !== "string") {
-    console.error("Invalid date string provided:", dateString);
-    return "Invalid date";
-  }
+  // // 08/10/2024 21:09:57
+  // 11/03/2024 20:24:15
 
-  // Parse the input date string
   const [datePart, timePart] = dateString.split(" ");
-  if (!datePart || !timePart) {
-    console.error("Date string in unexpected format:", dateString);
-    return "Invalid date format";
-  }
-
   const [day, month, year] = datePart.split("/").map(Number);
   const [hours, minutes, seconds] = timePart.split(":").map(Number);
 
-  if (
-    isNaN(day) ||
-    isNaN(month) ||
-    isNaN(year) ||
-    isNaN(hours) ||
-    isNaN(minutes) ||
-    isNaN(seconds)
-  ) {
-    console.error("Date parts are not valid numbers:", {
-      day,
-      month,
-      year,
-      hours,
-      minutes,
-      seconds,
-    });
-    return "Invalid date components";
-  }
-
-  // Note: month is 0-indexed in JavaScript Date
   const date = new Date(year, month - 1, day, hours, minutes, seconds);
-  if (isNaN(date.getTime())) {
-    console.error("Invalid date created:", date);
-    return "Invalid date";
-  }
-
-  // Get the current time
   const now = new Date();
 
-  // Calculate the difference in milliseconds
   const diffInMs = now - date;
 
   if (diffInMs < 0) {
-    console.error("Date is in the future:", dateString, "Current date:", now);
-    return "Future date";
+    return "in the future";
   }
 
-  // Convert milliseconds to various time units
   const secondsDiff = Math.floor(diffInMs / 1000);
+
   const minutesDiff = Math.floor(secondsDiff / 60);
   const hoursDiff = Math.floor(minutesDiff / 60);
   const daysDiff = Math.floor(hoursDiff / 24);
-  const weeksDiff = Math.floor(daysDiff / 7);
-  const monthsDiff = Math.floor(daysDiff / 30);
-  const yearsDiff = Math.floor(daysDiff / 365);
 
-  // Create a readable string
-  if (yearsDiff > 0) return `${yearsDiff} year${yearsDiff > 1 ? "s" : ""} ago`;
-  if (monthsDiff > 0)
-    return `${monthsDiff} month${monthsDiff > 1 ? "s" : ""} ago`;
-  if (weeksDiff > 0) return `${weeksDiff} week${weeksDiff > 1 ? "s" : ""} ago`;
   if (daysDiff > 0) return `${daysDiff} day${daysDiff > 1 ? "s" : ""} ago`;
   if (hoursDiff > 0) return `${hoursDiff} hour${hoursDiff > 1 ? "s" : ""} ago`;
   if (minutesDiff > 0)
     return `${minutesDiff} minute${minutesDiff > 1 ? "s" : ""} ago`;
   return `${secondsDiff} second${secondsDiff > 1 ? "s" : ""} ago`;
 }
+
 export async function getTokenDecimal(tokenAddress) {
   const tokenInstance = new ethers.Contract(tokenAddress, ERC20_ABI, PROVIDER);
   return (await tokenInstance.functions.decimals())[0];

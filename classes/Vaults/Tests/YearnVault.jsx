@@ -26,18 +26,6 @@ export class YearnVault extends BasePortfolio {
     );
     this.validateStrategyWeights();
   }
-  description() {
-    return (
-      <ReactMarkdown className="text-base text-gray-500">
-        {`
-    1. Ethereum staking rewards
-    2. Swap fees
-    3. Farming rewards from protocols (non-sustainable)
-    4. Trading of Principal Tokens (similar to zero-coupon bonds)
-    `}
-      </ReactMarkdown>
-    );
-  }
   async lockUpPeriod(address) {
     // Get lockUpPeriods from all protocols
     const lockUpPeriodsPromises = this.strategy.gold.arbitrum.map(

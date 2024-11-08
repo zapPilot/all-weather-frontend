@@ -85,14 +85,7 @@ const _getChildrenTab = (
   },
 ) => {
   if (wording === "Performance") {
-    return (
-      <Performance
-        portfolioApr={portfolioApr}
-        sharpeRatio={sharpeRatio}
-        ROI={ROI}
-        maxDrawdown={maxDrawdown}
-      />
-    );
+    return <Performance portfolioApr={portfolioApr} />;
   } else if (wording === "Bundle") {
     return <Bundle />;
   }

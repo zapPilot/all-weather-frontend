@@ -62,7 +62,7 @@ export class BaseConvex extends BaseProtocol {
   rewards() {
     return this.customParams.rewards;
   }
-  async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
+  async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     let rewardBalance = {};
     updateProgress(
       `fetching pending rewards from ${this.stakeFarmContract.address}`,
@@ -82,7 +82,7 @@ export class BaseConvex extends BaseProtocol {
       const reward_balance = (
         await stakeFarmContractInstance.functions.claimable_reward(
           reward_address,
-          recipient,
+          owner,
         )
       )[0];
       rewardBalance[reward_address] = {
@@ -97,7 +97,7 @@ export class BaseConvex extends BaseProtocol {
     return rewardBalance;
   }
   async customDepositLP(
-    recipient,
+    owner,
     tokenAmetadata,
     tokenBmetadata,
     tokenPricesMappingTable,
@@ -133,102 +133,41 @@ export class BaseConvex extends BaseProtocol {
       method: "add_liquidity",
       params: [_amounts, _min_mint_amount],
     });
-    const approveForStakingTxn = approve(
-      this.assetContract.address,
-      this.stakeFarmContract.address,
-      // TODO(David): not sure why _min_mint_amount cannot be used here
-      // here's the failed txn: https://dashboard.tenderly.co/davidtnfsh/project/tx/arbitrum/0x822f5f426de88d1890f8836e825f52a70d22f5bcd8665125a83755eb947a4d88?trace=0.4.0.0.0.0.18.1
-      ethers.constants.MaxUint256,
-      updateProgress,
-    );
-    const stakeTxn = prepareContractCall({
-      contract: this.stakeFarmContract,
-      method: "depositAll",
-      params: [this.pid],
-    });
-    return [approveTxns, depositTxn, approveForStakingTxn, stakeTxn];
+    const stakeTxns = await this._stakeLP(_amounts, updateProgress);
+    return [...approveTxns, depositTxn, ...stakeTxns];
   }
-  async customWithdrawLPAndClaim(
-    recipient,
-    percentage,
-    slippage,
-    tokenPricesMappingTable,
-    updateProgress,
-  ) {
-    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
-    const stakeBalance = await this.stakeBalanceOf(recipient, updateProgress);
-    const amount = stakeBalance.mul(percentageBN).div(10000);
-    const unstakeTxn = prepareContractCall({
-      contract: this.convexRewardPoolContract,
-      method: "withdraw",
-      params: [amount, false],
-    });
-
-    const protocolContractInstance = new ethers.Contract(
-      this.protocolContract.address,
-      CurveStableSwapNG,
-      PROVIDER,
-    );
-    updateProgress("Getting LP balances");
-    const [token_a_balance, token_b_balance] = (
-      await protocolContractInstance.functions.get_balances()
-    )[0];
-    const ratio = token_a_balance / token_a_balance.add(token_b_balance);
-    const minimumWithdrawAmount_a = this.mul_with_slippage_in_bignumber_format(
-      amount * ratio,
-      slippage,
-    );
-    const minimumWithdrawAmount_b = this.mul_with_slippage_in_bignumber_format(
-      amount * (1 - ratio),
-      slippage,
-    );
-    const minPairAmounts = [minimumWithdrawAmount_a, minimumWithdrawAmount_b];
-    const withdrawTxn = prepareContractCall({
-      contract: this.protocolContract,
-      method: "remove_liquidity",
-      params: [amount, minPairAmounts],
-    });
-    const [claimTxn, _] = await this.customClaim(
-      recipient,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    const tokenMetadatas = this._getLPTokenPairesToZapIn();
-    return [
-      [unstakeTxn, withdrawTxn, claimTxn],
-      tokenMetadatas,
-      minPairAmounts,
-    ];
-  }
-  async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
+  async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     const pendingRewards = await this.pendingRewards(
-      recipient,
+      owner,
       tokenPricesMappingTable,
       updateProgress,
     );
     const claimTxn = prepareContractCall({
       contract: this.convexRewardPoolContract,
       method: "function getReward(address _account)",
-      params: [recipient],
+      params: [owner],
     });
     return [[claimTxn], pendingRewards];
   }
   customRedeemVestingRewards(pendingRewards) {
     return [];
   }
-  async usdBalanceOf(recipient, tokenPricesMappingTable) {
-    const lpBalance = await this.stakeBalanceOf(recipient, () => {});
+  async usdBalanceOf(owner, tokenPricesMappingTable) {
+    const lpBalance = await this.stakeBalanceOf(owner, () => {});
     const lpPrice = this._calculateLpPrice(tokenPricesMappingTable);
     return (lpBalance * lpPrice) / Math.pow(10, this.assetDecimals);
   }
-  async stakeBalanceOf(recipient, updateProgress) {
+  async assetUsdPrice() {
+    return await this._calculateLpPrice(() => {});
+  }
+  async stakeBalanceOf(owner, updateProgress) {
     const rewardPoolContractInstance = new ethers.Contract(
       this.convexRewardPoolContract.address,
       ERC20_ABI,
       PROVIDER,
     );
     updateProgress("Getting stake balance");
-    return (await rewardPoolContractInstance.functions.balanceOf(recipient))[0];
+    return (await rewardPoolContractInstance.functions.balanceOf(owner))[0];
   }
   _getLPTokenPairesToZapIn() {
     return this.customParams.lpTokens;
@@ -246,6 +185,76 @@ export class BaseConvex extends BaseProtocol {
       return tokenPricesMappingTable["weth"];
     }
     throw new Error("Not implemented");
+  }
+  async _stakeLP(amount, updateProgress) {
+    const approveForStakingTxn = approve(
+      this.assetContract.address,
+      this.stakeFarmContract.address,
+      // TODO(David): not sure why _min_mint_amount cannot be used here
+      // here's the failed txn: https://dashboard.tenderly.co/davidtnfsh/project/tx/arbitrum/0x822f5f426de88d1890f8836e825f52a70d22f5bcd8665125a83755eb947a4d88?trace=0.4.0.0.0.0.18.1
+      ethers.constants.MaxUint256,
+      updateProgress,
+    );
+    const stakeTxn = prepareContractCall({
+      contract: this.stakeFarmContract,
+      method: "depositAll",
+      params: [this.pid],
+    });
+    return [approveForStakingTxn, stakeTxn];
+  }
+  async _unstakeLP(owner, percentage, updateProgress) {
+    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
+    const stakeBalance = await this.stakeBalanceOf(owner, updateProgress);
+    const amount = stakeBalance.mul(percentageBN).div(10000);
+    const unstakeTxn = prepareContractCall({
+      contract: this.convexRewardPoolContract,
+      method: "withdraw",
+      params: [amount, false],
+    });
+    return [[unstakeTxn], amount];
+  }
+  async _withdrawLPAndClaim(
+    owner,
+    amount,
+    slippage,
+    tokenPricesMappingTable,
+    updateProgress,
+  ) {
+    const protocolContractInstance = new ethers.Contract(
+      this.protocolContract.address,
+      CurveStableSwapNG,
+      PROVIDER,
+    );
+    updateProgress("Getting LP balances");
+    const [token_a_balance, token_b_balance] = (
+      await protocolContractInstance.functions.get_balances()
+    )[0];
+    const ratio = token_a_balance
+      .mul(ethers.constants.WeiPerEther)
+      .div(token_a_balance.add(token_b_balance));
+    const minimumWithdrawAmount_a = this.mul_with_slippage_in_bignumber_format(
+      amount.mul(ratio).div(ethers.constants.WeiPerEther),
+      slippage,
+    );
+    const minimumWithdrawAmount_b = this.mul_with_slippage_in_bignumber_format(
+      amount
+        .mul(ethers.constants.WeiPerEther.sub(ratio))
+        .div(ethers.constants.WeiPerEther),
+      slippage,
+    );
+    const minPairAmounts = [minimumWithdrawAmount_a, minimumWithdrawAmount_b];
+    const withdrawTxn = prepareContractCall({
+      contract: this.protocolContract,
+      method: "remove_liquidity",
+      params: [amount, minPairAmounts],
+    });
+    const [claimTxns, _] = await this.customClaim(
+      owner,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
+    const tokenMetadatas = this._getLPTokenPairesToZapIn();
+    return [[withdrawTxn, ...claimTxns], tokenMetadatas, minPairAmounts];
   }
   async lockUpPeriod() {
     return 0;

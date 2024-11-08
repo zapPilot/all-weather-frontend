@@ -54,11 +54,11 @@ export class Vela extends BaseProtocol {
   rewards() {
     return [];
   }
-  async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
+  async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     return {};
   }
   async customDeposit(
-    recipient,
+    owner,
     inputToken,
     bestTokenAddressToZapIn,
     amountToZapIn,
@@ -81,97 +81,24 @@ export class Vela extends BaseProtocol {
         Math.pow(10, bestTokenToZapInDecimal) /
         latestPrice) *
       Math.pow(10, this.assetDecimals);
-    const minVlpAmount = Math.floor(
-      (estimatedVlpAmount * (100 - slippage)) / 100,
-    );
     const mintTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "stake",
-      params: [recipient, bestTokenAddressToZapIn, amountToZapIn],
+      params: [owner, bestTokenAddressToZapIn, amountToZapIn],
     });
-    const approveAlpTxn = approve(
-      this.assetContract.address,
-      this.stakeFarmContract.address,
-      minVlpAmount,
-      updateProgress,
+    const minVlpAmount = Math.floor(
+      (estimatedVlpAmount * (100 - slippage)) / 100,
     );
-    const stakeTxn = prepareContractCall({
-      contract: this.stakeFarmContract,
-      method: "stake", // <- this gets inferred from the contract
-      params: [this.assetContract.address, minVlpAmount],
-    });
-    return [approveForZapInTxn, mintTxn, approveAlpTxn, stakeTxn];
+    const stakeTxns = await this._stake(minVlpAmount, updateProgress);
+    return [approveForZapInTxn, mintTxn, ...stakeTxns];
   }
-  async customWithdrawAndClaim(
-    recipient,
-    percentage,
-    slippage,
-    tokenPricesMappingTable,
-    updateProgress,
-  ) {
-    const stakeFarmContractInstance = new ethers.Contract(
-      this.stakeFarmContract.address,
-      TokenFarm,
-      PROVIDER,
-    );
-
-    // Assuming 'percentage' is a float between 0 and 1
-    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
-    const stakedAmount = (
-      await stakeFarmContractInstance.functions.getStakedAmount(
-        this.assetContract.address,
-        recipient,
-      )
-    )[0];
-    const vlpAmount = stakedAmount.mul(percentageBN).div(10000);
-    const approveAlpTxn = approve(
-      this.assetContract.address,
-      this.protocolContract.address,
-      vlpAmount,
-      updateProgress,
-    );
-
-    const withdrawTxn = prepareContractCall({
-      contract: this.stakeFarmContract,
-      method: "unstake",
-      params: [this.assetContract.address, vlpAmount],
-    });
-
-    const [
-      symbolOfBestTokenToZapOut,
-      bestTokenAddressToZapOut,
-      decimalOfBestTokenToZapOut,
-    ] = this._getTheBestTokenAddressToZapOut();
-    const latestPrice = await this._fetchVlpPrice(updateProgress);
-
-    const minOutAmount = Math.floor(
-      ((((vlpAmount / Math.pow(10, this.assetDecimals)) * latestPrice) /
-        tokenPricesMappingTable[symbolOfBestTokenToZapOut]) *
-        Math.pow(10, decimalOfBestTokenToZapOut) *
-        (100 - slippage)) /
-        100,
-    );
-
-    const burnTxn = prepareContractCall({
-      contract: this.protocolContract,
-      method: "unstake",
-      params: [bestTokenAddressToZapOut, vlpAmount],
-    });
-    return [
-      [withdrawTxn, approveAlpTxn, burnTxn],
-      symbolOfBestTokenToZapOut,
-      bestTokenAddressToZapOut,
-      decimalOfBestTokenToZapOut,
-      minOutAmount,
-    ];
-  }
-  async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
+  async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     return [[], {}];
   }
   customRedeemVestingRewards(pendingRewards) {
     return [];
   }
-  async usdBalanceOf(recipient, tokenPricesMappingTable) {
+  async usdBalanceOf(owner, tokenPricesMappingTable) {
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       TokenFarm,
@@ -180,13 +107,15 @@ export class Vela extends BaseProtocol {
     const userBalance = (
       await stakeFarmContractInstance.functions.getStakedAmount(
         this.assetContract.address,
-        recipient,
+        owner,
       )
     )[0];
     const latestVlpPrice = await this._fetchVlpPrice(() => {});
     return (userBalance / Math.pow(10, this.assetDecimals)) * latestVlpPrice;
   }
-
+  async assetUsdPrice() {
+    return await this._fetchVlpPrice(() => {});
+  }
   async _fetchVlpPrice(updateProgress) {
     updateProgress("fetching VLP price");
     const protocolContractInstance = new ethers.Contract(
@@ -207,6 +136,84 @@ export class Vela extends BaseProtocol {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
     const usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
     return ["usdc", usdcAddress, 6];
+  }
+  async _stake(amount, updateProgress) {
+    const approveAlpTxn = approve(
+      this.assetContract.address,
+      this.stakeFarmContract.address,
+      amount,
+      updateProgress,
+    );
+    const stakeTxn = prepareContractCall({
+      contract: this.stakeFarmContract,
+      method: "stake", // <- this gets inferred from the contract
+      params: [this.assetContract.address, amount],
+    });
+    return [approveAlpTxn, stakeTxn];
+  }
+  async _unstake(owner, percentage, updateProgress) {
+    const stakeFarmContractInstance = new ethers.Contract(
+      this.stakeFarmContract.address,
+      TokenFarm,
+      PROVIDER,
+    );
+
+    // Assuming 'percentage' is a float between 0 and 1
+    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
+    const stakedAmount = (
+      await stakeFarmContractInstance.functions.getStakedAmount(
+        this.assetContract.address,
+        owner,
+      )
+    )[0];
+    const vlpAmount = stakedAmount.mul(percentageBN).div(10000);
+
+    const withdrawTxn = prepareContractCall({
+      contract: this.stakeFarmContract,
+      method: "unstake",
+      params: [this.assetContract.address, vlpAmount],
+    });
+    return [[withdrawTxn], vlpAmount];
+  }
+  async _withdrawAndClaim(
+    owner,
+    vlpAmount,
+    slippage,
+    tokenPricesMappingTable,
+    updateProgress,
+  ) {
+    const [
+      symbolOfBestTokenToZapOut,
+      bestTokenAddressToZapOut,
+      decimalOfBestTokenToZapOut,
+    ] = this._getTheBestTokenAddressToZapOut();
+    const latestPrice = await this._fetchVlpPrice(updateProgress);
+
+    const minOutAmount = Math.floor(
+      ((((vlpAmount / Math.pow(10, this.assetDecimals)) * latestPrice) /
+        tokenPricesMappingTable[symbolOfBestTokenToZapOut]) *
+        Math.pow(10, decimalOfBestTokenToZapOut) *
+        (100 - slippage)) /
+        100,
+    );
+    const approveVlpTxn = approve(
+      this.assetContract.address,
+      this.protocolContract.address,
+      minOutAmount,
+      updateProgress,
+    );
+    const burnTxn = prepareContractCall({
+      contract: this.protocolContract,
+      method: "unstake",
+      params: [bestTokenAddressToZapOut, minOutAmount],
+    });
+    return [
+      [approveVlpTxn, burnTxn],
+      symbolOfBestTokenToZapOut,
+      bestTokenAddressToZapOut,
+      decimalOfBestTokenToZapOut,
+      minOutAmount,
+    ];
   }
   async lockUpPeriod(address) {
     try {
