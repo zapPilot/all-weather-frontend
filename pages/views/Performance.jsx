@@ -22,7 +22,10 @@ const Performance = ({ portfolioApr }) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { query } = router;
-  const searchWalletAddress = query.address;
+  const searchWalletAddress = query.address
+    ?.toLowerCase()
+    ?.trim()
+    ?.replace("/", "");
   const account = useActiveAccount();
   const walletAddress = account?.address;
 
@@ -50,7 +53,7 @@ const Performance = ({ portfolioApr }) => {
         `${process.env.NEXT_PUBLIC_API_URL}/bundle_portfolio/${
           searchWalletAddress === undefined
             ? walletAddress
-            : searchWalletAddress.toLowerCase().trim().replace("/", "")
+            : searchWalletAddress
         }?refresh=${refresh}`,
       )
       .then((response) => response.data)
@@ -181,7 +184,11 @@ const Performance = ({ portfolioApr }) => {
 
       {account?.address && (
         <HistoricalGenericDataChart
-          apiUrl={`${process.env.NEXT_PUBLIC_SDK_API_URL}/balances/${account.address}/history`}
+          apiUrl={`${process.env.NEXT_PUBLIC_SDK_API_URL}/balances/${
+            searchWalletAddress === undefined
+              ? walletAddress
+              : searchWalletAddress
+          }/history`}
           dataTransformCallback={(response) => response.json()}
           yLabel={"usd_value"}
         />
