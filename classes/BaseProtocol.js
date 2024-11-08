@@ -186,7 +186,6 @@ export default class BaseProtocol extends BaseUniswap {
         recipient,
         percentage,
         slippage,
-        tokenPricesMappingTable,
         updateProgress,
       );
       const [redeemTxnsForSingle, withdrawTokenAndBalanceForSingle] =
@@ -322,16 +321,32 @@ export default class BaseProtocol extends BaseUniswap {
     recipient,
     percentage,
     slippage,
-    updateProgress,
+        updateProgress,
   ) {
-    const [unstakedAmount, unstakeTxns] = this._unstake(recipient, percentage);
-    const withdrawAndClaimTxns = this._withdrawAndClaim(
+    const [unstakeTxns, unstakedAmount, ] = await this._unstake(
+      recipient,
+      percentage,
+      updateProgress,
+    );
+    const [
+      withdrawAndClaimTxns,
+      symbolOfBestTokenToZapOut,
+      bestTokenAddressToZapOut,
+      decimalOfBestTokenToZapOut,
+      minTokenOut,
+    ] = await this._withdrawAndClaim(
       recipient,
       unstakedAmount,
       slippage,
       updateProgress,
     );
-    return [...unstakeTxns, ...withdrawAndClaimTxns];
+    return [
+      [...unstakeTxns, ...withdrawAndClaimTxns],
+      symbolOfBestTokenToZapOut,
+      bestTokenAddressToZapOut,
+      decimalOfBestTokenToZapOut,
+      minTokenOut,
+    ];
   }
   async customWithdrawLPAndClaim(
     recipient,
@@ -339,17 +354,23 @@ export default class BaseProtocol extends BaseUniswap {
     slippage,
     updateProgress,
   ) {
-    const [unstakedAmount, unstakeTxns] = this._unstakeLP(
+    const [unstakeTxns, unstakedAmount] = await this._unstakeLP(
       recipient,
       percentage,
-    );
-    const withdrawAndClaimTxns = this._withdrawLPAndClaim(
-      recipient,
-      amount,
-      slippage,
       updateProgress,
     );
-    return [...unstakeTxns, ...withdrawAndClaimTxns];
+    const [withdrawAndClaimTxns, tokenMetadatas, minPairAmounts] =
+      await this._withdrawLPAndClaim(
+        recipient,
+        unstakedAmount,
+        slippage,
+        updateProgress,
+      );
+    return [
+      [...unstakeTxns, ...withdrawAndClaimTxns],
+      tokenMetadatas,
+      minPairAmounts,
+    ];
   }
 
   async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
@@ -658,13 +679,19 @@ export default class BaseProtocol extends BaseUniswap {
     }
     return [redeemTxns, withdrawTokenAndBalance];
   }
+  async _stake(amount, updateProgress) {
+    throw new Error("Method '_stake()' must be implemented.");
+  }
+  async _stakeLP(amount, updateProgress) {
+    throw new Error("Method '_stakeLP()' must be implemented.");
+  }
   async _unstake(owner, percentage, updateProgress) {
     throw new Error("Method '_unstake()' must be implemented.");
   }
   async _unstakeLP(owner, percentage, updateProgress) {
     throw new Error("Method '_unstakeLP()' must be implemented.");
   }
-  _withdrawAndClaim() {
+  async _withdrawAndClaim(owner, withdrawAmount, slippage, updateProgress) {
     throw new Error("Method '_withdrawAndClaim()' must be implemented.");
   }
   _calculateTokenAmountsForLP(tokenMetadatas) {

@@ -136,32 +136,6 @@ export class BaseConvex extends BaseProtocol {
     const stakeTxns = await this._stakeLP(_amounts, updateProgress);
     return [approveTxns, depositTxn, ...stakeTxns];
   }
-  async customWithdrawLPAndClaim(
-    owner,
-    percentage,
-    slippage,
-    tokenPricesMappingTable,
-    updateProgress,
-  ) {
-    const [unstakeTxn, amount] = await this._unstakeLP(
-      owner,
-      percentage,
-      updateProgress,
-    );
-    const [withdrawAndClaimTxns, tokenMetadatas, minPairAmounts] =
-      await this._withdrawLPandClaim(
-        owner,
-        amount,
-        slippage,
-        tokenPricesMappingTable,
-        updateProgress,
-      );
-    return [
-      [unstakeTxn, ...withdrawAndClaimTxns],
-      tokenMetadatas,
-      minPairAmounts,
-    ];
-  }
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     const pendingRewards = await this.pendingRewards(
       owner,

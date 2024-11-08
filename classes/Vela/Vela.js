@@ -81,48 +81,16 @@ export class Vela extends BaseProtocol {
         Math.pow(10, bestTokenToZapInDecimal) /
         latestPrice) *
       Math.pow(10, this.assetDecimals);
-    const minVlpAmount = Math.floor(
-      (estimatedVlpAmount * (100 - slippage)) / 100,
-    );
     const mintTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "stake",
       params: [owner, bestTokenAddressToZapIn, amountToZapIn],
     });
-    const stakeTxns = await this._stake(amountToZapIn, updateProgress);
+    const minVlpAmount = Math.floor(
+      (estimatedVlpAmount * (100 - slippage)) / 100,
+    );
+    const stakeTxns = await this._stake(minVlpAmount, updateProgress);
     return [approveForZapInTxn, mintTxn, ...stakeTxns];
-  }
-  async customWithdrawAndClaim(
-    owner,
-    percentage,
-    slippage,
-    tokenPricesMappingTable,
-    updateProgress,
-  ) {
-    const [unstakeTxns, vlpAmount] = await this._unstake(
-      owner,
-      percentage,
-      updateProgress,
-    );
-    const [
-      withdrawAndClaimTxns,
-      symbolOfBestTokenToZapOut,
-      bestTokenAddressToZapOut,
-      decimalOfBestTokenToZapOut,
-      minOutAmount,
-    ] = await this._withdrawAndClaim(
-      vlpAmount,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    return [
-      [...unstakeTxns, ...withdrawAndClaimTxns],
-      symbolOfBestTokenToZapOut,
-      bestTokenAddressToZapOut,
-      decimalOfBestTokenToZapOut,
-      minOutAmount,
-    ];
   }
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     return [[], {}];

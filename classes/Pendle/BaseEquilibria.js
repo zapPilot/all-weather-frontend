@@ -247,29 +247,7 @@ export class BaseEquilibria extends BaseProtocol {
     const stakeTxns = await this._stake(minLPOutAmount, updateProgress);
     return [approveForZapInTxn, mintTxn, ...stakeTxns];
   }
-  async customWithdrawAndClaim(
-    owner,
-    percentage,
-    slippage,
-    tokenPricesMappingTable,
-    updateProgress,
-  ) {
-    const [withdrawAmount, unstakeTxns] = this._unstake(owner, percentage);
-    const [
-      withdrawAndClaimTxns,
-      symbolOfBestTokenToZapOut,
-      bestTokenAddressToZapOut,
-      decimalOfBestTokenToZapOut,
-      minTokenOut,
-    ] = this._withdrawAndClaim(owner, withdrawAmount, slippage, updateProgress);
-    return [
-      [...unstakeTxns, ...withdrawAndClaimTxns],
-      symbolOfBestTokenToZapOut,
-      bestTokenAddressToZapOut,
-      decimalOfBestTokenToZapOut,
-      minTokenOut,
-    ];
-  }
+
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     const pendingRewards = await this.pendingRewards(
       owner,
@@ -377,6 +355,7 @@ export class BaseEquilibria extends BaseProtocol {
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
     const stakedAmount = await this.stakeBalanceOf(owner);
     const withdrawAmount = stakedAmount.mul(percentageBN).div(10000);
+    console.log("updateProgress", updateProgress)
     const approveEqbLPTxn = approve(
       (
         await this.stakeFarmContractInstance.functions.poolInfo(
@@ -428,7 +407,7 @@ export class BaseEquilibria extends BaseProtocol {
       params: zapOutResp.data.contractCallParams,
     });
     return [
-      [approveEqbLPTxn, withdrawTxn, approvePendleTxn, burnTxn],
+      [approvePendleTxn, burnTxn],
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
