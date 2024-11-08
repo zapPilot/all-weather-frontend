@@ -70,7 +70,7 @@ export default function IndexOverviews() {
   const [progress, setProgress] = useState(0);
   const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(0.5);
-  const [zapOutPercentage, setZapOutPercentage] = useState(1);
+  const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
   const [rebalancableUsdBalanceDict, setrebalancableUsdBalanceDict] =
@@ -323,7 +323,7 @@ export default function IndexOverviews() {
               className="w-full"
               onClick={() => handleAAWalletAction("zapOut")}
               loading={zapOutIsLoading || usdBalanceLoading}
-              disabled={usdBalance < 0.01}
+              disabled={usdBalance < 0.01 || zapOutPercentage === 0}
             >
               Withdraw
             </Button>

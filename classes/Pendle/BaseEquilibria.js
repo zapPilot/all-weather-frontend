@@ -355,7 +355,6 @@ export class BaseEquilibria extends BaseProtocol {
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
     const stakedAmount = await this.stakeBalanceOf(owner);
     const withdrawAmount = stakedAmount.mul(percentageBN).div(10000);
-    console.log("updateProgress", updateProgress)
     const approveEqbLPTxn = approve(
       (
         await this.stakeFarmContractInstance.functions.poolInfo(
@@ -374,7 +373,13 @@ export class BaseEquilibria extends BaseProtocol {
     });
     return [[approveEqbLPTxn, withdrawTxn], withdrawAmount];
   }
-  async _withdrawAndClaim(owner, amount, slippage, updateProgress) {
+  async _withdrawAndClaim(
+    owner,
+    amount,
+    slippage,
+    tokenPricesMappingTable,
+    updateProgress,
+  ) {
     const approvePendleTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,

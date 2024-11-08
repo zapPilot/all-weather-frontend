@@ -213,7 +213,7 @@ export class BaseConvex extends BaseProtocol {
     });
     return [[unstakeTxn], amount];
   }
-  async _withdrawLPandClaim(
+  async _withdrawLPAndClaim(
     owner,
     amount,
     slippage,
@@ -254,10 +254,6 @@ export class BaseConvex extends BaseProtocol {
       updateProgress,
     );
     const tokenMetadatas = this._getLPTokenPairesToZapIn();
-    return [
-      [unstakeTxn, withdrawTxn, claimTxn],
-      tokenMetadatas,
-      minPairAmounts,
-    ];
+    return [[withdrawTxn, claimTxn], tokenMetadatas, minPairAmounts];
   }
 }

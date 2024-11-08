@@ -186,6 +186,7 @@ export default class BaseProtocol extends BaseUniswap {
         recipient,
         percentage,
         slippage,
+        tokenPricesMappingTable,
         updateProgress,
       );
       const [redeemTxnsForSingle, withdrawTokenAndBalanceForSingle] =
@@ -318,13 +319,14 @@ export default class BaseProtocol extends BaseUniswap {
     throw new Error("Method 'customDeposit()' must be implemented.", amount);
   }
   async customWithdrawAndClaim(
-    recipient,
+    owner,
     percentage,
     slippage,
-        updateProgress,
+    tokenPricesMappingTable,
+    updateProgress,
   ) {
-    const [unstakeTxns, unstakedAmount, ] = await this._unstake(
-      recipient,
+    const [unstakeTxns, unstakedAmount] = await this._unstake(
+      owner,
       percentage,
       updateProgress,
     );
@@ -335,9 +337,10 @@ export default class BaseProtocol extends BaseUniswap {
       decimalOfBestTokenToZapOut,
       minTokenOut,
     ] = await this._withdrawAndClaim(
-      recipient,
+      owner,
       unstakedAmount,
       slippage,
+      tokenPricesMappingTable,
       updateProgress,
     );
     return [
@@ -349,21 +352,23 @@ export default class BaseProtocol extends BaseUniswap {
     ];
   }
   async customWithdrawLPAndClaim(
-    recipient,
+    owner,
     percentage,
     slippage,
+    tokenPricesMappingTable,
     updateProgress,
   ) {
     const [unstakeTxns, unstakedAmount] = await this._unstakeLP(
-      recipient,
+      owner,
       percentage,
       updateProgress,
     );
     const [withdrawAndClaimTxns, tokenMetadatas, minPairAmounts] =
       await this._withdrawLPAndClaim(
-        recipient,
+        owner,
         unstakedAmount,
         slippage,
+        tokenPricesMappingTable,
         updateProgress,
       );
     return [
@@ -373,7 +378,7 @@ export default class BaseProtocol extends BaseUniswap {
     ];
   }
 
-  async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
+  async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     throw new Error("Method 'customClaim()' must be implemented.");
   }
 
@@ -691,8 +696,23 @@ export default class BaseProtocol extends BaseUniswap {
   async _unstakeLP(owner, percentage, updateProgress) {
     throw new Error("Method '_unstakeLP()' must be implemented.");
   }
-  async _withdrawAndClaim(owner, withdrawAmount, slippage, updateProgress) {
+  async _withdrawAndClaim(
+    owner,
+    withdrawAmount,
+    slippage,
+    tokenPricesMappingTable,
+    updateProgress,
+  ) {
     throw new Error("Method '_withdrawAndClaim()' must be implemented.");
+  }
+  async _withdrawLPAndClaim(
+    owner,
+    amount,
+    slippage,
+    tokenPricesMappingTable,
+    updateProgress,
+  ) {
+    throw new Error("Method '_withdrawLPAndClaim()' must be implemented.");
   }
   _calculateTokenAmountsForLP(tokenMetadatas) {
     throw new Error(

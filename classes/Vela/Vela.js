@@ -167,21 +167,16 @@ export class Vela extends BaseProtocol {
       )
     )[0];
     const vlpAmount = stakedAmount.mul(percentageBN).div(10000);
-    const approveAlpTxn = approve(
-      this.assetContract.address,
-      this.protocolContract.address,
-      vlpAmount,
-      updateProgress,
-    );
 
     const withdrawTxn = prepareContractCall({
       contract: this.stakeFarmContract,
       method: "unstake",
       params: [this.assetContract.address, vlpAmount],
     });
-    return [[approveAlpTxn, withdrawTxn], vlpAmount];
+    return [[withdrawTxn], vlpAmount];
   }
   async _withdrawAndClaim(
+    owner,
     vlpAmount,
     slippage,
     tokenPricesMappingTable,
@@ -201,14 +196,19 @@ export class Vela extends BaseProtocol {
         (100 - slippage)) /
         100,
     );
-
+    const approveVlpTxn = approve(
+      this.assetContract.address,
+      this.protocolContract.address,
+      minOutAmount,
+      updateProgress,
+    );
     const burnTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "unstake",
-      params: [bestTokenAddressToZapOut, vlpAmount],
+      params: [bestTokenAddressToZapOut, minOutAmount],
     });
     return [
-      [withdrawTxn, approveAlpTxn, burnTxn],
+      [approveVlpTxn, burnTxn],
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
