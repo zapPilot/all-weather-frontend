@@ -4,7 +4,7 @@ import { generateIntentTxns } from "../../classes/main.js";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { encode } from "thirdweb";
 
-describe("Con", () => {
+describe("Convex", () => {
   it("should be able to zap-in Convex's Stablecoin Vault", async () => {
     const actionName = "zapIn";
     const userAddress = "0x04B79E6394a8200DF40d1b7fb2eC310B2e45D232";
@@ -30,26 +30,17 @@ describe("Con", () => {
       setStepName,
       slippage,
     );
-    expect(txns.length).toBe(5);
+    expect(txns.length).toBe(8);
     expect(await encode(txns[0])).toBe(
       "0x095ea7b30000000000000000000000001111111254eeb25477b68fb85ed929f73a9605820000000000000000000000000000000000000000000000000de0b6b3a7640000",
     );
 
-    expect(await encode(txns[1])).toBe(
-      "0x095ea7b3000000000000000000000000888888888889758f76e7103c6cbf23abbf58f9460000000000000000000000000000000000000000000000000de0b6b3a7640000",
-    );
     expect(
       (await encode(txns[2])).includes(
         userAddress.replace("0x", "").toLowerCase(),
       ),
     ).toBe(true);
-    expect(txns[3].to).toBe("0x279b44E48226d40Ec389129061cb0B56C5c09e46");
-    expect(
-      (await encode(txns[3])).includes(
-        "4d32c8ff2facc771ec7efc70d6a8468bc30c26bf",
-      ),
-    ).toBe(true);
-    expect(txns[4].to).toBe("0x4D32C8Ff2fACC771eC7Efc70d6A8468bC30C26bF");
+    expect(txns[3].to).toBe("0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34");
   });
   it("should be able to zap-out Convex's Stablecoin Vault", async () => {
     const actionName = "zapOut";
@@ -63,7 +54,7 @@ describe("Con", () => {
     const setProgress = () => {};
     const setStepName = () => {};
     const slippage = 0.5;
-    const portfolioHelper = getPortfolioHelper("Con");
+    const portfolioHelper = getPortfolioHelper("Convex Stablecoin Vault");
     const txns = await generateIntentTxns(
       actionName,
       portfolioHelper,
@@ -78,31 +69,9 @@ describe("Con", () => {
       slippage,
     );
     expect(txns.length).toBe(11);
-    expect(
-      (await encode(txns[0])).includes(
-        "c7517f481cc0a645e63f870830a4b2e580421e32",
-      ),
-    ).toBe(true);
-    expect(txns[1].to).toBe("0xc7517f481Cc0a645e63f870830A4B2e580421e32");
-    expect(txns[2].to).toBe("0x279b44E48226d40Ec389129061cb0B56C5c09e46");
-    expect(
-      (await encode(txns[2])).includes(
-        "888888888889758f76e7103c6cbf23abbf58f946",
-      ),
-    ).toBe(true);
-    expect(txns[3].to).toBe("0x888888888889758F76e7103c6CbF23ABbF58F946");
-    expect(
-      (await encode(txns[3])).includes(
-        userAddress.replace("0x", "").toLowerCase(),
-      ),
-    ).toBe(true);
-
-    // redeem
-    expect(txns[4].to).toBe("0x96c4a48abdf781e9c931cfa92ec0167ba219ad8e");
-
-    // swap
-    expect(txns[6].to).toBe("0x1111111254EEB25477B68fb85Ed929f73A960582");
-    expect(txns[8].to).toBe("0x1111111254EEB25477B68fb85Ed929f73A960582");
+    expect(txns[0].to).toBe("0xe062e302091f44d7483d9D6e0Da9881a0817E2be");
+    expect(txns[1].to).toBe("0x096A8865367686290639bc50bF8D85C0110d9Fea");
+    expect(txns[2].to).toBe("0xe062e302091f44d7483d9D6e0Da9881a0817E2be");
   });
   it("should be able to claim from Convex Vault", async () => {
     // params claimAndSwap 0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0 usdc 0xaf88d065e77c8cc2239327c5edb3a432268e5831 0 6 1 0.5
@@ -134,21 +103,12 @@ describe("Con", () => {
     expect(txns.length).toBe(3);
 
     // claim
-    expect(txns[0].to).toBe("0xc7517f481Cc0a645e63f870830A4B2e580421e32");
-    // redeem xEqbContract
-    expect(txns[1][0].to).toBe("0x96c4a48abdf781e9c931cfa92ec0167ba219ad8e");
+    expect(txns[0].to).toBe("0xe062e302091f44d7483d9D6e0Da9881a0817E2be");
     // approve and swap * 2
     expect(
-      (await encode(txns[2])).includes(
+      (await encode(txns[1])).includes(
         "1111111254eeb25477b68fb85ed929f73a960582",
       ),
     ).toBe(true);
-    expect(txns[3].to).toBe("0x1111111254EEB25477B68fb85Ed929f73A960582");
-    expect(
-      (await encode(txns[4])).includes(
-        "1111111254eeb25477b68fb85ed929f73a960582",
-      ),
-    ).toBe(true);
-    expect(txns[5].to).toBe("0x1111111254EEB25477B68fb85Ed929f73A960582");
   });
 });

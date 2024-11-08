@@ -134,7 +134,7 @@ export class BaseConvex extends BaseProtocol {
       params: [_amounts, _min_mint_amount],
     });
     const stakeTxns = await this._stakeLP(_amounts, updateProgress);
-    return [approveTxns, depositTxn, ...stakeTxns];
+    return [...approveTxns, depositTxn, ...stakeTxns];
   }
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     const pendingRewards = await this.pendingRewards(
@@ -248,12 +248,12 @@ export class BaseConvex extends BaseProtocol {
       method: "remove_liquidity",
       params: [amount, minPairAmounts],
     });
-    const [claimTxn, _] = await this.customClaim(
+    const [claimTxns, _] = await this.customClaim(
       owner,
       tokenPricesMappingTable,
       updateProgress,
     );
     const tokenMetadatas = this._getLPTokenPairesToZapIn();
-    return [[withdrawTxn, claimTxn], tokenMetadatas, minPairAmounts];
+    return [[withdrawTxn, ...claimTxns], tokenMetadatas, minPairAmounts];
   }
 }
