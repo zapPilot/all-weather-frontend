@@ -54,11 +54,11 @@ export class Vela extends BaseProtocol {
   rewards() {
     return [];
   }
-  async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
+  async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     return {};
   }
   async customDeposit(
-    recipient,
+    owner,
     inputToken,
     bestTokenAddressToZapIn,
     amountToZapIn,
@@ -87,28 +87,103 @@ export class Vela extends BaseProtocol {
     const mintTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "stake",
-      params: [recipient, bestTokenAddressToZapIn, amountToZapIn],
+      params: [owner, bestTokenAddressToZapIn, amountToZapIn],
     });
-    const approveAlpTxn = approve(
-      this.assetContract.address,
-      this.stakeFarmContract.address,
-      minVlpAmount,
-      updateProgress,
-    );
-    const stakeTxn = prepareContractCall({
-      contract: this.stakeFarmContract,
-      method: "stake", // <- this gets inferred from the contract
-      params: [this.assetContract.address, minVlpAmount],
-    });
-    return [approveForZapInTxn, mintTxn, approveAlpTxn, stakeTxn];
+    const stakeTxns = await this._stake(amountToZapIn, updateProgress);
+    return [approveForZapInTxn, mintTxn, ...stakeTxns];
   }
   async customWithdrawAndClaim(
-    recipient,
+    owner,
     percentage,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
   ) {
+    const [unstakeTxns, vlpAmount] = await this._unstake(
+      owner,
+      percentage,
+      updateProgress,
+    );
+    const [
+      withdrawAndClaimTxns,
+      symbolOfBestTokenToZapOut,
+      bestTokenAddressToZapOut,
+      decimalOfBestTokenToZapOut,
+      minOutAmount,
+    ] = await this._withdrawAndClaim(
+      vlpAmount,
+      slippage,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
+    return [
+      [...unstakeTxns, ...withdrawAndClaimTxns],
+      symbolOfBestTokenToZapOut,
+      bestTokenAddressToZapOut,
+      decimalOfBestTokenToZapOut,
+      minOutAmount,
+    ];
+  }
+  async customClaim(owner, tokenPricesMappingTable, updateProgress) {
+    return [[], {}];
+  }
+  customRedeemVestingRewards(pendingRewards) {
+    return [];
+  }
+  async usdBalanceOf(owner, tokenPricesMappingTable) {
+    const stakeFarmContractInstance = new ethers.Contract(
+      this.stakeFarmContract.address,
+      TokenFarm,
+      PROVIDER,
+    );
+    const userBalance = (
+      await stakeFarmContractInstance.functions.getStakedAmount(
+        this.assetContract.address,
+        owner,
+      )
+    )[0];
+    const latestVlpPrice = await this._fetchVlpPrice(() => {});
+    return (userBalance / Math.pow(10, this.assetDecimals)) * latestVlpPrice;
+  }
+  async assetUsdPrice() {
+    return await this._fetchVlpPrice(() => {});
+  }
+  async _fetchVlpPrice(updateProgress) {
+    updateProgress("fetching VLP price");
+    const protocolContractInstance = new ethers.Contract(
+      this.protocolContract.address,
+      Vault,
+      PROVIDER,
+    );
+    const vlpPrice =
+      (await protocolContractInstance.functions.getVLPPrice()) / 1e5;
+    return vlpPrice;
+  }
+  _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
+    // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
+    const usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
+    return [usdcAddress, 6];
+  }
+  _getTheBestTokenAddressToZapOut() {
+    // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
+    const usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
+    return ["usdc", usdcAddress, 6];
+  }
+  async _stake(amount, updateProgress) {
+    const approveAlpTxn = approve(
+      this.assetContract.address,
+      this.stakeFarmContract.address,
+      amount,
+      updateProgress,
+    );
+    const stakeTxn = prepareContractCall({
+      contract: this.stakeFarmContract,
+      method: "stake", // <- this gets inferred from the contract
+      params: [this.assetContract.address, amount],
+    });
+    return [approveAlpTxn, stakeTxn];
+  }
+  async _unstake(owner, percentage, updateProgress) {
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       TokenFarm,
@@ -120,7 +195,7 @@ export class Vela extends BaseProtocol {
     const stakedAmount = (
       await stakeFarmContractInstance.functions.getStakedAmount(
         this.assetContract.address,
-        recipient,
+        owner,
       )
     )[0];
     const vlpAmount = stakedAmount.mul(percentageBN).div(10000);
@@ -136,7 +211,14 @@ export class Vela extends BaseProtocol {
       method: "unstake",
       params: [this.assetContract.address, vlpAmount],
     });
-
+    return [[approveAlpTxn, withdrawTxn], vlpAmount];
+  }
+  async _withdrawAndClaim(
+    vlpAmount,
+    slippage,
+    tokenPricesMappingTable,
+    updateProgress,
+  ) {
     const [
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
@@ -164,48 +246,5 @@ export class Vela extends BaseProtocol {
       decimalOfBestTokenToZapOut,
       minOutAmount,
     ];
-  }
-  async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
-    return [[], {}];
-  }
-  customRedeemVestingRewards(pendingRewards) {
-    return [];
-  }
-  async usdBalanceOf(recipient, tokenPricesMappingTable) {
-    const stakeFarmContractInstance = new ethers.Contract(
-      this.stakeFarmContract.address,
-      TokenFarm,
-      PROVIDER,
-    );
-    const userBalance = (
-      await stakeFarmContractInstance.functions.getStakedAmount(
-        this.assetContract.address,
-        recipient,
-      )
-    )[0];
-    const latestVlpPrice = await this._fetchVlpPrice(() => {});
-    return (userBalance / Math.pow(10, this.assetDecimals)) * latestVlpPrice;
-  }
-
-  async _fetchVlpPrice(updateProgress) {
-    updateProgress("fetching VLP price");
-    const protocolContractInstance = new ethers.Contract(
-      this.protocolContract.address,
-      Vault,
-      PROVIDER,
-    );
-    const vlpPrice =
-      (await protocolContractInstance.functions.getVLPPrice()) / 1e5;
-    return vlpPrice;
-  }
-  _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
-    // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
-    const usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
-    return [usdcAddress, 6];
-  }
-  _getTheBestTokenAddressToZapOut() {
-    // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
-    const usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
-    return ["usdc", usdcAddress, 6];
   }
 }

@@ -105,7 +105,7 @@ export const selectBefore = (handleChange, chainID, selectedToken) => {
         }}
       >
         <Modal
-          title="Basic Modal"
+          title="Supported Tokens"
           open={isModalOpen}
           onCancel={handleCancel}
           footer={null}

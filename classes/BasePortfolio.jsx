@@ -129,6 +129,27 @@ export class BasePortfolio {
     }
     return [usdBalance, usdBalanceDict];
   }
+  async assetUsdPrice(owner) {
+    // Flatten the strategy structure and create balance calculation promises
+    const assetUsdPricePromises = Object.values(this.strategy)
+      .flatMap((category) => Object.values(category))
+      .flat()
+      .map((protocol) =>
+        protocol.interface
+          .assetUsdPrice(owner)
+          .then((balance) => ({ protocol, balance })),
+      );
+
+    // Wait for all promises to resolve
+    const results = await Promise.all(assetUsdPricePromises);
+
+    // Combine all assetUsdPrices
+    const totalAssetUsdPrice = results.reduce((acc, { assetUsdPrice }) => {
+      return acc + (assetUsdPrice || 0);
+    }, 0);
+
+    return totalAssetUsdPrice;
+  }
   async pendingRewards(owner, updateProgress) {
     const tokenPricesMappingTable =
       await this.getTokenPricesMappingTable(updateProgress);
@@ -291,6 +312,11 @@ export class BasePortfolio {
         actionParams.updateProgress,
         actionParams.rebalancableUsdBalanceDict,
       );
+    } else if (actionName === "stake") {
+      return await this._generateStakeTxns(
+        actionParams.protocolAssetDustInWallet,
+        actionParams.updateProgress,
+      );
     } else if (actionName === "zapOut") {
       portfolioUsdBalance = (await this.usdBalanceOf(actionParams.account))[0];
       if (portfolioUsdBalance === 0) {
@@ -344,6 +370,13 @@ export class BasePortfolio {
               actionParams.tokenPricesMappingTable,
               actionParams.updateProgress,
               this.existingInvestmentPositions[chain],
+            );
+          } else if (actionName === "transfer") {
+            txnsForThisProtocol = await protocol.interface.transfer(
+              actionParams.account,
+              actionParams.zapOutPercentage,
+              actionParams.updateProgress,
+              actionParams.recipient,
             );
           }
           if (!txnsForThisProtocol) {
@@ -488,7 +521,17 @@ export class BasePortfolio {
     }
     return txns;
   }
-
+  async _generateStakeTxns(protocolAssetDustInWallet, updateProgress) {
+    let txns = [];
+    for (const { protocol } of Object.values(protocolAssetDustInWallet)) {
+      const stakeTxns = await protocol.stake(
+        protocolAssetDustInWallet,
+        updateProgress,
+      );
+      txns = txns.concat(stakeTxns);
+    }
+    return txns;
+  }
   async _getProtocolUsdBalanceDictionary(owner) {
     const protocolPromises = Object.values(this.strategy)
       .flatMap((category) => Object.entries(category))
@@ -520,19 +563,24 @@ export class BasePortfolio {
       .flatMap(([chain, protocols]) =>
         protocols.map(async (protocol) => {
           const assetBalance = await protocol.interface.assetBalanceOf(owner);
+          const assetUsdPrice = await protocol.interface.assetUsdPrice();
           return {
             chain,
-            address: protocol.interface.assetContract.address,
+            protocol: protocol.interface,
             assetBalance,
+            assetUsdBalanceOf:
+              (Number(assetBalance) /
+                Math.pow(10, protocol.interface.assetDecimals)) *
+              assetUsdPrice,
           };
         }),
       );
 
     const results = await Promise.all(protocolPromises);
 
-    return results.reduce((acc, { chain, address, assetBalance }) => {
+    return results.reduce((acc, { chain, ...protocolData }) => {
       if (!acc[chain]) acc[chain] = {};
-      acc[chain][address] = assetBalance;
+      acc[chain][protocolData.protocol.uniqueId()] = protocolData;
       return acc;
     }, {});
   }
@@ -658,6 +706,12 @@ export class BasePortfolio {
             counts +=
               protocol.interface.rebalanceSteps() +
               protocol.interface.zapInSteps();
+          } else if (actionName === "transfer") {
+            // counts += protocol.interface.transferSteps();
+            counts += 2;
+          } else if (actionName === "stake") {
+            // usually 2 steps: approve and stake
+            counts += 2;
           } else {
             throw new Error(`Action ${actionName} not supported`);
           }

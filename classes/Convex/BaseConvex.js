@@ -62,7 +62,7 @@ export class BaseConvex extends BaseProtocol {
   rewards() {
     return this.customParams.rewards;
   }
-  async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
+  async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     let rewardBalance = {};
     updateProgress(
       `fetching pending rewards from ${this.stakeFarmContract.address}`,
@@ -82,7 +82,7 @@ export class BaseConvex extends BaseProtocol {
       const reward_balance = (
         await stakeFarmContractInstance.functions.claimable_reward(
           reward_address,
-          recipient,
+          owner,
         )
       )[0];
       rewardBalance[reward_address] = {
@@ -97,7 +97,7 @@ export class BaseConvex extends BaseProtocol {
     return rewardBalance;
   }
   async customDepositLP(
-    recipient,
+    owner,
     tokenAmetadata,
     tokenBmetadata,
     tokenPricesMappingTable,
@@ -133,6 +133,86 @@ export class BaseConvex extends BaseProtocol {
       method: "add_liquidity",
       params: [_amounts, _min_mint_amount],
     });
+    const stakeTxns = await this._stakeLP(_amounts, updateProgress);
+    return [approveTxns, depositTxn, ...stakeTxns];
+  }
+  async customWithdrawLPAndClaim(
+    owner,
+    percentage,
+    slippage,
+    tokenPricesMappingTable,
+    updateProgress,
+  ) {
+    const [unstakeTxn, amount] = await this._unstakeLP(
+      owner,
+      percentage,
+      updateProgress,
+    );
+    const [withdrawAndClaimTxns, tokenMetadatas, minPairAmounts] =
+      await this._withdrawLPandClaim(
+        owner,
+        amount,
+        slippage,
+        tokenPricesMappingTable,
+        updateProgress,
+      );
+    return [
+      [unstakeTxn, ...withdrawAndClaimTxns],
+      tokenMetadatas,
+      minPairAmounts,
+    ];
+  }
+  async customClaim(owner, tokenPricesMappingTable, updateProgress) {
+    const pendingRewards = await this.pendingRewards(
+      owner,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
+    const claimTxn = prepareContractCall({
+      contract: this.convexRewardPoolContract,
+      method: "function getReward(address _account)",
+      params: [owner],
+    });
+    return [[claimTxn], pendingRewards];
+  }
+  customRedeemVestingRewards(pendingRewards) {
+    return [];
+  }
+  async usdBalanceOf(owner, tokenPricesMappingTable) {
+    const lpBalance = await this.stakeBalanceOf(owner, () => {});
+    const lpPrice = this._calculateLpPrice(tokenPricesMappingTable);
+    return (lpBalance * lpPrice) / Math.pow(10, this.assetDecimals);
+  }
+  async assetUsdPrice() {
+    return await this._calculateLpPrice(() => {});
+  }
+  async stakeBalanceOf(owner, updateProgress) {
+    const rewardPoolContractInstance = new ethers.Contract(
+      this.convexRewardPoolContract.address,
+      ERC20_ABI,
+      PROVIDER,
+    );
+    updateProgress("Getting stake balance");
+    return (await rewardPoolContractInstance.functions.balanceOf(owner))[0];
+  }
+  _getLPTokenPairesToZapIn() {
+    return this.customParams.lpTokens;
+  }
+  _calculateTokenAmountsForLP(tokenMetadatas) {
+    return [1, 1];
+  }
+  _calculateLpPrice(tokenPricesMappingTable) {
+    // TODO(david): need to calculate the correct LP price
+    if (this.pid === 34) {
+      // it's a stablecoin pool
+      return 1;
+    } else if (this.pid === 28) {
+      // it's a ETH pool
+      return tokenPricesMappingTable["weth"];
+    }
+    throw new Error("Not implemented");
+  }
+  async _stakeLP(amount, updateProgress) {
     const approveForStakingTxn = approve(
       this.assetContract.address,
       this.stakeFarmContract.address,
@@ -146,24 +226,26 @@ export class BaseConvex extends BaseProtocol {
       method: "depositAll",
       params: [this.pid],
     });
-    return [approveTxns, depositTxn, approveForStakingTxn, stakeTxn];
+    return [approveForStakingTxn, stakeTxn];
   }
-  async customWithdrawLPAndClaim(
-    recipient,
-    percentage,
-    slippage,
-    tokenPricesMappingTable,
-    updateProgress,
-  ) {
+  async _unstakeLP(owner, percentage, updateProgress) {
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
-    const stakeBalance = await this.stakeBalanceOf(recipient, updateProgress);
+    const stakeBalance = await this.stakeBalanceOf(owner, updateProgress);
     const amount = stakeBalance.mul(percentageBN).div(10000);
     const unstakeTxn = prepareContractCall({
       contract: this.convexRewardPoolContract,
       method: "withdraw",
       params: [amount, false],
     });
-
+    return [[unstakeTxn], amount];
+  }
+  async _withdrawLPandClaim(
+    owner,
+    amount,
+    slippage,
+    tokenPricesMappingTable,
+    updateProgress,
+  ) {
     const protocolContractInstance = new ethers.Contract(
       this.protocolContract.address,
       CurveStableSwapNG,
@@ -193,7 +275,7 @@ export class BaseConvex extends BaseProtocol {
       params: [amount, minPairAmounts],
     });
     const [claimTxn, _] = await this.customClaim(
-      recipient,
+      owner,
       tokenPricesMappingTable,
       updateProgress,
     );
@@ -203,52 +285,5 @@ export class BaseConvex extends BaseProtocol {
       tokenMetadatas,
       minPairAmounts,
     ];
-  }
-  async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
-    const pendingRewards = await this.pendingRewards(
-      recipient,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    const claimTxn = prepareContractCall({
-      contract: this.convexRewardPoolContract,
-      method: "function getReward(address _account)",
-      params: [recipient],
-    });
-    return [[claimTxn], pendingRewards];
-  }
-  customRedeemVestingRewards(pendingRewards) {
-    return [];
-  }
-  async usdBalanceOf(recipient, tokenPricesMappingTable) {
-    const lpBalance = await this.stakeBalanceOf(recipient, () => {});
-    const lpPrice = this._calculateLpPrice(tokenPricesMappingTable);
-    return (lpBalance * lpPrice) / Math.pow(10, this.assetDecimals);
-  }
-  async stakeBalanceOf(recipient, updateProgress) {
-    const rewardPoolContractInstance = new ethers.Contract(
-      this.convexRewardPoolContract.address,
-      ERC20_ABI,
-      PROVIDER,
-    );
-    updateProgress("Getting stake balance");
-    return (await rewardPoolContractInstance.functions.balanceOf(recipient))[0];
-  }
-  _getLPTokenPairesToZapIn() {
-    return this.customParams.lpTokens;
-  }
-  _calculateTokenAmountsForLP(tokenMetadatas) {
-    return [1, 1];
-  }
-  _calculateLpPrice(tokenPricesMappingTable) {
-    // TODO(david): need to calculate the correct LP price
-    if (this.pid === 34) {
-      // it's a stablecoin pool
-      return 1;
-    } else if (this.pid === 28) {
-      // it's a ETH pool
-      return tokenPricesMappingTable["weth"];
-    }
-    throw new Error("Not implemented");
   }
 }

@@ -61,14 +61,19 @@ export default function TransacitonHistory({
             [principalSymbol]:
               (principalBalance[principalSymbol] || 0) + investmentAmount,
           };
-        } else if (txn.metadata.actionName === "zapOut") {
+        } else if (
+          txn.metadata.actionName === "zapOut" ||
+          txn.metadata.actionName === "transfer"
+        ) {
           const zapOutAmount = parseFloat(txn.metadata.zapOutAmount) || 0;
           principalBalance = {
             ...principalBalance,
             ["usd"]: (principalBalance["usd"] || 0) - zapOutAmount,
           };
         }
-        if (["zapOut", "rebalance"].includes(txn.metadata.actionName)) {
+        if (
+          ["zapOut", "rebalance", "transfer"].includes(txn.metadata.actionName)
+        ) {
           for (const tokenMetadata of Object.values(txn.gotRefundData)) {
             const symbol = refineSymbol(tokenMetadata.symbol);
             principalBalance = {
@@ -120,7 +125,8 @@ export default function TransacitonHistory({
     const actionAmount =
       activityItem.metadata.actionName === "zapIn"
         ? parseFloat(activityItem.metadata.investmentAmount)
-        : activityItem.metadata.actionName === "zapOut"
+        : activityItem.metadata.actionName === "zapOut" ||
+          activityItem.metadata.actionName === "transfer"
         ? parseFloat(activityItem.metadata.zapOutAmount)
         : 0;
     const actionTokenSymbol = activityItem.metadata.tokenSymbol;
@@ -137,6 +143,8 @@ export default function TransacitonHistory({
         ? "Deposit"
         : activityItem.metadata.actionName === "zapOut"
         ? "Withdraw"
+        : activityItem.metadata.actionName === "transfer"
+        ? "Transfer"
         : activityItem.metadata.actionName === "rebalance"
         ? `rebalance ${
             tokenSum > 0 ? "(refund)" : tokenSum < 0 ? "(cost)" : ""
@@ -149,7 +157,8 @@ export default function TransacitonHistory({
             className={classNames(
               activityItem.metadata.actionName === "zapIn"
                 ? "text-green-500"
-                : activityItem.metadata.actionName === "zapOut"
+                : activityItem.metadata.actionName === "zapOut" ||
+                  activityItem.metadata.actionName === "transfer"
                 ? "text-orange-500"
                 : "text-blue-500",
             )}
@@ -160,16 +169,25 @@ export default function TransacitonHistory({
         {Object.entries(tokenDict).map(([symbol, amount]) => {
           return (
             <div key={symbol} className="flex gap-1 items-center">
-              {activityItem.metadata.actionName === "zapOut" && "$"}
+              {activityItem.metadata.actionName === "zapOut" ||
+                (activityItem.metadata.actionName === "transfer" && "$")}
               {amount > 0.01 ? amount.toFixed(2) : "< 0.01"}
-              {activityItem.metadata.actionName === "zapOut" && " worth of "}
-              <ImageWithFallback
-                token={symbol}
-                height={20}
-                width={20}
-                domKey={`${symbol}-${amount}`}
-              />
-              {symbol}
+              {activityItem.metadata.actionName === "zapOut" ||
+                (activityItem.metadata.actionName === "transfer" &&
+                  " worth of ")}
+              {activityItem.metadata.actionName === "transfer" ? (
+                "LP tokens"
+              ) : (
+                <>
+                  <ImageWithFallback
+                    token={symbol}
+                    height={20}
+                    width={20}
+                    domKey={`${symbol}-${amount}`}
+                  />
+                  {symbol}
+                </>
+              )}
             </div>
           );
         })}

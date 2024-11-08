@@ -7,7 +7,7 @@ import BaseUniswap from "./uniswapv3/BaseUniswap.js";
 import assert from "assert";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 import { approve } from "../utils/general";
-import { prepareTransaction } from "thirdweb";
+import { prepareTransaction, prepareContractCall } from "thirdweb";
 
 export default class BaseProtocol extends BaseUniswap {
   // arbitrum's Apollox is staked on PancakeSwap
@@ -83,6 +83,11 @@ export default class BaseProtocol extends BaseUniswap {
   async usdBalanceOf(address, tokenPricesMappingTable) {
     throw new Error("Method 'usdBalanceOf()' must be implemented.");
   }
+  async assetUsdBalanceOf(owner) {
+    return (await this.assetBalanceOf(owner))
+      .div(10 ** this.assetDecimals)
+      .mul(await this.assetUsdPrice());
+  }
   async stakeBalanceOf(address) {
     throw new Error("Method 'stakeBalanceOf()' must be implemented.");
   }
@@ -99,6 +104,9 @@ export default class BaseProtocol extends BaseUniswap {
   }
   async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
     throw new Error("Method 'pendingRewards()' must be implemented.");
+  }
+  async assetUsdPrice() {
+    throw new Error("Method 'assetUsdPrice()' must be implemented.");
   }
   async zapIn(
     recipient,
@@ -250,6 +258,54 @@ export default class BaseProtocol extends BaseUniswap {
     );
     return [...claimTxns, ...txns];
   }
+
+  async transfer(owner, percentage, updateProgress, recipient) {
+    let amount;
+    let unstakeTxnsOfThisProtocol;
+
+    if (this.mode === "single") {
+      [unstakeTxnsOfThisProtocol, amount] = await this._unstake(
+        owner,
+        percentage,
+        updateProgress,
+      );
+    } else if (this.mode === "LP") {
+      [unstakeTxnsOfThisProtocol, amount] = await this._unstakeLP(
+        owner,
+        percentage,
+        updateProgress,
+      );
+    } else {
+      throw new Error("Invalid mode for transfer");
+    }
+
+    // Ensure amount is valid
+    if (!amount || amount.toString() === "0") {
+      throw new Error("No amount available to transfer");
+    }
+
+    const transferTxn = prepareContractCall({
+      contract: this.assetContract,
+      method: "transfer",
+      params: [recipient, amount],
+    });
+    return [...unstakeTxnsOfThisProtocol, transferTxn];
+  }
+  async stake(protocolAssetDustInWallet, updateProgress) {
+    let stakeTxns = [];
+    const amount = protocolAssetDustInWallet[this.uniqueId()].assetBalance;
+    if (amount.toString() === "0") {
+      return [];
+    }
+    if (this.mode === "single") {
+      stakeTxns = await this._stake(amount, updateProgress);
+    } else if (this.mode === "LP") {
+      stakeTxns = await this._stakeLP(amount, updateProgress);
+    } else {
+      throw new Error("Invalid mode for stake");
+    }
+    return stakeTxns;
+  }
   async customDeposit(
     recipient,
     inputToken,
@@ -268,7 +324,14 @@ export default class BaseProtocol extends BaseUniswap {
     slippage,
     updateProgress,
   ) {
-    throw new Error("Method 'customWithdrawAndClaim()' must be implemented.");
+    const [unstakedAmount, unstakeTxns] = this._unstake(recipient, percentage);
+    const withdrawAndClaimTxns = this._withdrawAndClaim(
+      recipient,
+      unstakedAmount,
+      slippage,
+      updateProgress,
+    );
+    return [...unstakeTxns, ...withdrawAndClaimTxns];
   }
   async customWithdrawLPAndClaim(
     recipient,
@@ -276,7 +339,17 @@ export default class BaseProtocol extends BaseUniswap {
     slippage,
     updateProgress,
   ) {
-    throw new Error("Method 'customWithdrawLPAndClaim()' must be implemented.");
+    const [unstakedAmount, unstakeTxns] = this._unstakeLP(
+      recipient,
+      percentage,
+    );
+    const withdrawAndClaimTxns = this._withdrawLPAndClaim(
+      recipient,
+      amount,
+      slippage,
+      updateProgress,
+    );
+    return [...unstakeTxns, ...withdrawAndClaimTxns];
   }
 
   async customClaim(recipient, tokenPricesMappingTable, updateProgress) {
@@ -584,6 +657,15 @@ export default class BaseProtocol extends BaseUniswap {
       }
     }
     return [redeemTxns, withdrawTokenAndBalance];
+  }
+  async _unstake(owner, percentage, updateProgress) {
+    throw new Error("Method '_unstake()' must be implemented.");
+  }
+  async _unstakeLP(owner, percentage, updateProgress) {
+    throw new Error("Method '_unstakeLP()' must be implemented.");
+  }
+  _withdrawAndClaim() {
+    throw new Error("Method '_withdrawAndClaim()' must be implemented.");
   }
   _calculateTokenAmountsForLP(tokenMetadatas) {
     throw new Error(
