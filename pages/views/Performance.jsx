@@ -182,7 +182,7 @@ const Performance = ({ portfolioApr }) => {
         </a>
       </center>
 
-      {account?.address && (
+      {(account?.address || searchWalletAddress) && (
         <HistoricalGenericDataChart
           apiUrl={`${process.env.NEXT_PUBLIC_SDK_API_URL}/balances/${
             searchWalletAddress === undefined
