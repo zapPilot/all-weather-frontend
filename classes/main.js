@@ -14,6 +14,8 @@ export const generateIntentTxns = async (
   setStepName,
   slippage,
   rebalancableUsdBalanceDict,
+  recipient,
+  protocolAssetDustInWallet,
 ) => {
   let txns;
   if (actionName === "zapIn") {
@@ -55,6 +57,23 @@ export const generateIntentTxns = async (
       slippage,
       rebalancableUsdBalanceDict,
     });
+  } else if (actionName === "transfer") {
+    txns = await portfolioHelper.portfolioAction(actionName, {
+      account: accountAddress,
+      zapOutPercentage: Number(zapOutPercentage),
+      progressCallback: (progressPercentage) => setProgress(progressPercentage),
+      progressStepNameCallback: (stepName) => setStepName(stepName),
+      slippage,
+      recipient,
+    });
+  } else if (actionName === "stake") {
+    txns = await portfolioHelper.portfolioAction(actionName, {
+      account: accountAddress,
+      progressCallback: (progressPercentage) => setProgress(progressPercentage),
+      progressStepNameCallback: (stepName) => setStepName(stepName),
+      protocolAssetDustInWallet,
+    });
   }
+
   return txns;
 };

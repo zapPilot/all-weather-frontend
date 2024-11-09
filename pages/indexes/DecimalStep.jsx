@@ -1,4 +1,4 @@
-import { Space, InputNumber, Row, Slider } from "antd";
+import { Space, InputNumber, Slider } from "antd";
 import { useState, useEffect } from "react";
 import { selectBefore } from "../../utils/contractInteractions";
 import { useActiveWalletChain } from "thirdweb/react";
@@ -10,8 +10,8 @@ const DecimalStep = ({
   selectedToken,
   setSelectedToken,
 }) => {
-  const [inputValue, setInputValue] = useState(depositBalance);
-  const [sliderValue, setSliderValue] = useState(100);
+  const [inputValue, setInputValue] = useState(0);
+  const [sliderValue, setSliderValue] = useState(0);
   const chainId = useActiveWalletChain();
   const handleTokenChange = (value) => {
     setSelectedToken(value);
@@ -19,8 +19,8 @@ const DecimalStep = ({
 
   // Update inputValue when depositBalance changes
   useEffect(() => {
-    setInputValue(depositBalance);
-    setSliderValue(100); // Reset slider to 100% when depositBalance changes
+    setInputValue(0);
+    setSliderValue(0); // Reset slider to 100% when depositBalance changes
   }, [depositBalance]);
 
   useEffect(() => {
