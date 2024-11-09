@@ -10,7 +10,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { CheckIcon } from "@heroicons/react/24/outline";
 import { Input } from "antd";
 import { useRouter } from "next/router";
-import TransacitonHistory from "./transacitonHistory.jsx";
+import TransacitonHistory from "./transactionHistory.jsx";
 import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
 import ConfiguredConnectButton from "../ConnectButton";
 import {
