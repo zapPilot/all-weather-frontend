@@ -27,8 +27,7 @@ const ACTION_LABELS = {
   zapIn: "Deposit",
   zapOut: "Withdraw",
   transfer: "Transfer",
-  rebalance: (tokenSum) =>
-    `rebalance ${tokenSum > 0 ? "(refund)" : tokenSum < 0 ? "(cost)" : ""}`,
+  rebalance: "Rebalance",
 };
 
 const ACTION_COLORS = {
@@ -50,6 +49,13 @@ const updateBalance = (balance, symbol, amount) => ({
   ...balance,
   [symbol]: (balance[symbol] || 0) + amount,
 });
+
+// Add separate function for rebalance suffix
+const getRebalanceLabel = (tokenSum) => {
+  const baseLabel = ACTION_LABELS.rebalance;
+  const suffix = tokenSum > 0 ? " (refund)" : tokenSum < 0 ? " (cost)" : "";
+  return baseLabel + suffix;
+};
 
 export default function TransactionHistory({
   setPrincipalBalance,
@@ -200,10 +206,9 @@ export default function TransactionHistory({
       0,
     );
     const actionLabel =
-      ACTION_LABELS[actionName] ||
-      (actionName === "rebalance"
-        ? ACTION_LABELS.rebalance(tokenSum)
-        : actionName);
+      actionName === "rebalance"
+        ? getRebalanceLabel(tokenSum)
+        : ACTION_LABELS[actionName] || actionName;
 
     return (
       <div className="flex flex-col gap-1">

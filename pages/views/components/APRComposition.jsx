@@ -37,7 +37,7 @@ const APRComposition = ({
     <Popover
       style={{ width: "500px" }}
       content={renderContent()}
-      title="Data Breakdown (cannot claim less than $1)"
+      title="Data Breakdown"
       trigger="hover"
     >
       <InfoCircleOutlined
