@@ -333,34 +333,6 @@ export default function IndexOverviews() {
     },
     {
       key: "3",
-      label: "Convert Rewards",
-      children: (
-        <div>
-          {selectBefore(handleSetSelectedToken, chainId?.id, selectedToken)}
-          {account === undefined ? (
-            <ConfiguredConnectButton />
-          ) : (
-            <Button
-              type="primary"
-              className="w-full mt-2"
-              onClick={() => handleAAWalletAction("claimAndSwap")}
-              loading={claimIsLoading || pendingRewardsLoading}
-              disabled={
-                portfolioHelper?.sumUsdDenominatedValues(pendingRewards) < 1
-              }
-            >
-              Convert
-              {formatBalance(
-                portfolioHelper?.sumUsdDenominatedValues(pendingRewards),
-              )}{" "}
-              Rewards to {selectedToken.split("-")[0]}
-            </Button>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "4",
       label: "Transfer",
       children: (
         <div>
@@ -691,7 +663,7 @@ export default function IndexOverviews() {
               ⛽<span className="text-emerald-400">Free</span>
               {tabKey === "2" ? (
                 <span className="text-gray-400">
-                  , Transaction Fee: {portfolioHelper?.swapFeeRate() * 100}%
+                  , Exit Fee: {portfolioHelper?.swapFeeRate() * 100}%
                 </span>
               ) : null}
             </div>
@@ -782,8 +754,8 @@ export default function IndexOverviews() {
                     <ul className="mt-3 text-white">
                       <li>
                         <div className="text-gray-400">
-                          Transaction Fee:{" "}
-                          {portfolioHelper?.swapFeeRate() * 100}%
+                          Rebalance Cost: {portfolioHelper?.swapFeeRate() * 100}
+                          %
                         </div>
                         {calCurrentAPR(rebalancableUsdBalanceDict) >
                         portfolioApr[portfolioName]?.portfolioAPR * 100 ? (
@@ -837,7 +809,7 @@ export default function IndexOverviews() {
                       />
                     </dt>
                     <dd className="text-sm font-medium leading-6 text-white">
-                      PnL:{" "}
+                      Profit:{" "}
                       {usdBalanceLoading ||
                       Object.values(tokenPricesMappingTable).length === 0 ? (
                         <Spin />

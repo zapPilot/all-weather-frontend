@@ -428,6 +428,7 @@ export class BasePortfolio {
     let zapOutUsdcBalance = 0;
     const usdcSymbol = "usdc";
     const usdcAddressInThisChain = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
+    const usdcDecimals = 6;
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const [chain, protocols] of Object.entries(
         protocolsInThisCategory,
@@ -469,8 +470,8 @@ export class BasePortfolio {
       (
         (zapOutUsdcBalance * (100 - slippage)) / 100 +
         rebalancableUsdBalanceDict.pendingRewards.usdBalance * REWARD_SLIPPAGE
-      ).toFixed(6),
-      6,
+      ).toFixed(usdcDecimals),
+      usdcDecimals,
     );
     const approveTxn = approve(
       usdcAddressInThisChain,
