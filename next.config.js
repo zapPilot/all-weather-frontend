@@ -45,9 +45,8 @@ module.exports = withSentryConfig(
     // Transpiles SDK to be compatible with IE11 (increases bundle size)
     transpileClientSDK: true,
 
-    // comment this since it's showing error
-    // // Routes browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers (increases server load)
-    // tunnelRoute: "/monitoring",
+    // Routes browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers (increases server load)
+    tunnelRoute: "/monitoring",
 
     // Hides source maps from generated client bundles
     hideSourceMaps: true,
