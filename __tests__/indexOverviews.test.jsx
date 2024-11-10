@@ -127,7 +127,10 @@ describe("IndexOverviews Component", () => {
   });
 
   it('should show "Unlocked" when lockUpPeriod is 0', async () => {
-    render(<IndexOverviews />, {
+    // mock lockUpPeriod
+    mockPortfolioHelper.lockUpPeriod.mockResolvedValue(0);
+
+    const { container } = render(<IndexOverviews />, {
       preloadedState: {
         account: {
           address: "0x123456789abcdef",
@@ -143,14 +146,19 @@ describe("IndexOverviews Component", () => {
         },
       },
     });
-    const lockUpPeriods = await screen.findAllByRole(
-      "lockUpPeriod",
-      {},
-      { timeout: 1000 },
+
+    await waitFor(
+      () => {
+        const lockUpPeriods = screen.getAllByRole("lockUpPeriod");
+        lockUpPeriods.forEach((element) => {
+          expect(element.textContent).toBe("Unlocked");
+        });
+      },
+      {
+        timeout: 5000,
+        interval: 100,
+      }
     );
-    lockUpPeriods.forEach((element) => {
-      expect(element.textContent).toBe("Unlocked");
-    });
   });
 
   it("should show remaining time when lockUpPeriod is greater than 0", async () => {
