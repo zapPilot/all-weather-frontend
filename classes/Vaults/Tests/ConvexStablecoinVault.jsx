@@ -50,7 +50,4 @@ export class ConvexStablecoinVault extends BasePortfolio {
     );
     this.validateStrategyWeights();
   }
-  lockUpPeriod() {
-    return 0;
-  }
 }
