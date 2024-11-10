@@ -431,7 +431,7 @@ export class BasePortfolio {
             chain,
           );
           if (txnsForThisProtocol) {
-            protocolTxns.push(txnsForThisProtocol);
+            protocolTxns.push(...txnsForThisProtocol);
           }
         }
       }
@@ -742,9 +742,11 @@ export class BasePortfolio {
           } else if (actionName === "claimAndSwap") {
             counts += protocol.interface.claimAndSwapSteps();
           } else if (actionName === "rebalance") {
+            // TODO(david): currently, steps are totally inaccurate
             counts +=
-              protocol.interface.rebalanceSteps() +
-              protocol.interface.zapInSteps();
+              protocol.interface.zapOutSteps() +
+              protocol.interface.zapInSteps() +
+              3;
           } else if (actionName === "transfer") {
             // counts += protocol.interface.transferSteps();
             counts += 2;
