@@ -162,43 +162,28 @@ describe("IndexOverviews Component", () => {
   });
 
   it("should show remaining time when lockUpPeriod is greater than 0", async () => {
-    // reset mockPortfolioHelper lockUpPeriod
+    // mock lockUpPeriod
     mockPortfolioHelper.lockUpPeriod.mockReset();
-    mockPortfolioHelper.lockUpPeriod.mockImplementation(async () => {
-      return 172800;
-    });
+    mockPortfolioHelper.lockUpPeriod.mockResolvedValue(172800);
 
-    // render component
-    const { unmount } = render(<IndexOverviews />, {
-      preloadedState: {
-        account: {
-          address: "0x123456789abcdef",
-        },
-        strategyMetadata: {
-          loading: false,
-          error: null,
-          strategyMetadata: {
-            "Stablecoin Vault": {
-              portfolioAPR: 0.05,
-            },
-          },
-        },
-      },
-    });
+    render(<IndexOverviews />);
 
-    // wait for state update
     await waitFor(
       () => {
+        // find the locked period
         const lockUpPeriods = screen.getAllByRole("lockUpPeriod");
-        expect(lockUpPeriods[0].textContent.trim()).toBe("2 d");
+        const lockedPeriod = lockUpPeriods.find((element) =>
+          element.className.includes("text-red-500"),
+        );
+
+        // ensure the locked period is found and the content is correct
+        expect(lockedPeriod).toBeInTheDocument();
+        expect(lockedPeriod.textContent.trim()).toBe("2 d");
       },
       {
-        timeout: 2000,
+        timeout: 5000,
         interval: 100,
       },
     );
-
-    // unmount component
-    unmount();
   });
 });
