@@ -736,4 +736,7 @@ export default class BaseProtocol extends BaseUniswap {
       .mul(ethers.BigNumber.from(10000).sub(slippageBasisPoints))
       .div(10000);
   }
+  async lockUpPeriod(address) {
+    throw new Error("Method 'lockUpPeriod()' must be implemented.");
+  }
 }

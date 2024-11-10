@@ -253,4 +253,7 @@ export class BaseConvex extends BaseProtocol {
     const tokenMetadatas = this._getLPTokenPairesToZapIn();
     return [[withdrawTxn, ...claimTxns], tokenMetadatas, minPairAmounts];
   }
+  async lockUpPeriod() {
+    return 0;
+  }
 }

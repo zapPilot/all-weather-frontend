@@ -175,7 +175,4 @@ export class StablecoinVault extends BasePortfolio {
   denomination() {
     return "$";
   }
-  lockUpPeriod() {
-    return 2;
-  }
 }

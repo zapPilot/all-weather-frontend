@@ -223,6 +223,9 @@ export class BaseApolloX extends BaseProtocol {
     const usdcBridgedAddress = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8";
     return ["usdc.e", usdcBridgedAddress, 6];
   }
+  async lockUpPeriod() {
+    return 0;
+  }
   _stake(amount, updateProgress) {
     const approveAlpTxn = approve(
       this.assetContract.address,
