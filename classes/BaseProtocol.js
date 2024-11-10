@@ -228,6 +228,7 @@ export default class BaseProtocol extends BaseUniswap {
       withdrawTokenAndBalance,
       outputToken,
       slippage,
+      tokenPricesMappingTable,
       updateProgress,
     );
     if (redeemTxns.length === 0) {
@@ -254,6 +255,7 @@ export default class BaseProtocol extends BaseUniswap {
       claimedTokenAndBalance,
       outputToken,
       slippage,
+      tokenPricesMappingTable,
       updateProgress,
     );
     return [...claimTxns, ...txns];
@@ -262,7 +264,6 @@ export default class BaseProtocol extends BaseUniswap {
   async transfer(owner, percentage, updateProgress, recipient) {
     let amount;
     let unstakeTxnsOfThisProtocol;
-
     if (this.mode === "single") {
       [unstakeTxnsOfThisProtocol, amount] = await this._unstake(
         owner,
@@ -504,6 +505,7 @@ export default class BaseProtocol extends BaseUniswap {
     withdrawTokenAndBalance,
     outputToken,
     slippage,
+    tokenPricesMappingTable,
     updateProgress,
   ) {
     let txns = [];
@@ -514,7 +516,9 @@ export default class BaseProtocol extends BaseUniswap {
       if (
         amount.toString() === "0" ||
         amount === 0 ||
-        tokenMetadata.vesting === true
+        tokenMetadata.vesting === true ||
+        // if usd value of this token is less than 1, then it's easy to suffer from high slippage
+        tokenPricesMappingTable[tokenMetadata.symbol] * amount < 1
       ) {
         continue;
       }

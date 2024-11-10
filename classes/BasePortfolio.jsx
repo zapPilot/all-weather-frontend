@@ -293,17 +293,17 @@ export class BasePortfolio {
 
   async _generateTxnsByAction(actionName, actionParams) {
     let totalTxns = [];
-    let portfolioUsdBalance = 0;
+
+    // Handle special pre-processing for specific actions
     if (actionName === "zapIn") {
-      // TODO(david): zap in's weight should take protocolUsdBalanceDictionary into account
-      // protocolUsdBalanceDictionary = await this._getProtocolUsdBalanceDictionary(owner)
-      const approveTxn = approve(
-        actionParams.tokenInAddress,
-        oneInchAddress,
-        actionParams.zapInAmount,
-        actionParams.updateProgress,
+      totalTxns.push(
+        approve(
+          actionParams.tokenInAddress,
+          oneInchAddress,
+          actionParams.zapInAmount,
+          actionParams.updateProgress,
+        ),
       );
-      totalTxns = totalTxns.concat([approveTxn]);
     } else if (actionName === "rebalance") {
       return await this._generateRebalanceTxns(
         actionParams.account,
@@ -317,88 +317,126 @@ export class BasePortfolio {
         actionParams.protocolAssetDustInWallet,
         actionParams.updateProgress,
       );
-    } else if (actionName === "zapOut") {
-      portfolioUsdBalance = (await this.usdBalanceOf(actionParams.account))[0];
-      if (portfolioUsdBalance === 0) {
-        return [];
-      }
     }
-    for (const protocolsInThisCategory of Object.values(this.strategy)) {
-      for (const [chain, protocols] of Object.entries(
-        protocolsInThisCategory,
-      )) {
-        for (const protocol of protocols) {
-          if (protocol.weight === 0) {
-            continue;
-          }
-          // make it concurrent!
-          let txnsForThisProtocol;
-          if (actionName === "zapIn") {
-            const percentageBN = ethers.BigNumber.from(
-              Math.floor(protocol.weight * 10000),
-            );
-            txnsForThisProtocol = await protocol.interface.zapIn(
-              actionParams.account,
-              actionParams.zapInAmount.mul(percentageBN).div(10000),
-              actionParams.tokenInSymbol,
-              actionParams.tokenInAddress,
-              actionParams.slippage,
-              actionParams.tokenPricesMappingTable,
-              actionParams.updateProgress,
-              this.existingInvestmentPositions[chain],
-            );
-          } else if (actionName === "zapOut") {
-            const protocolUsdBalance = await protocol.interface.usdBalanceOf(
-              actionParams.account,
-              actionParams.tokenPricesMappingTable,
-            );
-            if (protocolUsdBalance === 0) continue;
-            txnsForThisProtocol = await protocol.interface.zapOut(
-              actionParams.account,
-              Number(actionParams.zapOutPercentage),
-              actionParams.tokenOutAddress,
-              actionParams.slippage,
-              actionParams.tokenPricesMappingTable,
-              actionParams.updateProgress,
-              this.existingInvestmentPositions[chain],
-            );
-          } else if (actionName === "claimAndSwap") {
-            txnsForThisProtocol = await protocol.interface.claimAndSwap(
-              actionParams.account,
-              actionParams.tokenOutAddress,
-              actionParams.slippage,
-              actionParams.tokenPricesMappingTable,
-              actionParams.updateProgress,
-              this.existingInvestmentPositions[chain],
-            );
-          } else if (actionName === "transfer") {
-            txnsForThisProtocol = await protocol.interface.transfer(
-              actionParams.account,
-              actionParams.zapOutPercentage,
-              actionParams.updateProgress,
-              actionParams.recipient,
-            );
-          }
-          if (!txnsForThisProtocol) {
-            continue;
-          }
-          totalTxns = totalTxns.concat(txnsForThisProtocol);
-        }
-      }
-    }
+
+    // Process each protocol
+    const protocolTxns = await this._processProtocolActions(
+      actionName,
+      actionParams,
+    );
+    totalTxns = totalTxns.concat(protocolTxns);
+
+    // Handle special post-processing for specific actions
     if (actionName === "zapOut") {
-      totalTxns = totalTxns.concat(
-        await this._swapFeeTxnsForZapOut(
+      const portfolioUsdBalance = (
+        await this.usdBalanceOf(actionParams.account)
+      )[0];
+      if (portfolioUsdBalance > 0) {
+        const swapFeeTxns = await this._swapFeeTxnsForZapOut(
           actionParams.account,
           actionParams.tokenOutAddress,
           actionParams.tokenOutSymbol,
           actionParams.tokenPricesMappingTable,
           actionParams.zapOutPercentage,
           portfolioUsdBalance,
-        ),
-      );
+        );
+        totalTxns = totalTxns.concat(swapFeeTxns);
+      }
     }
+
     return totalTxns;
+  }
+
+  async _processProtocolActions(actionName, actionParams) {
+    const actionHandlers = {
+      zapIn: async (protocol, chain) => {
+        // TODO(david): zap in's weight should take protocolUsdBalanceDictionary into account
+        // protocolUsdBalanceDictionary = await this._getProtocolUsdBalanceDictionary(owner)
+        if (protocol.weight === 0) return null;
+        const percentageBN = ethers.BigNumber.from(
+          Math.floor(protocol.weight * 10000),
+        );
+        return protocol.interface.zapIn(
+          actionParams.account,
+          actionParams.zapInAmount.mul(percentageBN).div(10000),
+          actionParams.tokenInSymbol,
+          actionParams.tokenInAddress,
+          actionParams.slippage,
+          actionParams.tokenPricesMappingTable,
+          actionParams.updateProgress,
+          this.existingInvestmentPositions[chain],
+        );
+      },
+
+      zapOut: async (protocol, chain) => {
+        const protocolUsdBalance = await protocol.interface.usdBalanceOf(
+          actionParams.account,
+          actionParams.tokenPricesMappingTable,
+        );
+        if (protocolUsdBalance === 0) return null;
+        return protocol.interface.zapOut(
+          actionParams.account,
+          protocolUsdBalance * actionParams.zapOutPercentage < 0.1
+            ? 1
+            : Number(actionParams.zapOutPercentage),
+          actionParams.tokenOutAddress,
+          actionParams.slippage,
+          actionParams.tokenPricesMappingTable,
+          actionParams.updateProgress,
+          this.existingInvestmentPositions[chain],
+        );
+      },
+
+      claimAndSwap: async (protocol, chain) => {
+        return protocol.interface.claimAndSwap(
+          actionParams.account,
+          actionParams.tokenOutAddress,
+          actionParams.slippage,
+          actionParams.tokenPricesMappingTable,
+          actionParams.updateProgress,
+          this.existingInvestmentPositions[chain],
+        );
+      },
+
+      transfer: async (protocol, chain) => {
+        const protocolUsdBalance = await protocol.interface.usdBalanceOf(
+          actionParams.account,
+          actionParams.tokenPricesMappingTable,
+        );
+        if (protocolUsdBalance === 0) return null;
+        return protocol.interface.transfer(
+          actionParams.account,
+          actionParams.zapOutPercentage,
+          actionParams.updateProgress,
+          actionParams.recipient,
+        );
+      },
+
+      stake: async (protocol, chain) => {
+        return protocol.stake(
+          actionParams.protocolAssetDustInWallet,
+          actionParams.updateProgress,
+        );
+      },
+    };
+
+    const protocolTxns = [];
+    for (const protocolsInThisCategory of Object.values(this.strategy)) {
+      for (const [chain, protocols] of Object.entries(
+        protocolsInThisCategory,
+      )) {
+        for (const protocol of protocols) {
+          const txnsForThisProtocol = await actionHandlers[actionName](
+            protocol,
+            chain,
+          );
+          if (txnsForThisProtocol) {
+            protocolTxns.push(txnsForThisProtocol);
+          }
+        }
+      }
+    }
+    return protocolTxns;
   }
 
   async _generateRebalanceTxns(
