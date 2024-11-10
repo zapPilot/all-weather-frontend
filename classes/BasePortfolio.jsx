@@ -53,10 +53,10 @@ export class BasePortfolio {
           if (protocol.weight === 0) {
             continue;
           }
-          if (typeof protocol.lockUpPeriod !== "function") {
+          if (typeof protocol.interface.lockUpPeriod !== "function") {
             throw new Error("Method 'lockUpPeriod()' must be implemented.");
           }
-          const lockUpPeriod = await protocol.lockUpPeriod(address);
+          const lockUpPeriod = await protocol.interface.lockUpPeriod(address);
           maxLockUpPeriod = Math.max(maxLockUpPeriod, lockUpPeriod);
         }
       }

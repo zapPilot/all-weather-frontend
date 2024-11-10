@@ -246,7 +246,7 @@ export class Vela extends BaseProtocol {
           lockUpPeriod = cooldownDurationValue - elapsedTime;
         }
 
-        return lockUpPeriod; // 返回以秒为单位的时间长度
+        return lockUpPeriod; // return the lock-up period in seconds
       } else {
         return 0;
       }

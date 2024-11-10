@@ -1091,7 +1091,7 @@ export default function IndexOverviews() {
                   )}
                 <div>
                   <span className="text-gray-500">Lock-up Period</span>{" "}
-                  {loading === true ? (
+                  {usdBalanceLoading === true ? (
                     <Spin />
                   ) : typeof lockUpPeriod === "number" ? (
                     lockUpPeriod === 0 ? (

@@ -336,6 +336,7 @@ export class BaseEquilibria extends BaseProtocol {
   }
   async lockUpPeriod() {
     return 0;
+  }
   async _stake(amount, updateProgress) {
     const approveTxn = approve(
       this.assetContract.address,
