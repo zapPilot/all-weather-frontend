@@ -50,9 +50,6 @@ export class BaseApolloX extends BaseProtocol {
   claimAndSwapSteps() {
     return 2;
   }
-  rebalanceSteps() {
-    return 2;
-  }
   rewards() {
     return [
       {
@@ -130,22 +127,11 @@ export class BaseApolloX extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    const stakeFarmContractInstance = new ethers.Contract(
-      this.stakeFarmContract.address,
-      SmartChefInitializable,
-      PROVIDER,
+    const [unstakeTxns, amount] = await this._unstake(
+      owner,
+      percentage,
+      updateProgress,
     );
-    // Assuming 'percentage' is a float between 0 and 1
-    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
-
-    const userInfo = await stakeFarmContractInstance.functions.userInfo(owner);
-    const amount = userInfo.amount.mul(percentageBN).div(10000);
-    const withdrawTxn = prepareContractCall({
-      contract: this.stakeFarmContract,
-      method: "withdraw",
-      params: [amount],
-    });
-
     const approveAlpTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
@@ -171,7 +157,7 @@ export class BaseApolloX extends BaseProtocol {
       params: [bestTokenAddressToZapOut, amount, minOutAmount, owner],
     });
     return [
-      [withdrawTxn, approveAlpTxn, burnTxn],
+      [...unstakeTxns, approveAlpTxn, burnTxn],
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
@@ -250,5 +236,23 @@ export class BaseApolloX extends BaseProtocol {
       params: [amount],
     });
     return [approveAlpTxn, depositTxn];
+  }
+  async _unstake(owner, percentage, updateProgress) {
+    const stakeFarmContractInstance = new ethers.Contract(
+      this.stakeFarmContract.address,
+      SmartChefInitializable,
+      PROVIDER,
+    );
+    // Assuming 'percentage' is a float between 0 and 1
+    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
+
+    const userInfo = await stakeFarmContractInstance.functions.userInfo(owner);
+    const amount = userInfo.amount.mul(percentageBN).div(10000);
+    const withdrawTxn = prepareContractCall({
+      contract: this.stakeFarmContract,
+      method: "withdraw",
+      params: [amount],
+    });
+    return [[withdrawTxn], amount];
   }
 }

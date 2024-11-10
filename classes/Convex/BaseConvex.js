@@ -56,9 +56,6 @@ export class BaseConvex extends BaseProtocol {
   claimAndSwapSteps() {
     return 2;
   }
-  rebalanceSteps() {
-    return 2;
-  }
   rewards() {
     return this.customParams.rewards;
   }

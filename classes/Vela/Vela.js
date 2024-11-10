@@ -48,9 +48,6 @@ export class Vela extends BaseProtocol {
   claimAndSwapSteps() {
     return 3;
   }
-  rebalanceSteps() {
-    return 2;
-  }
   rewards() {
     return [];
   }

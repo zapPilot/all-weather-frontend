@@ -745,7 +745,7 @@ export default function IndexOverviews() {
                               ).toFixed(2)}
                               %
                             </span>{" "}
-                            for $
+                            for
                             {formatBalance(getRebalanceReinvestUsdAmount())}
                           </>
                         )}

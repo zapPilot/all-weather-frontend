@@ -85,9 +85,6 @@ export class BaseEquilibria extends BaseProtocol {
   claimAndSwapSteps() {
     return 3;
   }
-  rebalanceSteps() {
-    return 2;
-  }
   rewards() {
     return [
       {
@@ -351,10 +348,13 @@ export class BaseEquilibria extends BaseProtocol {
     return [approveTxn, stakeTxn];
   }
   async _unstake(owner, percentage, updateProgress) {
-    // Assuming 'percentage' is a float between 0 and 1
-    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
+    // Convert percentage (0-1) to precise BigNumber with 18 decimals
+    const percentageStr = percentage.toFixed(18).replace(".", "");
+    const percentageBN = ethers.BigNumber.from(percentageStr);
     const stakedAmount = await this.stakeBalanceOf(owner);
-    const withdrawAmount = stakedAmount.mul(percentageBN).div(10000);
+    const withdrawAmount = stakedAmount
+      .mul(percentageBN)
+      .div(ethers.BigNumber.from("10").pow(18));
     const approveEqbLPTxn = approve(
       (
         await this.stakeFarmContractInstance.functions.poolInfo(
