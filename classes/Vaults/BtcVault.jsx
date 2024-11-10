@@ -35,7 +35,4 @@ export class BtcVault extends BasePortfolio {
   denomination() {
     return "₿";
   }
-  lockUpPeriod() {
-    return 0;
-  }
 }

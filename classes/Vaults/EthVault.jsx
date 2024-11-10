@@ -98,7 +98,4 @@ export class EthVault extends BasePortfolio {
   denomination() {
     return "Ξ";
   }
-  lockUpPeriod() {
-    return 0;
-  }
 }

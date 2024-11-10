@@ -110,7 +110,7 @@ export default function TransactionHistory({
         );
       }
 
-      if (["zapOut", "transfer"].includes(actionName)) {
+      if (["transfer"].includes(actionName)) {
         balance = updateBalance(
           balance,
           principalSymbol,
@@ -193,7 +193,7 @@ export default function TransactionHistory({
     const actionAmount =
       actionName === "zapIn"
         ? parseFloat(investmentAmount)
-        : ["zapOut", "transfer"].includes(actionName)
+        : ["transfer"].includes(actionName)
         ? parseFloat(zapOutAmount)
         : 0;
 

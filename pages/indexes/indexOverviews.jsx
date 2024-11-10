@@ -93,6 +93,7 @@ export default function IndexOverviews() {
   const [txnLink, setTxnLink] = useState("");
   const [tokenPricesMappingTable, setTokenPricesMappingTable] = useState({});
   const [tabKey, setTabKey] = useState("");
+  const [lockUpPeriod, setLockUpPeriod] = useState(0);
 
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
@@ -517,6 +518,10 @@ export default function IndexOverviews() {
         account.address,
         portfolioApr[portfolioName],
       );
+      const portfolioLockUpPeriod = await portfolioHelper.lockUpPeriod(
+        account.address,
+      );
+      setLockUpPeriod(portfolioLockUpPeriod);
       setUsdBalance(usdBalance);
       setUsdBalanceLoading(false);
       setrebalancableUsdBalanceDict(usdBalanceDict);
@@ -531,7 +536,7 @@ export default function IndexOverviews() {
     };
     fetchUsdBalance();
   }, [portfolioName, account, portfolioApr]);
-
+  useEffect(() => {}, [lockUpPeriod]);
   useEffect(() => {
     const balance = walletBalanceData?.displayValue;
     setTokenBalance(balance);
@@ -678,7 +683,7 @@ export default function IndexOverviews() {
                       Your Balance
                     </dt>
                     <dd className="mt-1 text-base font-semibold leading-6 text-white flex">
-                      <span class="mr-2">
+                      <span className="mr-2">
                         {usdBalanceLoading === true ||
                         Object.values(tokenPricesMappingTable).length === 0 ? (
                           <Spin />
@@ -745,7 +750,7 @@ export default function IndexOverviews() {
                               ).toFixed(2)}
                               %
                             </span>{" "}
-                            for $
+                            for
                             {formatBalance(getRebalanceReinvestUsdAmount())}
                           </>
                         )}
@@ -1056,16 +1061,25 @@ export default function IndexOverviews() {
                         ),
                       ),
                   )}
-                {portfolioHelper?.lockUpPeriod() !== 0 ? (
-                  <div>
-                    <dt className="inline text-gray-500">Lock-up Period</dt>{" "}
-                    <dd className="inline text-red-500">
-                      <time dateTime="2023-23-01">
-                        {portfolioHelper?.lockUpPeriod()} Days
-                      </time>
-                    </dd>
-                  </div>
-                ) : null}
+                <div>
+                  <span className="text-gray-500">Lock-up Period</span>{" "}
+                  {usdBalanceLoading === true ? (
+                    <Spin />
+                  ) : typeof lockUpPeriod === "number" ? (
+                    lockUpPeriod === 0 ? (
+                      <span className="text-green-500" role="lockUpPeriod">
+                        Unlocked
+                      </span>
+                    ) : (
+                      <span className="text-red-500" role="lockUpPeriod">
+                        {Math.floor(lockUpPeriod / 86400)} d{" "}
+                        {Math.ceil((lockUpPeriod % 86400) / 3600)
+                          ? Math.ceil((lockUpPeriod % 86400) / 3600) + "h"
+                          : null}
+                      </span>
+                    )
+                  ) : null}
+                </div>
               </div>
               <HistoricalDataChart portfolioName={portfolioName} />
             </div>
