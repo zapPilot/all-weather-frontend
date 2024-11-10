@@ -157,7 +157,7 @@ describe("IndexOverviews Component", () => {
       {
         timeout: 5000,
         interval: 100,
-      }
+      },
     );
   });
 
