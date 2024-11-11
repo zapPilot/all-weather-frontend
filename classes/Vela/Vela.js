@@ -185,24 +185,22 @@ export class Vela extends BaseProtocol {
       decimalOfBestTokenToZapOut,
     ] = this._getTheBestTokenAddressToZapOut();
     const latestPrice = await this._fetchVlpPrice(updateProgress);
-
     const minOutAmount = Math.floor(
       ((((vlpAmount / Math.pow(10, this.assetDecimals)) * latestPrice) /
         tokenPricesMappingTable[symbolOfBestTokenToZapOut]) *
-        Math.pow(10, decimalOfBestTokenToZapOut) *
         (100 - slippage)) /
         100,
     );
     const approveVlpTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
-      minOutAmount,
+      vlpAmount,
       updateProgress,
     );
     const burnTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "unstake",
-      params: [bestTokenAddressToZapOut, minOutAmount],
+      params: [bestTokenAddressToZapOut, vlpAmount],
     });
     return [
       [approveVlpTxn, burnTxn],
