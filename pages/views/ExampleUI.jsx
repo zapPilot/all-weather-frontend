@@ -1,6 +1,5 @@
 import React from "react";
 import { useEffect, useState } from "react";
-import { Row, Col, Button } from "antd";
 import Image from "next/image";
 import { useWindowHeight } from "../../utils/chartUtils";
 import styles from "../../styles/Home.module.css";
@@ -85,98 +84,94 @@ export default function ExampleUI() {
       .catch((error) => dispatch(fetchDataFailure(error.toString())));
   };
   return (
-    <div className={styles.divInstallment}>
-      <Row
-        gutter={{
-          xs: 8,
-          md: 16,
-        }}
-      >
-        <Col
-          xs={{
-            span: 24,
-            offset: 0,
+    <div className="px-2 text-white bg-black">
+      <div className={"w-full md:w-5/6 md:ml-[8.333333%] " + styles.bgStyle}>
+        <div
+          style={{
+            minHeight: windowHeight,
           }}
-          md={{
-            span: 20,
-            offset: 2,
-          }}
-          className={styles.bgStyle}
+          className="flex items-center justify-center"
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              minHeight: windowHeight,
-            }}
-          >
-            <center>
-              <Image src="/logo.png" alt="logo" width={100} height={100} />
-              <h1
-                style={{ color: "#5DFDCB" }}
-                className="text-5xl tracking-tight mb-8"
+          <center>
+            <Image src="/logo.png" alt="logo" width={100} height={100} />
+            <h1 className="text-5xl tracking-tight mb-8 text-[#5DFDCB]">
+              All Weather Protocol
+            </h1>
+            <h2 className="heading-subtitle">
+              Your Intent Centric Yield Aggregator
+            </h2>
+            <p className="heading-subtitle">Click Once, Diversify Forever!</p>
+            <p className="heading-subtitle">
+              Enjoy Up to
+              <span
+                className="text-5xl tracking-tight text-[#5DFDCB]"
+                data-testid="apr"
               >
-                All Weather Protocol
-              </h1>
-              <h2 className="heading-subtitle">
-                Your Intent Centric Yield Aggregator
-              </h2>
-              <p className="heading-subtitle">Click Once, Diversify Forever!</p>
-              <p className="heading-subtitle">
-                Enjoy Up to
-                <span
-                  style={{ color: "#5DFDCB" }}
-                  className="text-5xl tracking-tight"
-                  data-testid="apr"
-                >
-                  {" "}
-                  {strategyLoading ||
-                  isNaN(strategyMetadata["Stablecoin Vault"]?.portfolioAPR) ? (
-                    <Spin />
-                  ) : (
-                    (
-                      strategyMetadata["Stablecoin Vault"]?.portfolioAPR * 100
-                    ).toFixed(2)
-                  )}
-                  %{" "}
-                </span>
-                APR
-              </p>
-              <Link
-                href={`/indexes/indexOverviews?portfolioName=Stablecoin+Vault`}
+                {" "}
+                {strategyLoading ||
+                isNaN(strategyMetadata["Stablecoin Vault"]?.portfolioAPR) ? (
+                  <Spin />
+                ) : (
+                  (
+                    strategyMetadata["Stablecoin Vault"]?.portfolioAPR * 100
+                  ).toFixed(2)
+                )}
+                %{" "}
+              </span>
+              APR
+            </p>
+            <Link
+              href={`/indexes/indexOverviews?portfolioName=Stablecoin+Vault`}
+            >
+              <button
+                type="button"
+                className="
+                  mt-8 px-4 py-2 w-52 h-12
+                  font-semibold bg-transparent text-[#5DFDCB]
+                  rounded-md border border-solid border-[#5DFDCB] 
+                  hover:bg-[#5DFDCB] hover:text-black
+                  transition-colors duration-200
+                "
+                role="invest_now"
               >
-                <Button
-                  type="primary"
-                  className={styles.btnInvest}
-                  style={
-                    isHover
-                      ? { backgroundColor: "#5DFDCB", color: "#000000" }
-                      : { backgroundColor: "transparent", color: "#5DFDCB" }
-                  }
-                  onMouseEnter={handleMouseEnter}
-                  onMouseLeave={handleMouseLeave}
-                  role="invest_now"
-                >
-                  Invest Now!
-                </Button>
-              </Link>
-            </center>
+                Invest Now!
+              </button>
+            </Link>
+          </center>
+        </div>
+      </div>
+      <div className="w-full md:w-[75%] md:ml-[12.5%] md:flex items-center">
+        <div className="w-full md:w-1/2 px-2">
+          <h3 className="text-2xl text-emerald-400 font-semibold mb-4">
+            What is All Weather Protocol?
+          </h3>
+          <p className="text-lg mb-4">
+            We help you diversify your investments across various high-yield
+            protocols. With just one click, you can increase your returns and
+            save time on research and transactions.
+          </p>
+        </div>
+        <div className="w-full md:w-1/2">
+          <div className="relative w-full aspect-video">
+            <iframe
+              className="absolute top-0 left-0 w-full h-full rounded-lg"
+              src="https://www.youtube.com/embed/aYXbafEPFM4?si=gdtDTsNBw_gf6bRU"
+              title="YouTube video player"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              loading="lazy"
+              allowFullScreen
+            ></iframe>
           </div>
-        </Col>
-        <Col
-          xs={{
-            span: 24,
-            offset: 0,
-          }}
-          md={{
-            span: 18,
-            offset: 3,
-          }}
-        >
-          <Vaults />
-        </Col>
-      </Row>
+        </div>
+      </div>
+      <div className="w-full md:w-[75%] md:ml-[12.5%]">
+        <h3 className="text-2xl text-emerald-400 font-semibold md:mb-4 px-4">
+          Vaults
+        </h3>
+        <Vaults />
+      </div>
     </div>
   );
 }
