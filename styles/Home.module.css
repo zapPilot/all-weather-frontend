@@ -16,7 +16,7 @@
 
 .bgStyle {
   background-image: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.6)),
-    url("../public/images/bg-8.jpg");
+    url("/images/bg-9.jpg");
   background-position: right top;
   background-repeat: no-repeat;
   background-size: cover;
