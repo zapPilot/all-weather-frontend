@@ -155,7 +155,7 @@ export default function ExampleUI() {
           <div className="relative w-full aspect-video">
             <iframe
               className="absolute top-0 left-0 w-full h-full rounded-lg"
-              src="https://www.youtube.com/embed/aYXbafEPFM4?si=gdtDTsNBw_gf6bRU"
+              src="https://www.youtube.com/embed/wSzdKyqLKdY?si=8nRvJgJ3wYuvS9ew"
               title="YouTube video player"
               frameborder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
