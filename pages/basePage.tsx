@@ -22,8 +22,6 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
   const router = useRouter();
 
   const account = useActiveAccount();
-  const [referees, setReferees] = useState([]);
-  const [open, setOpen] = useState(false);
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
 

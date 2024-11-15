@@ -21,18 +21,8 @@ import Vaults from "../indexes/index.jsx";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ExampleUI() {
-  const [isHover, setIsHover] = useState(false);
-
-  const handleMouseEnter = () => {
-    setIsHover(true);
-  };
-  const handleMouseLeave = () => {
-    setIsHover(false);
-  };
-
   const windowHeight = useWindowHeight();
   const dispatch = useDispatch();
-  const { data, loading } = useSelector((state) => state.api);
   const account = useActiveAccount();
   const walletAddress = account?.address.toLocaleLowerCase();
   const { strategyMetadata, strategyLoading, error } = useSelector(
