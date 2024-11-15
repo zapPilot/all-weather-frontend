@@ -66,11 +66,13 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
           );
         }
       } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error occurred";
         openNotificationWithIcon(
           notificationAPI,
           "Referral Program",
           "error",
-          `Failed: ${error.message}`,
+          `Failed: ${errorMessage}`,
         );
       }
     };
