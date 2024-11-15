@@ -373,13 +373,13 @@ export class BasePortfolio {
         );
         return protocol.interface.zapIn(
           actionParams.account,
+          chain,
           actionParams.zapInAmount.mul(percentageBN).div(10000),
           actionParams.tokenInSymbol,
           actionParams.tokenInAddress,
           actionParams.slippage,
           actionParams.tokenPricesMappingTable,
           actionParams.updateProgress,
-          this.existingInvestmentPositions[chain],
         );
       },
 

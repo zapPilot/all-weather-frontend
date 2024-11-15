@@ -107,13 +107,13 @@ export default class BaseProtocol extends BaseUniswap {
   }
   async zapIn(
     recipient,
+    chain,
     investmentAmountInThisPosition,
     inputToken,
     inputTokenAddress,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
-    existingInvestmentPositionsInThisChain,
   ) {
     if (this.mode === "single") {
       const [
