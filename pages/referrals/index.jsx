@@ -1,17 +1,14 @@
 import { useEffect, useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
-import PopUpForReferrals from "./PopUpForReferrals";
 import BasePage from "../basePage";
 import CopyableReferralButton from "./copyableReferralButton.jsx";
-import { useRouter } from "next/router";
 import { notification } from "antd";
 import openNotificationWithIcon from "../../utils/notification.js";
 import { Fragment } from "react";
 import axios from "axios";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
+import PopUpForReferrals from "./PopUpForReferrals";
 export default function Referrals() {
-  const router = useRouter();
-
   const account = useActiveAccount();
   const [referees, setReferees] = useState([]);
   const [referrer, setReferrer] = useState("");
@@ -54,61 +51,6 @@ export default function Referrals() {
     };
     fetchData();
   }, [account]);
-
-  useEffect(() => {
-    const addReferrer = async (currentInputValue) => {
-      try {
-        if (!account) return;
-        const response = await fetch(
-          `${
-            process.env.NEXT_PUBLIC_SDK_API_URL
-          }/referral/${account.address.toLowerCase()}/referrer`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              referrer: currentInputValue.toLowerCase(),
-            }),
-          },
-        );
-        const resp = await response.json();
-        if (response.ok) {
-          openNotificationWithIcon(
-            notificationAPI,
-            "Referral Program",
-            "success",
-            `Successfully add referrer ${currentInputValue.toLowerCase()}, happy earning`,
-          );
-        } else if (
-          resp.status !==
-          "Referrer Already Exists! Or Your referrer cannot be referred by you"
-        ) {
-          openNotificationWithIcon(
-            notificationAPI,
-            "Referral Program",
-            "error",
-            `Failed: ${resp.status}`,
-          );
-        }
-      } catch (error) {
-        openNotificationWithIcon(
-          notificationAPI,
-          "Referral Program",
-          "error",
-          `Failed: ${error.message}`,
-        );
-      }
-    };
-    if (!router.isReady) return;
-
-    const { referrer: referrerParam } = router.query;
-    if (referrerParam) {
-      setReferrer(referrerParam);
-      addReferrer(referrerParam);
-    }
-  }, [router, account]);
 
   useEffect(() => {
     async function fetchTransactionHistory(referee) {
@@ -222,7 +164,7 @@ export default function Referrals() {
             ),
           )}
           <CopyableReferralButton
-            referralLink={`Click Once, Yield Forever! 🚀 Join All Weather Protocol using this link:  https://all-weather-protocol.on-fleek.app/referrals?referrer=${account?.address}`}
+            referralLink={`Click Once, Yield Forever! 🚀 Join All Weather Protocol using this link:  https://all-weather-protocol.on-fleek.app?referrer=${account?.address}`}
           />
         </p>
       </div>
