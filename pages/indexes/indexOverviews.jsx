@@ -617,7 +617,7 @@ export default function IndexOverviews() {
           </div>
         </header>
         <div className="mx-auto max-w-7xl p-6">
-          <div className="mb-8 p-4 ring-1 ring-white/10 rounded-lg relative">
+          <div className="mb-8 p-4 border border-white/50 relative">
             <ConfigProvider
               theme={{
                 components: {
@@ -637,7 +637,7 @@ export default function IndexOverviews() {
                 onChange={onChange}
               />
             </ConfigProvider>
-            <div className="w-16 flex items-center justify-center rounded-full bg-gray-800 text-gray-400 rounded-full absolute top-7 right-4">
+            <div className="w-16 flex items-center justify-center rounded-full bg-gray-800 text-gray-400 absolute top-7 right-4">
               <span className="me-2">{slippage}%</span>
               <Dropdown
                 dropdownRender={() => (
@@ -675,10 +675,10 @@ export default function IndexOverviews() {
           </div>
           <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
             {/* Invoice summary */}
-            <div className="lg:col-start-3 lg:row-end-1">
-              <div className="rounded-lg bg-gray-800 shadow-sm ring-1 ring-white/10">
+            <div className="lg:col-start-3 lg:row-span-1 lg:row-end-1 h-full shadow-sm border border-white/50">
+              <div className="p-6">
                 <dl className="flex flex-wrap">
-                  <div className="flex-auto pl-6 pt-6">
+                  <div className="flex-auto">
                     <dt className="text-sm font-semibold leading-6 text-white">
                       Your Balance
                     </dt>
@@ -709,7 +709,7 @@ export default function IndexOverviews() {
                       </a>
                     </dd>
                   </div>
-                  <div className="flex-none self-end px-6 pt-4 w-full">
+                  <div className="flex-none self-end w-full">
                     <ConfigProvider
                       theme={{
                         token: {
@@ -786,7 +786,7 @@ export default function IndexOverviews() {
                       </li>
                     </ul>
                   </div>
-                  <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
+                  <div className="mt-6 flex w-full flex-none gap-x-4">
                     <dt className="flex-none">
                       <BanknotesIcon
                         aria-hidden="true"
@@ -806,7 +806,7 @@ export default function IndexOverviews() {
                       )}
                     </dd>
                   </div>
-                  <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
+                  <div className="mt-6 flex w-full flex-none gap-x-4">
                     <dt className="flex-none">
                       <CurrencyDollarIcon
                         aria-hidden="true"
@@ -858,7 +858,7 @@ export default function IndexOverviews() {
                       )}
                     </dd>
                   </div>
-                  <div className="mt-6 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
+                  <div className="mt-6 flex w-full flex-none gap-x-4">
                     <dt className="flex-none">
                       <ChartBarIcon
                         aria-hidden="true"
@@ -876,7 +876,7 @@ export default function IndexOverviews() {
                     </dd>
                   </div>
 
-                  <div className="my-4 flex w-full flex-none gap-x-4 border-t border-white/5 px-6 pt-6">
+                  <div className="mt-6 flex w-full flex-none gap-x-4">
                     <dt className="flex-none">
                       <APRComposition
                         APRData={pendingRewards}
@@ -906,10 +906,10 @@ export default function IndexOverviews() {
             </div>
 
             {/* Invoice */}
-            <div className="lg:col-span-2 lg:row-span-2 lg:row-end-2">
-              <div className="rounded-lg bg-gray-800 shadow-sm ring-1 ring-white/10 p-6">
+            <div className="lg:col-span-2 lg:row-span-1">
+              <div className="shadow-sm border border-white/50 p-6">
                 <h2 className="text-base font-semibold leading-6 text-white">
-                  Allocations
+                  {portfolioName} Composition
                 </h2>
                 {portfolioHelper &&
                   Object.entries(portfolioHelper.strategy).map(
@@ -917,6 +917,16 @@ export default function IndexOverviews() {
                       Object.entries(protocols).map(
                         ([chain, protocolArray], index) => (
                           <div key={`${chain}-${index}`}>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-white font-semibold">Protocols in</span>
+                              <Image
+                                src={`/chainPicturesWebp/${chain}.webp`}
+                                alt={chain}
+                                height={25}
+                                width={25}
+                                className="rounded-full"
+                              />
+                            </div>
                             <table className="mt-3 w-full whitespace-nowrap text-left text-sm leading-6">
                               <thead className="border-b border-gray-200 text-white">
                                 <tr>
@@ -924,19 +934,11 @@ export default function IndexOverviews() {
                                     scope="col"
                                     className="py-3 font-semibold"
                                   >
-                                    <div className="flex items-center space-x-2">
-                                      <span>Protocols in</span>
-                                      <Image
-                                        src={`/chainPicturesWebp/${chain}.webp`}
-                                        alt={chain}
-                                        height={25}
-                                        width={25}
-                                        className="rounded-full"
-                                      />
-                                    </div>
+                                    <span>POOL</span>
                                   </th>
                                   <th
                                     scope="col"
+                                    width={50}
                                     className="py-3 text-right font-semibold"
                                   >
                                     <span>APR</span>
@@ -970,74 +972,82 @@ export default function IndexOverviews() {
                                     return (
                                       <tr
                                         key={index}
-                                        className="border-b border-gray-100"
+                                        className=""
                                       >
-                                        <td className="max-w-0 px-0 py-5 align-top">
-                                          <div className="flex items-center space-x-2 truncate font-medium text-white">
-                                            <Image
-                                              src={`/projectPictures/${protocol.interface.protocolName}.webp`}
-                                              alt={
-                                                protocol.interface.protocolName
-                                              }
-                                              height={25}
-                                              width={25}
-                                              className="rounded-full"
-                                            />
-                                            <span>
-                                              {protocol.interface.protocolName}-
-                                              {(protocol.weight * 100).toFixed(
-                                                0,
-                                              )}
-                                              %
-                                            </span>
-                                          </div>
-                                          <div className="truncate text-gray-500">
-                                            <div className="mt-2 flex items-center">
-                                              {protocol.interface.symbolList.map(
-                                                (symbol, idx) => {
-                                                  return (
-                                                    <ImageWithFallback
-                                                      key={idx}
-                                                      className="me-1 rounded-full"
-                                                      domKey={`${symbol}-${index}`}
-                                                      // use usdc instead of usdc(bridged), aka, usdc.e for the image
-                                                      token={symbol.replace(
-                                                        "(bridged)",
-                                                        "",
-                                                      )}
-                                                      height={20}
-                                                      width={20}
-                                                    />
-                                                  );
-                                                },
-                                              )}
-                                              {protocol.interface.symbolList.join(
-                                                "-",
-                                              )}
+                                        <td className="max-w-0 px-0 py-4">
+                                          <div className="text-white flex items-center gap-3">
+                                            <div className="relative flex items-center gap-1">
+                                              <div className="relative flex items-center">
+                                                {protocol.interface.symbolList.map(
+                                                  (symbol, idx) => {
+                                                    return (
+                                                      <ImageWithFallback
+                                                        key={idx}
+                                                        className="me-1 rounded-full"
+                                                        domKey={`${symbol}-${index}`}
+                                                        // use usdc instead of usdc(bridged), aka, usdc.e for the image
+                                                        token={symbol.replace(
+                                                          "(bridged)",
+                                                          "",
+                                                        )}
+                                                        height={25}
+                                                        width={25}
+                                                      />
+                                                    );
+                                                  },
+                                                )}
+                                              </div>
+                                              <div className="absolute -bottom-3 -right-3 sm:-bottom-1 sm:-right-1">
+                                                <Image
+                                                  src={`/projectPictures/${protocol.interface.protocolName}.webp`}
+                                                  alt={
+                                                    protocol.interface.protocolName
+                                                  }
+                                                  height={20}
+                                                  width={20}
+                                                  className="rounded-full"
+                                                />
+                                              </div>
+                                            </div>
+                                            <div className="ms-2 truncate">
+                                              <p className="font-semibold truncate ...">
+                                                {protocol.interface.symbolList.join(
+                                                    "-",
+                                                  )}
+                                              </p>
+                                              <p className="text-gray-500 truncate ...">
+                                                {protocol.interface.protocolName}-
+                                                {(protocol.weight * 100).toFixed(
+                                                  0,
+                                                )}
+                                                %
+                                              </p>
                                             </div>
                                           </div>
                                         </td>
-                                        <td className="py-5 pl-8 pr-0 text-right align-top tabular-nums text-white">
-                                          {isNaN(
-                                            portfolioApr?.[portfolioName]?.[
-                                              protocol.interface.uniqueId()
-                                            ]?.apr * 100,
-                                          ) ? (
-                                            <Spin />
-                                          ) : (
-                                            `${(
+                                        <td className="py-4 pl-8 pr-0 text-right tabular-nums text-white">
+                                          <span>
+                                            {isNaN(
                                               portfolioApr?.[portfolioName]?.[
                                                 protocol.interface.uniqueId()
-                                              ]?.apr * 100 || 0
-                                            ).toFixed(2)}%`
-                                          )}
+                                                ]?.apr * 100,
+                                            ) ? (
+                                              <Spin />
+                                            ) : (
+                                              `${(
+                                                portfolioApr?.[portfolioName]?.[
+                                                  protocol.interface.uniqueId()
+                                                ]?.apr * 100 || 0
+                                                ).toFixed(2)}%`
+                                            )}
+                                          </span>
                                         </td>
                                       </tr>
                                     );
                                   })}
                               </tbody>
                               <tfoot>
-                                <tr>
+                                <tr className="border-t border-gray-200">
                                   <th
                                     scope="row"
                                     className="pt-6 font-semibold text-white"
@@ -1081,19 +1091,28 @@ export default function IndexOverviews() {
                   ) : null}
                 </div>
               </div>
-              <HistoricalDataChart portfolioName={portfolioName} />
             </div>
-            <div className="lg:col-start-3">
+            <div className="lg:col-span-2 lg:row-span-1 lg:row-end-2">
+              <div className="border border-white/50 p-6">
+                <h2 className="text-base font-semibold leading-6 text-white">
+                  Historical Data
+                </h2>
+                <HistoricalDataChart portfolioName={portfolioName} />
+              </div>
+            </div>
+            <div className="lg:col-start-3 h-full border border-white/50">
               {/* Activity feed */}
-              <h2 className="text-sm font-semibold leading-6 text-white">
-                History
-              </h2>
-              <ul role="list" className="mt-6 space-y-6">
-                <TransacitonHistory
-                  setPrincipalBalance={setPrincipalBalance}
-                  tokenPricesMappingTable={tokenPricesMappingTable}
-                />
-              </ul>
+              <div className="h-96 overflow-y-scroll shadow-sm p-6">
+                <h2 className="text-sm font-semibold leading-6 text-white">
+                  History
+                </h2>
+                <ul role="list" className="mt-6 space-y-6">
+                  <TransacitonHistory
+                    setPrincipalBalance={setPrincipalBalance}
+                    tokenPricesMappingTable={tokenPricesMappingTable}
+                  />
+                </ul>
+              </div>
             </div>
           </div>
         </div>
