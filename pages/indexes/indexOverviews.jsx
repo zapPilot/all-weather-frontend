@@ -902,7 +902,9 @@ export default function IndexOverviews() {
                         ([chain, protocolArray], index) => (
                           <div key={`${chain}-${index}`}>
                             <div className="flex items-center space-x-2">
-                              <span className="text-white font-semibold">Protocols in</span>
+                              <span className="text-white font-semibold">
+                                Protocols in
+                              </span>
                               <Image
                                 src={`/chainPicturesWebp/${chain}.webp`}
                                 alt={chain}
@@ -954,10 +956,7 @@ export default function IndexOverviews() {
                                     // need to keep them in the portfolio so users can zap out
                                     if (protocol.weight === 0) return null;
                                     return (
-                                      <tr
-                                        key={index}
-                                        className=""
-                                      >
+                                      <tr key={index} className="">
                                         <td className="max-w-0 px-0 py-4">
                                           <div className="text-white flex items-center gap-3">
                                             <div className="relative flex items-center gap-1">
@@ -985,7 +984,8 @@ export default function IndexOverviews() {
                                                 <Image
                                                   src={`/projectPictures/${protocol.interface.protocolName}.webp`}
                                                   alt={
-                                                    protocol.interface.protocolName
+                                                    protocol.interface
+                                                      .protocolName
                                                   }
                                                   height={20}
                                                   width={20}
@@ -996,14 +996,18 @@ export default function IndexOverviews() {
                                             <div className="ms-2 truncate">
                                               <p className="font-semibold truncate ...">
                                                 {protocol.interface.symbolList.join(
-                                                    "-",
-                                                  )}
+                                                  "-",
+                                                )}
                                               </p>
                                               <p className="text-gray-500 truncate ...">
-                                                {protocol.interface.protocolName}-
-                                                {(protocol.weight * 100).toFixed(
-                                                  0,
-                                                )}
+                                                {
+                                                  protocol.interface
+                                                    .protocolName
+                                                }
+                                                -
+                                                {(
+                                                  protocol.weight * 100
+                                                ).toFixed(0)}
                                                 %
                                               </p>
                                             </div>
@@ -1014,7 +1018,7 @@ export default function IndexOverviews() {
                                             {isNaN(
                                               portfolioApr?.[portfolioName]?.[
                                                 protocol.interface.uniqueId()
-                                                ]?.apr * 100,
+                                              ]?.apr * 100,
                                             ) ? (
                                               <Spin />
                                             ) : (
@@ -1022,7 +1026,7 @@ export default function IndexOverviews() {
                                                 portfolioApr?.[portfolioName]?.[
                                                   protocol.interface.uniqueId()
                                                 ]?.apr * 100 || 0
-                                                ).toFixed(2)}%`
+                                              ).toFixed(2)}%`
                                             )}
                                           </span>
                                         </td>
