@@ -1,0 +1,6 @@
+.bgStyle {
+    background-image: url("/images/bg-vault.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
+}

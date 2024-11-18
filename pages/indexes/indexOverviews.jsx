@@ -36,7 +36,6 @@ import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { formatBalance } from "../../utils/general.js";
 import axios from "axios";
 import openNotificationWithIcon from "../../utils/notification.js";
-import { selectBefore } from "../../utils/contractInteractions";
 import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
@@ -44,13 +43,13 @@ import {
   CurrencyDollarIcon,
   BanknotesIcon,
   ArrowTopRightOnSquareIcon,
-  UserCircleIcon,
   ChartBarIcon,
 } from "@heroicons/react/20/solid";
 import { SettingOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { arbitrum } from "thirdweb/chains";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
+import styles from "../../styles/indexOverviews.module.css";
 
 export default function IndexOverviews() {
   const router = useRouter();
@@ -556,23 +555,8 @@ export default function IndexOverviews() {
     <BasePage>
       {notificationContextHolder}
       <ModalContent />
-      <main>
+      <main className={styles.bgStyle}>
         <header className="relative isolate pt-6">
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 -z-10 overflow-hidden"
-          >
-            <div className="absolute left-16 top-full -mt-16 transform-gpu opacity-50 blur-3xl xl:left-1/2 xl:-ml-80">
-              <div
-                style={{
-                  clipPath:
-                    "polygon(100% 38.5%, 82.6% 100%, 60.2% 37.7%, 52.4% 32.1%, 47.5% 41.8%, 45.2% 65.6%, 27.5% 23.4%, 0.1% 35.3%, 17.9% 0%, 27.7% 23.4%, 76.2% 2.5%, 74.2% 56%, 100% 38.5%)",
-                }}
-                className="aspect-[1154/678] w-[72.125rem] bg-gradient-to-br from-[#5dfdcb] to-[#5dfdcb]"
-              />
-            </div>
-            <div className="absolute inset-x-0 bottom-0 h-px bg-gray-900/5" />
-          </div>
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
             <div className="sm:flex items-center justify-between gap-x-6">
               <div className="flex items-center">
@@ -1092,8 +1076,8 @@ export default function IndexOverviews() {
                 </div>
               </div>
             </div>
-            <div className="lg:col-span-2 lg:row-span-1 lg:row-end-2">
-              <div className="border border-white/50 p-6">
+            <div className="lg:col-span-2 lg:row-span-1 lg:row-end-2 h-full border border-white/50">
+              <div className="p-6">
                 <h2 className="text-base font-semibold leading-6 text-white">
                   Historical Data
                 </h2>

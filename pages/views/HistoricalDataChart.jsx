@@ -48,6 +48,7 @@ const HistoricalDataChart = ({ portfolioName }) => {
 
   const config = {
     data,
+    height: 312,
     padding: "auto",
     xField: "Date",
     yField:
