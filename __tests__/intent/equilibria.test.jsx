@@ -122,7 +122,7 @@ describe("Equilibria ETH Vault", () => {
     const portfolioHelper = getPortfolioHelper("Equilibria ETH Vault");
     const txns = await generateIntentTxns(
       actionName,
-      arbitrum,     
+      arbitrum,
       portfolioHelper,
       userAddress,
       tokenSymbol,
