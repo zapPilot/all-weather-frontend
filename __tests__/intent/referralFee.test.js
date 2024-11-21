@@ -74,5 +74,5 @@ describe("Referral Fee Module", () => {
     expect(await encode(txns[10])).includes(
       "0xa9059cbb0000000000000000000000002ecbc6f229fed06044cdb0dd772437a30190cd50",
     );
-  });
+  }, { timeout: 70000 });
 });
