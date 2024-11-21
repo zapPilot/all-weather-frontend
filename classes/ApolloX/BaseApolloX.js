@@ -67,7 +67,7 @@ export class BaseApolloX extends BaseProtocol {
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       SmartChefInitializable,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     const pendingReward = (
       await stakeFarmContractInstance.functions.pendingReward(owner)
@@ -177,15 +177,12 @@ export class BaseApolloX extends BaseProtocol {
     });
     return [[claimTxn], pendingRewards];
   }
-  customRedeemVestingRewards(pendingRewards) {
-    return [];
-  }
 
   async usdBalanceOf(owner, tokenPricesMappingTable) {
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       SmartChefInitializable,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     const userInfo = (await stakeFarmContractInstance.functions.userInfo(owner))
       .amount;
@@ -244,7 +241,7 @@ export class BaseApolloX extends BaseProtocol {
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       SmartChefInitializable,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     // Assuming 'percentage' is a float between 0 and 1
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));

@@ -92,7 +92,7 @@ export default class BaseProtocol extends BaseUniswap {
     const assetContractInstance = new ethers.Contract(
       this.assetContract.address,
       ERC20_ABI,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     const balance = (
       await assetContractInstance.functions.balanceOf(recipient)
@@ -107,13 +107,13 @@ export default class BaseProtocol extends BaseUniswap {
   }
   async zapIn(
     recipient,
+    chain,
     investmentAmountInThisPosition,
     inputToken,
     inputTokenAddress,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
-    existingInvestmentPositionsInThisChain,
   ) {
     if (this.mode === "single") {
       const [
@@ -381,9 +381,7 @@ export default class BaseProtocol extends BaseUniswap {
   }
 
   customRedeemVestingRewards(pendingRewards) {
-    throw new Error(
-      "Method 'customRedeemVestingRewards()' must be implemented.",
-    );
+    return [];
   }
 
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
@@ -413,7 +411,7 @@ export default class BaseProtocol extends BaseUniswap {
     const tokenInstance = new ethers.Contract(
       inputTokenAddress,
       ERC20_ABI,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     const decimalsOfChosenToken = (await tokenInstance.functions.decimals())[0];
     const [bestTokenAddressToZapIn, bestTokenToZapInDecimal] =

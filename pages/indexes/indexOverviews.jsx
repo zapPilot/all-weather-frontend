@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
-import { CheckIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { Input } from "antd";
 import { useRouter } from "next/router";
 import TransacitonHistory from "./transactionHistory.jsx";
@@ -142,6 +142,7 @@ export default function IndexOverviews() {
     try {
       const txns = await generateIntentTxns(
         actionName,
+        chainId,
         portfolioHelper,
         account.address,
         tokenSymbol,
@@ -183,6 +184,7 @@ export default function IndexOverviews() {
                     timestamp: Math.floor(Date.now() / 1000),
                     swapFeeRate: portfolioHelper.swapFeeRate(),
                     referralFeeRate: portfolioHelper.referralFeeRate(),
+                    chain: chainId.name.toLowerCase(),
                   }),
                 },
               });
@@ -291,11 +293,11 @@ export default function IndexOverviews() {
               type="primary"
               className="w-full mt-2"
               onClick={() => handleAAWalletAction("zapIn")}
-              loading={zapInIsLoading}
-              disabled={
-                Number(investmentAmount) === 0 ||
-                Number(investmentAmount) > tokenBalance
-              }
+              // loading={zapInIsLoading}
+              // disabled={
+              //   Number(investmentAmount) === 0 ||
+              //   Number(investmentAmount) > tokenBalance
+              // }
             >
               Zap In
             </Button>
@@ -530,6 +532,7 @@ export default function IndexOverviews() {
 
       const dust = await portfolioHelper.calProtocolAssetDustInWalletDictionary(
         account.address,
+        tokenPricesMappingTable,
       );
       setProtocolAssetDustInWallet(dust);
     };
@@ -570,6 +573,28 @@ export default function IndexOverviews() {
                 </h1>
               </div>
               <div className="flex items-center justify-between sm:justify-normal gap-x-8 text-white mt-3 sm:mt-0">
+                <div className="flex items-center space-x-2">
+                  <ShieldCheckIcon
+                    aria-hidden="true"
+                    className="h-6 w-6 text-green-600"
+                  />
+                  <Popover
+                    content="Click to view the audit report for more details."
+                    trigger="hover"
+                  >
+                    <span className="text-white">
+                      Audit Report:{" "}
+                      <a
+                        href="https://thirdweb.com/explore/smart-wallet"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 underline"
+                      >
+                        View here
+                      </a>
+                    </span>
+                  </Popover>
+                </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold">
                     $ {portfolioApr[portfolioName]?.portfolioTVL}

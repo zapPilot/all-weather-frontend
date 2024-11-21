@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import { generateIntentTxns } from "../../classes/main.js";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { encode } from "thirdweb";
-
+import { arbitrum } from "thirdweb/chains";
 describe("Yearn Vault", () => {
   it("should be able to zap-in Yearn Vault", async () => {
     const actionName = "zapIn";
@@ -19,6 +19,7 @@ describe("Yearn Vault", () => {
     const portfolioHelper = getPortfolioHelper("Yearn Vault");
     const txns = await generateIntentTxns(
       actionName,
+      arbitrum,
       portfolioHelper,
       userAddress,
       tokenSymbol,
@@ -56,6 +57,7 @@ describe("Yearn Vault", () => {
     const portfolioHelper = getPortfolioHelper("Yearn Vault");
     const txns = await generateIntentTxns(
       actionName,
+      arbitrum,
       portfolioHelper,
       userAddress,
       tokenSymbol,
@@ -90,6 +92,7 @@ describe("Yearn Vault", () => {
     const portfolioHelper = getPortfolioHelper("Yearn Vault");
     const txns = await generateIntentTxns(
       actionName,
+      arbitrum,
       portfolioHelper,
       userAddress,
       tokenSymbol,

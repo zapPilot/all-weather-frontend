@@ -3,6 +3,7 @@ import { toFixedString } from "../utils/general";
 
 export const generateIntentTxns = async (
   actionName,
+  chainMetadata,
   portfolioHelper,
   accountAddress,
   tokenSymbol,
@@ -21,6 +22,7 @@ export const generateIntentTxns = async (
   if (actionName === "zapIn") {
     txns = await portfolioHelper.portfolioAction("zapIn", {
       account: accountAddress,
+      chainMetadata: chainMetadata,
       tokenInSymbol: tokenSymbol,
       tokenInAddress: tokenAddress,
       zapInAmount: ethers.utils.parseUnits(
@@ -34,6 +36,7 @@ export const generateIntentTxns = async (
   } else if (actionName === "zapOut") {
     txns = await portfolioHelper.portfolioAction("zapOut", {
       account: accountAddress,
+      chainMetadata,
       tokenOutSymbol: tokenSymbol,
       tokenOutAddress: tokenAddress,
       zapOutPercentage: Number(zapOutPercentage),
@@ -44,6 +47,7 @@ export const generateIntentTxns = async (
   } else if (actionName === "claimAndSwap") {
     txns = await portfolioHelper.portfolioAction(actionName, {
       account: accountAddress,
+      chainMetadata,
       tokenOutAddress: tokenAddress,
       progressCallback: (progressPercentage) => setProgress(progressPercentage),
       progressStepNameCallback: (stepName) => setStepName(stepName),
@@ -52,6 +56,7 @@ export const generateIntentTxns = async (
   } else if (actionName === "rebalance") {
     txns = await portfolioHelper.portfolioAction(actionName, {
       account: accountAddress,
+      chainMetadata,
       progressCallback: (progressPercentage) => setProgress(progressPercentage),
       progressStepNameCallback: (stepName) => setStepName(stepName),
       slippage,
@@ -60,6 +65,7 @@ export const generateIntentTxns = async (
   } else if (actionName === "transfer") {
     txns = await portfolioHelper.portfolioAction(actionName, {
       account: accountAddress,
+      chainMetadata,
       zapOutPercentage: Number(zapOutPercentage),
       progressCallback: (progressPercentage) => setProgress(progressPercentage),
       progressStepNameCallback: (stepName) => setStepName(stepName),
@@ -69,6 +75,7 @@ export const generateIntentTxns = async (
   } else if (actionName === "stake") {
     txns = await portfolioHelper.portfolioAction(actionName, {
       account: accountAddress,
+      chainMetadata,
       progressCallback: (progressPercentage) => setProgress(progressPercentage),
       progressStepNameCallback: (stepName) => setStepName(stepName),
       protocolAssetDustInWallet,

@@ -6,9 +6,25 @@ import {
   useActiveAccount,
 } from "thirdweb/react";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
-import { arbitrum } from "thirdweb/chains";
+import {
+  arbitrum,
+  base,
+  optimism,
+  bsc,
+  polygon,
+  mantle,
+} from "thirdweb/chains";
 import NumericInput from "./NumberInput";
 import { selectBefore } from "../../utils/contractInteractions";
+
+const chainIdToChain = {
+  8453: base,
+  42161: arbitrum,
+  10: optimism,
+  56: bsc,
+  137: polygon,
+  5000: mantle,
+};
 
 const TokenDropdownInput = memo(
   ({ selectedToken, setSelectedToken, setInvestmentAmount }) => {
@@ -17,7 +33,7 @@ const TokenDropdownInput = memo(
     const account = useActiveAccount();
     const chainId = useActiveWalletChain();
     const { data, isLoading } = useWalletBalance({
-      chain: arbitrum,
+      chain: chainIdToChain[chainId?.id],
       address: account?.address,
       client: THIRDWEB_CLIENT,
       tokenAddress,

@@ -53,17 +53,17 @@ export class CamelotV3 extends BaseUniswap {
     const erc20Instance = new ethers.Contract(
       tokenAddress,
       ERC20_ABI,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     const token0Instance = new ethers.Contract(
       this.token0,
       ERC20_ABI,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     const token1Instance = new ethers.Contract(
       this.token1,
       ERC20_ABI,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
 
     const decimalsOfToken0 = (await token0Instance.functions.decimals())[0];

@@ -88,7 +88,7 @@ export class YearnV3Vault extends BaseProtocol {
     const assetContractInstance = new ethers.Contract(
       this.assetContract.address,
       YearnV3,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     // Assuming 'percentage' is a float between 0 and 1
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
@@ -123,7 +123,7 @@ export class YearnV3Vault extends BaseProtocol {
     const assetContractInstance = new ethers.Contract(
       this.assetContract.address,
       YearnV3,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     const userBalance = await assetContractInstance.functions.balanceOf(owner);
     const pricePerShare = await assetContractInstance.functions.pricePerShare();

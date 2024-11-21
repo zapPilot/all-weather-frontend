@@ -97,7 +97,7 @@ export class InterportArbitrumUsdc extends BaseProtocol {
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       YearnV3,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     // Assuming 'percentage' is a float between 0 and 1
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
@@ -140,7 +140,7 @@ export class InterportArbitrumUsdc extends BaseProtocol {
     const assetContractInstance = new ethers.Contract(
       this.assetContract.address,
       Vault,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     const userBalance = await assetContractInstance.functions.balanceOf(owner);
     return (userBalance * tokenPricesMappingTable["usdc"]) / 1e6;

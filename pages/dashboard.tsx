@@ -166,7 +166,7 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: goldDataFilterDict,
       unexpandable: unexpandable.gold,
       setUnexpandable: updateState,
-      chain_blacklist: ["ethereum"],
+      chain_blacklist: ["ethereum", "solana", "aptos", "sui", "core", "bob"],
       topN: defaultTopN,
     },
     {
