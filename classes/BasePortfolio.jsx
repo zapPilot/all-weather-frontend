@@ -109,6 +109,7 @@ export class BasePortfolio {
       const protocolUniqueId =
         protocol.interface.uniqueId() + protocol.interface.constructor.name;
       usdBalanceDict[protocolUniqueId] = {
+        chain: protocol.interface.chain,
         usdBalance: balance,
         weight: protocol.weight,
         symbol: protocol.interface.symbolList,
@@ -540,6 +541,7 @@ export class BasePortfolio {
         txns = txns.concat(
           await protocol.interface.zapIn(
             owner,
+            protocolMetadata.chain,
             zapInAmountAfterFee.mul(percentageBN).div(10000),
             usdcSymbol,
             usdcAddressInThisChain,

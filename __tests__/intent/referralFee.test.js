@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import { generateIntentTxns } from "../../classes/main.js";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { encode } from "thirdweb";
-
+import { arbitrum } from "thirdweb/chains";
 describe("Referral Fee Module", () => {
   // it("should not charge fee for zap-in", async () => {
   //   const actionName = "zapIn";
@@ -52,6 +52,7 @@ describe("Referral Fee Module", () => {
     const portfolioHelper = getPortfolioHelper("Equilibria ETH Vault");
     const txns = await generateIntentTxns(
       actionName,
+      arbitrum,
       portfolioHelper,
       userAddress,
       tokenSymbol,

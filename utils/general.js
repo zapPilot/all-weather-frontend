@@ -23,6 +23,7 @@ export const PROVIDER = (chain) => {
   // Use a predefined mapping of chains to their RPC provider URLs
   const rpcProviders = {
     arbitrum: process.env.NEXT_PUBLIC_ARBITRUM_RPC_PROVIDER_URL,
+    "arbitrum one": process.env.NEXT_PUBLIC_ARBITRUM_RPC_PROVIDER_URL,
     base: process.env.NEXT_PUBLIC_BASE_RPC_PROVIDER_URL,
     optimism: process.env.NEXT_PUBLIC_OPTIMISM_RPC_PROVIDER_URL,
     // Add other chains as needed
