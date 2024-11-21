@@ -1,13 +1,40 @@
 import { ethers } from "ethers";
-import { arbitrum } from "thirdweb/chains";
+import {
+  arbitrum,
+  base,
+  optimism,
+  bsc,
+  polygon,
+  mantle,
+} from "thirdweb/chains";
 import { ERC20_ABI } from "../node_modules/@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
 import permanentPortfolioJson from "../lib/contracts/PermanentPortfolioLPToken.json" assert { type: "json" };
 import { prepareContractCall, getContract } from "thirdweb";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
+export const CHAIN_ID_TO_CHAIN = {
+  8453: base,
+  42161: arbitrum,
+  10: optimism,
+  56: bsc,
+  137: polygon,
+  5000: mantle,
+};
+export const PROVIDER = (chain) => {
+  // Use a predefined mapping of chains to their RPC provider URLs
+  const rpcProviders = {
+    arbitrum: process.env.NEXT_PUBLIC_ARBITRUM_RPC_PROVIDER_URL,
+    base: process.env.NEXT_PUBLIC_BASE_RPC_PROVIDER_URL,
+    optimism: process.env.NEXT_PUBLIC_OPTIMISM_RPC_PROVIDER_URL,
+    // Add other chains as needed
+  };
 
-export const PROVIDER = new ethers.providers.JsonRpcProvider(
-  process.env.NEXT_PUBLIC_RPC_PROVIDER_URL,
-);
+  const providerUrl = rpcProviders[chain.toLowerCase()];
+  if (!providerUrl) {
+    console.warn(`Warning: No RPC provider URL found for chain: ${chain}`);
+  }
+
+  return new ethers.providers.JsonRpcProvider(providerUrl);
+};
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 export function timeAgo(dateString) {
   // // 08/10/2024 21:09:57
@@ -39,8 +66,12 @@ export function timeAgo(dateString) {
   return `${secondsDiff} second${secondsDiff > 1 ? "s" : ""} ago`;
 }
 
-export async function getTokenDecimal(tokenAddress) {
-  const tokenInstance = new ethers.Contract(tokenAddress, ERC20_ABI, PROVIDER);
+export async function getTokenDecimal(tokenAddress, chain) {
+  const tokenInstance = new ethers.Contract(
+    tokenAddress,
+    ERC20_ABI,
+    PROVIDER(chain),
+  );
   return (await tokenInstance.functions.decimals())[0];
 }
 

@@ -1,7 +1,7 @@
 import { ConnectButton } from "thirdweb/react";
 import { createWallet, walletConnect, inAppWallet } from "thirdweb/wallets";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
-import { arbitrum, optimism } from "thirdweb/chains";
+import { arbitrum, optimism, base } from "thirdweb/chains";
 
 export default function ConfiguredConnectButton() {
   const wallets = [
@@ -22,7 +22,7 @@ export default function ConfiguredConnectButton() {
       autoConnect={true}
       wallets={wallets}
       theme={"light"}
-      chains={[arbitrum]}
+      chains={[arbitrum, base, optimism]}
       accountAbstraction={{
         chain: arbitrum,
         sponsorGas: true,

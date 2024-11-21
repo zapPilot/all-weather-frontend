@@ -142,6 +142,7 @@ export default function IndexOverviews() {
     try {
       const txns = await generateIntentTxns(
         actionName,
+        chainId,
         portfolioHelper,
         account.address,
         tokenSymbol,
@@ -183,6 +184,7 @@ export default function IndexOverviews() {
                     timestamp: Math.floor(Date.now() / 1000),
                     swapFeeRate: portfolioHelper.swapFeeRate(),
                     referralFeeRate: portfolioHelper.referralFeeRate(),
+                    chain: chainId.name.toLowerCase(),
                   }),
                 },
               });
@@ -291,11 +293,11 @@ export default function IndexOverviews() {
               type="primary"
               className="w-full mt-2"
               onClick={() => handleAAWalletAction("zapIn")}
-              loading={zapInIsLoading}
-              disabled={
-                Number(investmentAmount) === 0 ||
-                Number(investmentAmount) > tokenBalance
-              }
+              // loading={zapInIsLoading}
+              // disabled={
+              //   Number(investmentAmount) === 0 ||
+              //   Number(investmentAmount) > tokenBalance
+              // }
             >
               Zap In
             </Button>
@@ -530,6 +532,7 @@ export default function IndexOverviews() {
 
       const dust = await portfolioHelper.calProtocolAssetDustInWalletDictionary(
         account.address,
+        tokenPricesMappingTable,
       );
       setProtocolAssetDustInWallet(dust);
     };
