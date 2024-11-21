@@ -293,11 +293,11 @@ export default function IndexOverviews() {
               type="primary"
               className="w-full mt-2"
               onClick={() => handleAAWalletAction("zapIn")}
-              // loading={zapInIsLoading}
-              // disabled={
-              //   Number(investmentAmount) === 0 ||
-              //   Number(investmentAmount) > tokenBalance
-              // }
+              loading={zapInIsLoading}
+              disabled={
+                Number(investmentAmount) === 0 ||
+                Number(investmentAmount) > tokenBalance
+              }
             >
               Zap In
             </Button>
@@ -363,7 +363,7 @@ export default function IndexOverviews() {
               type="primary"
               className="w-full"
               onClick={() => handleAAWalletAction("transfer")}
-              // loading={transferLoading || usdBalanceLoading}
+              loading={transferLoading || usdBalanceLoading}
               disabled={usdBalance < 0.01 || recipientError}
             >
               Transfer
