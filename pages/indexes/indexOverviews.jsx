@@ -579,7 +579,7 @@ export default function IndexOverviews() {
                     className="h-6 w-6 text-green-600"
                   />
                   <Popover
-                    content="Click to view the audit report for more details."
+                    content="All Weather Protocol is a zero-smart-contract protocol. It’s a pure JavaScript project built with an Account Abstraction (AA) wallet. Here is the audit report for the AA wallet."
                     trigger="hover"
                   >
                     <span className="text-white">
