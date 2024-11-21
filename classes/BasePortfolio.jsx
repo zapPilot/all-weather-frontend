@@ -2,11 +2,10 @@ import { tokensAndCoinmarketcapIdsFromDropdownOptions } from "../utils/contractI
 import assert from "assert";
 import { oneInchAddress } from "../utils/oneInch";
 import axios from "axios";
-import { getTokenDecimal, approve } from "../utils/general";
+import { getTokenDecimal, approve, CHAIN_ID_TO_CHAIN } from "../utils/general";
 import { ethers } from "ethers";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
-import { arbitrum } from "thirdweb/chains";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import ReactMarkdown from "react-markdown";
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
@@ -110,6 +109,7 @@ export class BasePortfolio {
       const protocolUniqueId =
         protocol.interface.uniqueId() + protocol.interface.constructor.name;
       usdBalanceDict[protocolUniqueId] = {
+        chain: protocol.interface.chain,
         usdBalance: balance,
         weight: protocol.weight,
         symbol: protocol.interface.symbolList,
@@ -143,27 +143,6 @@ export class BasePortfolio {
       }
     }
     return [usdBalance, usdBalanceDict];
-  }
-  async assetUsdPrice(owner) {
-    // Flatten the strategy structure and create balance calculation promises
-    const assetUsdPricePromises = Object.values(this.strategy)
-      .flatMap((category) => Object.values(category))
-      .flat()
-      .map((protocol) =>
-        protocol.interface
-          .assetUsdPrice(owner)
-          .then((balance) => ({ protocol, balance })),
-      );
-
-    // Wait for all promises to resolve
-    const results = await Promise.all(assetUsdPricePromises);
-
-    // Combine all assetUsdPrices
-    const totalAssetUsdPrice = results.reduce((acc, { assetUsdPrice }) => {
-      return acc + (assetUsdPrice || 0);
-    }, 0);
-
-    return totalAssetUsdPrice;
   }
   async pendingRewards(owner, updateProgress) {
     const tokenPricesMappingTable =
@@ -340,7 +319,6 @@ export class BasePortfolio {
       actionParams,
     );
     totalTxns = totalTxns.concat(protocolTxns);
-
     // Handle special post-processing for specific actions
     if (actionName === "zapOut") {
       const portfolioUsdBalance = (
@@ -354,6 +332,7 @@ export class BasePortfolio {
           actionParams.tokenPricesMappingTable,
           actionParams.zapOutPercentage,
           portfolioUsdBalance,
+          actionParams.chainMetadata,
         );
         totalTxns = totalTxns.concat(swapFeeTxns);
       }
@@ -373,13 +352,13 @@ export class BasePortfolio {
         );
         return protocol.interface.zapIn(
           actionParams.account,
+          chain,
           actionParams.zapInAmount.mul(percentageBN).div(10000),
           actionParams.tokenInSymbol,
           actionParams.tokenInAddress,
           actionParams.slippage,
           actionParams.tokenPricesMappingTable,
           actionParams.updateProgress,
-          this.existingInvestmentPositions[chain],
         );
       },
 
@@ -562,6 +541,7 @@ export class BasePortfolio {
         txns = txns.concat(
           await protocol.interface.zapIn(
             owner,
+            protocolMetadata.chain,
             zapInAmountAfterFee.mul(percentageBN).div(10000),
             usdcSymbol,
             usdcAddressInThisChain,
@@ -611,13 +591,15 @@ export class BasePortfolio {
       return acc;
     }, {});
   }
-  async calProtocolAssetDustInWalletDictionary(owner) {
+  async calProtocolAssetDustInWalletDictionary(owner, tokenPricesMappingTable) {
     const protocolPromises = Object.values(this.strategy)
       .flatMap((category) => Object.entries(category))
       .flatMap(([chain, protocols]) =>
         protocols.map(async (protocol) => {
           const assetBalance = await protocol.interface.assetBalanceOf(owner);
-          const assetUsdPrice = await protocol.interface.assetUsdPrice();
+          const assetUsdPrice = await protocol.interface.assetUsdPrice(
+            tokenPricesMappingTable,
+          );
           return {
             chain,
             protocol: protocol.interface,
@@ -782,7 +764,7 @@ export class BasePortfolio {
     const contract = getContract({
       client: THIRDWEB_CLIENT,
       address: actionParams.tokenInAddress,
-      chain: arbitrum,
+      chain: actionParams.chainMetadata,
       abi: ERC20_ABI,
     });
 
@@ -814,16 +796,20 @@ export class BasePortfolio {
     tokenPricesMappingTable,
     zapOutPercentage,
     portfolioUsdBalance,
+    chainMetadata,
   ) {
     let txns = [];
     const referrer = await this._getReferrer(owner);
     const tokenOutUsdBalance = portfolioUsdBalance * zapOutPercentage;
     const swapFeeUsd = tokenOutUsdBalance * this.swapFeeRate();
-    const tokenOutDecimals = await getTokenDecimal(tokenOutAddress);
+    const tokenOutDecimals = await getTokenDecimal(
+      tokenOutAddress,
+      chainMetadata.name.toLowerCase(),
+    );
     const contract = getContract({
       client: THIRDWEB_CLIENT,
       address: tokenOutAddress,
-      chain: arbitrum,
+      chain: chainMetadata,
       abi: ERC20_ABI,
     });
     let platformFee = ethers.utils.parseUnits(

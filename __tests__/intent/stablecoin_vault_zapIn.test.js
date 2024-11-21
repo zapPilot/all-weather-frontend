@@ -2,6 +2,7 @@
 import { describe, it } from "vitest";
 import { generateIntentTxns } from "../../classes/main.js";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
+import { arbitrum } from "thirdweb/chains";
 
 describe("Stablecoin Vault", () => {
   it("should be able to zap-in with BigNumber", async () => {
@@ -18,6 +19,7 @@ describe("Stablecoin Vault", () => {
     const portfolioHelper = getPortfolioHelper("Stablecoin Vault");
     await generateIntentTxns(
       actionName,
+      arbitrum,
       portfolioHelper,
       userAddress,
       tokenSymbol,

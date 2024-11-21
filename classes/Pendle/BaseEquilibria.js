@@ -63,12 +63,12 @@ export class BaseEquilibria extends BaseProtocol {
     this.assetContractInstance = new ethers.Contract(
       this.assetContract.address,
       PendleMarketV3,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     this.stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       PendleBoosterSidechain,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
 
     this.symbolOfBestTokenToZapOut = customParams.symbolOfBestTokenToZapOut;
@@ -130,7 +130,7 @@ export class BaseEquilibria extends BaseProtocol {
     const rewardPoolContractInstance = new ethers.Contract(
       rewardPool,
       BaseRewardPool,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     const rewards = (
       await rewardPoolContractInstance.functions.getRewardTokens()
@@ -160,7 +160,7 @@ export class BaseEquilibria extends BaseProtocol {
     const eqbMinterInstance = new ethers.Contract(
       eqbMinterAddr,
       EqbMinterSidechain,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     const eqbFactor = (await eqbMinterInstance.functions.getFactor())[0];
     const eqbDENOMINATOR = (await eqbMinterInstance.functions.DENOMINATOR())[0];
@@ -280,7 +280,7 @@ export class BaseEquilibria extends BaseProtocol {
     const eqbPendleLPInstance = new ethers.Contract(
       rewardPool,
       ERC20_ABI,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     return (await eqbPendleLPInstance.functions.balanceOf(owner))[0];
   }

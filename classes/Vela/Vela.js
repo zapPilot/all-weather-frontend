@@ -92,14 +92,11 @@ export class Vela extends BaseProtocol {
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     return [[], {}];
   }
-  customRedeemVestingRewards(pendingRewards) {
-    return [];
-  }
   async usdBalanceOf(owner, tokenPricesMappingTable) {
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       TokenFarm,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     const userBalance = (
       await stakeFarmContractInstance.functions.getStakedAmount(
@@ -118,7 +115,7 @@ export class Vela extends BaseProtocol {
     const protocolContractInstance = new ethers.Contract(
       this.protocolContract.address,
       Vault,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     const vlpPrice =
       (await protocolContractInstance.functions.getVLPPrice()) / 1e5;
@@ -152,7 +149,7 @@ export class Vela extends BaseProtocol {
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       TokenFarm,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
 
     // Assuming 'percentage' is a float between 0 and 1
@@ -215,7 +212,7 @@ export class Vela extends BaseProtocol {
       const stakeFarmContractInstance = new ethers.Contract(
         this.stakeFarmContract.address,
         TokenFarm,
-        PROVIDER,
+        PROVIDER(this.chain),
       );
       const userStakedInfo =
         await stakeFarmContractInstance.functions.userStakedInfo(

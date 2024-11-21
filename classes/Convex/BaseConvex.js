@@ -67,7 +67,7 @@ export class BaseConvex extends BaseProtocol {
     const stakeFarmContractInstance = new ethers.Contract(
       this.convexRewardPoolContract.address,
       ConvexRewardPool,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     const rewardLength =
       await stakeFarmContractInstance.functions.rewardLength();
@@ -146,9 +146,6 @@ export class BaseConvex extends BaseProtocol {
     });
     return [[claimTxn], pendingRewards];
   }
-  customRedeemVestingRewards(pendingRewards) {
-    return [];
-  }
   async usdBalanceOf(owner, tokenPricesMappingTable) {
     const lpBalance = await this.stakeBalanceOf(owner, () => {});
     const lpPrice = this._calculateLpPrice(tokenPricesMappingTable);
@@ -161,7 +158,7 @@ export class BaseConvex extends BaseProtocol {
     const rewardPoolContractInstance = new ethers.Contract(
       this.convexRewardPoolContract.address,
       ERC20_ABI,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     updateProgress("Getting stake balance");
     return (await rewardPoolContractInstance.functions.balanceOf(owner))[0];
@@ -220,7 +217,7 @@ export class BaseConvex extends BaseProtocol {
     const protocolContractInstance = new ethers.Contract(
       this.protocolContract.address,
       CurveStableSwapNG,
-      PROVIDER,
+      PROVIDER(this.chain),
     );
     updateProgress("Getting LP balances");
     const [token_a_balance, token_b_balance] = (

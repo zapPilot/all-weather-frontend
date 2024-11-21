@@ -53,7 +53,7 @@ export const selectBefore = (handleChange, chainID, selectedToken) => {
 
   if (!chainID) {
     // chaindID would be set once the user connects their wallet
-    chainID = 42161;
+    return;
   }
   return (
     <>
