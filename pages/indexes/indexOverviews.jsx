@@ -293,11 +293,11 @@ export default function IndexOverviews() {
               type="primary"
               className="w-full mt-2"
               onClick={() => handleAAWalletAction("zapIn")}
-              // loading={zapInIsLoading}
-              // disabled={
-              //   Number(investmentAmount) === 0 ||
-              //   Number(investmentAmount) > tokenBalance
-              // }
+              loading={zapInIsLoading}
+              disabled={
+                Number(investmentAmount) === 0 ||
+                Number(investmentAmount) > tokenBalance
+              }
             >
               Zap In
             </Button>
@@ -363,7 +363,7 @@ export default function IndexOverviews() {
               type="primary"
               className="w-full"
               onClick={() => handleAAWalletAction("transfer")}
-              // loading={transferLoading || usdBalanceLoading}
+              loading={transferLoading || usdBalanceLoading}
               disabled={usdBalance < 0.01 || recipientError}
             >
               Transfer
@@ -579,7 +579,7 @@ export default function IndexOverviews() {
                     className="h-6 w-6 text-green-600"
                   />
                   <Popover
-                    content="Click to view the audit report for more details."
+                    content="All Weather Protocol is a zero-smart-contract protocol. It’s a pure JavaScript project built with an Account Abstraction (AA) wallet. Here is the audit report for the AA wallet."
                     trigger="hover"
                   >
                     <span className="text-white">

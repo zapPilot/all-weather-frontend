@@ -305,6 +305,7 @@ export class BasePortfolio {
         actionParams.tokenPricesMappingTable,
         actionParams.updateProgress,
         actionParams.rebalancableUsdBalanceDict,
+        actionParams.chainMetadata,
       );
     } else if (actionName === "stake") {
       return await this._generateStakeTxns(
@@ -439,6 +440,7 @@ export class BasePortfolio {
     tokenPricesMappingTable,
     updateProgress,
     rebalancableUsdBalanceDict,
+    chainMetadata,
   ) {
     // rebalace workflow:
 
@@ -517,6 +519,7 @@ export class BasePortfolio {
       {
         account: owner,
         tokenInAddress: usdcAddressInThisChain,
+        chainMetadata: chainMetadata,
       },
       transferAmount,
     );
@@ -774,7 +777,6 @@ export class BasePortfolio {
     if (referrer) {
       const referralFee = this._calculateReferralFee(transferAmount);
       platformFee = transferAmount.sub(referralFee);
-
       txns.push(this._prepareTransferTxn(contract, referrer, referralFee));
     }
 

@@ -112,6 +112,9 @@ describe("IndexOverviews Component", () => {
   afterEach(() => {
     vi.clearAllMocks();
     mockPortfolioHelper.lockUpPeriod.mockReset();
+    // Clear any timeouts or intervals if set
+    clearTimeout();
+    clearInterval();
   });
 
   it("fetch indexes data and apr", async () => {
@@ -148,7 +151,7 @@ describe("IndexOverviews Component", () => {
     });
 
     await waitFor(
-      () => {
+      async () => {
         const lockUpPeriods = screen.getAllByRole("lockUpPeriod");
         lockUpPeriods.forEach((element) => {
           expect(element.textContent).toBe("Unlocked");
@@ -169,7 +172,7 @@ describe("IndexOverviews Component", () => {
     render(<IndexOverviews />);
 
     await waitFor(
-      () => {
+      async () => {
         // find the locked period
         const lockUpPeriods = screen.getAllByRole("lockUpPeriod");
         const lockedPeriod = lockUpPeriods.find((element) =>
