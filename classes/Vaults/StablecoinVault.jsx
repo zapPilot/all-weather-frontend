@@ -6,6 +6,7 @@ import { Vela } from "../Vela/Vela";
 import { BaseConvex } from "../Convex/BaseConvex";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import { BaseAave } from "../Aave/BaseAave";
+import { BaseMoonwell } from "../Moonwell/BaseMoonwell";
 export class StablecoinVault extends BasePortfolio {
   constructor() {
     super(
@@ -165,19 +166,31 @@ export class StablecoinVault extends BasePortfolio {
               weight: 0.34,
             },
           ],
-          // base: [
-          //   {
-          //     interface: new BaseAave("base", 8453, ["usdc"], "single", {
-          //       symbolOfBestTokenToZapInOut: "usdc",
-          //       zapInOutTokenAddress:
-          //         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-          //       assetAddress: "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB",
-          //       protocolAddress: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
-          //       assetDecimals: 6,
-          //     }),
-          //     weight: 1,
-          //   },
-          // ],
+          base: [
+            // {
+            //   interface: new BaseAave("base", 8453, ["usdc"], "single", {
+            //     symbolOfBestTokenToZapInOut: "usdc",
+            //     zapInOutTokenAddress:
+            //       "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+            //     assetAddress: "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB",
+            //     protocolAddress: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
+            //     assetDecimals: 6,
+            //   }),
+            //   weight: 1,
+            // },
+            // {
+            //   interface: new BaseMoonwell("base", 8453, ["eurc"], "single", {
+            //     symbolOfBestTokenToZapInOut: "eurc",
+            //     zapInOutTokenAddress:
+            //       "0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42",
+            //     decimalsOfZapInOutToken: 6,
+            //     assetAddress: "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
+            //     protocolAddress: "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
+            //     assetDecimals: 8,
+            //   }),
+            //   weight: 1,
+            // },
+          ],
         },
       },
       {

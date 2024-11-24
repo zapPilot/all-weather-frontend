@@ -30,7 +30,7 @@ const items = [
       {
         label: (
           <a
-            href="https://all-weather.gitbook.io/all-weather-protocol"
+            href="https://all-weather-protocol.gitbook.io/all-weather-protocol"
             target="_blank"
           >
             Docs
