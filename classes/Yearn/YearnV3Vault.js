@@ -68,6 +68,7 @@ export class YearnV3Vault extends BaseProtocol {
       this.protocolContract.address,
       amountToZapIn,
       updateProgress,
+      this.chainId,
     );
 
     updateProgress("deposit");

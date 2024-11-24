@@ -6,7 +6,7 @@ import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import axios from "axios";
 import { timeAgo, unixToCustomFormat } from "../../utils/general";
 import { useRouter } from "next/router";
-
+import Image from "next/image";
 // Constants
 const VAULT_CONFIGS = {
   "ETH Vault": {
@@ -215,7 +215,17 @@ export default function TransactionHistory({
         <div className="flex gap-1">
           <span className={ACTION_COLORS[actionName] || ACTION_COLORS.default}>
             {actionLabel}
-          </span>
+          </span>{" "}
+          on{" "}
+          {
+            <Image
+              src={`/chainPicturesWebp/${
+                activityItem.metadata.chain || "arbitrum"
+              }.webp`}
+              height={20}
+              width={20}
+            />
+          }
         </div>
         {Object.entries(tokenDict).map(([symbol, amount]) =>
           renderTokenAmount(
@@ -284,7 +294,9 @@ export default function TransactionHistory({
                 {renderSingleTransaction(activityItem)}
               </span>{" "}
               <a
-                href={`https://arbitrum.blockscout.com/tx/${activityItem.tx_hash}`}
+                href={`https://${
+                  activityItem.metadata.chain || "arbitrum"
+                }.blockscout.com/tx/${activityItem.tx_hash}`}
                 target="_blank"
               >
                 tx:{" "}

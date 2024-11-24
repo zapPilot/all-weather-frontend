@@ -14,6 +14,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   dai: 4943,
   usde: 29470,
   wbtc: 3717,
+  eurc: 20641,
 };
 export const tokensForDropDown = [
   // "eth",

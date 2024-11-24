@@ -72,6 +72,7 @@ export class InterportArbitrumUsdc extends BaseProtocol {
       this.protocolContract.address,
       amountToZapIn,
       updateProgress,
+      this.chainId,
     );
     updateProgress("deposit");
     const depositTxn = prepareContractCall({

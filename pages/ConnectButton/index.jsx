@@ -22,6 +22,8 @@ export default function ConfiguredConnectButton() {
       autoConnect={true}
       wallets={wallets}
       theme={"light"}
+      // here are all the supported chains
+      // https://portal.thirdweb.com/connect/account-abstraction/infrastructure
       chains={[arbitrum, base, optimism]}
       accountAbstraction={{
         chain: arbitrum,

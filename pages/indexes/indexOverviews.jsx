@@ -380,7 +380,7 @@ export default function IndexOverviews() {
       <br />
       Click{" "}
       <Link
-        href="https://all-weather.gitbook.io/all-weather-protocol"
+        href="https://all-weather-protocol.gitbook.io/all-weather-protocol/vault-strategy/stablecoin-vault"
         target="_blank"
         className="text-blue-400"
       >

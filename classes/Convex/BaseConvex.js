@@ -115,6 +115,7 @@ export class BaseConvex extends BaseProtocol {
         this.protocolContract.address,
         amountToZapIn,
         updateProgress,
+        this.chainId,
       );
       approveTxns.push(approveForZapInTxn);
       _amounts.push(amountToZapIn);
@@ -188,6 +189,7 @@ export class BaseConvex extends BaseProtocol {
       // here's the failed txn: https://dashboard.tenderly.co/davidtnfsh/project/tx/arbitrum/0x822f5f426de88d1890f8836e825f52a70d22f5bcd8665125a83755eb947a4d88?trace=0.4.0.0.0.0.18.1
       ethers.constants.MaxUint256,
       updateProgress,
+      this.chainId,
     );
     const stakeTxn = prepareContractCall({
       contract: this.stakeFarmContract,
