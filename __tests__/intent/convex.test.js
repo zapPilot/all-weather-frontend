@@ -70,7 +70,7 @@ describe("Convex", () => {
       setStepName,
       slippage,
     );
-    expect(txns.length).toBe(11);
+    expect(txns.length).toBe(7);
     expect(txns[0].to).toBe("0xe062e302091f44d7483d9D6e0Da9881a0817E2be");
     expect(txns[1].to).toBe("0x096A8865367686290639bc50bF8D85C0110d9Fea");
     expect(txns[2].to).toBe("0xe062e302091f44d7483d9D6e0Da9881a0817E2be");

@@ -66,7 +66,7 @@ describe("Referral Fee Module", () => {
         setStepName,
         slippage,
       );
-      expect(txns.length).toBe(11);
+      expect(txns.length).toBe(9);
       expect(await encode(txns[0])).toBe(
         "0x095ea7b3000000000000000000000000c7517f481cc0a645e63f870830a4b2e580421e3200000000000000000000000000000000000000000000000011d4fc27b5027517",
       );
