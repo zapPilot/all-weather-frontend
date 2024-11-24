@@ -121,7 +121,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
             <span className="fi fi-rr-home"></span>
           </a> */}
           <a
-            href="https://all-weather-protocol.gitbook.io/all-weather-protocol"
+            href="https://all-weather-protocol.gitbook.io/"
             rel="noopener noreferrer"
             target="_blank"
           >

@@ -100,6 +100,7 @@ export class BaseApolloX extends BaseProtocol {
       this.protocolContract.address,
       amountToZapIn,
       updateProgress,
+      this.chainId,
     );
 
     const latestPrice = await this._fetchAlpPrice(updateProgress);
@@ -137,6 +138,7 @@ export class BaseApolloX extends BaseProtocol {
       this.protocolContract.address,
       amount,
       updateProgress,
+      this.chainId,
     );
     const latestPrice = await this._fetchAlpPrice(updateProgress);
     const estimatedZapOutUsdValue =
@@ -229,6 +231,7 @@ export class BaseApolloX extends BaseProtocol {
       this.stakeFarmContract.address,
       amount,
       updateProgress,
+      this.chainId,
     );
     const depositTxn = prepareContractCall({
       contract: this.stakeFarmContract,

@@ -76,7 +76,13 @@ export async function getTokenDecimal(tokenAddress, chain) {
   return (await tokenInstance.functions.decimals())[0];
 }
 
-export function approve(tokenAddress, spenderAddress, amount, updateProgress) {
+export function approve(
+  tokenAddress,
+  spenderAddress,
+  amount,
+  updateProgress,
+  chainId,
+) {
   updateProgress(`approve spending amount to ${spenderAddress}`);
   const approvalAmount = amount;
   if (approvalAmount === 0) {
@@ -89,7 +95,7 @@ export function approve(tokenAddress, spenderAddress, amount, updateProgress) {
     contract: getContract({
       client: THIRDWEB_CLIENT,
       address: tokenAddress,
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[chainId],
       abi: permanentPortfolioJson.abi,
     }),
     method: "approve", // <- this gets inferred from the contract

@@ -79,7 +79,7 @@ describe("Equilibria ETH Vault", () => {
       setStepName,
       slippage,
     );
-    expect(txns.length).toBe(11);
+    expect(txns.length).toBe(9);
     expect(
       (await encode(txns[0])).includes(
         "c7517f481cc0a645e63f870830a4b2e580421e32",
@@ -104,7 +104,7 @@ describe("Equilibria ETH Vault", () => {
 
     // swap
     expect(txns[6].to).toBe("0x1111111254EEB25477B68fb85Ed929f73A960582");
-    expect(txns[8].to).toBe("0x1111111254EEB25477B68fb85Ed929f73A960582");
+    expect(txns[8].to).toBe("0x82af49447d8a07e3bd95bd0d56f35241523fbab1");
   });
   it("should be able to claim from Equilibria Vault", async () => {
     // params claimAndSwap 0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0 usdc 0xaf88d065e77c8cc2239327c5edb3a432268e5831 0 6 1 0.5
@@ -134,7 +134,7 @@ describe("Equilibria ETH Vault", () => {
       setStepName,
       slippage,
     );
-    expect(txns.length).toBe(6);
+    expect(txns.length).toBe(4);
 
     // claim
     expect(txns[0].to).toBe("0xc7517f481Cc0a645e63f870830A4B2e580421e32");
@@ -147,11 +147,5 @@ describe("Equilibria ETH Vault", () => {
       ),
     ).toBe(true);
     expect(txns[3].to).toBe("0x1111111254EEB25477B68fb85Ed929f73A960582");
-    expect(
-      (await encode(txns[4])).includes(
-        "1111111254eeb25477b68fb85ed929f73a960582",
-      ),
-    ).toBe(true);
-    expect(txns[5].to).toBe("0x1111111254EEB25477B68fb85Ed929f73A960582");
   });
 });

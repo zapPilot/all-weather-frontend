@@ -80,6 +80,7 @@ export class BaseAave extends BaseProtocol {
       this.protocolContract.address,
       amountToZapIn,
       updateProgress,
+      this.chainId,
     );
     const depositTxn = prepareContractCall({
       contract: this.protocolContract,

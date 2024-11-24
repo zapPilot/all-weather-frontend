@@ -163,7 +163,6 @@ export class BasePortfolio {
 
     // Wait for all promises to resolve
     const allRewards = await Promise.all(rewardsPromises);
-
     // Combine all rewards
     const rewardsMappingTable = allRewards.reduce((acc, rewards) => {
       for (const [tokenAddress, rewardMetadata] of Object.entries(rewards)) {
@@ -296,6 +295,7 @@ export class BasePortfolio {
           oneInchAddress,
           actionParams.zapInAmount,
           actionParams.updateProgress,
+          actionParams.chainMetadata.id,
         ),
       );
     } else if (actionName === "rebalance") {
@@ -338,7 +338,6 @@ export class BasePortfolio {
         totalTxns = totalTxns.concat(swapFeeTxns);
       }
     }
-
     return totalTxns;
   }
 
@@ -512,6 +511,7 @@ export class BasePortfolio {
       oneInchAddress,
       zapInAmount,
       () => {},
+      chainMetadata.id,
     );
     const transferAmount = this.mulSwapFeeRate(zapInAmount);
     const zapInAmountAfterFee = zapInAmount.sub(transferAmount);

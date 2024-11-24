@@ -69,6 +69,7 @@ export class Vela extends BaseProtocol {
       this.protocolContract.address,
       amountToZapIn,
       updateProgress,
+      this.chainId,
     );
 
     const latestPrice = await this._fetchVlpPrice(updateProgress);
@@ -137,6 +138,7 @@ export class Vela extends BaseProtocol {
       this.stakeFarmContract.address,
       amount,
       updateProgress,
+      this.chainId,
     );
     const stakeTxn = prepareContractCall({
       contract: this.stakeFarmContract,
@@ -193,6 +195,7 @@ export class Vela extends BaseProtocol {
       this.protocolContract.address,
       vlpAmount,
       updateProgress,
+      this.chainId,
     );
     const burnTxn = prepareContractCall({
       contract: this.protocolContract,

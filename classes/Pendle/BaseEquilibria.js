@@ -213,6 +213,7 @@ export class BaseEquilibria extends BaseProtocol {
       this.protocolContract.address,
       amountToZapIn,
       updateProgress,
+      this.chainId,
     );
     updateProgress("fetching Pendle's routing data");
     const resp = await axios.get(
@@ -340,6 +341,7 @@ export class BaseEquilibria extends BaseProtocol {
       this.stakeFarmContract.address,
       amount,
       updateProgress,
+      this.chainId,
     );
 
     updateProgress("prepare staking farm's contract call");
@@ -367,6 +369,7 @@ export class BaseEquilibria extends BaseProtocol {
       this.eqbStakeFarmWithdrawContract.address,
       withdrawAmount,
       updateProgress,
+      this.chainId,
     );
 
     const withdrawTxn = prepareContractCall({
@@ -388,6 +391,7 @@ export class BaseEquilibria extends BaseProtocol {
       this.protocolContract.address,
       amount,
       updateProgress,
+      this.chainId,
     );
     const [
       symbolOfBestTokenToZapOut,

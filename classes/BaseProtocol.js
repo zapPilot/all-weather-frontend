@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { fetch1InchSwapData, oneInchAddress } from "../utils/oneInch.js";
-import { PROVIDER } from "../utils/general.js";
+import { CHAIN_ID_TO_CHAIN, PROVIDER } from "../utils/general.js";
 import { arbitrum } from "thirdweb/chains";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import BaseUniswap from "./uniswapv3/BaseUniswap.js";
@@ -513,7 +513,7 @@ export default class BaseProtocol extends BaseUniswap {
         amount === 0 ||
         tokenMetadata.vesting === true ||
         // if usd value of this token is less than 1, then it's easy to suffer from high slippage
-        tokenPricesMappingTable[tokenMetadata.symbol] * amount < 1
+        tokenMetadata.usdDenominatedValue < 1
       ) {
         continue;
       }
@@ -522,6 +522,7 @@ export default class BaseProtocol extends BaseUniswap {
         oneInchAddress,
         amount,
         updateProgress,
+        this.chainId,
       );
       const swapTxnResult = await this._swap(
         recipient,
@@ -589,7 +590,7 @@ export default class BaseProtocol extends BaseUniswap {
     return [
       prepareTransaction({
         to: oneInchAddress,
-        chain: arbitrum,
+        chain: CHAIN_ID_TO_CHAIN[this.chainId],
         client: THIRDWEB_CLIENT,
         data: swapCallData["data"],
       }),
