@@ -82,13 +82,13 @@ export class BaseMoonwell extends BaseProtocol {
     const comptroller = (
       await this.protocolContractInstance.functions.comptroller()
     )[0];
-    const controllerContractInstance = new ethers.Contract(
+    const comptrollerInstance = new ethers.Contract(
       comptroller,
       Comptroller,
       PROVIDER(this.chain),
     );
     const rewardDistributor = (
-      await controllerContractInstance.functions.rewardDistributor()
+      await comptrollerInstance.functions.rewardDistributor()
     )[0];
     const rewardDistributorContractInstance = new ethers.Contract(
       rewardDistributor,
@@ -145,7 +145,7 @@ export class BaseMoonwell extends BaseProtocol {
     const comptroller = (
       await this.protocolContractInstance.functions.comptroller()
     )[0];
-    const controllerContract = getContract({
+    const comptrollerInstance = getContract({
       client: THIRDWEB_CLIENT,
       address: comptroller,
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
@@ -153,7 +153,7 @@ export class BaseMoonwell extends BaseProtocol {
     });
 
     const claimTxn = prepareContractCall({
-      contract: controllerContract,
+      contract: comptrollerInstance,
       method: "claimReward",
       params: [[owner], [this.assetContract.address], true, true],
     });
