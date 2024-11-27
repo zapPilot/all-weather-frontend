@@ -12,7 +12,6 @@ class BaseBridge {
     amount: string,
     updateProgress: any,
   ): Promise<[any, any]> {
-    console.log("toToken in base bridge", toToken);
     const [customBridgeTxn, bridgeAddress] = await this.customBridgeTxn(
       owner,
       fromChainId,
