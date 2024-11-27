@@ -32,6 +32,7 @@ class AcrossBridge extends BaseBridge {
     fromToken,
     toToken,
     amount,
+    updateProgress,
   ) {
     // WETH from Arbitrum -> Optimism
     const route = {
@@ -40,11 +41,11 @@ class AcrossBridge extends BaseBridge {
       inputToken: fromToken,
       outputToken: toToken,
     };
+    updateProgress("Getting quote from Across...");
     const quote = await this.sdk.getQuote({
       route,
       inputAmount: amount,
     });
-    console.log("quote", quote);
     const bridgeAddress =
       AcrossBridge.spokePoolMapping[
         CHAIN_ID_TO_CHAIN[fromChainId].name.toLowerCase()

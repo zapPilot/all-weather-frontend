@@ -39,6 +39,7 @@ class BaseBridge {
     fromToken: string,
     toToken: string,
     amount: string,
+    updateProgress: CallableFunction,
   ): Promise<[any, any, string]> {
     // Implementation
     throw new Error("Method 'customBridgeTxn()' must be implemented.");
