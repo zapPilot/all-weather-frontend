@@ -94,7 +94,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 45,
                 },
               ),
-              weight: 0.33,
+              weight: 0.25,
             },
             {
               interface: new BaseEquilibria(
@@ -111,7 +111,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 52,
                 },
               ),
-              weight: 0.33,
+              weight: 0.25,
             },
             {
               interface: new BaseEquilibria(
@@ -163,7 +163,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.34,
+              weight: 0.25,
             },
           ],
           base: [
@@ -178,18 +178,18 @@ export class StablecoinVault extends BasePortfolio {
             //   }),
             //   weight: 1,
             // },
-            // {
-            //   interface: new BaseMoonwell("base", 8453, ["eurc"], "single", {
-            //     symbolOfBestTokenToZapInOut: "eurc",
-            //     zapInOutTokenAddress:
-            //       "0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42",
-            //     decimalsOfZapInOutToken: 6,
-            //     assetAddress: "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
-            //     protocolAddress: "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
-            //     assetDecimals: 8,
-            //   }),
-            //   weight: 1,
-            // },
+            {
+              interface: new BaseMoonwell("base", 8453, ["eurc"], "single", {
+                symbolOfBestTokenToZapInOut: "eurc",
+                zapInOutTokenAddress:
+                  "0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42",
+                decimalsOfZapInOutToken: 6,
+                assetAddress: "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
+                protocolAddress: "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
+                assetDecimals: 8,
+              }),
+              weight: 0.25,
+            },
           ],
         },
       },

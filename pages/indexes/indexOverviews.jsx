@@ -13,6 +13,7 @@ import { useRouter } from "next/router";
 import TransacitonHistory from "./transactionHistory.jsx";
 import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
 import ConfiguredConnectButton from "../ConnectButton";
+import { base } from "thirdweb/chains";
 import {
   Button,
   Progress,
@@ -31,7 +32,9 @@ import {
   useSendBatchTransaction,
   useActiveWalletChain,
   useWalletBalance,
+  useSwitchActiveWalletChain,
 } from "thirdweb/react";
+
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { formatBalance } from "../../utils/general.js";
 import axios from "axios";
@@ -56,6 +59,7 @@ export default function IndexOverviews() {
   const { portfolioName } = router.query;
   const account = useActiveAccount();
   const chainId = useActiveWalletChain();
+  const switchChain = useSwitchActiveWalletChain();
   const [selectedToken, setSelectedToken] = useState(
     "USDC-0xaf88d065e77c8cc2239327c5edb3a432268e5831-6",
   );
@@ -113,7 +117,7 @@ export default function IndexOverviews() {
   } = useSelector((state) => state.strategyMetadata);
   const dispatch = useDispatch();
 
-  const handleAAWalletAction = async (actionName) => {
+  const handleAAWalletAction = async (actionName, onlyThisChain = false) => {
     setOpen(true);
 
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
@@ -156,6 +160,7 @@ export default function IndexOverviews() {
         rebalancableUsdBalanceDict,
         recipient,
         protocolAssetDustInWallet.arbitrum,
+        onlyThisChain,
       );
       // Call sendBatchTransaction and wait for the result
       try {
@@ -206,14 +211,18 @@ export default function IndexOverviews() {
           });
         });
       } catch (error) {
+        let errorReadableMsg;
+        if (error.message.includes("0x495d907f")) {
+          errorReadableMsg = "Bridge quote expired, please try again";
+        } else {
+          errorReadableMsg = error.message + "\nProbably out of gas";
+        }
         openNotificationWithIcon(
           notificationAPI,
           "Transaction Result",
           "error",
           `Transaction failed\n
-          error:${error.message}\n
-        1. Probably out of gas\n
-        2. Or still in the lock-up period
+          error:${errorReadableMsg}
         `,
         );
       }
@@ -255,7 +264,6 @@ export default function IndexOverviews() {
       tokenAddress,
     });
   const [tokenBalance, setTokenBalance] = useState(0);
-
   const items = [
     {
       key: "1",
@@ -267,6 +275,21 @@ export default function IndexOverviews() {
             setSelectedToken={handleSetSelectedToken}
             setInvestmentAmount={handleSetInvestmentAmount}
           />
+
+          <Button onClick={() => switchChain(base)}>Switch to Base</Button>
+          <Button
+            type="primary"
+            className="w-full mt-2"
+            onClick={() => handleAAWalletAction("zapIn", true)}
+            loading={zapInIsLoading}
+            disabled={
+              Number(investmentAmount) === 0 ||
+              Number(investmentAmount) > tokenBalance
+            }
+          >
+            Zap In on Base after bridging
+          </Button>
+
           {account === undefined ? (
             <ConfiguredConnectButton />
           ) : Object.values(protocolAssetDustInWallet?.arbitrum || {}).some(
@@ -928,7 +951,7 @@ export default function IndexOverviews() {
                           <div key={`${chain}-${index}`}>
                             <div className="flex items-center space-x-2">
                               <span className="text-white font-semibold">
-                                Protocols in
+                                Protocols on
                               </span>
                               <Image
                                 src={`/chainPicturesWebp/${chain}.webp`}
@@ -1059,31 +1082,27 @@ export default function IndexOverviews() {
                                     );
                                   })}
                               </tbody>
-                              <tfoot>
-                                <tr className="border-t border-gray-200">
-                                  <th
-                                    scope="row"
-                                    className="pt-6 font-semibold text-white"
-                                  >
-                                    Avg. APR
-                                  </th>
-                                  <td className="pt-6 font-semibold text-right text-green-500">
-                                    {loading ? (
-                                      <Spin />
-                                    ) : (
-                                      `${(
-                                        (portfolioApr[portfolioName]
-                                          ?.portfolioAPR || 0) * 100
-                                      ).toFixed(2)}%`
-                                    )}
-                                  </td>
-                                </tr>
-                              </tfoot>
                             </table>
                           </div>
                         ),
                       ),
                   )}
+                <tfoot>
+                  <tr className="border-t border-gray-200">
+                    <th scope="row" className="pt-6 font-semibold text-white">
+                      Avg. APR
+                    </th>
+                    <td className="pt-6 font-semibold text-right text-green-500">
+                      {loading ? (
+                        <Spin />
+                      ) : (
+                        `${(
+                          (portfolioApr[portfolioName]?.portfolioAPR || 0) * 100
+                        ).toFixed(2)}%`
+                      )}
+                    </td>
+                  </tr>
+                </tfoot>
                 <div>
                   <span className="text-gray-500">Lock-up Period</span>{" "}
                   {usdBalanceLoading === true ? (

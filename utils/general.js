@@ -19,6 +19,28 @@ export const CHAIN_ID_TO_CHAIN = {
   137: polygon,
   5000: mantle,
 };
+export const CHAIN_TO_CHAIN_ID = {
+  arbitrum: 42161,
+  base: 8453,
+  optimism: 10,
+  bsc: 56,
+  polygon: 137,
+  mantle: 5000,
+};
+export const TOKEN_ADDRESS_MAP = {
+  usdc: {
+    arbitrum: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+    base: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  },
+  "usdc.e": {
+    arbitrum: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+    base: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  },
+  dai: {
+    arbitrum: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+    base: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
+  },
+};
 export const PROVIDER = (chain) => {
   // Use a predefined mapping of chains to their RPC provider URLs
   const rpcProviders = {
