@@ -17,6 +17,7 @@ export const generateIntentTxns = async (
   rebalancableUsdBalanceDict,
   recipient,
   protocolAssetDustInWallet,
+  onlyThisChain,
 ) => {
   let txns;
   if (actionName === "zapIn") {
@@ -32,6 +33,7 @@ export const generateIntentTxns = async (
       progressCallback: (progressPercentage) => setProgress(progressPercentage),
       progressStepNameCallback: (stepName) => setStepName(stepName),
       slippage,
+      onlyThisChain,
     });
   } else if (actionName === "zapOut") {
     txns = await portfolioHelper.portfolioAction("zapOut", {
@@ -43,6 +45,7 @@ export const generateIntentTxns = async (
       progressCallback: (progressPercentage) => setProgress(progressPercentage),
       progressStepNameCallback: (stepName) => setStepName(stepName),
       slippage,
+      onlyThisChain,
     });
   } else if (actionName === "claimAndSwap") {
     txns = await portfolioHelper.portfolioAction(actionName, {
@@ -52,6 +55,7 @@ export const generateIntentTxns = async (
       progressCallback: (progressPercentage) => setProgress(progressPercentage),
       progressStepNameCallback: (stepName) => setStepName(stepName),
       slippage,
+      onlyThisChain,
     });
   } else if (actionName === "rebalance") {
     txns = await portfolioHelper.portfolioAction(actionName, {
@@ -61,6 +65,7 @@ export const generateIntentTxns = async (
       progressStepNameCallback: (stepName) => setStepName(stepName),
       slippage,
       rebalancableUsdBalanceDict,
+      onlyThisChain,
     });
   } else if (actionName === "transfer") {
     txns = await portfolioHelper.portfolioAction(actionName, {
@@ -71,6 +76,7 @@ export const generateIntentTxns = async (
       progressStepNameCallback: (stepName) => setStepName(stepName),
       slippage,
       recipient,
+      onlyThisChain,
     });
   } else if (actionName === "stake") {
     txns = await portfolioHelper.portfolioAction(actionName, {
@@ -79,6 +85,7 @@ export const generateIntentTxns = async (
       progressCallback: (progressPercentage) => setProgress(progressPercentage),
       progressStepNameCallback: (stepName) => setStepName(stepName),
       protocolAssetDustInWallet,
+      onlyThisChain,
     });
   }
 

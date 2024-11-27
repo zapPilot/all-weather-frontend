@@ -8,6 +8,8 @@ import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import ReactMarkdown from "react-markdown";
+import getTheBestBridge from "./bridges/bridgeFactory";
+import { CHAIN_TO_CHAIN_ID, TOKEN_ADDRESS_MAP } from "../utils/general";
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 export class BasePortfolio {
@@ -306,6 +308,7 @@ export class BasePortfolio {
         actionParams.updateProgress,
         actionParams.rebalancableUsdBalanceDict,
         actionParams.chainMetadata,
+        actionParams.onlyThisChain,
       );
     } else if (actionName === "stake") {
       return await this._generateStakeTxns(
@@ -342,13 +345,16 @@ export class BasePortfolio {
   }
 
   async _processProtocolActions(actionName, actionParams) {
+    const currentChain = actionParams.chainMetadata.name
+      .toLowerCase()
+      .replace(" one", "");
     const actionHandlers = {
-      zapIn: async (protocol, chain) => {
+      zapIn: async (protocol, chain, derivative) => {
         // TODO(david): zap in's weight should take protocolUsdBalanceDictionary into account
         // protocolUsdBalanceDictionary = await this._getProtocolUsdBalanceDictionary(owner)
         if (protocol.weight === 0) return null;
         const percentageBN = ethers.BigNumber.from(
-          Math.floor(protocol.weight * 10000),
+          Math.floor(protocol.weight * derivative * 10000),
         );
         return protocol.interface.zapIn(
           actionParams.account,
@@ -412,25 +418,89 @@ export class BasePortfolio {
           actionParams.updateProgress,
         );
       },
+      bridge: async (chain, totalWeight) => {
+        if (totalWeight === 0) return [];
+        const percentageBN = ethers.BigNumber.from(
+          Math.floor(totalWeight * 10000),
+        );
+        const bridge = await getTheBestBridge();
+        const bridgeTxns = await bridge.getBridgeTxns(
+          actionParams.account,
+          actionParams.chainMetadata.id,
+          CHAIN_TO_CHAIN_ID[chain],
+          TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol][currentChain],
+          TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol][chain],
+          actionParams.zapInAmount.mul(percentageBN).div(10000),
+          actionParams.updateProgress,
+        );
+        return bridgeTxns;
+      },
     };
-
-    const protocolTxns = [];
-    for (const protocolsInThisCategory of Object.values(this.strategy)) {
-      for (const [chain, protocols] of Object.entries(
-        protocolsInThisCategory,
-      )) {
-        for (const protocol of protocols) {
-          const txnsForThisProtocol = await actionHandlers[actionName](
-            protocol,
-            chain,
+    // Separate function to process protocol transactions
+    const processProtocolTxns = async (currentChain) => {
+      const txns = [];
+      for (const protocolsInThisCategory of Object.values(this.strategy)) {
+        for (const [chain, protocols] of Object.entries(
+          protocolsInThisCategory,
+        )) {
+          if (chain.toLowerCase() !== currentChain) continue;
+          const totalWeight = protocols.reduce(
+            (sum, protocol) => sum + (protocol.weight || 0),
+            0,
           );
-          if (txnsForThisProtocol) {
-            protocolTxns.push(...txnsForThisProtocol);
+          let derivative = 1;
+          if (actionParams.onlyThisChain === true) {
+            derivative = 1 / totalWeight;
+          }
+          for (const protocol of protocols) {
+            const txnsForThisProtocol = await actionHandlers[actionName](
+              protocol,
+              chain,
+              derivative,
+            );
+            if (txnsForThisProtocol) {
+              txns.push(...txnsForThisProtocol);
+            }
           }
         }
       }
-    }
-    return protocolTxns;
+      return txns;
+    };
+
+    // Separate function to process bridge transactions
+    const processBridgeTxns = async (currentChain) => {
+      const txns = [];
+      for (const protocolsInThisCategory of Object.values(this.strategy)) {
+        const targetChains = Object.entries(protocolsInThisCategory)
+          .filter(([chain, protocols]) => chain.toLowerCase() !== currentChain)
+          .map(([chain, protocols]) => {
+            const totalWeight = protocols.reduce(
+              (sum, protocol) => sum + (protocol.weight || 0),
+              0,
+            );
+            return { chain, totalWeight };
+          });
+
+        for (const { chain, totalWeight } of targetChains) {
+          if (totalWeight === 0) continue;
+          const bridgeTxns = await actionHandlers["bridge"](chain, totalWeight);
+          txns.push(...bridgeTxns);
+        }
+      }
+      return txns;
+    };
+
+    // Execute protocol transactions first
+    const protocolTxns = await processProtocolTxns(currentChain);
+
+    // Then execute bridge transactions if needed
+    const bridgeTxns =
+      actionParams.onlyThisChain === true
+        ? []
+        : await processBridgeTxns(currentChain);
+
+    // Combine all transactions, with bridge transactions at the end
+    return [...protocolTxns, ...bridgeTxns];
   }
 
   async _generateRebalanceTxns(
