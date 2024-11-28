@@ -19,10 +19,23 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
 export const tokensForDropDown = [
   "usdc",
   "usdc.e",
-  "usdt",
+  // "usdt",
   "dai",
-  "wbtc",
-  "weth",
+  // "wbtc",
+  // "weth",
+  // "frax",
+  // "wsteth",
+  // "usds",
+  // "eura",
+  // "usd+",
+  // "reth",
+  // "pendle",
+  // "ezeth",
+  // "cbeth",
+  // "lusd",
+  // "susd",
+  // "euroe",
+  // "axlusdc",
 ];
 export const selectBefore = (handleChange, chainID, selectedToken) => {
   const selectSymbol = selectedToken?.split("-")[0];
