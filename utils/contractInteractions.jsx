@@ -25,7 +25,6 @@ export const tokensForDropDown = [
   "dai",
   "wbtc",
   "weth",
-  "usde",
   // "frax",
   // "wsteth",
   // "usds",

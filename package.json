@@ -15,7 +15,7 @@
     "test-ui": "vitest --ui"
   },
   "dependencies": {
-    "@0xsquid/sdk": "^2.8.26",
+    "@across-protocol/app-sdk": "^0.0.4",
     "@ant-design/charts": "^1.4.2",
     "@ant-design/plots": "1.2.5",
     "@ant-design/web3": "^1.15.1",

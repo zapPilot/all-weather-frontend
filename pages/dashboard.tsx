@@ -167,7 +167,7 @@ const Dashboard: NextPage = () => {
       unexpandable: unexpandable.gold,
       setUnexpandable: updateState,
       chain_blacklist: ["ethereum", "solana", "aptos", "sui", "core", "bob"],
-      topN: defaultTopN,
+      topN: 20,
     },
     {
       img: "/tokenPictures/btc.webp",
