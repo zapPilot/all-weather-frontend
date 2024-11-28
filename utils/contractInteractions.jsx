@@ -17,27 +17,12 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   eurc: 20641,
 };
 export const tokensForDropDown = [
-  // "eth",
-  // "usdc.e",
   "usdc",
   "usdc.e",
   "usdt",
   "dai",
   "wbtc",
   "weth",
-  // "frax",
-  // "wsteth",
-  // "usds",
-  // "eura",
-  // "usd+",
-  // "reth",
-  // "pendle",
-  // "ezeth",
-  // "cbeth",
-  // "lusd",
-  // "susd",
-  // "euroe",
-  // "axlusdc",
 ];
 export const selectBefore = (handleChange, chainID, selectedToken) => {
   const selectSymbol = selectedToken?.split("-")[0];
