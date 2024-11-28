@@ -278,7 +278,12 @@ export default function IndexOverviews() {
             setInvestmentAmount={handleSetInvestmentAmount}
           />
 
-          <Button onClick={() => switchChain(base)}>Switch to Base</Button>
+          <Button
+            type="primary"
+            onClick={() => switchChain(base)}
+          >
+            Switch to Base
+          </Button>
           <Button
             type="primary"
             className="w-full mt-2"
