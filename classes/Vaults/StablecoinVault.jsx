@@ -188,6 +188,18 @@ export class StablecoinVault extends BasePortfolio {
                 protocolAddress: "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
                 assetDecimals: 8,
               }),
+              weight: 0,
+            },
+            {
+              interface: new BaseMoonwell("base", 8453, ["dai"], "single", {
+                symbolOfBestTokenToZapInOut: "dai",
+                zapInOutTokenAddress:
+                  "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
+                decimalsOfZapInOutToken: 18,
+                assetAddress: "0x73b06D8d18De422E269645eaCe15400DE7462417",
+                protocolAddress: "0x73b06D8d18De422E269645eaCe15400DE7462417",
+                assetDecimals: 8,
+              }),
               weight: 0.25,
             },
           ],

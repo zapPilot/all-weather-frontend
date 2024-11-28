@@ -214,6 +214,8 @@ export default function IndexOverviews() {
         let errorReadableMsg;
         if (error.message.includes("0x495d907f")) {
           errorReadableMsg = "Bridge quote expired, please try again";
+        } else if (error.message.includes("User rejected the request")) {
+          return;
         } else {
           errorReadableMsg = error.message + "\nProbably out of gas";
         }
@@ -298,7 +300,7 @@ export default function IndexOverviews() {
             <Button
               type="primary"
               className="w-full mt-2"
-              onClick={() => handleAAWalletAction("stake")}
+              onClick={() => handleAAWalletAction("stake", true)}
               disabled={usdBalanceLoading}
             >
               {`Stake Available Assets ($${Object.values(
@@ -346,7 +348,7 @@ export default function IndexOverviews() {
             <Button
               type="primary"
               className="w-full"
-              onClick={() => handleAAWalletAction("zapOut")}
+              onClick={() => handleAAWalletAction("zapOut", true)}
               loading={zapOutIsLoading || usdBalanceLoading}
               disabled={usdBalance < 0.01 || zapOutPercentage === 0}
             >
@@ -385,7 +387,7 @@ export default function IndexOverviews() {
             <Button
               type="primary"
               className="w-full"
-              onClick={() => handleAAWalletAction("transfer")}
+              onClick={() => handleAAWalletAction("transfer", true)}
               loading={transferLoading || usdBalanceLoading}
               disabled={usdBalance < 0.01 || recipientError}
             >
@@ -752,7 +754,7 @@ export default function IndexOverviews() {
                       <Button
                         className="w-full mt-2"
                         type="primary"
-                        onClick={() => handleAAWalletAction("rebalance")}
+                        onClick={() => handleAAWalletAction("rebalance", true)}
                         loading={
                           rebalanceIsLoading ||
                           rebalancableUsdBalanceDictLoading
