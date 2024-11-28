@@ -67,7 +67,7 @@ class AcrossBridge extends BaseBridge {
         quote.deposit.inputToken,
         quote.deposit.outputToken,
         quote.deposit.inputAmount,
-        quote.deposit.outputAmount,
+        quote.deposit.inputAmount - quote.fees.totalRelayFee.total,
         quote.deposit.destinationChainId,
         quote.deposit.exclusiveRelayer,
         quote.deposit.quoteTimestamp,
