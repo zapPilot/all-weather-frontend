@@ -178,7 +178,9 @@ export default function IndexOverviews() {
         slippage,
         rebalancableUsdBalanceDict,
         recipient,
-        protocolAssetDustInWallet.arbitrum,
+        protocolAssetDustInWallet[
+          chainId.name.toLowerCase().replace(" one", "")
+        ],
         onlyThisChain,
       );
       // Call sendBatchTransaction and wait for the result
@@ -313,13 +315,18 @@ export default function IndexOverviews() {
           >
             Zap In on Base after bridging
           </Button>
-
           {account === undefined ? (
             <ConfiguredConnectButton />
-          ) : Object.values(protocolAssetDustInWallet?.arbitrum || {}).reduce(
-              (sum, protocolObj) => sum + (protocolObj.usdBalance || 0),
+          ) : Object.values(
+              protocolAssetDustInWallet?.[
+                chainId.name.toLowerCase().replace(" one", "")
+              ] || {},
+            ).reduce(
+              (sum, protocolObj) => sum + (protocolObj.assetUsdBalanceOf || 0),
               0,
-            ) > 0.05 ? (
+            ) /
+              usdBalance >
+            0.05 ? (
             <Button
               type="primary"
               className="w-full mt-2"
@@ -327,7 +334,9 @@ export default function IndexOverviews() {
               disabled={usdBalanceLoading}
             >
               {`Stake Available Assets ($${Object.values(
-                protocolAssetDustInWallet?.arbitrum || {},
+                protocolAssetDustInWallet?.[
+                  chainId.name.toLowerCase().replace(" one", "")
+                ] || {},
               )
                 .reduce(
                   (sum, protocolObj) =>
