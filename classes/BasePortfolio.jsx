@@ -510,6 +510,7 @@ export class BasePortfolio {
     updateProgress,
     rebalancableUsdBalanceDict,
     chainMetadata,
+    onlyThisChain,
   ) {
     // rebalace workflow:
 
@@ -530,12 +531,28 @@ export class BasePortfolio {
     // but it's enough for now
     let zapOutUsdcBalance = 0;
     const usdcSymbol = "usdc";
-    const usdcAddressInThisChain = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
+    const usdcAddressInThisChain =
+      TOKEN_ADDRESS_MAP[usdcSymbol][
+        chainMetadata.name.toLowerCase().replace(" one", "")
+      ];
     const usdcDecimals = 6;
+    const rebalancableUsdBalanceDictOnThisChain = Object.fromEntries(
+      Object.entries(rebalancableUsdBalanceDict).filter(
+        ([key, protocolMetadata]) =>
+          protocolMetadata.chain ===
+            chainMetadata.name.toLowerCase().replace(" one", "") ||
+          key === "pendingRewards",
+      ),
+    );
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const [chain, protocols] of Object.entries(
         protocolsInThisCategory,
       )) {
+        if (
+          onlyThisChain &&
+          chain !== chainMetadata.name.toLowerCase().replace(" one", "")
+        )
+          continue;
         for (const protocol of protocols) {
           const usdBalance = await protocol.interface.usdBalanceOf(
             owner,
@@ -546,10 +563,12 @@ export class BasePortfolio {
           let zapOutPercentage;
           if (usdBalance === 0) continue;
           if (
-            rebalancableUsdBalanceDict[protocolClassName]?.zapOutPercentage > 0
+            rebalancableUsdBalanceDictOnThisChain[protocolClassName]
+              ?.zapOutPercentage > 0
           ) {
             zapOutPercentage =
-              rebalancableUsdBalanceDict[protocolClassName].zapOutPercentage;
+              rebalancableUsdBalanceDictOnThisChain[protocolClassName]
+                .zapOutPercentage;
           } else {
             continue;
           }
@@ -572,7 +591,8 @@ export class BasePortfolio {
     const zapInAmount = ethers.utils.parseUnits(
       (
         (zapOutUsdcBalance * (100 - slippage)) / 100 +
-        rebalancableUsdBalanceDict.pendingRewards.usdBalance * REWARD_SLIPPAGE
+        rebalancableUsdBalanceDictOnThisChain.pendingRewards.usdBalance *
+          REWARD_SLIPPAGE
       ).toFixed(usdcDecimals),
       usdcDecimals,
     );
@@ -595,7 +615,7 @@ export class BasePortfolio {
     );
     txns = txns.concat(approveTxn, ...rebalanceFeeTxns);
     for (const [key, protocolMetadata] of Object.entries(
-      rebalancableUsdBalanceDict,
+      rebalancableUsdBalanceDictOnThisChain,
     )) {
       if (key === "pendingRewards") {
         continue;
@@ -669,6 +689,20 @@ export class BasePortfolio {
       .flatMap((category) => Object.entries(category))
       .flatMap(([chain, protocols]) =>
         protocols.map(async (protocol) => {
+          const placeholderForStake = 1;
+          if (
+            protocol.interface.mode == "single" &&
+            (await protocol.interface._stake(placeholderForStake, () => {}))
+              .length === 0
+          ) {
+            return null;
+          } else if (
+            protocol.interface.mode == "LP" &&
+            (await protocol.interface._stakeLP(placeholderForStake, () => {}))
+              .length === 0
+          ) {
+            return null;
+          }
           const assetBalance = await protocol.interface.assetBalanceOf(owner);
           const assetUsdPrice = await protocol.interface.assetUsdPrice(
             tokenPricesMappingTable,
@@ -686,12 +720,19 @@ export class BasePortfolio {
       );
 
     const results = await Promise.all(protocolPromises);
-
-    return results.reduce((acc, { chain, ...protocolData }) => {
-      if (!acc[chain]) acc[chain] = {};
-      acc[chain][protocolData.protocol.uniqueId()] = protocolData;
-      return acc;
-    }, {});
+    return results
+      .filter((result) => result !== null)
+      .reduce((acc, result) => {
+        if (!acc[result.chain]) {
+          acc[result.chain] = {};
+        }
+        acc[result.chain][result.protocol.assetAddress] = {
+          protocol: result.protocol,
+          assetBalance: result.assetBalance,
+          assetUsdBalanceOf: result.assetUsdBalanceOf,
+        };
+        return acc;
+      }, {});
   }
   async _getExistingInvestmentPositionsByChain(address, updateProgress) {
     const chainPromises = Object.entries(this.assetAddressSetByChain).map(
