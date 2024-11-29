@@ -179,7 +179,7 @@ export default function IndexOverviews() {
         rebalancableUsdBalanceDict,
         recipient,
         protocolAssetDustInWallet[
-          chainId.name.toLowerCase().replace(" one", "")
+          chainId?.name.toLowerCase().replace(" one", "")
         ],
         onlyThisChain,
       );
@@ -319,7 +319,7 @@ export default function IndexOverviews() {
             <ConfiguredConnectButton />
           ) : Object.values(
               protocolAssetDustInWallet?.[
-                chainId.name.toLowerCase().replace(" one", "")
+                chainId?.name.toLowerCase().replace(" one", "")
               ] || {},
             ).reduce(
               (sum, protocolObj) => sum + (protocolObj.assetUsdBalanceOf || 0),
@@ -335,7 +335,7 @@ export default function IndexOverviews() {
             >
               {`Stake Available Assets ($${Object.values(
                 protocolAssetDustInWallet?.[
-                  chainId.name.toLowerCase().replace(" one", "")
+                  chainId?.name.toLowerCase().replace(" one", "")
                 ] || {},
               )
                 .reduce(
