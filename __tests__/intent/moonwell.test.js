@@ -31,18 +31,15 @@ describe("Moonwell", () => {
       setStepName,
       slippage,
     );
-    expect(txns.length).toBe(4);
+    expect(txns.length).toBe(3);
     // approve 1inch
     expect(await encode(txns[0])).includes(
       "0x095ea7b30000000000000000000000001111111254eeb25477b68fb85ed929f73a96058200000000000000000000000000000000000000000000000000000000000f4240",
     );
 
-    expect(await encode(txns[2])).includes(
-      "0x095ea7b3000000000000000000000000b682c840b5f4fc58b20769e691a6fa1305a501a2",
-    );
-    expect(txns[2].to).toBe("0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42");
+    expect(txns[1].to).toBe("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913");
     // .toBe(true);
-    expect(txns[3].to).toBe("0xb682c840B5F4FC58B20769E691A6fa1305A501a2");
+    expect(txns[2].to).toBe("0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22");
   });
   it("should be able to zap-out Moonwell's Stablecoin Vault", async () => {
     const actionName = "zapOut";
@@ -70,10 +67,10 @@ describe("Moonwell", () => {
       setStepName,
       slippage,
     );
-    expect(txns.length).toBe(6);
-    expect(txns[0].to).toBe("0xb682c840B5F4FC58B20769E691A6fa1305A501a2");
+    expect(txns.length).toBe(4);
+    expect(txns[0].to).toBe("0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22");
     expect(txns[1].to).toBe("0xfBb21d0380beE3312B33c4353c8936a0F13EF26C");
-    expect(txns[2].to).toBe("0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42");
+    expect(txns[2].to).toBe("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913");
   });
   it("should be able to claim from Moonwell Vault", async () => {
     // params claimAndSwap 0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0 usdc 0xaf88d065e77c8cc2239327c5edb3a432268e5831 0 6 1 0.5
