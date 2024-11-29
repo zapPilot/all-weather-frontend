@@ -53,6 +53,7 @@ import { arbitrum } from "thirdweb/chains";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
+import tokens from "../views/components/tokens.json";
 
 export default function IndexOverviews() {
   const router = useRouter();
@@ -60,10 +61,28 @@ export default function IndexOverviews() {
   const account = useActiveAccount();
   const chainId = useActiveWalletChain();
   const switchChain = useSwitchActiveWalletChain();
-  const [selectedToken, setSelectedToken] = useState(
-    "USDC-0xaf88d065e77c8cc2239327c5edb3a432268e5831-6",
-  );
 
+  const getDefaultToken = (chainId) => {
+    if (!chainId) return null;
+
+    const chainTokens =
+      tokens.props.pageProps.tokenList[String(chainId?.id)] || [];
+    if (!Array.isArray(chainTokens)) {
+      return null;
+    }
+
+    const usdcToken = chainTokens.find(
+      (token) => token.symbol?.toLowerCase() === "usdc",
+    );
+
+    if (!usdcToken) {
+      return null;
+    }
+
+    return `${usdcToken.symbol}-${usdcToken.value}-${usdcToken.decimals}`;
+  };
+
+  const [selectedToken, setSelectedToken] = useState(null);
   const [investmentAmount, setInvestmentAmount] = useState(0);
   const [zapInIsLoading, setZapInIsLoading] = useState(false);
   const [zapOutIsLoading, setZapOutIsLoading] = useState(false);
@@ -159,7 +178,9 @@ export default function IndexOverviews() {
         slippage,
         rebalancableUsdBalanceDict,
         recipient,
-        protocolAssetDustInWallet.arbitrum,
+        protocolAssetDustInWallet[
+          chainId?.name.toLowerCase().replace(" one", "")
+        ],
         onlyThisChain,
       );
       // Call sendBatchTransaction and wait for the result
@@ -279,6 +300,9 @@ export default function IndexOverviews() {
           />
 
           <Button onClick={() => switchChain(base)}>Switch to Base</Button>
+          <Button onClick={() => switchChain(arbitrum)}>
+            Switch to Arbitrum
+          </Button>
           <Button
             type="primary"
             className="w-full mt-2"
@@ -291,12 +315,18 @@ export default function IndexOverviews() {
           >
             Zap In on Base after bridging
           </Button>
-
           {account === undefined ? (
             <ConfiguredConnectButton />
-          ) : Object.values(protocolAssetDustInWallet?.arbitrum || {}).some(
-              (protocolObj) => protocolObj.assetBalance > 0,
-            ) ? (
+          ) : Object.values(
+              protocolAssetDustInWallet?.[
+                chainId?.name.toLowerCase().replace(" one", "")
+              ] || {},
+            ).reduce(
+              (sum, protocolObj) => sum + (protocolObj.assetUsdBalanceOf || 0),
+              0,
+            ) /
+              usdBalance >
+            0.05 ? (
             <Button
               type="primary"
               className="w-full mt-2"
@@ -304,7 +334,9 @@ export default function IndexOverviews() {
               disabled={usdBalanceLoading}
             >
               {`Stake Available Assets ($${Object.values(
-                protocolAssetDustInWallet?.arbitrum || {},
+                protocolAssetDustInWallet?.[
+                  chainId?.name.toLowerCase().replace(" one", "")
+                ] || {},
               )
                 .reduce(
                   (sum, protocolObj) =>
@@ -341,6 +373,7 @@ export default function IndexOverviews() {
             depositBalance={usdBalance}
             setZapOutPercentage={setZapOutPercentage}
             currency="$"
+            noTokenSelect={false}
           />
           {account === undefined ? (
             <ConfiguredConnectButton />
@@ -369,6 +402,7 @@ export default function IndexOverviews() {
             depositBalance={usdBalance}
             setZapOutPercentage={setZapOutPercentage}
             currency="$"
+            noTokenSelect={true}
           />
           <Input
             status={recipientError ? "error" : ""}
@@ -578,6 +612,13 @@ export default function IndexOverviews() {
     setRecipientError(!isValid);
     setRecipient(address);
   };
+
+  useEffect(() => {
+    const defaultToken = getDefaultToken(chainId);
+    if (defaultToken) {
+      setSelectedToken(defaultToken);
+    }
+  }, [chainId]);
 
   return (
     <BasePage>
