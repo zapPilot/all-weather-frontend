@@ -7,13 +7,13 @@ export class MoonwellStablecoinVault extends BasePortfolio {
         long_term_bond: {
           base: [
             {
-              interface: new BaseMoonwell("base", 8453, ["eurc"], "single", {
-                symbolOfBestTokenToZapInOut: "eurc",
+              interface: new BaseMoonwell("base", 8453, ["usdc"], "single", {
+                symbolOfBestTokenToZapInOut: "usdc",
                 zapInOutTokenAddress:
-                  "0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42",
-                decimalsOfZapInOutToken: 6,
-                assetAddress: "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
-                protocolAddress: "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
+                  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                decimalsOfZapInOutToken: 18,
+                assetAddress: "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22",
+                protocolAddress: "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22",
                 assetDecimals: 8,
               }),
               weight: 1,
