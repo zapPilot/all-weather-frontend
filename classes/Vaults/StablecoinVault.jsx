@@ -94,7 +94,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 45,
                 },
               ),
-              weight: 0.25,
+              weight: 0.125,
             },
             {
               interface: new BaseEquilibria(
@@ -111,7 +111,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 52,
                 },
               ),
-              weight: 0.25,
+              weight: 0.125,
             },
             {
               interface: new BaseEquilibria(
@@ -200,7 +200,19 @@ export class StablecoinVault extends BasePortfolio {
                 protocolAddress: "0x73b06D8d18De422E269645eaCe15400DE7462417",
                 assetDecimals: 8,
               }),
-              weight: 0.25,
+              weight: 0,
+            },
+            {
+              interface: new BaseMoonwell("base", 8453, ["usdc"], "single", {
+                symbolOfBestTokenToZapInOut: "usdc",
+                zapInOutTokenAddress:
+                  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                decimalsOfZapInOutToken: 18,
+                assetAddress: "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22",
+                protocolAddress: "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22",
+                assetDecimals: 8,
+              }),
+              weight: 0.5,
             },
           ],
         },
