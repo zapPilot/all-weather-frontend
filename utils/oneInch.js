@@ -25,17 +25,6 @@ export const APX = "0x78f5d389f5cdccfc41594abab4b0ed02f31398b3";
 export const USDT = "0x55d398326f99059ff775485246999027b3197955";
 export const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 
-// export const magicTokenAddress = "0x539bdE0d7Dbd336b79148AA742883198BBF60342";
-// export const gDAIMarketPoolAddress =
-//   "0xa0192f6567f8f5DC38C53323235FD08b318D2dcA";
-// export const daiAddress = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1";
-// export const glpMarketPoolAddress =
-//   "0x7D49E5Adc0EAAD9C027857767638613253eF125f";
-// export const rethMarketPoolAddress =
-//   "0x14FbC760eFaF36781cB0eb3Cb255aD976117B9Bd";
-// export const pendleMarketPoolAddress =
-//   "0x24e4Df37ea00C4954d668e3ce19fFdcffDEc2cF6";
-// export const rethTokenAddress = "0xEC70Dcb4A1EFa46b8F2D97C310C9c4790ba5ffA8";
 export async function fetch1InchSwapData(
   chainId,
   fromTokenAddress,

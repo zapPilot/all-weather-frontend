@@ -225,7 +225,7 @@ export class BaseApolloX extends BaseProtocol {
   async lockUpPeriod() {
     return 0;
   }
-  _stake(amount, updateProgress) {
+  async _stake(amount, updateProgress) {
     const approveAlpTxn = approve(
       this.assetContract.address,
       this.stakeFarmContract.address,
