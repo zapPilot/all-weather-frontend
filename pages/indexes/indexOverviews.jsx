@@ -316,9 +316,10 @@ export default function IndexOverviews() {
 
           {account === undefined ? (
             <ConfiguredConnectButton />
-          ) : Object.values(protocolAssetDustInWallet?.arbitrum || {}).some(
-              (protocolObj) => protocolObj.assetBalance > 0,
-            ) ? (
+          ) : Object.values(protocolAssetDustInWallet?.arbitrum || {}).reduce(
+              (sum, protocolObj) => sum + (protocolObj.usdBalance || 0),
+              0,
+            ) > 0.05 ? (
             <Button
               type="primary"
               className="w-full mt-2"
