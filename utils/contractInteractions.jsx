@@ -17,8 +17,6 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   eurc: 20641,
 };
 export const tokensForDropDown = [
-  // "eth",
-  // "usdc.e",
   "usdc",
   "usdc.e",
   // "usdt",
