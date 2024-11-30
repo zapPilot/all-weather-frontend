@@ -298,67 +298,72 @@ export default function IndexOverviews() {
             setSelectedToken={handleSetSelectedToken}
             setInvestmentAmount={handleSetInvestmentAmount}
           />
-
-          <Button onClick={() => switchChain(base)}>Switch to Base</Button>
-          <Button onClick={() => switchChain(arbitrum)}>
-            Switch to Arbitrum
-          </Button>
-          <Button
-            type="primary"
-            className="w-full mt-2"
-            onClick={() => handleAAWalletAction("zapIn", true)}
-            loading={zapInIsLoading}
-            disabled={
-              Number(investmentAmount) === 0 ||
-              Number(investmentAmount) > tokenBalance
-            }
-          >
-            Zap In on Base after bridging
-          </Button>
-          {account === undefined ? (
-            <ConfiguredConnectButton />
-          ) : Object.values(
-              protocolAssetDustInWallet?.[
-                chainId?.name.toLowerCase().replace(" one", "")
-              ] || {},
-            ).reduce(
-              (sum, protocolObj) => sum + (protocolObj.assetUsdBalanceOf || 0),
-              0,
-            ) /
-              usdBalance >
-            0.05 ? (
-            <Button
-              type="primary"
-              className="w-full mt-2"
-              onClick={() => handleAAWalletAction("stake", true)}
-              disabled={usdBalanceLoading}
-            >
-              {`Stake Available Assets ($${Object.values(
-                protocolAssetDustInWallet?.[
-                  chainId?.name.toLowerCase().replace(" one", "")
-                ] || {},
-              )
-                .reduce(
-                  (sum, protocolObj) =>
-                    sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Button onClick={() => switchChain(arbitrum)}>Switch to Arbitrum</Button>
+              {account === undefined ? (
+                <ConfiguredConnectButton />
+              ) : Object.values(
+                  protocolAssetDustInWallet?.[
+                    chainId?.name.toLowerCase().replace(" one", "")
+                  ] || {},
+                ).reduce(
+                  (sum, protocolObj) => sum + (protocolObj.assetUsdBalanceOf || 0),
                   0,
-                )
-                .toFixed(2)})`}
-            </Button>
-          ) : (
-            <Button
-              type="primary"
-              className="w-full mt-2"
-              onClick={() => handleAAWalletAction("zapIn")}
-              loading={zapInIsLoading}
-              disabled={
-                Number(investmentAmount) === 0 ||
-                Number(investmentAmount) > tokenBalance
-              }
-            >
-              Zap In
-            </Button>
-          )}
+                ) /
+                  usdBalance >
+                0.05 ? (
+                <Button
+                  type="primary"
+                  className="w-full mt-2"
+                  onClick={() => handleAAWalletAction("stake", true)}
+                  disabled={usdBalanceLoading}
+                >
+                  {`Stake Available Assets ($${Object.values(
+                    protocolAssetDustInWallet?.[
+                      chainId?.name.toLowerCase().replace(" one", "")
+                    ] || {},
+                  )
+                    .reduce(
+                      (sum, protocolObj) =>
+                        sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
+                      0,
+                    )
+                    .toFixed(2)})`}
+                </Button>
+              ) : (
+                <Button
+                  type="primary"
+                  className="w-full mt-2"
+                  onClick={() => handleAAWalletAction("zapIn")}
+                  loading={zapInIsLoading}
+                  disabled={
+                    Number(investmentAmount) === 0 ||
+                    Number(investmentAmount) > tokenBalance ||
+                    chainId?.id !== 42161
+                  }
+                >
+                  Zap In
+                </Button>
+              )}
+            </div>
+            <div>
+              <Button onClick={() => switchChain(base)}>Switch to Base</Button>
+              <Button
+                type="primary"
+                className="w-full mt-2"
+                onClick={() => handleAAWalletAction("zapIn", true)}
+                loading={zapInIsLoading}
+                disabled={
+                  Number(investmentAmount) === 0 ||
+                  Number(investmentAmount) > tokenBalance ||
+                  chainId?.id !== 8453
+                }
+              >
+                Zap In on Base after bridging
+              </Button>
+            </div>
+          </div>
         </div>
       ),
     },
