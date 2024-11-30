@@ -2,7 +2,7 @@ import { tokensAndCoinmarketcapIdsFromDropdownOptions } from "../utils/contractI
 import assert from "assert";
 import { oneInchAddress } from "../utils/oneInch";
 import axios from "axios";
-import { getTokenDecimal, approve, CHAIN_ID_TO_CHAIN } from "../utils/general";
+import { getTokenDecimal, approve } from "../utils/general";
 import { ethers } from "ethers";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
@@ -492,13 +492,11 @@ export class BasePortfolio {
 
     // Execute protocol transactions first
     const protocolTxns = await processProtocolTxns(currentChain);
-
     // Then execute bridge transactions if needed
     const bridgeTxns =
       actionParams.onlyThisChain === true
         ? []
         : await processBridgeTxns(currentChain);
-
     // Combine all transactions, with bridge transactions at the end
     return [...protocolTxns, ...bridgeTxns];
   }

@@ -281,7 +281,7 @@ export default function IndexOverviews() {
   const tokenAddress = selectedToken?.split("-")[1];
   const { data: walletBalanceData, isLoading: walletBalanceLoading } =
     useWalletBalance({
-      chain: arbitrum,
+      chain: chainId,
       address: account?.address,
       client: THIRDWEB_CLIENT,
       tokenAddress,

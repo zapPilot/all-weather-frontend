@@ -1,7 +1,6 @@
 import { ethers } from "ethers";
 import { fetch1InchSwapData, oneInchAddress } from "../utils/oneInch.js";
 import { CHAIN_ID_TO_CHAIN, PROVIDER } from "../utils/general.js";
-import { arbitrum } from "thirdweb/chains";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import BaseUniswap from "./uniswapv3/BaseUniswap.js";
 import assert from "assert";

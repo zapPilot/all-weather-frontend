@@ -1,8 +1,6 @@
-import CurveStableSwapNG from "../../lib/contracts/Curve/CurveStableSwapNG.json" assert { type: "json" };
-import Booster from "../../lib/contracts/Convex/Booster.json" assert { type: "json" };
-import ConvexRewardPool from "../../lib/contracts/Convex/ConvexRewardPool.json" assert { type: "json" };
-import { CHAIN_ID_TO_CHAIN } from "../../utils/general";
-
+import Router from "../../lib/contracts/Aerodrome/Router.json" assert { type: "json" };
+import Guage from "../../lib/contracts/Aerodrome/Guage.json" assert { type: "json" };
+import Pool from "../../lib/contracts/Aerodrome/Pool.json" assert { type: "json" };
 import axios from "axios";
 import { ethers } from "ethers";
 import { PROVIDER } from "../../utils/general.js";
@@ -10,41 +8,33 @@ import axiosRetry from "axios-retry";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import BaseProtocol from "../BaseProtocol.js";
-import { approve } from "../../utils/general";
+import { approve, CHAIN_ID_TO_CHAIN } from "../../utils/general";
 import ERC20_ABI from "../../lib/contracts/ERC20.json" assert { type: "json" };
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
-export class BaseConvex extends BaseProtocol {
+export class BaseAerodrome extends BaseProtocol {
   constructor(chain, chaindId, symbolList, mode, customParams) {
     super(chain, chaindId, symbolList, mode, customParams);
-    this.protocolName = "convex";
+    this.protocolName = "aerodrome";
     this.protocolVersion = "0";
-    this.pid = this.customParams.pid;
     this.assetDecimals = this.customParams.assetDecimals;
     this.assetContract = getContract({
       client: THIRDWEB_CLIENT,
       address: this.customParams.assetAddress,
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
-      abi: CurveStableSwapNG,
+      abi: Pool,
     });
     this.protocolContract = getContract({
       client: THIRDWEB_CLIENT,
-      address: this.customParams.protocolAddress,
+      address: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
-      abi: CurveStableSwapNG,
+      abi: Router,
     });
-    // stakeFarmContract is null not used in this protocol
     this.stakeFarmContract = getContract({
       client: THIRDWEB_CLIENT,
-      address: "0xF403C135812408BFbE8713b5A23a04b3D48AAE31",
+      address: "0xDBF852464fC906C744E52Dbd68C1b07dD33A922a",
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
-      abi: Booster,
-    });
-    this.convexRewardPoolContract = getContract({
-      client: THIRDWEB_CLIENT,
-      address: customParams.convexRewardPool,
-      chain: CHAIN_ID_TO_CHAIN[this.chainId],
-      abi: ConvexRewardPool,
+      abi: Guage,
     });
     this._checkIfParamsAreSet();
   }
@@ -102,37 +92,49 @@ export class BaseConvex extends BaseProtocol {
     slippage,
     updateProgress,
   ) {
-    let approveTxns = [];
-    let _amounts = [];
-    let _min_mint_amount = ethers.BigNumber.from(0);
-    for (const [
-      bestTokenSymbol,
-      bestTokenAddressToZapIn,
-      bestTokenToZapInDecimal,
-      amountToZapIn,
-    ] of [tokenAmetadata, tokenBmetadata]) {
-      const approveForZapInTxn = approve(
-        bestTokenAddressToZapIn,
+    // Prepare token amounts and approvals
+    const tokens = [tokenAmetadata, tokenBmetadata].map(
+      ([symbol, address, decimals, amount]) => ({
+        address,
+        amount,
+        minAmount: this.mul_with_slippage_in_bignumber_format(
+          amount,
+          slippage * 10,
+        ),
+        decimals,
+      }),
+    );
+    const min_mint_amount = this._calculateMintLP(tokens[0], tokens[1]);
+
+    // Generate approve transactions
+    const approveTxns = tokens.map((token) =>
+      approve(
+        token.address,
         this.protocolContract.address,
-        amountToZapIn,
+        token.amount,
         updateProgress,
         this.chainId,
-      );
-      approveTxns.push(approveForZapInTxn);
-      _amounts.push(amountToZapIn);
-      _min_mint_amount = _min_mint_amount.add(amountToZapIn);
-    }
-    _min_mint_amount = Math.floor(
-      (_min_mint_amount * (100 - slippage)) /
-        100 /
-        this._calculateLpPrice(tokenPricesMappingTable),
+      ),
     );
+
     const depositTxn = prepareContractCall({
       contract: this.protocolContract,
-      method: "add_liquidity",
-      params: [_amounts, _min_mint_amount],
+      method: "addLiquidity",
+      params: [
+        tokens[0].address,
+        tokens[1].address,
+        true,
+        tokens[0].amount,
+        tokens[1].amount,
+        tokens[0].minAmount,
+        tokens[1].minAmount,
+        owner,
+        Math.floor(Date.now() / 1000) + 600, // 10 minute deadline
+      ],
     });
-    const stakeTxns = await this._stakeLP(_amounts, updateProgress);
+
+    // Get staking transactions and combine all transactions
+    const stakeTxns = await this._stakeLP(min_mint_amount, updateProgress);
     return [...approveTxns, depositTxn, ...stakeTxns];
   }
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
@@ -171,6 +173,29 @@ export class BaseConvex extends BaseProtocol {
   _calculateTokenAmountsForLP(tokenMetadatas) {
     return [1, 1];
   }
+  _calculateMintLP(tokenAmetadata, tokenBmetadata) {
+    // Convert amounts to common decimals and calculate average
+    const amountA = Number(
+      ethers.utils.formatUnits(
+        tokenAmetadata.minAmount.toString(),
+        tokenAmetadata.decimals,
+      ),
+    );
+    const amountB = Number(
+      ethers.utils.formatUnits(
+        tokenBmetadata.minAmount.toString(),
+        tokenBmetadata.decimals,
+      ),
+    );
+
+    // Calculate expected LP tokens (average of normalized amounts)
+    const averageAmount = ((amountA + amountB) / 2).toFixed(this.assetDecimals);
+
+    // Convert to BigNumber with proper scaling
+    return ethers.BigNumber.from(
+      String(averageAmount * Math.pow(10, this.assetDecimals)),
+    ).div(ethers.BigNumber.from(10).pow(6));
+  }
   _calculateLpPrice(tokenPricesMappingTable) {
     // TODO(david): need to calculate the correct LP price
     if (this.pid === 34) {
@@ -186,16 +211,14 @@ export class BaseConvex extends BaseProtocol {
     const approveForStakingTxn = approve(
       this.assetContract.address,
       this.stakeFarmContract.address,
-      // TODO(David): not sure why _min_mint_amount cannot be used here
-      // here's the failed txn: https://dashboard.tenderly.co/davidtnfsh/project/tx/arbitrum/0x822f5f426de88d1890f8836e825f52a70d22f5bcd8665125a83755eb947a4d88?trace=0.4.0.0.0.0.18.1
-      ethers.constants.MaxUint256,
+      amount,
       updateProgress,
       this.chainId,
     );
     const stakeTxn = prepareContractCall({
       contract: this.stakeFarmContract,
-      method: "depositAll",
-      params: [this.pid],
+      method: "function deposit(uint256 _amount)",
+      params: [amount],
     });
     return [approveForStakingTxn, stakeTxn];
   }
