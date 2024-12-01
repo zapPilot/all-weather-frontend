@@ -803,12 +803,13 @@ export class BasePortfolio {
       frax: 1,
       usde: 1,
       susd: 1,
+      msusd: 1,
     };
     for (const [token, coinMarketCapId] of Object.entries(
       this.uniqueTokenIdsForCurrentPrice,
     )) {
       updateProgress(`Fetching price for ${token}`);
-      if (["usdc", "usdt", "dai", "frax"].includes(token)) continue;
+      if (Object.keys(tokenPricesMappingTable).includes(token)) continue;
       axios
         .get(
           `${process.env.NEXT_PUBLIC_API_URL}/token/${coinMarketCapId}/price`,
