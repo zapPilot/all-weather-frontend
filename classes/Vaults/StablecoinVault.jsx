@@ -5,8 +5,8 @@ import { ApolloX20240820 } from "../ApolloX/ApolloX20240820";
 import { Vela } from "../Vela/Vela";
 import { BaseConvex } from "../Convex/BaseConvex";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
-import { BaseAave } from "../Aave/BaseAave";
 import { BaseMoonwell } from "../Moonwell/BaseMoonwell";
+import { BaseAerodrome } from "../Aerodrome/BaseAerodrome";
 export class StablecoinVault extends BasePortfolio {
   constructor() {
     super(
@@ -94,7 +94,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 45,
                 },
               ),
-              weight: 0.125,
+              weight: 0.2,
             },
             {
               interface: new BaseEquilibria(
@@ -111,7 +111,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 52,
                 },
               ),
-              weight: 0.125,
+              weight: 0,
             },
             {
               interface: new BaseEquilibria(
@@ -163,21 +163,11 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.25,
+              weight: 0.2,
             },
           ],
+
           base: [
-            // {
-            //   interface: new BaseAave("base", 8453, ["usdc"], "single", {
-            //     symbolOfBestTokenToZapInOut: "usdc",
-            //     zapInOutTokenAddress:
-            //       "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-            //     assetAddress: "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB",
-            //     protocolAddress: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
-            //     assetDecimals: 6,
-            //   }),
-            //   weight: 1,
-            // },
             {
               interface: new BaseMoonwell("base", 8453, ["eurc"], "single", {
                 symbolOfBestTokenToZapInOut: "eurc",
@@ -212,7 +202,25 @@ export class StablecoinVault extends BasePortfolio {
                 protocolAddress: "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22",
                 assetDecimals: 8,
               }),
-              weight: 0.5,
+              weight: 0,
+            },
+            {
+              interface: new BaseAerodrome(
+                "base",
+                8453,
+                ["msusd", "usdc"],
+                "LP",
+                {
+                  assetAddress: "0xcEFC8B799a8EE5D9b312aeca73262645D664AaF7",
+                  assetDecimals: 18,
+                  guageAddress: "0xDBF852464fC906C744E52Dbd68C1b07dD33A922a",
+                  lpTokens: [
+                    ["msusd", "0x526728DBc96689597F85ae4cd716d4f7fCcBAE9d", 18],
+                    ["usdc", "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", 6],
+                  ],
+                },
+              ),
+              weight: 0.6,
             },
           ],
         },

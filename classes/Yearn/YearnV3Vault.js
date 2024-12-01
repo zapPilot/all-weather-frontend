@@ -1,6 +1,4 @@
 import YearnV3 from "../../lib/contracts/Yearn/YearnV3.json" assert { type: "json" };
-import ERC20_ABI from "../../lib/contracts/ERC20.json" assert { type: "json" };
-import { arbitrum } from "thirdweb/chains";
 import axios from "axios";
 import { ethers } from "ethers";
 import { PROVIDER } from "../../utils/general.js";
@@ -8,7 +6,7 @@ import axiosRetry from "axios-retry";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import BaseProtocol from "../BaseProtocol.js";
-import { approve } from "../../utils/general";
+import { approve, CHAIN_ID_TO_CHAIN } from "../../utils/general";
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 export class YearnV3Vault extends BaseProtocol {
@@ -20,20 +18,20 @@ export class YearnV3Vault extends BaseProtocol {
     this.assetContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0x86dF48f8DC91504D2B3E360d67513f094Dfa6C84",
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: YearnV3,
     });
     this.protocolContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0x86dF48f8DC91504D2B3E360d67513f094Dfa6C84",
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: YearnV3,
     });
     // stakeFarmContract is null not used in this protocol
     this.stakeFarmContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0x86dF48f8DC91504D2B3E360d67513f094Dfa6C84",
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: YearnV3,
     });
     this._checkIfParamsAreSet();
