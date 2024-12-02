@@ -326,7 +326,8 @@ export default function IndexOverviews() {
                     chainId?.name.toLowerCase().replace(" one", "")
                   ] || {},
                 ).reduce(
-                  (sum, protocolObj) => sum + (protocolObj.assetUsdBalanceOf || 0),
+                  (sum, protocolObj) =>
+                    sum + (protocolObj.assetUsdBalanceOf || 0),
                   0,
                 ) /
                   usdBalance >
@@ -368,8 +369,8 @@ export default function IndexOverviews() {
             <div className="mt-4">
               <p>Step 2: Switch to Base chain before zapping in.</p>
               <Button
-               className="flex items-center mt-2"
-               onClick={() => switchChain(base)}
+                className="flex items-center mt-2"
+                onClick={() => switchChain(base)}
               >
                 Switch to
                 <Image
