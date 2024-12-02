@@ -95,14 +95,14 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
       {notificationContextHolder}
       <Layout style={{ background: "#000000" }}>
         <Affix offsetTop={0}>
-          <Header className={`${styles.header} sm:h-24 h-auto`}>
+          <Header className={`${styles.header} justify-between sm:h-24 h-auto`}>
             <div className="div-logo">
               <Link href="/">
                 <Image src="/logo.png" alt="logo" width={40} height={40} />
               </Link>
             </div>
             <HeaderInner />
-            <div className="connect-button">
+            <div className="flex items-center gap-2">
               <ConfiguredConnectButton />
             </div>
           </Header>
