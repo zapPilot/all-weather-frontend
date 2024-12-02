@@ -295,15 +295,30 @@ export default function IndexOverviews() {
       key: "1",
       label: "Zap In",
       children: (
-        <div>
-          <TokenDropdownInput
-            selectedToken={selectedToken}
-            setSelectedToken={handleSetSelectedToken}
-            setInvestmentAmount={handleSetInvestmentAmount}
-          />
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Button onClick={() => switchChain(arbitrum)}>Switch to Arbitrum</Button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <TokenDropdownInput
+              selectedToken={selectedToken}
+              setSelectedToken={handleSetSelectedToken}
+              setInvestmentAmount={handleSetInvestmentAmount}
+            />
+          </div>
+          <div>
+            <div className="mt-4 sm:mt-0 border-b border-white">
+              <p>Step 1: Zap in all asset on Arbitrum.</p>
+              <Button
+                className="flex items-center mt-2"
+                onClick={() => switchChain(arbitrum)}
+              >
+                Switch to
+                <Image
+                  src={`/chainPicturesWebp/arbitrum.webp`}
+                  alt="arbitrum"
+                  height={22}
+                  width={22}
+                  className="rounded-full ms-1"
+                />
+              </Button>
               {account === undefined ? (
                 <ConfiguredConnectButton />
               ) : Object.values(
@@ -318,7 +333,7 @@ export default function IndexOverviews() {
                 0.05 ? (
                 <Button
                   type="primary"
-                  className="w-full mt-2"
+                  className="w-full my-2"
                   onClick={() => handleAAWalletAction("stake", true)}
                   disabled={usdBalanceLoading}
                 >
@@ -337,7 +352,7 @@ export default function IndexOverviews() {
               ) : (
                 <Button
                   type="primary"
-                  className="w-full mt-2"
+                  className="w-full my-2"
                   onClick={() => handleAAWalletAction("zapIn")}
                   loading={zapInIsLoading}
                   disabled={
@@ -350,11 +365,24 @@ export default function IndexOverviews() {
                 </Button>
               )}
             </div>
-            <div>
-              <Button onClick={() => switchChain(base)}>Switch to Base</Button>
+            <div className="mt-4">
+              <p>Step 2: Switch to Base chain before zapping in.</p>
+              <Button
+               className="flex items-center mt-2"
+               onClick={() => switchChain(base)}
+              >
+                Switch to
+                <Image
+                  src={`/chainPicturesWebp/base.webp`}
+                  alt="base"
+                  height={22}
+                  width={22}
+                  className="rounded-full ms-1"
+                />
+              </Button>
               <Button
                 type="primary"
-                className="w-full mt-2"
+                className="w-full my-2"
                 onClick={() => handleAAWalletAction("zapIn", true)}
                 loading={zapInIsLoading}
                 disabled={
