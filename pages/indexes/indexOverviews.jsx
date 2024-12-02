@@ -183,6 +183,9 @@ export default function IndexOverviews() {
         ],
         onlyThisChain,
       );
+      if (txns.length < 2) {
+        throw new Error("No transactions to send");
+      }
       // Call sendBatchTransaction and wait for the result
       try {
         await new Promise((resolve, reject) => {
@@ -281,7 +284,7 @@ export default function IndexOverviews() {
   const tokenAddress = selectedToken?.split("-")[1];
   const { data: walletBalanceData, isLoading: walletBalanceLoading } =
     useWalletBalance({
-      chain: arbitrum,
+      chain: chainId,
       address: account?.address,
       client: THIRDWEB_CLIENT,
       tokenAddress,
@@ -866,7 +869,7 @@ export default function IndexOverviews() {
                       </li>
                     </ul>
                   </div>
-                  <div className="mt-6 flex w-full flex-none gap-x-4">
+                  {/* <div className="mt-6 flex w-full flex-none gap-x-4">
                     <dt className="flex-none">
                       <BanknotesIcon
                         aria-hidden="true"
@@ -937,7 +940,7 @@ export default function IndexOverviews() {
                         </span>
                       )}
                     </dd>
-                  </div>
+                  </div> */}
                   <div className="mt-6 flex w-full flex-none gap-x-4">
                     <dt className="flex-none">
                       <ChartBarIcon

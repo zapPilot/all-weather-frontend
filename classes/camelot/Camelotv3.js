@@ -4,7 +4,7 @@ import { encodeFunctionData } from "viem";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json" assert { type: "json" };
 import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import { fetch1InchSwapData } from "../../utils/oneInch.js";
-import { arbitrum } from "thirdweb/chains";
+import { CHAIN_ID_TO_CHAIN } from "../../utils/general.js";
 import assert from "assert";
 import BaseUniswap from "../uniswapv3/BaseUniswap.js";
 import {
@@ -111,7 +111,7 @@ export class CamelotV3 extends BaseUniswap {
       throw new Error("Approval amount is 0. Cannot proceed with approving.");
     }
     const approveTxn = {
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       to: tokenAddress,
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
@@ -240,7 +240,7 @@ export class CamelotV3 extends BaseUniswap {
       {
         to: oneInchAddress,
         data: swapCallData["data"],
-        chain: arbitrum,
+        chain: CHAIN_ID_TO_CHAIN[this.chainId],
       },
       swapCallData["toAmount"],
     ];
@@ -256,7 +256,7 @@ export class CamelotV3 extends BaseUniswap {
       );
     }
     return {
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       to: tokenAddress,
       data: encodeFunctionData({
         abi: permanentPortfolioJson.abi,
@@ -289,7 +289,7 @@ export class CamelotV3 extends BaseUniswap {
       ],
     });
     return {
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       to: CamelotV3.lpTokenAddress,
       data: camelotCallData,
     };
@@ -317,7 +317,7 @@ export class CamelotV3 extends BaseUniswap {
       ],
     });
     return {
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       to: CamelotV3.lpTokenAddress,
       data: camelotCallData,
     };

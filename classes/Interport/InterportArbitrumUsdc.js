@@ -1,6 +1,5 @@
 import Vault from "../../lib/contracts/Interport/Vault.json" assert { type: "json" };
 import StablecoinFarm from "../../lib/contracts/Interport/StablecoinFarm.json" assert { type: "json" };
-import { arbitrum } from "thirdweb/chains";
 import axios from "axios";
 import { ethers } from "ethers";
 import { PROVIDER } from "../../utils/general.js";
@@ -8,7 +7,7 @@ import axiosRetry from "axios-retry";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import BaseProtocol from "../BaseProtocol.js";
-import { approve } from "../../utils/general";
+import { approve, CHAIN_ID_TO_CHAIN } from "../../utils/general";
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 export class InterportArbitrumUsdc extends BaseProtocol {
@@ -24,20 +23,20 @@ export class InterportArbitrumUsdc extends BaseProtocol {
     this.assetContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0xb6ab8eefae1a2c22ca6338e143cb7de544800c6e",
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: Vault,
     });
     this.protocolContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0xb6ab8eefae1a2c22ca6338e143cb7de544800c6e",
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: Vault,
     });
     // stakeFarmContract is null not used in this protocol
     this.stakeFarmContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0x29d44c17f4f83b3c77ae2eac4bc1468a496e3196",
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: StablecoinFarm,
     });
     this._checkIfParamsAreSet();
