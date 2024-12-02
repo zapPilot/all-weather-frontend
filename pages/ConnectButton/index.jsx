@@ -40,7 +40,7 @@ export default function ConfiguredConnectButton() {
       detailsButton={{
         render() {
           return <div
-          className="flex items-center gap-3 p-2 rounded-full bg-white/90 text-xs cursor-pointer"
+          className="flex items-center gap-3 p-2 rounded-md bg-white/90 text-xs cursor-pointer"
         >
           <div className="flex items-center gap-2 p-1">
             <Image
