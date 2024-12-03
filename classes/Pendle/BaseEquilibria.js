@@ -230,12 +230,13 @@ export class BaseEquilibria extends BaseProtocol {
       },
     );
     updateProgress("prepare equilibria's contract call");
+    const precision = Math.pow(10, 6);
     const slippageBN = ethers.BigNumber.from(
-      Math.floor((1 - slippage / 100) * 10000),
-    );
+      String(Math.floor((100 - slippage) * precision)),
+    ).div(100);
     const minLPOutAmount = ethers.BigNumber.from(resp.data.data.amountLpOut)
       .mul(slippageBN)
-      .div(10000);
+      .div(ethers.BigNumber.from(precision));
     const mintTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "addLiquiditySingleToken",
