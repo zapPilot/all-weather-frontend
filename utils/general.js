@@ -106,6 +106,9 @@ export function approve(
   chainId,
 ) {
   updateProgress(`approve spending amount to ${spenderAddress}`);
+  if (typeof amount !== "object") {
+    amount = ethers.BigNumber.from(amount);
+  }
   const approvalAmount = amount;
   if (approvalAmount === 0) {
     throw new Error("Approval amount is 0. Cannot proceed with approving.");
