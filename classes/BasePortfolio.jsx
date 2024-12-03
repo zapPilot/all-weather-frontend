@@ -805,17 +805,23 @@ export class BasePortfolio {
       susd: 1,
       msusd: 1,
     };
+    let tokenPriceCache = {};
     for (const [token, coinMarketCapId] of Object.entries(
       this.uniqueTokenIdsForCurrentPrice,
     )) {
       updateProgress(`Fetching price for ${token}`);
       if (Object.keys(tokenPricesMappingTable).includes(token)) continue;
+      if (tokenPriceCache[coinMarketCapId]) {
+        tokenPricesMappingTable[token] = tokenPriceCache[coinMarketCapId];
+        continue;
+      }
       axios
         .get(
           `${process.env.NEXT_PUBLIC_API_URL}/token/${coinMarketCapId}/price`,
         )
         .then((result) => {
           tokenPricesMappingTable[token] = result.data.price;
+          tokenPriceCache[coinMarketCapId] = result.data.price;
         });
     }
     return tokenPricesMappingTable;
