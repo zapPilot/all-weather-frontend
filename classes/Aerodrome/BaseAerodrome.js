@@ -122,7 +122,6 @@ export class BaseAerodrome extends BaseProtocol {
       }),
     );
     const min_mint_amount = this._calculateMintLP(tokens[0], tokens[1]);
-
     // Generate approve transactions
     const approveTxns = tokens.map((token) =>
       approve(
@@ -133,7 +132,6 @@ export class BaseAerodrome extends BaseProtocol {
         this.chainId,
       ),
     );
-
     const depositTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "addLiquidity",
@@ -149,7 +147,6 @@ export class BaseAerodrome extends BaseProtocol {
         BaseAerodrome.deadline,
       ],
     });
-
     // Get staking transactions and combine all transactions
     const stakeTxns = await this._stakeLP(min_mint_amount, updateProgress);
     return [...approveTxns, depositTxn, ...stakeTxns];
@@ -204,7 +201,6 @@ export class BaseAerodrome extends BaseProtocol {
         tokenBmetadata.decimals,
       ),
     );
-
     // Calculate expected LP tokens (average of normalized amounts)
     const [token0Decimals, token1Decimals] = [
       this.customParams.lpTokens[0][2],
@@ -212,7 +208,6 @@ export class BaseAerodrome extends BaseProtocol {
     ];
     const avgPrecision = (token0Decimals + token1Decimals) / 2;
     const averageAmount = ((amountA + amountB) / 2).toFixed(avgPrecision);
-
     // Convert to BigNumber with proper scaling
     return ethers.BigNumber.from(
       String(averageAmount * Math.pow(10, avgPrecision)),

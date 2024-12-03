@@ -295,73 +295,107 @@ export default function IndexOverviews() {
       key: "1",
       label: "Zap In",
       children: (
-        <div>
-          <TokenDropdownInput
-            selectedToken={selectedToken}
-            setSelectedToken={handleSetSelectedToken}
-            setInvestmentAmount={handleSetInvestmentAmount}
-          />
-
-          <Button onClick={() => switchChain(base)}>Switch to Base</Button>
-          <Button onClick={() => switchChain(arbitrum)}>
-            Switch to Arbitrum
-          </Button>
-          <Button
-            type="primary"
-            className="w-full mt-2"
-            onClick={() => handleAAWalletAction("zapIn", true)}
-            loading={zapInIsLoading}
-            disabled={
-              Number(investmentAmount) === 0 ||
-              Number(investmentAmount) > tokenBalance
-            }
-          >
-            Zap In on Base after bridging
-          </Button>
-          {account === undefined ? (
-            <ConfiguredConnectButton />
-          ) : Object.values(
-              protocolAssetDustInWallet?.[
-                chainId?.name.toLowerCase().replace(" one", "")
-              ] || {},
-            ).reduce(
-              (sum, protocolObj) => sum + (protocolObj.assetUsdBalanceOf || 0),
-              0,
-            ) /
-              usdBalance >
-            0.05 ? (
-            <Button
-              type="primary"
-              className="w-full mt-2"
-              onClick={() => handleAAWalletAction("stake", true)}
-              disabled={usdBalanceLoading}
-            >
-              {`Stake Available Assets ($${Object.values(
-                protocolAssetDustInWallet?.[
-                  chainId?.name.toLowerCase().replace(" one", "")
-                ] || {},
-              )
-                .reduce(
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <TokenDropdownInput
+              selectedToken={selectedToken}
+              setSelectedToken={handleSetSelectedToken}
+              setInvestmentAmount={handleSetInvestmentAmount}
+            />
+          </div>
+          <div>
+            <div className="mt-4 sm:mt-0 border-b border-white">
+              <p>Step 1: Zap in all asset on Arbitrum.</p>
+              <Button
+                className="flex items-center mt-2"
+                onClick={() => switchChain(arbitrum)}
+              >
+                Switch to
+                <Image
+                  src={`/chainPicturesWebp/arbitrum.webp`}
+                  alt="arbitrum"
+                  height={22}
+                  width={22}
+                  className="rounded-full ms-1"
+                />
+              </Button>
+              {account === undefined ? (
+                <ConfiguredConnectButton />
+              ) : Object.values(
+                  protocolAssetDustInWallet?.[
+                    chainId?.name.toLowerCase().replace(" one", "")
+                  ] || {},
+                ).reduce(
                   (sum, protocolObj) =>
-                    sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
+                    sum + (protocolObj.assetUsdBalanceOf || 0),
                   0,
-                )
-                .toFixed(2)})`}
-            </Button>
-          ) : (
-            <Button
-              type="primary"
-              className="w-full mt-2"
-              onClick={() => handleAAWalletAction("zapIn")}
-              loading={zapInIsLoading}
-              disabled={
-                Number(investmentAmount) === 0 ||
-                Number(investmentAmount) > tokenBalance
-              }
-            >
-              Zap In
-            </Button>
-          )}
+                ) /
+                  usdBalance >
+                0.05 ? (
+                <Button
+                  type="primary"
+                  className="w-full my-2"
+                  onClick={() => handleAAWalletAction("stake", true)}
+                  disabled={usdBalanceLoading}
+                >
+                  {`Stake Available Assets ($${Object.values(
+                    protocolAssetDustInWallet?.[
+                      chainId?.name.toLowerCase().replace(" one", "")
+                    ] || {},
+                  )
+                    .reduce(
+                      (sum, protocolObj) =>
+                        sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
+                      0,
+                    )
+                    .toFixed(2)})`}
+                </Button>
+              ) : (
+                <Button
+                  type="primary"
+                  className="w-full my-2"
+                  onClick={() => handleAAWalletAction("zapIn")}
+                  loading={zapInIsLoading}
+                  disabled={
+                    Number(investmentAmount) === 0 ||
+                    Number(investmentAmount) > tokenBalance ||
+                    chainId?.id !== 42161
+                  }
+                >
+                  Zap In
+                </Button>
+              )}
+            </div>
+            <div className="mt-4">
+              <p>Step 2: Switch to Base chain before zapping in.</p>
+              <Button
+                className="flex items-center mt-2"
+                onClick={() => switchChain(base)}
+              >
+                Switch to
+                <Image
+                  src={`/chainPicturesWebp/base.webp`}
+                  alt="base"
+                  height={22}
+                  width={22}
+                  className="rounded-full ms-1"
+                />
+              </Button>
+              <Button
+                type="primary"
+                className="w-full my-2"
+                onClick={() => handleAAWalletAction("zapIn", true)}
+                loading={zapInIsLoading}
+                disabled={
+                  Number(investmentAmount) === 0 ||
+                  Number(investmentAmount) > tokenBalance ||
+                  chainId?.id !== 8453
+                }
+              >
+                Zap In on Base after bridging
+              </Button>
+            </div>
+          </div>
         </div>
       ),
     },
