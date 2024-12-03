@@ -206,12 +206,17 @@ export class BaseAerodrome extends BaseProtocol {
     );
 
     // Calculate expected LP tokens (average of normalized amounts)
-    const averageAmount = ((amountA + amountB) / 2).toFixed(this.assetDecimals);
+    const [token0Decimals, token1Decimals] = [
+      this.customParams.lpTokens[0][2],
+      this.customParams.lpTokens[1][2],
+    ];
+    const avgPrecision = (token0Decimals + token1Decimals) / 2;
+    const averageAmount = ((amountA + amountB) / 2).toFixed(avgPrecision);
 
     // Convert to BigNumber with proper scaling
     return ethers.BigNumber.from(
-      String(averageAmount * Math.pow(10, this.assetDecimals)),
-    ).div(ethers.BigNumber.from(10).pow(6));
+      String(averageAmount * Math.pow(10, avgPrecision)),
+    );
   }
   async _calculateLpPrice(tokenPricesMappingTable) {
     // Get pool metadata and total supply in a single call to reduce RPC requests
