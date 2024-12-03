@@ -94,6 +94,23 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 45,
                 },
               ),
+              weight: 0,
+            },
+            {
+              interface: new BaseEquilibria(
+                "arbitrum",
+                42161,
+                ["usdc", "pt gusdc 26jun2025"],
+                "single",
+                {
+                  assetAddress: "0x22e0F26320aCE985e3CB2434095F18Bfe114E28e",
+                  symbolOfBestTokenToZapOut: "gusdc",
+                  bestTokenAddressToZapOut:
+                    "0xd3443ee1e91af28e5fb858fbd0d72a63ba8046e0",
+                  decimalOfBestTokenToZapOut: 6,
+                  pidOfEquilibria: 59,
+                },
+              ),
               weight: 0.2,
             },
             {
@@ -166,7 +183,6 @@ export class StablecoinVault extends BasePortfolio {
               weight: 0.2,
             },
           ],
-
           base: [
             {
               interface: new BaseMoonwell("base", 8453, ["eurc"], "single", {
