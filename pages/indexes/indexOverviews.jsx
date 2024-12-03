@@ -25,7 +25,7 @@ import {
   Dropdown,
   Popover,
   Input,
-  Space
+  Space,
 } from "antd";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import {
@@ -49,7 +49,11 @@ import {
   ArrowTopRightOnSquareIcon,
   ChartBarIcon,
 } from "@heroicons/react/20/solid";
-import { SettingOutlined, InfoCircleOutlined, DownOutlined } from "@ant-design/icons";
+import {
+  SettingOutlined,
+  InfoCircleOutlined,
+  DownOutlined,
+} from "@ant-design/icons";
 import { arbitrum } from "thirdweb/chains";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
@@ -64,7 +68,7 @@ export default function IndexOverviews() {
   const switchChain = useSwitchActiveWalletChain();
   const switchItems = [
     {
-      key: '1',
+      key: "1",
       label: (
         <Button type="link" onClick={() => switchChain(arbitrum)}>
           <Image
@@ -78,7 +82,7 @@ export default function IndexOverviews() {
       ),
     },
     {
-      key: '2',
+      key: "2",
       label: (
         <Button type="link" onClick={() => switchChain(base)}>
           <Image
@@ -345,17 +349,21 @@ export default function IndexOverviews() {
                 <Button onClick={(e) => e.preventDefault()}>
                   <Space>
                     <Image
-                        src={`/chainPicturesWebp/${chainId?.name.toLowerCase().replace(" one", "")}.webp`}
-                        alt="arbitrum"
-                        height={22}
-                        width={22}
-                        className="rounded-full ms-1"
-                      />
+                      src={`/chainPicturesWebp/${chainId?.name
+                        .toLowerCase()
+                        .replace(" one", "")}.webp`}
+                      alt="arbitrum"
+                      height={22}
+                      width={22}
+                      className="rounded-full ms-1"
+                    />
                     <DownOutlined />
                   </Space>
                 </Button>
               </Dropdown>
-              <p>Step 1:  Choose a chain to zap in and bridge to another chain.</p>
+              <p>
+                Step 1: Choose a chain to zap in and bridge to another chain.
+              </p>
               {account === undefined ? (
                 <ConfiguredConnectButton />
               ) : Object.values(
@@ -403,7 +411,10 @@ export default function IndexOverviews() {
               )}
             </div>
             <div className="mt-4">
-              <p>Step 2: Once bridging is complete, switch to the other chain and zap in again.</p>
+              <p>
+                Step 2: Once bridging is complete, switch to the other chain and
+                zap in again.
+              </p>
               <Button
                 type="primary"
                 className="w-full my-2"

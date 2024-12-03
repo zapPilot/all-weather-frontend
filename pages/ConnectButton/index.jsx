@@ -23,7 +23,9 @@ export default function ConfiguredConnectButton() {
   ];
   const activeChain = useActiveWalletChain();
   const chainName =
-    activeChain && activeChain.name ? activeChain.name.toLowerCase().split(" ")[0] : "";
+    activeChain && activeChain.name
+      ? activeChain.name.toLowerCase().split(" ")[0]
+      : "";
   const activeAccount = useActiveAccount();
   return (
     <ConnectButton
