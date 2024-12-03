@@ -8,7 +8,6 @@ import Link from "next/link";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
 import { CheckIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
-import { Input } from "antd";
 import { useRouter } from "next/router";
 import TransacitonHistory from "./transactionHistory.jsx";
 import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
@@ -25,6 +24,8 @@ import {
   Tabs,
   Dropdown,
   Popover,
+  Input,
+  Space,
 } from "antd";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import {
@@ -48,7 +49,11 @@ import {
   ArrowTopRightOnSquareIcon,
   ChartBarIcon,
 } from "@heroicons/react/20/solid";
-import { SettingOutlined, InfoCircleOutlined } from "@ant-design/icons";
+import {
+  SettingOutlined,
+  InfoCircleOutlined,
+  DownOutlined,
+} from "@ant-design/icons";
 import { arbitrum } from "thirdweb/chains";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
@@ -61,6 +66,36 @@ export default function IndexOverviews() {
   const account = useActiveAccount();
   const chainId = useActiveWalletChain();
   const switchChain = useSwitchActiveWalletChain();
+  const switchItems = [
+    {
+      key: "1",
+      label: (
+        <Button type="link" onClick={() => switchChain(arbitrum)}>
+          <Image
+            src={`/chainPicturesWebp/arbitrum.webp`}
+            alt="arbitrum"
+            height={22}
+            width={22}
+            className="rounded-full"
+          />
+        </Button>
+      ),
+    },
+    {
+      key: "2",
+      label: (
+        <Button type="link" onClick={() => switchChain(base)}>
+          <Image
+            src={`/chainPicturesWebp/base.webp`}
+            alt="base"
+            height={22}
+            width={22}
+            className="rounded-full"
+          />
+        </Button>
+      ),
+    },
+  ];
 
   const getDefaultToken = (chainId) => {
     if (!chainId) return null;
@@ -305,20 +340,30 @@ export default function IndexOverviews() {
           </div>
           <div>
             <div className="mt-4 sm:mt-0 border-b border-white">
-              <p>Step 1: Zap in all asset on Arbitrum.</p>
-              <Button
-                className="flex items-center mt-2"
-                onClick={() => switchChain(arbitrum)}
+              <Dropdown
+                menu={{
+                  items: switchItems,
+                }}
+                trigger="click"
               >
-                Switch to
-                <Image
-                  src={`/chainPicturesWebp/arbitrum.webp`}
-                  alt="arbitrum"
-                  height={22}
-                  width={22}
-                  className="rounded-full ms-1"
-                />
-              </Button>
+                <Button onClick={(e) => e.preventDefault()}>
+                  <Space>
+                    <Image
+                      src={`/chainPicturesWebp/${chainId?.name
+                        .toLowerCase()
+                        .replace(" one", "")}.webp`}
+                      alt="arbitrum"
+                      height={22}
+                      width={22}
+                      className="rounded-full ms-1"
+                    />
+                    <DownOutlined />
+                  </Space>
+                </Button>
+              </Dropdown>
+              <p>
+                Step 1: Choose a chain to zap in and bridge to another chain.
+              </p>
               {account === undefined ? (
                 <ConfiguredConnectButton />
               ) : Object.values(
@@ -358,8 +403,7 @@ export default function IndexOverviews() {
                   loading={zapInIsLoading}
                   disabled={
                     Number(investmentAmount) === 0 ||
-                    Number(investmentAmount) > tokenBalance ||
-                    chainId?.id !== 42161
+                    Number(investmentAmount) > tokenBalance
                   }
                 >
                   Zap In
@@ -367,20 +411,10 @@ export default function IndexOverviews() {
               )}
             </div>
             <div className="mt-4">
-              <p>Step 2: Switch to Base chain before zapping in.</p>
-              <Button
-                className="flex items-center mt-2"
-                onClick={() => switchChain(base)}
-              >
-                Switch to
-                <Image
-                  src={`/chainPicturesWebp/base.webp`}
-                  alt="base"
-                  height={22}
-                  width={22}
-                  className="rounded-full ms-1"
-                />
-              </Button>
+              <p>
+                Step 2: Once bridging is complete, switch to the other chain and
+                zap in again.
+              </p>
               <Button
                 type="primary"
                 className="w-full my-2"
@@ -388,11 +422,10 @@ export default function IndexOverviews() {
                 loading={zapInIsLoading}
                 disabled={
                   Number(investmentAmount) === 0 ||
-                  Number(investmentAmount) > tokenBalance ||
-                  chainId?.id !== 8453
+                  Number(investmentAmount) > tokenBalance
                 }
               >
-                Zap In on Base after bridging
+                Zap In on current chain
               </Button>
             </div>
           </div>
