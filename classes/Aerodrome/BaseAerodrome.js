@@ -202,13 +202,15 @@ export class BaseAerodrome extends BaseProtocol {
       ),
     );
     // Calculate expected LP tokens (average of normalized amounts)
-    const averageAmount = (amountA + amountB) / 2;
+    const [token0Decimals, token1Decimals] = [
+      this.customParams.lpTokens[0][2],
+      this.customParams.lpTokens[1][2],
+    ];
+    const avgPrecision = (token0Decimals + token1Decimals) / 2;
+    const averageAmount = ((amountA + amountB) / 2).toFixed(avgPrecision);
     // Convert to BigNumber with proper scaling
-    const LP_SCALE = 6;
     return ethers.BigNumber.from(
-      String(
-        Math.floor(averageAmount * Math.pow(10, this.assetDecimals - LP_SCALE)),
-      ),
+      String(averageAmount * Math.pow(10, avgPrecision)),
     );
   }
   async _calculateLpPrice(tokenPricesMappingTable) {
@@ -323,6 +325,7 @@ export class BaseAerodrome extends BaseProtocol {
     const [token0Reserve, token1Reserve] = [metadata.r0, metadata.r1];
     const [token0Decimals, token1Decimals] = [lpTokens[0][2], lpTokens[1][2]];
 
+    const avgDecimals = (token0Decimals + token1Decimals) / 2;
     // Calculate reserves ratio
     const reserve0 = Number(
       ethers.utils.formatUnits(token0Reserve, token0Decimals),
@@ -338,21 +341,28 @@ export class BaseAerodrome extends BaseProtocol {
       ratio,
       token0Decimals,
       slippage,
+      avgDecimals,
     );
     const minAmount1 = this._calculateMinWithdrawAmount(
       lpAmount,
       1 - ratio,
       token1Decimals,
       slippage,
+      avgDecimals,
     );
     return { minAmount0, minAmount1 };
   }
 
-  _calculateMinWithdrawAmount(lpAmount, ratio, decimals, slippage) {
+  _calculateMinWithdrawAmount(
+    lpAmount,
+    ratio,
+    decimals,
+    slippage,
+    avgDecimals,
+  ) {
     // Convert lpAmount from BigNumber to number, accounting for LP token decimals (18)
-    const LP_SCALE = 12;
     const normalizedLpAmount =
-      Number(ethers.utils.formatUnits(lpAmount, LP_SCALE)) * 2;
+      Number(ethers.utils.formatUnits(lpAmount, avgDecimals)) * 2;
     // Calculate expected withdrawal amount
     const expectedAmount = normalizedLpAmount * ratio;
     // Convert back to BigNumber with proper decimals

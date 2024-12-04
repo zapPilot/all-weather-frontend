@@ -15,6 +15,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   usde: 29470,
   wbtc: 3717,
   eurc: 20641,
+  mseth: 2396,
 };
 export const tokensForDropDown = [
   "usdc",
