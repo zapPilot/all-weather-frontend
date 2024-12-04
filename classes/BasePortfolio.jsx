@@ -890,7 +890,7 @@ export class BasePortfolio {
         if (!acc[result.chain]) {
           acc[result.chain] = {};
         }
-        acc[result.chain][result.protocol.assetAddress] = {
+        acc[result.chain][result.protocol.assetContract.address] = {
           protocol: result.protocol,
           assetBalance: result.assetBalance,
           assetUsdBalanceOf: result.assetUsdBalanceOf,

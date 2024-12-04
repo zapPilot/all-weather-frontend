@@ -124,6 +124,10 @@ export default function IndexOverviews() {
   const [claimIsLoading, setClaimIsLoading] = useState(false);
   const [transferLoading, setTransferLoading] = useState(false);
   const [rebalanceIsLoading, setRebalanceIsLoading] = useState(false);
+  const [
+    protocolAssetDustInWalletLoading,
+    setProtocolAssetDustInWalletLoading,
+  ] = useState(false);
   const [progress, setProgress] = useState(0);
   const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(1);
@@ -367,6 +371,7 @@ export default function IndexOverviews() {
               <p>
                 Step 1: Choose a chain to zap in and bridge to another chain.
               </p>
+
               {account === undefined ? (
                 <ConfiguredConnectButton />
               ) : Object.values(
@@ -384,6 +389,7 @@ export default function IndexOverviews() {
                   type="primary"
                   className="w-full my-2"
                   onClick={() => handleAAWalletAction("stake", true)}
+                  loading={protocolAssetDustInWalletLoading}
                   disabled={usdBalanceLoading}
                 >
                   {`Stake Available Assets ($${Object.values(
@@ -643,6 +649,7 @@ export default function IndexOverviews() {
       setUsdBalanceLoading(true);
       setPendingRewardsLoading(true);
       setrebalancableUsdBalanceDictLoading(true);
+      setProtocolAssetDustInWalletLoading(true);
 
       const tokenPricesMappingTable =
         await portfolioHelper.getTokenPricesMappingTable(() => {});
@@ -667,6 +674,7 @@ export default function IndexOverviews() {
         tokenPricesMappingTable,
       );
       setProtocolAssetDustInWallet(dust);
+      setProtocolAssetDustInWalletLoading(false);
     };
     fetchUsdBalance();
   }, [portfolioName, account, portfolioApr]);
