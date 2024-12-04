@@ -271,7 +271,7 @@ export default function IndexOverviews() {
         });
       } catch (error) {
         let errorReadableMsg;
-        if (error.message.includes("0x495d907f")) {
+        if (error.message.includes("0x495d907f") || error.message.includes('0x203d82d8')) {
           errorReadableMsg = "Bridge quote expired, please try again";
         } else if (error.message.includes("User rejected the request")) {
           return;
