@@ -1,6 +1,7 @@
 import { BasePortfolio } from "../BasePortfolio";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import { BaseConvex } from "../Convex/BaseConvex";
+import { BaseAerodrome } from "../Aerodrome/BaseAerodrome";
 export class EthVault extends BasePortfolio {
   constructor() {
     super(
@@ -22,7 +23,7 @@ export class EthVault extends BasePortfolio {
                   pidOfEquilibria: 47,
                 },
               ),
-              weight: 0.4,
+              weight: 0,
             },
             {
               interface: new BaseEquilibria(
@@ -39,7 +40,7 @@ export class EthVault extends BasePortfolio {
                   pidOfEquilibria: 44,
                 },
               ),
-              weight: 0.4,
+              weight: 0.1,
             },
             {
               interface: new BaseConvex(
@@ -84,7 +85,27 @@ export class EthVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.2,
+              weight: 0.3,
+            },
+          ],
+          base: [
+            {
+              interface: new BaseAerodrome(
+                "base",
+                8453,
+                ["weth", "mseth"],
+                "LP",
+                {
+                  assetAddress: "0xDE4FB30cCC2f1210FcE2c8aD66410C586C8D1f9A",
+                  assetDecimals: 18,
+                  guageAddress: "0x62940D9643a130b80CA0f8bc7e94De5b7ec496C5",
+                  lpTokens: [
+                    ["weth", "0x4200000000000000000000000000000000000006", 18],
+                    ["mseth", "0x7Ba6F01772924a82D9626c126347A28299E98c98", 18],
+                  ],
+                },
+              ),
+              weight: 0.6,
             },
           ],
         },
