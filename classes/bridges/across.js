@@ -60,7 +60,7 @@ class AcrossBridge extends BaseBridge {
     const fillDeadline = Math.round(Date.now() / 1000) + fillDeadlineBuffer;
     const bridgeTxn = prepareContractCall({
       contract: spokePoolContract,
-      method: "depositExclusive",
+      method: "depositV3",
       params: [
         owner,
         owner,
