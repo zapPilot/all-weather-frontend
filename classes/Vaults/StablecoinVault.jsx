@@ -7,6 +7,7 @@ import { BaseConvex } from "../Convex/BaseConvex";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import { BaseMoonwell } from "../Moonwell/BaseMoonwell";
 import { BaseAerodrome } from "../Aerodrome/BaseAerodrome";
+import { BaseAave } from "../Aave/BaseAave";
 export class StablecoinVault extends BasePortfolio {
   constructor() {
     super(
@@ -184,6 +185,17 @@ export class StablecoinVault extends BasePortfolio {
             },
           ],
           base: [
+            {
+              interface: new BaseAave("base", 8453, ["usdc"], "single", {
+                symbolOfBestTokenToZapInOut: "usdc",
+                zapInOutTokenAddress:
+                  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                assetAddress: "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB",
+                protocolAddress: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
+                assetDecimals: 6,
+              }),
+              weight: 0,
+            },
             {
               interface: new BaseMoonwell("base", 8453, ["eurc"], "single", {
                 symbolOfBestTokenToZapInOut: "eurc",
