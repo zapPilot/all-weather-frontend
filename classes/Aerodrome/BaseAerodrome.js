@@ -169,8 +169,9 @@ export class BaseAerodrome extends BaseProtocol {
     const lpPrice = await this._calculateLpPrice(tokenPricesMappingTable);
     return lpBalance * lpPrice;
   }
-  async assetUsdPrice() {
-    return await this._calculateLpPrice(() => {});
+  async assetUsdPrice(tokenPricesMappingTable) {
+    const assetUsdPrice = await this._calculateLpPrice(tokenPricesMappingTable);
+    return assetUsdPrice;
   }
   async stakeBalanceOf(owner, updateProgress) {
     const stakeFarmContractInstance = new ethers.Contract(
@@ -219,14 +220,12 @@ export class BaseAerodrome extends BaseProtocol {
       this.assetContractInstance.functions.metadata(),
       this.assetContractInstance.functions.totalSupply(),
     ]);
-
     // Destructure reserves
     const [token0Reserve, token1Reserve] = [lpMetadata.r0, lpMetadata.r1];
     const [token0Decimals, token1Decimals] = [
       this.customParams.lpTokens[0][2],
       this.customParams.lpTokens[1][2],
     ];
-
     // Calculate normalized reserves
     const normalizedReserve0 = Number(
       ethers.utils.formatUnits(token0Reserve, token0Decimals),
@@ -234,14 +233,13 @@ export class BaseAerodrome extends BaseProtocol {
     const normalizedReserve1 = Number(
       ethers.utils.formatUnits(token1Reserve, token1Decimals),
     );
-
     // Calculate total value and return price per LP token
     const totalPoolValue =
       normalizedReserve0 *
         tokenPricesMappingTable[this.customParams.lpTokens[0][0]] +
       normalizedReserve1 *
         tokenPricesMappingTable[this.customParams.lpTokens[1][0]];
-    return totalPoolValue / totalSupply;
+    return totalPoolValue / totalSupply[0];
   }
   async _stakeLP(amount, updateProgress) {
     const approveForStakingTxn = approve(

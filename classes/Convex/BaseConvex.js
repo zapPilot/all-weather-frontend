@@ -153,8 +153,8 @@ export class BaseConvex extends BaseProtocol {
     const lpPrice = this._calculateLpPrice(tokenPricesMappingTable);
     return (lpBalance * lpPrice) / Math.pow(10, this.assetDecimals);
   }
-  async assetUsdPrice() {
-    return await this._calculateLpPrice(() => {});
+  async assetUsdPrice(tokenPricesMappingTable) {
+    return await this._calculateLpPrice(tokenPricesMappingTable);
   }
   async stakeBalanceOf(owner, updateProgress) {
     const rewardPoolContractInstance = new ethers.Contract(
@@ -173,12 +173,12 @@ export class BaseConvex extends BaseProtocol {
   }
   _calculateLpPrice(tokenPricesMappingTable) {
     // TODO(david): need to calculate the correct LP price
-    if (this.pid === 34) {
+    if (this.pid === 34 || this.pid === 36) {
       // it's a stablecoin pool
-      return 1;
+      return 1 / Math.pow(10, this.assetDecimals);
     } else if (this.pid === 28) {
       // it's a ETH pool
-      return tokenPricesMappingTable["weth"];
+      return tokenPricesMappingTable["weth"] / Math.pow(10, this.assetDecimals);
     }
     throw new Error("Not implemented");
   }

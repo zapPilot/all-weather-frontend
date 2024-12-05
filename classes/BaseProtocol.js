@@ -79,10 +79,12 @@ export default class BaseProtocol extends BaseUniswap {
   async usdBalanceOf(address, tokenPricesMappingTable) {
     throw new Error("Method 'usdBalanceOf()' must be implemented.");
   }
-  async assetUsdBalanceOf(owner) {
-    return (await this.assetBalanceOf(owner))
-      .div(10 ** this.assetDecimals)
-      .mul(await this.assetUsdPrice());
+  async assetUsdBalanceOf(owner, tokenPricesMappingTable) {
+    const balance = await this.assetBalanceOf(owner);
+    const assetPrice = await this.assetUsdPrice(tokenPricesMappingTable);
+
+    // Calculate: (balance * price) / (10 ** assetDecimals)
+    return balance * assetPrice;
   }
   async stakeBalanceOf(address) {
     throw new Error("Method 'stakeBalanceOf()' must be implemented.");
@@ -101,7 +103,7 @@ export default class BaseProtocol extends BaseUniswap {
   async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
     throw new Error("Method 'pendingRewards()' must be implemented.");
   }
-  async assetUsdPrice() {
+  async assetUsdPrice(tokenPricesMappingTable) {
     throw new Error("Method 'assetUsdPrice()' must be implemented.");
   }
   async zapIn(

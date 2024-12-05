@@ -351,7 +351,7 @@ export class BasePortfolio {
     const actionHandlers = {
       zapIn: async (protocol, chain, derivative) => {
         // TODO(david): zap in's weight should take protocolUsdBalanceDictionary into account
-        // protocolUsdBalanceDictionary = await this._getProtocolUsdBalanceDictionary(owner)
+        // protocolUsdBalanceDictionary = await this._getProtocolUsdBalanceDictionary(owner, actionParams.tokenPricesMappingTable)
         if (protocol.weight === 0) return null;
         const percentageBN = ethers.BigNumber.from(
           Math.floor(protocol.weight * derivative * 10000),
@@ -823,15 +823,17 @@ export class BasePortfolio {
     }
     return txns;
   }
-  async _getProtocolUsdBalanceDictionary(owner) {
+  async _getProtocolUsdBalanceDictionary(owner, tokenPricesMappingTable) {
     const protocolPromises = Object.values(this.strategy)
       .flatMap((category) => Object.entries(category))
       .flatMap(([chain, protocols]) =>
         protocols
           .filter((protocol) => protocol.weight !== 0)
           .map(async (protocol) => {
-            const protocolUsdBalance =
-              await protocol.interface.usdBalanceOf(owner);
+            const protocolUsdBalance = await protocol.interface.usdBalanceOf(
+              owner,
+              tokenPricesMappingTable,
+            );
             return {
               chain,
               address: protocol.interface.assetContract.address,
@@ -867,18 +869,15 @@ export class BasePortfolio {
           ) {
             return null;
           }
-          const assetBalance = await protocol.interface.assetBalanceOf(owner);
-          const assetUsdPrice = await protocol.interface.assetUsdPrice(
-            tokenPricesMappingTable,
-          );
+          if (Object.keys(tokenPricesMappingTable).length === 0) return null;
           return {
             chain,
             protocol: protocol.interface,
-            assetBalance,
-            assetUsdBalanceOf:
-              (Number(assetBalance) /
-                Math.pow(10, protocol.interface.assetDecimals)) *
-              assetUsdPrice,
+            assetBalance: await protocol.interface.assetBalanceOf(owner),
+            assetUsdBalanceOf: await protocol.interface.assetUsdBalanceOf(
+              owner,
+              tokenPricesMappingTable,
+            ),
           };
         }),
       );

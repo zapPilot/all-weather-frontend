@@ -107,7 +107,7 @@ export class Vela extends BaseProtocol {
     const latestVlpPrice = await this._fetchVlpPrice(() => {});
     return (userBalance / Math.pow(10, this.assetDecimals)) * latestVlpPrice;
   }
-  async assetUsdPrice() {
+  async assetUsdPrice(tokenPricesMappingTable) {
     return await this._fetchVlpPrice(() => {});
   }
   async _fetchVlpPrice(updateProgress) {
@@ -119,7 +119,7 @@ export class Vela extends BaseProtocol {
     );
     const vlpPrice =
       (await protocolContractInstance.functions.getVLPPrice()) / 1e5;
-    return vlpPrice;
+    return vlpPrice / Math.pow(10, this.assetDecimals);
   }
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
