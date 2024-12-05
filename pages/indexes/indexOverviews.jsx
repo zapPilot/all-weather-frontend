@@ -130,7 +130,7 @@ export default function IndexOverviews() {
   ] = useState(false);
   const [progress, setProgress] = useState(0);
   const [stepName, setStepName] = useState("");
-  const [slippage, setSlippage] = useState(1);
+  const [slippage, setSlippage] = useState(3);
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
@@ -669,6 +669,7 @@ export default function IndexOverviews() {
       setPendingRewards(usdBalanceDict.pendingRewards.pendingRewardsDict);
       setPendingRewardsLoading(false);
 
+      // if (!tokenPricesMappingTable) return;
       const dust = await portfolioHelper.calProtocolAssetDustInWalletDictionary(
         account.address,
         tokenPricesMappingTable,
@@ -805,7 +806,7 @@ export default function IndexOverviews() {
                       size="small"
                       onChange={(e) => setSlippage(e.target.value)}
                     >
-                      {[1, 3, 5].map((slippageValue) => (
+                      {[3, 4, 5].map((slippageValue) => (
                         <Radio.Button value={slippageValue} key={slippageValue}>
                           {slippageValue}%
                         </Radio.Button>

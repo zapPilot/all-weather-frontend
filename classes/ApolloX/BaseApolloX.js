@@ -190,7 +190,7 @@ export class BaseApolloX extends BaseProtocol {
     const latestAlpPrice = await this._fetchAlpPrice(() => {});
     return (userInfo / Math.pow(10, this.assetDecimals)) * latestAlpPrice;
   }
-  async assetUsdPrice() {
+  async assetUsdPrice(tokenPricesMappingTable) {
     return await this._fetchAlpPrice(() => {});
   }
   async _fetchAlpPrice(updateProgress) {
@@ -209,7 +209,7 @@ export class BaseApolloX extends BaseProtocol {
       referrer: "https://www.apollox.finance/en/ALP",
     });
     const latestPrice = response.data.data[0].price;
-    return latestPrice;
+    return latestPrice / Math.pow(10, this.assetDecimals);
   }
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of ALP to get the cheapest token to zap in
