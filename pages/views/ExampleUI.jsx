@@ -76,9 +76,7 @@ export default function ExampleUI() {
   return (
     <div className="px-2 text-white bg-black">
       <div className={"w-full md:w-5/6 md:ml-[8.333333%] " + styles.bgStyle}>
-        <div
-          className="flex items-center justify-center min-h-[calc(100vh-100px)]"
-        >
+        <div className="flex items-center justify-center min-h-[calc(100vh-100px)]">
           <center>
             <Image src="/logo.png" alt="logo" width={100} height={100} />
             <h1 className="text-5xl tracking-tight mb-8 text-[#5DFDCB]">
@@ -157,8 +155,20 @@ export default function ExampleUI() {
         <h3 className="text-2xl text-emerald-400 font-semibold mb-4">
           Kepp all assets in your own AA wallet
         </h3>
-        <Image src="/images/intro_sm.svg" alt="intro" width={375} height={350} className="mx-auto md:hidden" />
-        <Image src="/images/intro.svg" alt="intro" width={895} height={96} className="mx-auto hidden md:block" />
+        <Image
+          src="/images/intro_sm.svg"
+          alt="intro"
+          width={375}
+          height={350}
+          className="mx-auto md:hidden"
+        />
+        <Image
+          src="/images/intro.svg"
+          alt="intro"
+          width={895}
+          height={96}
+          className="mx-auto hidden md:block"
+        />
         <Link
           href="https://all-weather-protocol.gitbook.io/"
           className="text-lg underline underline-offset-1 hover:text-[#5DFDCB] hover:underline"
