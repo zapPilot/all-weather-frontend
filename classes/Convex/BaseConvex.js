@@ -73,7 +73,7 @@ export class BaseConvex extends BaseProtocol {
     const rewardLength =
       await stakeFarmContractInstance.functions.rewardLength();
     const rewards = this.rewards();
-    for (let index = 0; index < rewardLength; index++) {
+    for (let index = 0; index < rewards; index++) {
       const reward_address = (
         await stakeFarmContractInstance.functions.rewards(index)
       ).reward_token;
@@ -104,7 +104,7 @@ export class BaseConvex extends BaseProtocol {
   ) {
     let approveTxns = [];
     let _amounts = [];
-    let _min_mint_amount = ethers.BigNumber.from(0);
+    let _min_mint_amount = 0;
     for (const [
       bestTokenSymbol,
       bestTokenAddressToZapIn,
@@ -120,12 +120,18 @@ export class BaseConvex extends BaseProtocol {
       );
       approveTxns.push(approveForZapInTxn);
       _amounts.push(amountToZapIn);
-      _min_mint_amount = _min_mint_amount.add(amountToZapIn);
+      const normalizedAmount = Number(
+        ethers.utils.formatUnits(
+          amountToZapIn.toString(),
+          bestTokenToZapInDecimal,
+        ),
+      );
+      _min_mint_amount += normalizedAmount;
     }
     _min_mint_amount = Math.floor(
-      (_min_mint_amount * (100 - slippage)) /
-        100 /
-        this._calculateLpPrice(tokenPricesMappingTable),
+      ((_min_mint_amount / this._calculateLpPrice(tokenPricesMappingTable)) *
+        (100 - slippage)) /
+        100,
     );
     const depositTxn = prepareContractCall({
       contract: this.protocolContract,

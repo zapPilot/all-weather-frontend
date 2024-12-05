@@ -428,7 +428,7 @@ export default function IndexOverviews() {
                 type="primary"
                 className="w-full my-2"
                 onClick={() => handleAAWalletAction("zapIn", true)}
-                loading={zapInIsLoading}
+                // loading={zapInIsLoading}
                 disabled={
                   Number(investmentAmount) === 0 ||
                   Number(investmentAmount) > tokenBalance
@@ -806,7 +806,7 @@ export default function IndexOverviews() {
                       size="small"
                       onChange={(e) => setSlippage(e.target.value)}
                     >
-                      {[3, 4, 5].map((slippageValue) => (
+                      {[3, 5, 7].map((slippageValue) => (
                         <Radio.Button value={slippageValue} key={slippageValue}>
                           {slippageValue}%
                         </Radio.Button>
