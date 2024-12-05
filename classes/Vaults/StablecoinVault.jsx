@@ -112,7 +112,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 59,
                 },
               ),
-              weight: 0.2,
+              weight: 0.13,
             },
             {
               interface: new BaseEquilibria(
@@ -181,7 +181,49 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.2,
+              weight: 0.14,
+              // weight: 0.27,
+            },
+            {
+              interface: new BaseConvex(
+                "arbitrum",
+                42161,
+                ["eusd", "usdc"],
+                "LP",
+                {
+                  pid: 36,
+                  assetDecimals: 18,
+                  assetAddress: "0x93a416206B4ae3204cFE539edfeE6BC05a62963e",
+                  protocolAddress: "0x93a416206B4ae3204cFE539edfeE6BC05a62963e",
+                  convexRewardPool:
+                    "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4",
+                  lpTokens: [
+                    ["eusd", "0x12275DCB9048680c4Be40942eA4D92c74C63b844", 18],
+                    ["usdc", "0xaf88d065e77c8cc2239327c5edb3a432268e5831", 6],
+                  ],
+                  rewards: [
+                    {
+                      symbol: "crv",
+                      coinmarketcapApiId: 6538,
+                      address: "0x11cDb42B0EB46D95f990BeDD4695A6e3fA034978",
+                      decimals: 18,
+                    },
+                    {
+                      symbol: "cvx",
+                      coinmarketcapApiId: 9903,
+                      address: "0xaAFcFD42c9954C6689ef1901e03db742520829c5",
+                      decimals: 18,
+                    },
+                    {
+                      symbol: "arb",
+                      coinmarketcapApiId: 11841,
+                      address: "0x912CE59144191C1204E64559FE8253a0e49E6548",
+                      decimals: 18,
+                    },
+                  ],
+                },
+              ),
+              weight: 0.13,
             },
           ],
           base: [
