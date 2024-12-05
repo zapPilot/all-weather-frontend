@@ -379,8 +379,7 @@ export default function IndexOverviews() {
                     chainId?.name.toLowerCase().replace(" one", "")
                   ] || {},
                 ).reduce(
-                  (sum, protocolObj) =>
-                    sum + (protocolObj.assetUsdBalanceOf || 0),
+                  (sum, protocolObj) => sum + (protocolObj.assetUsdBalanceOf || 0),
                   0,
                 ) /
                   usdBalance >
