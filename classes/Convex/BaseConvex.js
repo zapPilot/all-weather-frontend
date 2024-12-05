@@ -1,7 +1,8 @@
 import CurveStableSwapNG from "../../lib/contracts/Curve/CurveStableSwapNG.json" assert { type: "json" };
 import Booster from "../../lib/contracts/Convex/Booster.json" assert { type: "json" };
 import ConvexRewardPool from "../../lib/contracts/Convex/ConvexRewardPool.json" assert { type: "json" };
-import { arbitrum } from "thirdweb/chains";
+import { CHAIN_ID_TO_CHAIN } from "../../utils/general";
+
 import axios from "axios";
 import { ethers } from "ethers";
 import { PROVIDER } from "../../utils/general.js";
@@ -23,26 +24,26 @@ export class BaseConvex extends BaseProtocol {
     this.assetContract = getContract({
       client: THIRDWEB_CLIENT,
       address: this.customParams.assetAddress,
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: CurveStableSwapNG,
     });
     this.protocolContract = getContract({
       client: THIRDWEB_CLIENT,
       address: this.customParams.protocolAddress,
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: CurveStableSwapNG,
     });
     // stakeFarmContract is null not used in this protocol
     this.stakeFarmContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0xF403C135812408BFbE8713b5A23a04b3D48AAE31",
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: Booster,
     });
     this.convexRewardPoolContract = getContract({
       client: THIRDWEB_CLIENT,
       address: customParams.convexRewardPool,
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: ConvexRewardPool,
     });
     this._checkIfParamsAreSet();
@@ -152,8 +153,8 @@ export class BaseConvex extends BaseProtocol {
     const lpPrice = this._calculateLpPrice(tokenPricesMappingTable);
     return (lpBalance * lpPrice) / Math.pow(10, this.assetDecimals);
   }
-  async assetUsdPrice() {
-    return await this._calculateLpPrice(() => {});
+  async assetUsdPrice(tokenPricesMappingTable) {
+    return await this._calculateLpPrice(tokenPricesMappingTable);
   }
   async stakeBalanceOf(owner, updateProgress) {
     const rewardPoolContractInstance = new ethers.Contract(
@@ -172,12 +173,12 @@ export class BaseConvex extends BaseProtocol {
   }
   _calculateLpPrice(tokenPricesMappingTable) {
     // TODO(david): need to calculate the correct LP price
-    if (this.pid === 34) {
+    if (this.pid === 34 || this.pid === 36) {
       // it's a stablecoin pool
-      return 1;
+      return 1 / Math.pow(10, this.assetDecimals);
     } else if (this.pid === 28) {
       // it's a ETH pool
-      return tokenPricesMappingTable["weth"];
+      return tokenPricesMappingTable["weth"] / Math.pow(10, this.assetDecimals);
     }
     throw new Error("Not implemented");
   }

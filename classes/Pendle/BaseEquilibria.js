@@ -5,14 +5,13 @@ import EqbMinterSidechain from "../../lib/contracts/Pendle/EqbMinterSidechain.js
 import BaseRewardPool from "../../lib/contracts/Pendle/BaseRewardPool.json" assert { type: "json" };
 import XEqbToken from "../../lib/contracts/Equilibria/XEqbToken.json" assert { type: "json" };
 import EqbZap from "../../lib/contracts/Equilibria/EqbZap.json" assert { type: "json" };
-import { arbitrum } from "thirdweb/chains";
 import axios from "axios";
 import { ethers } from "ethers";
 import { PROVIDER } from "../../utils/general.js";
 import axiosRetry from "axios-retry";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb.js";
-import { approve } from "../../utils/general.js";
+import { approve, CHAIN_ID_TO_CHAIN } from "../../utils/general.js";
 import BaseProtocol from "../BaseProtocol.js";
 import { ERC20_ABI } from "@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
 
@@ -32,31 +31,31 @@ export class BaseEquilibria extends BaseProtocol {
     this.assetContract = getContract({
       client: THIRDWEB_CLIENT,
       address: customParams.assetAddress,
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: PendleMarketV3,
     });
     this.protocolContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0x888888888889758F76e7103c6CbF23ABbF58F946",
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: ActionAddRemoveLiqV3,
     });
     this.stakeFarmContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0x4D32C8Ff2fACC771eC7Efc70d6A8468bC30C26bF",
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: PendleBoosterSidechain,
     });
     this.eqbStakeFarmWithdrawContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0xc7517f481Cc0a645e63f870830A4B2e580421e32",
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: EqbZap,
     });
     this.xEqbContract = getContract({
       client: THIRDWEB_CLIENT,
       address: this.XEQB_TOKEN_ADDR,
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: XEqbToken,
     });
 
@@ -231,12 +230,13 @@ export class BaseEquilibria extends BaseProtocol {
       },
     );
     updateProgress("prepare equilibria's contract call");
+    const precision = Math.pow(10, 6);
     const slippageBN = ethers.BigNumber.from(
-      Math.floor((1 - slippage / 100) * 10000),
-    );
+      String(Math.floor((100 - slippage) * precision)),
+    ).div(100);
     const minLPOutAmount = ethers.BigNumber.from(resp.data.data.amountLpOut)
       .mul(slippageBN)
-      .div(10000);
+      .div(ethers.BigNumber.from(precision));
     const mintTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "addLiquiditySingleToken",
@@ -268,7 +268,7 @@ export class BaseEquilibria extends BaseProtocol {
       (userBalance / Math.pow(10, this.assetDecimals)) * latestPendleAssetPrice
     );
   }
-  async assetUsdPrice() {
+  async assetUsdPrice(tokenPricesMappingTable) {
     return await this._fetchPendleAssetPrice(() => {});
   }
 
@@ -296,7 +296,7 @@ export class BaseEquilibria extends BaseProtocol {
         },
       },
     );
-    return resp.data.pricesUsd[0];
+    return resp.data.pricesUsd[0] / Math.pow(10, this.assetDecimals);
   }
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     return [inputToken, InputTokenDecimals];

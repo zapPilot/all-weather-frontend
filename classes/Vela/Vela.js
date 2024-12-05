@@ -1,14 +1,13 @@
 import Vault from "../../lib/contracts/Vela/Vault.json" assert { type: "json" };
 import TokenFarm from "../../lib/contracts/Vela/TokenFarm.json" assert { type: "json" };
 import ERC20_ABI from "../../lib/contracts/ERC20.json" assert { type: "json" };
-import { arbitrum } from "thirdweb/chains";
 import axios from "axios";
 import { ethers } from "ethers";
 import { PROVIDER } from "../../utils/general.js";
 import axiosRetry from "axios-retry";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
-import { approve } from "../../utils/general.js";
+import { approve, CHAIN_ID_TO_CHAIN } from "../../utils/general";
 import BaseProtocol from "../BaseProtocol.js";
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
@@ -22,19 +21,19 @@ export class Vela extends BaseProtocol {
     this.assetContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0xC5b2D9FDa8A82E8DcECD5e9e6e99b78a9188eB05",
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: ERC20_ABI,
     });
     this.protocolContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0xC4ABADE3a15064F9E3596943c699032748b13352",
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: Vault,
     });
     this.stakeFarmContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0x60b8C145235A31f1949a831803768bF37d7Ab7AA",
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: TokenFarm,
     });
     this._checkIfParamsAreSet();
@@ -108,7 +107,7 @@ export class Vela extends BaseProtocol {
     const latestVlpPrice = await this._fetchVlpPrice(() => {});
     return (userBalance / Math.pow(10, this.assetDecimals)) * latestVlpPrice;
   }
-  async assetUsdPrice() {
+  async assetUsdPrice(tokenPricesMappingTable) {
     return await this._fetchVlpPrice(() => {});
   }
   async _fetchVlpPrice(updateProgress) {
@@ -120,7 +119,7 @@ export class Vela extends BaseProtocol {
     );
     const vlpPrice =
       (await protocolContractInstance.functions.getVLPPrice()) / 1e5;
-    return vlpPrice;
+    return vlpPrice / Math.pow(10, this.assetDecimals);
   }
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in

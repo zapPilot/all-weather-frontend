@@ -295,7 +295,7 @@ export default function TransactionHistory({
               </span>{" "}
               <a
                 href={`https://${
-                  activityItem.metadata.chain || "arbitrum"
+                  activityItem.metadata.chain?.replace(" one", "") || "arbitrum"
                 }.blockscout.com/tx/${activityItem.tx_hash}`}
                 target="_blank"
               >

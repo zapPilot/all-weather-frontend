@@ -1,13 +1,12 @@
 import ApolloXABI from "../../lib/contracts/ApolloX.json" assert { type: "json" };
 import ERC20_ABI from "../../lib/contracts/ERC20.json" assert { type: "json" };
-import { arbitrum } from "thirdweb/chains";
 import axios from "axios";
 import { ethers } from "ethers";
 import { PROVIDER } from "../../utils/general.js";
 import axiosRetry from "axios-retry";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
-import { approve } from "../../utils/general.js";
+import { approve, CHAIN_ID_TO_CHAIN } from "../../utils/general.js";
 import BaseProtocol from "../BaseProtocol.js";
 // For PancakeSwap Stake
 import SmartChefInitializable from "../../lib/contracts/PancakeSwap/SmartChefInitializable.json" assert { type: "json" };
@@ -23,20 +22,20 @@ export class BaseApolloX extends BaseProtocol {
     this.assetContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0xbc76b3fd0d18c7496c0b04aea0fe7c3ed0e4d9c9",
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: ERC20_ABI,
     });
     this.protocolContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0xB3879E95a4B8e3eE570c232B19d520821F540E48",
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: ApolloXABI,
     });
     this.stakeFarmContract = getContract({
       client: THIRDWEB_CLIENT,
       // PancakeSwap Stake would change this address from time to time
       address: customParams.stakeFarmContractAddress,
-      chain: arbitrum,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: SmartChefInitializable,
     });
     this._checkIfParamsAreSet();
@@ -191,7 +190,7 @@ export class BaseApolloX extends BaseProtocol {
     const latestAlpPrice = await this._fetchAlpPrice(() => {});
     return (userInfo / Math.pow(10, this.assetDecimals)) * latestAlpPrice;
   }
-  async assetUsdPrice() {
+  async assetUsdPrice(tokenPricesMappingTable) {
     return await this._fetchAlpPrice(() => {});
   }
   async _fetchAlpPrice(updateProgress) {
@@ -210,7 +209,7 @@ export class BaseApolloX extends BaseProtocol {
       referrer: "https://www.apollox.finance/en/ALP",
     });
     const latestPrice = response.data.data[0].price;
-    return latestPrice;
+    return latestPrice / Math.pow(10, this.assetDecimals);
   }
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of ALP to get the cheapest token to zap in
@@ -225,7 +224,7 @@ export class BaseApolloX extends BaseProtocol {
   async lockUpPeriod() {
     return 0;
   }
-  _stake(amount, updateProgress) {
+  async _stake(amount, updateProgress) {
     const approveAlpTxn = approve(
       this.assetContract.address,
       this.stakeFarmContract.address,

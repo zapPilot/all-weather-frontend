@@ -8,11 +8,11 @@ import Link from "next/link";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
 import { CheckIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
-import { Input } from "antd";
 import { useRouter } from "next/router";
 import TransacitonHistory from "./transactionHistory.jsx";
 import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
 import ConfiguredConnectButton from "../ConnectButton";
+import { base } from "thirdweb/chains";
 import {
   Button,
   Progress,
@@ -24,6 +24,8 @@ import {
   Tabs,
   Dropdown,
   Popover,
+  Input,
+  Space,
 } from "antd";
 import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import {
@@ -31,7 +33,9 @@ import {
   useSendBatchTransaction,
   useActiveWalletChain,
   useWalletBalance,
+  useSwitchActiveWalletChain,
 } from "thirdweb/react";
+
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { formatBalance } from "../../utils/general.js";
 import axios from "axios";
@@ -45,30 +49,88 @@ import {
   ArrowTopRightOnSquareIcon,
   ChartBarIcon,
 } from "@heroicons/react/20/solid";
-import { SettingOutlined, InfoCircleOutlined } from "@ant-design/icons";
+import {
+  SettingOutlined,
+  InfoCircleOutlined,
+  DownOutlined,
+} from "@ant-design/icons";
 import { arbitrum } from "thirdweb/chains";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
+import tokens from "../views/components/tokens.json";
 
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
   const account = useActiveAccount();
   const chainId = useActiveWalletChain();
-  const [selectedToken, setSelectedToken] = useState(
-    "USDC-0xaf88d065e77c8cc2239327c5edb3a432268e5831-6",
-  );
+  const switchChain = useSwitchActiveWalletChain();
+  const switchItems = [
+    {
+      key: "1",
+      label: (
+        <Button type="link" onClick={() => switchChain(arbitrum)}>
+          <Image
+            src={`/chainPicturesWebp/arbitrum.webp`}
+            alt="arbitrum"
+            height={22}
+            width={22}
+            className="rounded-full"
+          />
+        </Button>
+      ),
+    },
+    {
+      key: "2",
+      label: (
+        <Button type="link" onClick={() => switchChain(base)}>
+          <Image
+            src={`/chainPicturesWebp/base.webp`}
+            alt="base"
+            height={22}
+            width={22}
+            className="rounded-full"
+          />
+        </Button>
+      ),
+    },
+  ];
 
+  const getDefaultToken = (chainId) => {
+    if (!chainId) return null;
+
+    const chainTokens =
+      tokens.props.pageProps.tokenList[String(chainId?.id)] || [];
+    if (!Array.isArray(chainTokens)) {
+      return null;
+    }
+
+    const usdcToken = chainTokens.find(
+      (token) => token.symbol?.toLowerCase() === "usdc",
+    );
+
+    if (!usdcToken) {
+      return null;
+    }
+
+    return `${usdcToken.symbol}-${usdcToken.value}-${usdcToken.decimals}`;
+  };
+
+  const [selectedToken, setSelectedToken] = useState(null);
   const [investmentAmount, setInvestmentAmount] = useState(0);
   const [zapInIsLoading, setZapInIsLoading] = useState(false);
   const [zapOutIsLoading, setZapOutIsLoading] = useState(false);
   const [claimIsLoading, setClaimIsLoading] = useState(false);
   const [transferLoading, setTransferLoading] = useState(false);
   const [rebalanceIsLoading, setRebalanceIsLoading] = useState(false);
+  const [
+    protocolAssetDustInWalletLoading,
+    setProtocolAssetDustInWalletLoading,
+  ] = useState(false);
   const [progress, setProgress] = useState(0);
   const [stepName, setStepName] = useState("");
-  const [slippage, setSlippage] = useState(0.5);
+  const [slippage, setSlippage] = useState(3);
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
@@ -113,7 +175,7 @@ export default function IndexOverviews() {
   } = useSelector((state) => state.strategyMetadata);
   const dispatch = useDispatch();
 
-  const handleAAWalletAction = async (actionName) => {
+  const handleAAWalletAction = async (actionName, onlyThisChain = false) => {
     setOpen(true);
 
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
@@ -155,8 +217,14 @@ export default function IndexOverviews() {
         slippage,
         rebalancableUsdBalanceDict,
         recipient,
-        protocolAssetDustInWallet.arbitrum,
+        protocolAssetDustInWallet[
+          chainId?.name.toLowerCase().replace(" one", "")
+        ],
+        onlyThisChain,
       );
+      if (txns.length < 2) {
+        throw new Error("No transactions to send");
+      }
       // Call sendBatchTransaction and wait for the result
       try {
         await new Promise((resolve, reject) => {
@@ -206,14 +274,23 @@ export default function IndexOverviews() {
           });
         });
       } catch (error) {
+        let errorReadableMsg;
+        if (
+          error.message.includes("0x495d907f") ||
+          error.message.includes("0x203d82d8")
+        ) {
+          errorReadableMsg = "Bridge quote expired, please try again";
+        } else if (error.message.includes("User rejected the request")) {
+          return;
+        } else {
+          errorReadableMsg = error.message + "\nProbably out of gas";
+        }
         openNotificationWithIcon(
           notificationAPI,
           "Transaction Result",
           "error",
           `Transaction failed\n
-          error:${error.message}\n
-        1. Probably out of gas\n
-        2. Or still in the lock-up period
+          error:${errorReadableMsg}
         `,
         );
       }
@@ -249,59 +326,118 @@ export default function IndexOverviews() {
   const tokenAddress = selectedToken?.split("-")[1];
   const { data: walletBalanceData, isLoading: walletBalanceLoading } =
     useWalletBalance({
-      chain: arbitrum,
+      chain: chainId,
       address: account?.address,
       client: THIRDWEB_CLIENT,
       tokenAddress,
     });
   const [tokenBalance, setTokenBalance] = useState(0);
-
   const items = [
     {
       key: "1",
       label: "Zap In",
       children: (
-        <div>
-          <TokenDropdownInput
-            selectedToken={selectedToken}
-            setSelectedToken={handleSetSelectedToken}
-            setInvestmentAmount={handleSetInvestmentAmount}
-          />
-          {account === undefined ? (
-            <ConfiguredConnectButton />
-          ) : Object.values(protocolAssetDustInWallet?.arbitrum || {}).some(
-              (protocolObj) => protocolObj.assetBalance > 0,
-            ) ? (
-            <Button
-              type="primary"
-              className="w-full mt-2"
-              onClick={() => handleAAWalletAction("stake")}
-              disabled={usdBalanceLoading}
-            >
-              {`Stake Available Assets ($${Object.values(
-                protocolAssetDustInWallet?.arbitrum || {},
-              )
-                .reduce(
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <TokenDropdownInput
+              selectedToken={selectedToken}
+              setSelectedToken={handleSetSelectedToken}
+              setInvestmentAmount={handleSetInvestmentAmount}
+            />
+          </div>
+          <div>
+            <div className="mt-4 sm:mt-0 border-b border-white">
+              <Dropdown
+                menu={{
+                  items: switchItems,
+                }}
+                trigger="click"
+              >
+                <Button onClick={(e) => e.preventDefault()}>
+                  <Space>
+                    <Image
+                      src={`/chainPicturesWebp/${chainId?.name
+                        .toLowerCase()
+                        .replace(" one", "")}.webp`}
+                      alt="arbitrum"
+                      height={22}
+                      width={22}
+                      className="rounded-full ms-1"
+                    />
+                    <DownOutlined />
+                  </Space>
+                </Button>
+              </Dropdown>
+              <p>
+                Step 1: Choose a chain to zap in and bridge to another chain.
+              </p>
+
+              {account === undefined ? (
+                <ConfiguredConnectButton />
+              ) : Object.values(
+                  protocolAssetDustInWallet?.[
+                    chainId?.name.toLowerCase().replace(" one", "")
+                  ] || {},
+                ).reduce(
                   (sum, protocolObj) =>
-                    sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
+                    sum + (protocolObj.assetUsdBalanceOf || 0),
                   0,
-                )
-                .toFixed(2)})`}
-            </Button>
-          ) : (
-            <Button
-              type="primary"
-              className="w-full mt-2"
-              onClick={() => handleAAWalletAction("zapIn")}
-              loading={zapInIsLoading}
-              disabled={
-                Number(investmentAmount) === 0 ||
-                Number(investmentAmount) > tokenBalance
-              }
-            >
-              Zap In
-            </Button>
-          )}
+                ) /
+                  usdBalance >
+                0.05 ? (
+                <Button
+                  type="primary"
+                  className="w-full my-2"
+                  onClick={() => handleAAWalletAction("stake", true)}
+                  loading={protocolAssetDustInWalletLoading}
+                  disabled={usdBalanceLoading}
+                >
+                  {`Stake Available Assets ($${Object.values(
+                    protocolAssetDustInWallet?.[
+                      chainId?.name.toLowerCase().replace(" one", "")
+                    ] || {},
+                  )
+                    .reduce(
+                      (sum, protocolObj) =>
+                        sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
+                      0,
+                    )
+                    .toFixed(2)})`}
+                </Button>
+              ) : (
+                <Button
+                  type="primary"
+                  className="w-full my-2"
+                  onClick={() => handleAAWalletAction("zapIn")}
+                  loading={zapInIsLoading}
+                  disabled={
+                    Number(investmentAmount) === 0 ||
+                    Number(investmentAmount) > tokenBalance
+                  }
+                >
+                  Zap In
+                </Button>
+              )}
+            </div>
+            <div className="mt-4">
+              <p>
+                Step 2: Once bridging is complete, switch to the other chain and
+                zap in again.
+              </p>
+              <Button
+                type="primary"
+                className="w-full my-2"
+                onClick={() => handleAAWalletAction("zapIn", true)}
+                loading={zapInIsLoading}
+                disabled={
+                  Number(investmentAmount) === 0 ||
+                  Number(investmentAmount) > tokenBalance
+                }
+              >
+                Zap In on current chain
+              </Button>
+            </div>
+          </div>
         </div>
       ),
     },
@@ -316,6 +452,7 @@ export default function IndexOverviews() {
             depositBalance={usdBalance}
             setZapOutPercentage={setZapOutPercentage}
             currency="$"
+            noTokenSelect={false}
           />
           {account === undefined ? (
             <ConfiguredConnectButton />
@@ -323,7 +460,7 @@ export default function IndexOverviews() {
             <Button
               type="primary"
               className="w-full"
-              onClick={() => handleAAWalletAction("zapOut")}
+              onClick={() => handleAAWalletAction("zapOut", true)}
               loading={zapOutIsLoading || usdBalanceLoading}
               disabled={usdBalance < 0.01 || zapOutPercentage === 0}
             >
@@ -344,6 +481,7 @@ export default function IndexOverviews() {
             depositBalance={usdBalance}
             setZapOutPercentage={setZapOutPercentage}
             currency="$"
+            noTokenSelect={true}
           />
           <Input
             status={recipientError ? "error" : ""}
@@ -362,7 +500,7 @@ export default function IndexOverviews() {
             <Button
               type="primary"
               className="w-full"
-              onClick={() => handleAAWalletAction("transfer")}
+              onClick={() => handleAAWalletAction("transfer", true)}
               loading={transferLoading || usdBalanceLoading}
               disabled={usdBalance < 0.01 || recipientError}
             >
@@ -511,6 +649,7 @@ export default function IndexOverviews() {
       setUsdBalanceLoading(true);
       setPendingRewardsLoading(true);
       setrebalancableUsdBalanceDictLoading(true);
+      setProtocolAssetDustInWalletLoading(true);
 
       const tokenPricesMappingTable =
         await portfolioHelper.getTokenPricesMappingTable(() => {});
@@ -530,11 +669,13 @@ export default function IndexOverviews() {
       setPendingRewards(usdBalanceDict.pendingRewards.pendingRewardsDict);
       setPendingRewardsLoading(false);
 
+      // if (!tokenPricesMappingTable) return;
       const dust = await portfolioHelper.calProtocolAssetDustInWalletDictionary(
         account.address,
         tokenPricesMappingTable,
       );
       setProtocolAssetDustInWallet(dust);
+      setProtocolAssetDustInWalletLoading(false);
     };
     fetchUsdBalance();
   }, [portfolioName, account, portfolioApr]);
@@ -553,6 +694,13 @@ export default function IndexOverviews() {
     setRecipientError(!isValid);
     setRecipient(address);
   };
+
+  useEffect(() => {
+    const defaultToken = getDefaultToken(chainId);
+    if (defaultToken) {
+      setSelectedToken(defaultToken);
+    }
+  }, [chainId]);
 
   return (
     <BasePage>
@@ -658,7 +806,7 @@ export default function IndexOverviews() {
                       size="small"
                       onChange={(e) => setSlippage(e.target.value)}
                     >
-                      {[0.5, 1, 3].map((slippageValue) => (
+                      {[3, 4, 5].map((slippageValue) => (
                         <Radio.Button value={slippageValue} key={slippageValue}>
                           {slippageValue}%
                         </Radio.Button>
@@ -729,7 +877,7 @@ export default function IndexOverviews() {
                       <Button
                         className="w-full mt-2"
                         type="primary"
-                        onClick={() => handleAAWalletAction("rebalance")}
+                        onClick={() => handleAAWalletAction("rebalance", true)}
                         loading={
                           rebalanceIsLoading ||
                           rebalancableUsdBalanceDictLoading
@@ -795,7 +943,7 @@ export default function IndexOverviews() {
                       </li>
                     </ul>
                   </div>
-                  <div className="mt-6 flex w-full flex-none gap-x-4">
+                  {/* <div className="mt-6 flex w-full flex-none gap-x-4">
                     <dt className="flex-none">
                       <BanknotesIcon
                         aria-hidden="true"
@@ -866,7 +1014,7 @@ export default function IndexOverviews() {
                         </span>
                       )}
                     </dd>
-                  </div>
+                  </div> */}
                   <div className="mt-6 flex w-full flex-none gap-x-4">
                     <dt className="flex-none">
                       <ChartBarIcon
@@ -928,7 +1076,7 @@ export default function IndexOverviews() {
                           <div key={`${chain}-${index}`}>
                             <div className="flex items-center space-x-2">
                               <span className="text-white font-semibold">
-                                Protocols in
+                                Protocols on
                               </span>
                               <Image
                                 src={`/chainPicturesWebp/${chain}.webp`}
@@ -1059,31 +1207,27 @@ export default function IndexOverviews() {
                                     );
                                   })}
                               </tbody>
-                              <tfoot>
-                                <tr className="border-t border-gray-200">
-                                  <th
-                                    scope="row"
-                                    className="pt-6 font-semibold text-white"
-                                  >
-                                    Avg. APR
-                                  </th>
-                                  <td className="pt-6 font-semibold text-right text-green-500">
-                                    {loading ? (
-                                      <Spin />
-                                    ) : (
-                                      `${(
-                                        (portfolioApr[portfolioName]
-                                          ?.portfolioAPR || 0) * 100
-                                      ).toFixed(2)}%`
-                                    )}
-                                  </td>
-                                </tr>
-                              </tfoot>
                             </table>
                           </div>
                         ),
                       ),
                   )}
+                <tfoot>
+                  <tr className="border-t border-gray-200">
+                    <th scope="row" className="pt-6 font-semibold text-white">
+                      Avg. APR
+                    </th>
+                    <td className="pt-6 font-semibold text-right text-green-500">
+                      {loading ? (
+                        <Spin />
+                      ) : (
+                        `${(
+                          (portfolioApr[portfolioName]?.portfolioAPR || 0) * 100
+                        ).toFixed(2)}%`
+                      )}
+                    </td>
+                  </tr>
+                </tfoot>
                 <div>
                   <span className="text-gray-500">Lock-up Period</span>{" "}
                   {usdBalanceLoading === true ? (

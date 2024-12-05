@@ -1,7 +1,6 @@
 import { ethers } from "ethers";
 import { fetch1InchSwapData, oneInchAddress } from "../utils/oneInch.js";
 import { CHAIN_ID_TO_CHAIN, PROVIDER } from "../utils/general.js";
-import { arbitrum } from "thirdweb/chains";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import BaseUniswap from "./uniswapv3/BaseUniswap.js";
 import assert from "assert";
@@ -80,10 +79,12 @@ export default class BaseProtocol extends BaseUniswap {
   async usdBalanceOf(address, tokenPricesMappingTable) {
     throw new Error("Method 'usdBalanceOf()' must be implemented.");
   }
-  async assetUsdBalanceOf(owner) {
-    return (await this.assetBalanceOf(owner))
-      .div(10 ** this.assetDecimals)
-      .mul(await this.assetUsdPrice());
+  async assetUsdBalanceOf(owner, tokenPricesMappingTable) {
+    const balance = await this.assetBalanceOf(owner);
+    const assetPrice = await this.assetUsdPrice(tokenPricesMappingTable);
+
+    // Calculate: (balance * price) / (10 ** assetDecimals)
+    return balance * assetPrice;
   }
   async stakeBalanceOf(address) {
     throw new Error("Method 'stakeBalanceOf()' must be implemented.");
@@ -102,7 +103,7 @@ export default class BaseProtocol extends BaseUniswap {
   async pendingRewards(recipient, tokenPricesMappingTable, updateProgress) {
     throw new Error("Method 'pendingRewards()' must be implemented.");
   }
-  async assetUsdPrice() {
+  async assetUsdPrice(tokenPricesMappingTable) {
     throw new Error("Method 'assetUsdPrice()' must be implemented.");
   }
   async zapIn(

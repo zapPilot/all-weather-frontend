@@ -9,6 +9,7 @@ const DecimalStep = ({
   currency,
   selectedToken,
   setSelectedToken,
+  noTokenSelect,
 }) => {
   const [inputValue, setInputValue] = useState(0);
   const [sliderValue, setSliderValue] = useState(0);
@@ -48,7 +49,8 @@ const DecimalStep = ({
   return (
     <>
       <Space.Compact>
-        {selectBefore(handleTokenChange, chainId?.id, selectedToken)}
+        {!noTokenSelect &&
+          selectBefore(handleTokenChange, chainId?.id, selectedToken)}
         <InputNumber
           min={0}
           max={depositBalance}
