@@ -268,7 +268,7 @@ export class BaseEquilibria extends BaseProtocol {
       (userBalance / Math.pow(10, this.assetDecimals)) * latestPendleAssetPrice
     );
   }
-  async assetUsdPrice() {
+  async assetUsdPrice(tokenPricesMappingTable) {
     return await this._fetchPendleAssetPrice(() => {});
   }
 
@@ -296,7 +296,7 @@ export class BaseEquilibria extends BaseProtocol {
         },
       },
     );
-    return resp.data.pricesUsd[0];
+    return resp.data.pricesUsd[0] / Math.pow(10, this.assetDecimals);
   }
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     return [inputToken, InputTokenDecimals];
