@@ -669,7 +669,7 @@ export default function IndexOverviews() {
       setPendingRewards(usdBalanceDict.pendingRewards.pendingRewardsDict);
       setPendingRewardsLoading(false);
 
-      // if (!tokenPricesMappingTable) return;
+      if (Object.values(tokenPricesMappingTable).length === 0) return;
       const dust = await portfolioHelper.calProtocolAssetDustInWalletDictionary(
         account.address,
         tokenPricesMappingTable,
