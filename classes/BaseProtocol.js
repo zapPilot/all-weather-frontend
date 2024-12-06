@@ -292,7 +292,8 @@ export default class BaseProtocol extends BaseUniswap {
   }
   async stake(protocolAssetDustInWallet, updateProgress) {
     let stakeTxns = [];
-    const amount = protocolAssetDustInWallet[this.uniqueId()].assetBalance;
+    const amount =
+      protocolAssetDustInWallet[this.assetContract.address].assetBalance;
     if (amount.toString() === "0") {
       return [];
     }
