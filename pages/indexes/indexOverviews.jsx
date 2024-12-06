@@ -230,32 +230,37 @@ export default function IndexOverviews() {
         await new Promise((resolve, reject) => {
           sendBatchTransaction(txns.flat(Infinity), {
             onSuccess: async (data) => {
-              await axios({
-                method: "post",
-                url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                data: {
-                  user_api_key: "placeholder",
-                  tx_hash: data.transactionHash,
-                  address: account.address,
-                  metadata: JSON.stringify({
-                    portfolioName,
-                    actionName,
-                    tokenSymbol,
-                    investmentAmount:
-                      investmentAmount *
-                      (1 - slippage / 100 - portfolioHelper.swapFeeRate()),
-                    zapOutAmount: usdBalance * zapOutPercentage,
-                    rebalanceAmount: getRebalanceReinvestUsdAmount(),
-                    timestamp: Math.floor(Date.now() / 1000),
-                    swapFeeRate: portfolioHelper.swapFeeRate(),
-                    referralFeeRate: portfolioHelper.referralFeeRate(),
-                    chain: chainId.name.toLowerCase(),
-                  }),
-                },
-              });
+              console.log("transaction data", data);
+              try {
+                await axios({
+                  method: "post",
+                  url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  data: {
+                    user_api_key: "placeholder",
+                    tx_hash: data.transactionHash,
+                    address: account.address,
+                    metadata: JSON.stringify({
+                      portfolioName,
+                      actionName,
+                      tokenSymbol,
+                      investmentAmount:
+                        investmentAmount *
+                        (1 - slippage / 100 - portfolioHelper.swapFeeRate()),
+                      zapOutAmount: usdBalance * zapOutPercentage,
+                      rebalanceAmount: getRebalanceReinvestUsdAmount(),
+                      timestamp: Math.floor(Date.now() / 1000),
+                      swapFeeRate: portfolioHelper.swapFeeRate(),
+                      referralFeeRate: portfolioHelper.referralFeeRate(),
+                      chain: chainId.name.toLowerCase(),
+                    }),
+                  },
+                });
+              } catch (error) {
+                console.log("error", error);
+              }
               openNotificationWithIcon(
                 notificationAPI,
                 "Transaction Result",
