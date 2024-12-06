@@ -70,8 +70,6 @@ export class BaseConvex extends BaseProtocol {
       ConvexRewardPool,
       PROVIDER(this.chain),
     );
-    const rewardLength =
-      await stakeFarmContractInstance.functions.rewardLength();
     const rewards = this.rewards();
     for (let index = 0; index < rewards; index++) {
       const reward_address = (
@@ -128,10 +126,14 @@ export class BaseConvex extends BaseProtocol {
       );
       _min_mint_amount += normalizedAmount;
     }
-    _min_mint_amount = Math.floor(
-      ((_min_mint_amount / this._calculateLpPrice(tokenPricesMappingTable)) *
-        (100 - slippage)) /
-        100,
+    _min_mint_amount = ethers.BigNumber.from(
+      Math.floor(
+        (_min_mint_amount *
+          this._calculateLpPrice(tokenPricesMappingTable) *
+          (100 - slippage)) /
+          100,
+      ),
+      this.assetDecimals,
     );
     const depositTxn = prepareContractCall({
       contract: this.protocolContract,
@@ -181,10 +183,10 @@ export class BaseConvex extends BaseProtocol {
     // TODO(david): need to calculate the correct LP price
     if (this.pid === 34 || this.pid === 36) {
       // it's a stablecoin pool
-      return 1 / Math.pow(10, this.assetDecimals);
+      return 1;
     } else if (this.pid === 28) {
       // it's a ETH pool
-      return tokenPricesMappingTable["weth"] / Math.pow(10, this.assetDecimals);
+      return tokenPricesMappingTable["weth"];
     }
     throw new Error("Not implemented");
   }
