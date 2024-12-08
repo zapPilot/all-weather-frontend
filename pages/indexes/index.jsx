@@ -50,15 +50,6 @@ export default function Vaults() {
       tvl: vaultsMetadata?.["BTC Vault"]?.portfolioTVL,
       portfolioHelper: getPortfolioHelper("BTC Vault"),
     },
-    {
-      id: 4,
-      portfolioName: "Build Your Own Vault with",
-      href: "/vote",
-      imageSrc: `/tokenPictures/${diyToken}.webp`,
-      imageAlt: "Build Your Own Vault",
-      apr,
-      tvl: (tvl / 1000000).toFixed(2).concat("M"),
-    },
   ];
 
   useEffect(() => {
