@@ -130,7 +130,9 @@ export default function IndexOverviews() {
   ] = useState(false);
   const [progress, setProgress] = useState(0);
   const [stepName, setStepName] = useState("");
-  const [slippage, setSlippage] = useState(1);
+  const [slippage, setSlippage] = useState(
+    portfolioName === "Stablecoin Vault" ? 1 : 3,
+  );
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
