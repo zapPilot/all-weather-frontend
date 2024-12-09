@@ -575,12 +575,9 @@ export class BasePortfolio {
         CHAIN_TO_CHAIN_ID[chain],
         TOKEN_ADDRESS_MAP["usdc"][currentChain],
         TOKEN_ADDRESS_MAP["usdc"][chain],
-        ethers.utils
-          .parseUnits(
-            (zapOutUsdcBalance * totalWeight).toFixed(usdcConfig.decimals),
-            usdcConfig.decimals,
-          )
-          .toString(),
+        ethers.BigNumber.from(
+          Math.floor(Number(zapInAmountAfterFee) * totalWeight),
+        ),
         updateProgress,
       );
       txns.push(...bridgeToOtherChainTxns);
