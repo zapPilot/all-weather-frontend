@@ -56,7 +56,7 @@ import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
 import tokens from "../views/components/tokens.json";
-
+import DemoFlowDirectionGraph from "../FlowChart";
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -915,6 +915,7 @@ export default function IndexOverviews() {
   return (
     <BasePage>
       {notificationContextHolder}
+      <DemoFlowDirectionGraph />
       <ModalContent />
       <main className={styles.bgStyle}>
         <header className="relative isolate pt-6">
