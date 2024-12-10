@@ -717,6 +717,7 @@ export default function IndexOverviews() {
       Object.keys(portfolioApr).length === 0
     ) {
       dispatch(fetchStrategyMetadata());
+      setSlippage(portfolioName === "Stablecoin Vault" ? 1 : 3);
     }
   }, [portfolioName]);
   useEffect(() => {
