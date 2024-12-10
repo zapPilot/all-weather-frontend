@@ -290,15 +290,13 @@ export default function IndexOverviews() {
         } else if (error.message.includes("User rejected the request")) {
           return;
         } else {
-          errorReadableMsg = error.message + "\nProbably out of gas";
+          errorReadableMsg = "error:" + error.message;
         }
         openNotificationWithIcon(
           notificationAPI,
           "Transaction Result",
           "error",
-          `Transaction failed\n
-          error:${errorReadableMsg}
-        `,
+          `Increase Slippage and Try Again!\n${errorReadableMsg}`,
         );
       }
     } catch (error) {
@@ -572,7 +570,7 @@ export default function IndexOverviews() {
                       : "block"
                   }`}
                 onClick={() => handleAAWalletAction("zapIn", true)}
-                // loading={zapInIsLoading}
+                loading={zapInIsLoading}
                 disabled={
                   Number(investmentAmount) === 0 ||
                   Number(investmentAmount) > tokenBalance
