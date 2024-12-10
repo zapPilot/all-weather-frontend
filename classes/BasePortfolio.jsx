@@ -374,11 +374,14 @@ export class BasePortfolio {
           actionParams.tokenPricesMappingTable,
         );
         if (protocolUsdBalance === 0) return null;
+        let normalizedZapOutPercentage = actionParams.zapOutPercentage;
+        if (protocolUsdBalance * actionParams.zapOutPercentage < 1) {
+          // to avoid high slippage, we need to zap out at least 1 dollar
+          normalizedZapOutPercentage = 1 / protocolUsdBalance;
+        }
         return protocol.interface.zapOut(
           actionParams.account,
-          protocolUsdBalance * actionParams.zapOutPercentage < 0.1
-            ? 1
-            : Number(actionParams.zapOutPercentage),
+          normalizedZapOutPercentage,
           actionParams.tokenOutAddress,
           actionParams.slippage,
           actionParams.tokenPricesMappingTable,
@@ -575,12 +578,9 @@ export class BasePortfolio {
         CHAIN_TO_CHAIN_ID[chain],
         TOKEN_ADDRESS_MAP["usdc"][currentChain],
         TOKEN_ADDRESS_MAP["usdc"][chain],
-        ethers.utils
-          .parseUnits(
-            (zapOutUsdcBalance * totalWeight).toFixed(usdcConfig.decimals),
-            usdcConfig.decimals,
-          )
-          .toString(),
+        ethers.BigNumber.from(
+          Math.floor(Number(zapInAmountAfterFee) * totalWeight),
+        ),
         updateProgress,
       );
       txns.push(...bridgeToOtherChainTxns);

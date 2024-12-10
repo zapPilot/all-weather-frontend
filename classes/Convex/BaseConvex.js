@@ -159,7 +159,7 @@ export class BaseConvex extends BaseProtocol {
   async usdBalanceOf(owner, tokenPricesMappingTable) {
     const lpBalance = await this.stakeBalanceOf(owner, () => {});
     const lpPrice = this._calculateLpPrice(tokenPricesMappingTable);
-    return (lpBalance * lpPrice) / Math.pow(10, this.assetDecimals);
+    return lpBalance * lpPrice;
   }
   async assetUsdPrice(tokenPricesMappingTable) {
     return await this._calculateLpPrice(tokenPricesMappingTable);
@@ -183,10 +183,10 @@ export class BaseConvex extends BaseProtocol {
     // TODO(david): need to calculate the correct LP price
     if (this.pid === 34 || this.pid === 36) {
       // it's a stablecoin pool
-      return 1;
+      return 1 / Math.pow(10, this.assetDecimals);
     } else if (this.pid === 28) {
       // it's a ETH pool
-      return tokenPricesMappingTable["weth"];
+      return tokenPricesMappingTable["weth"] / Math.pow(10, this.assetDecimals);
     }
     throw new Error("Not implemented");
   }
@@ -234,17 +234,31 @@ export class BaseConvex extends BaseProtocol {
     const [token_a_balance, token_b_balance] = (
       await protocolContractInstance.functions.get_balances()
     )[0];
-    const ratio = token_a_balance
-      .mul(ethers.constants.WeiPerEther)
-      .div(token_a_balance.add(token_b_balance));
+    const decimalsA = this.customParams.lpTokens[0][2];
+    const decimalsB = this.customParams.lpTokens[1][2];
+    const normalizedTokenA = Number(
+      ethers.utils.formatUnits(token_a_balance.toString(), decimalsA),
+    );
+    const normalizedTokenB = Number(
+      ethers.utils.formatUnits(token_b_balance.toString(), decimalsB),
+    );
+    const ratio = normalizedTokenA / (normalizedTokenA + normalizedTokenB);
+    const normalizedAmount = ethers.utils.formatUnits(
+      amount.toString(),
+      this.assetDecimals,
+    );
     const minimumWithdrawAmount_a = this.mul_with_slippage_in_bignumber_format(
-      amount.mul(ratio).div(ethers.constants.WeiPerEther),
+      ethers.utils.parseUnits(
+        (normalizedAmount * ratio).toFixed(decimalsA),
+        decimalsA,
+      ),
       slippage,
     );
     const minimumWithdrawAmount_b = this.mul_with_slippage_in_bignumber_format(
-      amount
-        .mul(ethers.constants.WeiPerEther.sub(ratio))
-        .div(ethers.constants.WeiPerEther),
+      ethers.utils.parseUnits(
+        (normalizedAmount * (1 - ratio)).toFixed(decimalsB),
+        decimalsB,
+      ),
       slippage,
     );
     const minPairAmounts = [minimumWithdrawAmount_a, minimumWithdrawAmount_b];

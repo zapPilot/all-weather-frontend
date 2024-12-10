@@ -127,7 +127,9 @@ export default function IndexOverviews() {
   ] = useState(false);
   const [progress, setProgress] = useState(0);
   const [stepName, setStepName] = useState("");
-  const [slippage, setSlippage] = useState(3);
+  const [slippage, setSlippage] = useState(
+    portfolioName === "Stablecoin Vault" ? 1 : 3,
+  );
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
@@ -863,7 +865,7 @@ export default function IndexOverviews() {
                         size="small"
                         onChange={(e) => setSlippage(e.target.value)}
                       >
-                        {[3, 5, 7].map((slippageValue) => (
+                        {[1, 3, 5, 7].map((slippageValue) => (
                           <Radio.Button value={slippageValue} key={slippageValue}>
                             {slippageValue}%
                           </Radio.Button>
