@@ -269,8 +269,8 @@ export default function IndexOverviews() {
               resolve(data); // Resolve the promise successfully
               setFinishedTxn(true);
               // get current chain from Txn data
-              const newNextChain = switchNextChain(data.chain.name)
-              setNextStepChain(newNextChain)
+              const newNextChain = switchNextChain(data.chain.name);
+              setNextStepChain(newNextChain);
               setTxnLink(
                 `${data.chain.blockExplorers[0].url}/tx/${data.transactionHash}`,
               );
@@ -329,16 +329,14 @@ export default function IndexOverviews() {
   const [nextStepChain, setNextStepChain] = useState("");
   const switchNextChain = (chain) => {
     const nextChain = chain.includes(" ")
-    ? chain.toLowerCase().replace(" one", "")
-    : chain;
-    return nextChain === "arbitrum" ? "base" : "arbitrum"
-  }
+      ? chain.toLowerCase().replace(" one", "")
+      : chain;
+    return nextChain === "arbitrum" ? "base" : "arbitrum";
+  };
   const switchNextStepChain = (chain, action) => {
-    chain === "arbitrum" ?
-    switchChain(arbitrum)
-    : switchChain(base)
-  }
-  
+    chain === "arbitrum" ? switchChain(arbitrum) : switchChain(base);
+  };
+
   const onChange = (key) => {
     setTabKey(key);
   };
@@ -489,7 +487,9 @@ export default function IndexOverviews() {
             />
           </div>
           <div>
-            <div className={`mt-4 sm:mt-0 ${nextStepChain ? "hidden" : "block"}`}>
+            <div
+              className={`mt-4 sm:mt-0 ${nextStepChain ? "hidden" : "block"}`}
+            >
               <p>
                 Step 1: Choose a chain to zap in and bridge to another chain.
               </p>
@@ -548,27 +548,29 @@ export default function IndexOverviews() {
               </p>
               <Button
                 type="primary"
-                className={
-                  `w-full my-2 
-                  ${chainId?.name.toLowerCase().replace(" one", "").trim() === nextStepChain ? 
-                    "hidden" : "block"
-                  }`
-                }
+                className={`w-full my-2 
+                  ${
+                    chainId?.name.toLowerCase().replace(" one", "").trim() ===
+                    nextStepChain
+                      ? "hidden"
+                      : "block"
+                  }`}
                 onClick={() => {
-                  switchNextStepChain(nextStepChain)
-                  setFinishedTxn(false)
+                  switchNextStepChain(nextStepChain);
+                  setFinishedTxn(false);
                 }}
               >
                 switch to {nextStepChain} Chain
               </Button>
               <Button
                 type="primary"
-                className={
-                  `w-full my-2 
-                  ${chainId?.name.toLowerCase().replace(" one", "").trim() !== nextStepChain ? 
-                    "hidden" : "block"
-                  }`
-                }
+                className={`w-full my-2 
+                  ${
+                    chainId?.name.toLowerCase().replace(" one", "").trim() !==
+                    nextStepChain
+                      ? "hidden"
+                      : "block"
+                  }`}
                 onClick={() => handleAAWalletAction("zapIn", true)}
                 // loading={zapInIsLoading}
                 disabled={
@@ -586,20 +588,16 @@ export default function IndexOverviews() {
     {
       key: "2",
       label: "Rebalance",
-      children:(
+      children: (
         <div>
           <Button
             className="w-full mt-2"
             type="primary"
             onClick={() => handleAAWalletAction("rebalance", true)}
-            loading={
-              rebalanceIsLoading ||
-              rebalancableUsdBalanceDictLoading
-            }
+            loading={rebalanceIsLoading || rebalancableUsdBalanceDictLoading}
             disabled={
               getRebalanceReinvestUsdAmount() / usdBalance <
-                portfolioHelper?.rebalanceThreshold() ||
-              usdBalance <= 0
+                portfolioHelper?.rebalanceThreshold() || usdBalance <= 0
             }
           >
             {calCurrentAPR(rebalancableUsdBalanceDict) >
@@ -609,16 +607,11 @@ export default function IndexOverviews() {
               <>
                 Boost APR from{" "}
                 <span className="text-red-500">
-                  {calCurrentAPR(
-                    rebalancableUsdBalanceDict,
-                  ).toFixed(2)}
-                  %{" "}
+                  {calCurrentAPR(rebalancableUsdBalanceDict).toFixed(2)}%{" "}
                 </span>
                 to{" "}
                 <span className="text-green-400">
-                  {(
-                    portfolioApr[portfolioName]?.portfolioAPR * 100
-                  ).toFixed(2)}
+                  {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}
                   %
                 </span>{" "}
                 for
@@ -627,19 +620,17 @@ export default function IndexOverviews() {
             )}
           </Button>
           <div className="text-gray-400">
-            Rebalance Cost: {portfolioHelper?.swapFeeRate() * 100}
-            %
+            Rebalance Cost: {portfolioHelper?.swapFeeRate() * 100}%
           </div>
           {calCurrentAPR(rebalancableUsdBalanceDict) >
           portfolioApr[portfolioName]?.portfolioAPR * 100 ? (
             <>
-              {formatBalance(getRebalanceReinvestUsdAmount())} has
-              outperformed. It&apos;s time to rebalance and take
-              the profit!
+              {formatBalance(getRebalanceReinvestUsdAmount())} has outperformed.
+              It&apos;s time to rebalance and take the profit!
             </>
           ) : null}
         </div>
-      )
+      ),
     },
     {
       key: "3",
@@ -867,7 +858,10 @@ export default function IndexOverviews() {
                         onChange={(e) => setSlippage(e.target.value)}
                       >
                         {[1, 3, 5, 7].map((slippageValue) => (
-                          <Radio.Button value={slippageValue} key={slippageValue}>
+                          <Radio.Button
+                            value={slippageValue}
+                            key={slippageValue}
+                          >
                             {slippageValue}%
                           </Radio.Button>
                         ))}
@@ -891,19 +885,19 @@ export default function IndexOverviews() {
                 >
                   <Button onClick={(e) => e.preventDefault()}>
                     <Space>
-                    <Image
-                      src={
-                        chainId?.name
-                          ? `/chainPicturesWebp/${chainId.name.toLowerCase().replace(" one", "")}.webp`
-                          : '/chainPicturesWebp/arbitrum.webp'
-                      }
-                      alt={
-                        chainId ? chainId.name : 'arbitrum'
-                      }
-                      height={22}
-                      width={22}
-                      className="rounded-full ms-1"
-                    />
+                      <Image
+                        src={
+                          chainId?.name
+                            ? `/chainPicturesWebp/${chainId.name
+                                .toLowerCase()
+                                .replace(" one", "")}.webp`
+                            : "/chainPicturesWebp/arbitrum.webp"
+                        }
+                        alt={chainId ? chainId.name : "arbitrum"}
+                        height={22}
+                        width={22}
+                        className="rounded-full ms-1"
+                      />
                       <DownOutlined />
                     </Space>
                   </Button>
@@ -929,7 +923,7 @@ export default function IndexOverviews() {
                 onChange={onChange}
               />
             </ConfigProvider>
-            
+
             <div className="mt-2 flex align-items-center">
               ⛽<span className="text-emerald-400">Free</span>
               {tabKey === "3" ? (
