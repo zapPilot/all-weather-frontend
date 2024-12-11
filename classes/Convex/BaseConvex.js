@@ -176,7 +176,7 @@ export class BaseConvex extends BaseProtocol {
   _getLPTokenPairesToZapIn() {
     return this.customParams.lpTokens;
   }
-  _calculateTokenAmountsForLP(tokenMetadatas) {
+  async _calculateTokenAmountsForLP(tokenMetadatas) {
     return [1, 1];
   }
   _calculateLpPrice(tokenPricesMappingTable) {

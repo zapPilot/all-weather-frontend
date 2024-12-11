@@ -114,10 +114,7 @@ export class BaseAerodrome extends BaseProtocol {
       ([symbol, address, decimals, amount]) => ({
         address,
         amount,
-        minAmount: this.mul_with_slippage_in_bignumber_format(
-          amount,
-          slippage * 10,
-        ),
+        minAmount: this.mul_with_slippage_in_bignumber_format(amount, slippage),
         decimals,
       }),
     );
@@ -185,8 +182,11 @@ export class BaseAerodrome extends BaseProtocol {
   _getLPTokenPairesToZapIn() {
     return this.customParams.lpTokens;
   }
-  _calculateTokenAmountsForLP(tokenMetadatas) {
-    return [1, 1];
+  async _calculateTokenAmountsForLP(tokenMetadatas) {
+    const metadata = await this.assetContractInstance.functions.metadata();
+    const [r0, r1] = [metadata.r0, metadata.r1];
+    const [dec0, dec1] = [metadata.dec0, metadata.dec1];
+    return [r0.div(dec0), r1.div(dec1)];
   }
   _calculateMintLP(tokenAmetadata, tokenBmetadata) {
     // Convert amounts to common decimals and calculate average
