@@ -453,7 +453,7 @@ export default class BaseProtocol extends BaseUniswap {
     let swappedTokenMetadatas = [];
     let swapTxns = [];
     const tokenMetadatas = this._getLPTokenPairesToZapIn();
-    const lpTokenRatio = this._calculateTokenAmountsForLP(tokenMetadatas);
+    const lpTokenRatio = await this._calculateTokenAmountsForLP(tokenMetadatas);
     const sumOfLPTokenRatio = lpTokenRatio.reduce(
       (acc, value) => acc.add(value),
       ethers.BigNumber.from(0),
@@ -716,7 +716,7 @@ export default class BaseProtocol extends BaseUniswap {
   ) {
     throw new Error("Method '_withdrawLPAndClaim()' must be implemented.");
   }
-  _calculateTokenAmountsForLP(tokenMetadatas) {
+  async _calculateTokenAmountsForLP(tokenMetadatas) {
     throw new Error(
       'Method "_calculateTokenAmountsForLP()" must be implemented.',
     );
