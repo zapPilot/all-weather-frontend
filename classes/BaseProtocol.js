@@ -470,7 +470,9 @@ export default class BaseProtocol extends BaseUniswap {
       // if inputTokenAddress is one of the bestTokenAddressToZapIn, then we don't need to swap
       let amountToZapIn = investmentAmountInThisPosition
         .mul(lpTokenRatio[index])
-        .div(sumOfLPTokenRatio);
+        .div(sumOfLPTokenRatio)
+        .mul((100 - slippage) * 10000)
+        .div(100 * 10000);
       if (
         inputTokenAddress.toLowerCase() !==
         bestTokenAddressToZapIn.toLowerCase()
@@ -483,9 +485,7 @@ export default class BaseProtocol extends BaseUniswap {
           slippage,
           updateProgress,
         );
-        amountToZapIn = ethers.BigNumber.from(swapEstimateAmount)
-          .mul((100 - slippage) * 10000)
-          .div(100 * 10000);
+        amountToZapIn = ethers.BigNumber.from(swapEstimateAmount);
         swapTxns.push(swapTxn);
       }
       swappedTokenMetadatas.push([
