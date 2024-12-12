@@ -388,13 +388,8 @@ export default function IndexOverviews() {
             <div>
               <p>Tips:</p>
               <p>
-                1. Test with $5–$10 first, as signature verification isn&apos;t
-                available yet.
+                1. Transaction simulation will be available in the next version.
               </p>
-              <p>
-                2. Transaction simulation will be available in the next version.
-              </p>
-              <p>3. Increase your slippage if the transaction fails.</p>
             </div>
 
             <Progress
