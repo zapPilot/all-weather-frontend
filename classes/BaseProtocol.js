@@ -450,52 +450,115 @@ export default class BaseProtocol extends BaseUniswap {
     slippage,
     updateProgress,
   ) {
-    let swappedTokenMetadatas = [];
-    let swapTxns = [];
+    // Validate and get token pairs
     const tokenMetadatas = this._getLPTokenPairesToZapIn();
-    const lpTokenRatio = await this._calculateTokenAmountsForLP(tokenMetadatas);
-    const sumOfLPTokenRatio = lpTokenRatio.reduce(
-      (acc, value) => acc.add(value),
-      ethers.BigNumber.from(0),
-    );
     if (tokenMetadatas.length !== 2) {
       throw new Error(
         `Currently only support 2 tokens in LP, but got ${tokenMetadatas.length}`,
       );
     }
-    for (const [
-      index,
-      [bestTokenSymbol, bestTokenAddressToZapIn, bestTokenToZapInDecimal],
-    ] of tokenMetadatas.entries()) {
-      // if inputTokenAddress is one of the bestTokenAddressToZapIn, then we don't need to swap
-      let amountToZapIn = investmentAmountInThisPosition
+
+    // Calculate initial ratios
+    const lpTokenRatio = await this._calculateTokenAmountsForLP(tokenMetadatas);
+    const sumOfLPTokenRatio = lpTokenRatio.reduce(
+      (acc, value) => acc.add(value),
+      ethers.BigNumber.from(0),
+    );
+
+    // Process swaps for each token
+    const [swapTxns, amountsAfterSwap] = await this._processTokenSwaps(
+      recipient,
+      inputTokenAddress,
+      tokenMetadatas,
+      lpTokenRatio,
+      sumOfLPTokenRatio,
+      investmentAmountInThisPosition,
+      slippage,
+      updateProgress,
+    );
+
+    // Balance token ratios
+    const balancedAmounts = this._balanceTokenRatios(
+      amountsAfterSwap,
+      tokenMetadatas,
+      lpTokenRatio,
+    );
+
+    // Format final metadata
+    const swappedTokenMetadatas = tokenMetadatas.map((metadata, index) => [
+      ...metadata.slice(0, 3),
+      balancedAmounts[index],
+    ]);
+
+    return [swapTxns, swappedTokenMetadatas[0], swappedTokenMetadatas[1]];
+  }
+
+  async _processTokenSwaps(
+    recipient,
+    inputTokenAddress,
+    tokenMetadatas,
+    lpTokenRatio,
+    sumOfLPTokenRatio,
+    investmentAmount,
+    slippage,
+    updateProgress,
+  ) {
+    const swapTxns = [];
+    const amountsAfterSwap = [];
+
+    for (const [index, [, bestTokenAddress, ,]] of tokenMetadatas.entries()) {
+      let amountToZapIn = investmentAmount
         .mul(lpTokenRatio[index])
-        .div(sumOfLPTokenRatio)
-        .mul((100 - slippage) * 10000)
-        .div(100 * 10000);
-      if (
-        inputTokenAddress.toLowerCase() !==
-        bestTokenAddressToZapIn.toLowerCase()
-      ) {
+        .div(sumOfLPTokenRatio);
+
+      if (inputTokenAddress.toLowerCase() !== bestTokenAddress.toLowerCase()) {
         const [swapTxn, swapEstimateAmount] = await this._swap(
           recipient,
           inputTokenAddress,
-          bestTokenAddressToZapIn,
+          bestTokenAddress,
           amountToZapIn,
           slippage,
           updateProgress,
         );
-        amountToZapIn = ethers.BigNumber.from(swapEstimateAmount);
+
+        amountToZapIn = ethers.BigNumber.from(swapEstimateAmount)
+          .mul((100 - slippage) * 10000)
+          .div(100 * 10000);
         swapTxns.push(swapTxn);
       }
-      swappedTokenMetadatas.push([
-        bestTokenSymbol,
-        bestTokenAddressToZapIn,
-        bestTokenToZapInDecimal,
-        amountToZapIn,
-      ]);
+
+      amountsAfterSwap.push(amountToZapIn);
     }
-    return [swapTxns, swappedTokenMetadatas[0], swappedTokenMetadatas[1]];
+
+    return [swapTxns, amountsAfterSwap];
+  }
+
+  _balanceTokenRatios(amounts, tokenMetadatas, lpTokenRatio) {
+    const precision = 1000000000;
+
+    // Calculate current and target ratios
+    const currentRatio =
+      Number(ethers.utils.formatUnits(amounts[0], tokenMetadatas[0][2])) /
+      Number(ethers.utils.formatUnits(amounts[1], tokenMetadatas[1][2]));
+    const targetRatio = lpTokenRatio[0] / lpTokenRatio[1];
+
+    // Convert to BigNumber for precise calculations
+    const currentRatioBN = ethers.BigNumber.from(
+      Math.floor(currentRatio * precision),
+    );
+    const targetRatioBN = ethers.BigNumber.from(
+      Math.floor(targetRatio * precision),
+    );
+
+    // Adjust amounts to match target ratio
+    const balancedAmounts = [...amounts];
+    if (currentRatioBN.gt(targetRatioBN)) {
+      balancedAmounts[0] = amounts[0].mul(targetRatioBN).div(currentRatioBN);
+    } else {
+      balancedAmounts[1] = amounts[1].mul(currentRatioBN).div(targetRatioBN);
+    }
+
+    return balancedAmounts;
   }
   async _batchSwap(
     recipient,
