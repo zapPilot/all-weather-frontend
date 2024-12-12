@@ -623,7 +623,8 @@ export default function IndexOverviews() {
             type="primary"
             className={`w-full my-2 
               ${
-                chainId?.name.toLowerCase().replace(" one", "").trim() === "arbitrum"
+                chainId?.name.toLowerCase().replace(" one", "").trim() ===
+                "arbitrum"
                   ? "block"
                   : "hidden"
               }`}
