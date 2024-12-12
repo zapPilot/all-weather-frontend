@@ -583,6 +583,7 @@ export default function IndexOverviews() {
       label: "Rebalance",
       children: (
         <div>
+          <p>Step 1: Rebalance to boost APR on arbitrum chain.</p>
           <Button
             className="w-full mt-2"
             type="primary"
@@ -612,6 +613,50 @@ export default function IndexOverviews() {
               </>
             )}
           </Button>
+          <p>Step 2: Switch to base chain and zap in again.</p>
+          <Button
+            type="primary"
+            className={`w-full my-2 
+              ${
+                chainId?.name.toLowerCase().replace(" one", "").trim() ===
+                "arbitrum"
+                  ? "block"
+                  : "hidden"
+              }`}
+            onClick={() => switchChain(base)}
+            loading={rebalanceIsLoading || rebalancableUsdBalanceDictLoading}
+            disabled={
+              getRebalanceReinvestUsdAmount() / usdBalance <
+                portfolioHelper?.rebalanceThreshold() || usdBalance <= 0
+            }
+          >
+            switch to base Chain
+          </Button>
+          <div
+            className={`mt-4 ${
+              chainId?.name.toLowerCase().replace(" one", "").trim() === "base"
+                ? "block"
+                : "hidden"
+            }`}
+          >
+            <TokenDropdownInput
+              selectedToken={selectedToken}
+              setSelectedToken={handleSetSelectedToken}
+              setInvestmentAmount={handleSetInvestmentAmount}
+            />
+            <Button
+              type="primary"
+              className="w-full my-2"
+              onClick={() => handleAAWalletAction("zapIn", true)}
+              loading={zapInIsLoading}
+              disabled={
+                Number(investmentAmount) === 0 ||
+                Number(investmentAmount) > tokenBalance
+              }
+            >
+              Enter amount to Zap In on current chain
+            </Button>
+          </div>
           <div className="text-gray-400">
             Rebalance Cost: {portfolioHelper?.swapFeeRate() * 100}%
           </div>
