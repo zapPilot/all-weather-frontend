@@ -3,13 +3,11 @@ import Image from "next/image";
 
 const ImageWithFallback = ({ token, height, width, domKey, className }) => {
   const [imgSrc, setImgSrc] = useState(
-    `/tokenPictures/${
-      token
-        ?.replace("lp ", "")
-        ?.replace("pt ", "")
-        ?.replace(/[()]/g, "")
-        .split(" ")[0]
-    }.webp`,
+    `/tokenPictures/${token
+      ?.replace("lp ", "")
+      ?.replace("pt ", "")
+      ?.replace(/[()]/g, "")
+      ?.trim()}.webp`,
   );
   return (
     <Image
@@ -30,7 +28,7 @@ const ImageWithFallback = ({ token, height, width, domKey, className }) => {
           "sol",
           "dai",
         ]) {
-          if (token.includes(commonToken)) {
+          if (token.toLowerCase().includes(commonToken)) {
             setImgSrc(`/tokenPictures/${commonToken}.webp`);
             return;
           }
