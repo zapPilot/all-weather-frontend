@@ -113,7 +113,7 @@ export default class BaseProtocol extends BaseUniswap {
         },
         {
           id: `${this.uniqueId()}-deposit`,
-          name: "Deposit",
+          name: `Deposit ${this.symbolList.join("-")}`,
         },
         {
           id: `${this.uniqueId()}-stake`,
@@ -124,6 +124,18 @@ export default class BaseProtocol extends BaseUniswap {
       }
     } else if (this.mode === "LP") {
       const tokenMetadatas = this._getLPTokenPairesToZapIn();
+      for (const [
+        bestTokenSymbol,
+        bestTokenAddressToZapIn,
+        bestTokenToZapInDecimal,
+      ] of tokenMetadatas) {
+        if (bestTokenAddressToZapIn !== inputTokenAddress) {
+          nodes.push({
+            id: `${this.uniqueId()}-swap-${amount}-${inputToken}-${bestTokenAddressToZapIn}`,
+            name: `Swap ${inputToken} to ${bestTokenSymbol}`,
+          });
+        }
+      }
       for (const node of [
         {
           id: `${this.uniqueId()}-approve`,
@@ -131,7 +143,7 @@ export default class BaseProtocol extends BaseUniswap {
         },
         {
           id: `${this.uniqueId()}-deposit`,
-          name: "Deposit",
+          name: `Deposit ${this.symbolList.join("-")}`,
         },
         {
           id: `${this.uniqueId()}-stake`,
@@ -485,7 +497,7 @@ export default class BaseProtocol extends BaseUniswap {
     );
   }
   _getLPTokenPairesToZapIn() {
-    throw new Error("Method '_getLPTokenPairesToZapIn()' must be implemented.");
+    return this.customParams.lpTokens;
   }
   _getTheBestTokenAddressToZapOut(inputToken, InputTokenDecimals) {
     throw new Error(

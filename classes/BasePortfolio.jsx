@@ -1010,25 +1010,6 @@ export class BasePortfolio {
     );
   }
   getFlowChartData(actionName, actionParams) {
-    function _autoGenerateEdgesFromChainNodesToProtocolNodes(
-      chainNodes,
-      protocolNodes,
-    ) {
-      console.log("chainNodes", chainNodes, "protocolNodes", protocolNodes);
-      const edges = [];
-      for (const chainNode of chainNodes) {
-        for (const protocolNode of protocolNodes) {
-          if (protocolNode.length === 0) continue;
-          console.log("chainNode", chainNode, "protocolNode", protocolNode);
-          edges.push({
-            id: `edge-${chainNode.id}-${protocolNode.id}`,
-            source: chainNode.id,
-            target: protocolNode.id,
-          });
-        }
-      }
-      return edges;
-    }
     let flowChartData = {
       nodes: [],
       edges: [],

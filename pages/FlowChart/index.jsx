@@ -4,35 +4,77 @@ import Image from "next/image";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 
 const UserFlowNode = ({ data }) => {
+  const renderSwapNode = () => (
+    <div className="flex items-center">
+      <Image
+        src="/projectPictures/1inch-network.webp"
+        alt="1inch"
+        className="inline-block me-2"
+        height={20}
+        width={20}
+      />
+      Swap
+      <ImageWithFallback
+        token={data.name.split(" to ")[0].replace("Swap ", "")}
+        height={20}
+        width={20}
+        className="me-1"
+      />
+      <span className="mx-1">→</span>
+      <ImageWithFallback
+        token={data.name.split(" to ")[1]}
+        height={20}
+        width={20}
+      />
+    </div>
+  );
+
+  const renderDepositNode = () => (
+    <div className="flex items-center">
+      <Image
+        src={data.imgSrc}
+        alt={data.name}
+        className="inline-block me-2"
+        height={20}
+        width={20}
+      />
+      Deposit
+      {data.name
+        .replace("Deposit ", "")
+        .split("-")
+        .map((token, idx) => (
+          <ImageWithFallback
+            key={idx}
+            token={token}
+            height={20}
+            width={20}
+            className="me-1"
+          />
+        ))}
+    </div>
+  );
+
+  const renderDefaultNode = () => (
+    <>
+      <Image
+        src={data.imgSrc}
+        alt={data.name}
+        className="inline-block me-2"
+        height={20}
+        width={20}
+      />
+      {data.name}
+    </>
+  );
+
   return (
     <div className="user-flow-node">
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <Image
-          src={data.imgSrc}
-          alt={data.name}
-          className="inline-block me-2"
-          height={20}
-          width={20}
-        />
-      </div>
-      <div
-        className="user-flow-node-name"
-        style={{ display: "flex", alignItems: "center" }}
-      >
-        {data.name}
-        {data.symbolList !== undefined &&
-          data.symbolList.map((symbol, idx) => {
-            return (
-              <ImageWithFallback
-                key={idx}
-                className="me-1 rounded-full"
-                domKey={`${symbol}-${idx}`}
-                token={symbol}
-                height={25}
-                width={25}
-              />
-            );
-          })}
+      <div className="flex items-center">
+        {data.name.startsWith("Swap")
+          ? renderSwapNode()
+          : data.name.startsWith("Deposit")
+          ? renderDepositNode()
+          : renderDefaultNode()}
       </div>
     </div>
   );

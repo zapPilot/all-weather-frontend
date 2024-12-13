@@ -443,6 +443,13 @@ export default function IndexOverviews() {
             {stepName}
           </>
         ) : (
+          //   <DemoFlowDirectionGraph
+          //   data={portfolioHelper?.getFlowChartData("zapIn", {
+          //     inputToken: selectedToken?.toLowerCase()?.split('-')[0],
+          //     inputTokenAddress: selectedToken?.toLowerCase()?.split('-')[1],
+          //     amount: 1,
+          //   })}
+          // />
           <>
             <div className="flex flex-col items-center">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
@@ -480,7 +487,7 @@ export default function IndexOverviews() {
               </button>
             </div>
           </>
-        )} */}
+        )}
       </Modal>
     );
   }
@@ -916,6 +923,7 @@ export default function IndexOverviews() {
   return (
     <BasePage>
       {notificationContextHolder}
+      <ModalContent />
       <DemoFlowDirectionGraph
         data={portfolioHelper?.getFlowChartData("zapIn", {
           inputToken: "usdt",
@@ -923,7 +931,6 @@ export default function IndexOverviews() {
           amount: 1,
         })}
       />
-      <ModalContent />
       <main className={styles.bgStyle}>
         <header className="relative isolate pt-6">
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
