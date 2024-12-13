@@ -76,6 +76,99 @@ export default class BaseProtocol extends BaseUniswap {
   claimAndSwapSteps() {
     throw new Error("Method 'claimAndSwapSteps()' must be implemented.");
   }
+  getZapInFlowChartData(inputToken, inputTokenAddress, amount, weight) {
+    function _autoGenerateEdges(uniqueId, nodes) {
+      const edges = [];
+      for (let i = 0; i < nodes.length - 1; i++) {
+        edges.push({
+          id: `edge-${uniqueId}-${i}`,
+          source: nodes[i].id,
+          target: nodes[i + 1].id,
+          data: {
+            ratio: weight,
+          },
+        });
+      }
+      return edges;
+    }
+    const nodes = [];
+
+    const inputTokenDecimalsPlaceholder = 18;
+    if (this.mode === "single") {
+      // decimals here doesn't matter
+      const [bestTokenAddressToZapIn, _] = this._getTheBestTokenAddressToZapIn(
+        inputTokenAddress,
+        inputTokenDecimalsPlaceholder,
+      );
+      if (bestTokenAddressToZapIn !== inputTokenAddress) {
+        nodes.push({
+          id: `swap-${amount}-${inputToken}-${bestTokenAddressToZapIn}`,
+          name: `Swap ${inputToken}`,
+        });
+      }
+      for (const node of [
+        {
+          id: `${this.uniqueId()}-approve`,
+          name: "Approve",
+        },
+        {
+          id: `${this.uniqueId()}-deposit`,
+          name: "Deposit",
+        },
+        {
+          id: `${this.uniqueId()}-stake`,
+          name: "stake",
+        },
+      ]) {
+        nodes.push(node);
+      }
+    } else if (this.mode === "LP") {
+      const tokenMetadatas = this._getLPTokenPairesToZapIn();
+      for (const node of [
+        {
+          id: `${this.uniqueId()}-approve`,
+          name: "Approve",
+        },
+        {
+          id: `${this.uniqueId()}-deposit`,
+          name: "Deposit",
+        },
+        {
+          id: `${this.uniqueId()}-stake`,
+          name: "stake",
+        },
+      ]) {
+        nodes.push(node);
+      }
+    }
+    const edges = _autoGenerateEdges(this.uniqueId(), nodes);
+    // add chain, category, protocol, symbol to the nodes
+    for (const node of nodes) {
+      node.chain = this.chain;
+      node.symbolList = this.symbolList.map((symbol) =>
+        symbol.replace("(bridged)", ""),
+      );
+      node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
+    }
+    return {
+      nodes,
+      edges,
+    };
+  }
+  getZapOutFlowChartData() {
+    throw new Error("Method 'getZapOutFlowChartData()' must be implemented.");
+  }
+  getTransferFlowChartData() {
+    throw new Error("Method 'getTransferFlowChartData()' must be implemented.");
+  }
+  getStakeFlowChartData() {
+    throw new Error("Method 'getStakeFlowChartData()' must be implemented.");
+  }
+  getRebalanceFlowChartData() {
+    throw new Error(
+      "Method 'getRebalanceFlowChartData()' must be implemented.",
+    );
+  }
   async usdBalanceOf(address, tokenPricesMappingTable) {
     throw new Error("Method 'usdBalanceOf()' must be implemented.");
   }

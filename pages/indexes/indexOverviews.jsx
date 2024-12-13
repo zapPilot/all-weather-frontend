@@ -417,8 +417,9 @@ export default function IndexOverviews() {
           }
         }}
         footer={<></>}
+        width={1000}
       >
-        {finishedTxn === false ? (
+        {/* {finishedTxn === false ? (
           <>
             <div>
               <p>Tips:</p>
@@ -479,7 +480,7 @@ export default function IndexOverviews() {
               </button>
             </div>
           </>
-        )}
+        )} */}
       </Modal>
     );
   }
@@ -915,7 +916,13 @@ export default function IndexOverviews() {
   return (
     <BasePage>
       {notificationContextHolder}
-      <DemoFlowDirectionGraph />
+      <DemoFlowDirectionGraph
+        data={portfolioHelper?.getFlowChartData("zapIn", {
+          inputToken: "usdt",
+          inputTokenAddress: "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
+          amount: 1,
+        })}
+      />
       <ModalContent />
       <main className={styles.bgStyle}>
         <header className="relative isolate pt-6">

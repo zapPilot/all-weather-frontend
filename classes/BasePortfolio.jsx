@@ -995,10 +995,10 @@ export class BasePortfolio {
   validateStrategyWeights() {
     let totalWeight = 0;
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
-      for (const protocolsInThisChain of Object.values(
+      for (const protocolsOnThisChain of Object.values(
         protocolsInThisCategory,
       )) {
-        for (const protocol of protocolsInThisChain) {
+        for (const protocol of protocolsOnThisChain) {
           totalWeight += protocol.weight;
         }
       }
@@ -1009,13 +1009,87 @@ export class BasePortfolio {
       `Total weight across all strategies should be 1, but is ${totalWeight}`,
     );
   }
+  getFlowChartData(actionName, actionParams) {
+    function _autoGenerateEdgesFromChainNodesToProtocolNodes(
+      chainNodes,
+      protocolNodes,
+    ) {
+      console.log("chainNodes", chainNodes, "protocolNodes", protocolNodes);
+      const edges = [];
+      for (const chainNode of chainNodes) {
+        for (const protocolNode of protocolNodes) {
+          if (protocolNode.length === 0) continue;
+          console.log("chainNode", chainNode, "protocolNode", protocolNode);
+          edges.push({
+            id: `edge-${chainNode.id}-${protocolNode.id}`,
+            source: chainNode.id,
+            target: protocolNode.id,
+          });
+        }
+      }
+      return edges;
+    }
+    let flowChartData = {
+      nodes: [],
+      edges: [],
+    };
+    const chainNodes = [];
+    for (const [category, protocolsInThisCategory] of Object.entries(
+      this.strategy,
+    )) {
+      for (const [chain, protocolsOnThisChain] of Object.entries(
+        protocolsInThisCategory,
+      )) {
+        const currentChainNode = {
+          id: chain,
+          name: actionName,
+          chain: chain,
+          category: category,
+          imgSrc: `/chainPicturesWebp/${chain}.webp`,
+        };
+        chainNodes.push(currentChainNode);
+        for (const protocol of protocolsOnThisChain) {
+          if (protocol.weight === 0) continue;
+          if (actionName === "zapIn") {
+            const stepsData = protocol.interface.getZapInFlowChartData(
+              actionParams.inputToken,
+              actionParams.inputTokenAddress,
+              actionParams.amount,
+              protocol.weight,
+            );
+            const currentChainToProtocolNodeEdge = {
+              id: `edge-${
+                currentChainNode.id
+              }-${protocol.interface.uniqueId()}`,
+              source: currentChainNode.id,
+              target: stepsData.nodes[0].id,
+              data: {
+                ratio: protocol.weight,
+              },
+            };
+            flowChartData.nodes = flowChartData.nodes.concat(stepsData.nodes);
+            flowChartData.edges = flowChartData.edges.concat(
+              stepsData.edges.concat(currentChainToProtocolNodeEdge),
+            );
+          } else {
+            const stepsData = protocol.interface.getFlowChartData();
+            flowChartData.push(stepsData);
+          }
+        }
+      }
+    }
+    return {
+      nodes: chainNodes.concat(flowChartData.nodes),
+      edges: flowChartData.edges,
+    };
+  }
   _countProtocolStepsWithThisAction(actionName) {
     let counts = 0;
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
-      for (const protocolsInThisChain of Object.values(
+      for (const protocolsOnThisChain of Object.values(
         protocolsInThisCategory,
       )) {
-        for (const protocol of protocolsInThisChain) {
+        for (const protocol of protocolsOnThisChain) {
           if (protocol.weight === 0) continue;
           if (actionName === "zapIn") {
             counts += protocol.interface.zapInSteps();
