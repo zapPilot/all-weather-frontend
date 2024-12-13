@@ -128,7 +128,7 @@ export default function IndexOverviews() {
   const [progress, setProgress] = useState(0);
   const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(
-    portfolioName === "Stablecoin Vault" ? 1 : 3,
+    portfolioName === "Stablecoin Vault" ? 0.5 : 3,
   );
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
@@ -290,13 +290,14 @@ export default function IndexOverviews() {
         } else if (error.message.includes("User rejected the request")) {
           return;
         } else {
-          errorReadableMsg = "error:" + error.message;
+          errorReadableMsg =
+            "Increase Slippage and Try Again! error:" + error.message;
         }
         openNotificationWithIcon(
           notificationAPI,
           "Transaction Result",
           "error",
-          `Increase Slippage and Try Again!\n${errorReadableMsg}`,
+          errorReadableMsg,
         );
       }
     } catch (error) {
@@ -324,7 +325,7 @@ export default function IndexOverviews() {
     }
   };
 
-  const [nextStepChain, setNextStepChain] = useState("");
+  const [nextStepChain, setNextStepChain] = useState("base");
   const switchNextChain = (chain) => {
     const nextChain = chain.includes(" ")
       ? chain.toLowerCase().replace(" one", "")
@@ -746,7 +747,7 @@ export default function IndexOverviews() {
       Object.keys(portfolioApr).length === 0
     ) {
       dispatch(fetchStrategyMetadata());
-      setSlippage(portfolioName === "Stablecoin Vault" ? 1 : 3);
+      setSlippage(portfolioName === "Stablecoin Vault" ? 0.5 : 3);
     }
   }, [portfolioName]);
   useEffect(() => {
@@ -895,7 +896,7 @@ export default function IndexOverviews() {
                         size="small"
                         onChange={(e) => setSlippage(e.target.value)}
                       >
-                        {[1, 3, 5, 7].map((slippageValue) => (
+                        {[0.5, 1, 3, 5, 7].map((slippageValue) => (
                           <Radio.Button
                             value={slippageValue}
                             key={slippageValue}
@@ -1235,8 +1236,7 @@ export default function IndexOverviews() {
                                                       <ImageWithFallback
                                                         key={idx}
                                                         className="me-1 rounded-full"
-                                                        domKey={`${symbol}-${index}`}
-                                                        // use usdc instead of usdc(bridged), aka, usdc.e for the image
+                                                        domKey={`${protocol.interface.protocolName}-${symbol}-${index}-${idx}`}
                                                         token={symbol.replace(
                                                           "(bridged)",
                                                           "",
