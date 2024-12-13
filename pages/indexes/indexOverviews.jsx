@@ -325,7 +325,7 @@ export default function IndexOverviews() {
     }
   };
 
-  const [nextStepChain, setNextStepChain] = useState("base");
+  const [nextStepChain, setNextStepChain] = useState("");
   const switchNextChain = (chain) => {
     const nextChain = chain.includes(" ")
       ? chain.toLowerCase().replace(" one", "")
