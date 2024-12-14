@@ -467,6 +467,32 @@ export default function IndexOverviews() {
       (sum, { currentWeight, APR }) => currentWeight * APR + sum,
       0,
     ) || 0;
+    const investmentAmountArbitrum = investmentAmount * (1 - slippage / 100 - portfolioHelper?.swapFeeRate()) *
+    (portfolioHelper &&
+      Object.entries(portfolioHelper.strategy).reduce((sum, [category, protocols]) => {
+        return sum + Object.entries(protocols).reduce((innerSum, [chain, protocolArray]) => {
+          if (chain === "arbitrum") {
+            // 假設每個 protocolArray 中都有一個 weight 屬性
+            return innerSum + protocolArray.reduce((weightSum, protocol) => {
+              return weightSum + protocol.weight; // 假設 protocol 有 weight 屬性
+            }, 0);
+          }
+          return innerSum;
+        }, 0);
+      }, 0));
+      const investmentAmountBase = investmentAmount * (1 - slippage / 100 - portfolioHelper?.swapFeeRate()) *
+    (portfolioHelper &&
+      Object.entries(portfolioHelper.strategy).reduce((sum, [category, protocols]) => {
+        return sum + Object.entries(protocols).reduce((innerSum, [chain, protocolArray]) => {
+          if (chain === "base") {
+            // 假設每個 protocolArray 中都有一個 weight 屬性
+            return innerSum + protocolArray.reduce((weightSum, protocol) => {
+              return weightSum + protocol.weight; // 假設 protocol 有 weight 屬性
+            }, 0);
+          }
+          return innerSum;
+        }, 0);
+      }, 0));
   const items = [
     {
       key: "1",
@@ -487,7 +513,16 @@ export default function IndexOverviews() {
               <p>
                 Step 1: Choose a chain to zap in and bridge to another chain.
               </p>
-
+              <p>
+                investmentAmount arbitrum:
+                {investmentAmountArbitrum}
+                {investmentAmountArbitrum > parseFloat(walletBalanceData?.displayValue) ? "too much" : "ok"}
+              </p>
+              <p>
+                investmentAmount base:
+                {investmentAmountBase}
+                {investmentAmountBase > parseFloat(walletBalanceData?.displayValue) ? "too much" : "ok"}
+              </p>
               {account === undefined ? (
                 <ConfiguredConnectButton />
               ) : Object.values(
