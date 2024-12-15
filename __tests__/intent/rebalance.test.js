@@ -15,7 +15,7 @@ describe("Stablecoin Vault", () => {
     const investmentAmount = "";
     const tokenDecimals = "";
     const zapOutPercentage = "";
-    const setProgress = () => {};
+    const setTradingLoss = () => {};
     const setStepName = () => {};
     const slippage = 0.5;
     // just a random number
@@ -85,7 +85,7 @@ describe("Stablecoin Vault", () => {
       investmentAmount,
       tokenDecimals,
       zapOutPercentage,
-      setProgress,
+      setTradingLoss,
       setStepName,
       slippage,
       rebalancableUsdBalanceDictDict,

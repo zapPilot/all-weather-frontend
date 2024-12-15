@@ -223,98 +223,78 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.13,
+              weight: 0.73,
+              // weight: 0.13,
             },
           ],
-          base: [
-            {
-              interface: new BaseAave("base", 8453, ["usdc"], "single", {
-                symbolOfBestTokenToZapInOut: "usdc",
-                zapInOutTokenAddress:
-                  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-                assetAddress: "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB",
-                protocolAddress: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
-                assetDecimals: 6,
-              }),
-              weight: 0,
-            },
-            {
-              interface: new BaseMoonwell("base", 8453, ["eurc"], "single", {
-                symbolOfBestTokenToZapInOut: "eurc",
-                zapInOutTokenAddress:
-                  "0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42",
-                decimalsOfZapInOutToken: 6,
-                assetAddress: "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
-                protocolAddress: "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
-                assetDecimals: 8,
-              }),
-              weight: 0,
-            },
-            {
-              interface: new BaseMoonwell("base", 8453, ["dai"], "single", {
-                symbolOfBestTokenToZapInOut: "dai",
-                zapInOutTokenAddress:
-                  "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
-                decimalsOfZapInOutToken: 18,
-                assetAddress: "0x73b06D8d18De422E269645eaCe15400DE7462417",
-                protocolAddress: "0x73b06D8d18De422E269645eaCe15400DE7462417",
-                assetDecimals: 8,
-              }),
-              weight: 0,
-            },
-            {
-              interface: new BaseMoonwell("base", 8453, ["usdc"], "single", {
-                symbolOfBestTokenToZapInOut: "usdc",
-                zapInOutTokenAddress:
-                  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-                decimalsOfZapInOutToken: 18,
-                assetAddress: "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22",
-                protocolAddress: "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22",
-                assetDecimals: 8,
-              }),
-              weight: 0,
-            },
-            {
-              interface: new BaseAerodrome(
-                "base",
-                8453,
-                ["msusd", "usdc"],
-                "LP",
-                {
-                  assetAddress: "0xcEFC8B799a8EE5D9b312aeca73262645D664AaF7",
-                  assetDecimals: 18,
-                  guageAddress: "0xDBF852464fC906C744E52Dbd68C1b07dD33A922a",
-                  lpTokens: [
-                    ["msusd", "0x526728DBc96689597F85ae4cd716d4f7fCcBAE9d", 18],
-                    ["usdc", "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", 6],
-                  ],
-                },
-              ),
-              weight: 0.57,
-            },
-            {
-              interface: new BaseAerodrome(
-                "base",
-                8453,
-                ["usdc", "zunusd"],
-                "LP",
-                {
-                  assetAddress: "0x72c3eEd99b100526e1a25e04Ce7A22D7C3005c06",
-                  assetDecimals: 18,
-                  guageAddress: "0x55f9db31250D311c54D61F1384F75dbdF54b8305",
-                  lpTokens: [
-                    ["usdc", "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", 6],
-                    [
-                      "zunusd",
-                      "0xD5B9dDB04f20eA773C9b56607250149B26049B1F",
-                      18,
-                    ],
-                  ],
-                },
-              ),
-              weight: 0.03,
-            },
-          ],
+
+          // base: [
+          //   {
+          //     interface: new BaseAave("base", 8453, ["usdc"], "single", {
+          //       symbolOfBestTokenToZapInOut: "usdc",
+          //       zapInOutTokenAddress:
+          //         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          //       assetAddress: "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB",
+          //       protocolAddress: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
+          //       assetDecimals: 6,
+          //     }),
+          //     weight: 0,
+          //   },
+          //   {
+          //     interface: new BaseMoonwell("base", 8453, ["eurc"], "single", {
+          //       symbolOfBestTokenToZapInOut: "eurc",
+          //       zapInOutTokenAddress:
+          //         "0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42",
+          //       decimalsOfZapInOutToken: 6,
+          //       assetAddress: "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
+          //       protocolAddress: "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
+          //       assetDecimals: 8,
+          //     }),
+          //     weight: 0,
+          //   },
+          //   {
+          //     interface: new BaseMoonwell("base", 8453, ["dai"], "single", {
+          //       symbolOfBestTokenToZapInOut: "dai",
+          //       zapInOutTokenAddress:
+          //         "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
+          //       decimalsOfZapInOutToken: 18,
+          //       assetAddress: "0x73b06D8d18De422E269645eaCe15400DE7462417",
+          //       protocolAddress: "0x73b06D8d18De422E269645eaCe15400DE7462417",
+          //       assetDecimals: 8,
+          //     }),
+          //     weight: 0,
+          //   },
+          //   {
+          //     interface: new BaseMoonwell("base", 8453, ["usdc"], "single", {
+          //       symbolOfBestTokenToZapInOut: "usdc",
+          //       zapInOutTokenAddress:
+          //         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          //       decimalsOfZapInOutToken: 18,
+          //       assetAddress: "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22",
+          //       protocolAddress: "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22",
+          //       assetDecimals: 8,
+          //     }),
+          //     weight: 0,
+          //   },
+          //   {
+          //     interface: new BaseAerodrome(
+          //       "base",
+          //       8453,
+          //       ["msusd", "usdc"],
+          //       "LP",
+          //       {
+          //         assetAddress: "0xcEFC8B799a8EE5D9b312aeca73262645D664AaF7",
+          //         assetDecimals: 18,
+          //         guageAddress: "0xDBF852464fC906C744E52Dbd68C1b07dD33A922a",
+          //         lpTokens: [
+          //           ["msusd", "0x526728DBc96689597F85ae4cd716d4f7fCcBAE9d", 18],
+          //           ["usdc", "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", 6],
+          //         ],
+          //       },
+          //     ),
+          //     weight: 0.6,
+          //   },
+          // ],
         },
       },
       {

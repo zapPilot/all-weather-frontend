@@ -13,7 +13,7 @@ describe("Yearn Vault", () => {
     const investmentAmount = 1;
     const tokenDecimals = 18;
     const zapOutPercentage = NaN;
-    const setProgress = () => {};
+    const setTradingLoss = () => {};
     const setStepName = () => {};
     const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Yearn Vault");
@@ -27,7 +27,7 @@ describe("Yearn Vault", () => {
       investmentAmount,
       tokenDecimals,
       zapOutPercentage,
-      setProgress,
+      setTradingLoss,
       setStepName,
       slippage,
     );
@@ -51,7 +51,7 @@ describe("Yearn Vault", () => {
     const investmentAmount = 1;
     const tokenDecimals = 18;
     const zapOutPercentage = 0.00022992956568238272;
-    const setProgress = () => {};
+    const setTradingLoss = () => {};
     const setStepName = () => {};
     const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Yearn Vault");
@@ -65,7 +65,7 @@ describe("Yearn Vault", () => {
       investmentAmount,
       tokenDecimals,
       zapOutPercentage,
-      setProgress,
+      setTradingLoss,
       setStepName,
       slippage,
     );
@@ -86,7 +86,7 @@ describe("Yearn Vault", () => {
     const investmentAmount = 0;
     const tokenDecimals = 18;
     const zapOutPercentage = 1;
-    const setProgress = () => {};
+    const setTradingLoss = () => {};
     const setStepName = () => {};
     const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Yearn Vault");
@@ -100,7 +100,7 @@ describe("Yearn Vault", () => {
       investmentAmount,
       tokenDecimals,
       zapOutPercentage,
-      setProgress,
+      setTradingLoss,
       setStepName,
       slippage,
     );

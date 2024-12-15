@@ -13,7 +13,7 @@ describe("Moonwell", () => {
     const investmentAmount = 1;
     const tokenDecimals = 6;
     const zapOutPercentage = NaN;
-    const setProgress = () => {};
+    const setTradingLoss = () => {};
     const setStepName = () => {};
     const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Moonwell Stablecoin Vault");
@@ -27,7 +27,7 @@ describe("Moonwell", () => {
       investmentAmount,
       tokenDecimals,
       zapOutPercentage,
-      setProgress,
+      setTradingLoss,
       setStepName,
       slippage,
     );
@@ -49,7 +49,7 @@ describe("Moonwell", () => {
     const investmentAmount = 1;
     const tokenDecimals = 18;
     const zapOutPercentage = 1;
-    const setProgress = () => {};
+    const setTradingLoss = () => {};
     const setStepName = () => {};
     const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Moonwell Stablecoin Vault");
@@ -63,7 +63,7 @@ describe("Moonwell", () => {
       investmentAmount,
       tokenDecimals,
       zapOutPercentage,
-      setProgress,
+      setTradingLoss,
       setStepName,
       slippage,
     );
@@ -82,7 +82,7 @@ describe("Moonwell", () => {
     const investmentAmount = 0;
     const tokenDecimals = 18;
     const zapOutPercentage = 1;
-    const setProgress = () => {};
+    const setTradingLoss = () => {};
     const setStepName = () => {};
     const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Moonwell Stablecoin Vault");
@@ -96,7 +96,7 @@ describe("Moonwell", () => {
       investmentAmount,
       tokenDecimals,
       zapOutPercentage,
-      setProgress,
+      setTradingLoss,
       setStepName,
       slippage,
     );

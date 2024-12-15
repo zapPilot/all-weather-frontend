@@ -1,9 +1,43 @@
 import dynamic from "next/dynamic";
-import React from "react";
+import React, { useState, useRef } from "react";
 import Image from "next/image";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 
-const UserFlowNode = ({ data }) => {
+const UserFlowNode = ({
+  data,
+  stepName,
+  tradingLoss,
+  completedSteps,
+  setCompletedSteps,
+}) => {
+  const prevStepNameRef = useRef(stepName);
+  const [nodeState, setNodeState] = useState({
+    isActive: false,
+    tradingLossValue: null
+  });
+  React.useEffect(() => {
+    if (stepName !== prevStepNameRef.current) {
+      setCompletedSteps((prev) => new Set([...prev, stepName]));
+      prevStepNameRef.current = stepName;
+      
+      // If this node is the current step, store its trading loss
+      if (data.id === stepName) {
+        setNodeState({
+          isActive: true,
+          tradingLossValue: tradingLoss
+        });
+      }
+    }
+  }, [stepName]);
+  console.log("prevStepNameRef", prevStepNameRef.current, "completedSteps", completedSteps)
+
+  // Use stored state or calculate current state
+  const isActiveOrCompleted =
+    nodeState.isActive || data.id === stepName || completedSteps?.has(data.id);
+  
+  // Use stored trading loss if available, otherwise use current trading loss
+  const displayTradingLoss = nodeState.isActive ? nodeState.tradingLossValue : tradingLoss;
+
   const renderSwapNode = () => (
     <div className="flex items-center">
       <Image
@@ -26,6 +60,7 @@ const UserFlowNode = ({ data }) => {
         height={20}
         width={20}
       />
+      {displayTradingLoss}
     </div>
   );
 
@@ -51,6 +86,8 @@ const UserFlowNode = ({ data }) => {
             className="me-1"
           />
         ))}
+      {displayTradingLoss}
+      
     </div>
   );
 
@@ -66,9 +103,12 @@ const UserFlowNode = ({ data }) => {
       {data.name}
     </>
   );
-
   return (
-    <div className="user-flow-node">
+    <div
+      className={`user-flow-node transition-opacity duration-300 ${
+        isActiveOrCompleted ? "opacity-100" : "opacity-40"
+      }`}
+    >
       <div className="flex items-center">
         {data.name.startsWith("Swap")
           ? renderSwapNode()
@@ -80,33 +120,33 @@ const UserFlowNode = ({ data }) => {
   );
 };
 
-// const transformData = (data) => {
-//   const REF_NODE_IDS = ['node-5', 'node-6'];
-//   const findNodeById = (id) => data.nodes.find((node) => node.id === id);
-//   data.edges.forEach((edge) => {
-//     edge.data ||= {};
-//     const isSplit = REF_NODE_IDS.includes(edge.source);
-//     edge.data.type = isSplit ? 'split' : 'proportion';
-//     // edge.data.ratio = edge.measure.value / findNodeById(isSplit ? edge.source : edge.target).measure.value;
-//   });
-//   return data;
-// };
-
 // Dynamically import FlowDirectionGraph with SSR disabled
 const FlowDirectionGraph = dynamic(
   () => import("@ant-design/graphs").then((mod) => mod.FlowDirectionGraph),
   { ssr: false },
 );
 
-export default function DemoFlowDirectionGraph({ data }) {
+export default function DemoFlowDirectionGraph({
+  data,
+  stepName,
+  tradingLoss,
+}) {
+  const [completedSteps, setCompletedSteps] = useState(new Set());
   const options = {
     autoFit: "view",
     padding: 120,
-    // data: transformData(data),
-    data: data,
+    data,
     node: {
       style: {
-        component: (data) => <UserFlowNode data={data} />,
+        component: (data) => (
+          <UserFlowNode
+            data={data}
+            stepName={stepName}
+            tradingLoss={tradingLoss}
+            completedSteps={completedSteps}
+            setCompletedSteps={setCompletedSteps}
+          />
+        ),
         size: [160, 90],
       },
     },

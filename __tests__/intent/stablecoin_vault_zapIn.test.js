@@ -13,7 +13,7 @@ describe("Stablecoin Vault", () => {
     const investmentAmount = 100;
     const tokenDecimals = 6;
     const zapOutPercentage = NaN;
-    const setProgress = () => {};
+    const setTradingLoss = () => {};
     const setStepName = () => {};
     const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Stablecoin Vault");
@@ -27,7 +27,7 @@ describe("Stablecoin Vault", () => {
       investmentAmount,
       tokenDecimals,
       zapOutPercentage,
-      setProgress,
+      setTradingLoss,
       setStepName,
       slippage,
       {},

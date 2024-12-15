@@ -105,7 +105,6 @@ export function approve(
   updateProgress,
   chainId,
 ) {
-  updateProgress(`approve spending amount to ${spenderAddress}`);
   if (typeof amount !== "object") {
     amount = ethers.BigNumber.from(amount);
   }

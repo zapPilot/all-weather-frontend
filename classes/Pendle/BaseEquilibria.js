@@ -120,7 +120,6 @@ export class BaseEquilibria extends BaseProtocol {
   }
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     let rewardBalance = {};
-    updateProgress("checking pending rewards");
     const rewardPool = (
       await this.stakeFarmContractInstance.functions.poolInfo(
         this.pidOfEquilibria,
@@ -214,7 +213,6 @@ export class BaseEquilibria extends BaseProtocol {
       updateProgress,
       this.chainId,
     );
-    updateProgress("fetching Pendle's routing data");
     const resp = await axios.get(
       `https://api-v2.pendle.finance/core/v1/sdk/42161/markets/${this.assetContract.address}/add-liquidity`,
       {
@@ -229,7 +227,6 @@ export class BaseEquilibria extends BaseProtocol {
         },
       },
     );
-    updateProgress("prepare equilibria's contract call");
     const precision = Math.pow(10, 6);
     const slippageBN = ethers.BigNumber.from(
       String(Math.floor((100 - slippage) * precision)),
@@ -242,6 +239,7 @@ export class BaseEquilibria extends BaseProtocol {
       method: "addLiquiditySingleToken",
       params: resp.data.contractCallParams,
     });
+    await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-deposit`, 1);
     const stakeTxns = await this._stake(minLPOutAmount, updateProgress);
     return [approveForZapInTxn, mintTxn, ...stakeTxns];
   }
@@ -285,7 +283,6 @@ export class BaseEquilibria extends BaseProtocol {
   }
 
   async _fetchPendleAssetPrice(updateProgress) {
-    updateProgress("fetching Pendle's asset price");
     const resp = await axios.get(
       "https://api-v2.pendle.finance/core/v1/42161/prices/assets/addresses",
       {
@@ -342,7 +339,6 @@ export class BaseEquilibria extends BaseProtocol {
       this.chainId,
     );
 
-    updateProgress("prepare staking farm's contract call");
     const stakeTxn = prepareContractCall({
       contract: this.stakeFarmContract,
       method: "deposit",
@@ -396,7 +392,6 @@ export class BaseEquilibria extends BaseProtocol {
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
     ] = this._getTheBestTokenAddressToZapOut();
-    updateProgress("fetching Pendle's routing data");
     const zapOutResp = await axios.get(
       `https://api-v2.pendle.finance/core/v1/sdk/42161/markets/${this.assetContract.address}/remove-liquidity`,
       {
@@ -410,7 +405,6 @@ export class BaseEquilibria extends BaseProtocol {
         },
       },
     );
-    updateProgress("prepare equilibria's contract call");
     const burnTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "removeLiquiditySingleToken",

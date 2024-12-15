@@ -178,7 +178,7 @@ export class AllWeatherPortfolio extends React.Component {
     account,
     investmentAmount,
     tokenSymbolAndAddress,
-    progressCallback,
+    tradingLossCallback,
     slippage,
   ) {
     const [tokenSymbol, tokenAddress] = tokenSymbolAndAddress.split("-");
@@ -194,7 +194,7 @@ export class AllWeatherPortfolio extends React.Component {
       Object.keys(uniqueTokenIdsForCurrentPrice).length;
     const updateProgress = () => {
       completedSteps++;
-      progressCallback((completedSteps / totalSteps) * 100);
+      tradingLossCallback((completedSteps / totalSteps) * 100);
     };
 
     this.existingInvestmentPositions =
@@ -205,7 +205,6 @@ export class AllWeatherPortfolio extends React.Component {
       );
     this.tokenPricesMappingTable = await this._getTokenPricesMappingTable(
       uniqueTokenIdsForCurrentPrice,
-      updateProgress,
     );
     const txns = await this._generateInvestmentTxns(
       strategy,
@@ -307,10 +306,7 @@ export class AllWeatherPortfolio extends React.Component {
     return coinMarketCapIdSet;
   }
 
-  async _getTokenPricesMappingTable(
-    uniqueTokenIdsForCurrentPrice,
-    updateProgress,
-  ) {
+  async _getTokenPricesMappingTable(uniqueTokenIdsForCurrentPrice) {
     let tokenPricesMappingTable = {};
     for (const [token, coinMarketCapId] of Object.entries(
       uniqueTokenIdsForCurrentPrice,

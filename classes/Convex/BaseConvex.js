@@ -109,7 +109,7 @@ export class BaseConvex extends BaseProtocol {
       bestTokenToZapInDecimal,
       amountToZapIn,
     ] of [tokenAmetadata, tokenBmetadata]) {
-      const approveForZapInTxn = approve(
+      const approveForZapInTxn = await this.approve(
         bestTokenAddressToZapIn,
         this.protocolContract.address,
         amountToZapIn,
@@ -140,6 +140,7 @@ export class BaseConvex extends BaseProtocol {
       method: "add_liquidity",
       params: [_amounts, _min_mint_amount],
     });
+    await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-deposit`, 1);
     const stakeTxns = await this._stakeLP(_amounts, updateProgress);
     return [...approveTxns, depositTxn, ...stakeTxns];
   }
@@ -170,7 +171,6 @@ export class BaseConvex extends BaseProtocol {
       ERC20_ABI,
       PROVIDER(this.chain),
     );
-    updateProgress("Getting stake balance");
     return (await rewardPoolContractInstance.functions.balanceOf(owner))[0];
   }
   _getLPTokenPairesToZapIn() {

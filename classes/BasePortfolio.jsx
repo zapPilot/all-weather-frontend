@@ -265,22 +265,11 @@ export class BasePortfolio {
   }
 
   async portfolioAction(actionName, actionParams) {
-    let completedSteps = 0;
-    const totalSteps =
-      this._countProtocolStepsWithThisAction(actionName) +
-      Object.keys(this.uniqueTokenIdsForCurrentPrice).length +
-      Object.keys(this.assetAddressSetByChain).length;
-    const updateProgress = (actionName) => {
-      completedSteps++;
-      actionParams.progressCallback(
-        (completedSteps / totalSteps) * 100 > 100
-          ? 100
-          : (completedSteps / totalSteps) * 100,
-      );
-      actionParams.progressStepNameCallback(actionName);
+    const updateProgress = (nodeID, tradingLoss) => {
+      actionParams.setTradingLoss(tradingLoss);
+      actionParams.setStepName(nodeID);
     };
-    const tokenPricesMappingTable =
-      await this.getTokenPricesMappingTable(updateProgress);
+    const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
     actionParams.tokenPricesMappingTable = tokenPricesMappingTable;
     actionParams.updateProgress = updateProgress;
     return await this._generateTxnsByAction(actionName, actionParams);
@@ -900,7 +889,6 @@ export class BasePortfolio {
   async _getExistingInvestmentPositionsByChain(address, updateProgress) {
     const chainPromises = Object.entries(this.assetAddressSetByChain).map(
       async ([chain, lpTokens]) => {
-        updateProgress(`Fetching ${chain}'s investment positions: ${lpTokens}`);
         const response = await fetch(
           `${
             process.env.NEXT_PUBLIC_API_URL
@@ -975,7 +963,6 @@ export class BasePortfolio {
     for (const [token, coinMarketCapId] of Object.entries(
       this.uniqueTokenIdsForCurrentPrice,
     )) {
-      updateProgress(`Fetching price for ${token}`);
       if (Object.keys(tokenPricesMappingTable).includes(token)) continue;
       if (tokenPriceCache[coinMarketCapId]) {
         tokenPricesMappingTable[token] = tokenPriceCache[coinMarketCapId];
@@ -1063,40 +1050,6 @@ export class BasePortfolio {
       nodes: chainNodes.concat(flowChartData.nodes),
       edges: flowChartData.edges,
     };
-  }
-  _countProtocolStepsWithThisAction(actionName) {
-    let counts = 0;
-    for (const protocolsInThisCategory of Object.values(this.strategy)) {
-      for (const protocolsOnThisChain of Object.values(
-        protocolsInThisCategory,
-      )) {
-        for (const protocol of protocolsOnThisChain) {
-          if (protocol.weight === 0) continue;
-          if (actionName === "zapIn") {
-            counts += protocol.interface.zapInSteps();
-          } else if (actionName === "zapOut") {
-            counts += protocol.interface.zapOutSteps();
-          } else if (actionName === "claimAndSwap") {
-            counts += protocol.interface.claimAndSwapSteps();
-          } else if (actionName === "rebalance") {
-            // TODO(david): currently, steps are totally inaccurate
-            counts +=
-              protocol.interface.zapOutSteps() +
-              protocol.interface.zapInSteps() +
-              3;
-          } else if (actionName === "transfer") {
-            // counts += protocol.interface.transferSteps();
-            counts += 2;
-          } else if (actionName === "stake") {
-            // usually 2 steps: approve and stake
-            counts += 2;
-          } else {
-            throw new Error(`Action ${actionName} not supported`);
-          }
-        }
-      }
-    }
-    return counts;
   }
 
   async _getSwapFeeTxnsForZapIn(actionParams, transferAmount) {

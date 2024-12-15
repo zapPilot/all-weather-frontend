@@ -1,12 +1,12 @@
 import { ethers } from "ethers";
 import { fetch1InchSwapData, oneInchAddress } from "../utils/oneInch.js";
-import { CHAIN_ID_TO_CHAIN, PROVIDER } from "../utils/general.js";
+import { CHAIN_ID_TO_CHAIN, PROVIDER, NULL_ADDRESS } from "../utils/general.js";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import BaseUniswap from "./uniswapv3/BaseUniswap.js";
 import assert from "assert";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 import { approve } from "../utils/general";
-import { prepareTransaction, prepareContractCall } from "thirdweb";
+import { prepareTransaction, prepareContractCall, getContract } from "thirdweb";
 
 export default class BaseProtocol extends BaseUniswap {
   // arbitrum's Apollox is staked on PancakeSwap
@@ -102,7 +102,7 @@ export default class BaseProtocol extends BaseUniswap {
       );
       if (bestTokenAddressToZapIn !== inputTokenAddress) {
         nodes.push({
-          id: `swap-${amount}-${inputToken}-${bestTokenAddressToZapIn}`,
+          id: `${this.uniqueId()}-${fromTokenAddress}-${toTokenAddress}-swap`,
           name: `Swap ${inputToken}`,
         });
       }
@@ -131,7 +131,7 @@ export default class BaseProtocol extends BaseUniswap {
       ] of tokenMetadatas) {
         if (bestTokenAddressToZapIn !== inputTokenAddress) {
           nodes.push({
-            id: `${this.uniqueId()}-swap-${amount}-${inputToken}-${bestTokenAddressToZapIn}`,
+            id: `${this.uniqueId()}-${inputTokenAddress}-${bestTokenAddressToZapIn}-swap`,
             name: `Swap ${inputToken} to ${bestTokenSymbol}`,
           });
         }
@@ -234,6 +234,7 @@ export default class BaseProtocol extends BaseUniswap {
         slippage,
         updateProgress,
       );
+      await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-approve`, 0);
       const zapinTxns = await this.customDeposit(
         recipient,
         inputToken,
@@ -244,6 +245,7 @@ export default class BaseProtocol extends BaseUniswap {
         slippage,
         updateProgress,
       );
+      await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-stake`, 0);
       return beforeZapInTxns.concat(zapinTxns);
     } else if (this.mode === "LP") {
       const [beforeZapInTxns, tokenAmetadata, tokenBmetadata] =
@@ -254,6 +256,7 @@ export default class BaseProtocol extends BaseUniswap {
           slippage,
           updateProgress,
         );
+        await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-approve`, 0);
       const zapinTxns = await this.customDepositLP(
         recipient,
         tokenAmetadata,
@@ -262,6 +265,8 @@ export default class BaseProtocol extends BaseUniswap {
         slippage,
         updateProgress,
       );
+      await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-deposit`, 0);
+      await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-stake`, 0);
       return beforeZapInTxns.concat(zapinTxns);
     }
   }
@@ -409,6 +414,7 @@ export default class BaseProtocol extends BaseUniswap {
     } else {
       throw new Error("Invalid mode for stake");
     }
+    await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-stake`, 0);
     return stakeTxns;
   }
   async customDeposit(
@@ -742,7 +748,7 @@ export default class BaseProtocol extends BaseUniswap {
     if (fromTokenAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
       return;
     }
-    updateProgress(`swap ${fromTokenAddress} to ${toTokenAddress}`);
+    
     const swapCallData = await fetch1InchSwapData(
       this.chainId,
       fromTokenAddress,
@@ -751,12 +757,17 @@ export default class BaseProtocol extends BaseUniswap {
       walletAddress,
       slippage,
     );
+    
     if (swapCallData["data"] === undefined) {
       throw new Error("Swap data is undefined. Cannot proceed with swapping.");
     }
     if (swapCallData["toAmount"] === 0) {
       throw new Error("To amount is 0. Cannot proceed with swapping.");
     }
+
+    // If you need to wait for the progress update
+    await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-${fromTokenAddress}-${toTokenAddress}-swap`, Number(amount) - Number(swapCallData["toAmount"]));
+
     return [
       prepareTransaction({
         to: oneInchAddress,
@@ -908,4 +919,40 @@ export default class BaseProtocol extends BaseUniswap {
   async lockUpPeriod(address) {
     throw new Error("Method 'lockUpPeriod()' must be implemented.");
   }
+  async approve(tokenAddress, spenderAddress, amount, updateProgress, chainId) {
+    if (typeof amount !== "object") {
+      amount = ethers.BigNumber.from(amount);
+    }
+    const approvalAmount = amount;
+    if (approvalAmount === 0) {
+      throw new Error("Approval amount is 0. Cannot proceed with approving.");
+    }
+    if (spenderAddress === NULL_ADDRESS) {
+      throw new Error(
+        "Spender address is null. Cannot proceed with approving.",
+      );
+    }
+    const contractCall = prepareContractCall({
+      contract: getContract({
+        client: THIRDWEB_CLIENT,
+        address: tokenAddress,
+        chain: CHAIN_ID_TO_CHAIN[chainId],
+        abi: ERC20_ABI,
+      }),
+      method: "approve", // <- this gets inferred from the contract
+      params: [spenderAddress, approvalAmount],
+    });
+    await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-approve`, 0);
+    return contractCall;
+  }
+  async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
+    await new Promise(resolve => {
+      updateProgress(
+        nodeId,
+        tradingLoss
+      );
+      // Use setTimeout to ensure the state update is queued
+      setTimeout(resolve, 10);
+    });
+  } 
 }

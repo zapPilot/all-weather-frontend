@@ -13,7 +13,7 @@ describe("Referral Fee Module", () => {
   //   const investmentAmount = 1;
   //   const tokenDecimals = 18;
   //   const zapOutPercentage = NaN;
-  //   const setProgress = () => {};
+  //   const setTradingLoss = () => {};
   //   const setStepName = () => {};
   //   const slippage = 0.5;
   //   const portfolioHelper = getPortfolioHelper("Equilibria ETH Vault");
@@ -26,7 +26,7 @@ describe("Referral Fee Module", () => {
   //     investmentAmount,
   //     tokenDecimals,
   //     zapOutPercentage,
-  //     setProgress,
+  //     setTradingLoss,
   //     setStepName,
   //     slippage,
   //   );
@@ -48,7 +48,7 @@ describe("Referral Fee Module", () => {
       const investmentAmount = 1;
       const tokenDecimals = 18;
       const zapOutPercentage = 1;
-      const setProgress = () => {};
+      const setTradingLoss = () => {};
       const setStepName = () => {};
       const slippage = 0.5;
       const portfolioHelper = getPortfolioHelper("Equilibria ETH Vault");
@@ -62,7 +62,7 @@ describe("Referral Fee Module", () => {
         investmentAmount,
         tokenDecimals,
         zapOutPercentage,
-        setProgress,
+        setTradingLoss,
         setStepName,
         slippage,
       );
