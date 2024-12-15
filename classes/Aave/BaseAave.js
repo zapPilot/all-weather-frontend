@@ -50,15 +50,6 @@ export class BaseAave extends BaseProtocol {
     this.zapInOutTokenAddress = customParams.zapInOutTokenAddress;
     this._checkIfParamsAreSet();
   }
-  zapInSteps(tokenInAddress) {
-    return 3;
-  }
-  zapOutSteps(tokenInAddress) {
-    return 4;
-  }
-  claimAndSwapSteps() {
-    return 3;
-  }
   rewards() {
     return [];
   }

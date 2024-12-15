@@ -75,15 +75,6 @@ export class BaseEquilibria extends BaseProtocol {
     this.decimalOfBestTokenToZapOut = customParams.decimalOfBestTokenToZapOut;
     this._checkIfParamsAreSet();
   }
-  zapInSteps(tokenInAddress) {
-    return 3;
-  }
-  zapOutSteps(tokenInAddress) {
-    return 4;
-  }
-  claimAndSwapSteps() {
-    return 3;
-  }
   rewards() {
     return [
       {

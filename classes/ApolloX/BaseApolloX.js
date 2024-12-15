@@ -40,15 +40,6 @@ export class BaseApolloX extends BaseProtocol {
     });
     this._checkIfParamsAreSet();
   }
-  zapInSteps(tokenInAddress) {
-    return 3;
-  }
-  zapOutSteps(tokenInAddress) {
-    return 2;
-  }
-  claimAndSwapSteps() {
-    return 2;
-  }
   rewards() {
     return [
       {

@@ -55,15 +55,6 @@ export class BaseAerodrome extends BaseProtocol {
     );
     this._checkIfParamsAreSet();
   }
-  zapInSteps(tokenInAddress) {
-    return 1;
-  }
-  zapOutSteps(tokenInAddress) {
-    return 1;
-  }
-  claimAndSwapSteps() {
-    return 2;
-  }
   rewards() {
     return [
       {

@@ -65,17 +65,6 @@ export default class BaseProtocol extends BaseUniswap {
     );
   }
 
-  zapInSteps(tokenInAddress) {
-    // TODO: we can use `tokenInAddress` to dynamically determine the steps
-    // if the user is using the best token to zap in, then the step would be less than others (no need to swap)
-    throw new Error("Method 'zapInSteps()' must be implemented.");
-  }
-  zapOutSteps(tokenOutAddress) {
-    throw new Error("Method 'zapOutSteps()' must be implemented.");
-  }
-  claimAndSwapSteps() {
-    throw new Error("Method 'claimAndSwapSteps()' must be implemented.");
-  }
   getZapInFlowChartData(inputToken, inputTokenAddress, amount, weight) {
     function _autoGenerateEdges(uniqueId, nodes) {
       const edges = [];

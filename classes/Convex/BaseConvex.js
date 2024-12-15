@@ -48,15 +48,6 @@ export class BaseConvex extends BaseProtocol {
     });
     this._checkIfParamsAreSet();
   }
-  zapInSteps(tokenInAddress) {
-    return 1;
-  }
-  zapOutSteps(tokenInAddress) {
-    return 1;
-  }
-  claimAndSwapSteps() {
-    return 2;
-  }
   rewards() {
     return this.customParams.rewards;
   }

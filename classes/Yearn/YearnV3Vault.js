@@ -36,15 +36,6 @@ export class YearnV3Vault extends BaseProtocol {
     });
     this._checkIfParamsAreSet();
   }
-  zapInSteps(tokenInAddress) {
-    return 2;
-  }
-  zapOutSteps(tokenInAddress) {
-    return 2;
-  }
-  claimAndSwapSteps() {
-    return 4;
-  }
   rewards() {
     return [];
   }
