@@ -9,6 +9,7 @@ const UserFlowNode = ({
   tradingLoss,
   completedSteps,
   setCompletedSteps,
+  currentChain,
 }) => {
   const prevStepNameRef = useRef(stepName);
   const [nodeState, setNodeState] = useState({
@@ -29,11 +30,10 @@ const UserFlowNode = ({
       }
     }
   }, [stepName]);
-  console.log("prevStepNameRef", prevStepNameRef.current, "completedSteps", completedSteps)
 
   // Use stored state or calculate current state
   const isActiveOrCompleted =
-    nodeState.isActive || data.id === stepName || completedSteps?.has(data.id);
+    nodeState.isActive || data.id === stepName || completedSteps?.has(data.id) || currentChain.toLowerCase().replace(" one", "") === data.id;
   
   // Use stored trading loss if available, otherwise use current trading loss
   const displayTradingLoss = nodeState.isActive ? nodeState.tradingLossValue : tradingLoss;
@@ -130,6 +130,7 @@ export default function DemoFlowDirectionGraph({
   data,
   stepName,
   tradingLoss,
+  currentChain,
 }) {
   const [completedSteps, setCompletedSteps] = useState(new Set());
   const options = {
@@ -145,6 +146,7 @@ export default function DemoFlowDirectionGraph({
             tradingLoss={tradingLoss}
             completedSteps={completedSteps}
             setCompletedSteps={setCompletedSteps}
+            currentChain={currentChain}
           />
         ),
         size: [160, 90],

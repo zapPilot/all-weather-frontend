@@ -1008,14 +1008,14 @@ export class BasePortfolio {
       for (const [chain, protocolsOnThisChain] of Object.entries(
         protocolsInThisCategory,
       )) {
-        const currentChainNode = {
+        const chainNode = {
           id: chain,
           name: actionName,
           chain: chain,
           category: category,
           imgSrc: `/chainPicturesWebp/${chain}.webp`,
         };
-        chainNodes.push(currentChainNode);
+        chainNodes.push(chainNode);
         for (const protocol of protocolsOnThisChain) {
           if (protocol.weight === 0) continue;
           if (actionName === "zapIn") {
@@ -1027,9 +1027,9 @@ export class BasePortfolio {
             );
             const currentChainToProtocolNodeEdge = {
               id: `edge-${
-                currentChainNode.id
+                chainNode.id
               }-${protocol.interface.uniqueId()}`,
-              source: currentChainNode.id,
+              source: chainNode.id,
               target: stepsData.nodes[0].id,
               data: {
                 ratio: protocol.weight,
