@@ -969,6 +969,7 @@ export class BasePortfolio {
       usde: 1,
       susd: 1,
       msusd: 1,
+      zunusd: 1,
     };
     let tokenPriceCache = {};
     for (const [token, coinMarketCapId] of Object.entries(
