@@ -271,6 +271,7 @@ export default function IndexOverviews() {
               // get current chain from Txn data
               const newNextChain = switchNextChain(data.chain.name);
               setNextStepChain(newNextChain);
+              setNextChainInvestmentAmount(calCrossChainInvestmentAmount(newNextChain));
               setTxnLink(
                 `${data.chain.blockExplorers[0].url}/tx/${data.transactionHash}`,
               );
@@ -336,6 +337,27 @@ export default function IndexOverviews() {
     chain === "arbitrum" ? switchChain(arbitrum) : switchChain(base);
   };
 
+  // calculate the total investment amount
+  const allInvestmentAmount = investmentAmount * (1 - slippage / 100 - portfolioHelper?.swapFeeRate())
+  // calculate the investment amount for next chain
+  const calCrossChainInvestmentAmount = (nextChain) => {
+    const chainWeight = Object.entries(portfolioHelper.strategy).reduce((sum, [category, protocols]) => {
+      return sum + Object.entries(protocols).reduce((innerSum, [chain, protocolArray]) => {
+        if (chain === nextChain) {
+          console.log("nextChain", nextChain);
+          return innerSum + protocolArray.reduce((weightSum, protocol) => {
+            console.log("protocol", protocol);
+            console.log("weightSum", weightSum);
+            return weightSum + protocol.weight;
+          }, 0);
+        }
+        return innerSum;
+      }, 0);
+    }, 0);
+    return allInvestmentAmount * chainWeight;
+  }
+  const [nextChainInvestmentAmount, setNextChainInvestmentAmount] = useState(0);
+  
   const onChange = (key) => {
     setTabKey(key);
   };
@@ -467,32 +489,7 @@ export default function IndexOverviews() {
       (sum, { currentWeight, APR }) => currentWeight * APR + sum,
       0,
     ) || 0;
-    const investmentAmountArbitrum = investmentAmount * (1 - slippage / 100 - portfolioHelper?.swapFeeRate()) *
-    (portfolioHelper &&
-      Object.entries(portfolioHelper.strategy).reduce((sum, [category, protocols]) => {
-        return sum + Object.entries(protocols).reduce((innerSum, [chain, protocolArray]) => {
-          if (chain === "arbitrum") {
-            // 假設每個 protocolArray 中都有一個 weight 屬性
-            return innerSum + protocolArray.reduce((weightSum, protocol) => {
-              return weightSum + protocol.weight; // 假設 protocol 有 weight 屬性
-            }, 0);
-          }
-          return innerSum;
-        }, 0);
-      }, 0));
-      const investmentAmountBase = investmentAmount * (1 - slippage / 100 - portfolioHelper?.swapFeeRate()) *
-    (portfolioHelper &&
-      Object.entries(portfolioHelper.strategy).reduce((sum, [category, protocols]) => {
-        return sum + Object.entries(protocols).reduce((innerSum, [chain, protocolArray]) => {
-          if (chain === "base") {
-            // 假設每個 protocolArray 中都有一個 weight 屬性
-            return innerSum + protocolArray.reduce((weightSum, protocol) => {
-              return weightSum + protocol.weight; // 假設 protocol 有 weight 屬性
-            }, 0);
-          }
-          return innerSum;
-        }, 0);
-      }, 0));
+
   const items = [
     {
       key: "1",
@@ -512,16 +509,6 @@ export default function IndexOverviews() {
             >
               <p>
                 Step 1: Choose a chain to zap in and bridge to another chain.
-              </p>
-              <p>
-                investmentAmount arbitrum:
-                {investmentAmountArbitrum}
-                {investmentAmountArbitrum > parseFloat(walletBalanceData?.displayValue) ? "too much" : "ok"}
-              </p>
-              <p>
-                investmentAmount base:
-                {investmentAmountBase}
-                {investmentAmountBase > parseFloat(walletBalanceData?.displayValue) ? "too much" : "ok"}
               </p>
               {account === undefined ? (
                 <ConfiguredConnectButton />
@@ -586,11 +573,18 @@ export default function IndexOverviews() {
                   }`}
                 onClick={() => {
                   switchNextStepChain(nextStepChain);
+                  setInvestmentAmount(nextChainInvestmentAmount);
                   setFinishedTxn(false);
                 }}
               >
                 switch to {nextStepChain} Chain
               </Button>
+              <p>nextChainInvestmentAmount: {nextChainInvestmentAmount}</p>
+              <p>
+                {nextChainInvestmentAmount > parseFloat(walletBalanceData?.displayValue)
+                  ? parseFloat(walletBalanceData?.displayValue)
+                  : nextChainInvestmentAmount}
+              </p>
               <Button
                 type="primary"
                 className={`w-full my-2 
