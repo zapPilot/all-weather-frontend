@@ -268,7 +268,9 @@ export class BasePortfolio {
     const updateProgress = (nodeID, tradingLoss) => {
       actionParams.setTradingLoss(tradingLoss);
       actionParams.setStepName(nodeID);
-      actionParams.setTotalTradingLoss(prevTotalTradingLoss => prevTotalTradingLoss + tradingLoss);
+      actionParams.setTotalTradingLoss(
+        (prevTotalTradingLoss) => prevTotalTradingLoss + tradingLoss,
+      );
     };
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
     actionParams.tokenPricesMappingTable = tokenPricesMappingTable;
@@ -290,6 +292,10 @@ export class BasePortfolio {
           actionParams.chainMetadata.id,
         ),
       );
+      // // test
+      // actionParams.setPlatformFee(
+      //   actionParams.zapInAmount * this.swapFeeRate(),
+      // );
     } else if (actionName === "rebalance") {
       return await this._generateRebalanceTxns(
         actionParams.account,
@@ -327,6 +333,7 @@ export class BasePortfolio {
           actionParams.zapOutPercentage,
           portfolioUsdBalance,
           actionParams.chainMetadata,
+          actionParams.setPlatformFee,
         );
         totalTxns = totalTxns.concat(swapFeeTxns);
       }
@@ -541,6 +548,7 @@ export class BasePortfolio {
         usdcConfig,
         zapInConfig.amount,
         chainMetadata,
+        zapOutUsdcBalance,
       );
     txns.push(...approvalAndFeeTxns);
     // Generate zap in transactions for protocols that need rebalancing
@@ -735,6 +743,7 @@ export class BasePortfolio {
     usdcConfig,
     zapInAmount,
     chainMetadata,
+    zapOutUsdcBalance,
   ) {
     const approveTxn = approve(
       usdcConfig.address,
@@ -754,6 +763,7 @@ export class BasePortfolio {
         chainMetadata: chainMetadata,
       },
       transferAmount,
+      zapOutUsdcBalance,
     );
 
     return [[approveTxn, ...rebalanceFeeTxns], zapInAmountAfterFee];
@@ -957,7 +967,7 @@ export class BasePortfolio {
       dai: 1,
       frax: 0.997,
       usde: 1,
-      susd: 0.997,
+      susd: 0.9952,
       msusd: 0.9972,
       zunusd: 0.9953,
       eusd: 0.9999,
@@ -1029,9 +1039,7 @@ export class BasePortfolio {
               protocol.weight,
             );
             const currentChainToProtocolNodeEdge = {
-              id: `edge-${
-                chainNode.id
-              }-${protocol.interface.uniqueId()}`,
+              id: `edge-${chainNode.id}-${protocol.interface.uniqueId()}`,
               source: chainNode.id,
               target: stepsData.nodes[0].id,
               data: {
@@ -1055,7 +1063,12 @@ export class BasePortfolio {
     };
   }
 
-  async _getSwapFeeTxnsForZapIn(actionParams, transferAmount) {
+  async _getSwapFeeTxnsForZapIn(
+    actionParams,
+    transferAmount,
+    zapOutUsdcBalance,
+  ) {
+    actionParams.setPlatformFee(zapOutUsdcBalance * this.swapFeeRate() * 2);
     const referrer = await this._getReferrer(actionParams.account);
     const contract = getContract({
       client: THIRDWEB_CLIENT,
@@ -1063,7 +1076,6 @@ export class BasePortfolio {
       chain: actionParams.chainMetadata,
       abi: ERC20_ABI,
     });
-
     let platformFee = transferAmount;
     let txns = [];
 
@@ -1092,11 +1104,13 @@ export class BasePortfolio {
     zapOutPercentage,
     portfolioUsdBalance,
     chainMetadata,
+    setPlatformFee,
   ) {
     let txns = [];
     const referrer = await this._getReferrer(owner);
     const tokenOutUsdBalance = portfolioUsdBalance * zapOutPercentage;
     const swapFeeUsd = tokenOutUsdBalance * this.swapFeeRate();
+    setPlatformFee(swapFeeUsd);
     const tokenOutDecimals = await getTokenDecimal(
       tokenOutAddress,
       chainMetadata.name.toLowerCase(),

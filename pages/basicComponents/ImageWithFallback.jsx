@@ -3,15 +3,15 @@ import Image from "next/image";
 
 const ImageWithFallback = ({ token, height, width, domKey, className }) => {
   const [imgSrc, setImgSrc] = useState(() => {
-    if (!token) return '/tokenPictures/placeholder.webp';
-    
+    if (!token) return "/tokenPictures/placeholder.webp";
+
     const cleanedToken = token
       .toLowerCase()
       .replace("lp ", "")
       .replace("pt ", "")
       .replace(/[()]/g, "")
       .split(" ")[0];
-      
+
     return `/tokenPictures/${cleanedToken}.webp`;
   });
   return (

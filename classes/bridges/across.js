@@ -3,9 +3,11 @@ import { optimism, arbitrum, polygon, base } from "viem/chains";
 import BaseBridge from "./BaseBridge";
 import { prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
-import { CHAIN_ID_TO_CHAIN } from "../../utils/general";
+import { CHAIN_ID_TO_CHAIN, PROVIDER } from "../../utils/general";
 import SpokePool from "../../lib/contracts/Across/SpokePool.json";
 import { getContract } from "thirdweb";
+import { ethers } from "ethers";
+import ERC20 from "../../lib/contracts/ERC20.json";
 class AcrossBridge extends BaseBridge {
   static spokePoolMapping = {
     arbitrum: "0xe35e9842fceaCA96570B734083f4a58e8F7C5f2A",
@@ -41,7 +43,12 @@ class AcrossBridge extends BaseBridge {
       inputToken: fromToken,
       outputToken: toToken,
     };
-    updateProgress("Getting quote from Across...");
+    const tokenInstance = new ethers.Contract(
+      fromToken,
+      ERC20,
+      PROVIDER(CHAIN_ID_TO_CHAIN[fromChainId].name.replace(" one", "")),
+    );
+    const tokenDecimals = await tokenInstance.decimals();
     const quote = await this.sdk.getQuote({
       route,
       inputAmount: amount,
@@ -58,6 +65,11 @@ class AcrossBridge extends BaseBridge {
     });
     const fillDeadlineBuffer = 18000;
     const fillDeadline = Math.round(Date.now() / 1000) + fillDeadlineBuffer;
+    const fee = quote.fees.totalRelayFee.total;
+    updateProgress(
+      `bridge-${fromChainId}-${toChainId}`,
+      -Number(ethers.utils.formatUnits(fee, tokenDecimals)),
+    );
     const bridgeTxn = prepareContractCall({
       contract: spokePoolContract,
       method: "depositV3",
@@ -67,7 +79,7 @@ class AcrossBridge extends BaseBridge {
         quote.deposit.inputToken,
         quote.deposit.outputToken,
         quote.deposit.inputAmount,
-        quote.deposit.inputAmount - quote.fees.totalRelayFee.total,
+        quote.deposit.inputAmount - fee,
         quote.deposit.destinationChainId,
         "0x0000000000000000000000000000000000000000",
         quote.deposit.quoteTimestamp,

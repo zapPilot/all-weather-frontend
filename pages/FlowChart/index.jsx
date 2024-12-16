@@ -2,6 +2,7 @@ import dynamic from "next/dynamic";
 import React, { useState, useRef } from "react";
 import Image from "next/image";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
+import { Spin } from "antd";
 
 const UserFlowNode = ({
   data,
@@ -14,18 +15,18 @@ const UserFlowNode = ({
   const prevStepNameRef = useRef(stepName);
   const [nodeState, setNodeState] = useState({
     isActive: false,
-    tradingLossValue: null
+    tradingLossValue: null,
   });
   React.useEffect(() => {
     if (stepName !== prevStepNameRef.current) {
       setCompletedSteps((prev) => new Set([...prev, stepName]));
       prevStepNameRef.current = stepName;
-      
+
       // If this node is the current step, store its trading loss
       if (data.id === stepName) {
         setNodeState({
           isActive: true,
-          tradingLossValue: tradingLoss
+          tradingLossValue: tradingLoss,
         });
       }
     }
@@ -33,61 +34,88 @@ const UserFlowNode = ({
 
   // Use stored state or calculate current state
   const isActiveOrCompleted =
-    nodeState.isActive || data.id === stepName || completedSteps?.has(data.id) || currentChain.toLowerCase().replace(" one", "") === data.id;
-  
+    nodeState.isActive ||
+    data.id === stepName ||
+    completedSteps?.has(data.id) ||
+    currentChain.toLowerCase().replace(" one", "") === data.id;
+
   // Use stored trading loss if available, otherwise use current trading loss
-  const displayTradingLoss = nodeState.isActive ? nodeState.tradingLossValue : tradingLoss;
+  const displayTradingLoss = nodeState.isActive
+    ? nodeState.tradingLossValue
+    : tradingLoss;
+
+  const formatTradingLoss = (value) => {
+    if (!value) return <Spin />;
+    const absValue = Math.abs(value);
+    const isNegative = value < 0;
+
+    const formattedValue =
+      absValue < 0.01 ? "< $0.01" : `$${absValue.toFixed(2)}`;
+
+    return (
+      <span className={`${isNegative ? "" : "text-green-500"}`}>
+        {formattedValue}
+      </span>
+    );
+  };
 
   const renderSwapNode = () => (
-    <div className="flex items-center">
-      <Image
-        src="/projectPictures/1inch-network.webp"
-        alt="1inch"
-        className="inline-block me-2"
-        height={20}
-        width={20}
-      />
-      Swap
-      <ImageWithFallback
-        token={data.name.split(" to ")[0].replace("Swap ", "")}
-        height={20}
-        width={20}
-        className="me-1"
-      />
-      <span className="mx-1">→</span>
-      <ImageWithFallback
-        token={data.name.split(" to ")[1]}
-        height={20}
-        width={20}
-      />
-      {displayTradingLoss}
+    <div className="flex flex-col">
+      <div className="flex items-center">
+        <Image
+          src="/projectPictures/1inch-network.webp"
+          alt="1inch"
+          className="inline-block me-2"
+          height={20}
+          width={20}
+        />
+        Swap
+        <ImageWithFallback
+          token={data.name.split(" to ")[0].replace("Swap ", "")}
+          height={20}
+          width={20}
+          className="me-1"
+        />
+        <span className="mx-1">→</span>
+        <ImageWithFallback
+          token={data.name.split(" to ")[1]}
+          height={20}
+          width={20}
+        />
+      </div>
+      {displayTradingLoss !== 0 && (
+        <div>{formatTradingLoss(displayTradingLoss)}</div>
+      )}
     </div>
   );
 
   const renderDepositNode = () => (
-    <div className="flex items-center">
-      <Image
-        src={data.imgSrc}
-        alt={data.name}
-        className="inline-block me-2"
-        height={20}
-        width={20}
-      />
-      Deposit
-      {data.name
-        .replace("Deposit ", "")
-        .split("-")
-        .map((token, idx) => (
-          <ImageWithFallback
-            key={idx}
-            token={token}
-            height={20}
-            width={20}
-            className="me-1"
-          />
-        ))}
-      {displayTradingLoss}
-      
+    <div className="flex flex-col">
+      <div className="flex items-center">
+        <Image
+          src={data.imgSrc}
+          alt={data.name}
+          className="inline-block me-2"
+          height={20}
+          width={20}
+        />
+        Deposit
+        {data.name
+          .replace("Deposit ", "")
+          .split("-")
+          .map((token, idx) => (
+            <ImageWithFallback
+              key={idx}
+              token={token}
+              height={20}
+              width={20}
+              className="me-1"
+            />
+          ))}
+      </div>
+      {displayTradingLoss !== 0 && (
+        <div>{formatTradingLoss(displayTradingLoss)}</div>
+      )}
     </div>
   );
 
@@ -131,7 +159,6 @@ export default function DemoFlowDirectionGraph({
   stepName,
   tradingLoss,
   currentChain,
-  totalTradingLoss,
 }) {
   const [completedSteps, setCompletedSteps] = useState(new Set());
   const options = {

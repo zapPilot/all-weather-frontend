@@ -89,13 +89,11 @@ export class BaseConvex extends BaseProtocol {
     tokenBmetadata,
     tokenPricesMappingTable,
     slippage,
-    updateProgress
+    updateProgress,
   ) {
     const tokenPairs = [tokenAmetadata, tokenBmetadata];
-    const { approveTxns, amounts, totalNormalizedAmount } = await this._prepareTokenApprovals(
-      tokenPairs,
-      updateProgress
-    );
+    const { approveTxns, amounts, totalNormalizedAmount } =
+      await this._prepareTokenApprovals(tokenPairs, updateProgress);
 
     const { minMintAmount, tradingLoss } = this._calculateMinimumMintAmount(
       totalNormalizedAmount,
@@ -103,19 +101,19 @@ export class BaseConvex extends BaseProtocol {
       tokenAmetadata,
       tokenBmetadata,
       tokenPricesMappingTable,
-      slippage
+      slippage,
     );
 
     const depositTxn = this._createDepositTransaction(amounts, minMintAmount);
-    
+
     await this._updateProgressAndWait(
-      updateProgress, 
-      `${this.uniqueId()}-deposit`, 
-      tradingLoss
+      updateProgress,
+      `${this.uniqueId()}-deposit`,
+      tradingLoss,
     );
 
     const stakeTxns = await this._stakeLP(amounts, updateProgress);
-    
+
     return [...approveTxns, depositTxn, ...stakeTxns];
   }
 
@@ -130,14 +128,14 @@ export class BaseConvex extends BaseProtocol {
         this.protocolContract.address,
         amount,
         updateProgress,
-        this.chainId
+        this.chainId,
       );
 
       approveTxns.push(approveTxn);
       amounts.push(amount);
 
       const normalizedAmount = Number(
-        ethers.utils.formatUnits(amount.toString(), decimals)
+        ethers.utils.formatUnits(amount.toString(), decimals),
       );
       totalNormalizedAmount += normalizedAmount;
     }
@@ -151,20 +149,27 @@ export class BaseConvex extends BaseProtocol {
     tokenAmetadata,
     tokenBmetadata,
     tokenPricesMappingTable,
-    slippage
+    slippage,
   ) {
     const lpPrice = this._calculateLpPrice(tokenPricesMappingTable);
-    const outputPrice = totalNormalizedAmount * lpPrice * Math.pow(10, this.assetDecimals);
-    
+    const outputPrice =
+      totalNormalizedAmount * lpPrice * Math.pow(10, this.assetDecimals);
+
     // TODO(david): the asset price is not correct here, so we just reduce 0.03% swap fee to estimate the trading loss
-    const tradingLoss = outputPrice * 0.9997 - (
-      Number(ethers.utils.formatUnits(amounts[0].toString(), tokenAmetadata[2])) * tokenPricesMappingTable[tokenAmetadata[0]] +
-      Number(ethers.utils.formatUnits(amounts[1].toString(), tokenBmetadata[2])) * tokenPricesMappingTable[tokenBmetadata[0]]
-    );
+    const tradingLoss =
+      outputPrice * 0.9997 -
+      (Number(
+        ethers.utils.formatUnits(amounts[0].toString(), tokenAmetadata[2]),
+      ) *
+        tokenPricesMappingTable[tokenAmetadata[0]] +
+        Number(
+          ethers.utils.formatUnits(amounts[1].toString(), tokenBmetadata[2]),
+        ) *
+          tokenPricesMappingTable[tokenBmetadata[0]]);
 
     const minMintAmount = ethers.BigNumber.from(
       Math.floor((outputPrice * (100 - slippage)) / 100),
-      this.assetDecimals
+      this.assetDecimals,
     );
 
     return { minMintAmount, tradingLoss };
@@ -174,7 +179,7 @@ export class BaseConvex extends BaseProtocol {
     return prepareContractCall({
       contract: this.protocolContract,
       method: "add_liquidity",
-      params: [amounts, minMintAmount]
+      params: [amounts, minMintAmount],
     });
   }
 

@@ -225,9 +225,13 @@ export default class BaseProtocol extends BaseUniswap {
         updateProgress,
         inputToken,
         tokenDecimals,
-        tokenPricesMappingTable
+        tokenPricesMappingTable,
       );
-      await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-approve`, 0);
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-approve`,
+        0,
+      );
       const zapinTxns = await this.customDeposit(
         recipient,
         inputToken,
@@ -238,7 +242,11 @@ export default class BaseProtocol extends BaseUniswap {
         slippage,
         updateProgress,
       );
-      await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-stake`, 0);
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-stake`,
+        0,
+      );
       return beforeZapInTxns.concat(zapinTxns);
     } else if (this.mode === "LP") {
       const [beforeZapInTxns, tokenAmetadata, tokenBmetadata] =
@@ -250,9 +258,13 @@ export default class BaseProtocol extends BaseUniswap {
           updateProgress,
           inputToken,
           tokenDecimals,
-          tokenPricesMappingTable
+          tokenPricesMappingTable,
         );
-        await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-approve`, 0);
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-approve`,
+        0,
+      );
       const zapinTxns = await this.customDepositLP(
         recipient,
         tokenAmetadata,
@@ -261,8 +273,16 @@ export default class BaseProtocol extends BaseUniswap {
         slippage,
         updateProgress,
       );
-      await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-deposit`, 0);
-      await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-stake`, 0);
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-deposit`,
+        0,
+      );
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-stake`,
+        0,
+      );
       return beforeZapInTxns.concat(zapinTxns);
     }
   }
@@ -410,7 +430,11 @@ export default class BaseProtocol extends BaseUniswap {
     } else {
       throw new Error("Invalid mode for stake");
     }
-    await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-stake`, 0);
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-stake`,
+      0,
+    );
     return stakeTxns;
   }
   async customDeposit(
@@ -517,14 +541,14 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
     inputToken,
     tokenDecimals,
-    tokenPricesMappingTable
+    tokenPricesMappingTable,
   ) {
     let swapTxns = [];
     const [bestTokenSymbol, bestTokenAddressToZapIn, bestTokenToZapInDecimal] =
       this._getTheBestTokenAddressToZapIn(
         inputToken,
         inputTokenAddress,
-        tokenDecimals
+        tokenDecimals,
       );
     let amountToZapIn = investmentAmountInThisPosition;
     if (
@@ -541,7 +565,7 @@ export default class BaseProtocol extends BaseUniswap {
         tokenDecimals,
         bestTokenSymbol,
         bestTokenToZapInDecimal,
-        tokenPricesMappingTable
+        tokenPricesMappingTable,
       );
       amountToZapIn = Math.floor((swapEstimateAmount * (100 - slippage)) / 100);
       swapTxns.push(swapTxn);
@@ -561,7 +585,7 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
     inputToken,
     tokenDecimals,
-    tokenPricesMappingTable
+    tokenPricesMappingTable,
   ) {
     // Validate and get token pairs
     const tokenMetadatas = this._getLPTokenPairesToZapIn();
@@ -636,7 +660,7 @@ export default class BaseProtocol extends BaseUniswap {
           tokenDecimals,
           bestTokenSymbol,
           bestTokenToZapInDecimal,
-          tokenPricesMappingTable
+          tokenPricesMappingTable,
         );
 
         amountToZapIn = ethers.BigNumber.from(swapEstimateAmount)
@@ -755,12 +779,12 @@ export default class BaseProtocol extends BaseUniswap {
     fromTokenDecimals,
     toTokenSymbol,
     toTokenDecimals,
-    tokenPricesMappingTable
+    tokenPricesMappingTable,
   ) {
     if (fromTokenAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
       return;
     }
-    
+
     const swapCallData = await fetch1InchSwapData(
       this.chainId,
       fromTokenAddress,
@@ -769,18 +793,30 @@ export default class BaseProtocol extends BaseUniswap {
       walletAddress,
       slippage,
     );
-    
+
     if (swapCallData["data"] === undefined) {
       throw new Error("Swap data is undefined. Cannot proceed with swapping.");
     }
     if (swapCallData["toAmount"] === 0) {
       throw new Error("To amount is 0. Cannot proceed with swapping.");
     }
-    const normalizedInputAmout = ethers.utils.formatUnits(amount, fromTokenDecimals);
-    const normalizedOutputAmount = ethers.utils.formatUnits(swapCallData["toAmount"], toTokenDecimals);
-    const tradingLoss = Number(normalizedOutputAmount)*tokenPricesMappingTable[toTokenSymbol]- Number(normalizedInputAmout)*tokenPricesMappingTable[fromToken]
+    const normalizedInputAmout = ethers.utils.formatUnits(
+      amount,
+      fromTokenDecimals,
+    );
+    const normalizedOutputAmount = ethers.utils.formatUnits(
+      swapCallData["toAmount"],
+      toTokenDecimals,
+    );
+    const tradingLoss =
+      Number(normalizedOutputAmount) * tokenPricesMappingTable[toTokenSymbol] -
+      Number(normalizedInputAmout) * tokenPricesMappingTable[fromToken];
     // If you need to wait for the progress update
-    await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-${fromTokenAddress}-${toTokenAddress}-swap`, tradingLoss);
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-${fromTokenAddress}-${toTokenAddress}-swap`,
+      tradingLoss,
+    );
 
     return [
       prepareTransaction({
@@ -956,17 +992,18 @@ export default class BaseProtocol extends BaseUniswap {
       method: "approve", // <- this gets inferred from the contract
       params: [spenderAddress, approvalAmount],
     });
-    await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-approve`, 0);
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-approve`,
+      0,
+    );
     return contractCall;
   }
   async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
-    await new Promise(resolve => {
-      updateProgress(
-        nodeId,
-        tradingLoss
-      );
+    await new Promise((resolve) => {
+      updateProgress(nodeId, tradingLoss);
       // Use setTimeout to ensure the state update is queued
       setTimeout(resolve, 10);
     });
-  } 
+  }
 }

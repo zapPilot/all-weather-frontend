@@ -231,8 +231,22 @@ export class BaseEquilibria extends BaseProtocol {
       params: resp.data.contractCallParams,
     });
     const latestPendleAssetPrice = await this._fetchPendleAssetPrice(() => {});
-    const tradingLoss = Number(ethers.utils.formatUnits(resp.data.data.amountLpOut, this.assetDecimals))*latestPendleAssetPrice*Math.pow(10, this.assetDecimals)-Number(ethers.utils.formatUnits(amountToZapIn, bestTokenToZapInDecimal))*tokenPricesMappingTable[inputToken] 
-    await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-deposit`, tradingLoss);
+    const tradingLoss =
+      Number(
+        ethers.utils.formatUnits(
+          resp.data.data.amountLpOut,
+          this.assetDecimals,
+        ),
+      ) *
+        latestPendleAssetPrice *
+        Math.pow(10, this.assetDecimals) -
+      Number(ethers.utils.formatUnits(amountToZapIn, bestTokenToZapInDecimal)) *
+        tokenPricesMappingTable[inputToken];
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-deposit`,
+      tradingLoss,
+    );
     const stakeTxns = await this._stake(minLPOutAmount, updateProgress);
     return [approveForZapInTxn, mintTxn, ...stakeTxns];
   }

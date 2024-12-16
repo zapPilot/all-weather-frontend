@@ -85,7 +85,7 @@ export class EthVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.3,
+              weight: 0.1,
             },
           ],
           base: [
@@ -105,7 +105,7 @@ export class EthVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.6,
+              weight: 0.8,
             },
           ],
         },
