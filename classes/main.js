@@ -13,6 +13,7 @@ export const generateIntentTxns = async (
   zapOutPercentage,
   setTradingLoss,
   setStepName,
+  setTotalTradingLoss,
   slippage,
   rebalancableUsdBalanceDict,
   recipient,
@@ -32,8 +33,10 @@ export const generateIntentTxns = async (
       ),
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
       slippage,
       onlyThisChain,
+      tokenDecimals
     });
   } else if (actionName === "zapOut") {
     txns = await portfolioHelper.portfolioAction("zapOut", {
@@ -44,6 +47,7 @@ export const generateIntentTxns = async (
       zapOutPercentage: Number(zapOutPercentage),
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
       slippage,
       onlyThisChain,
     });
@@ -54,6 +58,7 @@ export const generateIntentTxns = async (
       tokenOutAddress: tokenAddress,
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
       slippage,
       onlyThisChain,
     });
@@ -63,6 +68,7 @@ export const generateIntentTxns = async (
       chainMetadata,
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
       slippage,
       rebalancableUsdBalanceDict,
       onlyThisChain,
@@ -74,6 +80,7 @@ export const generateIntentTxns = async (
       zapOutPercentage: Number(zapOutPercentage),
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
       slippage,
       recipient,
       onlyThisChain,
@@ -84,6 +91,7 @@ export const generateIntentTxns = async (
       chainMetadata,
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
       protocolAssetDustInWallet,
       onlyThisChain,
     });

@@ -268,6 +268,7 @@ export class BasePortfolio {
     const updateProgress = (nodeID, tradingLoss) => {
       actionParams.setTradingLoss(tradingLoss);
       actionParams.setStepName(nodeID);
+      actionParams.setTotalTradingLoss(prevTotalTradingLoss => prevTotalTradingLoss + tradingLoss);
     };
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
     actionParams.tokenPricesMappingTable = tokenPricesMappingTable;
@@ -351,6 +352,7 @@ export class BasePortfolio {
           actionParams.zapInAmount.mul(percentageBN).div(10000),
           actionParams.tokenInSymbol,
           actionParams.tokenInAddress,
+          actionParams.tokenDecimals,
           actionParams.slippage,
           actionParams.tokenPricesMappingTable,
           actionParams.updateProgress,
@@ -953,11 +955,12 @@ export class BasePortfolio {
       usdc: 1,
       usdt: 1,
       dai: 1,
-      frax: 1,
+      frax: 0.997,
       usde: 1,
-      susd: 1,
-      msusd: 1,
-      zunusd: 1,
+      susd: 0.997,
+      msusd: 0.9972,
+      zunusd: 0.9953,
+      eusd: 0.9999,
     };
     let tokenPriceCache = {};
     for (const [token, coinMarketCapId] of Object.entries(

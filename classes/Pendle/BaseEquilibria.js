@@ -230,7 +230,9 @@ export class BaseEquilibria extends BaseProtocol {
       method: "addLiquiditySingleToken",
       params: resp.data.contractCallParams,
     });
-    await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-deposit`, 1);
+    const latestPendleAssetPrice = await this._fetchPendleAssetPrice(() => {});
+    const tradingLoss = Number(ethers.utils.formatUnits(resp.data.data.amountLpOut, this.assetDecimals))*latestPendleAssetPrice*Math.pow(10, this.assetDecimals)-Number(ethers.utils.formatUnits(amountToZapIn, bestTokenToZapInDecimal))*tokenPricesMappingTable[inputToken] 
+    await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-deposit`, tradingLoss);
     const stakeTxns = await this._stake(minLPOutAmount, updateProgress);
     return [approveForZapInTxn, mintTxn, ...stakeTxns];
   }
@@ -284,8 +286,8 @@ export class BaseEquilibria extends BaseProtocol {
     );
     return resp.data.pricesUsd[0] / Math.pow(10, this.assetDecimals);
   }
-  _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
-    return [inputToken, InputTokenDecimals];
+  _getTheBestTokenAddressToZapIn(inputToken, inputTokenAddress, tokenDecimals) {
+    return [inputToken, inputTokenAddress, tokenDecimals];
   }
   _getTheBestTokenAddressToZapOut() {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in

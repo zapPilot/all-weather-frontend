@@ -131,6 +131,7 @@ export default function DemoFlowDirectionGraph({
   stepName,
   tradingLoss,
   currentChain,
+  totalTradingLoss,
 }) {
   const [completedSteps, setCompletedSteps] = useState(new Set());
   const options = {

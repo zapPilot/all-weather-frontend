@@ -91,7 +91,7 @@ export default class BaseProtocol extends BaseUniswap {
       );
       if (bestTokenAddressToZapIn !== inputTokenAddress) {
         nodes.push({
-          id: `${this.uniqueId()}-${fromTokenAddress}-${toTokenAddress}-swap`,
+          id: `${this.uniqueId()}-${inputTokenAddress}-${bestTokenAddressToZapIn}-swap`,
           name: `Swap ${inputToken}`,
         });
       }
@@ -206,6 +206,7 @@ export default class BaseProtocol extends BaseUniswap {
     investmentAmountInThisPosition,
     inputToken,
     inputTokenAddress,
+    tokenDecimals,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
@@ -222,6 +223,9 @@ export default class BaseProtocol extends BaseUniswap {
         investmentAmountInThisPosition,
         slippage,
         updateProgress,
+        inputToken,
+        tokenDecimals,
+        tokenPricesMappingTable
       );
       await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-approve`, 0);
       const zapinTxns = await this.customDeposit(
@@ -244,6 +248,9 @@ export default class BaseProtocol extends BaseUniswap {
           investmentAmountInThisPosition,
           slippage,
           updateProgress,
+          inputToken,
+          tokenDecimals,
+          tokenPricesMappingTable
         );
         await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-approve`, 0);
       const zapinTxns = await this.customDepositLP(
@@ -508,18 +515,16 @@ export default class BaseProtocol extends BaseUniswap {
     investmentAmountInThisPosition,
     slippage,
     updateProgress,
+    inputToken,
+    tokenDecimals,
+    tokenPricesMappingTable
   ) {
     let swapTxns = [];
-    const tokenInstance = new ethers.Contract(
-      inputTokenAddress,
-      ERC20_ABI,
-      PROVIDER(this.chain),
-    );
-    const decimalsOfChosenToken = (await tokenInstance.functions.decimals())[0];
-    const [bestTokenAddressToZapIn, bestTokenToZapInDecimal] =
+    const [bestTokenSymbol, bestTokenAddressToZapIn, bestTokenToZapInDecimal] =
       this._getTheBestTokenAddressToZapIn(
+        inputToken,
         inputTokenAddress,
-        decimalsOfChosenToken,
+        tokenDecimals
       );
     let amountToZapIn = investmentAmountInThisPosition;
     if (
@@ -532,6 +537,11 @@ export default class BaseProtocol extends BaseUniswap {
         amountToZapIn,
         slippage,
         updateProgress,
+        inputToken,
+        tokenDecimals,
+        bestTokenSymbol,
+        bestTokenToZapInDecimal,
+        tokenPricesMappingTable
       );
       amountToZapIn = Math.floor((swapEstimateAmount * (100 - slippage)) / 100);
       swapTxns.push(swapTxn);
@@ -549,6 +559,9 @@ export default class BaseProtocol extends BaseUniswap {
     investmentAmountInThisPosition,
     slippage,
     updateProgress,
+    inputToken,
+    tokenDecimals,
+    tokenPricesMappingTable
   ) {
     // Validate and get token pairs
     const tokenMetadatas = this._getLPTokenPairesToZapIn();
@@ -619,6 +632,11 @@ export default class BaseProtocol extends BaseUniswap {
           amountToZapIn,
           slippage,
           updateProgress,
+          inputToken,
+          tokenDecimals,
+          bestTokenSymbol,
+          bestTokenToZapInDecimal,
+          tokenPricesMappingTable
         );
 
         amountToZapIn = ethers.BigNumber.from(swapEstimateAmount)
@@ -733,6 +751,11 @@ export default class BaseProtocol extends BaseUniswap {
     amount,
     slippage,
     updateProgress,
+    fromToken,
+    fromTokenDecimals,
+    toTokenSymbol,
+    toTokenDecimals,
+    tokenPricesMappingTable
   ) {
     if (fromTokenAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
       return;
@@ -753,9 +776,11 @@ export default class BaseProtocol extends BaseUniswap {
     if (swapCallData["toAmount"] === 0) {
       throw new Error("To amount is 0. Cannot proceed with swapping.");
     }
-
+    const normalizedInputAmout = ethers.utils.formatUnits(amount, fromTokenDecimals);
+    const normalizedOutputAmount = ethers.utils.formatUnits(swapCallData["toAmount"], toTokenDecimals);
+    const tradingLoss = Number(normalizedOutputAmount)*tokenPricesMappingTable[toTokenSymbol]- Number(normalizedInputAmout)*tokenPricesMappingTable[fromToken]
     // If you need to wait for the progress update
-    await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-${fromTokenAddress}-${toTokenAddress}-swap`, Number(amount) - Number(swapCallData["toAmount"]));
+    await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-${fromTokenAddress}-${toTokenAddress}-swap`, tradingLoss);
 
     return [
       prepareTransaction({

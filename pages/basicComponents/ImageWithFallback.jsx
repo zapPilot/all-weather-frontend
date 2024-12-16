@@ -2,13 +2,18 @@ import React, { useState } from "react";
 import Image from "next/image";
 
 const ImageWithFallback = ({ token, height, width, domKey, className }) => {
-  const [imgSrc, setImgSrc] = useState(
-    `/tokenPictures/${token
-      ?.replace("lp ", "")
-      ?.replace("pt ", "")
-      ?.replace(/[()]/g, "")
-      ?.trim()}.webp`,
-  );
+  const [imgSrc, setImgSrc] = useState(() => {
+    if (!token) return '/tokenPictures/placeholder.webp';
+    
+    const cleanedToken = token
+      .toLowerCase()
+      .replace("lp ", "")
+      .replace("pt ", "")
+      .replace(/[()]/g, "")
+      .split(" ")[0];
+      
+    return `/tokenPictures/${cleanedToken}.webp`;
+  });
   return (
     <Image
       src={imgSrc}
