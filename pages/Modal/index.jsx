@@ -13,27 +13,26 @@ import { Popover, Spin } from "antd";
 import { calculateOverrideValues } from "next/dist/server/font-utils";
 
 const formatAmount = (amount) => {
+  if (amount === undefined || amount === null) return <Spin />;
+
   const absAmount = Math.abs(amount);
-  return absAmount === 0 ? (
-    <Spin />
-  ) : absAmount < 0.01 ? (
-    "< $0.01"
-  ) : (
-    `$${absAmount.toFixed(2)}`
-  );
+  return absAmount < 0.01 ? "< $0.01" : `$${absAmount.toFixed(2)}`;
 };
 
 const AmountDisplay = ({
+  key,
   amount,
   showEmoji = false,
   isGreen = false,
   isLoading = false,
-}) => (
-  <span className={isGreen ? "text-green-500" : ""}>
-    {showEmoji && "🎉 "}
-    {isLoading ? <Spin /> : formatAmount(amount)}
-  </span>
-);
+}) => {
+  return (
+    <span className={isGreen ? "text-green-500" : ""} key={key}>
+      {showEmoji && "🎉 "}
+      {isLoading ? <Spin key={`spin-${amount}`} /> : formatAmount(amount)}
+    </span>
+  );
+};
 
 export default function PopUpModal({
   portfolioHelper,
@@ -166,8 +165,9 @@ export default function PopUpModal({
                   </dt>
                   <dd className="text-sm font-medium text-gray-900">
                     <AmountDisplay
+                      key="tansaction-costs"
                       amount={totalTradingLoss}
-                      showEmoji={totalTradingLoss > 0}
+                      showEmoji={totalTradingLoss > 0 && costsCalculated}
                       isGreen={totalTradingLoss > 0}
                       isLoading={!costsCalculated}
                     />
@@ -202,10 +202,10 @@ export default function PopUpModal({
                     </a>
                   </dt>
                   <dd className="text-sm font-medium text-gray-900">
-                    {costsCalculated} {platformFee}
                     <AmountDisplay
+                      key="platformFee"
                       amount={platformFee}
-                      showEmoji={platformFee > 0}
+                      showEmoji={platformFee > 0 && costsCalculated}
                       isGreen={platformFee > 0}
                       isLoading={!costsCalculated}
                     />
@@ -301,9 +301,11 @@ export default function PopUpModal({
                   </dt>
                   <dd className="text-base font-medium text-gray-900">
                     <AmountDisplay
+                      key="total"
                       amount={totalTradingLoss}
                       showEmoji={totalTradingLoss > 0}
                       isGreen={totalTradingLoss > 0}
+                      isLoading={!costsCalculated}
                     />
                   </dd>
                 </div>
