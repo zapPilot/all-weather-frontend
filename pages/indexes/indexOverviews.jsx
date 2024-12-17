@@ -336,6 +336,40 @@ export default function IndexOverviews() {
     chain === "arbitrum" ? switchChain(arbitrum) : switchChain(base);
   };
 
+  // calculate the total investment amount
+  const allInvestmentAmount =
+    investmentAmount * (1 - slippage / 100 - portfolioHelper?.swapFeeRate());
+  // calculate the investment amount for next chain
+  const calCrossChainInvestmentAmount = (nextChain) => {
+    const chainWeight = Object.entries(portfolioHelper.strategy).reduce(
+      (sum, [category, protocols]) => {
+        return (
+          sum +
+          Object.entries(protocols).reduce(
+            (innerSum, [chain, protocolArray]) => {
+              if (chain === nextChain) {
+                console.log("nextChain", nextChain);
+                return (
+                  innerSum +
+                  protocolArray.reduce((weightSum, protocol) => {
+                    console.log("protocol", protocol);
+                    console.log("weightSum", weightSum);
+                    return weightSum + protocol.weight;
+                  }, 0)
+                );
+              }
+              return innerSum;
+            },
+            0,
+          )
+        );
+      },
+      0,
+    );
+    return allInvestmentAmount * chainWeight;
+  };
+  const [nextChainInvestmentAmount, setNextChainInvestmentAmount] = useState(0);
+
   const onChange = (key) => {
     setTabKey(key);
   };
@@ -467,6 +501,7 @@ export default function IndexOverviews() {
       (sum, { currentWeight, APR }) => currentWeight * APR + sum,
       0,
     ) || 0;
+
   const items = [
     {
       key: "1",
@@ -474,20 +509,17 @@ export default function IndexOverviews() {
       children: (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <TokenDropdownInput
-              selectedToken={selectedToken}
-              setSelectedToken={handleSetSelectedToken}
-              setInvestmentAmount={handleSetInvestmentAmount}
-            />
-          </div>
-          <div>
             <div
               className={`mt-4 sm:mt-0 ${nextStepChain ? "hidden" : "block"}`}
             >
               <p>
                 Step 1: Choose a chain to zap in and bridge to another chain.
               </p>
-
+              <TokenDropdownInput
+                selectedToken={selectedToken}
+                setSelectedToken={handleSetSelectedToken}
+                setInvestmentAmount={handleSetInvestmentAmount}
+              />
               {account === undefined ? (
                 <ConfiguredConnectButton />
               ) : Object.values(
@@ -535,10 +567,20 @@ export default function IndexOverviews() {
                 </Button>
               )}
             </div>
-            <div className={`mt-4 ${nextStepChain ? "block" : "hidden"}`}>
+            <div
+              className={`mt-4 
+              ${
+                nextStepChain
+                  ? nextChainInvestmentAmount > 0
+                    ? "hidden"
+                    : "block"
+                  : "hidden"
+              }
+            `}
+            >
               <p>
-                Step 2: Once bridging is complete, switch to the other chain and
-                zap in again.
+                Step 2: Once bridging is complete, switch to the other chain to
+                calculate the investment amount.
               </p>
               <Button
                 type="primary"
@@ -551,20 +593,80 @@ export default function IndexOverviews() {
                   }`}
                 onClick={() => {
                   switchNextStepChain(nextStepChain);
-                  setFinishedTxn(false);
+                  setNextChainInvestmentAmount(
+                    calCrossChainInvestmentAmount(nextStepChain),
+                  );
                 }}
               >
                 switch to {nextStepChain} Chain
               </Button>
+            </div>
+            <div
+              className={`mt-4 ${
+                nextChainInvestmentAmount > 0 ? "block" : "hidden"
+              }`}
+            >
+              <p>
+                Step 3: After calculating the investment amount, click to zap
+                in.
+              </p>
+              {slippage > 1 ? (
+                ((nextChainInvestmentAmount -
+                  parseFloat(walletBalanceData?.displayValue)) /
+                  nextChainInvestmentAmount) *
+                  100 >
+                slippage
+              ) : ((nextChainInvestmentAmount -
+                  parseFloat(walletBalanceData?.displayValue)) /
+                  nextChainInvestmentAmount) *
+                  100 >
+                1 ? (
+                <p className="text-red-400">
+                  Please send more tokens to your AA Wallet to continue.
+                  <br />
+                  Click on the top-right corner to get your AA Wallet address.
+                </p>
+              ) : ((nextChainInvestmentAmount -
+                  parseFloat(walletBalanceData?.displayValue)) /
+                  nextChainInvestmentAmount) *
+                  100 >
+                0 ? (
+                <Button
+                  type="primary"
+                  className={`w-full my-2 ${
+                    investmentAmount > 0 ? "hidden" : "block"
+                  }`}
+                  onClick={() => {
+                    setInvestmentAmount(
+                      parseFloat(walletBalanceData?.displayValue),
+                    );
+                    setFinishedTxn(false);
+                  }}
+                >
+                  Set Investment Amount to{" "}
+                  {parseFloat(walletBalanceData?.displayValue)} on{" "}
+                  {nextStepChain} Chain
+                </Button>
+              ) : (
+                <Button
+                  type="primary"
+                  className={`w-full my-2 ${
+                    investmentAmount > 0 ? "hidden" : "block"
+                  }`}
+                  onClick={() => {
+                    setInvestmentAmount(nextChainInvestmentAmount);
+                    setFinishedTxn(false);
+                  }}
+                >
+                  Set Investment Amount to {nextChainInvestmentAmount} on{" "}
+                  {nextStepChain} Chain
+                </Button>
+              )}
               <Button
                 type="primary"
-                className={`w-full my-2 
-                  ${
-                    chainId?.name.toLowerCase().replace(" one", "").trim() !==
-                    nextStepChain
-                      ? "hidden"
-                      : "block"
-                  }`}
+                className={`w-full my-2 ${
+                  investmentAmount > 0 ? "block" : "hidden"
+                }`}
                 onClick={() => handleAAWalletAction("zapIn", true)}
                 loading={zapInIsLoading}
                 disabled={
@@ -572,7 +674,7 @@ export default function IndexOverviews() {
                   Number(investmentAmount) > tokenBalance
                 }
               >
-                Enter amount to Zap In on current chain
+                Zap In
               </Button>
             </div>
           </div>
