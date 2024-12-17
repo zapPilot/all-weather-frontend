@@ -53,9 +53,6 @@ export class BaseConvex extends BaseProtocol {
   }
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     let rewardBalance = {};
-    updateProgress(
-      `fetching pending rewards from ${this.stakeFarmContract.address}`,
-    );
     const stakeFarmContractInstance = new ethers.Contract(
       this.convexRewardPoolContract.address,
       ConvexRewardPool,
@@ -255,6 +252,11 @@ export class BaseConvex extends BaseProtocol {
       method: "withdraw",
       params: [amount, false],
     });
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-unstake`,
+      0,
+    );
     return [[unstakeTxn], amount];
   }
   async _withdrawLPAndClaim(
@@ -269,19 +271,22 @@ export class BaseConvex extends BaseProtocol {
       CurveStableSwapNG,
       PROVIDER(this.chain),
     );
-    updateProgress("Getting LP balances");
     const [token_a_balance, token_b_balance] = (
       await protocolContractInstance.functions.get_balances()
     )[0];
+    const tokenASymbol = this.customParams.lpTokens[0][0];
+    const tokenBSymbol = this.customParams.lpTokens[1][0];
     const decimalsA = this.customParams.lpTokens[0][2];
     const decimalsB = this.customParams.lpTokens[1][2];
-    const normalizedTokenA = Number(
+    const normalizedTokenAInThePool = Number(
       ethers.utils.formatUnits(token_a_balance.toString(), decimalsA),
     );
-    const normalizedTokenB = Number(
+    const normalizedTokenBInThePool = Number(
       ethers.utils.formatUnits(token_b_balance.toString(), decimalsB),
     );
-    const ratio = normalizedTokenA / (normalizedTokenA + normalizedTokenB);
+    const ratio =
+      normalizedTokenAInThePool /
+      (normalizedTokenAInThePool + normalizedTokenBInThePool);
     const normalizedAmount = ethers.utils.formatUnits(
       amount.toString(),
       this.assetDecimals,
@@ -306,10 +311,30 @@ export class BaseConvex extends BaseProtocol {
       method: "remove_liquidity",
       params: [amount, minPairAmounts],
     });
+
+    // TODO(david): the asset price is not correct here, so we just reduce 0.03% swap fee to estimate the trading loss
+    const lpPrice = this._calculateLpPrice(tokenPricesMappingTable);
+    const tradingLoss =
+      (normalizedAmount * ratio * tokenPricesMappingTable[tokenASymbol] +
+        normalizedAmount *
+          (1 - ratio) *
+          tokenPricesMappingTable[tokenBSymbol]) *
+        0.9997 -
+      amount * lpPrice;
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-withdraw`,
+      tradingLoss,
+    );
     const [claimTxns, _] = await this.customClaim(
       owner,
       tokenPricesMappingTable,
       updateProgress,
+    );
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-claim`,
+      0,
     );
     const tokenMetadatas = this._getLPTokenPairesToZapIn();
     return [[withdrawTxn, ...claimTxns], tokenMetadatas, minPairAmounts];

@@ -381,6 +381,8 @@ export class BasePortfolio {
           actionParams.account,
           normalizedZapOutPercentage,
           actionParams.tokenOutAddress,
+          actionParams.tokenOutSymbol,
+          actionParams.tokenOutDecimals,
           actionParams.slippage,
           actionParams.tokenPricesMappingTable,
           actionParams.updateProgress,
@@ -961,6 +963,7 @@ export class BasePortfolio {
     return assetAddressSetByChain;
   }
   async getTokenPricesMappingTable(updateProgress) {
+    // [TODO](david): remove this table and use update to date data
     let tokenPricesMappingTable = {
       usdc: 1,
       usdt: 1,
@@ -971,6 +974,7 @@ export class BasePortfolio {
       msusd: 0.9972,
       zunusd: 0.9953,
       eusd: 0.9999,
+      gusdc: 1.13,
     };
     let tokenPriceCache = {};
     for (const [token, coinMarketCapId] of Object.entries(
@@ -1030,30 +1034,39 @@ export class BasePortfolio {
         };
         chainNodes.push(chainNode);
         for (const protocol of protocolsOnThisChain) {
+          let stepsData = [];
           if (protocol.weight === 0) continue;
           if (actionName === "zapIn") {
-            const stepsData = protocol.interface.getZapInFlowChartData(
+            stepsData = protocol.interface.getZapInFlowChartData(
               actionParams.inputToken,
               actionParams.inputTokenAddress,
-              actionParams.amount,
               protocol.weight,
             );
-            const currentChainToProtocolNodeEdge = {
-              id: `edge-${chainNode.id}-${protocol.interface.uniqueId()}`,
-              source: chainNode.id,
-              target: stepsData.nodes[0].id,
-              data: {
-                ratio: protocol.weight,
-              },
-            };
-            flowChartData.nodes = flowChartData.nodes.concat(stepsData.nodes);
-            flowChartData.edges = flowChartData.edges.concat(
-              stepsData.edges.concat(currentChainToProtocolNodeEdge),
+          } else if (actionName === "stake") {
+            stepsData = protocol.interface.getStakeFlowChartData();
+          } else if (actionName === "zapOut") {
+            stepsData = protocol.interface.getZapOutFlowChartData(
+              actionParams.outputToken,
+              actionParams.outputTokenAddress,
+              protocol.weight,
             );
+          } else if (actionName === "rebalance") {
+            stepsData = protocol.interface.getRebalanceFlowChartData();
           } else {
-            const stepsData = protocol.interface.getFlowChartData();
-            flowChartData.push(stepsData);
+            stepsData = protocol.interface.getFlowChartData();
           }
+          const currentChainToProtocolNodeEdge = {
+            id: `edge-${chainNode.id}-${protocol.interface.uniqueId()}`,
+            source: chainNode.id,
+            target: stepsData.nodes[0].id,
+            data: {
+              ratio: protocol.weight,
+            },
+          };
+          flowChartData.nodes = flowChartData.nodes.concat(stepsData.nodes);
+          flowChartData.edges = flowChartData.edges.concat(
+            stepsData.edges.concat(currentChainToProtocolNodeEdge),
+          );
         }
       }
     }
@@ -1068,7 +1081,7 @@ export class BasePortfolio {
     transferAmount,
     zapOutUsdcBalance,
   ) {
-    actionParams.setPlatformFee(zapOutUsdcBalance * this.swapFeeRate() * 2);
+    actionParams.setPlatformFee(-zapOutUsdcBalance * this.swapFeeRate() * 2);
     const referrer = await this._getReferrer(actionParams.account);
     const contract = getContract({
       client: THIRDWEB_CLIENT,
@@ -1110,7 +1123,7 @@ export class BasePortfolio {
     const referrer = await this._getReferrer(owner);
     const tokenOutUsdBalance = portfolioUsdBalance * zapOutPercentage;
     const swapFeeUsd = tokenOutUsdBalance * this.swapFeeRate();
-    setPlatformFee(swapFeeUsd);
+    setPlatformFee(-swapFeeUsd);
     const tokenOutDecimals = await getTokenDecimal(
       tokenOutAddress,
       chainMetadata.name.toLowerCase(),

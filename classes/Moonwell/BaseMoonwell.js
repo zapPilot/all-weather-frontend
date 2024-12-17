@@ -68,7 +68,6 @@ export class BaseMoonwell extends BaseProtocol {
   }
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     let rewardBalance = {};
-    updateProgress("checking pending rewards");
 
     const comptroller = (
       await this.protocolContractInstance.functions.comptroller()

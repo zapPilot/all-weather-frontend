@@ -67,9 +67,6 @@ export class BaseAerodrome extends BaseProtocol {
   }
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     let rewardBalance = {};
-    updateProgress(
-      `fetching pending rewards from ${this.stakeFarmContract.address}`,
-    );
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       Guage,
@@ -167,7 +164,6 @@ export class BaseAerodrome extends BaseProtocol {
       ERC20_ABI,
       PROVIDER(this.chain),
     );
-    updateProgress("Getting stake balance");
     return (await stakeFarmContractInstance.functions.balanceOf(owner))[0];
   }
   _getLPTokenPairesToZapIn() {
@@ -272,8 +268,6 @@ export class BaseAerodrome extends BaseProtocol {
       updateProgress,
       this.chainId,
     );
-
-    updateProgress("Getting LP balances");
     const lpTokens = this._getLPTokenPairesToZapIn();
 
     // Get pool reserves and calculate withdrawal amounts

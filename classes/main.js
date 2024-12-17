@@ -46,6 +46,7 @@ export const generateIntentTxns = async (
       chainMetadata,
       tokenOutSymbol: tokenSymbol,
       tokenOutAddress: tokenAddress,
+      tokenOutDecimals: tokenDecimals,
       zapOutPercentage: Number(zapOutPercentage),
       setTradingLoss,
       setStepName,

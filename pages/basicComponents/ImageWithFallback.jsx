@@ -6,12 +6,12 @@ const ImageWithFallback = ({ token, height, width, domKey, className }) => {
     if (!token) return "/tokenPictures/placeholder.webp";
 
     const cleanedToken = token
+      .trim()
       .toLowerCase()
       .replace("lp ", "")
       .replace("pt ", "")
       .replace(/[()]/g, "")
       .split(" ")[0];
-
     return `/tokenPictures/${cleanedToken}.webp`;
   });
   return (

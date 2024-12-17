@@ -378,6 +378,16 @@ export class BaseEquilibria extends BaseProtocol {
       method: "withdraw",
       params: [this.pidOfEquilibria, withdrawAmount],
     });
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-unstake`,
+      0,
+    );
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-claim`,
+      0,
+    );
     return [[approveEqbLPTxn, withdrawTxn], withdrawAmount];
   }
   async _withdrawAndClaim(
@@ -417,6 +427,23 @@ export class BaseEquilibria extends BaseProtocol {
       method: "removeLiquiditySingleToken",
       params: zapOutResp.data.contractCallParams,
     });
+    const latestPendleAssetPrice = await this._fetchPendleAssetPrice(() => {});
+    const tradingLoss =
+      Number(
+        ethers.utils.formatUnits(
+          zapOutResp.data.contractCallParams[3].minTokenOut,
+          decimalOfBestTokenToZapOut,
+        ),
+      ) *
+        tokenPricesMappingTable[symbolOfBestTokenToZapOut] -
+      Number(ethers.utils.formatUnits(amount, this.assetDecimals)) *
+        latestPendleAssetPrice *
+        Math.pow(10, this.assetDecimals);
+    this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-withdraw`,
+      tradingLoss,
+    );
     return [
       [approvePendleTxn, burnTxn],
       symbolOfBestTokenToZapOut,

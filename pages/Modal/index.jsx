@@ -10,7 +10,6 @@ import DemoFlowDirectionGraph from "../FlowChart";
 import { CheckIcon, QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/20/solid";
 import { Popover, Spin } from "antd";
-import { calculateOverrideValues } from "next/dist/server/font-utils";
 
 const formatAmount = (amount) => {
   if (amount === undefined || amount === null) return <Spin />;
@@ -103,7 +102,10 @@ export default function PopUpModal({
                       inputTokenAddress: selectedToken
                         ?.toLowerCase()
                         ?.split("-")[1],
-                      amount: investmentAmount,
+                      outputToken: selectedToken?.toLowerCase()?.split("-")[0],
+                      outputTokenAddress: selectedToken
+                        ?.toLowerCase()
+                        ?.split("-")[1],
                     })}
                     stepName={stepName}
                     tradingLoss={tradingLoss}
@@ -189,38 +191,7 @@ export default function PopUpModal({
                             <br />
                             3. Rebalance: 0.598%
                             <br />
-                          </>
-                        }
-                        title="How is this calculated?"
-                        trigger="hover"
-                      >
-                        <QuestionMarkCircleIcon
-                          aria-hidden="true"
-                          className="size-5"
-                        />
-                      </Popover>
-                    </a>
-                  </dt>
-                  <dd className="text-sm font-medium text-gray-900">
-                    <AmountDisplay
-                      key="platformFee"
-                      amount={platformFee}
-                      showEmoji={platformFee > 0 && costsCalculated}
-                      isGreen={platformFee > 0}
-                      isLoading={!costsCalculated}
-                    />
-                  </dd>
-                </div>
-                <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                  <dt className="flex text-sm text-gray-600">
-                    <span>Performance fee estimate</span>
-                    <a
-                      href="#"
-                      className="ml-2 shrink-0 text-gray-400 hover:text-gray-500"
-                    >
-                      <Popover
-                        content={
-                          <>
+                            <br />
                             (zap-in * 1 time + zap-out * 1 time + rebalance * 5
                             times per year * 50%) / APR = <br />
                             (usually of 50% of your money needs to be
@@ -235,7 +206,7 @@ export default function PopUpModal({
                             %
                           </>
                         }
-                        title="How is this calculated?"
+                        title="How is Performance fee calculated?"
                         trigger="hover"
                       >
                         <QuestionMarkCircleIcon
@@ -246,6 +217,7 @@ export default function PopUpModal({
                     </a>
                   </dt>
                   <dd className="text-sm font-medium text-gray-900">
+                    Performance fee{" "}
                     {isNaN(
                       ((5 * 0.00299 * 2 * 0.5 + 0.00299 * 2) / portfolioAPR) *
                         100,
@@ -256,55 +228,31 @@ export default function PopUpModal({
                         ((5 * 0.00299 * 2 * 0.5 + 0.00299 * 2) / portfolioAPR) *
                         100
                       ).toFixed(2)}%`
-                    )}
+                    )}{" "}
+                    ≈{" "}
+                    <AmountDisplay
+                      key="platformFee"
+                      amount={platformFee}
+                      showEmoji={platformFee > 0 && costsCalculated}
+                      isGreen={platformFee > 0}
+                      isLoading={!costsCalculated}
+                    />
                   </dd>
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                  <dt className="flex items-center text-sm text-gray-600">
-                    <span>
-                      {totalTradingLoss > 0 ? "Total profit" : "Total loss"}
-                    </span>
-                    <a
-                      href="#"
-                      className="ml-2 shrink-0 text-gray-400 hover:text-gray-500"
-                    >
-                      <Popover
-                        content={
-                          <>
-                            Transaction cost estimate:
-                            <br />
-                            1. DEX slippage
-                            <br />
-                            2. Deposit fee charged by protocols like Pendle,
-                            Curve, etc.
-                            <br />
-                            3. Withdrawal fee charged by protocols like Pendle,
-                            Curve, etc.
-                            <br />
-                            <br />
-                            Arbitrage profit estimate:
-                            <br />
-                            1. Market inefficiencies between protocols may
-                            create opportunities for profitable trades
-                            <br />
-                          </>
-                        }
-                        title="How is this calculated?"
-                        trigger="hover"
-                      >
-                        <QuestionMarkCircleIcon
-                          aria-hidden="true"
-                          className="size-5"
-                        />
-                      </Popover>
-                    </a>
+                  <dt className="text-base font-medium text-gray-900">
+                    {totalTradingLoss + platformFee > 0
+                      ? "Total profit"
+                      : "Total cost"}
                   </dt>
                   <dd className="text-base font-medium text-gray-900">
                     <AmountDisplay
                       key="total"
-                      amount={totalTradingLoss}
-                      showEmoji={totalTradingLoss > 0}
-                      isGreen={totalTradingLoss > 0}
+                      amount={totalTradingLoss + platformFee}
+                      showEmoji={
+                        totalTradingLoss + platformFee > 0 && costsCalculated
+                      }
+                      isGreen={totalTradingLoss + platformFee > 0}
                       isLoading={!costsCalculated}
                     />
                   </dd>

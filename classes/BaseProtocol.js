@@ -65,7 +65,111 @@ export default class BaseProtocol extends BaseUniswap {
     );
   }
 
-  getZapInFlowChartData(inputToken, inputTokenAddress, amount, weight) {
+  getZapInFlowChartData(inputToken, inputTokenAddress, weight) {
+    const nodes = this._generateZapInNodes(inputToken, inputTokenAddress);
+    const edges = this._generateEdges(nodes, weight);
+    this._enrichNodesWithMetadata(nodes);
+
+    return { nodes, edges };
+  }
+
+  _generateZapInNodes(inputToken, inputTokenAddress) {
+    const nodes = [];
+
+    if (this.mode === "single") {
+      this._addSingleModeNodes(nodes, inputToken, inputTokenAddress);
+    } else if (this.mode === "LP") {
+      this._addLPModeNodes(nodes, inputToken, inputTokenAddress);
+    }
+
+    return nodes;
+  }
+
+  _addSingleModeNodes(nodes, inputToken, inputTokenAddress) {
+    const [bestTokenAddressToZapIn] = this._getTheBestTokenAddressToZapIn(
+      inputTokenAddress,
+      18, // inputTokenDecimalsPlaceholder
+    );
+
+    if (bestTokenAddressToZapIn !== inputTokenAddress) {
+      nodes.push(
+        this._createSwapNode(
+          inputToken,
+          inputTokenAddress,
+          bestTokenAddressToZapIn,
+        ),
+      );
+    }
+
+    this._addCommonNodes(nodes);
+  }
+
+  _addLPModeNodes(nodes, inputToken, inputTokenAddress) {
+    const tokenMetadatas = this._getLPTokenPairesToZapIn();
+
+    for (const [bestTokenSymbol, bestTokenAddressToZapIn] of tokenMetadatas) {
+      if (bestTokenAddressToZapIn !== inputTokenAddress) {
+        nodes.push({
+          id: `${this.uniqueId()}-${inputToken}-${bestTokenSymbol}-swap`,
+          name: `Swap ${inputToken} to ${bestTokenSymbol}`,
+        });
+      }
+    }
+
+    this._addCommonNodes(nodes);
+  }
+
+  _addCommonNodes(nodes) {
+    const commonNodes = [
+      {
+        id: `${this.uniqueId()}-approve`,
+        name: "Approve",
+      },
+      {
+        id: `${this.uniqueId()}-deposit`,
+        name: `Deposit ${this.symbolList.join("-")}`,
+      },
+      {
+        id: `${this.uniqueId()}-stake`,
+        name: "stake",
+      },
+    ];
+
+    nodes.push(...commonNodes);
+  }
+
+  _createSwapNode(inputToken, inputTokenAddress, bestTokenAddressToZapIn) {
+    return {
+      id: `${this.uniqueId()}-${inputTokenAddress}-${bestTokenAddressToZapIn}-swap`,
+      name: `Swap ${inputToken}`,
+    };
+  }
+
+  _generateEdges(nodes, weight) {
+    const edges = [];
+
+    for (let i = 0; i < nodes.length - 1; i++) {
+      edges.push({
+        id: `edge-${this.uniqueId()}-${i}`,
+        source: nodes[i].id,
+        target: nodes[i + 1].id,
+        data: { ratio: weight },
+      });
+    }
+
+    return edges;
+  }
+
+  _enrichNodesWithMetadata(nodes) {
+    for (const node of nodes) {
+      node.chain = this.chain;
+      node.symbolList = this.symbolList.map((symbol) =>
+        symbol.replace("(bridged)", ""),
+      );
+      node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
+    }
+  }
+  getZapOutFlowChartData(outputToken, outputTokenAddress, weight) {
     function _autoGenerateEdges(uniqueId, nodes) {
       const edges = [];
       for (let i = 0; i < nodes.length - 1; i++) {
@@ -82,64 +186,61 @@ export default class BaseProtocol extends BaseUniswap {
     }
     const nodes = [];
 
-    const inputTokenDecimalsPlaceholder = 18;
     if (this.mode === "single") {
       // decimals here doesn't matter
-      const [bestTokenAddressToZapIn, _] = this._getTheBestTokenAddressToZapIn(
-        inputTokenAddress,
-        inputTokenDecimalsPlaceholder,
-      );
-      if (bestTokenAddressToZapIn !== inputTokenAddress) {
+      for (const node of [
+        {
+          id: `${this.uniqueId()}-unstake`,
+          name: "Unstake",
+        },
+        {
+          id: `${this.uniqueId()}-withdraw`,
+          name: `Withdraw ${this.symbolList.join("-")}`,
+        },
+        {
+          id: `${this.uniqueId()}-claim`,
+          name: "Claim Rewards",
+        },
+      ]) {
+        nodes.push(node);
+      }
+      const [bestTokenSymbol, bestTokenAddressToZapIn, _] =
+        this._getTheBestTokenAddressToZapOut();
+      if (outputTokenAddress !== bestTokenAddressToZapIn) {
         nodes.push({
-          id: `${this.uniqueId()}-${inputTokenAddress}-${bestTokenAddressToZapIn}-swap`,
-          name: `Swap ${inputToken}`,
+          id: `${this.uniqueId()}-${bestTokenSymbol}-${outputToken}-swap`,
+          name: `Swap ${bestTokenSymbol} to ${outputToken}`,
         });
       }
+    } else if (this.mode === "LP") {
       for (const node of [
         {
-          id: `${this.uniqueId()}-approve`,
-          name: "Approve",
+          id: `${this.uniqueId()}-unstake`,
+          name: "Unstake",
         },
         {
-          id: `${this.uniqueId()}-deposit`,
-          name: `Deposit ${this.symbolList.join("-")}`,
+          id: `${this.uniqueId()}-withdraw`,
+          name: `Withdraw ${this.symbolList.join("-")}`,
         },
         {
-          id: `${this.uniqueId()}-stake`,
-          name: "stake",
+          id: `${this.uniqueId()}-claim`,
+          name: "Claim Rewards",
         },
       ]) {
         nodes.push(node);
       }
-    } else if (this.mode === "LP") {
-      const tokenMetadatas = this._getLPTokenPairesToZapIn();
+      const tokenMetadatas = this._getLPTokenAddressesToZapOut();
       for (const [
         bestTokenSymbol,
-        bestTokenAddressToZapIn,
-        bestTokenToZapInDecimal,
+        bestTokenAddressToZapOut,
+        decimals,
       ] of tokenMetadatas) {
-        if (bestTokenAddressToZapIn !== inputTokenAddress) {
+        if (bestTokenAddressToZapOut !== outputTokenAddress) {
           nodes.push({
-            id: `${this.uniqueId()}-${inputTokenAddress}-${bestTokenAddressToZapIn}-swap`,
-            name: `Swap ${inputToken} to ${bestTokenSymbol}`,
+            id: `${this.uniqueId()}-${bestTokenSymbol}-${outputToken}-swap`,
+            name: `Swap ${bestTokenSymbol} to ${outputToken}`,
           });
         }
-      }
-      for (const node of [
-        {
-          id: `${this.uniqueId()}-approve`,
-          name: "Approve",
-        },
-        {
-          id: `${this.uniqueId()}-deposit`,
-          name: `Deposit ${this.symbolList.join("-")}`,
-        },
-        {
-          id: `${this.uniqueId()}-stake`,
-          name: "stake",
-        },
-      ]) {
-        nodes.push(node);
       }
     }
     const edges = _autoGenerateEdges(this.uniqueId(), nodes);
@@ -155,9 +256,6 @@ export default class BaseProtocol extends BaseUniswap {
       nodes,
       edges,
     };
-  }
-  getZapOutFlowChartData() {
-    throw new Error("Method 'getZapOutFlowChartData()' must be implemented.");
   }
   getTransferFlowChartData() {
     throw new Error("Method 'getTransferFlowChartData()' must be implemented.");
@@ -290,6 +388,8 @@ export default class BaseProtocol extends BaseUniswap {
     recipient,
     percentage,
     outputToken,
+    outputTokenSymbol,
+    outputTokenDecimals,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
@@ -351,6 +451,8 @@ export default class BaseProtocol extends BaseUniswap {
       recipient,
       withdrawTokenAndBalance,
       outputToken,
+      outputTokenSymbol,
+      outputTokenDecimals,
       slippage,
       tokenPricesMappingTable,
       updateProgress,
@@ -525,7 +627,7 @@ export default class BaseProtocol extends BaseUniswap {
   _getLPTokenPairesToZapIn() {
     return this.customParams.lpTokens;
   }
-  _getTheBestTokenAddressToZapOut(inputToken, InputTokenDecimals) {
+  _getTheBestTokenAddressToZapOut() {
     throw new Error(
       "Method '_getTheBestTokenAddressToZapOut()' must be implemented.",
     );
@@ -706,6 +808,8 @@ export default class BaseProtocol extends BaseUniswap {
     recipient,
     withdrawTokenAndBalance,
     outputToken,
+    outputTokenSymbol,
+    outputTokenDecimals,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
@@ -715,6 +819,8 @@ export default class BaseProtocol extends BaseUniswap {
       withdrawTokenAndBalance,
     )) {
       const amount = tokenMetadata.balance;
+      const fromTokenSymbol = tokenMetadata.symbol;
+      const fromTokenDecimals = tokenMetadata.decimals;
       if (
         amount.toString() === "0" ||
         amount === 0 ||
@@ -738,6 +844,11 @@ export default class BaseProtocol extends BaseUniswap {
         amount,
         slippage,
         updateProgress,
+        fromTokenSymbol,
+        fromTokenDecimals,
+        outputTokenSymbol,
+        outputTokenDecimals,
+        tokenPricesMappingTable,
       );
       if (swapTxnResult === undefined) {
         continue;
@@ -814,7 +925,7 @@ export default class BaseProtocol extends BaseUniswap {
     // If you need to wait for the progress update
     await this._updateProgressAndWait(
       updateProgress,
-      `${this.uniqueId()}-${fromTokenAddress}-${toTokenAddress}-swap`,
+      `${this.uniqueId()}-${fromToken}-${toTokenSymbol}-swap`,
       tradingLoss,
     );
 
@@ -1003,7 +1114,7 @@ export default class BaseProtocol extends BaseUniswap {
     await new Promise((resolve) => {
       updateProgress(nodeId, tradingLoss);
       // Use setTimeout to ensure the state update is queued
-      setTimeout(resolve, 10);
+      setTimeout(resolve, 30);
     });
   }
 }

@@ -102,7 +102,6 @@ export class Vela extends BaseProtocol {
     return await this._fetchVlpPrice(() => {});
   }
   async _fetchVlpPrice(updateProgress) {
-    updateProgress("fetching VLP price");
     const protocolContractInstance = new ethers.Contract(
       this.protocolContract.address,
       Vault,

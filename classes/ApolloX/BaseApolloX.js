@@ -51,9 +51,6 @@ export class BaseApolloX extends BaseProtocol {
     ];
   }
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
-    updateProgress(
-      `fetching pending rewards from ${this.stakeFarmContract.address}`,
-    );
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       SmartChefInitializable,
@@ -185,7 +182,6 @@ export class BaseApolloX extends BaseProtocol {
     return await this._fetchAlpPrice(() => {});
   }
   async _fetchAlpPrice(updateProgress) {
-    updateProgress("fetching ALP price");
     const response = await axios({
       method: "post",
       url: "https://www.apollox.finance/bapi/futures/v1/public/future/symbol/history-price",

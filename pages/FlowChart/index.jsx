@@ -17,9 +17,10 @@ const UserFlowNode = ({
     isActive: false,
     tradingLossValue: null,
   });
+
   React.useEffect(() => {
     if (stepName !== prevStepNameRef.current) {
-      setCompletedSteps((prev) => new Set([...prev, stepName]));
+      setCompletedSteps((prev) => new Set([...prev, prevStepNameRef.current]));
       prevStepNameRef.current = stepName;
 
       // If this node is the current step, store its trading loss
@@ -28,9 +29,15 @@ const UserFlowNode = ({
           isActive: true,
           tradingLossValue: tradingLoss,
         });
+      } else {
+        // Add explicit state reset when node is no longer active
+        setNodeState((prev) => ({
+          ...prev,
+          isActive: false,
+        }));
       }
     }
-  }, [stepName]);
+  }, [stepName, data.id, tradingLoss, setCompletedSteps]);
 
   // Use stored state or calculate current state
   const isActiveOrCompleted =
@@ -89,7 +96,7 @@ const UserFlowNode = ({
     </div>
   );
 
-  const renderDepositNode = () => (
+  const renderDepositWithdrawNode = (actionName) => (
     <div className="flex flex-col">
       <div className="flex items-center">
         <Image
@@ -99,9 +106,9 @@ const UserFlowNode = ({
           height={20}
           width={20}
         />
-        Deposit
+        {actionName}
         {data.name
-          .replace("Deposit ", "")
+          .replace(actionName, "")
           .split("-")
           .map((token, idx) => (
             <ImageWithFallback
@@ -133,6 +140,7 @@ const UserFlowNode = ({
   );
   return (
     <div
+      key={`flow-node-${data.id}`}
       className={`user-flow-node transition-opacity duration-300 ${
         isActiveOrCompleted ? "opacity-100" : "opacity-40"
       }`}
@@ -140,8 +148,10 @@ const UserFlowNode = ({
       <div className="flex items-center">
         {data.name.startsWith("Swap")
           ? renderSwapNode()
-          : data.name.startsWith("Deposit")
-          ? renderDepositNode()
+          : data.name.startsWith("Deposit") || data.name.startsWith("Withdraw")
+          ? renderDepositWithdrawNode(
+              data.name.startsWith("Deposit") ? "Deposit" : "Withdraw",
+            )
           : renderDefaultNode()}
       </div>
     </div>
@@ -187,10 +197,7 @@ export default function DemoFlowDirectionGraph({
             ? "l(0) 0:#F04864 0.5:#7EC2F3 1:#1890FF"
             : "l(0) 0:#1890FF 0.5:#7EC2F3 1:#F04864",
         labelText: (d) => {
-          const { type, ratio } = d.data;
           return "";
-          const text = type === "split" ? "分流" : "占比";
-          return `${text} ${(Number(ratio) * 100).toFixed(2)}%`;
         },
         labelBackground: true,
       },

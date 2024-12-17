@@ -282,7 +282,6 @@ export class AllWeatherPortfolio extends React.Component {
       );
       const data = await response.json();
       existingInvestmentPositionsbyChain[chain] = data;
-      updateProgress();
     }
     return existingInvestmentPositionsbyChain;
   }
@@ -318,7 +317,6 @@ export class AllWeatherPortfolio extends React.Component {
         .then((result) => {
           tokenPricesMappingTable[token] = result.data.price;
         });
-      updateProgress();
     }
     return tokenPricesMappingTable;
   }
@@ -351,7 +349,6 @@ export class AllWeatherPortfolio extends React.Component {
           { retries: 5, delay: 1000 },
         );
         txns.push(txn);
-        updateProgress();
       }
     }
     return txns;
