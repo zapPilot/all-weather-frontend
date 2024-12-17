@@ -209,11 +209,20 @@ export class BaseConvex extends BaseProtocol {
     );
     return (await rewardPoolContractInstance.functions.balanceOf(owner))[0];
   }
-  _getLPTokenPairesToZapIn() {
-    return this.customParams.lpTokens;
-  }
   async _calculateTokenAmountsForLP(tokenMetadatas) {
-    return [1, 1];
+    const [reserve0, reserve1] =
+      await this.assetContractInstance.functions.get_balances();
+    const [decimals0, decimals1] = [tokenMetadatas[0][2], tokenMetadatas[1][2]];
+    const normalizedReserve0 = Number(
+      ethers.utils.formatUnits(reserve0.toString(), decimals0),
+    ).toFixed(18);
+    const normalizedReserve1 = Number(
+      ethers.utils.formatUnits(reserve1.toString(), decimals1),
+    ).toFixed(18);
+    return [
+      ethers.utils.parseUnits(normalizedReserve0, 18),
+      ethers.utils.parseUnits(normalizedReserve1, 18),
+    ];
   }
   _calculateLpPrice(tokenPricesMappingTable) {
     // TODO(david): need to calculate the correct LP price
