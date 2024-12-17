@@ -7,17 +7,13 @@ import Image from "next/image";
 import Link from "next/link";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
-import { CheckIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
+import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
 import TransacitonHistory from "./transactionHistory.jsx";
 import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
 import ConfiguredConnectButton from "../ConnectButton";
-<<<<<<< HEAD
 import { base, arbitrum } from "thirdweb/chains";
-=======
 import PopUpModal from "../Modal";
-import { base } from "thirdweb/chains";
->>>>>>> b19bac1 ([wip]: calculated performance fee)
 import {
   Button,
   ConfigProvider,
@@ -127,9 +123,12 @@ export default function IndexOverviews() {
     protocolAssetDustInWalletLoading,
     setProtocolAssetDustInWalletLoading,
   ] = useState(false);
+  const [actionName, setActionName] = useState("");
+  const [onlyThisChain, setOnlyThisChain] = useState(false);
   const [totalTradingLoss, setTotalTradingLoss] = useState(0);
   const [tradingLoss, setTradingLoss] = useState(0);
   const [platformFee, setPlatformFee] = useState(0);
+  const [costsCalculated, setCostsCalculated] = useState(false);
   const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(
     portfolioName === "Stablecoin Vault" ? 0.5 : 3,
@@ -180,6 +179,8 @@ export default function IndexOverviews() {
 
   const handleAAWalletAction = async (actionName, onlyThisChain = false) => {
     setOpen(true);
+    setActionName(actionName);
+    setOnlyThisChain(onlyThisChain);
 
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
     if (!tokenSymbolAndAddress) {
@@ -227,6 +228,7 @@ export default function IndexOverviews() {
         ],
         onlyThisChain,
       );
+      setCostsCalculated(true);
       if (txns.length < 2) {
         throw new Error("No transactions to send");
       }
@@ -389,189 +391,6 @@ export default function IndexOverviews() {
       tokenAddress,
     });
   const [tokenBalance, setTokenBalance] = useState(0);
-<<<<<<< HEAD
-=======
-  const items = [
-    {
-      key: "1",
-      label: "Zap In",
-      children: (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <TokenDropdownInput
-              selectedToken={selectedToken}
-              setSelectedToken={handleSetSelectedToken}
-              setInvestmentAmount={handleSetInvestmentAmount}
-            />
-          </div>
-          <div>
-            <div className="mt-4 sm:mt-0 border-b border-white">
-              <Dropdown
-                menu={{
-                  items: switchItems,
-                }}
-                trigger="click"
-              >
-                <Button onClick={(e) => e.preventDefault()}>
-                  <Space>
-                    <Image
-                      src={`/chainPicturesWebp/${chainId?.name
-                        .toLowerCase()
-                        .replace(" one", "")}.webp`}
-                      alt="arbitrum"
-                      height={22}
-                      width={22}
-                      className="rounded-full ms-1"
-                    />
-                    <DownOutlined />
-                  </Space>
-                </Button>
-              </Dropdown>
-              <p>
-                Step 1: Choose a chain to zap in and bridge to another chain.
-              </p>
-
-              {account === undefined ? (
-                <ConfiguredConnectButton />
-              ) : Object.values(
-                  protocolAssetDustInWallet?.[
-                    chainId?.name.toLowerCase().replace(" one", "")
-                  ] || {},
-                ).reduce(
-                  (sum, protocolObj) =>
-                    sum + (protocolObj.assetUsdBalanceOf || 0),
-                  0,
-                ) /
-                  usdBalance >
-                0.05 ? (
-                <Button
-                  type="primary"
-                  className="w-full my-2"
-                  onClick={() => handleAAWalletAction("stake", true)}
-                  loading={protocolAssetDustInWalletLoading}
-                  disabled={usdBalanceLoading}
-                >
-                  {`Stake Available Assets ($${Object.values(
-                    protocolAssetDustInWallet?.[
-                      chainId?.name.toLowerCase().replace(" one", "")
-                    ] || {},
-                  )
-                    .reduce(
-                      (sum, protocolObj) =>
-                        sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
-                      0,
-                    )
-                    .toFixed(2)})`}
-                </Button>
-              ) : (
-                <Button
-                  type="primary"
-                  className="w-full my-2"
-                  onClick={() => handleAAWalletAction("zapIn")}
-                  loading={zapInIsLoading}
-                  disabled={
-                    Number(investmentAmount) === 0 ||
-                    Number(investmentAmount) > tokenBalance
-                  }
-                >
-                  Zap In
-                </Button>
-              )}
-            </div>
-            <div className="mt-4">
-              <p>
-                Step 2: Once bridging is complete, switch to the other chain and
-                zap in again.
-              </p>
-              <Button
-                type="primary"
-                className="w-full my-2"
-                onClick={() => handleAAWalletAction("zapIn", true)}
-                loading={zapInIsLoading}
-                disabled={
-                  Number(investmentAmount) === 0 ||
-                  Number(investmentAmount) > tokenBalance
-                }
-              >
-                Zap In on current chain
-              </Button>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "2",
-      label: "Zap Out",
-      children: (
-        <div>
-          <DecimalStep
-            selectedToken={selectedToken}
-            setSelectedToken={handleSetSelectedToken}
-            depositBalance={usdBalance}
-            setZapOutPercentage={setZapOutPercentage}
-            currency="$"
-            noTokenSelect={false}
-          />
-          {account === undefined ? (
-            <ConfiguredConnectButton />
-          ) : (
-            <Button
-              type="primary"
-              className="w-full"
-              onClick={() => handleAAWalletAction("zapOut", true)}
-              loading={zapOutIsLoading || usdBalanceLoading}
-              disabled={usdBalance < 0.01 || zapOutPercentage === 0}
-            >
-              Withdraw
-            </Button>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "3",
-      label: "Transfer",
-      children: (
-        <div>
-          <DecimalStep
-            selectedToken={selectedToken}
-            setSelectedToken={handleSetSelectedToken}
-            depositBalance={usdBalance}
-            setZapOutPercentage={setZapOutPercentage}
-            currency="$"
-            noTokenSelect={true}
-          />
-          <Input
-            status={recipientError ? "error" : ""}
-            placeholder="Recipient Address"
-            onChange={(e) => validateRecipient(e.target.value)}
-            value={recipient}
-          />
-          {recipientError && (
-            <div className="text-red-500 text-sm mt-1">
-              Please enter a valid Ethereum address different from your own
-            </div>
-          )}
-          {account === undefined ? (
-            <ConfiguredConnectButton />
-          ) : (
-            <Button
-              type="primary"
-              className="w-full"
-              onClick={() => handleAAWalletAction("transfer", true)}
-              loading={transferLoading || usdBalanceLoading}
-              disabled={usdBalance < 0.01 || recipientError}
-            >
-              Transfer
-            </Button>
-          )}
-        </div>
-      ),
-    },
-  ];
-
->>>>>>> b19bac1 ([wip]: calculated performance fee)
   const yieldContent = (
     <>
       {portfolioHelper?.description()}
@@ -587,89 +406,6 @@ export default function IndexOverviews() {
       for more information
     </>
   );
-
-  function ModalContent() {
-    // remove the transition animation effect, still need to figure out that re-render issue
-    return (
-      <Modal
-        transitionName=""
-        maskTransitionName=""
-        title={
-          finishedTxn === false ? "Transaction Preview" : "Transaction Result"
-        }
-        open={open}
-        onCancel={() => {
-          setOpen(false);
-          if (finishedTxn) {
-            // window.location.reload();
-            setOpen(false);
-          }
-        }}
-        footer={<></>}
-        width={1000}
-      >
-        {finishedTxn === false ? (
-          <DemoFlowDirectionGraph
-            data={portfolioHelper?.getFlowChartData("zapIn", {
-              inputToken: "usdc",
-              inputTokenAddress: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
-              amount: 1,
-              // updateP
-            })}
-            stepName={stepName}
-            tradingLoss={tradingLoss}
-            currentChain={chainId?.name}
-            totalTradingLoss={totalTradingLoss}
-          />
-        ) : (
-          //   <DemoFlowDirectionGraph
-          //   data={portfolioHelper?.getFlowChartData("zapIn", {
-          //     inputToken: selectedToken?.toLowerCase()?.split('-')[0],
-          //     inputTokenAddress: selectedToken?.toLowerCase()?.split('-')[1],
-          //     amount: 1,
-          //   })}
-          // />
-          <>
-            <div className="flex flex-col items-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                <CheckIcon
-                  aria-hidden="true"
-                  className="h-6 w-6 text-green-600"
-                />
-              </div>
-              <div className="mt-3 text-center sm:mt-5">
-                <div className="mt-2">
-                  <p className="text-sm text-gray-500">
-                    🎉 Success! Click Once 🌟, Yield Forever 🌿
-                  </p>
-                  <a
-                    href={txnLink}
-                    target="_blank"
-                    className="flex justify-center mt-2"
-                  >
-                    <ArrowTopRightOnSquareIcon className="h-6 w-5 text-gray-500" />
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 sm:mt-6 flex justify-center">
-              <button
-                type="button"
-                onClick={() =>
-                  window.open("https://t.me/all_weather_protocol_bot", "_blank")
-                }
-                className="inline-flex items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-              >
-                Subscribe for Rebalance Notifications
-                <span className="fi fi-brands-telegram ml-2"></span>
-              </button>
-            </div>
-          </>
-        )}
-      </Modal>
-    );
-  }
 
   const getRebalanceReinvestUsdAmount = () => {
     return (
@@ -1113,6 +849,12 @@ export default function IndexOverviews() {
         finishedTxn={finishedTxn}
         txnLink={txnLink}
         portfolioAPR={portfolioApr[portfolioName]?.portfolioAPR}
+        actionName={actionName}
+        onlyThisChain={onlyThisChain}
+        selectedToken={selectedToken}
+        investmentAmount={investmentAmount}
+        costsCalculated={costsCalculated}
+        platformFee={platformFee}
       />
       <main className={styles.bgStyle}>
         <header className="relative isolate pt-6">
