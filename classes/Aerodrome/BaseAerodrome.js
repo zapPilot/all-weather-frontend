@@ -166,9 +166,6 @@ export class BaseAerodrome extends BaseProtocol {
     );
     return (await stakeFarmContractInstance.functions.balanceOf(owner))[0];
   }
-  _getLPTokenPairesToZapIn() {
-    return this.customParams.lpTokens;
-  }
   async _calculateTokenAmountsForLP(tokenMetadatas) {
     const metadata = await this.assetContractInstance.functions.metadata();
     const [r0, r1] = [metadata.r0, metadata.r1];

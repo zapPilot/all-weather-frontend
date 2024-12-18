@@ -1018,6 +1018,13 @@ export class BasePortfolio {
       nodes: [],
       edges: [],
     };
+    console.log("actionParams", actionParams);
+    // else if (actionName === "rebalance") {
+    //   stepsData = protocol.interface.getRebalanceFlowChartData(
+    //     actionParams.rebalancableUsdBalanceDict,
+    //     actionParams.onlyThisChain,
+    //   );
+    // }
     const chainNodes = [];
     for (const [category, protocolsInThisCategory] of Object.entries(
       this.strategy,
@@ -1050,8 +1057,6 @@ export class BasePortfolio {
               actionParams.outputTokenAddress,
               protocol.weight,
             );
-          } else if (actionName === "rebalance") {
-            stepsData = protocol.interface.getRebalanceFlowChartData();
           } else {
             stepsData = protocol.interface.getFlowChartData();
           }

@@ -46,6 +46,12 @@ export class BaseConvex extends BaseProtocol {
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: ConvexRewardPool,
     });
+
+    this.assetContractInstance = new ethers.Contract(
+      this.assetContract.address,
+      CurveStableSwapNG,
+      PROVIDER(this.chain),
+    );
     this._checkIfParamsAreSet();
   }
   rewards() {
@@ -210,8 +216,9 @@ export class BaseConvex extends BaseProtocol {
     return (await rewardPoolContractInstance.functions.balanceOf(owner))[0];
   }
   async _calculateTokenAmountsForLP(tokenMetadatas) {
-    const [reserve0, reserve1] =
-      await this.assetContractInstance.functions.get_balances();
+    const [reserve0, reserve1] = (
+      await this.assetContractInstance.functions.get_balances()
+    )[0];
     const [decimals0, decimals1] = [tokenMetadatas[0][2], tokenMetadatas[1][2]];
     const normalizedReserve0 = Number(
       ethers.utils.formatUnits(reserve0.toString(), decimals0),
