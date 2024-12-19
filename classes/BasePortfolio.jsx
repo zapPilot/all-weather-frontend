@@ -123,6 +123,7 @@ export class BasePortfolio {
 
     // Calculate weight differences
     let negativeWeigtDiffSum = 0;
+    let positiveWeigtDiffSum = 0;
     for (const [protocolUniqueId, data] of Object.entries(usdBalanceDict)) {
       if (protocolUniqueId !== "pendingRewards") {
         const currentWeight = isNaN(data.usdBalance)
@@ -136,6 +137,8 @@ export class BasePortfolio {
         }
         if (data.weightDiff < 0) {
           negativeWeigtDiffSum += data.weightDiff;
+        } else {
+          positiveWeigtDiffSum += data.weightDiff;
         }
       }
     }
@@ -143,6 +146,7 @@ export class BasePortfolio {
       if (negativeWeigtDiffSum < 0) {
         data.negativeWeigtDiffSum = Math.abs(negativeWeigtDiffSum);
       }
+      data.positiveWeigtDiffSum = positiveWeigtDiffSum;
     }
     return [usdBalance, usdBalanceDict];
   }
@@ -297,15 +301,7 @@ export class BasePortfolio {
       //   actionParams.zapInAmount * this.swapFeeRate(),
       // );
     } else if (actionName === "rebalance") {
-      return await this._generateRebalanceTxns(
-        actionParams.account,
-        actionParams.slippage,
-        actionParams.tokenPricesMappingTable,
-        actionParams.updateProgress,
-        actionParams.rebalancableUsdBalanceDict,
-        actionParams.chainMetadata,
-        actionParams.onlyThisChain,
-      );
+      return await this._generateRebalanceTxns(actionParams);
     } else if (actionName === "stake") {
       return await this._generateStakeTxns(
         actionParams.protocolAssetDustInWallet,
@@ -504,15 +500,16 @@ export class BasePortfolio {
     return [...protocolTxns, ...bridgeTxns];
   }
 
-  async _generateRebalanceTxns(
-    owner,
-    slippage,
-    tokenPricesMappingTable,
-    updateProgress,
-    rebalancableUsdBalanceDict,
-    chainMetadata,
-    onlyThisChain,
-  ) {
+  async _generateRebalanceTxns(actionParams) {
+    const {
+      account: owner,
+      slippage,
+      tokenPricesMappingTable,
+      updateProgress,
+      rebalancableUsdBalanceDict,
+      chainMetadata,
+      onlyThisChain,
+    } = actionParams;
     const txns = [];
     const currentChain = chainMetadata.name.toLowerCase().replace(" one", "");
     const usdcConfig = this._getUsdcConfig(currentChain);
@@ -546,11 +543,11 @@ export class BasePortfolio {
     // Generate approval and fee transactions
     const [approvalAndFeeTxns, zapInAmountAfterFee] =
       await this._generateApprovalAndFeeTxns(
-        owner,
         usdcConfig,
         zapInConfig.amount,
         chainMetadata,
         zapOutUsdcBalance,
+        actionParams,
       );
     txns.push(...approvalAndFeeTxns);
     // Generate zap in transactions for protocols that need rebalancing
@@ -584,6 +581,7 @@ export class BasePortfolio {
         ),
         updateProgress,
       );
+      this._updateProgressAndWait(actionParams.updateProgress, chain, 0);
       txns.push(...bridgeToOtherChainTxns);
     }
     // Combine all transactions
@@ -711,6 +709,8 @@ export class BasePortfolio {
       owner,
       zapOutPercentage,
       usdcConfig.address,
+      usdcConfig.symbol,
+      usdcConfig.decimals,
       slippage,
       tokenPricesMappingTable,
       updateProgress,
@@ -741,11 +741,11 @@ export class BasePortfolio {
   }
 
   async _generateApprovalAndFeeTxns(
-    owner,
     usdcConfig,
     zapInAmount,
     chainMetadata,
     zapOutUsdcBalance,
+    actionParams,
   ) {
     const approveTxn = approve(
       usdcConfig.address,
@@ -759,11 +759,7 @@ export class BasePortfolio {
     const zapInAmountAfterFee = zapInAmount.sub(transferAmount);
 
     const rebalanceFeeTxns = await this._getSwapFeeTxnsForZapIn(
-      {
-        account: owner,
-        tokenInAddress: usdcConfig.address,
-        chainMetadata: chainMetadata,
-      },
+      actionParams,
       transferAmount,
       zapOutUsdcBalance,
     );
@@ -781,6 +777,7 @@ export class BasePortfolio {
     updateProgress,
   ) {
     const txns = [];
+    let activateStartZapInNode = false;
 
     for (const [key, metadata] of Object.entries(rebalancableDict)) {
       if (key === "pendingRewards" || metadata.weightDiff >= 0) continue;
@@ -797,18 +794,27 @@ export class BasePortfolio {
       if (zapInAmount < 100000) continue;
 
       const protocol = metadata.protocol;
+      if (activateStartZapInNode === false) {
+        await protocol.interface._updateProgressAndWait(
+          updateProgress,
+          "endOfZapOutOn" + metadata.chain,
+          0,
+        );
+        activateStartZapInNode = true;
+      }
+
       const protocolTxns = await protocol.interface.zapIn(
         owner,
         metadata.chain,
         zapInAmount,
         usdcConfig.symbol,
         usdcConfig.address,
+        usdcConfig.decimals,
         slippage,
         tokenPricesMappingTable,
         updateProgress,
         this.existingInvestmentPositions["arbitrum"],
       );
-
       txns.push(...protocolTxns);
     }
 
@@ -975,6 +981,7 @@ export class BasePortfolio {
       zunusd: 0.9953,
       eusd: 0.9999,
       gusdc: 1.13,
+      dusdc: 1,
     };
     let tokenPriceCache = {};
     for (const [token, coinMarketCapId] of Object.entries(
@@ -1018,60 +1025,177 @@ export class BasePortfolio {
       nodes: [],
       edges: [],
     };
-    console.log("actionParams", actionParams);
-    // else if (actionName === "rebalance") {
-    //   stepsData = protocol.interface.getRebalanceFlowChartData(
-    //     actionParams.rebalancableUsdBalanceDict,
-    //     actionParams.onlyThisChain,
-    //   );
-    // }
     const chainNodes = [];
-    for (const [category, protocolsInThisCategory] of Object.entries(
-      this.strategy,
-    )) {
-      for (const [chain, protocolsOnThisChain] of Object.entries(
-        protocolsInThisCategory,
+
+    if (actionName === "rebalance") {
+      const chainSet = new Set();
+      let chainNode;
+      let endOfZapOutNodeOnThisChain;
+      for (const [key, protocolObj] of Object.entries(
+        actionParams.rebalancableUsdBalanceDict,
       )) {
-        const chainNode = {
-          id: chain,
-          name: actionName,
-          chain: chain,
-          category: category,
-          imgSrc: `/chainPicturesWebp/${chain}.webp`,
-        };
-        chainNodes.push(chainNode);
-        for (const protocol of protocolsOnThisChain) {
-          let stepsData = [];
-          if (protocol.weight === 0) continue;
-          if (actionName === "zapIn") {
-            stepsData = protocol.interface.getZapInFlowChartData(
-              actionParams.inputToken,
-              actionParams.inputTokenAddress,
-              protocol.weight,
-            );
-          } else if (actionName === "stake") {
-            stepsData = protocol.interface.getStakeFlowChartData();
-          } else if (actionName === "zapOut") {
-            stepsData = protocol.interface.getZapOutFlowChartData(
+        if (key === "pendingRewards") continue;
+        if (protocolObj.weightDiff > this.rebalanceThreshold()) {
+          if (!chainSet.has(protocolObj.chain)) {
+            chainSet.add(protocolObj.chain);
+            chainNode = {
+              id: protocolObj.chain,
+              name: actionName,
+              chain: protocolObj.chain,
+              imgSrc: `/chainPicturesWebp/${protocolObj.chain}.webp`,
+            };
+            endOfZapOutNodeOnThisChain = {
+              id: `endOfZapOutOn${protocolObj.chain}`,
+              name: "Start Zapping In",
+              chain: protocolObj.chain,
+              imgSrc: `/chainPicturesWebp/${protocolObj.chain}.webp`,
+            };
+            chainNodes.push(chainNode);
+            flowChartData.nodes.push(endOfZapOutNodeOnThisChain);
+          }
+          const rebalanceRatio =
+            protocolObj.weightDiff / protocolObj.positiveWeigtDiffSum;
+          const stepsData =
+            protocolObj.protocol.interface.getZapOutFlowChartData(
               actionParams.outputToken,
               actionParams.outputTokenAddress,
-              protocol.weight,
+              rebalanceRatio,
             );
-          } else {
-            stepsData = protocol.interface.getFlowChartData();
-          }
           const currentChainToProtocolNodeEdge = {
-            id: `edge-${chainNode.id}-${protocol.interface.uniqueId()}`,
+            id: `edge-${
+              chainNode.id
+            }-${protocolObj.protocol.interface.uniqueId()}`,
             source: chainNode.id,
             target: stepsData.nodes[0].id,
             data: {
-              ratio: protocol.weight,
+              ratio: rebalanceRatio,
+            },
+          };
+          const endOfZapOutOfThisProtocolToEndOfZapOutNodeEdge = {
+            id: `edge-${
+              stepsData.nodes[stepsData.nodes.length - 1].id
+            }-endOfZapOut`,
+            source: stepsData.nodes[stepsData.nodes.length - 1].id,
+            target: endOfZapOutNodeOnThisChain.id,
+            data: {
+              ratio: rebalanceRatio,
             },
           };
           flowChartData.nodes = flowChartData.nodes.concat(stepsData.nodes);
           flowChartData.edges = flowChartData.edges.concat(
-            stepsData.edges.concat(currentChainToProtocolNodeEdge),
+            stepsData.edges.concat([
+              currentChainToProtocolNodeEdge,
+              endOfZapOutOfThisProtocolToEndOfZapOutNodeEdge,
+            ]),
           );
+        }
+      }
+      // Start Zap In
+      for (const [key, protocolObj] of Object.entries(
+        actionParams.rebalancableUsdBalanceDict,
+      )) {
+        if (key === "pendingRewards") continue;
+        if (protocolObj.weightDiff < 0) {
+          const zapInRatio =
+            -protocolObj.weightDiff / protocolObj.negativeWeigtDiffSum;
+          const stepsData =
+            protocolObj.protocol.interface.getZapInFlowChartData(
+              actionParams.inputToken,
+              actionParams.inputTokenAddress,
+              zapInRatio,
+            );
+          if (!chainSet.has(protocolObj.chain)) {
+            chainSet.add(protocolObj.chain);
+            chainNode = {
+              id: protocolObj.chain,
+              name: `Bridge to ${protocolObj.chain}`,
+              chain: protocolObj.chain,
+              imgSrc: `/chainPicturesWebp/${protocolObj.chain}.webp`,
+            };
+            const bridgeEdge = {
+              id: `edge-${endOfZapOutNodeOnThisChain.id}-${chainNode.id}`,
+              source: endOfZapOutNodeOnThisChain.id,
+              target: chainNode.id,
+              data: {
+                ratio: zapInRatio,
+              },
+            };
+            chainNodes.push(chainNode);
+            flowChartData.edges.push(bridgeEdge);
+          }
+          const endOfZapOutNodeToZapInNodeEdge = {
+            id: `edge-${
+              endOfZapOutNodeOnThisChain.id
+            }-${protocolObj.protocol.interface.uniqueId()}`,
+            source:
+              actionParams.chainMetadata.name
+                .toLowerCase()
+                .replace(" one", "") === protocolObj.chain
+                ? endOfZapOutNodeOnThisChain.id
+                : protocolObj.chain,
+            target: stepsData.nodes[0].id,
+            data: {
+              ratio: zapInRatio,
+            },
+          };
+          flowChartData.nodes = flowChartData.nodes.concat(stepsData.nodes);
+          flowChartData.edges = flowChartData.edges.concat(
+            stepsData.edges.concat([endOfZapOutNodeToZapInNodeEdge]),
+          );
+        }
+      }
+    } else {
+      for (const [category, protocolsInThisCategory] of Object.entries(
+        this.strategy,
+      )) {
+        for (const [chain, protocolsOnThisChain] of Object.entries(
+          protocolsInThisCategory,
+        )) {
+          const chainNode = {
+            id: chain,
+            name: actionName,
+            chain: chain,
+            category: category,
+            imgSrc: `/chainPicturesWebp/${chain}.webp`,
+          };
+          chainNodes.push(chainNode);
+          for (const protocol of protocolsOnThisChain) {
+            let stepsData = [];
+            if (protocol.weight === 0) continue;
+            if (actionName === "zapIn") {
+              stepsData = protocol.interface.getZapInFlowChartData(
+                actionParams.inputToken,
+                actionParams.inputTokenAddress,
+                protocol.weight,
+              );
+            } else if (actionName === "stake") {
+              stepsData = protocol.interface.getStakeFlowChartData();
+            } else if (actionName === "transfer") {
+              stepsData = protocol.interface.getTransferFlowChartData(
+                protocol.weight,
+              );
+            } else if (actionName === "zapOut") {
+              stepsData = protocol.interface.getZapOutFlowChartData(
+                actionParams.outputToken,
+                actionParams.outputTokenAddress,
+                protocol.weight,
+              );
+            } else {
+              throw new Error(`Invalid action name ${actionName}`);
+            }
+            const currentChainToProtocolNodeEdge = {
+              id: `edge-${chainNode.id}-${protocol.interface.uniqueId()}`,
+              source: chainNode.id,
+              target: stepsData.nodes[0].id,
+              data: {
+                ratio: protocol.weight,
+              },
+            };
+            flowChartData.nodes = flowChartData.nodes.concat(stepsData.nodes);
+            flowChartData.edges = flowChartData.edges.concat(
+              stepsData.edges.concat(currentChainToProtocolNodeEdge),
+            );
+          }
         }
       }
     }
@@ -1181,5 +1305,12 @@ export class BasePortfolio {
     );
     const data = await response.json();
     return data.referrer;
+  }
+  async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
+    await new Promise((resolve) => {
+      updateProgress(nodeId, tradingLoss);
+      // Use setTimeout to ensure the state update is queued
+      setTimeout(resolve, 30);
+    });
   }
 }

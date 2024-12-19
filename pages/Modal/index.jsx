@@ -27,7 +27,7 @@ const AmountDisplay = ({
 }) => {
   return (
     <span className={isGreen ? "text-green-500" : ""} key={key}>
-      {showEmoji && "🎉 "}
+      {showEmoji && "🎉 Earned "}
       {isLoading ? <Spin key={`spin-${amount}`} /> : formatAmount(amount)}
     </span>
   );
@@ -49,6 +49,10 @@ export default function PopUpModal({
   investmentAmount,
   costsCalculated,
   platformFee,
+  rebalancableUsdBalanceDict,
+  chainMetadata,
+  rebalanceAmount,
+  zapOutAmount,
 }) {
   return (
     <Dialog
@@ -106,6 +110,8 @@ export default function PopUpModal({
                       outputTokenAddress: selectedToken
                         ?.toLowerCase()
                         ?.split("-")[1],
+                      rebalancableUsdBalanceDict,
+                      chainMetadata,
                     })}
                     stepName={stepName}
                     tradingLoss={tradingLoss}
@@ -255,6 +261,13 @@ export default function PopUpModal({
                       isGreen={totalTradingLoss + platformFee > 0}
                       isLoading={!costsCalculated}
                     />
+                    {costsCalculated && actionName === "zapIn"
+                      ? `(Zap in $${investmentAmount})`
+                      : actionName === "zapOut"
+                      ? `(Zap out $${zapOutAmount})`
+                      : actionName === "rebalance"
+                      ? `(Rebalance $${rebalanceAmount})`
+                      : ""}
                   </dd>
                 </div>
               </dl>

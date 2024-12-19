@@ -181,6 +181,12 @@ export default function IndexOverviews() {
     setOpen(true);
     setActionName(actionName);
     setOnlyThisChain(onlyThisChain);
+    setCostsCalculated(false);
+    setFinishedTxn(false);
+    setPlatformFee(0);
+    setTotalTradingLoss(0);
+    setTradingLoss(0);
+    setStepName("");
 
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
     if (!tokenSymbolAndAddress) {
@@ -237,7 +243,6 @@ export default function IndexOverviews() {
         await new Promise((resolve, reject) => {
           sendBatchTransaction(txns.flat(Infinity), {
             onSuccess: async (data) => {
-              console.log("transaction data", data);
               try {
                 await axios({
                   method: "post",
@@ -479,7 +484,7 @@ export default function IndexOverviews() {
                 <Button
                   type="primary"
                   className="w-full my-2"
-                  onClick={() => handleAAWalletAction("zapIn")}
+                  onClick={() => handleAAWalletAction("zapIn", false)}
                   loading={zapInIsLoading}
                   disabled={
                     Number(investmentAmount) === 0 ||
@@ -855,6 +860,10 @@ export default function IndexOverviews() {
         investmentAmount={investmentAmount}
         costsCalculated={costsCalculated}
         platformFee={platformFee}
+        rebalancableUsdBalanceDict={rebalancableUsdBalanceDict}
+        chainMetadata={chainId}
+        rebalanceAmount={getRebalanceReinvestUsdAmount()}
+        zapOutAmount={usdBalance * zapOutPercentage}
       />
       <main className={styles.bgStyle}>
         <header className="relative isolate pt-6">

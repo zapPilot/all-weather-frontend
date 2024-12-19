@@ -257,16 +257,58 @@ export default class BaseProtocol extends BaseUniswap {
       edges,
     };
   }
-  getTransferFlowChartData() {
-    throw new Error("Method 'getTransferFlowChartData()' must be implemented.");
+  getTransferFlowChartData(weight) {
+    const nodes = [
+      {
+        id: `${this.uniqueId()}-unstake`,
+        name: "Unstake",
+      },
+      {
+        id: `${this.uniqueId()}-transfer`,
+        name: "Transfer",
+      },
+    ];
+    // add chain, category, protocol, symbol to the nodes
+    for (const node of nodes) {
+      node.chain = this.chain;
+      node.symbolList = this.symbolList.map((symbol) =>
+        symbol.replace("(bridged)", ""),
+      );
+      node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
+    }
+    return {
+      nodes,
+      edges: [
+        {
+          id: `edge-${this.uniqueId()}-0`,
+          source: `${this.uniqueId()}-unstake`,
+          target: `${this.uniqueId()}-transfer`,
+          data: {
+            ratio: weight,
+          },
+        },
+      ],
+    };
   }
   getStakeFlowChartData() {
-    throw new Error("Method 'getStakeFlowChartData()' must be implemented.");
-  }
-  getRebalanceFlowChartData() {
-    throw new Error(
-      "Method 'getRebalanceFlowChartData()' must be implemented.",
-    );
+    const nodes = [
+      {
+        id: `${this.uniqueId()}-stake`,
+        name: "stake",
+      },
+    ];
+    // add chain, category, protocol, symbol to the nodes
+    for (const node of nodes) {
+      node.chain = this.chain;
+      node.symbolList = this.symbolList.map((symbol) =>
+        symbol.replace("(bridged)", ""),
+      );
+      node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
+    }
+    return {
+      nodes,
+      edges: [],
+    };
   }
   async usdBalanceOf(address, tokenPricesMappingTable) {
     throw new Error("Method 'usdBalanceOf()' must be implemented.");
@@ -516,6 +558,11 @@ export default class BaseProtocol extends BaseUniswap {
       method: "transfer",
       params: [recipient, amount],
     });
+    this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-transfer`,
+      0,
+    );
     return [...unstakeTxnsOfThisProtocol, transferTxn];
   }
   async stake(protocolAssetDustInWallet, updateProgress) {

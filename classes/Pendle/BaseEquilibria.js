@@ -354,6 +354,11 @@ export class BaseEquilibria extends BaseProtocol {
     return [approveTxn, stakeTxn];
   }
   async _unstake(owner, percentage, updateProgress) {
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-unstake`,
+      0,
+    );
     // Convert percentage (0-1) to precise BigNumber with 18 decimals
     const percentageStr = percentage.toFixed(18).replace(".", "");
     const percentageBN = ethers.BigNumber.from(percentageStr);
@@ -378,11 +383,6 @@ export class BaseEquilibria extends BaseProtocol {
       method: "withdraw",
       params: [this.pidOfEquilibria, withdrawAmount],
     });
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-unstake`,
-      0,
-    );
     await this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-claim`,
