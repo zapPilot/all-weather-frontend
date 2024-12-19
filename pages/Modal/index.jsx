@@ -56,7 +56,7 @@ export default function PopUpModal({
 }) {
   return (
     <Dialog
-      open={open}
+      open={Boolean(open)} // Ensure boolean conversion
       onClose={() => {
         setOpen(false);
         if (finishedTxn) {

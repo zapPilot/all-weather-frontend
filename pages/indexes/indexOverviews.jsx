@@ -848,7 +848,7 @@ export default function IndexOverviews() {
         stepName={stepName}
         tradingLoss={tradingLoss}
         totalTradingLoss={totalTradingLoss}
-        open={open}
+        open={open ?? false}
         setOpen={setOpen}
         chainId={chainId}
         finishedTxn={finishedTxn}
