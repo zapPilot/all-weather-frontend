@@ -131,7 +131,7 @@ export default function IndexOverviews() {
   const [costsCalculated, setCostsCalculated] = useState(false);
   const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(
-    portfolioName === "Stablecoin Vault" ? 0.5 : 3,
+    portfolioName?.includes("Stablecoin") ? 1 : 3,
   );
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
@@ -161,6 +161,7 @@ export default function IndexOverviews() {
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
   const [recipientError, setRecipientError] = useState(false);
+  const [showZapIn, setShowZapIn] = useState(false);
 
   const handleSetSelectedToken = useCallback((token) => {
     setSelectedToken(token);
@@ -578,12 +579,11 @@ export default function IndexOverviews() {
               ) : (
                 <Button
                   type="primary"
-                  className={`w-full my-2 ${
-                    investmentAmount > 0 ? "hidden" : "block"
-                  }`}
+                  className={`w-full my-2 ${showZapIn ? "hidden" : "block"}`}
                   onClick={() => {
                     setInvestmentAmount(nextChainInvestmentAmount);
                     setFinishedTxn(false);
+                    setShowZapIn(true);
                   }}
                 >
                   Set Investment Amount to {nextChainInvestmentAmount} on{" "}
@@ -592,9 +592,7 @@ export default function IndexOverviews() {
               )}
               <Button
                 type="primary"
-                className={`w-full my-2 ${
-                  investmentAmount > 0 ? "block" : "hidden"
-                }`}
+                className={`w-full my-2 ${showZapIn ? "block" : "hidden"}`}
                 onClick={() => handleAAWalletAction("zapIn", true)}
                 loading={zapInIsLoading}
                 disabled={
@@ -777,7 +775,9 @@ export default function IndexOverviews() {
       Object.keys(portfolioApr).length === 0
     ) {
       dispatch(fetchStrategyMetadata());
-      setSlippage(portfolioName === "Stablecoin Vault" ? 0.5 : 3);
+    }
+    if (portfolioName !== undefined) {
+      setSlippage(portfolioName.includes("Stablecoin") ? 1 : 3);
     }
   }, [portfolioName]);
   useEffect(() => {
@@ -947,7 +947,7 @@ export default function IndexOverviews() {
                         size="small"
                         onChange={(e) => setSlippage(e.target.value)}
                       >
-                        {[0.5, 1, 3, 5, 7].map((slippageValue) => (
+                        {[1, 3, 5, 7].map((slippageValue) => (
                           <Radio.Button
                             value={slippageValue}
                             key={slippageValue}

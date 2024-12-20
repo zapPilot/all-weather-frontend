@@ -13,9 +13,9 @@ const UserFlowNode = ({
   currentChain,
 }) => {
   const prevStepNameRef = useRef(stepName);
+  const tradingLossRef = useRef(null);
   const [nodeState, setNodeState] = useState({
     isActive: false,
-    tradingLossValue: null,
   });
 
   React.useEffect(() => {
@@ -23,42 +23,49 @@ const UserFlowNode = ({
       setCompletedSteps((prev) => new Set([...prev, prevStepNameRef.current]));
       prevStepNameRef.current = stepName;
 
-      // If this node is the current step, store its trading loss
       if (data.id === stepName) {
+        tradingLossRef.current = tradingLoss;
         setNodeState({
           isActive: true,
-          tradingLossValue: tradingLoss,
         });
+      } else if (completedSteps?.has(data.id)) {
+        setNodeState((prev) => ({
+          ...prev,
+          isActive: false,
+        }));
       } else {
-        // Add explicit state reset when node is no longer active
+        tradingLossRef.current = null;
         setNodeState((prev) => ({
           ...prev,
           isActive: false,
         }));
       }
+    } else if (data.id === stepName && tradingLoss !== tradingLossRef.current) {
+      tradingLossRef.current = tradingLoss;
     }
-  }, [stepName, data.id, tradingLoss, setCompletedSteps]);
+  }, [stepName, data.id, tradingLoss, setCompletedSteps, completedSteps]);
 
-  // Use stored state or calculate current state
   const isActiveOrCompleted =
     nodeState.isActive ||
     data.id === stepName ||
     completedSteps?.has(data.id) ||
     currentChain.toLowerCase().replace(" one", "") === data.id;
 
-  // Use stored trading loss if available, otherwise use current trading loss
-  const displayTradingLoss = nodeState.isActive
-    ? nodeState.tradingLossValue
-    : tradingLoss;
+  const displayTradingLoss = completedSteps?.has(data.id)
+    ? tradingLossRef.current
+    : data.id === stepName
+    ? tradingLoss
+    : null;
 
   const formatTradingLoss = (value) => {
-    if (!value) return <Spin />;
+    if (value === null && data.id === stepName) return <Spin />;
+    if (value === null) return null;
+
     const absValue = Math.abs(value);
     const isNegative = value < 0;
 
     const formattedValue =
       absValue < 0.01 ? "< $0.01" : `$${absValue.toFixed(2)}`;
-
     return (
       <span className={`${isNegative ? "" : "text-green-500"}`}>
         {formattedValue}
@@ -90,7 +97,7 @@ const UserFlowNode = ({
           width={20}
         />
       </div>
-      {displayTradingLoss !== 0 && (
+      {displayTradingLoss !== null && (
         <div>{formatTradingLoss(displayTradingLoss)}</div>
       )}
     </div>
@@ -120,7 +127,7 @@ const UserFlowNode = ({
             />
           ))}
       </div>
-      {displayTradingLoss !== 0 && (
+      {displayTradingLoss !== null && (
         <div>{formatTradingLoss(displayTradingLoss)}</div>
       )}
     </div>

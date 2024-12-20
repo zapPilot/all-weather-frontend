@@ -59,9 +59,6 @@ export default function PopUpModal({
       open={Boolean(open)} // Ensure boolean conversion
       onClose={() => {
         setOpen(false);
-        if (finishedTxn) {
-          window.location.reload();
-        }
       }}
       className="relative z-10"
     >
