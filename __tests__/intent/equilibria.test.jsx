@@ -42,26 +42,32 @@ describe("Equilibria ETH Vault", () => {
       protocolAssetDustInWallet,
       onlyThisChain,
     );
-    expect(txns.length).toBe(5);
+    expect(txns.length).toBe(7);
     expect(await encode(txns[0])).toBe(
       "0x095ea7b30000000000000000000000001111111254eeb25477b68fb85ed929f73a9605820000000000000000000000000000000000000000000000000de0b6b3a7640000",
     );
-
-    expect(await encode(txns[1])).toBe(
+    // referral fee
+    expect(await encode(txns[1])).includes(
+      "2ecbc6f229fed06044cdb0dd772437a30190cd50",
+    );
+    expect(await encode(txns[2])).includes(
+      "2ecbc6f229fed06044cdb0dd772437a30190cd50",
+    );
+    expect(await encode(txns[3])).toBe(
       "0x095ea7b3000000000000000000000000888888888889758f76e7103c6cbf23abbf58f9460000000000000000000000000000000000000000000000000de0b6b3a7640000",
     );
     expect(
-      (await encode(txns[2])).includes(
+      (await encode(txns[4])).includes(
         userAddress.replace("0x", "").toLowerCase(),
       ),
     ).toBe(true);
-    expect(txns[3].to).toBe("0x279b44E48226d40Ec389129061cb0B56C5c09e46");
+    expect(txns[5].to).toBe("0x279b44E48226d40Ec389129061cb0B56C5c09e46");
     expect(
-      (await encode(txns[3])).includes(
+      (await encode(txns[5])).includes(
         "4d32c8ff2facc771ec7efc70d6a8468bc30c26bf",
       ),
     ).toBe(true);
-    expect(txns[4].to).toBe("0x4D32C8Ff2fACC771eC7Efc70d6A8468bC30C26bF");
+    expect(txns[6].to).toBe("0x4D32C8Ff2fACC771eC7Efc70d6A8468bC30C26bF");
   });
   it("should be able to zap-out Equilibria's ETH Vault", async () => {
     const actionName = "zapOut";
