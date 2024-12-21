@@ -17,6 +17,7 @@
   "dependencies": {
     "@across-protocol/app-sdk": "^0.0.4",
     "@ant-design/charts": "^1.4.2",
+    "@ant-design/graphs": "^2.0.1",
     "@ant-design/plots": "1.2.5",
     "@ant-design/web3": "^1.15.1",
     "@ant-design/web3-common": "^1.12.0",

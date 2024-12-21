@@ -36,15 +36,6 @@ export class YearnV3Vault extends BaseProtocol {
     });
     this._checkIfParamsAreSet();
   }
-  zapInSteps(tokenInAddress) {
-    return 2;
-  }
-  zapOutSteps(tokenInAddress) {
-    return 2;
-  }
-  claimAndSwapSteps() {
-    return 4;
-  }
   rewards() {
     return [];
   }
@@ -69,7 +60,6 @@ export class YearnV3Vault extends BaseProtocol {
       this.chainId,
     );
 
-    updateProgress("deposit");
     const depositTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "deposit",
@@ -135,7 +125,7 @@ export class YearnV3Vault extends BaseProtocol {
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
     const weth = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
-    return [weth, 18];
+    return ["weth", weth, 18];
   }
   _getTheBestTokenAddressToZapOut() {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in

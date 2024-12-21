@@ -40,16 +40,6 @@ export default function Vaults() {
       tvl: vaultsMetadata?.["Stablecoin Vault"]?.portfolioTVL,
       portfolioHelper: getPortfolioHelper("Stablecoin Vault"),
     },
-    {
-      id: 3,
-      portfolioName: "BTC Vault",
-      href: "/indexes/indexOverviews/?portfolioName=BTC+Vault",
-      imageSrc: "btc",
-      imageAlt: "BTC Vault",
-      apr: vaultsMetadata?.["BTC Vault"]?.portfolioAPR * 100,
-      tvl: vaultsMetadata?.["BTC Vault"]?.portfolioTVL,
-      portfolioHelper: getPortfolioHelper("BTC Vault"),
-    },
   ];
 
   useEffect(() => {

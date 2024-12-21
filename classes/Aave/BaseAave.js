@@ -50,15 +50,6 @@ export class BaseAave extends BaseProtocol {
     this.zapInOutTokenAddress = customParams.zapInOutTokenAddress;
     this._checkIfParamsAreSet();
   }
-  zapInSteps(tokenInAddress) {
-    return 3;
-  }
-  zapOutSteps(tokenInAddress) {
-    return 4;
-  }
-  claimAndSwapSteps() {
-    return 3;
-  }
   rewards() {
     return [];
   }
@@ -112,7 +103,7 @@ export class BaseAave extends BaseProtocol {
   }
 
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
-    return [this.zapInOutTokenAddress, this.assetDecimals];
+    return [inputToken, this.zapInOutTokenAddress, this.assetDecimals];
   }
   _getTheBestTokenAddressToZapOut() {
     return [

@@ -182,7 +182,6 @@ export class StablecoinVault extends BasePortfolio {
                 },
               ),
               weight: 0.14,
-              // weight: 0.27,
             },
             {
               interface: new BaseConvex(
@@ -226,6 +225,7 @@ export class StablecoinVault extends BasePortfolio {
               weight: 0.13,
             },
           ],
+
           base: [
             {
               interface: new BaseAave("base", 8453, ["usdc"], "single", {
@@ -290,29 +290,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.57,
-            },
-            {
-              interface: new BaseAerodrome(
-                "base",
-                8453,
-                ["usdc", "zunusd"],
-                "LP",
-                {
-                  assetAddress: "0x72c3eEd99b100526e1a25e04Ce7A22D7C3005c06",
-                  assetDecimals: 18,
-                  guageAddress: "0x55f9db31250D311c54D61F1384F75dbdF54b8305",
-                  lpTokens: [
-                    ["usdc", "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", 6],
-                    [
-                      "zunusd",
-                      "0xD5B9dDB04f20eA773C9b56607250149B26049B1F",
-                      18,
-                    ],
-                  ],
-                },
-              ),
-              weight: 0.03,
+              weight: 0.6,
             },
           ],
         },

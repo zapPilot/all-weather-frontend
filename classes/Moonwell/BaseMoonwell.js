@@ -55,15 +55,6 @@ export class BaseMoonwell extends BaseProtocol {
     this.decimalsOfZapInOutToken = customParams.decimalsOfZapInOutToken;
     this._checkIfParamsAreSet();
   }
-  zapInSteps(tokenInAddress) {
-    return 3;
-  }
-  zapOutSteps(tokenInAddress) {
-    return 4;
-  }
-  claimAndSwapSteps() {
-    return 3;
-  }
   rewards() {
     return [
       {
@@ -77,7 +68,6 @@ export class BaseMoonwell extends BaseProtocol {
   }
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     let rewardBalance = {};
-    updateProgress("checking pending rewards");
 
     const comptroller = (
       await this.protocolContractInstance.functions.comptroller()
@@ -190,7 +180,11 @@ export class BaseMoonwell extends BaseProtocol {
   }
 
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
-    return [this.zapInOutTokenAddress, this.decimalsOfZapInOutToken];
+    return [
+      inputToken,
+      this.zapInOutTokenAddress,
+      this.decimalsOfZapInOutToken,
+    ];
   }
   _getTheBestTokenAddressToZapOut() {
     return [

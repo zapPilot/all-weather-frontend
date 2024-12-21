@@ -46,25 +46,19 @@ export class BaseConvex extends BaseProtocol {
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: ConvexRewardPool,
     });
+
+    this.assetContractInstance = new ethers.Contract(
+      this.assetContract.address,
+      CurveStableSwapNG,
+      PROVIDER(this.chain),
+    );
     this._checkIfParamsAreSet();
-  }
-  zapInSteps(tokenInAddress) {
-    return 1;
-  }
-  zapOutSteps(tokenInAddress) {
-    return 1;
-  }
-  claimAndSwapSteps() {
-    return 2;
   }
   rewards() {
     return this.customParams.rewards;
   }
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     let rewardBalance = {};
-    updateProgress(
-      `fetching pending rewards from ${this.stakeFarmContract.address}`,
-    );
     const stakeFarmContractInstance = new ethers.Contract(
       this.convexRewardPoolContract.address,
       ConvexRewardPool,
@@ -100,49 +94,98 @@ export class BaseConvex extends BaseProtocol {
     slippage,
     updateProgress,
   ) {
-    let approveTxns = [];
-    let _amounts = [];
-    let _min_mint_amount = 0;
-    for (const [
-      bestTokenSymbol,
-      bestTokenAddressToZapIn,
-      bestTokenToZapInDecimal,
-      amountToZapIn,
-    ] of [tokenAmetadata, tokenBmetadata]) {
-      const approveForZapInTxn = approve(
-        bestTokenAddressToZapIn,
+    const tokenPairs = [tokenAmetadata, tokenBmetadata];
+    const { approveTxns, amounts, totalNormalizedAmount } =
+      await this._prepareTokenApprovals(tokenPairs, updateProgress);
+
+    const { minMintAmount, tradingLoss } = this._calculateMinimumMintAmount(
+      totalNormalizedAmount,
+      amounts,
+      tokenAmetadata,
+      tokenBmetadata,
+      tokenPricesMappingTable,
+      slippage,
+    );
+
+    const depositTxn = this._createDepositTransaction(amounts, minMintAmount);
+
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-deposit`,
+      tradingLoss,
+    );
+
+    const stakeTxns = await this._stakeLP(amounts, updateProgress);
+
+    return [...approveTxns, depositTxn, ...stakeTxns];
+  }
+
+  async _prepareTokenApprovals(tokenPairs, updateProgress) {
+    const approveTxns = [];
+    const amounts = [];
+    let totalNormalizedAmount = 0;
+
+    for (const [symbol, address, decimals, amount] of tokenPairs) {
+      const approveTxn = await this.approve(
+        address,
         this.protocolContract.address,
-        amountToZapIn,
+        amount,
         updateProgress,
         this.chainId,
       );
-      approveTxns.push(approveForZapInTxn);
-      _amounts.push(amountToZapIn);
+
+      approveTxns.push(approveTxn);
+      amounts.push(amount);
+
       const normalizedAmount = Number(
-        ethers.utils.formatUnits(
-          amountToZapIn.toString(),
-          bestTokenToZapInDecimal,
-        ),
+        ethers.utils.formatUnits(amount.toString(), decimals),
       );
-      _min_mint_amount += normalizedAmount;
+      totalNormalizedAmount += normalizedAmount;
     }
-    _min_mint_amount = ethers.BigNumber.from(
-      Math.floor(
-        (_min_mint_amount *
-          this._calculateLpPrice(tokenPricesMappingTable) *
-          (100 - slippage)) /
-          100,
-      ),
+
+    return { approveTxns, amounts, totalNormalizedAmount };
+  }
+
+  _calculateMinimumMintAmount(
+    totalNormalizedAmount,
+    amounts,
+    tokenAmetadata,
+    tokenBmetadata,
+    tokenPricesMappingTable,
+    slippage,
+  ) {
+    const lpPrice = this._calculateLpPrice(tokenPricesMappingTable);
+    const outputPrice =
+      totalNormalizedAmount * lpPrice * Math.pow(10, this.assetDecimals);
+
+    // TODO(david): the asset price is not correct here, so we just reduce 0.03% swap fee to estimate the trading loss
+    const tradingLoss =
+      outputPrice * 0.9997 -
+      (Number(
+        ethers.utils.formatUnits(amounts[0].toString(), tokenAmetadata[2]),
+      ) *
+        tokenPricesMappingTable[tokenAmetadata[0]] +
+        Number(
+          ethers.utils.formatUnits(amounts[1].toString(), tokenBmetadata[2]),
+        ) *
+          tokenPricesMappingTable[tokenBmetadata[0]]);
+
+    const minMintAmount = ethers.BigNumber.from(
+      Math.floor((outputPrice * (100 - slippage)) / 100),
       this.assetDecimals,
     );
-    const depositTxn = prepareContractCall({
+
+    return { minMintAmount, tradingLoss };
+  }
+
+  _createDepositTransaction(amounts, minMintAmount) {
+    return prepareContractCall({
       contract: this.protocolContract,
       method: "add_liquidity",
-      params: [_amounts, _min_mint_amount],
+      params: [amounts, minMintAmount],
     });
-    const stakeTxns = await this._stakeLP(_amounts, updateProgress);
-    return [...approveTxns, depositTxn, ...stakeTxns];
   }
+
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     const pendingRewards = await this.pendingRewards(
       owner,
@@ -170,14 +213,23 @@ export class BaseConvex extends BaseProtocol {
       ERC20_ABI,
       PROVIDER(this.chain),
     );
-    updateProgress("Getting stake balance");
     return (await rewardPoolContractInstance.functions.balanceOf(owner))[0];
   }
-  _getLPTokenPairesToZapIn() {
-    return this.customParams.lpTokens;
-  }
   async _calculateTokenAmountsForLP(tokenMetadatas) {
-    return [1, 1];
+    const [reserve0, reserve1] = (
+      await this.assetContractInstance.functions.get_balances()
+    )[0];
+    const [decimals0, decimals1] = [tokenMetadatas[0][2], tokenMetadatas[1][2]];
+    const normalizedReserve0 = Number(
+      ethers.utils.formatUnits(reserve0.toString(), decimals0),
+    ).toFixed(18);
+    const normalizedReserve1 = Number(
+      ethers.utils.formatUnits(reserve1.toString(), decimals1),
+    ).toFixed(18);
+    return [
+      ethers.utils.parseUnits(normalizedReserve0, 18),
+      ethers.utils.parseUnits(normalizedReserve1, 18),
+    ];
   }
   _calculateLpPrice(tokenPricesMappingTable) {
     // TODO(david): need to calculate the correct LP price
@@ -208,6 +260,11 @@ export class BaseConvex extends BaseProtocol {
     return [approveForStakingTxn, stakeTxn];
   }
   async _unstakeLP(owner, percentage, updateProgress) {
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-unstake`,
+      0,
+    );
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
     const stakeBalance = await this.stakeBalanceOf(owner, updateProgress);
     const amount = stakeBalance.mul(percentageBN).div(10000);
@@ -216,6 +273,7 @@ export class BaseConvex extends BaseProtocol {
       method: "withdraw",
       params: [amount, false],
     });
+
     return [[unstakeTxn], amount];
   }
   async _withdrawLPAndClaim(
@@ -230,19 +288,22 @@ export class BaseConvex extends BaseProtocol {
       CurveStableSwapNG,
       PROVIDER(this.chain),
     );
-    updateProgress("Getting LP balances");
     const [token_a_balance, token_b_balance] = (
       await protocolContractInstance.functions.get_balances()
     )[0];
+    const tokenASymbol = this.customParams.lpTokens[0][0];
+    const tokenBSymbol = this.customParams.lpTokens[1][0];
     const decimalsA = this.customParams.lpTokens[0][2];
     const decimalsB = this.customParams.lpTokens[1][2];
-    const normalizedTokenA = Number(
+    const normalizedTokenAInThePool = Number(
       ethers.utils.formatUnits(token_a_balance.toString(), decimalsA),
     );
-    const normalizedTokenB = Number(
+    const normalizedTokenBInThePool = Number(
       ethers.utils.formatUnits(token_b_balance.toString(), decimalsB),
     );
-    const ratio = normalizedTokenA / (normalizedTokenA + normalizedTokenB);
+    const ratio =
+      normalizedTokenAInThePool /
+      (normalizedTokenAInThePool + normalizedTokenBInThePool);
     const normalizedAmount = ethers.utils.formatUnits(
       amount.toString(),
       this.assetDecimals,
@@ -267,10 +328,30 @@ export class BaseConvex extends BaseProtocol {
       method: "remove_liquidity",
       params: [amount, minPairAmounts],
     });
+
+    // TODO(david): the asset price is not correct here, so we just reduce 0.03% swap fee to estimate the trading loss
+    const lpPrice = this._calculateLpPrice(tokenPricesMappingTable);
+    const tradingLoss =
+      (normalizedAmount * ratio * tokenPricesMappingTable[tokenASymbol] +
+        normalizedAmount *
+          (1 - ratio) *
+          tokenPricesMappingTable[tokenBSymbol]) *
+        0.9997 -
+      amount * lpPrice;
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-withdraw`,
+      tradingLoss,
+    );
     const [claimTxns, _] = await this.customClaim(
       owner,
       tokenPricesMappingTable,
       updateProgress,
+    );
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-claim`,
+      0,
     );
     const tokenMetadatas = this._getLPTokenPairesToZapIn();
     return [[withdrawTxn, ...claimTxns], tokenMetadatas, minPairAmounts];

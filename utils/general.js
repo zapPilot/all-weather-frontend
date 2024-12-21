@@ -58,7 +58,7 @@ export const PROVIDER = (chain) => {
 
   return new ethers.providers.JsonRpcProvider(providerUrl);
 };
-const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
+export const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 export function timeAgo(dateString) {
   // // 08/10/2024 21:09:57
   // 11/03/2024 20:24:15
@@ -105,7 +105,6 @@ export function approve(
   updateProgress,
   chainId,
 ) {
-  updateProgress(`approve spending amount to ${spenderAddress}`);
   if (typeof amount !== "object") {
     amount = ethers.BigNumber.from(amount);
   }
