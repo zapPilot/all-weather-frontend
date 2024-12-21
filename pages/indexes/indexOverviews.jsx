@@ -355,6 +355,7 @@ export default function IndexOverviews() {
     investmentAmount * (1 - slippage / 100 - portfolioHelper?.swapFeeRate());
   // calculate the investment amount for next chain
   const calCrossChainInvestmentAmount = (nextChain) => {
+    if (portfolioHelper?.strategy === undefined) return 0;
     const chainWeight = Object.entries(portfolioHelper.strategy).reduce(
       (sum, [category, protocols]) => {
         return (
@@ -362,12 +363,9 @@ export default function IndexOverviews() {
           Object.entries(protocols).reduce(
             (innerSum, [chain, protocolArray]) => {
               if (chain === nextChain) {
-                console.log("nextChain", nextChain);
                 return (
                   innerSum +
                   protocolArray.reduce((weightSum, protocol) => {
-                    console.log("protocol", protocol);
-                    console.log("weightSum", weightSum);
                     return weightSum + protocol.weight;
                   }, 0)
                 );
@@ -532,64 +530,39 @@ export default function IndexOverviews() {
             </div>
             <div
               className={`mt-4 ${
-                nextChainInvestmentAmount > 0 ? "block" : "hidden"
+                nextChainInvestmentAmount > 0 &&
+                nextStepChain ===
+                  chainId?.name.toLowerCase().replace(" one", "")
+                  ? "block"
+                  : "hidden"
               }`}
             >
               <p>
                 Step 3: After calculating the investment amount, click to zap
                 in.
               </p>
-              {slippage > 1 ? (
-                ((nextChainInvestmentAmount -
-                  parseFloat(walletBalanceData?.displayValue)) /
-                  nextChainInvestmentAmount) *
-                  100 >
-                slippage
-              ) : ((nextChainInvestmentAmount -
-                  parseFloat(walletBalanceData?.displayValue)) /
-                  nextChainInvestmentAmount) *
-                  100 >
-                1 ? (
-                <p className="text-red-400">
-                  Please send more tokens to your AA Wallet to continue.
-                  <br />
-                  Click on the top-right corner to get your AA Wallet address.
-                </p>
-              ) : ((nextChainInvestmentAmount -
-                  parseFloat(walletBalanceData?.displayValue)) /
-                  nextChainInvestmentAmount) *
-                  100 >
-                0 ? (
-                <Button
-                  type="primary"
-                  className={`w-full my-2 ${
-                    investmentAmount > 0 ? "hidden" : "block"
-                  }`}
-                  onClick={() => {
-                    setInvestmentAmount(
-                      parseFloat(walletBalanceData?.displayValue),
-                    );
-                    setFinishedTxn(false);
-                  }}
-                >
-                  Set Investment Amount to{" "}
-                  {parseFloat(walletBalanceData?.displayValue)} on{" "}
-                  {nextStepChain} Chain
-                </Button>
-              ) : (
-                <Button
-                  type="primary"
-                  className={`w-full my-2 ${showZapIn ? "hidden" : "block"}`}
-                  onClick={() => {
-                    setInvestmentAmount(nextChainInvestmentAmount);
-                    setFinishedTxn(false);
-                    setShowZapIn(true);
-                  }}
-                >
-                  Set Investment Amount to {nextChainInvestmentAmount} on{" "}
-                  {nextStepChain} Chain
-                </Button>
-              )}
+
+              <Button
+                type="primary"
+                className={`w-full my-2 ${showZapIn ? "hidden" : "block"}`}
+                onClick={() => {
+                  setInvestmentAmount(
+                    nextChainInvestmentAmount >
+                      parseFloat(walletBalanceData?.displayValue)
+                      ? parseFloat(walletBalanceData?.displayValue)
+                      : nextChainInvestmentAmount,
+                  );
+                  setFinishedTxn(false);
+                  setShowZapIn(true);
+                }}
+              >
+                Set Investment Amount to{" "}
+                {nextChainInvestmentAmount >
+                parseFloat(walletBalanceData?.displayValue)
+                  ? parseFloat(walletBalanceData?.displayValue).toFixed(2)
+                  : nextChainInvestmentAmount.toFixed(2)}{" "}
+                on {nextStepChain} Chain
+              </Button>
               <Button
                 type="primary"
                 className={`w-full my-2 ${showZapIn ? "block" : "hidden"}`}
@@ -600,7 +573,8 @@ export default function IndexOverviews() {
                   Number(investmentAmount) > tokenBalance
                 }
               >
-                Zap In
+                Zap In {Number(investmentAmount)?.toFixed(2)}{" "}
+                {selectedToken?.split("-")[0]} on {nextStepChain} Chain
               </Button>
             </div>
           </div>
