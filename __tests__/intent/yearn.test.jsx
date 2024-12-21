@@ -46,14 +46,20 @@ describe("Yearn Vault", () => {
       ],
       onlyThisChain,
     );
-    expect(txns.length).toBe(3);
+    expect(txns.length).toBe(5);
     expect(await encode(txns[0])).toBe(
       "0x095ea7b30000000000000000000000001111111254eeb25477b68fb85ed929f73a9605820000000000000000000000000000000000000000000000000de0b6b3a7640000",
     );
-    expect(await encode(txns[1])).toBe(
+    expect(await encode(txns[1])).includes(
+      "210050bb080155aec4eae79a2aac5fe78fd738e1",
+    );
+    expect(await encode(txns[2])).includes(
+      "2ecbc6f229fed06044cdb0dd772437a30190cd50",
+    );
+    expect(await encode(txns[3])).toBe(
       "0x095ea7b300000000000000000000000086df48f8dc91504d2b3e360d67513f094dfa6c840000000000000000000000000000000000000000000000000de0b6b3a7640000",
     );
-    expect(await encode(txns[2])).toBe(
+    expect(await encode(txns[4])).toBe(
       "0x6e553f650000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000c774806f9ff5f3d8aabb6b70d0ed509e42afe6f0",
     );
   });

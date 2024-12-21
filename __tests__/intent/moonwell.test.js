@@ -42,15 +42,22 @@ describe("Moonwell", () => {
       protocolAssetDustInWallet,
       onlyThisChain,
     );
-    expect(txns.length).toBe(3);
+    expect(txns.length).toBe(5);
     // approve 1inch
-    expect(await encode(txns[0])).includes(
+    expect(await encode(txns[0])).toBe(
       "0x095ea7b30000000000000000000000001111111254eeb25477b68fb85ed929f73a96058200000000000000000000000000000000000000000000000000000000000f4240",
     );
+    // referral fee
+    expect(await encode(txns[1])).includes(
+      "c774806f9ff5f3d8aabb6b70d0ed509e42afe6f0",
+    );
+    expect(await encode(txns[2])).includes(
+      "2ecbc6f229fed06044cdb0dd772437a30190cd50",
+    );
 
-    expect(txns[1].to).toBe("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913");
+    expect(txns[3].to).toBe("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913");
     // .toBe(true);
-    expect(txns[2].to).toBe("0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22");
+    expect(txns[4].to).toBe("0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22");
   });
   it("should be able to zap-out Moonwell's Stablecoin Vault", async () => {
     const actionName = "zapOut";
