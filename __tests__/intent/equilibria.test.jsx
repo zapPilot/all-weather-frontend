@@ -4,6 +4,14 @@ import { generateIntentTxns } from "../../classes/main.js";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { encode } from "thirdweb";
 import { arbitrum } from "thirdweb/chains";
+const setTradingLoss = () => {};
+const setStepName = () => {};
+const setTotalTradingLoss = () => {};
+const setPlatformFee = () => {};
+const slippage = 0.5;
+const rebalancableUsdBalanceDict = {};
+const protocolAssetDustInWallet = {};
+const onlyThisChain = false;
 describe("Equilibria ETH Vault", () => {
   it("should be able to zap-in Equilibria's ETH Vault", async () => {
     const actionName = "zapIn";
@@ -13,9 +21,6 @@ describe("Equilibria ETH Vault", () => {
     const investmentAmount = 1;
     const tokenDecimals = 18;
     const zapOutPercentage = NaN;
-    const setTradingLoss = () => {};
-    const setStepName = () => {};
-    const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Equilibria ETH Vault");
     const txns = await generateIntentTxns(
       actionName,
@@ -29,7 +34,13 @@ describe("Equilibria ETH Vault", () => {
       zapOutPercentage,
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
+      setPlatformFee,
       slippage,
+      rebalancableUsdBalanceDict,
+      userAddress,
+      protocolAssetDustInWallet,
+      onlyThisChain,
     );
     expect(txns.length).toBe(5);
     expect(await encode(txns[0])).toBe(
@@ -77,7 +88,13 @@ describe("Equilibria ETH Vault", () => {
       zapOutPercentage,
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
+      setPlatformFee,
       slippage,
+      rebalancableUsdBalanceDict,
+      userAddress,
+      protocolAssetDustInWallet,
+      onlyThisChain,
     );
     expect(
       (await encode(txns[0])).includes(
@@ -131,7 +148,13 @@ describe("Equilibria ETH Vault", () => {
       zapOutPercentage,
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
+      setPlatformFee,
       slippage,
+      rebalancableUsdBalanceDict,
+      userAddress,
+      protocolAssetDustInWallet,
+      onlyThisChain,
     );
     // claim
     expect(txns[0].to).toBe("0xc7517f481Cc0a645e63f870830A4B2e580421e32");

@@ -4,6 +4,16 @@ import { generateIntentTxns } from "../../classes/main.js";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { encode } from "thirdweb";
 import { arbitrum } from "thirdweb/chains";
+const setTradingLoss = () => {};
+const setStepName = () => {};
+const setTotalTradingLoss = () => {};
+const setPlatformFee = () => {};
+const slippage = 0.5;
+const rebalancableUsdBalanceDict = {};
+const protocolAssetDustInWallet = {};
+
+const recipient = "0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0";
+const onlyThisChain = true;
 describe("Yearn Vault", () => {
   it("should be able to zap-in Yearn Vault", async () => {
     const actionName = "zapIn";
@@ -13,9 +23,6 @@ describe("Yearn Vault", () => {
     const investmentAmount = 1;
     const tokenDecimals = 18;
     const zapOutPercentage = NaN;
-    const setTradingLoss = () => {};
-    const setStepName = () => {};
-    const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Yearn Vault");
     const txns = await generateIntentTxns(
       actionName,
@@ -29,7 +36,15 @@ describe("Yearn Vault", () => {
       zapOutPercentage,
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
+      setPlatformFee,
       slippage,
+      rebalancableUsdBalanceDict,
+      recipient,
+      protocolAssetDustInWallet[
+        arbitrum?.name.toLowerCase().replace(" one", "")
+      ],
+      onlyThisChain,
     );
     expect(txns.length).toBe(3);
     expect(await encode(txns[0])).toBe(
@@ -51,9 +66,7 @@ describe("Yearn Vault", () => {
     const investmentAmount = 1;
     const tokenDecimals = 18;
     const zapOutPercentage = 0.00022992956568238272;
-    const setTradingLoss = () => {};
-    const setStepName = () => {};
-    const slippage = 0.5;
+
     const portfolioHelper = getPortfolioHelper("Yearn Vault");
     const txns = await generateIntentTxns(
       actionName,
@@ -67,7 +80,15 @@ describe("Yearn Vault", () => {
       zapOutPercentage,
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
+      setPlatformFee,
       slippage,
+      rebalancableUsdBalanceDict,
+      recipient,
+      protocolAssetDustInWallet[
+        arbitrum?.name.toLowerCase().replace(" one", "")
+      ],
+      onlyThisChain,
     );
     expect(txns.length).toBe(3);
     const encodedData = await encode(txns[0]);
@@ -86,9 +107,6 @@ describe("Yearn Vault", () => {
     const investmentAmount = 0;
     const tokenDecimals = 18;
     const zapOutPercentage = 1;
-    const setTradingLoss = () => {};
-    const setStepName = () => {};
-    const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Yearn Vault");
     const txns = await generateIntentTxns(
       actionName,
@@ -102,7 +120,15 @@ describe("Yearn Vault", () => {
       zapOutPercentage,
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
+      setPlatformFee,
       slippage,
+      rebalancableUsdBalanceDict,
+      recipient,
+      protocolAssetDustInWallet[
+        arbitrum?.name.toLowerCase().replace(" one", "")
+      ],
+      onlyThisChain,
     );
     expect(txns.length).toBe(0);
   });

@@ -4,6 +4,14 @@ import { generateIntentTxns } from "../../classes/main.js";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { encode } from "thirdweb";
 import { arbitrum } from "thirdweb/chains";
+const setTradingLoss = () => {};
+const setStepName = () => {};
+const setTotalTradingLoss = () => {};
+const setPlatformFee = () => {};
+const slippage = 0.5;
+const rebalancableUsdBalanceDict = {};
+const protocolAssetDustInWallet = {};
+const onlyThisChain = false;
 describe("Referral Fee Module", () => {
   // it("should not charge fee for zap-in", async () => {
   //   const actionName = "zapIn";
@@ -48,9 +56,6 @@ describe("Referral Fee Module", () => {
       const investmentAmount = 1;
       const tokenDecimals = 18;
       const zapOutPercentage = 1;
-      const setTradingLoss = () => {};
-      const setStepName = () => {};
-      const slippage = 0.5;
       const portfolioHelper = getPortfolioHelper("Equilibria ETH Vault");
       const txns = await generateIntentTxns(
         actionName,
@@ -64,7 +69,15 @@ describe("Referral Fee Module", () => {
         zapOutPercentage,
         setTradingLoss,
         setStepName,
+        setTotalTradingLoss,
+        setPlatformFee,
         slippage,
+        rebalancableUsdBalanceDict,
+        userAddress,
+        protocolAssetDustInWallet[
+          arbitrum?.name.toLowerCase().replace(" one", "")
+        ],
+        onlyThisChain,
       );
       expect(await encode(txns[0])).includes(
         "0x095ea7b3000000000000000000000000c7517f481cc0a645e63f870830a4b2e580421e32000000000000000000000000000000000000000000000000",

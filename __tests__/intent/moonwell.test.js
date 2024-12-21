@@ -4,6 +4,14 @@ import { generateIntentTxns } from "../../classes/main.js";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { encode } from "thirdweb";
 import { base } from "thirdweb/chains";
+const setTradingLoss = () => {};
+const setStepName = () => {};
+const setTotalTradingLoss = () => {};
+const setPlatformFee = () => {};
+const slippage = 0.5;
+const rebalancableUsdBalanceDict = {};
+const protocolAssetDustInWallet = {};
+const onlyThisChain = false;
 describe("Moonwell", () => {
   it("should be able to zap-in Moonwell's Stablecoin Vault", async () => {
     const actionName = "zapIn";
@@ -13,9 +21,6 @@ describe("Moonwell", () => {
     const investmentAmount = 1;
     const tokenDecimals = 6;
     const zapOutPercentage = NaN;
-    const setTradingLoss = () => {};
-    const setStepName = () => {};
-    const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Moonwell Stablecoin Vault");
     const txns = await generateIntentTxns(
       actionName,
@@ -29,7 +34,13 @@ describe("Moonwell", () => {
       zapOutPercentage,
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
+      setPlatformFee,
       slippage,
+      rebalancableUsdBalanceDict,
+      userAddress,
+      protocolAssetDustInWallet,
+      onlyThisChain,
     );
     expect(txns.length).toBe(3);
     // approve 1inch
@@ -49,9 +60,6 @@ describe("Moonwell", () => {
     const investmentAmount = 1;
     const tokenDecimals = 18;
     const zapOutPercentage = 1;
-    const setTradingLoss = () => {};
-    const setStepName = () => {};
-    const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Moonwell Stablecoin Vault");
     const txns = await generateIntentTxns(
       actionName,
@@ -65,7 +73,13 @@ describe("Moonwell", () => {
       zapOutPercentage,
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
+      setPlatformFee,
       slippage,
+      rebalancableUsdBalanceDict,
+      userAddress,
+      protocolAssetDustInWallet,
+      onlyThisChain,
     );
     expect(txns.length).toBe(0);
     // due to the change of my wallet, the txns are not generated
@@ -82,9 +96,6 @@ describe("Moonwell", () => {
     const investmentAmount = 0;
     const tokenDecimals = 18;
     const zapOutPercentage = 1;
-    const setTradingLoss = () => {};
-    const setStepName = () => {};
-    const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Moonwell Stablecoin Vault");
     const txns = await generateIntentTxns(
       actionName,
@@ -98,7 +109,13 @@ describe("Moonwell", () => {
       zapOutPercentage,
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
+      setPlatformFee,
       slippage,
+      rebalancableUsdBalanceDict,
+      userAddress,
+      protocolAssetDustInWallet,
+      onlyThisChain,
     );
     expect(txns.length).toBe(1);
 

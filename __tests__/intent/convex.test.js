@@ -4,6 +4,14 @@ import { generateIntentTxns } from "../../classes/main.js";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { encode } from "thirdweb";
 import { arbitrum } from "thirdweb/chains";
+const setTradingLoss = () => {};
+const setStepName = () => {};
+const setTotalTradingLoss = () => {};
+const setPlatformFee = () => {};
+const slippage = 0.5;
+const rebalancableUsdBalanceDict = {};
+const protocolAssetDustInWallet = {};
+const onlyThisChain = false;
 describe("Convex", () => {
   it("should be able to zap-in Convex's Stablecoin Vault", async () => {
     const actionName = "zapIn";
@@ -13,9 +21,7 @@ describe("Convex", () => {
     const investmentAmount = 1;
     const tokenDecimals = 18;
     const zapOutPercentage = NaN;
-    const setTradingLoss = () => {};
-    const setStepName = () => {};
-    const slippage = 0.5;
+
     const portfolioHelper = getPortfolioHelper("Convex Stablecoin Vault");
     const txns = await generateIntentTxns(
       actionName,
@@ -29,7 +35,15 @@ describe("Convex", () => {
       zapOutPercentage,
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
+      setPlatformFee,
       slippage,
+      rebalancableUsdBalanceDict,
+      userAddress,
+      protocolAssetDustInWallet[
+        arbitrum?.name.toLowerCase().replace(" one", "")
+      ],
+      onlyThisChain,
     );
     expect(txns.length).toBe(8);
     expect(await encode(txns[0])).toBe(
@@ -52,9 +66,6 @@ describe("Convex", () => {
     const investmentAmount = 1;
     const tokenDecimals = 18;
     const zapOutPercentage = 0.00022992956568238272;
-    const setTradingLoss = () => {};
-    const setStepName = () => {};
-    const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Convex Stablecoin Vault");
     const txns = await generateIntentTxns(
       actionName,
@@ -68,7 +79,15 @@ describe("Convex", () => {
       zapOutPercentage,
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
+      setPlatformFee,
       slippage,
+      rebalancableUsdBalanceDict,
+      userAddress,
+      protocolAssetDustInWallet[
+        arbitrum?.name.toLowerCase().replace(" one", "")
+      ],
+      onlyThisChain,
     );
     // expect(txns.length).toBe(5);
     expect(txns[0].to).toBe("0xe062e302091f44d7483d9D6e0Da9881a0817E2be");
@@ -85,9 +104,6 @@ describe("Convex", () => {
     const investmentAmount = 0;
     const tokenDecimals = 18;
     const zapOutPercentage = 1;
-    const setTradingLoss = () => {};
-    const setStepName = () => {};
-    const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Convex Stablecoin Vault");
     const txns = await generateIntentTxns(
       actionName,
@@ -101,7 +117,15 @@ describe("Convex", () => {
       zapOutPercentage,
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
+      setPlatformFee,
       slippage,
+      rebalancableUsdBalanceDict,
+      userAddress,
+      protocolAssetDustInWallet[
+        arbitrum?.name.toLowerCase().replace(" one", "")
+      ],
+      onlyThisChain,
     );
     // expect(txns.length).toBe(1);
 

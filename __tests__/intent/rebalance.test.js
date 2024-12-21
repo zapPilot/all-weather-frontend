@@ -5,6 +5,13 @@ import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { Vela } from "../../classes/Vela/Vela";
 import { BaseConvex } from "../../classes/Convex/BaseConvex";
 import { arbitrum } from "thirdweb/chains";
+const setTradingLoss = () => {};
+const setStepName = () => {};
+const setTotalTradingLoss = () => {};
+const setPlatformFee = () => {};
+const slippage = 0.5;
+const protocolAssetDustInWallet = {};
+const onlyThisChain = false;
 describe("Stablecoin Vault", () => {
   it("should be able to rebalance from Stablecoin Vault", async () => {
     // params claimAndSwap 0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0 usdc 0xaf88d065e77c8cc2239327c5edb3a432268e5831 0 6 1 0.5
@@ -15,9 +22,6 @@ describe("Stablecoin Vault", () => {
     const investmentAmount = "";
     const tokenDecimals = "";
     const zapOutPercentage = "";
-    const setTradingLoss = () => {};
-    const setStepName = () => {};
-    const slippage = 0.5;
     // just a random number
     const rebalancableUsdBalanceDictDict = {
       "arbitrum/convex/0/usde-usdx": {
@@ -87,8 +91,13 @@ describe("Stablecoin Vault", () => {
       zapOutPercentage,
       setTradingLoss,
       setStepName,
+      setTotalTradingLoss,
+      setPlatformFee,
       slippage,
       rebalancableUsdBalanceDictDict,
+      userAddress,
+      protocolAssetDustInWallet,
+      onlyThisChain,
     );
   });
 });

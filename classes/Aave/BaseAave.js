@@ -103,7 +103,7 @@ export class BaseAave extends BaseProtocol {
   }
 
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
-    return [this.zapInOutTokenAddress, this.assetDecimals];
+    return [inputToken, this.zapInOutTokenAddress, this.assetDecimals];
   }
   _getTheBestTokenAddressToZapOut() {
     return [
