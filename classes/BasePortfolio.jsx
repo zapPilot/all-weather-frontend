@@ -287,6 +287,14 @@ export class BasePortfolio {
 
     // Handle special pre-processing for specific actions
     if (actionName === "zapIn") {
+      const platformFee = this.mulSwapFeeRate(actionParams.zapInAmount)
+      console.log("platformFee", platformFee)
+      console.log("actionParams.tokenInDecimals", actionParams, actionParams.tokenPricesMappingTable, actionParams.tokenInSymbol)
+      const normalizedPlatformFeeUSD = ethers.utils.formatUnits(
+        platformFee,
+        actionParams.tokenDecimals,
+      ) * actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol]
+      console.log("normalizedPlatformFeeUSD", normalizedPlatformFeeUSD)
       totalTxns.push(
         approve(
           actionParams.tokenInAddress,
@@ -296,10 +304,16 @@ export class BasePortfolio {
           actionParams.chainMetadata.id,
         ),
       );
-      // // test
-      // actionParams.setPlatformFee(
-      //   actionParams.zapInAmount * this.swapFeeRate(),
-      // );
+      const platformFeeTxns = await this._getPlatformFeeTxns(
+        actionParams.tokenInAddress,
+        actionParams.chainMetadata,
+        normalizedPlatformFeeUSD,
+        actionParams.account,
+      )
+      actionParams.setPlatformFee(
+        -normalizedPlatformFeeUSD
+      );
+      totalTxns = totalTxns.concat(platformFeeTxns);
     } else if (actionName === "rebalance") {
       return await this._generateRebalanceTxns(actionParams);
     } else if (actionName === "stake") {
@@ -755,13 +769,15 @@ export class BasePortfolio {
       chainMetadata.id,
     );
 
-    const transferAmount = this.mulSwapFeeRate(zapInAmount);
-    const zapInAmountAfterFee = zapInAmount.sub(transferAmount);
+    // need to multiply by 2 because we charge for zap in and zap out
+    const platformFee = this.mulSwapFeeRate(zapInAmount).mul(2);
+    const zapInAmountAfterFee = zapInAmount.sub(platformFee);
 
     const rebalanceFeeTxns = await this._getSwapFeeTxnsForZapIn(
       actionParams,
-      transferAmount,
+      platformFee,
       zapOutUsdcBalance,
+      usdcConfig
     );
 
     return [[approveTxn, ...rebalanceFeeTxns], zapInAmountAfterFee];
@@ -1207,35 +1223,22 @@ export class BasePortfolio {
 
   async _getSwapFeeTxnsForZapIn(
     actionParams,
-    transferAmount,
-    zapOutUsdcBalance,
+    platformFee,
+    usdcConfig
   ) {
-    actionParams.setPlatformFee(-zapOutUsdcBalance * this.swapFeeRate() * 2);
+    const normalizedPlatformFeeUsd = ethers.utils.formatUnits(
+      platformFee,
+      usdcConfig.decimals,
+    ) * usdcConfig.price;
+    console.log("normalizedPlatformFeeUsd", normalizedPlatformFeeUsd, "platformFee", platformFee);
+    actionParams.setPlatformFee(-normalizedPlatformFeeUsd);
     const referrer = await this._getReferrer(actionParams.account);
-    const contract = getContract({
-      client: THIRDWEB_CLIENT,
-      address: actionParams.tokenInAddress,
-      chain: actionParams.chainMetadata,
-      abi: ERC20_ABI,
-    });
-    let platformFee = transferAmount;
-    let txns = [];
-
-    if (referrer) {
-      const referralFee = this._calculateReferralFee(transferAmount);
-      platformFee = transferAmount.sub(referralFee);
-      txns.push(this._prepareTransferTxn(contract, referrer, referralFee));
-    }
-
-    txns.push(
-      this._prepareTransferTxn(
-        contract,
-        PROTOCOL_TREASURY_ADDRESS,
-        platformFee,
-      ),
+    return this._getPlatformFeeTxns(
+      actionParams.tokenInAddress,
+      actionParams.chainMetadata,
+      platformFee,
+      referrer,
     );
-
-    return txns;
   }
 
   async _swapFeeTxnsForZapOut(
@@ -1248,7 +1251,6 @@ export class BasePortfolio {
     chainMetadata,
     setPlatformFee,
   ) {
-    let txns = [];
     const referrer = await this._getReferrer(owner);
     const tokenOutUsdBalance = portfolioUsdBalance * zapOutPercentage;
     const swapFeeUsd = tokenOutUsdBalance * this.swapFeeRate();
@@ -1257,35 +1259,18 @@ export class BasePortfolio {
       tokenOutAddress,
       chainMetadata.name.toLowerCase(),
     );
-    const contract = getContract({
-      client: THIRDWEB_CLIENT,
-      address: tokenOutAddress,
-      chain: chainMetadata,
-      abi: ERC20_ABI,
-    });
     let platformFee = ethers.utils.parseUnits(
       (swapFeeUsd / tokenPricesMappingTable[tokenOutSymbol]).toFixed(
         tokenOutDecimals,
       ),
       tokenOutDecimals,
     );
-    if (referrer) {
-      const referralFee = this._calculateReferralFee(platformFee);
-      platformFee = platformFee.sub(referralFee);
-      const referralFeeTxn = this._prepareTransferTxn(
-        contract,
-        referrer,
-        referralFee,
-      );
-      txns.push(referralFeeTxn);
-    }
-    const swapFeeTxn = this._prepareTransferTxn(
-      contract,
-      PROTOCOL_TREASURY_ADDRESS,
+    return this._getPlatformFeeTxns(
+      tokenOutAddress,
+      chainMetadata,
       platformFee,
+      referrer,
     );
-    txns.push(swapFeeTxn);
-    return txns;
   }
   _calculateReferralFee(amount) {
     return this.mulReferralFeeRate(amount);
@@ -1312,5 +1297,31 @@ export class BasePortfolio {
       // Use setTimeout to ensure the state update is queued
       setTimeout(resolve, 30);
     });
+  }
+  _getPlatformFeeTxns(tokenAddress, chainMetadata, platformFee, referrer) {
+    let txns = [];
+    const contract = getContract({
+      client: THIRDWEB_CLIENT,
+      address: tokenAddress,
+      chain: chainMetadata,
+      abi: ERC20_ABI,
+    });
+    if (referrer) {
+      const referralFee = this._calculateReferralFee(platformFee);
+      platformFee = platformFee.sub(referralFee);
+      const referralFeeTxn = this._prepareTransferTxn(
+        contract,
+        referrer,
+        referralFee,
+      );
+      txns.push(referralFeeTxn);
+    }
+    const swapFeeTxn = this._prepareTransferTxn(
+      contract,
+      PROTOCOL_TREASURY_ADDRESS,
+      platformFee,
+    );
+    txns.push(swapFeeTxn);
+    return txns;
   }
 }
