@@ -55,15 +55,6 @@ export class BaseAerodrome extends BaseProtocol {
     );
     this._checkIfParamsAreSet();
   }
-  zapInSteps(tokenInAddress) {
-    return 1;
-  }
-  zapOutSteps(tokenInAddress) {
-    return 1;
-  }
-  claimAndSwapSteps() {
-    return 2;
-  }
   rewards() {
     return [
       {
@@ -76,9 +67,6 @@ export class BaseAerodrome extends BaseProtocol {
   }
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     let rewardBalance = {};
-    updateProgress(
-      `fetching pending rewards from ${this.stakeFarmContract.address}`,
-    );
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       Guage,
@@ -176,11 +164,7 @@ export class BaseAerodrome extends BaseProtocol {
       ERC20_ABI,
       PROVIDER(this.chain),
     );
-    updateProgress("Getting stake balance");
     return (await stakeFarmContractInstance.functions.balanceOf(owner))[0];
-  }
-  _getLPTokenPairesToZapIn() {
-    return this.customParams.lpTokens;
   }
   async _calculateTokenAmountsForLP(tokenMetadatas) {
     const metadata = await this.assetContractInstance.functions.metadata();
@@ -257,6 +241,11 @@ export class BaseAerodrome extends BaseProtocol {
     return [approveForStakingTxn, stakeTxn];
   }
   async _unstakeLP(owner, percentage, updateProgress) {
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-unstake`,
+      0,
+    );
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
     const stakeBalance = await this.stakeBalanceOf(owner, updateProgress);
     const amount = stakeBalance.mul(percentageBN).div(10000);
@@ -281,17 +270,25 @@ export class BaseAerodrome extends BaseProtocol {
       updateProgress,
       this.chainId,
     );
-
-    updateProgress("Getting LP balances");
     const lpTokens = this._getLPTokenPairesToZapIn();
 
     // Get pool reserves and calculate withdrawal amounts
-    const { minAmount0, minAmount1 } = await this._calculateWithdrawalAmounts(
-      amount,
-      slippage,
-      lpTokens,
+    const {
+      minAmount0,
+      minAmount1,
+      estimatedNormalizedAmount0,
+      estimatedNormalizedAmount1,
+    } = await this._calculateWithdrawalAmounts(amount, slippage, lpTokens);
+    const lpPrice = await this._calculateLpPrice(tokenPricesMappingTable);
+    const tradingLoss =
+      estimatedNormalizedAmount0 * tokenPricesMappingTable[lpTokens[0][0]] +
+      estimatedNormalizedAmount1 * tokenPricesMappingTable[lpTokens[1][0]] -
+      amount * lpPrice;
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-withdraw`,
+      tradingLoss,
     );
-
     const withdrawTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "removeLiquidity",
@@ -311,6 +308,7 @@ export class BaseAerodrome extends BaseProtocol {
       tokenPricesMappingTable,
       updateProgress,
     );
+    this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-claim`, 0);
     return [
       [approveTxn, withdrawTxn, ...claimTxns],
       lpTokens,
@@ -334,21 +332,28 @@ export class BaseAerodrome extends BaseProtocol {
     const ratio = reserve0 / (reserve0 + reserve1);
 
     // Calculate minimum withdrawal amounts with slippage
-    const minAmount0 = this._calculateMinWithdrawAmount(
-      lpAmount,
-      ratio,
-      token0Decimals,
-      slippage,
-      avgDecimals,
-    );
-    const minAmount1 = this._calculateMinWithdrawAmount(
-      lpAmount,
-      1 - ratio,
-      token1Decimals,
-      slippage,
-      avgDecimals,
-    );
-    return { minAmount0, minAmount1 };
+    const [estimatedNormalizedAmount0, minAmount0] =
+      this._calculateMinWithdrawAmount(
+        lpAmount,
+        ratio,
+        token0Decimals,
+        slippage,
+        avgDecimals,
+      );
+    const [estimatedNormalizedAmount1, minAmount1] =
+      this._calculateMinWithdrawAmount(
+        lpAmount,
+        1 - ratio,
+        token1Decimals,
+        slippage,
+        avgDecimals,
+      );
+    return {
+      estimatedNormalizedAmount0,
+      estimatedNormalizedAmount1,
+      minAmount0,
+      minAmount1,
+    };
   }
 
   _calculateMinWithdrawAmount(
@@ -369,7 +374,10 @@ export class BaseAerodrome extends BaseProtocol {
       decimals,
     );
     // Apply slippage and return
-    return this.mul_with_slippage_in_bignumber_format(withdrawAmount, slippage);
+    return [
+      expectedAmount,
+      this.mul_with_slippage_in_bignumber_format(withdrawAmount, slippage),
+    ];
   }
 
   async lockUpPeriod() {

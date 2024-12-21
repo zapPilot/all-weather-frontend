@@ -38,15 +38,6 @@ export class Vela extends BaseProtocol {
     });
     this._checkIfParamsAreSet();
   }
-  zapInSteps(tokenInAddress) {
-    return 4;
-  }
-  zapOutSteps(tokenInAddress) {
-    return 2;
-  }
-  claimAndSwapSteps() {
-    return 3;
-  }
   rewards() {
     return [];
   }
@@ -111,7 +102,6 @@ export class Vela extends BaseProtocol {
     return await this._fetchVlpPrice(() => {});
   }
   async _fetchVlpPrice(updateProgress) {
-    updateProgress("fetching VLP price");
     const protocolContractInstance = new ethers.Contract(
       this.protocolContract.address,
       Vault,
@@ -124,7 +114,7 @@ export class Vela extends BaseProtocol {
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
     const usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
-    return [usdcAddress, 6];
+    return ["usdc", usdcAddress, 6];
   }
   _getTheBestTokenAddressToZapOut() {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in

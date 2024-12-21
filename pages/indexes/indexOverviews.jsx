@@ -7,19 +7,18 @@ import Image from "next/image";
 import Link from "next/link";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
-import { CheckIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
+import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
 import TransacitonHistory from "./transactionHistory.jsx";
 import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
 import ConfiguredConnectButton from "../ConnectButton";
 import { base, arbitrum } from "thirdweb/chains";
+import PopUpModal from "../Modal";
 import {
   Button,
-  Progress,
   ConfigProvider,
   Radio,
   notification,
-  Modal,
   Spin,
   Tabs,
   Dropdown,
@@ -56,7 +55,6 @@ import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
 import tokens from "../views/components/tokens.json";
-
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -125,10 +123,15 @@ export default function IndexOverviews() {
     protocolAssetDustInWalletLoading,
     setProtocolAssetDustInWalletLoading,
   ] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [actionName, setActionName] = useState("");
+  const [onlyThisChain, setOnlyThisChain] = useState(false);
+  const [totalTradingLoss, setTotalTradingLoss] = useState(0);
+  const [tradingLoss, setTradingLoss] = useState(0);
+  const [platformFee, setPlatformFee] = useState(0);
+  const [costsCalculated, setCostsCalculated] = useState(false);
   const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(
-    portfolioName === "Stablecoin Vault" ? 0.5 : 3,
+    portfolioName?.includes("Stablecoin") ? 1 : 3,
   );
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
@@ -158,6 +161,7 @@ export default function IndexOverviews() {
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
   const [recipientError, setRecipientError] = useState(false);
+  const [showZapIn, setShowZapIn] = useState(false);
 
   const handleSetSelectedToken = useCallback((token) => {
     setSelectedToken(token);
@@ -176,6 +180,14 @@ export default function IndexOverviews() {
 
   const handleAAWalletAction = async (actionName, onlyThisChain = false) => {
     setOpen(true);
+    setActionName(actionName);
+    setOnlyThisChain(onlyThisChain);
+    setCostsCalculated(false);
+    setFinishedTxn(false);
+    setPlatformFee(0);
+    setTotalTradingLoss(0);
+    setTradingLoss(0);
+    setStepName("");
 
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
     if (!tokenSymbolAndAddress) {
@@ -211,8 +223,10 @@ export default function IndexOverviews() {
         investmentAmount,
         tokenDecimals,
         zapOutPercentage,
-        setProgress,
+        setTradingLoss,
         setStepName,
+        setTotalTradingLoss,
+        setPlatformFee,
         slippage,
         rebalancableUsdBalanceDict,
         recipient,
@@ -221,6 +235,7 @@ export default function IndexOverviews() {
         ],
         onlyThisChain,
       );
+      setCostsCalculated(true);
       if (txns.length < 2) {
         throw new Error("No transactions to send");
       }
@@ -229,7 +244,6 @@ export default function IndexOverviews() {
         await new Promise((resolve, reject) => {
           sendBatchTransaction(txns.flat(Infinity), {
             onSuccess: async (data) => {
-              console.log("transaction data", data);
               try {
                 await axios({
                   method: "post",
@@ -399,91 +413,6 @@ export default function IndexOverviews() {
     </>
   );
 
-  function ModalContent() {
-    // remove the transition animation effect, still need to figure out that re-render issue
-    return (
-      <Modal
-        transitionName=""
-        maskTransitionName=""
-        title={
-          finishedTxn === false ? "Transaction Preview" : "Transaction Result"
-        }
-        open={open}
-        onCancel={() => {
-          setOpen(false);
-          if (finishedTxn) {
-            // window.location.reload();
-            setOpen(false);
-          }
-        }}
-        footer={<></>}
-      >
-        {finishedTxn === false ? (
-          <>
-            <div>
-              <p>Tips:</p>
-              <p>
-                1. Transaction simulation will be available in the next version.
-              </p>
-            </div>
-
-            <Progress
-              percent={progress.toFixed(2)}
-              footer={<></>}
-              status={
-                zapInIsLoading || zapOutIsLoading || claimIsLoading
-                  ? "active"
-                  : ""
-              }
-              size={[400, 10]}
-              showInfo={true}
-              format={(percent) => `${percent}%`}
-            />
-            {stepName}
-          </>
-        ) : (
-          <>
-            <div className="flex flex-col items-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                <CheckIcon
-                  aria-hidden="true"
-                  className="h-6 w-6 text-green-600"
-                />
-              </div>
-              <div className="mt-3 text-center sm:mt-5">
-                <div className="mt-2">
-                  <p className="text-sm text-gray-500">
-                    🎉 Success! Click Once 🌟, Yield Forever 🌿
-                  </p>
-                  <a
-                    href={txnLink}
-                    target="_blank"
-                    className="flex justify-center mt-2"
-                  >
-                    <ArrowTopRightOnSquareIcon className="h-6 w-5 text-gray-500" />
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 sm:mt-6 flex justify-center">
-              <button
-                type="button"
-                onClick={() =>
-                  window.open("https://t.me/all_weather_protocol_bot", "_blank")
-                }
-                className="inline-flex items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-              >
-                Subscribe for Rebalance Notifications
-                <span className="fi fi-brands-telegram ml-2"></span>
-              </button>
-            </div>
-          </>
-        )}
-      </Modal>
-    );
-  }
-
   const getRebalanceReinvestUsdAmount = () => {
     return (
       Object.values(rebalancableUsdBalanceDict).reduce(
@@ -556,7 +485,7 @@ export default function IndexOverviews() {
                 <Button
                   type="primary"
                   className="w-full my-2"
-                  onClick={() => handleAAWalletAction("zapIn")}
+                  onClick={() => handleAAWalletAction("zapIn", false)}
                   loading={zapInIsLoading}
                   disabled={
                     Number(investmentAmount) === 0 ||
@@ -650,12 +579,11 @@ export default function IndexOverviews() {
               ) : (
                 <Button
                   type="primary"
-                  className={`w-full my-2 ${
-                    investmentAmount > 0 ? "hidden" : "block"
-                  }`}
+                  className={`w-full my-2 ${showZapIn ? "hidden" : "block"}`}
                   onClick={() => {
                     setInvestmentAmount(nextChainInvestmentAmount);
                     setFinishedTxn(false);
+                    setShowZapIn(true);
                   }}
                 >
                   Set Investment Amount to {nextChainInvestmentAmount} on{" "}
@@ -664,9 +592,7 @@ export default function IndexOverviews() {
               )}
               <Button
                 type="primary"
-                className={`w-full my-2 ${
-                  investmentAmount > 0 ? "block" : "hidden"
-                }`}
+                className={`w-full my-2 ${showZapIn ? "block" : "hidden"}`}
                 onClick={() => handleAAWalletAction("zapIn", true)}
                 loading={zapInIsLoading}
                 disabled={
@@ -849,7 +775,9 @@ export default function IndexOverviews() {
       Object.keys(portfolioApr).length === 0
     ) {
       dispatch(fetchStrategyMetadata());
-      setSlippage(portfolioName === "Stablecoin Vault" ? 0.5 : 3);
+    }
+    if (portfolioName !== undefined) {
+      setSlippage(portfolioName.includes("Stablecoin") ? 1 : 3);
     }
   }, [portfolioName]);
   useEffect(() => {
@@ -915,7 +843,28 @@ export default function IndexOverviews() {
   return (
     <BasePage>
       {notificationContextHolder}
-      <ModalContent />
+      <PopUpModal
+        portfolioHelper={portfolioHelper}
+        stepName={stepName}
+        tradingLoss={tradingLoss}
+        totalTradingLoss={totalTradingLoss}
+        open={open ?? false}
+        setOpen={setOpen}
+        chainId={chainId}
+        finishedTxn={finishedTxn}
+        txnLink={txnLink}
+        portfolioAPR={portfolioApr[portfolioName]?.portfolioAPR}
+        actionName={actionName}
+        onlyThisChain={onlyThisChain}
+        selectedToken={selectedToken}
+        investmentAmount={investmentAmount}
+        costsCalculated={costsCalculated}
+        platformFee={platformFee}
+        rebalancableUsdBalanceDict={rebalancableUsdBalanceDict}
+        chainMetadata={chainId}
+        rebalanceAmount={getRebalanceReinvestUsdAmount()}
+        zapOutAmount={usdBalance * zapOutPercentage}
+      />
       <main className={styles.bgStyle}>
         <header className="relative isolate pt-6">
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -998,7 +947,7 @@ export default function IndexOverviews() {
                         size="small"
                         onChange={(e) => setSlippage(e.target.value)}
                       >
-                        {[0.5, 1, 3, 5, 7].map((slippageValue) => (
+                        {[1, 3, 5, 7].map((slippageValue) => (
                           <Radio.Button
                             value={slippageValue}
                             key={slippageValue}

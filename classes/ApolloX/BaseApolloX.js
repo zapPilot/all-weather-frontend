@@ -40,15 +40,6 @@ export class BaseApolloX extends BaseProtocol {
     });
     this._checkIfParamsAreSet();
   }
-  zapInSteps(tokenInAddress) {
-    return 3;
-  }
-  zapOutSteps(tokenInAddress) {
-    return 2;
-  }
-  claimAndSwapSteps() {
-    return 2;
-  }
   rewards() {
     return [
       {
@@ -60,9 +51,6 @@ export class BaseApolloX extends BaseProtocol {
     ];
   }
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
-    updateProgress(
-      `fetching pending rewards from ${this.stakeFarmContract.address}`,
-    );
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       SmartChefInitializable,
@@ -194,7 +182,6 @@ export class BaseApolloX extends BaseProtocol {
     return await this._fetchAlpPrice(() => {});
   }
   async _fetchAlpPrice(updateProgress) {
-    updateProgress("fetching ALP price");
     const response = await axios({
       method: "post",
       url: "https://www.apollox.finance/bapi/futures/v1/public/future/symbol/history-price",
@@ -214,7 +201,7 @@ export class BaseApolloX extends BaseProtocol {
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of ALP to get the cheapest token to zap in
     const usdcBridgedAddress = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8";
-    return [usdcBridgedAddress, 6];
+    return ["usdc", usdcBridgedAddress, 6];
   }
   _getTheBestTokenAddressToZapOut() {
     // TODO: minor, but we can read the composition of ALP to get the cheapest token to zap in

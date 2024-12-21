@@ -37,7 +37,7 @@ export default function ConfiguredConnectButton() {
       // https://portal.thirdweb.com/connect/account-abstraction/infrastructure
       chains={[arbitrum, base]}
       accountAbstraction={{
-        chain: arbitrum,
+        chain: base,
         sponsorGas: true,
       }}
       connectModal={{
