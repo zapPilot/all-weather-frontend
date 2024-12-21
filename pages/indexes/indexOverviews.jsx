@@ -295,7 +295,6 @@ export default function IndexOverviews() {
           });
         });
       } catch (error) {
-        throw error;
         let errorReadableMsg;
         if (
           error.message.includes("0x495d907f") ||
@@ -316,7 +315,6 @@ export default function IndexOverviews() {
         );
       }
     } catch (error) {
-      throw error;
       const errorMsg =
         error.name === "AxiosError"
           ? error.response?.data?.message
@@ -487,8 +485,7 @@ export default function IndexOverviews() {
                 <Button
                   type="primary"
                   className="w-full my-2"
-                  // onClick={() => handleAAWalletAction("zapIn", false)}
-                  onClick={() => handleAAWalletAction("zapIn", true)}
+                  onClick={() => handleAAWalletAction("zapIn", false)}
                   loading={zapInIsLoading}
                   disabled={
                     Number(investmentAmount) === 0 ||

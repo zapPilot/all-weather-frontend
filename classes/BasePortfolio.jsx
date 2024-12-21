@@ -287,14 +287,10 @@ export class BasePortfolio {
 
     // Handle special pre-processing for specific actions
     if (actionName === "zapIn") {
-      const platformFee = this.mulSwapFeeRate(actionParams.zapInAmount)
-      console.log("platformFee", platformFee)
-      console.log("actionParams.tokenInDecimals", actionParams, actionParams.tokenPricesMappingTable, actionParams.tokenInSymbol)
-      const normalizedPlatformFeeUSD = ethers.utils.formatUnits(
-        platformFee,
-        actionParams.tokenDecimals,
-      ) * actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol]
-      console.log("normalizedPlatformFeeUSD", normalizedPlatformFeeUSD)
+      const platformFee = this.mulSwapFeeRate(actionParams.zapInAmount);
+      const normalizedPlatformFeeUSD =
+        ethers.utils.formatUnits(platformFee, actionParams.tokenDecimals) *
+        actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol];
       totalTxns.push(
         approve(
           actionParams.tokenInAddress,
@@ -304,15 +300,14 @@ export class BasePortfolio {
           actionParams.chainMetadata.id,
         ),
       );
+      const referrer = await this._getReferrer(actionParams.account);
       const platformFeeTxns = await this._getPlatformFeeTxns(
         actionParams.tokenInAddress,
         actionParams.chainMetadata,
-        normalizedPlatformFeeUSD,
-        actionParams.account,
-      )
-      actionParams.setPlatformFee(
-        -normalizedPlatformFeeUSD
+        platformFee,
+        referrer,
       );
+      actionParams.setPlatformFee(-normalizedPlatformFeeUSD);
       totalTxns = totalTxns.concat(platformFeeTxns);
     } else if (actionName === "rebalance") {
       return await this._generateRebalanceTxns(actionParams);
@@ -777,7 +772,7 @@ export class BasePortfolio {
       actionParams,
       platformFee,
       zapOutUsdcBalance,
-      usdcConfig
+      usdcConfig,
     );
 
     return [[approveTxn, ...rebalanceFeeTxns], zapInAmountAfterFee];
@@ -1221,16 +1216,10 @@ export class BasePortfolio {
     };
   }
 
-  async _getSwapFeeTxnsForZapIn(
-    actionParams,
-    platformFee,
-    usdcConfig
-  ) {
-    const normalizedPlatformFeeUsd = ethers.utils.formatUnits(
-      platformFee,
-      usdcConfig.decimals,
-    ) * usdcConfig.price;
-    console.log("normalizedPlatformFeeUsd", normalizedPlatformFeeUsd, "platformFee", platformFee);
+  async _getSwapFeeTxnsForZapIn(actionParams, platformFee, usdcConfig) {
+    const normalizedPlatformFeeUsd =
+      ethers.utils.formatUnits(platformFee, usdcConfig.decimals) *
+      usdcConfig.price;
     actionParams.setPlatformFee(-normalizedPlatformFeeUsd);
     const referrer = await this._getReferrer(actionParams.account);
     return this._getPlatformFeeTxns(
