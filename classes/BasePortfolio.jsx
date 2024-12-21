@@ -762,6 +762,10 @@ export class BasePortfolio {
       actionParams,
       transferAmount,
       zapOutUsdcBalance,
+<<<<<<< HEAD
+=======
+      usdcConfig,
+>>>>>>> 0b1e679 ([config]: upgrade next to solve the memory issue)
     );
 
     return [[approveTxn, ...rebalanceFeeTxns], zapInAmountAfterFee];
@@ -1205,12 +1209,26 @@ export class BasePortfolio {
     };
   }
 
+<<<<<<< HEAD
   async _getSwapFeeTxnsForZapIn(
     actionParams,
     transferAmount,
     zapOutUsdcBalance,
   ) {
     actionParams.setPlatformFee(-zapOutUsdcBalance * this.swapFeeRate() * 2);
+=======
+  async _getSwapFeeTxnsForZapIn(actionParams, platformFee, usdcConfig) {
+    const normalizedPlatformFeeUsd =
+      ethers.utils.formatUnits(platformFee, usdcConfig.decimals) *
+      usdcConfig.price;
+    console.log(
+      "normalizedPlatformFeeUsd",
+      normalizedPlatformFeeUsd,
+      "platformFee",
+      platformFee,
+    );
+    actionParams.setPlatformFee(-normalizedPlatformFeeUsd);
+>>>>>>> 0b1e679 ([config]: upgrade next to solve the memory issue)
     const referrer = await this._getReferrer(actionParams.account);
     const contract = getContract({
       client: THIRDWEB_CLIENT,
