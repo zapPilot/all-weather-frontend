@@ -73,6 +73,7 @@ need a linter like this one <https://github.com/david30907d/all-weather-scaffold
 4. Update Transaction Parser in Rebalance Backend: `_find_refund_data_by_txn_hash()`
 
 ### How to Integrate New Chain
+<https://portal.thirdweb.com/connect#supported-chains>
 
 1. Need to check if bridge supports the new chain
 2. Update UI of course
