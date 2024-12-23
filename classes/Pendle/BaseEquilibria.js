@@ -300,8 +300,8 @@ export class BaseEquilibria extends BaseProtocol {
     );
     return resp.data.pricesUsd[0] / Math.pow(10, this.assetDecimals);
   }
-  _getTheBestTokenAddressToZapIn(inputToken, inputTokenAddress, tokenDecimals) {
-    return [inputToken, inputTokenAddress, tokenDecimals];
+  _getTheBestTokenAddressToZapIn(inputToken, tokenInAddress, tokenDecimals) {
+    return [inputToken, tokenInAddress, tokenDecimals];
   }
   _getTheBestTokenAddressToZapOut() {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in

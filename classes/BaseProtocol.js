@@ -65,39 +65,39 @@ export default class BaseProtocol extends BaseUniswap {
     );
   }
 
-  getZapInFlowChartData(inputToken, inputTokenAddress, weight) {
-    const nodes = this._generateZapInNodes(inputToken, inputTokenAddress);
+  getZapInFlowChartData(inputToken, tokenInAddress, weight) {
+    const nodes = this._generateZapInNodes(inputToken, tokenInAddress);
     const edges = this._generateEdges(nodes, weight);
     this._enrichNodesWithMetadata(nodes);
 
     return { nodes, edges };
   }
 
-  _generateZapInNodes(inputToken, inputTokenAddress) {
+  _generateZapInNodes(inputToken, tokenInAddress) {
     const nodes = [];
 
     if (this.mode === "single") {
-      this._addSingleModeNodes(nodes, inputToken, inputTokenAddress);
+      this._addSingleModeNodes(nodes, inputToken, tokenInAddress);
     } else if (this.mode === "LP") {
-      this._addLPModeNodes(nodes, inputToken, inputTokenAddress);
+      this._addLPModeNodes(nodes, inputToken, tokenInAddress);
     }
 
     return nodes;
   }
 
-  _addSingleModeNodes(nodes, inputToken, inputTokenAddress) {
+  _addSingleModeNodes(nodes, inputToken, tokenInAddress) {
     const [bestTokenAddressToZapIn] = this._getTheBestTokenAddressToZapIn(
-      inputTokenAddress,
+      tokenInAddress,
       18, // inputTokenDecimalsPlaceholder
     );
 
     if (
-      bestTokenAddressToZapIn.toLowerCase() !== inputTokenAddress.toLowerCase()
+      bestTokenAddressToZapIn.toLowerCase() !== tokenInAddress.toLowerCase()
     ) {
       nodes.push(
         this._createSwapNode(
           inputToken,
-          inputTokenAddress,
+          tokenInAddress,
           bestTokenAddressToZapIn,
         ),
       );
@@ -106,13 +106,13 @@ export default class BaseProtocol extends BaseUniswap {
     this._addCommonNodes(nodes);
   }
 
-  _addLPModeNodes(nodes, inputToken, inputTokenAddress) {
+  _addLPModeNodes(nodes, inputToken, tokenInAddress) {
     const tokenMetadatas = this._getLPTokenPairesToZapIn();
 
     for (const [bestTokenSymbol, bestTokenAddressToZapIn] of tokenMetadatas) {
       if (
         bestTokenAddressToZapIn.toLowerCase() !==
-        inputTokenAddress.toLowerCase()
+        tokenInAddress.toLowerCase()
       ) {
         nodes.push({
           id: `${this.uniqueId()}-${inputToken}-${bestTokenSymbol}-swap`,
@@ -143,9 +143,9 @@ export default class BaseProtocol extends BaseUniswap {
     nodes.push(...commonNodes);
   }
 
-  _createSwapNode(inputToken, inputTokenAddress, bestTokenAddressToZapIn) {
+  _createSwapNode(inputToken, tokenInAddress, bestTokenAddressToZapIn) {
     return {
-      id: `${this.uniqueId()}-${inputTokenAddress}-${bestTokenAddressToZapIn}-swap`,
+      id: `${this.uniqueId()}-${tokenInAddress}-${bestTokenAddressToZapIn}-swap`,
       name: `Swap ${inputToken}`,
     };
   }
@@ -356,7 +356,7 @@ export default class BaseProtocol extends BaseUniswap {
     chain,
     investmentAmountInThisPosition,
     inputToken,
-    inputTokenAddress,
+    tokenInAddress,
     tokenDecimals,
     slippage,
     tokenPricesMappingTable,
@@ -370,7 +370,7 @@ export default class BaseProtocol extends BaseUniswap {
         bestTokenToZapInDecimal,
       ] = await this._beforeDeposit(
         recipient,
-        inputTokenAddress,
+        tokenInAddress,
         investmentAmountInThisPosition,
         slippage,
         updateProgress,
@@ -403,7 +403,7 @@ export default class BaseProtocol extends BaseUniswap {
       const [beforeZapInTxns, tokenAmetadata, tokenBmetadata] =
         await this._beforeDepositLP(
           recipient,
-          inputTokenAddress,
+          tokenInAddress,
           investmentAmountInThisPosition,
           slippage,
           updateProgress,
@@ -695,7 +695,7 @@ export default class BaseProtocol extends BaseUniswap {
   }
   async _beforeDeposit(
     recipient,
-    inputTokenAddress,
+    tokenInAddress,
     investmentAmountInThisPosition,
     slippage,
     updateProgress,
@@ -707,16 +707,16 @@ export default class BaseProtocol extends BaseUniswap {
     const [bestTokenSymbol, bestTokenAddressToZapIn, bestTokenToZapInDecimal] =
       this._getTheBestTokenAddressToZapIn(
         inputToken,
-        inputTokenAddress,
+        tokenInAddress,
         tokenDecimals,
       );
     let amountToZapIn = investmentAmountInThisPosition;
     if (
-      inputTokenAddress.toLowerCase() !== bestTokenAddressToZapIn.toLowerCase()
+      tokenInAddress.toLowerCase() !== bestTokenAddressToZapIn.toLowerCase()
     ) {
       const [swapTxn, swapEstimateAmount] = await this._swap(
         recipient,
-        inputTokenAddress,
+        tokenInAddress,
         bestTokenAddressToZapIn,
         amountToZapIn,
         slippage,
@@ -739,7 +739,7 @@ export default class BaseProtocol extends BaseUniswap {
   }
   async _beforeDepositLP(
     recipient,
-    inputTokenAddress,
+    tokenInAddress,
     investmentAmountInThisPosition,
     slippage,
     updateProgress,
@@ -765,7 +765,7 @@ export default class BaseProtocol extends BaseUniswap {
     // Process swaps for each token
     const [swapTxns, amountsAfterSwap] = await this._processTokenSwaps(
       recipient,
-      inputTokenAddress,
+      tokenInAddress,
       inputToken,
       tokenDecimals,
       tokenMetadatas,
@@ -795,7 +795,7 @@ export default class BaseProtocol extends BaseUniswap {
 
   async _processTokenSwaps(
     recipient,
-    inputTokenAddress,
+    tokenInAddress,
     inputToken,
     tokenDecimals,
     tokenMetadatas,
@@ -817,10 +817,10 @@ export default class BaseProtocol extends BaseUniswap {
         .mul(lpTokenRatio[index])
         .div(sumOfLPTokenRatio);
 
-      if (inputTokenAddress.toLowerCase() !== bestTokenAddress.toLowerCase()) {
+      if (tokenInAddress.toLowerCase() !== bestTokenAddress.toLowerCase()) {
         const [swapTxn, swapEstimateAmount] = await this._swap(
           recipient,
-          inputTokenAddress,
+          tokenInAddress,
           bestTokenAddress,
           amountToZapIn,
           slippage,

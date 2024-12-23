@@ -7,9 +7,12 @@ import { ethers } from "ethers";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
+import WETH from "../lib/contracts/WETH.json" assert { type: "json" };
 import ReactMarkdown from "react-markdown";
 import getTheBestBridge from "./bridges/bridgeFactory";
 import { CHAIN_TO_CHAIN_ID, TOKEN_ADDRESS_MAP } from "../utils/general";
+import { toWei } from "thirdweb/utils";
+
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 export class BasePortfolio {
@@ -287,6 +290,17 @@ export class BasePortfolio {
 
     // Handle special pre-processing for specific actions
     if (actionName === "zapIn") {
+      if (actionParams.tokenInSymbol === "eth") {
+        const [wethTxn, wethAddress, wethSymbol] = this._wrapNativeToken(
+          actionParams.tokenInSymbol,
+          "deposit",
+          actionParams.zapInAmount,
+          actionParams.chainMetadata,
+        );
+        actionParams.tokenInSymbol = wethSymbol;
+        actionParams.tokenInAddress = wethAddress;
+        totalTxns.push(wethTxn);
+      }
       const platformFee = this.mulSwapFeeRate(actionParams.zapInAmount);
       const normalizedPlatformFeeUSD =
         ethers.utils.formatUnits(platformFee, actionParams.tokenDecimals) *
@@ -385,8 +399,14 @@ export class BasePortfolio {
         return protocol.interface.zapOut(
           actionParams.account,
           normalizedZapOutPercentage,
-          actionParams.tokenOutAddress,
-          actionParams.tokenOutSymbol,
+          actionParams.tokenOutSymbol === "eth"
+            ? TOKEN_ADDRESS_MAP.weth[
+              chain
+              ]
+            : actionParams.tokenOutAddress,
+          actionParams.tokenOutSymbol === "eth"
+            ? "weth"
+            : actionParams.tokenOutSymbol,
           actionParams.tokenOutDecimals,
           actionParams.slippage,
           actionParams.tokenPricesMappingTable,
@@ -521,9 +541,9 @@ export class BasePortfolio {
     } = actionParams;
     const txns = [];
     const currentChain = chainMetadata.name.toLowerCase().replace(" one", "");
-    const usdcConfig = this._getUsdcConfig(currentChain);
+    const middleTokenConfig = this._getRebalanceMiddleTokenConfig(currentChain);
     const bridge = await getTheBestBridge();
-    // Filter protocols for current chain
+    // Filter protocols for the current chain
     const rebalancableUsdBalanceDictOnThisChain = this._filterProtocolsForChain(
       rebalancableUsdBalanceDict,
       currentChain,
@@ -531,7 +551,7 @@ export class BasePortfolio {
     // Generate zap out transactions and calculate total USDC balance
     const [zapOutTxns, zapOutUsdcBalance] = await this._generateZapOutTxns(
       owner,
-      usdcConfig,
+      middleTokenConfig,
       slippage,
       tokenPricesMappingTable,
       updateProgress,
@@ -547,12 +567,12 @@ export class BasePortfolio {
       zapOutUsdcBalance,
       rebalancableUsdBalanceDictOnThisChain,
       slippage,
-      usdcConfig.decimals,
+      middleTokenConfig.decimals,
     );
     // Generate approval and fee transactions
     const [approvalAndFeeTxns, zapInAmountAfterFee] =
       await this._generateApprovalAndFeeTxns(
-        usdcConfig,
+        middleTokenConfig,
         zapInConfig.amount,
         chainMetadata,
         zapOutUsdcBalance,
@@ -564,7 +584,7 @@ export class BasePortfolio {
       owner,
       rebalancableUsdBalanceDictOnThisChain,
       zapInAmountAfterFee,
-      usdcConfig,
+      middleTokenConfig,
       slippage,
       tokenPricesMappingTable,
       updateProgress,
@@ -583,8 +603,8 @@ export class BasePortfolio {
         owner,
         chainMetadata.id,
         CHAIN_TO_CHAIN_ID[chain],
-        TOKEN_ADDRESS_MAP["usdc"][currentChain],
-        TOKEN_ADDRESS_MAP["usdc"][chain],
+        this._getRebalanceMiddleTokenConfig(currentChain).address,
+        this._getRebalanceMiddleTokenConfig(chain).address,
         ethers.BigNumber.from(
           Math.floor(Number(zapInAmountAfterFee) * totalWeight),
         ),
@@ -598,7 +618,20 @@ export class BasePortfolio {
     return txns;
   }
 
-  _getUsdcConfig(chain) {
+  _getRebalanceMiddleTokenConfig(chain) {
+    if (this.constructor.name === "StablecoinVault") {
+      return {
+        symbol: "usdc",
+        address: TOKEN_ADDRESS_MAP["usdc"][chain],
+        decimals: 6,
+      };
+    } else if (this.constructor.name === "EthVault") {
+      return {
+        symbol: "weth",
+        address: TOKEN_ADDRESS_MAP["weth"][chain],
+        decimals: 18,
+      };
+    }
     return {
       symbol: "usdc",
       address: TOKEN_ADDRESS_MAP["usdc"][chain],
@@ -654,7 +687,7 @@ export class BasePortfolio {
 
   async _generateZapOutTxns(
     owner,
-    usdcConfig,
+    middleTokenConfig,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
@@ -676,7 +709,7 @@ export class BasePortfolio {
             await this._processProtocolZapOut(
               owner,
               protocol,
-              usdcConfig,
+              middleTokenConfig,
               slippage,
               tokenPricesMappingTable,
               updateProgress,
@@ -696,7 +729,7 @@ export class BasePortfolio {
   async _processProtocolZapOut(
     owner,
     protocol,
-    usdcConfig,
+    middleTokenConfig,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
@@ -717,9 +750,9 @@ export class BasePortfolio {
     const zapOutTxns = await protocol.interface.zapOut(
       owner,
       zapOutPercentage,
-      usdcConfig.address,
-      usdcConfig.symbol,
-      usdcConfig.decimals,
+      middleTokenConfig.address,
+      middleTokenConfig.symbol,
+      middleTokenConfig.decimals,
       slippage,
       tokenPricesMappingTable,
       updateProgress,
@@ -1111,8 +1144,8 @@ export class BasePortfolio {
             -protocolObj.weightDiff / protocolObj.negativeWeigtDiffSum;
           const stepsData =
             protocolObj.protocol.interface.getZapInFlowChartData(
-              actionParams.inputToken,
-              actionParams.inputTokenAddress,
+              actionParams.tokenInSymbol,
+              actionParams.tokenInAddress,
               zapInRatio,
             );
           if (!chainSet.has(protocolObj.chain)) {
@@ -1175,8 +1208,8 @@ export class BasePortfolio {
             if (protocol.weight === 0) continue;
             if (actionName === "zapIn") {
               stepsData = protocol.interface.getZapInFlowChartData(
-                actionParams.inputToken,
-                actionParams.inputTokenAddress,
+                actionParams.tokenInSymbol,
+                actionParams.tokenInAddress,
                 protocol.weight,
               );
             } else if (actionName === "stake") {
@@ -1312,5 +1345,35 @@ export class BasePortfolio {
     );
     txns.push(swapFeeTxn);
     return txns;
+  }
+  _wrapNativeToken(tokenSymbol, action, amount, chainMetadata) {
+    let wrappedTokenAddress;
+    let wrappedTokenSymbol;
+    let wrappedTokenABI;
+    if (tokenSymbol === "eth") {
+      wrappedTokenAddress = TOKEN_ADDRESS_MAP.weth[
+        chainMetadata.name.toLowerCase().replace(" one", "")
+        ];
+      wrappedTokenSymbol = "weth";
+      wrappedTokenABI = WETH;
+    }
+    const contract = getContract({
+      client: THIRDWEB_CLIENT,
+      address: wrappedTokenAddress,
+      chain: chainMetadata,
+      abi: wrappedTokenABI,
+    });
+    return [
+      prepareContractCall({
+          contract,
+          method: action,
+          ...(action === "deposit" 
+          ? { value: toWei(ethers.utils.formatEther(amount)) }
+          : { params: [amount] }
+      ),
+      }),
+      wrappedTokenAddress,
+      wrappedTokenSymbol,
+    ];
   }
 }

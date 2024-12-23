@@ -19,12 +19,13 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   zuneth: 2396,
 };
 export const tokensForDropDown = [
+  "eth",
   "usdc",
   "usdc.e",
   // "usdt",
   "dai",
   // "wbtc",
-  // "weth",
+  "weth",
   // "frax",
   // "wsteth",
   // "usds",

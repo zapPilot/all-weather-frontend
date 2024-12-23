@@ -99,8 +99,8 @@ export default function PopUpModal({
                 {finishedTxn === false && actionName !== "" ? (
                   <DemoFlowDirectionGraph
                     data={portfolioHelper?.getFlowChartData(actionName, {
-                      inputToken: selectedToken?.toLowerCase()?.split("-")[0],
-                      inputTokenAddress: selectedToken
+                      tokenInSymbol: selectedToken?.toLowerCase()?.split("-")[0] === 'eth' ? 'weth' : selectedToken?.toLowerCase()?.split("-")[0],
+                      tokenInAddress: selectedToken
                         ?.toLowerCase()
                         ?.split("-")[1],
                       outputToken: selectedToken?.toLowerCase()?.split("-")[0],
