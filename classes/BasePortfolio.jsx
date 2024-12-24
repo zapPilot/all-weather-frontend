@@ -400,9 +400,7 @@ export class BasePortfolio {
           actionParams.account,
           normalizedZapOutPercentage,
           actionParams.tokenOutSymbol === "eth"
-            ? TOKEN_ADDRESS_MAP.weth[
-              chain
-              ]
+            ? TOKEN_ADDRESS_MAP.weth[chain]
             : actionParams.tokenOutAddress,
           actionParams.tokenOutSymbol === "eth"
             ? "weth"
@@ -575,7 +573,6 @@ export class BasePortfolio {
         middleTokenConfig,
         zapInConfig.amount,
         chainMetadata,
-        zapOutUsdcBalance,
         actionParams,
       );
     txns.push(...approvalAndFeeTxns);
@@ -606,7 +603,7 @@ export class BasePortfolio {
         this._getRebalanceMiddleTokenConfig(currentChain).address,
         this._getRebalanceMiddleTokenConfig(chain).address,
         ethers.BigNumber.from(
-          Math.floor(Number(zapInAmountAfterFee) * totalWeight),
+          String(Math.floor(Number(zapInAmountAfterFee) * totalWeight)),
         ),
         updateProgress,
       );
@@ -783,14 +780,13 @@ export class BasePortfolio {
   }
 
   async _generateApprovalAndFeeTxns(
-    usdcConfig,
+    middleTokenConfig,
     zapInAmount,
     chainMetadata,
-    zapOutUsdcBalance,
     actionParams,
   ) {
     const approveTxn = approve(
-      usdcConfig.address,
+      middleTokenConfig.address,
       oneInchAddress,
       zapInAmount,
       () => {},
@@ -804,8 +800,7 @@ export class BasePortfolio {
     const rebalanceFeeTxns = await this._getSwapFeeTxnsForZapIn(
       actionParams,
       platformFee,
-      zapOutUsdcBalance,
-      usdcConfig,
+      middleTokenConfig,
     );
 
     return [[approveTxn, ...rebalanceFeeTxns], zapInAmountAfterFee];
@@ -815,7 +810,7 @@ export class BasePortfolio {
     owner,
     rebalancableDict,
     zapInAmountAfterFee,
-    usdcConfig,
+    middleTokenConfig,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
@@ -851,9 +846,9 @@ export class BasePortfolio {
         owner,
         metadata.chain,
         zapInAmount,
-        usdcConfig.symbol,
-        usdcConfig.address,
-        usdcConfig.decimals,
+        middleTokenConfig.symbol,
+        middleTokenConfig.address,
+        middleTokenConfig.decimals,
         slippage,
         tokenPricesMappingTable,
         updateProgress,
@@ -1013,7 +1008,7 @@ export class BasePortfolio {
     return assetAddressSetByChain;
   }
   async getTokenPricesMappingTable(updateProgress) {
-    // [TODO](david): remove this table and use update to date data
+    // Static prices remain the same
     let tokenPricesMappingTable = {
       usdc: 1,
       usdt: 1,
@@ -1027,24 +1022,51 @@ export class BasePortfolio {
       gusdc: 1.13,
       dusdc: 1,
     };
+
     let tokenPriceCache = {};
-    for (const [token, coinMarketCapId] of Object.entries(
+
+    // Group tokens that need price fetching
+    const tokensToFetch = Object.entries(
       this.uniqueTokenIdsForCurrentPrice,
-    )) {
-      if (Object.keys(tokenPricesMappingTable).includes(token)) continue;
-      if (tokenPriceCache[coinMarketCapId]) {
-        tokenPricesMappingTable[token] = tokenPriceCache[coinMarketCapId];
-        continue;
+    ).filter(
+      ([token]) => !Object.keys(tokenPricesMappingTable).includes(token),
+    );
+
+    // Batch requests with delay to respect rate limits
+    const batchSize = 3; // Adjust based on rate limit
+    const delayMs = 1000; // 1 second delay between batches
+
+    for (let i = 0; i < tokensToFetch.length; i += batchSize) {
+      const batch = tokensToFetch.slice(i, i + batchSize);
+
+      // Process batch concurrently
+      const batchPromises = batch.map(async ([token, coinMarketCapId]) => {
+        if (tokenPriceCache[coinMarketCapId]) {
+          tokenPricesMappingTable[token] = tokenPriceCache[coinMarketCapId];
+          return;
+        }
+
+        try {
+          const response = await axios.get(
+            `${process.env.NEXT_PUBLIC_API_URL}/token/${coinMarketCapId}/price`,
+          );
+          tokenPricesMappingTable[token] = response.data.price;
+          tokenPriceCache[coinMarketCapId] = response.data.price;
+        } catch (error) {
+          console.error(`Failed to fetch price for ${token}:`, error);
+          // You might want to set a fallback price or handle the error differently
+        }
+      });
+
+      // Wait for current batch to complete
+      await Promise.all(batchPromises);
+
+      // Add delay before next batch (skip delay for last batch)
+      if (i + batchSize < tokensToFetch.length) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
-      axios
-        .get(
-          `${process.env.NEXT_PUBLIC_API_URL}/token/${coinMarketCapId}/price`,
-        )
-        .then((result) => {
-          tokenPricesMappingTable[token] = result.data.price;
-          tokenPriceCache[coinMarketCapId] = result.data.price;
-        });
     }
+
     return tokenPricesMappingTable;
   }
   validateStrategyWeights() {
@@ -1249,14 +1271,14 @@ export class BasePortfolio {
     };
   }
 
-  async _getSwapFeeTxnsForZapIn(actionParams, platformFee, usdcConfig) {
+  async _getSwapFeeTxnsForZapIn(actionParams, platformFee, middleTokenConfig) {
     const normalizedPlatformFeeUsd =
-      ethers.utils.formatUnits(platformFee, usdcConfig.decimals) *
-      usdcConfig.price;
+      ethers.utils.formatUnits(platformFee, middleTokenConfig.decimals) *
+      middleTokenConfig.price;
     actionParams.setPlatformFee(-normalizedPlatformFeeUsd);
     const referrer = await this._getReferrer(actionParams.account);
     return this._getPlatformFeeTxns(
-      actionParams.tokenInAddress,
+      middleTokenConfig.address,
       actionParams.chainMetadata,
       platformFee,
       referrer,
@@ -1351,8 +1373,9 @@ export class BasePortfolio {
     let wrappedTokenSymbol;
     let wrappedTokenABI;
     if (tokenSymbol === "eth") {
-      wrappedTokenAddress = TOKEN_ADDRESS_MAP.weth[
-        chainMetadata.name.toLowerCase().replace(" one", "")
+      wrappedTokenAddress =
+        TOKEN_ADDRESS_MAP.weth[
+          chainMetadata.name.toLowerCase().replace(" one", "")
         ];
       wrappedTokenSymbol = "weth";
       wrappedTokenABI = WETH;
@@ -1365,12 +1388,11 @@ export class BasePortfolio {
     });
     return [
       prepareContractCall({
-          contract,
-          method: action,
-          ...(action === "deposit" 
+        contract,
+        method: action,
+        ...(action === "deposit"
           ? { value: toWei(ethers.utils.formatEther(amount)) }
-          : { params: [amount] }
-      ),
+          : { params: [amount] }),
       }),
       wrappedTokenAddress,
       wrappedTokenSymbol,

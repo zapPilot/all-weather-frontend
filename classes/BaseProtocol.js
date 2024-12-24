@@ -111,8 +111,7 @@ export default class BaseProtocol extends BaseUniswap {
 
     for (const [bestTokenSymbol, bestTokenAddressToZapIn] of tokenMetadatas) {
       if (
-        bestTokenAddressToZapIn.toLowerCase() !==
-        tokenInAddress.toLowerCase()
+        bestTokenAddressToZapIn.toLowerCase() !== tokenInAddress.toLowerCase()
       ) {
         nodes.push({
           id: `${this.uniqueId()}-${inputToken}-${bestTokenSymbol}-swap`,

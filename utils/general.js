@@ -94,6 +94,7 @@ export function timeAgo(dateString) {
 }
 
 export async function getTokenDecimal(tokenAddress, chain) {
+  if (tokenAddress === "0x0000000000000000000000000000000000000000") return 18;
   const tokenInstance = new ethers.Contract(
     tokenAddress,
     ERC20_ABI,

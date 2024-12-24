@@ -19,14 +19,14 @@ const formatAmount = (amount) => {
 };
 
 const AmountDisplay = ({
-  key,
+  propKey,
   amount,
   showEmoji = false,
   isGreen = false,
   isLoading = false,
 }) => {
   return (
-    <span className={isGreen ? "text-green-500" : ""} key={key}>
+    <span className={isGreen ? "text-green-500" : ""} key={propKey}>
       {showEmoji && "🎉 Earned "}
       {isLoading ? <Spin key={`spin-${amount}`} /> : formatAmount(amount)}
     </span>
@@ -99,7 +99,10 @@ export default function PopUpModal({
                 {finishedTxn === false && actionName !== "" ? (
                   <DemoFlowDirectionGraph
                     data={portfolioHelper?.getFlowChartData(actionName, {
-                      tokenInSymbol: selectedToken?.toLowerCase()?.split("-")[0] === 'eth' ? 'weth' : selectedToken?.toLowerCase()?.split("-")[0],
+                      tokenInSymbol:
+                        selectedToken?.toLowerCase()?.split("-")[0] === "eth"
+                          ? "weth"
+                          : selectedToken?.toLowerCase()?.split("-")[0],
                       tokenInAddress: selectedToken
                         ?.toLowerCase()
                         ?.split("-")[1],
@@ -170,7 +173,7 @@ export default function PopUpModal({
                   </dt>
                   <dd className="text-sm font-medium text-gray-900">
                     <AmountDisplay
-                      key="tansaction-costs"
+                      propKey="tansaction-costs"
                       amount={totalTradingLoss}
                       showEmoji={totalTradingLoss > 0 && costsCalculated}
                       isGreen={totalTradingLoss > 0}
@@ -234,7 +237,7 @@ export default function PopUpModal({
                     )}{" "}
                     ≈{" "}
                     <AmountDisplay
-                      key="platformFee"
+                      propKey="platformFee"
                       amount={platformFee}
                       showEmoji={platformFee > 0 && costsCalculated}
                       isGreen={platformFee > 0}
@@ -250,7 +253,7 @@ export default function PopUpModal({
                   </dt>
                   <dd className="text-base font-medium text-gray-900">
                     <AmountDisplay
-                      key="total"
+                      propKey="total"
                       amount={totalTradingLoss + platformFee}
                       showEmoji={
                         totalTradingLoss + platformFee > 0 && costsCalculated
@@ -259,11 +262,17 @@ export default function PopUpModal({
                       isLoading={!costsCalculated}
                     />
                     {costsCalculated && actionName === "zapIn"
-                      ? `(Zap in $${investmentAmount})`
+                      ? `(Zap in ${investmentAmount} ${
+                          selectedToken?.split("-")[0]
+                        })`
                       : actionName === "zapOut"
-                      ? `(Zap out $${zapOutAmount})`
+                      ? `(Zap out $${zapOutAmount.toFixed(2)} worth of ${
+                          selectedToken?.split("-")[0]
+                        })`
                       : actionName === "rebalance"
-                      ? `(Rebalance $${rebalanceAmount})`
+                      ? `(Rebalance ${rebalanceAmount} ${
+                          selectedToken?.split("-")[0]
+                        })`
                       : ""}
                   </dd>
                 </div>

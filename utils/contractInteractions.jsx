@@ -11,6 +11,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   usdt: 825,
   "usdc.e": 3408,
   weth: 2396,
+  eth: 2396,
   dai: 4943,
   usde: 29470,
   wbtc: 3717,
