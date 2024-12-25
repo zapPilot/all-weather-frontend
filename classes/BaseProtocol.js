@@ -1131,7 +1131,7 @@ export default class BaseProtocol extends BaseUniswap {
     // Convert amount to BigNumber if it isn't already
     const amountBN = ethers.BigNumber.isBigNumber(amount)
       ? amount
-      : ethers.BigNumber.from(String(amount));
+      : ethers.BigNumber.from(String(Math.floor(amount)));
 
     // Convert slippage to basis points (e.g., 0.5% -> 50)
     const slippageBasisPoints = ethers.BigNumber.from(
@@ -1148,7 +1148,7 @@ export default class BaseProtocol extends BaseUniswap {
   }
   async approve(tokenAddress, spenderAddress, amount, updateProgress, chainId) {
     if (typeof amount !== "object") {
-      amount = ethers.BigNumber.from(amount);
+      amount = ethers.BigNumber.from(String(Math.floor(amount)));
     }
     const approvalAmount = amount;
     if (approvalAmount === 0) {

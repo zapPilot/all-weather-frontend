@@ -198,14 +198,28 @@ export default function PopUpModal({
                             3. Rebalance: 0.598%
                             <br />
                             <br />
-                            (zap-in * 1 time + zap-out * 1 time + rebalance * 5
+                            (zap-in * 1 time + zap-out * 1 time + rebalance *
+                            {portfolioHelper?.constructor?.name === "EthVault"
+                              ? 1
+                              : 5}
+                            {""}
                             times per year * 50%) / APR = <br />
                             (usually of 50% of your money needs to be
                             rebalanced) <br />
-                            (0.00299 * 1 + 0.00299 * 1 + 0.00598 * 5 * 0.5) /{" "}
-                            {portfolioAPR} = <br />
+                            (0.00299 * 1 + 0.00299 * 1 + 0.00598 *{" "}
+                            {portfolioHelper?.constructor?.name === "EthVault"
+                              ? 2
+                              : 5}{" "}
+                            * 0.5) / {portfolioAPR} = <br />
                             {(
-                              ((0.00299 * 2 + 0.00598 * 5 * 0.5) /
+                              ((0.00299 * 1 +
+                                0.00299 * 1 +
+                                0.00598 *
+                                  (portfolioHelper?.constructor?.name ===
+                                  "EthVault"
+                                    ? 2
+                                    : 5) *
+                                  0.5) /
                                 portfolioAPR) *
                               100
                             ).toFixed(2)}
@@ -225,13 +239,27 @@ export default function PopUpModal({
                   <dd className="text-sm font-medium text-gray-900">
                     Performance fee{" "}
                     {isNaN(
-                      ((5 * 0.00299 * 2 * 0.5 + 0.00299 * 2) / portfolioAPR) *
+                      (((portfolioHelper?.constructor?.name === "EthVault"
+                        ? 2
+                        : 5) *
+                        0.00299 *
+                        2 *
+                        0.5 +
+                        0.00299 * 2) /
+                        portfolioAPR) *
                         100,
                     ) ? (
                       <Spin />
                     ) : (
                       `${(
-                        ((5 * 0.00299 * 2 * 0.5 + 0.00299 * 2) / portfolioAPR) *
+                        (((portfolioHelper?.constructor?.name === "EthVault"
+                          ? 2
+                          : 5) *
+                          0.00299 *
+                          2 *
+                          0.5 +
+                          0.00299 * 2) /
+                          portfolioAPR) *
                         100
                       ).toFixed(2)}%`
                     )}{" "}

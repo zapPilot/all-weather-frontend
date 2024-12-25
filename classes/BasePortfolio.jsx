@@ -1417,7 +1417,7 @@ export class BasePortfolio {
     // Convert amount to BigNumber if it isn't already
     const amountBN = ethers.BigNumber.isBigNumber(amount)
       ? amount
-      : ethers.BigNumber.from(String(amount));
+      : ethers.BigNumber.from(String(Math.floor(amount)));
 
     // Convert slippage to basis points (e.g., 0.5% -> 50)
     const slippageBasisPoints = ethers.BigNumber.from(

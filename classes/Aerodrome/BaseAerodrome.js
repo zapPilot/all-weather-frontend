@@ -195,7 +195,7 @@ export class BaseAerodrome extends BaseProtocol {
     const averageAmount = ((amountA + amountB) / 2).toFixed(avgPrecision);
     // Convert to BigNumber with proper scaling
     return ethers.BigNumber.from(
-      String(averageAmount * Math.pow(10, avgPrecision)),
+      String(Math.floor(averageAmount * Math.pow(10, avgPrecision))),
     );
   }
   async _calculateLpPrice(tokenPricesMappingTable) {
