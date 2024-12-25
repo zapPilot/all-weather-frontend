@@ -36,7 +36,9 @@ const TokenDropdownInput = memo(
       chain: chainIdToChain[chainId?.id],
       address: account?.address,
       client: THIRDWEB_CLIENT,
-      tokenAddress,
+      ...(tokenAddress !== "0x0000000000000000000000000000000000000000" && {
+        tokenAddress,
+      }),
     });
 
     const handleInputChange = (eventValue) => {

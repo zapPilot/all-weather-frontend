@@ -40,6 +40,10 @@ export const TOKEN_ADDRESS_MAP = {
     arbitrum: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
     base: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
   },
+  weth: {
+    arbitrum: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+    base: "0x4200000000000000000000000000000000000006",
+  },
 };
 export const PROVIDER = (chain) => {
   // Use a predefined mapping of chains to their RPC provider URLs
@@ -90,6 +94,7 @@ export function timeAgo(dateString) {
 }
 
 export async function getTokenDecimal(tokenAddress, chain) {
+  if (tokenAddress === "0x0000000000000000000000000000000000000000") return 18;
   const tokenInstance = new ethers.Contract(
     tokenAddress,
     ERC20_ABI,
