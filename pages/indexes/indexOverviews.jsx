@@ -1,7 +1,7 @@
 // copy from this Tailwind template: https://tailwindui.com/components/application-ui/page-examples/detail-screens
 "use client";
 import BasePage from "../basePage.tsx";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import DecimalStep from "./DecimalStep";
 import Image from "next/image";
 import Link from "next/link";
@@ -14,6 +14,7 @@ import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
 import ConfiguredConnectButton from "../ConnectButton";
 import { base, arbitrum } from "thirdweb/chains";
 import PopUpModal from "../Modal";
+import { TOKEN_ADDRESS_MAP } from "../../utils/general.js";
 import {
   Button,
   ConfigProvider,
@@ -92,7 +93,7 @@ export default function IndexOverviews() {
     },
   ];
 
-  const getDefaultToken = (chainId) => {
+  const getTokenMetadata = (chainId, tokenSymbol) => {
     if (!chainId) return null;
 
     const chainTokens =
@@ -101,18 +102,19 @@ export default function IndexOverviews() {
       return null;
     }
 
-    const usdcToken = chainTokens.find(
-      (token) => token.symbol?.toLowerCase() === "usdc",
+    const token = chainTokens.find(
+      (token) => token.symbol?.toLowerCase() === tokenSymbol.toLowerCase(),
     );
 
-    if (!usdcToken) {
+    if (!token) {
       return null;
     }
 
-    return `${usdcToken.symbol}-${usdcToken.value}-${usdcToken.decimals}`;
+    return `${token.symbol}-${token.value}-${token.decimals}`;
   };
 
   const [selectedToken, setSelectedToken] = useState(null);
+  const [previousTokenSymbol, setPreviousTokenSymbol] = useState(null);
   const [investmentAmount, setInvestmentAmount] = useState(0);
   const [zapInIsLoading, setZapInIsLoading] = useState(false);
   const [zapOutIsLoading, setZapOutIsLoading] = useState(false);
@@ -163,8 +165,13 @@ export default function IndexOverviews() {
   const [recipientError, setRecipientError] = useState(false);
   const [showZapIn, setShowZapIn] = useState(false);
 
+  const preservedAmountRef = useRef(null);
+  const hasProcessedChainChangeRef = useRef(false);
+  const isProcessingChainChangeRef = useRef(false);
+
   const handleSetSelectedToken = useCallback((token) => {
     setSelectedToken(token);
+    setPreviousTokenSymbol(token.split("-")[0].toLowerCase());
   }, []);
   const handleSetInvestmentAmount = useCallback((amount) => {
     setInvestmentAmount(amount);
@@ -239,6 +246,11 @@ export default function IndexOverviews() {
       if (txns.length < 2) {
         throw new Error("No transactions to send");
       }
+
+      // Reset the processing flag before changing chain
+      hasProcessedChainChangeRef.current = false;
+      preservedAmountRef.current = investmentAmount;
+
       // Call sendBatchTransaction and wait for the result
       try {
         await new Promise((resolve, reject) => {
@@ -351,8 +363,12 @@ export default function IndexOverviews() {
   };
 
   // calculate the total investment amount
-  const allInvestmentAmount =
-    investmentAmount * (1 - slippage / 100 - portfolioHelper?.swapFeeRate());
+  const allInvestmentAmount = useMemo(
+    () =>
+      preservedAmountRef.current *
+      (1 - slippage / 100 - portfolioHelper?.swapFeeRate()),
+    [preservedAmountRef.current, slippage, portfolioHelper],
+  );
   // calculate the investment amount for next chain
   const calCrossChainInvestmentAmount = (nextChain) => {
     if (portfolioHelper?.strategy === undefined) return 0;
@@ -392,7 +408,18 @@ export default function IndexOverviews() {
       chain: chainId,
       address: account?.address,
       client: THIRDWEB_CLIENT,
-      tokenAddress,
+      ...(tokenAddress === "0x0000000000000000000000000000000000000000" &&
+      nextStepChain === ""
+        ? {}
+        : tokenAddress === "0x0000000000000000000000000000000000000000" &&
+          nextStepChain !== ""
+        ? {
+            tokenAddress:
+              TOKEN_ADDRESS_MAP["weth"][
+                chainId.name.toLowerCase().replace(" one", "")
+              ],
+          }
+        : { tokenAddress }),
     });
   const [tokenBalance, setTokenBalance] = useState(0);
   const yieldContent = (
@@ -519,6 +546,9 @@ export default function IndexOverviews() {
                       : "block"
                   }`}
                 onClick={() => {
+                  setPreviousTokenSymbol(
+                    selectedToken.split("-")[0].toLowerCase(),
+                  );
                   switchNextStepChain(nextStepChain);
                   setNextChainInvestmentAmount(
                     calCrossChainInvestmentAmount(nextStepChain),
@@ -559,7 +589,11 @@ export default function IndexOverviews() {
                 Set Investment Amount to{" "}
                 {nextChainInvestmentAmount >
                 parseFloat(walletBalanceData?.displayValue)
-                  ? parseFloat(walletBalanceData?.displayValue).toFixed(2)
+                  ? parseFloat(walletBalanceData?.displayValue) < 0.01
+                    ? "< 0.01"
+                    : parseFloat(walletBalanceData?.displayValue).toFixed(2)
+                  : nextChainInvestmentAmount < 0.01
+                  ? "< 0.01"
                   : nextChainInvestmentAmount.toFixed(2)}{" "}
                 on {nextStepChain} Chain
               </Button>
@@ -573,7 +607,10 @@ export default function IndexOverviews() {
                   Number(investmentAmount) > tokenBalance
                 }
               >
-                Zap In {Number(investmentAmount)?.toFixed(2)}{" "}
+                Zap In{" "}
+                {Number(investmentAmount) < 0.01
+                  ? "< 0.01"
+                  : Number(investmentAmount)?.toFixed(2)}{" "}
                 {selectedToken?.split("-")[0]} on {nextStepChain} Chain
               </Button>
             </div>
@@ -694,7 +731,11 @@ export default function IndexOverviews() {
               className="w-full"
               onClick={() => handleAAWalletAction("zapOut", true)}
               loading={zapOutIsLoading || usdBalanceLoading}
-              disabled={usdBalance < 0.01 || zapOutPercentage === 0}
+              disabled={
+                usdBalance < 0.01 ||
+                zapOutPercentage === 0 ||
+                selectedToken?.split("-")[0].toLowerCase() === "eth"
+              }
             >
               Withdraw
             </Button>
@@ -808,11 +849,49 @@ export default function IndexOverviews() {
   };
 
   useEffect(() => {
-    const defaultToken = getDefaultToken(chainId);
-    if (defaultToken) {
-      setSelectedToken(defaultToken);
+    const getDefaultTokenMetadata = () => {
+      if (previousTokenSymbol) {
+        const tokenSymbol =
+          previousTokenSymbol === "eth" && nextStepChain !== ""
+            ? "weth"
+            : previousTokenSymbol;
+        const metadata = getTokenMetadata(chainId, tokenSymbol);
+        if (metadata) return { metadata, tokenSymbol };
+      }
+      return {
+        metadata: getTokenMetadata(chainId, "usdc"),
+        tokenSymbol: "usdc",
+      };
+    };
+
+    try {
+      isProcessingChainChangeRef.current = true;
+
+      const { metadata, tokenSymbol } = getDefaultTokenMetadata();
+
+      if (metadata) {
+        // For ETH -> WETH conversion
+        if (previousTokenSymbol === "eth" && tokenSymbol === "weth") {
+          if (!hasProcessedChainChangeRef.current && investmentAmount > 0) {
+            preservedAmountRef.current = investmentAmount;
+            hasProcessedChainChangeRef.current = true;
+          }
+        }
+
+        setSelectedToken(metadata);
+
+        // Use preserved amount if available
+        if (preservedAmountRef.current !== null) {
+          setInvestmentAmount(preservedAmountRef.current);
+        }
+      }
+    } finally {
+      // Reset processing flag after a short delay
+      setTimeout(() => {
+        isProcessingChainChangeRef.current = false;
+      }, 100);
     }
-  }, [chainId]);
+  }, [chainId, previousTokenSymbol, nextStepChain]);
 
   return (
     <BasePage>

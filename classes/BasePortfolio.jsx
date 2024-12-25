@@ -7,9 +7,12 @@ import { ethers } from "ethers";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
+import WETH from "../lib/contracts/Weth.json" assert { type: "json" };
 import ReactMarkdown from "react-markdown";
 import getTheBestBridge from "./bridges/bridgeFactory";
 import { CHAIN_TO_CHAIN_ID, TOKEN_ADDRESS_MAP } from "../utils/general";
+import { toWei } from "thirdweb/utils";
+
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 export class BasePortfolio {
@@ -287,6 +290,17 @@ export class BasePortfolio {
 
     // Handle special pre-processing for specific actions
     if (actionName === "zapIn") {
+      if (actionParams.tokenInSymbol === "eth") {
+        const [wethTxn, wethAddress, wethSymbol] = this._wrapNativeToken(
+          actionParams.tokenInSymbol,
+          "deposit",
+          actionParams.zapInAmount,
+          actionParams.chainMetadata,
+        );
+        actionParams.tokenInSymbol = wethSymbol;
+        actionParams.tokenInAddress = wethAddress;
+        totalTxns.push(wethTxn);
+      }
       const platformFee = this.mulSwapFeeRate(actionParams.zapInAmount);
       const normalizedPlatformFeeUSD =
         ethers.utils.formatUnits(platformFee, actionParams.tokenDecimals) *
@@ -385,8 +399,12 @@ export class BasePortfolio {
         return protocol.interface.zapOut(
           actionParams.account,
           normalizedZapOutPercentage,
-          actionParams.tokenOutAddress,
-          actionParams.tokenOutSymbol,
+          actionParams.tokenOutSymbol === "eth"
+            ? TOKEN_ADDRESS_MAP.weth[chain]
+            : actionParams.tokenOutAddress,
+          actionParams.tokenOutSymbol === "eth"
+            ? "weth"
+            : actionParams.tokenOutSymbol,
           actionParams.tokenOutDecimals,
           actionParams.slippage,
           actionParams.tokenPricesMappingTable,
@@ -521,9 +539,9 @@ export class BasePortfolio {
     } = actionParams;
     const txns = [];
     const currentChain = chainMetadata.name.toLowerCase().replace(" one", "");
-    const usdcConfig = this._getUsdcConfig(currentChain);
+    const middleTokenConfig = this._getRebalanceMiddleTokenConfig(currentChain);
     const bridge = await getTheBestBridge();
-    // Filter protocols for current chain
+    // Filter protocols for the current chain
     const rebalancableUsdBalanceDictOnThisChain = this._filterProtocolsForChain(
       rebalancableUsdBalanceDict,
       currentChain,
@@ -531,7 +549,7 @@ export class BasePortfolio {
     // Generate zap out transactions and calculate total USDC balance
     const [zapOutTxns, zapOutUsdcBalance] = await this._generateZapOutTxns(
       owner,
-      usdcConfig,
+      middleTokenConfig,
       slippage,
       tokenPricesMappingTable,
       updateProgress,
@@ -539,23 +557,29 @@ export class BasePortfolio {
       currentChain,
       onlyThisChain,
     );
+    if (zapOutUsdcBalance === 0) return txns;
+    const zapOutAmount = ethers.utils.parseUnits(
+      (
+        zapOutUsdcBalance / tokenPricesMappingTable[middleTokenConfig.symbol]
+      ).toFixed(middleTokenConfig.decimals),
+      middleTokenConfig.decimals,
+    );
     txns.push(...zapOutTxns);
 
-    if (zapOutUsdcBalance === 0) return txns;
     // Calculate zap in amount including pending rewards
-    const zapInConfig = this._calculateZapInAmount(
-      zapOutUsdcBalance,
+    const zapInAmount = this._calculateZapInAmount(
+      zapOutAmount,
       rebalancableUsdBalanceDictOnThisChain,
       slippage,
-      usdcConfig.decimals,
+      middleTokenConfig,
+      tokenPricesMappingTable,
     );
     // Generate approval and fee transactions
     const [approvalAndFeeTxns, zapInAmountAfterFee] =
       await this._generateApprovalAndFeeTxns(
-        usdcConfig,
-        zapInConfig.amount,
+        middleTokenConfig,
+        zapInAmount,
         chainMetadata,
-        zapOutUsdcBalance,
         actionParams,
       );
     txns.push(...approvalAndFeeTxns);
@@ -564,7 +588,7 @@ export class BasePortfolio {
       owner,
       rebalancableUsdBalanceDictOnThisChain,
       zapInAmountAfterFee,
-      usdcConfig,
+      middleTokenConfig,
       slippage,
       tokenPricesMappingTable,
       updateProgress,
@@ -583,10 +607,10 @@ export class BasePortfolio {
         owner,
         chainMetadata.id,
         CHAIN_TO_CHAIN_ID[chain],
-        TOKEN_ADDRESS_MAP["usdc"][currentChain],
-        TOKEN_ADDRESS_MAP["usdc"][chain],
+        this._getRebalanceMiddleTokenConfig(currentChain).address,
+        this._getRebalanceMiddleTokenConfig(chain).address,
         ethers.BigNumber.from(
-          Math.floor(Number(zapInAmountAfterFee) * totalWeight),
+          String(Math.floor(Number(zapInAmountAfterFee) * totalWeight)),
         ),
         updateProgress,
       );
@@ -598,7 +622,20 @@ export class BasePortfolio {
     return txns;
   }
 
-  _getUsdcConfig(chain) {
+  _getRebalanceMiddleTokenConfig(chain) {
+    if (this.constructor.name === "StablecoinVault") {
+      return {
+        symbol: "usdc",
+        address: TOKEN_ADDRESS_MAP["usdc"][chain],
+        decimals: 6,
+      };
+    } else if (this.constructor.name === "EthVault") {
+      return {
+        symbol: "weth",
+        address: TOKEN_ADDRESS_MAP["weth"][chain],
+        decimals: 18,
+      };
+    }
     return {
       symbol: "usdc",
       address: TOKEN_ADDRESS_MAP["usdc"][chain],
@@ -654,7 +691,7 @@ export class BasePortfolio {
 
   async _generateZapOutTxns(
     owner,
-    usdcConfig,
+    middleTokenConfig,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
@@ -676,7 +713,7 @@ export class BasePortfolio {
             await this._processProtocolZapOut(
               owner,
               protocol,
-              usdcConfig,
+              middleTokenConfig,
               slippage,
               tokenPricesMappingTable,
               updateProgress,
@@ -696,7 +733,7 @@ export class BasePortfolio {
   async _processProtocolZapOut(
     owner,
     protocol,
-    usdcConfig,
+    middleTokenConfig,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
@@ -717,9 +754,9 @@ export class BasePortfolio {
     const zapOutTxns = await protocol.interface.zapOut(
       owner,
       zapOutPercentage,
-      usdcConfig.address,
-      usdcConfig.symbol,
-      usdcConfig.decimals,
+      middleTokenConfig.address,
+      middleTokenConfig.symbol,
+      middleTokenConfig.decimals,
       slippage,
       tokenPricesMappingTable,
       updateProgress,
@@ -734,30 +771,33 @@ export class BasePortfolio {
   }
 
   _calculateZapInAmount(
-    zapOutUsdcBalance,
+    zapOutAmount,
     rebalancableDict,
     slippage,
-    decimals,
+    middleTokenConfig,
+    tokenPricesMappingTable,
   ) {
-    const amount = ethers.utils.parseUnits(
-      (
-        (zapOutUsdcBalance * (100 - slippage)) / 100 +
-        rebalancableDict.pendingRewards.usdBalance * REWARD_SLIPPAGE
-      ).toFixed(decimals),
-      decimals,
+    const rewardAmountInMiddleToken =
+      (rebalancableDict.pendingRewards.usdBalance * REWARD_SLIPPAGE) /
+      tokenPricesMappingTable[middleTokenConfig.symbol];
+    const rewardAmount = ethers.utils.parseUnits(
+      rewardAmountInMiddleToken.toFixed(middleTokenConfig.decimals),
+      middleTokenConfig.decimals,
     );
-    return { amount };
+    return this.mul_with_slippage_in_bignumber_format(
+      zapOutAmount,
+      slippage,
+    ).add(rewardAmount);
   }
 
   async _generateApprovalAndFeeTxns(
-    usdcConfig,
+    middleTokenConfig,
     zapInAmount,
     chainMetadata,
-    zapOutUsdcBalance,
     actionParams,
   ) {
     const approveTxn = approve(
-      usdcConfig.address,
+      middleTokenConfig.address,
       oneInchAddress,
       zapInAmount,
       () => {},
@@ -771,8 +811,7 @@ export class BasePortfolio {
     const rebalanceFeeTxns = await this._getSwapFeeTxnsForZapIn(
       actionParams,
       platformFee,
-      zapOutUsdcBalance,
-      usdcConfig,
+      middleTokenConfig,
     );
 
     return [[approveTxn, ...rebalanceFeeTxns], zapInAmountAfterFee];
@@ -782,7 +821,7 @@ export class BasePortfolio {
     owner,
     rebalancableDict,
     zapInAmountAfterFee,
-    usdcConfig,
+    middleTokenConfig,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
@@ -818,9 +857,9 @@ export class BasePortfolio {
         owner,
         metadata.chain,
         zapInAmount,
-        usdcConfig.symbol,
-        usdcConfig.address,
-        usdcConfig.decimals,
+        middleTokenConfig.symbol,
+        middleTokenConfig.address,
+        middleTokenConfig.decimals,
         slippage,
         tokenPricesMappingTable,
         updateProgress,
@@ -980,7 +1019,7 @@ export class BasePortfolio {
     return assetAddressSetByChain;
   }
   async getTokenPricesMappingTable(updateProgress) {
-    // [TODO](david): remove this table and use update to date data
+    // Static prices remain the same
     let tokenPricesMappingTable = {
       usdc: 1,
       usdt: 1,
@@ -994,24 +1033,51 @@ export class BasePortfolio {
       gusdc: 1.13,
       dusdc: 1,
     };
+
     let tokenPriceCache = {};
-    for (const [token, coinMarketCapId] of Object.entries(
+
+    // Group tokens that need price fetching
+    const tokensToFetch = Object.entries(
       this.uniqueTokenIdsForCurrentPrice,
-    )) {
-      if (Object.keys(tokenPricesMappingTable).includes(token)) continue;
-      if (tokenPriceCache[coinMarketCapId]) {
-        tokenPricesMappingTable[token] = tokenPriceCache[coinMarketCapId];
-        continue;
+    ).filter(
+      ([token]) => !Object.keys(tokenPricesMappingTable).includes(token),
+    );
+
+    // Batch requests with delay to respect rate limits
+    const batchSize = 3; // Adjust based on rate limit
+    const delayMs = 1000; // 1 second delay between batches
+
+    for (let i = 0; i < tokensToFetch.length; i += batchSize) {
+      const batch = tokensToFetch.slice(i, i + batchSize);
+
+      // Process batch concurrently
+      const batchPromises = batch.map(async ([token, coinMarketCapId]) => {
+        if (tokenPriceCache[coinMarketCapId]) {
+          tokenPricesMappingTable[token] = tokenPriceCache[coinMarketCapId];
+          return;
+        }
+
+        try {
+          const response = await axios.get(
+            `${process.env.NEXT_PUBLIC_API_URL}/token/${coinMarketCapId}/price`,
+          );
+          tokenPricesMappingTable[token] = response.data.price;
+          tokenPriceCache[coinMarketCapId] = response.data.price;
+        } catch (error) {
+          console.error(`Failed to fetch price for ${token}:`, error);
+          // You might want to set a fallback price or handle the error differently
+        }
+      });
+
+      // Wait for current batch to complete
+      await Promise.all(batchPromises);
+
+      // Add delay before next batch (skip delay for last batch)
+      if (i + batchSize < tokensToFetch.length) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
-      axios
-        .get(
-          `${process.env.NEXT_PUBLIC_API_URL}/token/${coinMarketCapId}/price`,
-        )
-        .then((result) => {
-          tokenPricesMappingTable[token] = result.data.price;
-          tokenPriceCache[coinMarketCapId] = result.data.price;
-        });
     }
+
     return tokenPricesMappingTable;
   }
   validateStrategyWeights() {
@@ -1042,6 +1108,7 @@ export class BasePortfolio {
       const chainSet = new Set();
       let chainNode;
       let endOfZapOutNodeOnThisChain;
+      let middleTokenConfig;
       for (const [key, protocolObj] of Object.entries(
         actionParams.rebalancableUsdBalanceDict,
       )) {
@@ -1063,13 +1130,16 @@ export class BasePortfolio {
             };
             chainNodes.push(chainNode);
             flowChartData.nodes.push(endOfZapOutNodeOnThisChain);
+            middleTokenConfig = this._getRebalanceMiddleTokenConfig(
+              protocolObj.chain,
+            );
           }
           const rebalanceRatio =
             protocolObj.weightDiff / protocolObj.positiveWeigtDiffSum;
           const stepsData =
             protocolObj.protocol.interface.getZapOutFlowChartData(
-              actionParams.outputToken,
-              actionParams.outputTokenAddress,
+              middleTokenConfig.symbol,
+              middleTokenConfig.address,
               rebalanceRatio,
             );
           const currentChainToProtocolNodeEdge = {
@@ -1111,8 +1181,8 @@ export class BasePortfolio {
             -protocolObj.weightDiff / protocolObj.negativeWeigtDiffSum;
           const stepsData =
             protocolObj.protocol.interface.getZapInFlowChartData(
-              actionParams.inputToken,
-              actionParams.inputTokenAddress,
+              actionParams.tokenInSymbol,
+              actionParams.tokenInAddress,
               zapInRatio,
             );
           if (!chainSet.has(protocolObj.chain)) {
@@ -1175,8 +1245,8 @@ export class BasePortfolio {
             if (protocol.weight === 0) continue;
             if (actionName === "zapIn") {
               stepsData = protocol.interface.getZapInFlowChartData(
-                actionParams.inputToken,
-                actionParams.inputTokenAddress,
+                actionParams.tokenInSymbol,
+                actionParams.tokenInAddress,
                 protocol.weight,
               );
             } else if (actionName === "stake") {
@@ -1216,14 +1286,14 @@ export class BasePortfolio {
     };
   }
 
-  async _getSwapFeeTxnsForZapIn(actionParams, platformFee, usdcConfig) {
+  async _getSwapFeeTxnsForZapIn(actionParams, platformFee, middleTokenConfig) {
     const normalizedPlatformFeeUsd =
-      ethers.utils.formatUnits(platformFee, usdcConfig.decimals) *
-      usdcConfig.price;
+      ethers.utils.formatUnits(platformFee, middleTokenConfig.decimals) *
+      actionParams.tokenPricesMappingTable[middleTokenConfig.symbol];
     actionParams.setPlatformFee(-normalizedPlatformFeeUsd);
     const referrer = await this._getReferrer(actionParams.account);
     return this._getPlatformFeeTxns(
-      actionParams.tokenInAddress,
+      middleTokenConfig.address,
       actionParams.chainMetadata,
       platformFee,
       referrer,
@@ -1312,5 +1382,51 @@ export class BasePortfolio {
     );
     txns.push(swapFeeTxn);
     return txns;
+  }
+  _wrapNativeToken(tokenSymbol, action, amount, chainMetadata) {
+    let wrappedTokenAddress;
+    let wrappedTokenSymbol;
+    let wrappedTokenABI;
+    if (tokenSymbol === "eth") {
+      wrappedTokenAddress =
+        TOKEN_ADDRESS_MAP.weth[
+          chainMetadata.name.toLowerCase().replace(" one", "")
+        ];
+      wrappedTokenSymbol = "weth";
+      wrappedTokenABI = WETH;
+    }
+    const contract = getContract({
+      client: THIRDWEB_CLIENT,
+      address: wrappedTokenAddress,
+      chain: chainMetadata,
+      abi: wrappedTokenABI,
+    });
+    return [
+      prepareContractCall({
+        contract,
+        method: action,
+        ...(action === "deposit"
+          ? { value: toWei(ethers.utils.formatEther(amount)) }
+          : { params: [amount] }),
+      }),
+      wrappedTokenAddress,
+      wrappedTokenSymbol,
+    ];
+  }
+  mul_with_slippage_in_bignumber_format(amount, slippage) {
+    // Convert amount to BigNumber if it isn't already
+    const amountBN = ethers.BigNumber.isBigNumber(amount)
+      ? amount
+      : ethers.BigNumber.from(String(Math.floor(amount)));
+
+    // Convert slippage to basis points (e.g., 0.5% -> 50)
+    const slippageBasisPoints = ethers.BigNumber.from(
+      Math.floor(slippage * 100),
+    );
+
+    // Calculate (amount * (10000 - slippageBasisPoints)) / 10000
+    return amountBN
+      .mul(ethers.BigNumber.from(10000).sub(slippageBasisPoints))
+      .div(10000);
   }
 }
