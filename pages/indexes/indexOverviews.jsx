@@ -2,7 +2,6 @@
 "use client";
 import BasePage from "../basePage.tsx";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import DecimalStep from "./DecimalStep";
 import Image from "next/image";
 import Link from "next/link";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
@@ -56,6 +55,8 @@ import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
 import tokens from "../views/components/tokens.json";
+import PortfolioActions from "../portfolio/PortfolioActions";
+
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -455,335 +456,6 @@ export default function IndexOverviews() {
       (sum, { currentWeight, APR }) => currentWeight * APR + sum,
       0,
     ) || 0;
-
-  const items = [
-    {
-      key: "1",
-      label: "Zap In",
-      children: (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <div
-              className={`mt-4 sm:mt-0 ${nextStepChain ? "hidden" : "block"}`}
-            >
-              <p>
-                Step 1: Choose a chain to zap in and bridge to another chain.
-              </p>
-              <TokenDropdownInput
-                selectedToken={selectedToken}
-                setSelectedToken={handleSetSelectedToken}
-                setInvestmentAmount={handleSetInvestmentAmount}
-              />
-              {account === undefined ? (
-                <ConfiguredConnectButton />
-              ) : Object.values(
-                  protocolAssetDustInWallet?.[
-                    chainId?.name.toLowerCase().replace(" one", "")
-                  ] || {},
-                ).reduce(
-                  (sum, protocolObj) =>
-                    sum + (protocolObj.assetUsdBalanceOf || 0),
-                  0,
-                ) /
-                  usdBalance >
-                0.05 ? (
-                <Button
-                  type="primary"
-                  className="w-full my-2"
-                  onClick={() => handleAAWalletAction("stake", true)}
-                  loading={protocolAssetDustInWalletLoading}
-                  disabled={usdBalanceLoading}
-                >
-                  {`Stake Available Assets ($${Object.values(
-                    protocolAssetDustInWallet?.[
-                      chainId?.name.toLowerCase().replace(" one", "")
-                    ] || {},
-                  )
-                    .reduce(
-                      (sum, protocolObj) =>
-                        sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
-                      0,
-                    )
-                    .toFixed(2)})`}
-                </Button>
-              ) : (
-                <Button
-                  type="primary"
-                  className="w-full my-2"
-                  onClick={() => handleAAWalletAction("zapIn", false)}
-                  loading={zapInIsLoading}
-                  disabled={
-                    Number(investmentAmount) === 0 ||
-                    Number(investmentAmount) > tokenBalance
-                  }
-                >
-                  Zap In
-                </Button>
-              )}
-            </div>
-            <div
-              className={`mt-4 
-              ${
-                nextStepChain
-                  ? nextChainInvestmentAmount > 0
-                    ? "hidden"
-                    : "block"
-                  : "hidden"
-              }
-            `}
-            >
-              <p>
-                Step 2: Once bridging is complete, switch to the other chain to
-                calculate the investment amount.
-              </p>
-              <Button
-                type="primary"
-                className={`w-full my-2 
-                  ${
-                    chainId?.name.toLowerCase().replace(" one", "").trim() ===
-                    nextStepChain
-                      ? "hidden"
-                      : "block"
-                  }`}
-                onClick={() => {
-                  setPreviousTokenSymbol(
-                    selectedToken.split("-")[0].toLowerCase(),
-                  );
-                  switchNextStepChain(nextStepChain);
-                  setNextChainInvestmentAmount(
-                    calCrossChainInvestmentAmount(nextStepChain),
-                  );
-                }}
-              >
-                switch to {nextStepChain} Chain
-              </Button>
-            </div>
-            <div
-              className={`mt-4 ${
-                nextChainInvestmentAmount > 0 &&
-                nextStepChain ===
-                  chainId?.name.toLowerCase().replace(" one", "")
-                  ? "block"
-                  : "hidden"
-              }`}
-            >
-              <p>
-                Step 3: After calculating the investment amount, click to zap
-                in.
-              </p>
-
-              <Button
-                type="primary"
-                className={`w-full my-2 ${showZapIn ? "hidden" : "block"}`}
-                onClick={() => {
-                  setInvestmentAmount(
-                    nextChainInvestmentAmount >
-                      parseFloat(walletBalanceData?.displayValue)
-                      ? parseFloat(walletBalanceData?.displayValue)
-                      : nextChainInvestmentAmount,
-                  );
-                  setFinishedTxn(false);
-                  setShowZapIn(true);
-                }}
-              >
-                Set Investment Amount to{" "}
-                {nextChainInvestmentAmount >
-                parseFloat(walletBalanceData?.displayValue)
-                  ? parseFloat(walletBalanceData?.displayValue) < 0.01
-                    ? "< 0.01"
-                    : parseFloat(walletBalanceData?.displayValue).toFixed(2)
-                  : nextChainInvestmentAmount < 0.01
-                  ? "< 0.01"
-                  : nextChainInvestmentAmount.toFixed(2)}{" "}
-                on {nextStepChain} Chain
-              </Button>
-              <Button
-                type="primary"
-                className={`w-full my-2 ${showZapIn ? "block" : "hidden"}`}
-                onClick={() => handleAAWalletAction("zapIn", true)}
-                loading={zapInIsLoading}
-                disabled={
-                  Number(investmentAmount) === 0 ||
-                  Number(investmentAmount) > tokenBalance
-                }
-              >
-                Zap In{" "}
-                {Number(investmentAmount) < 0.01
-                  ? "< 0.01"
-                  : Number(investmentAmount)?.toFixed(2)}{" "}
-                {selectedToken?.split("-")[0]} on {nextStepChain} Chain
-              </Button>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "2",
-      label: "Rebalance",
-      children: (
-        <div>
-          <p>Step 1: Rebalance to boost APR on arbitrum chain.</p>
-          <Button
-            className="w-full mt-2"
-            type="primary"
-            onClick={() => handleAAWalletAction("rebalance", true)}
-            loading={rebalanceIsLoading || rebalancableUsdBalanceDictLoading}
-            disabled={
-              getRebalanceReinvestUsdAmount() / usdBalance <
-                portfolioHelper?.rebalanceThreshold() || usdBalance <= 0
-            }
-          >
-            {calCurrentAPR(rebalancableUsdBalanceDict) >
-            portfolioApr[portfolioName]?.portfolioAPR * 100 ? (
-              "Take Profit"
-            ) : (
-              <>
-                Boost APR from{" "}
-                <span className="text-red-500">
-                  {calCurrentAPR(rebalancableUsdBalanceDict).toFixed(2)}%{" "}
-                </span>
-                to{" "}
-                <span className="text-green-400">
-                  {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}
-                  %
-                </span>{" "}
-                for
-                {formatBalance(getRebalanceReinvestUsdAmount())}
-              </>
-            )}
-          </Button>
-          <p>Step 2: Switch to base chain and zap in again.</p>
-          <Button
-            type="primary"
-            className={`w-full my-2 
-              ${
-                chainId?.name.toLowerCase().replace(" one", "").trim() ===
-                "arbitrum"
-                  ? "block"
-                  : "hidden"
-              }`}
-            onClick={() => switchChain(base)}
-            loading={rebalanceIsLoading || rebalancableUsdBalanceDictLoading}
-            disabled={
-              getRebalanceReinvestUsdAmount() / usdBalance <
-                portfolioHelper?.rebalanceThreshold() || usdBalance <= 0
-            }
-          >
-            switch to base Chain
-          </Button>
-          <div
-            className={`mt-4 ${
-              chainId?.name.toLowerCase().replace(" one", "").trim() === "base"
-                ? "block"
-                : "hidden"
-            }`}
-          >
-            <TokenDropdownInput
-              selectedToken={selectedToken}
-              setSelectedToken={handleSetSelectedToken}
-              setInvestmentAmount={handleSetInvestmentAmount}
-            />
-            <Button
-              type="primary"
-              className="w-full my-2"
-              onClick={() => handleAAWalletAction("zapIn", true)}
-              loading={zapInIsLoading}
-              disabled={
-                Number(investmentAmount) === 0 ||
-                Number(investmentAmount) > tokenBalance
-              }
-            >
-              Enter amount to Zap In on current chain
-            </Button>
-          </div>
-          <div className="text-gray-400">
-            Rebalance Cost: {portfolioHelper?.swapFeeRate() * 100}%
-          </div>
-          {calCurrentAPR(rebalancableUsdBalanceDict) >
-          portfolioApr[portfolioName]?.portfolioAPR * 100 ? (
-            <>
-              {formatBalance(getRebalanceReinvestUsdAmount())} has outperformed.
-              It&apos;s time to rebalance and take the profit!
-            </>
-          ) : null}
-        </div>
-      ),
-    },
-    {
-      key: "3",
-      label: "Zap Out",
-      children: (
-        <div>
-          <DecimalStep
-            selectedToken={selectedToken}
-            setSelectedToken={handleSetSelectedToken}
-            depositBalance={usdBalance}
-            setZapOutPercentage={setZapOutPercentage}
-            currency="$"
-            noTokenSelect={false}
-          />
-          {account === undefined ? (
-            <ConfiguredConnectButton />
-          ) : (
-            <Button
-              type="primary"
-              className="w-full"
-              onClick={() => handleAAWalletAction("zapOut", true)}
-              loading={zapOutIsLoading || usdBalanceLoading}
-              disabled={
-                usdBalance < 0.01 ||
-                zapOutPercentage === 0 ||
-                selectedToken?.split("-")[0].toLowerCase() === "eth"
-              }
-            >
-              Withdraw
-            </Button>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "4",
-      label: "Transfer",
-      children: (
-        <div>
-          <DecimalStep
-            selectedToken={selectedToken}
-            setSelectedToken={handleSetSelectedToken}
-            depositBalance={usdBalance}
-            setZapOutPercentage={setZapOutPercentage}
-            currency="$"
-            noTokenSelect={true}
-          />
-          <Input
-            status={recipientError ? "error" : ""}
-            placeholder="Recipient Address"
-            onChange={(e) => validateRecipient(e.target.value)}
-            value={recipient}
-          />
-          {recipientError && (
-            <div className="text-red-500 text-sm mt-1">
-              Please enter a valid Ethereum address different from your own
-            </div>
-          )}
-          {account === undefined ? (
-            <ConfiguredConnectButton />
-          ) : (
-            <Button
-              type="primary"
-              className="w-full"
-              onClick={() => handleAAWalletAction("transfer", true)}
-              loading={transferLoading || usdBalanceLoading}
-              disabled={usdBalance < 0.01 || recipientError}
-            >
-              Transfer
-            </Button>
-          )}
-        </div>
-      ),
-    },
-  ];
   useEffect(() => {
     if (
       portfolioApr[portfolioName] === undefined ||
@@ -1047,25 +719,24 @@ export default function IndexOverviews() {
                 </Dropdown>
               </div>
             </div>
-            <ConfigProvider
-              theme={{
-                components: {
-                  Tabs: {
-                    horizontalItemGutter: 16,
-                  },
-                },
-                token: {
-                  colorBgContainerDisabled: "rgb(156, 163, 175)",
-                },
-              }}
-            >
-              <Tabs
-                className="text-white"
-                defaultActiveKey="1"
-                items={items}
-                onChange={onChange}
-              />
-            </ConfigProvider>
+            <PortfolioActions
+              account={account}
+              chainId={chainId}
+              selectedToken={selectedToken}
+              handleSetSelectedToken={handleSetSelectedToken}
+              handleSetInvestmentAmount={handleSetInvestmentAmount}
+              handleAAWalletAction={handleAAWalletAction}
+              protocolAssetDustInWallet={protocolAssetDustInWallet}
+              usdBalance={usdBalance}
+              protocolAssetDustInWalletLoading={protocolAssetDustInWalletLoading}
+              usdBalanceLoading={usdBalanceLoading}
+              investmentAmount={investmentAmount}
+              tokenBalance={tokenBalance}
+              portfolioHelper={portfolioHelper}
+              portfolioApr={portfolioApr}
+              portfolioName={portfolioName}
+              onChange={onChange}
+            />
 
             <div className="mt-2 flex align-items-center">
               ⛽<span className="text-emerald-400">Free</span>
