@@ -557,21 +557,28 @@ export class BasePortfolio {
       currentChain,
       onlyThisChain,
     );
+    if (zapOutUsdcBalance === 0) return txns;
+    const zapOutAmount = ethers.utils.parseUnits(
+      (
+        zapOutUsdcBalance / tokenPricesMappingTable[middleTokenConfig.symbol]
+      ).toFixed(middleTokenConfig.decimals),
+      middleTokenConfig.decimals,
+    );
     txns.push(...zapOutTxns);
 
-    if (zapOutUsdcBalance === 0) return txns;
     // Calculate zap in amount including pending rewards
-    const zapInConfig = this._calculateZapInAmount(
-      zapOutUsdcBalance,
+    const zapInAmount = this._calculateZapInAmount(
+      zapOutAmount,
       rebalancableUsdBalanceDictOnThisChain,
       slippage,
-      middleTokenConfig.decimals,
+      middleTokenConfig,
+      tokenPricesMappingTable,
     );
     // Generate approval and fee transactions
     const [approvalAndFeeTxns, zapInAmountAfterFee] =
       await this._generateApprovalAndFeeTxns(
         middleTokenConfig,
-        zapInConfig.amount,
+        zapInAmount,
         chainMetadata,
         actionParams,
       );
@@ -764,19 +771,23 @@ export class BasePortfolio {
   }
 
   _calculateZapInAmount(
-    zapOutUsdcBalance,
+    zapOutAmount,
     rebalancableDict,
     slippage,
-    decimals,
+    middleTokenConfig,
+    tokenPricesMappingTable,
   ) {
-    const amount = ethers.utils.parseUnits(
-      (
-        (zapOutUsdcBalance * (100 - slippage)) / 100 +
-        rebalancableDict.pendingRewards.usdBalance * REWARD_SLIPPAGE
-      ).toFixed(decimals),
-      decimals,
+    const rewardAmountInMiddleToken =
+      (rebalancableDict.pendingRewards.usdBalance * REWARD_SLIPPAGE) /
+      tokenPricesMappingTable[middleTokenConfig.symbol];
+    const rewardAmount = ethers.utils.parseUnits(
+      rewardAmountInMiddleToken.toFixed(middleTokenConfig.decimals),
+      middleTokenConfig.decimals,
     );
-    return { amount };
+    return this.mul_with_slippage_in_bignumber_format(
+      zapOutAmount,
+      slippage,
+    ).add(rewardAmount);
   }
 
   async _generateApprovalAndFeeTxns(
@@ -1097,6 +1108,7 @@ export class BasePortfolio {
       const chainSet = new Set();
       let chainNode;
       let endOfZapOutNodeOnThisChain;
+      let middleTokenConfig;
       for (const [key, protocolObj] of Object.entries(
         actionParams.rebalancableUsdBalanceDict,
       )) {
@@ -1118,13 +1130,16 @@ export class BasePortfolio {
             };
             chainNodes.push(chainNode);
             flowChartData.nodes.push(endOfZapOutNodeOnThisChain);
+            middleTokenConfig = this._getRebalanceMiddleTokenConfig(
+              protocolObj.chain,
+            );
           }
           const rebalanceRatio =
             protocolObj.weightDiff / protocolObj.positiveWeigtDiffSum;
           const stepsData =
             protocolObj.protocol.interface.getZapOutFlowChartData(
-              actionParams.outputToken,
-              actionParams.outputTokenAddress,
+              middleTokenConfig.symbol,
+              middleTokenConfig.address,
               rebalanceRatio,
             );
           const currentChainToProtocolNodeEdge = {
@@ -1274,7 +1289,7 @@ export class BasePortfolio {
   async _getSwapFeeTxnsForZapIn(actionParams, platformFee, middleTokenConfig) {
     const normalizedPlatformFeeUsd =
       ethers.utils.formatUnits(platformFee, middleTokenConfig.decimals) *
-      middleTokenConfig.price;
+      actionParams.tokenPricesMappingTable[middleTokenConfig.symbol];
     actionParams.setPlatformFee(-normalizedPlatformFeeUsd);
     const referrer = await this._getReferrer(actionParams.account);
     return this._getPlatformFeeTxns(
@@ -1397,5 +1412,21 @@ export class BasePortfolio {
       wrappedTokenAddress,
       wrappedTokenSymbol,
     ];
+  }
+  mul_with_slippage_in_bignumber_format(amount, slippage) {
+    // Convert amount to BigNumber if it isn't already
+    const amountBN = ethers.BigNumber.isBigNumber(amount)
+      ? amount
+      : ethers.BigNumber.from(String(amount));
+
+    // Convert slippage to basis points (e.g., 0.5% -> 50)
+    const slippageBasisPoints = ethers.BigNumber.from(
+      Math.floor(slippage * 100),
+    );
+
+    // Calculate (amount * (10000 - slippageBasisPoints)) / 10000
+    return amountBN
+      .mul(ethers.BigNumber.from(10000).sub(slippageBasisPoints))
+      .div(10000);
   }
 }

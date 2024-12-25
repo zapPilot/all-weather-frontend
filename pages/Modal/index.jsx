@@ -270,7 +270,7 @@ export default function PopUpModal({
                           selectedToken?.split("-")[0]
                         })`
                       : actionName === "rebalance"
-                      ? `(Rebalance ${rebalanceAmount} ${
+                      ? `(Rebalance ${rebalanceAmount.toFixed(2)} ${
                           selectedToken?.split("-")[0]
                         })`
                       : ""}
