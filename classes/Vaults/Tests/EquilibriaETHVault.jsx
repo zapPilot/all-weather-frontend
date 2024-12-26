@@ -11,15 +11,15 @@ export class EquilibriaETHVault extends BasePortfolio {
               interface: new BaseEquilibria(
                 "arbitrum",
                 42161,
-                ["pt bedrock unieth 26dec2024", "unieth"],
+                ["pt bedrock unieth 26jun2025", "unieth"],
                 "single",
                 {
-                  assetAddress: "0x279b44E48226d40Ec389129061cb0B56C5c09e46",
+                  assetAddress: "0x3E4e3291Ed667FB4Dee680D19e5702eF8275493D",
                   symbolOfBestTokenToZapOut: "weth",
                   bestTokenAddressToZapOut:
                     "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
                   decimalOfBestTokenToZapOut: 18,
-                  pidOfEquilibria: 44,
+                  pidOfEquilibria: 57,
                 },
               ),
               weight: 1,

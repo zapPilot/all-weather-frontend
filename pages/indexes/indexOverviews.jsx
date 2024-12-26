@@ -14,7 +14,7 @@ import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
 import ConfiguredConnectButton from "../ConnectButton";
 import { base, arbitrum } from "thirdweb/chains";
 import PopUpModal from "../Modal";
-import { TOKEN_ADDRESS_MAP } from "../../utils/general.js";
+import { TOKEN_ADDRESS_MAP, truncateToFixed } from "../../utils/general.js";
 import {
   Button,
   ConfigProvider,
@@ -394,7 +394,10 @@ export default function IndexOverviews() {
       },
       0,
     );
-    return allInvestmentAmount * chainWeight;
+    return truncateToFixed(
+      allInvestmentAmount * chainWeight,
+      selectedToken?.split("-")[2],
+    );
   };
   const [nextChainInvestmentAmount, setNextChainInvestmentAmount] = useState(0);
 
@@ -473,6 +476,7 @@ export default function IndexOverviews() {
                 selectedToken={selectedToken}
                 setSelectedToken={handleSetSelectedToken}
                 setInvestmentAmount={handleSetInvestmentAmount}
+                tokenPricesMappingTable={tokenPricesMappingTable}
               />
               {account === undefined ? (
                 <ConfiguredConnectButton />
@@ -648,8 +652,6 @@ export default function IndexOverviews() {
                   {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}
                   %
                 </span>{" "}
-                for
-                {formatBalance(getRebalanceReinvestUsdAmount())}
               </>
             )}
           </Button>
@@ -683,6 +685,7 @@ export default function IndexOverviews() {
               selectedToken={selectedToken}
               setSelectedToken={handleSetSelectedToken}
               setInvestmentAmount={handleSetInvestmentAmount}
+              tokenPricesMappingTable={tokenPricesMappingTable}
             />
             <Button
               type="primary"
@@ -1000,7 +1003,7 @@ export default function IndexOverviews() {
                         size="small"
                         onChange={(e) => setSlippage(e.target.value)}
                       >
-                        {[1, 3, 5, 7].map((slippageValue) => (
+                        {[1, 3, 5, 7, 10].map((slippageValue) => (
                           <Radio.Button
                             value={slippageValue}
                             key={slippageValue}

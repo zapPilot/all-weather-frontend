@@ -188,3 +188,8 @@ export function unixToCustomFormat(unixTimestamp) {
 export const formatBalance = (balance) => {
   return balance >= 0.01 ? "$" + balance.toFixed(2) : "< $0.01";
 };
+
+export function truncateToFixed(num, precision) {
+  const factor = Math.pow(10, precision); // e.g., 10^2 = 100 for 2 decimal places
+  return Math.floor(num * factor) / factor;
+}

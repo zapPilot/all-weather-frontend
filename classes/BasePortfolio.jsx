@@ -321,6 +321,7 @@ export class BasePortfolio {
         platformFee,
         referrer,
       );
+      actionParams.zapInAmount = actionParams.zapInAmount.sub(platformFee);
       actionParams.setPlatformFee(-normalizedPlatformFeeUSD);
       totalTxns = totalTxns.concat(platformFeeTxns);
     } else if (actionName === "rebalance") {
