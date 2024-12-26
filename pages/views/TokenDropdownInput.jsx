@@ -27,7 +27,12 @@ const chainIdToChain = {
 };
 
 const TokenDropdownInput = memo(
-  ({ selectedToken, setSelectedToken, setInvestmentAmount }) => {
+  ({
+    selectedToken,
+    setSelectedToken,
+    setInvestmentAmount,
+    tokenPricesMappingTable,
+  }) => {
     const [localInvestmentAmount, setLocalInvestmentAmount] = useState("");
     const tokenAddress = selectedToken?.split("-")[1];
     const account = useActiveAccount();
@@ -102,6 +107,23 @@ const TokenDropdownInput = memo(
               Click on the top-right corner to get your AA Wallet address.
             </p>
           )}
+          {tokenPricesMappingTable &&
+            tokenPricesMappingTable[
+              selectedToken?.split("-")[0].toLowerCase()
+            ] && (
+              <p className="text-gray-400">
+                ≈ $
+                {(
+                  tokenPricesMappingTable[
+                    selectedToken?.split("-")[0].toLowerCase()
+                  ] * localInvestmentAmount
+                ).toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{" "}
+                USD
+              </p>
+            )}
         </div>
       </>
     );

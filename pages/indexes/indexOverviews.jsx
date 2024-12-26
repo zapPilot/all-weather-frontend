@@ -473,6 +473,7 @@ export default function IndexOverviews() {
                 selectedToken={selectedToken}
                 setSelectedToken={handleSetSelectedToken}
                 setInvestmentAmount={handleSetInvestmentAmount}
+                tokenPricesMappingTable={tokenPricesMappingTable}
               />
               {account === undefined ? (
                 <ConfiguredConnectButton />
@@ -683,6 +684,7 @@ export default function IndexOverviews() {
               selectedToken={selectedToken}
               setSelectedToken={handleSetSelectedToken}
               setInvestmentAmount={handleSetInvestmentAmount}
+              tokenPricesMappingTable={tokenPricesMappingTable}
             />
             <Button
               type="primary"
@@ -1000,7 +1002,7 @@ export default function IndexOverviews() {
                         size="small"
                         onChange={(e) => setSlippage(e.target.value)}
                       >
-                        {[1, 3, 5, 7].map((slippageValue) => (
+                        {[1, 3, 5, 7, 10].map((slippageValue) => (
                           <Radio.Button
                             value={slippageValue}
                             key={slippageValue}
