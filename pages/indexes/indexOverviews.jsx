@@ -14,7 +14,7 @@ import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
 import ConfiguredConnectButton from "../ConnectButton";
 import { base, arbitrum } from "thirdweb/chains";
 import PopUpModal from "../Modal";
-import { TOKEN_ADDRESS_MAP } from "../../utils/general.js";
+import { TOKEN_ADDRESS_MAP, truncateToFixed } from "../../utils/general.js";
 import {
   Button,
   ConfigProvider,
@@ -394,7 +394,10 @@ export default function IndexOverviews() {
       },
       0,
     );
-    return allInvestmentAmount * chainWeight;
+    return truncateToFixed(
+      allInvestmentAmount * chainWeight,
+      selectedToken?.split("-")[2],
+    );
   };
   const [nextChainInvestmentAmount, setNextChainInvestmentAmount] = useState(0);
 

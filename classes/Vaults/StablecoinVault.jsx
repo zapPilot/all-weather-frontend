@@ -181,9 +181,6 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              // TODO: https://dashboard.tenderly.co/tx/arbitrum/0xb4ff6973bd81e6b2eb27da193fc4ba80c312b06c9c92cb525bc78c8ce04b0799?trace=0.4.0.0.0.0.5.2.0.1.2.0.2
-              // temporary remove weight, since it's not working
-              // weight: 0.14,
               weight: 0,
             },
             {
