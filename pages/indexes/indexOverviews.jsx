@@ -652,8 +652,6 @@ export default function IndexOverviews() {
                   {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}
                   %
                 </span>{" "}
-                for
-                {formatBalance(getRebalanceReinvestUsdAmount())}
               </>
             )}
           </Button>
