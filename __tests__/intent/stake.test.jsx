@@ -5,6 +5,8 @@ import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { encode } from "thirdweb";
 import { arbitrum } from "thirdweb/chains";
 import exp from "constants";
+const equilibriaVaultAssetAddress =
+  "0x3E4e3291Ed667FB4Dee680D19e5702eF8275493D";
 describe("Stake module", () => {
   it(
     "should be able to stake",
@@ -23,15 +25,12 @@ describe("Stake module", () => {
       );
       expect(
         Number(
-          dust.arbitrum[
-            "0x279b44E48226d40Ec389129061cb0B56C5c09e46"
-          ].assetBalance.toString(),
+          dust.arbitrum[equilibriaVaultAssetAddress].assetBalance.toString(),
         ),
-      ).greaterThan(0);
+      ).equals(0);
       expect(
-        dust.arbitrum["0x279b44E48226d40Ec389129061cb0B56C5c09e46"]
-          .assetUsdBalanceOf,
-      ).greaterThan(0);
+        dust.arbitrum[equilibriaVaultAssetAddress].assetUsdBalanceOf,
+      ).equals(0);
     },
     { timeout: 70000 },
   );

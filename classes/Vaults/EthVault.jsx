@@ -40,7 +40,7 @@ export class EthVault extends BasePortfolio {
                   pidOfEquilibria: 44,
                 },
               ),
-              weight: 0.1,
+              weight: 0,
             },
             {
               interface: new BaseConvex(
@@ -105,7 +105,7 @@ export class EthVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.8,
+              weight: 0.9,
             },
           ],
         },

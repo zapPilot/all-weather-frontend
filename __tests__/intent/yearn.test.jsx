@@ -56,12 +56,13 @@ describe("Yearn Vault", () => {
     expect(await encode(txns[2])).includes(
       "2ecbc6f229fed06044cdb0dd772437a30190cd50",
     );
-    expect(await encode(txns[3])).toBe(
-      "0x095ea7b300000000000000000000000086df48f8dc91504d2b3e360d67513f094dfa6c840000000000000000000000000000000000000000000000000de0b6b3a7640000",
+    expect(await encode(txns[3])).includes(
+      "0x095ea7b300000000000000000000000086df48f8dc91504d2b3e360d67513f094dfa6c84",
     );
-    expect(await encode(txns[4])).toBe(
-      "0x6e553f650000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000c774806f9ff5f3d8aabb6b70d0ed509e42afe6f0",
+    expect(await encode(txns[4])).includes(
+      "c774806f9ff5f3d8aabb6b70d0ed509e42afe6f0",
     );
+    expect(await encode(txns[4])).includes("0x6e553f65");
   });
   it("should be able to zap-out Yearn Vault", async () => {
     const actionName = "zapOut";

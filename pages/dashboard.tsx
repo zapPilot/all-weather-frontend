@@ -153,8 +153,8 @@ const Dashboard: NextPage = () => {
       uniqueQueryTokens: longTermBondFilterDict,
       unexpandable: unexpandable.long_term_bond,
       setUnexpandable: updateState,
-      chain_blacklist: ["ethereum"],
-      topN: defaultTopN,
+      chain_blacklist: ["ethereum", "flare", "iota evm"],
+      topN: 10,
     },
     {
       img: "/tokenPictures/usdc.webp",
