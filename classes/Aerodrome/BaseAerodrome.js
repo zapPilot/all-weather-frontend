@@ -104,9 +104,30 @@ export class BaseAerodrome extends BaseProtocol {
         amount,
         minAmount: this.mul_with_slippage_in_bignumber_format(amount, slippage),
         decimals,
+        symbol,
       }),
     );
     const min_mint_amount = this._calculateMintLP(tokens[0], tokens[1]);
+    const lpPrice = await this._calculateLpPrice(tokenPricesMappingTable);
+    const tradingLoss =
+      Number(
+        min_mint_amount
+          .mul(
+            ethers.BigNumber.from(
+              String(Math.floor(lpPrice * 10 ** this.assetDecimals)),
+            ),
+          )
+          .div(ethers.BigNumber.from(String(10 ** this.assetDecimals))),
+      ) -
+      ethers.utils.formatUnits(tokens[0].minAmount, tokens[0].decimals) *
+        tokenPricesMappingTable[tokens[0].symbol] -
+      ethers.utils.formatUnits(tokens[1].minAmount, tokens[1].decimals) *
+        tokenPricesMappingTable[tokens[1].symbol];
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-deposit`,
+      tradingLoss,
+    );
     // Generate approve transactions
     const approveTxns = tokens.map((token) =>
       approve(
@@ -226,6 +247,7 @@ export class BaseAerodrome extends BaseProtocol {
     return totalPoolValue / totalSupply[0];
   }
   async _stakeLP(amount, updateProgress) {
+    await super._stakeLP(amount, updateProgress);
     const approveForStakingTxn = approve(
       this.assetContract.address,
       this.stakeFarmContract.address,
@@ -241,11 +263,7 @@ export class BaseAerodrome extends BaseProtocol {
     return [approveForStakingTxn, stakeTxn];
   }
   async _unstakeLP(owner, percentage, updateProgress) {
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-unstake`,
-      0,
-    );
+    await super._unstakeLP(owner, percentage, updateProgress);
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
     const stakeBalance = await this.stakeBalanceOf(owner, updateProgress);
     const amount = stakeBalance.mul(percentageBN).div(10000);
@@ -263,6 +281,13 @@ export class BaseAerodrome extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
+    await super._withdrawLPAndClaim(
+      owner,
+      amount,
+      slippage,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
     const approveTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
@@ -308,7 +333,6 @@ export class BaseAerodrome extends BaseProtocol {
       tokenPricesMappingTable,
       updateProgress,
     );
-    this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-claim`, 0);
     return [
       [approveTxn, withdrawTxn, ...claimTxns],
       lpTokens,

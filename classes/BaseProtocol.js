@@ -198,12 +198,12 @@ export default class BaseProtocol extends BaseUniswap {
           name: "Unstake",
         },
         {
-          id: `${this.uniqueId()}-withdraw`,
-          name: `Withdraw ${this.symbolList.join("-")}`,
-        },
-        {
           id: `${this.uniqueId()}-claim`,
           name: "Claim Rewards",
+        },
+        {
+          id: `${this.uniqueId()}-withdraw`,
+          name: `Withdraw ${this.symbolList.join("-")}`,
         },
       ]) {
         nodes.push(node);
@@ -226,12 +226,12 @@ export default class BaseProtocol extends BaseUniswap {
           name: "Unstake",
         },
         {
-          id: `${this.uniqueId()}-withdraw`,
-          name: `Withdraw ${this.symbolList.join("-")}`,
-        },
-        {
           id: `${this.uniqueId()}-claim`,
           name: "Claim Rewards",
+        },
+        {
+          id: `${this.uniqueId()}-withdraw`,
+          name: `Withdraw ${this.symbolList.join("-")}`,
         },
       ]) {
         nodes.push(node);
@@ -361,6 +361,11 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
   ) {
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-approve`,
+      0,
+    );
     if (this.mode === "single") {
       const [
         beforeZapInTxns,
@@ -377,11 +382,7 @@ export default class BaseProtocol extends BaseUniswap {
         tokenDecimals,
         tokenPricesMappingTable,
       );
-      await this._updateProgressAndWait(
-        updateProgress,
-        `${this.uniqueId()}-approve`,
-        0,
-      );
+
       const zapinTxns = await this.customDeposit(
         recipient,
         inputToken,
@@ -391,11 +392,6 @@ export default class BaseProtocol extends BaseUniswap {
         tokenPricesMappingTable,
         slippage,
         updateProgress,
-      );
-      await this._updateProgressAndWait(
-        updateProgress,
-        `${this.uniqueId()}-stake`,
-        0,
       );
       return beforeZapInTxns.concat(zapinTxns);
     } else if (this.mode === "LP") {
@@ -410,11 +406,6 @@ export default class BaseProtocol extends BaseUniswap {
           tokenDecimals,
           tokenPricesMappingTable,
         );
-      await this._updateProgressAndWait(
-        updateProgress,
-        `${this.uniqueId()}-approve`,
-        0,
-      );
       const zapinTxns = await this.customDepositLP(
         recipient,
         tokenAmetadata,
@@ -422,16 +413,6 @@ export default class BaseProtocol extends BaseUniswap {
         tokenPricesMappingTable,
         slippage,
         updateProgress,
-      );
-      await this._updateProgressAndWait(
-        updateProgress,
-        `${this.uniqueId()}-deposit`,
-        0,
-      );
-      await this._updateProgressAndWait(
-        updateProgress,
-        `${this.uniqueId()}-stake`,
-        0,
       );
       return beforeZapInTxns.concat(zapinTxns);
     }
@@ -589,11 +570,6 @@ export default class BaseProtocol extends BaseUniswap {
     } else {
       throw new Error("Invalid mode for stake");
     }
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-stake`,
-      0,
-    );
     return stakeTxns;
   }
   async customDeposit(
@@ -1093,16 +1069,36 @@ export default class BaseProtocol extends BaseUniswap {
     return [redeemTxns, withdrawTokenAndBalance];
   }
   async _stake(amount, updateProgress) {
-    throw new Error("Method '_stake()' must be implemented.");
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-stake`,
+      0,
+    );
+    // child class should implement this
   }
   async _stakeLP(amount, updateProgress) {
-    throw new Error("Method '_stakeLP()' must be implemented.");
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-stake`,
+      0,
+    );
+    // child class should implement this
   }
   async _unstake(owner, percentage, updateProgress) {
-    throw new Error("Method '_unstake()' must be implemented.");
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-unstake`,
+      0,
+    );
+    // child class should implement this
   }
   async _unstakeLP(owner, percentage, updateProgress) {
-    throw new Error("Method '_unstakeLP()' must be implemented.");
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-unstake`,
+      0,
+    );
+    // child class should implement this
   }
   async _withdrawAndClaim(
     owner,
@@ -1111,7 +1107,12 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    throw new Error("Method '_withdrawAndClaim()' must be implemented.");
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-claim`,
+      0,
+    );
+    // child class should implement this
   }
   async _withdrawLPAndClaim(
     owner,
@@ -1120,7 +1121,12 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    throw new Error("Method '_withdrawLPAndClaim()' must be implemented.");
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-claim`,
+      0,
+    );
+    // child class should implement this
   }
   async _calculateTokenAmountsForLP(tokenMetadatas) {
     throw new Error(
@@ -1177,6 +1183,7 @@ export default class BaseProtocol extends BaseUniswap {
     return contractCall;
   }
   async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
+    // throw new Error("Method '_updateProgressAndWait()' must be implemented.");
     await new Promise((resolve) => {
       updateProgress(nodeId, tradingLoss);
       // Use setTimeout to ensure the state update is queued

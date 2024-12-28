@@ -243,6 +243,7 @@ export class BaseConvex extends BaseProtocol {
     throw new Error("Not implemented");
   }
   async _stakeLP(amount, updateProgress) {
+    await super._stakeLP(amount, updateProgress);
     const approveForStakingTxn = approve(
       this.assetContract.address,
       this.stakeFarmContract.address,
@@ -260,11 +261,7 @@ export class BaseConvex extends BaseProtocol {
     return [approveForStakingTxn, stakeTxn];
   }
   async _unstakeLP(owner, percentage, updateProgress) {
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-unstake`,
-      0,
-    );
+    await super._unstakeLP(owner, percentage, updateProgress);
     const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
     const stakeBalance = await this.stakeBalanceOf(owner, updateProgress);
     const amount = stakeBalance.mul(percentageBN).div(10000);
@@ -283,6 +280,13 @@ export class BaseConvex extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
+    await super._withdrawLPAndClaim(
+      owner,
+      amount,
+      slippage,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
     const protocolContractInstance = new ethers.Contract(
       this.protocolContract.address,
       CurveStableSwapNG,
@@ -347,11 +351,6 @@ export class BaseConvex extends BaseProtocol {
       owner,
       tokenPricesMappingTable,
       updateProgress,
-    );
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-claim`,
-      0,
     );
     const tokenMetadatas = this._getLPTokenPairesToZapIn();
     return [[withdrawTxn, ...claimTxns], tokenMetadatas, minPairAmounts];
