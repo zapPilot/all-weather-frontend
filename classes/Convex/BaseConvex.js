@@ -65,10 +65,8 @@ export class BaseConvex extends BaseProtocol {
       PROVIDER(this.chain),
     );
     const rewards = this.rewards();
-    for (let index = 0; index < rewards; index++) {
-      const reward_address = (
-        await stakeFarmContractInstance.functions.rewards(index)
-      ).reward_token;
+    for (const reward of rewards) {
+      const reward_address = reward.address;
       const reward_balance = (
         await stakeFarmContractInstance.functions.claimable_reward(
           reward_address,
@@ -76,12 +74,12 @@ export class BaseConvex extends BaseProtocol {
         )
       )[0];
       rewardBalance[reward_address] = {
-        symbol: rewards[index].symbol,
+        symbol: reward.symbol,
         balance: reward_balance,
         usdDenominatedValue:
-          (tokenPricesMappingTable[rewards[index].symbol] * reward_balance) /
-          Math.pow(10, rewards[index].decimals),
-        decimals: rewards[index].decimals,
+          (tokenPricesMappingTable[reward.symbol] * reward_balance) /
+          Math.pow(10, reward.decimals),
+        decimals: reward.decimals,
       };
     }
     return rewardBalance;

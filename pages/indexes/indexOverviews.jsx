@@ -637,7 +637,7 @@ export default function IndexOverviews() {
       children: (
         <div>
           <p>Follow these steps to rebalance your portfolio:</p>
-
+          {rebalancableUsdBalanceDictLoading ? <Spin /> : null}
           {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
             (data, index) => {
               const isCurrentChain =

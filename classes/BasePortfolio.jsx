@@ -242,7 +242,6 @@ export class BasePortfolio {
     const rewardsPromises = Object.values(this.strategy)
       .flatMap((category) => Object.values(category))
       .flat()
-      .filter((protocol) => protocol.weight !== 0)
       .map((protocol) =>
         protocol.interface.pendingRewards(
           owner,
