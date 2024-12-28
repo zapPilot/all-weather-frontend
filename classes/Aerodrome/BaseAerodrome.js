@@ -246,7 +246,9 @@ export class BaseAerodrome extends BaseProtocol {
       `${this.uniqueId()}-unstake`,
       0,
     );
-    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
+    const percentageBN = ethers.BigNumber.from(
+      String(Math.floor(percentage * 10000)),
+    );
     const stakeBalance = await this.stakeBalanceOf(owner, updateProgress);
     const amount = stakeBalance.mul(percentageBN).div(10000);
     const unstakeTxn = prepareContractCall({
