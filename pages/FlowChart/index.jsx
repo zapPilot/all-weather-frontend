@@ -49,7 +49,8 @@ const UserFlowNode = ({
     nodeState.isActive ||
     data.id === stepName ||
     completedSteps?.has(data.id) ||
-    currentChain.toLowerCase().replace(" one", "") === data.id;
+    currentChain.toLowerCase().replace(" one", "") === data.id ||
+    currentChain.toLowerCase().replace(" one", "") === data.chain;
 
   const displayTradingLoss = completedSteps?.has(data.id)
     ? tradingLossRef.current
@@ -74,21 +75,20 @@ const UserFlowNode = ({
   };
 
   const renderSwapNode = () => (
-    <div className="flex flex-col">
+    <>
       <div className="flex items-center">
         <Image
           src="/projectPictures/1inch-network.webp"
           alt="1inch"
-          className="inline-block me-2"
+          className="inline-block"
           height={20}
           width={20}
         />
-        Swap
+        <span className="mx-1">Swap</span>
         <ImageWithFallback
           token={data.name.split(" to ")[0].replace("Swap ", "")}
           height={20}
           width={20}
-          className="me-1"
         />
         <span className="mx-1">→</span>
         <ImageWithFallback
@@ -100,20 +100,20 @@ const UserFlowNode = ({
       {displayTradingLoss !== null && (
         <div>{formatTradingLoss(displayTradingLoss)}</div>
       )}
-    </div>
+    </>
   );
 
   const renderDepositWithdrawNode = (actionName) => (
-    <div className="flex flex-col">
+    <>
       <div className="flex items-center">
         <Image
           src={data.imgSrc}
           alt={data.name}
-          className="inline-block me-2"
+          className="inline-block"
           height={20}
           width={20}
         />
-        {actionName}
+        <span className="mx-1">{actionName}</span>
         {data.name
           .replace(actionName, "")
           .split("-")
@@ -130,7 +130,7 @@ const UserFlowNode = ({
       {displayTradingLoss !== null && (
         <div>{formatTradingLoss(displayTradingLoss)}</div>
       )}
-    </div>
+    </>
   );
 
   const renderDefaultNode = () => (
@@ -138,7 +138,7 @@ const UserFlowNode = ({
       <Image
         src={data.imgSrc}
         alt={data.name}
-        className="inline-block me-2"
+        className="inline-block me-1"
         height={20}
         width={20}
       />
@@ -148,11 +148,11 @@ const UserFlowNode = ({
   return (
     <div
       key={`flow-node-${data.id}`}
-      className={`user-flow-node transition-opacity duration-300 ${
+      className={`user-flow-node bg-white duration-300 flex items-center justify-center ${
         isActiveOrCompleted ? "opacity-100" : "opacity-40"
       }`}
     >
-      <div className="flex items-center">
+      <div className="user-flow-node-name flex items-center">
         {data.name.startsWith("Swap")
           ? renderSwapNode()
           : data.name.startsWith("Deposit") || data.name.startsWith("Withdraw")
@@ -180,7 +180,6 @@ export default function DemoFlowDirectionGraph({
   const [completedSteps, setCompletedSteps] = useState(new Set());
   const options = {
     autoFit: "view",
-    padding: 120,
     data,
     node: {
       style: {
@@ -194,15 +193,15 @@ export default function DemoFlowDirectionGraph({
             currentChain={currentChain}
           />
         ),
-        size: [160, 90],
+        size: [200, 50],
       },
     },
     edge: {
       style: {
         stroke: (d) =>
           d.data.type === "split"
-            ? "l(0) 0:#F04864 0.5:#7EC2F3 1:#1890FF"
-            : "l(0) 0:#1890FF 0.5:#7EC2F3 1:#F04864",
+            ? "l(0) 0:#5dfdcb 0.5:#ffffff 1:#5dfdcb"
+            : "l(0) 0:#5dfdcb 0.5:#ffffff 1:#5dfdcb",
         labelText: (d) => {
           return "";
         },
@@ -218,15 +217,19 @@ export default function DemoFlowDirectionGraph({
         minValue: 0,
         maxValue: 1,
         minLineWidth: 1,
-        maxLineWidth: 32,
+        maxLineWidth: 16,
       },
     ],
     layout: {
       type: "antv-dagre",
-      nodesep: -10,
-      ranksep: 100,
+      nodesep: 10,
+      ranksep: 60,
     },
   };
 
-  return <FlowDirectionGraph {...options} />;
+  return (
+    <>
+      <FlowDirectionGraph {...options} />
+    </>
+  );
 }
