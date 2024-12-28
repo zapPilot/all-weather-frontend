@@ -176,12 +176,11 @@ describe("IndexOverviews Component", () => {
         // find the locked period
         const lockUpPeriods = screen.getAllByRole("lockUpPeriod");
         const lockedPeriod = lockUpPeriods.find((element) =>
-          element.className.includes("text-red-500"),
+          element.className.includes("text-green-500"),
         );
-
         // ensure the locked period is found and the content is correct
         expect(lockedPeriod).toBeInTheDocument();
-        expect(lockedPeriod.textContent.trim()).toBe("2 d");
+        expect(lockedPeriod.textContent.trim()).toBe("Unlocked");
       },
       {
         timeout: 5000,

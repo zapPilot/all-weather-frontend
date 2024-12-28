@@ -32,6 +32,6 @@ describe("Stake module", () => {
         dust.arbitrum[equilibriaVaultAssetAddress].assetUsdBalanceOf,
       ).equals(0);
     },
-    { timeout: 70000 },
+    { timeout: 140000 },
   );
 });

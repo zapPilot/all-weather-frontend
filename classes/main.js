@@ -59,7 +59,9 @@ export const generateIntentTxns = async (
     txns = await portfolioHelper.portfolioAction(actionName, {
       account: accountAddress,
       chainMetadata,
-      tokenOutAddress: tokenAddress,
+      outputToken: tokenAddress,
+      outputTokenSymbol: tokenSymbol,
+      outputTokenDecimals: tokenDecimals,
       setTradingLoss,
       setStepName,
       setTotalTradingLoss,

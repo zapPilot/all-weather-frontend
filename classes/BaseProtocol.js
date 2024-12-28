@@ -499,10 +499,11 @@ export default class BaseProtocol extends BaseUniswap {
   async claimAndSwap(
     recipient,
     outputToken,
+    outputTokenSymbol,
+    outputTokenDecimals,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
-    existingInvestmentPositionsInThisChain,
   ) {
     const [claimTxns, claimedTokenAndBalance] = await this.customClaim(
       recipient,
@@ -513,6 +514,8 @@ export default class BaseProtocol extends BaseUniswap {
       recipient,
       claimedTokenAndBalance,
       outputToken,
+      outputTokenSymbol,
+      outputTokenDecimals,
       slippage,
       tokenPricesMappingTable,
       updateProgress,

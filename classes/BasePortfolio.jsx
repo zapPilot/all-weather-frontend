@@ -497,11 +497,12 @@ export class BasePortfolio {
       claimAndSwap: async (protocol, chain) => {
         return protocol.interface.claimAndSwap(
           actionParams.account,
-          actionParams.tokenOutAddress,
+          actionParams.outputToken,
+          actionParams.outputTokenSymbol,
+          actionParams.outputTokenDecimals,
           actionParams.slippage,
           actionParams.tokenPricesMappingTable,
           actionParams.updateProgress,
-          this.existingInvestmentPositions[chain],
         );
       },
 
