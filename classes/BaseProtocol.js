@@ -854,10 +854,10 @@ export default class BaseProtocol extends BaseUniswap {
 
     // Convert to BigNumber for precise calculations
     const currentRatioBN = ethers.BigNumber.from(
-      Math.floor(currentRatio * precision),
+      String(Math.floor(currentRatio * precision)),
     );
     const targetRatioBN = ethers.BigNumber.from(
-      Math.floor(targetRatio * precision),
+      String(Math.floor(targetRatio * precision)),
     );
 
     // Adjust amounts to match target ratio
@@ -937,7 +937,7 @@ export default class BaseProtocol extends BaseUniswap {
       // Ensure balance is a ethers.BigNumber
       const balanceBN = ethers.BigNumber.isBigNumber(balance)
         ? balance
-        : ethers.BigNumber.from(balance);
+        : ethers.BigNumber.from(String(balance));
 
       // Add balances
       withdrawTokenAndBalance[address] =
@@ -1135,7 +1135,7 @@ export default class BaseProtocol extends BaseUniswap {
 
     // Convert slippage to basis points (e.g., 0.5% -> 50)
     const slippageBasisPoints = ethers.BigNumber.from(
-      Math.floor(slippage * 100),
+      String(Math.floor(slippage * 100)),
     );
 
     // Calculate (amount * (10000 - slippageBasisPoints)) / 10000
