@@ -5,11 +5,10 @@
 
 /* flowchart */
 .user-flow-node {
-  width: calc(100% - 32px);
-  height: calc(100% - 32px);
-  background-color: #f6f7f9;
+  width: calc(100% - 16px);
+  height: calc(100% - 16px);
   border-radius: 8px;
-  padding: 16px;
+  padding: 8px;
   box-shadow:
     0 4px 8px 0 rgba(0, 0, 0, 0.12),
     0 2px 4px 0 rgba(0, 0, 0, 0.1);
@@ -18,8 +17,7 @@
 .user-flow-node-name {
   font-size: 16px;
   font-weight: bold;
-  color: #252525;
-  margin-bottom: 8px;
+  color: #000000;
 }
 .user-flow-node-metric {
   font-size: 12px;
