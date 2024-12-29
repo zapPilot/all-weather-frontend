@@ -67,7 +67,7 @@ const UserFlowNode = ({
     const formattedValue =
       absValue < 0.01 ? "< $0.01" : `$${absValue.toFixed(2)}`;
     return (
-      <span className={`${isNegative ? "" : "text-green-500"}`}>
+      <span className={`text-sm ${isNegative ? "" : "text-green-500"}`}>
         {formattedValue}
       </span>
     );
