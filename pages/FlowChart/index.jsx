@@ -49,8 +49,7 @@ const UserFlowNode = ({
     nodeState.isActive ||
     data.id === stepName ||
     completedSteps?.has(data.id) ||
-    currentChain.toLowerCase().replace(" one", "") === data.id ||
-    currentChain.toLowerCase().replace(" one", "") === data.chain;
+    currentChain.toLowerCase().replace(" one", "") === data.id;
 
   const displayTradingLoss = completedSteps?.has(data.id)
     ? tradingLossRef.current
@@ -68,7 +67,7 @@ const UserFlowNode = ({
     const formattedValue =
       absValue < 0.01 ? "< $0.01" : `$${absValue.toFixed(2)}`;
     return (
-      <span className={`${isNegative ? "" : "text-green-500"}`}>
+      <span className={`text-sm ${isNegative ? "" : "text-green-500"}`}>
         {formattedValue}
       </span>
     );
