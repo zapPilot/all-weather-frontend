@@ -122,6 +122,7 @@ export class Vela extends BaseProtocol {
     return ["usdc", usdcAddress, 6];
   }
   async _stake(amount, updateProgress) {
+    await super._stake(amount, updateProgress);
     const approveAlpTxn = approve(
       this.assetContract.address,
       this.stakeFarmContract.address,
@@ -137,6 +138,7 @@ export class Vela extends BaseProtocol {
     return [approveAlpTxn, stakeTxn];
   }
   async _unstake(owner, percentage, updateProgress) {
+    await super._unstake(owner, percentage, updateProgress);
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       TokenFarm,
@@ -169,6 +171,13 @@ export class Vela extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
+    await super._withdrawAndClaim(
+      owner,
+      vlpAmount,
+      slippage,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
     const [
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,

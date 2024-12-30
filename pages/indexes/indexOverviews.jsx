@@ -14,7 +14,12 @@ import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
 import ConfiguredConnectButton from "../ConnectButton";
 import { base, arbitrum } from "thirdweb/chains";
 import PopUpModal from "../Modal";
-import { TOKEN_ADDRESS_MAP, truncateToFixed } from "../../utils/general.js";
+import {
+  TOKEN_ADDRESS_MAP,
+  truncateToFixed,
+  CHAIN_ID_TO_CHAIN,
+  CHAIN_TO_CHAIN_ID,
+} from "../../utils/general.js";
 import {
   Button,
   ConfigProvider,
@@ -56,12 +61,16 @@ import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
 import tokens from "../views/components/tokens.json";
+
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
   const account = useActiveAccount();
   const chainId = useActiveWalletChain();
   const switchChain = useSwitchActiveWalletChain();
+  const isProcessingChainChangeRef = useRef(false);
+  const hasProcessedChainChangeRef = useRef(false);
+
   const switchItems = [
     {
       key: "1",
@@ -166,8 +175,6 @@ export default function IndexOverviews() {
   const [showZapIn, setShowZapIn] = useState(false);
 
   const preservedAmountRef = useRef(null);
-  const hasProcessedChainChangeRef = useRef(false);
-  const isProcessingChainChangeRef = useRef(false);
 
   const handleSetSelectedToken = useCallback((token) => {
     setSelectedToken(token);
@@ -454,10 +461,12 @@ export default function IndexOverviews() {
     );
   };
   const calCurrentAPR = (rebalancableUsdBalanceDict) =>
-    Object.values(rebalancableUsdBalanceDict).reduce(
-      (sum, { currentWeight, APR }) => currentWeight * APR + sum,
-      0,
-    ) || 0;
+    Object.entries(rebalancableUsdBalanceDict)
+      .filter(([key]) => !["pendingRewards", "metadata"].includes(key))
+      .reduce(
+        (sum, [_, { currentWeight, APR }]) => currentWeight * APR + sum,
+        0,
+      ) || 0;
 
   const items = [
     {
@@ -627,89 +636,76 @@ export default function IndexOverviews() {
       label: "Rebalance",
       children: (
         <div>
-          <p>Step 1: Rebalance to boost APR on arbitrum chain.</p>
-          <Button
-            className="w-full mt-2"
-            type="primary"
-            onClick={() => handleAAWalletAction("rebalance", true)}
-            loading={rebalanceIsLoading || rebalancableUsdBalanceDictLoading}
-            disabled={
-              getRebalanceReinvestUsdAmount() / usdBalance <
-                portfolioHelper?.rebalanceThreshold() || usdBalance <= 0
-            }
-          >
-            {calCurrentAPR(rebalancableUsdBalanceDict) >
-            portfolioApr[portfolioName]?.portfolioAPR * 100 ? (
-              "Take Profit"
-            ) : (
-              <>
-                Boost APR from{" "}
-                <span className="text-red-500">
-                  {calCurrentAPR(rebalancableUsdBalanceDict).toFixed(2)}%{" "}
-                </span>
-                to{" "}
-                <span className="text-green-400">
-                  {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}
-                  %
-                </span>{" "}
-              </>
-            )}
-          </Button>
-          <p>Step 2: Switch to base chain and zap in again.</p>
-          <Button
-            type="primary"
-            className={`w-full my-2 
-              ${
+          <p>Follow these steps to rebalance your portfolio:</p>
+          {rebalancableUsdBalanceDictLoading ? <Spin /> : null}
+          {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
+            (data, index) => {
+              const isCurrentChain =
                 chainId?.name.toLowerCase().replace(" one", "").trim() ===
-                "arbitrum"
-                  ? "block"
-                  : "hidden"
-              }`}
-            onClick={() => switchChain(base)}
-            loading={rebalanceIsLoading || rebalancableUsdBalanceDictLoading}
-            disabled={
-              getRebalanceReinvestUsdAmount() / usdBalance <
-                portfolioHelper?.rebalanceThreshold() || usdBalance <= 0
-            }
-          >
-            switch to base Chain
-          </Button>
-          <div
-            className={`mt-4 ${
-              chainId?.name.toLowerCase().replace(" one", "").trim() === "base"
-                ? "block"
-                : "hidden"
-            }`}
-          >
-            <TokenDropdownInput
-              selectedToken={selectedToken}
-              setSelectedToken={handleSetSelectedToken}
-              setInvestmentAmount={handleSetInvestmentAmount}
-              tokenPricesMappingTable={tokenPricesMappingTable}
-            />
-            <Button
-              type="primary"
-              className="w-full my-2"
-              onClick={() => handleAAWalletAction("zapIn", true)}
-              loading={zapInIsLoading}
-              disabled={
-                Number(investmentAmount) === 0 ||
-                Number(investmentAmount) > tokenBalance
-              }
-            >
-              Enter amount to Zap In on current chain
-            </Button>
+                data.chain;
+              const isFirstPendingAction = index === 0;
+
+              return (
+                <div key={`${data.chain}-${data.actionName}`} className="mb-4">
+                  <p className="text-gray-400 mb-2">
+                    Step {index + 1}: {isCurrentChain ? "Execute" : "Switch to"}{" "}
+                    {data.chain} chain
+                    {isCurrentChain ? ` and ${data.actionName}` : ""}
+                  </p>
+
+                  {isCurrentChain ? (
+                    <Button
+                      type="primary"
+                      className="w-full"
+                      onClick={() =>
+                        handleAAWalletAction(data.actionName, true)
+                      }
+                      loading={
+                        rebalanceIsLoading || rebalancableUsdBalanceDictLoading
+                      }
+                      disabled={
+                        getRebalanceReinvestUsdAmount() / usdBalance <
+                          portfolioHelper?.rebalanceThreshold() ||
+                        usdBalance <= 0 ||
+                        Math.abs(
+                          calCurrentAPR(rebalancableUsdBalanceDict) -
+                            portfolioApr[portfolioName]?.portfolioAPR * 100,
+                        ) < 5
+                      }
+                    >
+                      {data.actionName} on {data.chain}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="primary"
+                      className="w-full"
+                      onClick={() =>
+                        switchChain(
+                          CHAIN_ID_TO_CHAIN[CHAIN_TO_CHAIN_ID[data.chain]],
+                        )
+                      }
+                      disabled={!isFirstPendingAction}
+                    >
+                      Switch to {data.chain} Chain
+                    </Button>
+                  )}
+                </div>
+              );
+            },
+          )}
+
+          <div className="mt-4 text-gray-400">
+            <p>Expected APR after rebalance: </p>
+            <div className="flex items-center gap-2">
+              <span className="text-red-500">
+                {calCurrentAPR(rebalancableUsdBalanceDict).toFixed(2)}%
+              </span>
+              <span>→</span>
+              <span className="text-green-400">
+                {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}%
+              </span>
+            </div>
           </div>
-          <div className="text-gray-400">
-            Rebalance Cost: {portfolioHelper?.swapFeeRate() * 100}%
-          </div>
-          {calCurrentAPR(rebalancableUsdBalanceDict) >
-          portfolioApr[portfolioName]?.portfolioAPR * 100 ? (
-            <>
-              {formatBalance(getRebalanceReinvestUsdAmount())} has outperformed.
-              It&apos;s time to rebalance and take the profit!
-            </>
-          ) : null}
         </div>
       ),
     },
@@ -799,43 +795,99 @@ export default function IndexOverviews() {
     }
   }, [portfolioName]);
   useEffect(() => {
-    if (!portfolioName || account === undefined) return;
-    if (portfolioApr[portfolioName] === undefined) return;
-    const fetchUsdBalance = async () => {
-      setUsdBalanceLoading(true);
-      setPendingRewardsLoading(true);
-      setrebalancableUsdBalanceDictLoading(true);
-      setProtocolAssetDustInWalletLoading(true);
+    let isMounted = true;
 
-      const tokenPricesMappingTable =
-        await portfolioHelper.getTokenPricesMappingTable(() => {});
-      setTokenPricesMappingTable(tokenPricesMappingTable);
-      const [usdBalance, usdBalanceDict] = await portfolioHelper.usdBalanceOf(
-        account.address,
-        portfolioApr[portfolioName],
-      );
-      const portfolioLockUpPeriod = await portfolioHelper.lockUpPeriod(
-        account.address,
-      );
-      setLockUpPeriod(portfolioLockUpPeriod);
-      setUsdBalance(usdBalance);
-      setUsdBalanceLoading(false);
-      setrebalancableUsdBalanceDict(usdBalanceDict);
-      setrebalancableUsdBalanceDictLoading(false);
-      setPendingRewards(usdBalanceDict.pendingRewards.pendingRewardsDict);
-      setPendingRewardsLoading(false);
+    if (!portfolioName || account === undefined || !chainId) {
+      return;
+    }
+    if (portfolioApr[portfolioName] === undefined) {
+      return;
+    }
 
-      if (Object.values(tokenPricesMappingTable).length === 0) return;
-      const dust = await portfolioHelper.calProtocolAssetDustInWalletDictionary(
-        account.address,
-        tokenPricesMappingTable,
-      );
-      setProtocolAssetDustInWallet(dust);
-      setProtocolAssetDustInWalletLoading(false);
+    // Add guard against multiple chain change processing
+    if (isProcessingChainChangeRef.current) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      const fetchUsdBalance = async () => {
+        if (!isMounted) {
+          return;
+        }
+
+        try {
+          isProcessingChainChangeRef.current = true;
+
+          setUsdBalanceLoading(true);
+          setPendingRewardsLoading(true);
+          setrebalancableUsdBalanceDictLoading(true);
+          setProtocolAssetDustInWalletLoading(true);
+
+          const tokenPricesMappingTable =
+            await portfolioHelper.getTokenPricesMappingTable(() => {});
+          if (!isMounted) return;
+          setTokenPricesMappingTable(tokenPricesMappingTable);
+
+          const [usdBalance, usdBalanceDict] =
+            await portfolioHelper.usdBalanceOf(
+              account.address,
+              portfolioApr[portfolioName],
+            );
+          if (!isMounted) return;
+
+          const portfolioLockUpPeriod = await portfolioHelper.lockUpPeriod(
+            account.address,
+          );
+          if (!isMounted) return;
+
+          setLockUpPeriod(portfolioLockUpPeriod);
+          setUsdBalance(usdBalance);
+          setUsdBalanceLoading(false);
+          setrebalancableUsdBalanceDict(usdBalanceDict);
+          setrebalancableUsdBalanceDictLoading(false);
+          setPendingRewards(usdBalanceDict.pendingRewards.pendingRewardsDict);
+          setPendingRewardsLoading(false);
+
+          if (Object.values(tokenPricesMappingTable).length === 0) {
+            return;
+          }
+
+          const dust =
+            await portfolioHelper.calProtocolAssetDustInWalletDictionary(
+              account.address,
+              tokenPricesMappingTable,
+            );
+          if (!isMounted) return;
+
+          setProtocolAssetDustInWallet(dust);
+          setProtocolAssetDustInWalletLoading(false);
+        } catch (error) {
+          console.error("Error in fetchUsdBalance:", error);
+          if (!isMounted) return;
+          // Reset loading states and processing flags on error
+          setUsdBalanceLoading(false);
+          setPendingRewardsLoading(false);
+          setrebalancableUsdBalanceDictLoading(false);
+          setProtocolAssetDustInWalletLoading(false);
+          isProcessingChainChangeRef.current = false;
+        }
+      };
+
+      fetchUsdBalance();
+    }, 500);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+      // Don't reset processing flag in cleanup to prevent re-runs during chain change
     };
-    fetchUsdBalance();
-  }, [portfolioName, account, portfolioApr]);
-  useEffect(() => {}, [lockUpPeriod]);
+  }, [portfolioName, account, chainId]);
+  useEffect(() => {
+    return () => {
+      isProcessingChainChangeRef.current = false;
+      hasProcessedChainChangeRef.current = false;
+    };
+  }, []);
   useEffect(() => {
     const balance = walletBalanceData?.displayValue;
     setTokenBalance(balance);

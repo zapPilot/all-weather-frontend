@@ -60,5 +60,5 @@ export async function fetch1InchSwapData(
     // Delay before retrying; you can adjust the delay as needed
     await new Promise((resolve) => setTimeout(resolve, (attempt + 1) * 3000));
   }
-  throw new Error("Failed to fetch data after retries");
+  throw new Error(`Failed to fetch data after retries, url: ${url}`);
 }
