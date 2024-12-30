@@ -137,30 +137,17 @@ export class Vela extends BaseProtocol {
     return [approveAlpTxn, stakeTxn];
   }
   async _unstake(owner, percentage, updateProgress) {
-    const stakeFarmContractInstance = new ethers.Contract(
-      this.stakeFarmContract.address,
-      TokenFarm,
+    // this protocol is sunsetting right now, so we need to withdraw all the assets
+    const assetContractInstance = new ethers.Contract(
+      this.assetContract.address,
+      ERC20_ABI,
       PROVIDER(this.chain),
     );
-
-    // Assuming 'percentage' is a float between 0 and 1
-    const percentageBN = ethers.BigNumber.from(
-      String(Math.floor(percentage * 10000)),
-    );
-    const stakedAmount = (
-      await stakeFarmContractInstance.functions.getStakedAmount(
-        this.assetContract.address,
-        owner,
-      )
+    const assetAmount = (
+      await assetContractInstance.functions.balanceOf(owner)
     )[0];
-    const vlpAmount = stakedAmount.mul(percentageBN).div(10000);
-
-    const withdrawTxn = prepareContractCall({
-      contract: this.stakeFarmContract,
-      method: "unstake",
-      params: [this.assetContract.address, vlpAmount],
-    });
-    return [[withdrawTxn], vlpAmount];
+    const vlpAmount = assetAmount;
+    return [[], vlpAmount];
   }
   async _withdrawAndClaim(
     owner,
