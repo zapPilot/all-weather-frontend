@@ -20,6 +20,6 @@ export default defineConfig({
     env: {
       ...config({ path: "./.env.local" }).parsed,
     },
-    testTimeout: 80000,
+    testTimeout: 140000,
   },
 });

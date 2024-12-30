@@ -116,6 +116,7 @@ export class BaseAave extends BaseProtocol {
     return 0;
   }
   async _stake(amount, updateProgress) {
+    await super._stake(amount, updateProgress);
     return [];
   }
   async _unstake(owner, percentage, updateProgress) {
@@ -138,6 +139,18 @@ export class BaseAave extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
+    await super._withdrawAndClaim(
+      owner,
+      amount,
+      slippage,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-withdraw`,
+      0,
+    );
     const [
       symbolOfBestTokenToZapInOut,
       bestTokenAddressToZapInOut,

@@ -75,7 +75,40 @@ export class BasePortfolio {
       () => {},
     );
 
-    // Flatten the strategy structure and create balance calculation promises
+    // Get balances and rewards
+    const [balanceResults, rewardsData] = await this._getBalancesAndRewards(
+      address,
+      tokenPricesMappingTable,
+    );
+
+    // Initialize balance dictionary with rewards
+    let usdBalance = rewardsData.rewardUsdBalance;
+    const usdBalanceDict = this._initializeBalanceDict(rewardsData);
+
+    // Process protocol balances
+    this._processProtocolBalances(
+      balanceResults,
+      portfolioAprDict,
+      usdBalanceDict,
+    );
+    usdBalance += this._calculateTotalBalance(balanceResults);
+
+    // Calculate weights and differences
+    const { negativeWeigtDiffSum, positiveWeigtDiffSum } =
+      this._calculateWeightDifferences(usdBalanceDict, usdBalance);
+
+    // Build metadata
+    const metadata = this._buildMetadata(
+      usdBalanceDict,
+      negativeWeigtDiffSum,
+      positiveWeigtDiffSum,
+    );
+    usdBalanceDict.metadata = metadata;
+
+    return [usdBalance, usdBalanceDict];
+  }
+
+  async _getBalancesAndRewards(address, tokenPricesMappingTable) {
     const balancePromises = Object.values(this.strategy)
       .flatMap((category) => Object.values(category))
       .flat()
@@ -85,7 +118,6 @@ export class BasePortfolio {
           .then((balance) => ({ protocol, balance })),
       );
 
-    // Add the pending rewards promise
     const pendingRewardsPromise = this.pendingRewards(address, () => {}).then(
       (pendingRewards) => ({
         rewardUsdBalance: this.sumUsdDenominatedValues(pendingRewards),
@@ -93,24 +125,27 @@ export class BasePortfolio {
       }),
     );
 
-    // Wait for all promises to resolve
-    const [balanceResults, { rewardUsdBalance, pendingRewardsDict }] =
-      await Promise.all([Promise.all(balancePromises), pendingRewardsPromise]);
-    let usdBalance = rewardUsdBalance;
-    const usdBalanceDict = {
+    return await Promise.all([
+      Promise.all(balancePromises),
+      pendingRewardsPromise,
+    ]);
+  }
+
+  _initializeBalanceDict(rewardsData) {
+    return {
       pendingRewards: {
-        usdBalance: rewardUsdBalance,
+        usdBalance: rewardsData.rewardUsdBalance,
         weightDiff: 1,
-        pendingRewardsDict,
+        pendingRewardsDict: rewardsData.pendingRewardsDict,
         weight: 0,
         APR: 0,
         currentWeight: 0,
       },
     };
+  }
 
-    // Process balance results
+  _processProtocolBalances(balanceResults, portfolioAprDict, usdBalanceDict) {
     for (const { protocol, balance } of balanceResults) {
-      usdBalance += balance;
       const protocolUniqueId =
         protocol.interface.uniqueId() + protocol.interface.constructor.name;
       usdBalanceDict[protocolUniqueId] = {
@@ -119,40 +154,86 @@ export class BasePortfolio {
         weight: protocol.weight,
         symbol: protocol.interface.symbolList,
         protocol: protocol,
-        zapOutPercentage: protocol.weight === 0 ? 1 : undefined,
         APR: portfolioAprDict?.[protocol.interface.uniqueId()]?.apr * 100,
       };
     }
+  }
 
-    // Calculate weight differences
+  _calculateTotalBalance(balanceResults) {
+    return balanceResults.reduce((sum, { balance }) => sum + balance, 0);
+  }
+
+  _calculateWeightDifferences(usdBalanceDict, totalUsdBalance) {
     let negativeWeigtDiffSum = 0;
     let positiveWeigtDiffSum = 0;
+
     for (const [protocolUniqueId, data] of Object.entries(usdBalanceDict)) {
-      if (protocolUniqueId !== "pendingRewards") {
-        const currentWeight = isNaN(data.usdBalance)
-          ? 0
-          : data.usdBalance / usdBalance;
-        data.weightDiff = currentWeight - data.weight;
-        data.currentWeight = currentWeight;
-        if (data.weightDiff > this.rebalanceThreshold()) {
-          data.zapOutPercentage =
-            ((currentWeight - data.weight) * usdBalance) / data.usdBalance;
-        }
-        if (data.weightDiff < 0) {
-          negativeWeigtDiffSum += data.weightDiff;
-        } else {
-          positiveWeigtDiffSum += data.weightDiff;
-        }
+      if (protocolUniqueId === "pendingRewards") continue;
+
+      const currentWeight = isNaN(data.usdBalance)
+        ? 0
+        : data.usdBalance / totalUsdBalance;
+      data.weightDiff = currentWeight - data.weight;
+      data.currentWeight = currentWeight;
+
+      this._calculateZapOutPercentage(data, totalUsdBalance);
+
+      if (data.weightDiff < 0) {
+        negativeWeigtDiffSum += data.weightDiff;
+      } else {
+        positiveWeigtDiffSum += data.weightDiff;
       }
     }
+
+    return { negativeWeigtDiffSum, positiveWeigtDiffSum };
+  }
+
+  _calculateZapOutPercentage(data, totalUsdBalance) {
+    if (data.weight === 0 && data.usdBalance > 0) {
+      data.zapOutPercentage = 1;
+    } else if (data.weightDiff > this.rebalanceThreshold()) {
+      data.zapOutPercentage =
+        ((data.currentWeight - data.weight) * totalUsdBalance) /
+        data.usdBalance;
+    } else {
+      data.zapOutPercentage = 0;
+    }
+  }
+
+  _buildMetadata(usdBalanceDict, negativeWeigtDiffSum, positiveWeigtDiffSum) {
+    const metadata = {
+      weightDiffGroupByChain: {},
+      rebalanceActionsByChain: [],
+    };
+
+    // Group weight differences by chain
     for (const data of Object.values(usdBalanceDict)) {
+      if (!data.chain) continue;
+
       if (negativeWeigtDiffSum < 0) {
         data.negativeWeigtDiffSum = Math.abs(negativeWeigtDiffSum);
       }
       data.positiveWeigtDiffSum = positiveWeigtDiffSum;
+
+      metadata.weightDiffGroupByChain[data.chain] =
+        (metadata.weightDiffGroupByChain[data.chain] || 0) + data.weightDiff;
     }
-    return [usdBalance, usdBalanceDict];
+
+    // Sort and determine rebalance actions
+    const sortedChains = Object.entries(metadata.weightDiffGroupByChain).sort(
+      (a, b) => b[1] - a[1],
+    );
+
+    metadata.rebalanceActionsByChain = sortedChains.map(
+      ([chain, weightDiff]) => ({
+        chain,
+        actionName: weightDiff > 0 ? "rebalance" : "zapIn",
+      }),
+    );
+
+    return metadata;
   }
+
   async pendingRewards(owner, updateProgress) {
     const tokenPricesMappingTable =
       await this.getTokenPricesMappingTable(updateProgress);
@@ -161,7 +242,6 @@ export class BasePortfolio {
     const rewardsPromises = Object.values(this.strategy)
       .flatMap((category) => Object.values(category))
       .flat()
-      .filter((protocol) => protocol.weight !== 0)
       .map((protocol) =>
         protocol.interface.pendingRewards(
           owner,
@@ -417,11 +497,12 @@ export class BasePortfolio {
       claimAndSwap: async (protocol, chain) => {
         return protocol.interface.claimAndSwap(
           actionParams.account,
-          actionParams.tokenOutAddress,
+          actionParams.outputToken,
+          actionParams.outputTokenSymbol,
+          actionParams.outputTokenDecimals,
           actionParams.slippage,
           actionParams.tokenPricesMappingTable,
           actionParams.updateProgress,
-          this.existingInvestmentPositions[chain],
         );
       },
 
@@ -654,8 +735,6 @@ export class BasePortfolio {
   }
 
   _filterProtocolsForOtherChains(rebalancableUsdBalanceDict, currentChain) {
-    const negativeWeigtDiffSum = Object.values(rebalancableUsdBalanceDict)[0]
-      .negativeWeigtDiffSum;
     // First filter protocols from other chains
     const otherChainProtocols = Object.entries(
       rebalancableUsdBalanceDict,
@@ -663,8 +742,10 @@ export class BasePortfolio {
       ([key, metadata]) =>
         metadata.chain !== currentChain &&
         key !== "pendingRewards" &&
+        key !== "metadata" &&
         metadata.weightDiff < 0,
     );
+    const negativeWeigtDiffSum = otherChainProtocols[0][1].negativeWeigtDiffSum;
     // Group protocols by chain
     return otherChainProtocols.reduce((acc, [key, metadata]) => {
       if (metadata.weightDiff >= 0) return acc;
@@ -702,7 +783,6 @@ export class BasePortfolio {
   ) {
     let txns = [];
     let zapOutUsdcBalance = 0;
-
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const [chain, protocols] of Object.entries(
         protocolsInThisCategory,
@@ -1112,10 +1192,19 @@ export class BasePortfolio {
       let chainNode;
       let endOfZapOutNodeOnThisChain;
       let middleTokenConfig;
+      const zapOutChains =
+        actionParams.rebalancableUsdBalanceDict.metadata.rebalanceActionsByChain
+          .filter((action) => action.actionName === "rebalance")
+          .map((action) => action.chain);
       for (const [key, protocolObj] of Object.entries(
         actionParams.rebalancableUsdBalanceDict,
       )) {
-        if (key === "pendingRewards") continue;
+        if (
+          key === "pendingRewards" ||
+          key === "metadata" ||
+          !zapOutChains.includes(protocolObj.chain)
+        )
+          continue;
         if (protocolObj.weightDiff > this.rebalanceThreshold()) {
           if (!chainSet.has(protocolObj.chain)) {
             chainSet.add(protocolObj.chain);
@@ -1178,7 +1267,7 @@ export class BasePortfolio {
       for (const [key, protocolObj] of Object.entries(
         actionParams.rebalancableUsdBalanceDict,
       )) {
-        if (key === "pendingRewards") continue;
+        if (key === "pendingRewards" || key === "metadata") continue;
         if (protocolObj.weightDiff < 0) {
           const zapInRatio =
             -protocolObj.weightDiff / protocolObj.negativeWeigtDiffSum;

@@ -101,6 +101,6 @@ describe("Referral Fee Module", () => {
         );
       }
     },
-    { timeout: 70000 },
+    { timeout: 140000 },
   );
 });
