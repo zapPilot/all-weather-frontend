@@ -233,7 +233,9 @@ export class BaseApolloX extends BaseProtocol {
       PROVIDER(this.chain),
     );
     // Assuming 'percentage' is a float between 0 and 1
-    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
+    const percentageBN = ethers.BigNumber.from(
+      String(Math.floor(percentage * 10000)),
+    );
 
     const userInfo = await stakeFarmContractInstance.functions.userInfo(owner);
     const amount = userInfo.amount.mul(percentageBN).div(10000);

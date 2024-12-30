@@ -451,7 +451,7 @@ export class BasePortfolio {
         // protocolUsdBalanceDictionary = await this._getProtocolUsdBalanceDictionary(owner, actionParams.tokenPricesMappingTable)
         if (protocol.weight === 0) return null;
         const percentageBN = ethers.BigNumber.from(
-          Math.floor(protocol.weight * derivative * 10000),
+          String(Math.floor(protocol.weight * derivative * 10000)),
         );
         return protocol.interface.zapIn(
           actionParams.account,
@@ -529,7 +529,7 @@ export class BasePortfolio {
       bridge: async (chain, totalWeight) => {
         if (totalWeight === 0) return [];
         const percentageBN = ethers.BigNumber.from(
-          Math.floor(totalWeight * 10000),
+          String(Math.floor(totalWeight * 10000)),
         );
         const bridge = await getTheBestBridge();
         const bridgeTxns = await bridge.getBridgeTxns(
@@ -915,8 +915,10 @@ export class BasePortfolio {
 
       // negativeWeigtDiffSum is a derivative to scale weightdiff to a [0~1] number
       const percentageBN = ethers.BigNumber.from(
-        Math.floor(
-          (-metadata.weightDiff / metadata.negativeWeigtDiffSum) * 10000,
+        String(
+          Math.floor(
+            (-metadata.weightDiff / metadata.negativeWeigtDiffSum) * 10000,
+          ),
         ),
       );
 
@@ -1511,12 +1513,12 @@ export class BasePortfolio {
 
     // Convert slippage to basis points (e.g., 0.5% -> 50)
     const slippageBasisPoints = ethers.BigNumber.from(
-      Math.floor(slippage * 100),
+      String(Math.floor(slippage * 100)),
     );
 
     // Calculate (amount * (10000 - slippageBasisPoints)) / 10000
     return amountBN
-      .mul(ethers.BigNumber.from(10000).sub(slippageBasisPoints))
+      .mul(ethers.BigNumber.from(String(10000)).sub(slippageBasisPoints))
       .div(10000);
   }
 }

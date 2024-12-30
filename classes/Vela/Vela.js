@@ -146,7 +146,9 @@ export class Vela extends BaseProtocol {
     );
 
     // Assuming 'percentage' is a float between 0 and 1
-    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
+    const percentageBN = ethers.BigNumber.from(
+      String(Math.floor(percentage * 10000)),
+    );
     const stakedAmount = (
       await stakeFarmContractInstance.functions.getStakedAmount(
         this.assetContract.address,

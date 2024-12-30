@@ -90,7 +90,9 @@ export class InterportArbitrumUsdc extends BaseProtocol {
       PROVIDER(this.chain),
     );
     // Assuming 'percentage' is a float between 0 and 1
-    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
+    const percentageBN = ethers.BigNumber.from(
+      String(Math.floor(percentage * 10000)),
+    );
 
     const balance = (
       await stakeFarmContractInstance.functions.userInfo(this.pid, owner)
