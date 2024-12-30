@@ -7,7 +7,8 @@ import { createWallet, walletConnect, inAppWallet } from "thirdweb/wallets";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { arbitrum, optimism, base } from "thirdweb/chains";
 import Image from "next/image";
-
+import { defineChain } from "thirdweb";
+import { CHAIN_ID_TO_CHAIN_STRING } from "../../utils/general";
 export default function ConfiguredConnectButton() {
   const wallets = [
     createWallet("io.rabby"),
@@ -22,9 +23,14 @@ export default function ConfiguredConnectButton() {
     }),
   ];
   const activeChain = useActiveWalletChain();
+  const extendedActiveChain = {
+    name: CHAIN_ID_TO_CHAIN_STRING[activeChain?.id],
+    ...activeChain,
+  };
+  console.log("activeChain", extendedActiveChain);
   const chainName =
-    activeChain && activeChain.name
-      ? activeChain.name.toLowerCase().split(" ")[0]
+    extendedActiveChain && extendedActiveChain.name
+      ? extendedActiveChain.name.toLowerCase().split(" ")[0]
       : "";
   const activeAccount = useActiveAccount();
   return (
@@ -35,7 +41,7 @@ export default function ConfiguredConnectButton() {
       theme={"light"}
       // here are all the supported chains
       // https://portal.thirdweb.com/connect/account-abstraction/infrastructure
-      chains={[arbitrum, base]}
+      chains={[arbitrum, base, defineChain(1088)]}
       accountAbstraction={{
         chain: base,
         sponsorGas: true,
@@ -50,9 +56,7 @@ export default function ConfiguredConnectButton() {
             <div className="flex items-center gap-3 p-2 rounded-md bg-white/90 text-xs cursor-pointer">
               <div className="flex items-center gap-2 p-1">
                 <Image
-                  src={`/chainPicturesWebp/${
-                    chainName ? chainName : "arbitrum"
-                  }.webp`}
+                  src={`/chainPicturesWebp/${chainName}.webp`}
                   alt={chainName}
                   height={16}
                   width={16}

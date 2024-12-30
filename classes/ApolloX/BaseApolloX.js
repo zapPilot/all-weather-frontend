@@ -227,6 +227,7 @@ export class BaseApolloX extends BaseProtocol {
     return [approveAlpTxn, depositTxn];
   }
   async _unstake(owner, percentage, updateProgress) {
+    await super._unstake(owner, percentage, updateProgress);
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       SmartChefInitializable,

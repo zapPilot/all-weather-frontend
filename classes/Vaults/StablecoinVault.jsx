@@ -222,7 +222,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.17,
+              weight: 0,
             },
           ],
 
@@ -290,7 +290,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.65,
+              weight: 0.82,
             },
           ],
         },
