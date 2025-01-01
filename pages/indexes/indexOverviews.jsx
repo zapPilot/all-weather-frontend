@@ -564,7 +564,7 @@ export default function IndexOverviews() {
                   );
                   switchNextStepChain(nextStepChain);
                   setNextChainInvestmentAmount(
-                    calCrossChainInvestmentAmount(nextStepChain),
+                    parseFloat(walletBalanceData?.displayValue)
                   );
                 }}
               >
