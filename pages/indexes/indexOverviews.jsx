@@ -564,7 +564,7 @@ export default function IndexOverviews() {
                   );
                   switchNextStepChain(nextStepChain);
                   setNextChainInvestmentAmount(
-                    parseFloat(walletBalanceData?.displayValue)
+                    parseFloat(walletBalanceData?.displayValue),
                   );
                 }}
               >

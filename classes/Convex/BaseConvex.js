@@ -260,7 +260,9 @@ export class BaseConvex extends BaseProtocol {
   }
   async _unstakeLP(owner, percentage, updateProgress) {
     await super._unstakeLP(owner, percentage, updateProgress);
-    const percentageBN = ethers.BigNumber.from(String(Math.floor(percentage * 10000)));
+    const percentageBN = ethers.BigNumber.from(
+      String(Math.floor(percentage * 10000)),
+    );
     const stakeBalance = await this.stakeBalanceOf(owner, updateProgress);
     const amount = stakeBalance.mul(percentageBN).div(10000);
     const unstakeTxn = prepareContractCall({
