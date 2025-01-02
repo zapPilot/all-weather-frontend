@@ -5,6 +5,7 @@ import { useWindowHeight } from "../../utils/chartUtils";
 import styles from "../../styles/Home.module.css";
 import { useDispatch, useSelector } from "react-redux";
 import { useActiveAccount } from "thirdweb/react";
+import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import Link from "next/link";
 import {
   fetchDataStart,
@@ -19,7 +20,6 @@ import { useRouter } from "next/router";
 import Vaults from "../indexes/index.jsx";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
 export default function ExampleUI() {
   const windowHeight = useWindowHeight();
   const dispatch = useDispatch();
@@ -28,6 +28,40 @@ export default function ExampleUI() {
   const { strategyMetadata, strategyLoading, error } = useSelector(
     (state) => state.strategyMetadata,
   );
+  const vaults = [
+    {
+      id: 1,
+      portfolioName: "ETH Vault",
+      href: "/indexes/indexOverviews/?portfolioName=ETH+Vault",
+      imageSrc: "eth",
+      imageAlt: "ETH Vault",
+      apr: strategyMetadata?.["ETH Vault"]?.portfolioAPR * 100,
+      tvl: strategyMetadata?.["ETH Vault"]?.portfolioTVL,
+      portfolioHelper: getPortfolioHelper("ETH Vault"),
+    },
+    {
+      id: 2,
+      portfolioName: "Stablecoin Vault",
+      href: "/indexes/indexOverviews/?portfolioName=Stablecoin+Vault",
+      imageSrc: "usdc",
+      imageAlt: "Stablecoin Vault",
+      apr: strategyMetadata?.["Stablecoin Vault"]?.portfolioAPR * 100,
+      tvl: strategyMetadata?.["Stablecoin Vault"]?.portfolioTVL,
+      portfolioHelper: getPortfolioHelper("Stablecoin Vault"),
+    },
+  ];
+  const partnershipVaults = [
+    {
+      id: 3,
+      portfolioName: "Metis Vault",
+      href: "/indexes/indexOverviews/?portfolioName=Metis+Vault",
+      imageSrc: "metis",
+      imageAlt: "Metis Vault",
+      apr: strategyMetadata?.["Metis Vault"]?.portfolioAPR * 100,
+      tvl: strategyMetadata?.["Metis Vault"]?.portfolioTVL,
+      portfolioHelper: getPortfolioHelper("Metis Vault"),
+    },
+  ];
   const maxAPREntry = Object.entries(strategyMetadata).reduce(
     (max, [key, strategy]) => {
       const apr = strategy.portfolioAPR * 100;
@@ -181,7 +215,13 @@ export default function ExampleUI() {
         <h3 className="text-2xl text-emerald-400 font-semibold md:mb-4 px-4">
           Vaults
         </h3>
-        <Vaults />
+        <Vaults vaults={vaults} />
+      </div>
+      <div className="w-full md:w-[75%] md:ml-[12.5%]">
+        <h3 className="text-2xl text-emerald-400 font-semibold md:mb-4 px-4">
+          Partnership Vaults
+        </h3>
+        <Vaults vaults={partnershipVaults} />
       </div>
     </div>
   );

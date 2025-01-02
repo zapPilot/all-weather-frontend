@@ -289,27 +289,32 @@ export default function IndexOverviews() {
                       timestamp: Math.floor(Date.now() / 1000),
                       swapFeeRate: portfolioHelper.swapFeeRate(),
                       referralFeeRate: portfolioHelper.referralFeeRate(),
-                      chain: chainId.name.toLowerCase(),
+                      chain:
+                        CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
                     }),
                   },
                 });
               } catch (error) {
-                console.log("error", error);
+                console.log("category API error", error);
               }
+              const explorerUrl =
+                data?.chain?.blockExplorers !== undefined
+                  ? data.chain.blockExplorers[0].url
+                  : `https://explorer.${CHAIN_ID_TO_CHAIN_STRING[
+                      chainId?.id
+                    ].toLowerCase()}.io`;
               openNotificationWithIcon(
                 notificationAPI,
                 "Transaction Result",
                 "success",
-                `${data.chain.blockExplorers[0].url}/tx/${data.transactionHash}`,
+                `${explorerUrl}/tx/${data.transactionHash}`,
               );
               resolve(data); // Resolve the promise successfully
               setFinishedTxn(true);
               // get current chain from Txn data
               const newNextChain = switchNextChain(data.chain.name);
               setNextStepChain(newNextChain);
-              setTxnLink(
-                `${data.chain.blockExplorers[0].url}/tx/${data.transactionHash}`,
-              );
+              setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
             },
             onError: (error) => {
               reject(error); // Reject the promise with the error
