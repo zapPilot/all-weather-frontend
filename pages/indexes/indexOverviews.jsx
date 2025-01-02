@@ -19,6 +19,7 @@ import {
   truncateToFixed,
   CHAIN_ID_TO_CHAIN,
   CHAIN_TO_CHAIN_ID,
+  CHAIN_ID_TO_CHAIN_STRING,
 } from "../../utils/general.js";
 import {
   Button,
@@ -229,7 +230,9 @@ export default function IndexOverviews() {
     try {
       const txns = await generateIntentTxns(
         actionName,
-        chainId,
+        chainId?.name === undefined
+          ? { name: CHAIN_ID_TO_CHAIN_STRING[chainId?.id], ...chainId }
+          : chainId,
         portfolioHelper,
         account.address,
         tokenSymbol,
@@ -245,7 +248,7 @@ export default function IndexOverviews() {
         rebalancableUsdBalanceDict,
         recipient,
         protocolAssetDustInWallet[
-          chainId?.name.toLowerCase().replace(" one", "")
+          chainId?.name?.toLowerCase()?.replace(" one", "")
         ],
         onlyThisChain,
       );
@@ -315,11 +318,11 @@ export default function IndexOverviews() {
         });
       } catch (error) {
         let errorReadableMsg;
-        if (
-          error.message.includes("0x495d907f") ||
-          error.message.includes("0x203d82d8")
-        ) {
-          errorReadableMsg = "Bridge quote expired, please try again";
+        if (error.message.includes("0x495d907f")) {
+          errorReadableMsg = "bridgequote expired, please try again";
+        } else if (error.message.includes("0x203d82d8")) {
+          errorReadableMsg =
+            "DeFi pool quote has expired. Please contact support.";
         } else if (error.message.includes("User rejected the request")) {
           return;
         } else {
@@ -355,6 +358,8 @@ export default function IndexOverviews() {
       setRebalanceIsLoading(false);
     } else if (actionName === "stake") {
       setZapInIsLoading(false);
+    } else if (actionName === "transfer") {
+      setTransferLoading(false);
     }
   };
 
@@ -491,7 +496,7 @@ export default function IndexOverviews() {
                 <ConfiguredConnectButton />
               ) : Object.values(
                   protocolAssetDustInWallet?.[
-                    chainId?.name.toLowerCase().replace(" one", "")
+                    chainId?.name?.toLowerCase()?.replace(" one", "")
                   ] || {},
                 ).reduce(
                   (sum, protocolObj) =>
@@ -509,7 +514,7 @@ export default function IndexOverviews() {
                 >
                   {`Stake Available Assets ($${Object.values(
                     protocolAssetDustInWallet?.[
-                      chainId?.name.toLowerCase().replace(" one", "")
+                      chainId?.name?.toLowerCase()?.replace(" one", "")
                     ] || {},
                   )
                     .reduce(
@@ -553,7 +558,7 @@ export default function IndexOverviews() {
                 type="primary"
                 className={`w-full my-2 
                   ${
-                    chainId?.name.toLowerCase().replace(" one", "").trim() ===
+                    chainId?.name?.toLowerCase()?.replace(" one", "").trim() ===
                     nextStepChain
                       ? "hidden"
                       : "block"
@@ -575,7 +580,7 @@ export default function IndexOverviews() {
               className={`mt-4 ${
                 nextChainInvestmentAmount > 0 &&
                 nextStepChain ===
-                  chainId?.name.toLowerCase().replace(" one", "")
+                  chainId?.name?.toLowerCase()?.replace(" one", "")
                   ? "block"
                   : "hidden"
               }`}
@@ -641,7 +646,7 @@ export default function IndexOverviews() {
           {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
             (data, index) => {
               const isCurrentChain =
-                chainId?.name.toLowerCase().replace(" one", "").trim() ===
+                chainId?.name?.toLowerCase().replace(" one", "").trim() ===
                 data.chain;
               const isFirstPendingAction = index === 0;
 
@@ -958,7 +963,11 @@ export default function IndexOverviews() {
         totalTradingLoss={totalTradingLoss}
         open={open ?? false}
         setOpen={setOpen}
-        chainId={chainId}
+        chainId={
+          chainId?.name === undefined
+            ? { name: CHAIN_ID_TO_CHAIN_STRING[chainId?.id], ...chainId }
+            : chainId
+        }
         finishedTxn={finishedTxn}
         txnLink={txnLink}
         portfolioAPR={portfolioApr[portfolioName]?.portfolioAPR}

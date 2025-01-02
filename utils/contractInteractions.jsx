@@ -18,6 +18,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   eurc: 20641,
   mseth: 2396,
   zuneth: 2396,
+  metis: 9640,
 };
 export const tokensForDropDown = [
   "eth",
@@ -27,6 +28,7 @@ export const tokensForDropDown = [
   "dai",
   // "wbtc",
   "weth",
+  "metis",
   // "frax",
   // "wsteth",
   // "usds",

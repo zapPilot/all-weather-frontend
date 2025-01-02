@@ -14,6 +14,7 @@ import {
   polygon,
   mantle,
 } from "thirdweb/chains";
+import { defineChain } from "thirdweb";
 import NumericInput from "./NumberInput";
 import { selectBefore } from "../../utils/contractInteractions";
 
@@ -24,6 +25,7 @@ const chainIdToChain = {
   56: bsc,
   137: polygon,
   5000: mantle,
+  1088: defineChain(1088),
 };
 
 const TokenDropdownInput = memo(
