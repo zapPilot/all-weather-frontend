@@ -11,7 +11,7 @@ export default function Vaults({ vaults }) {
   );
   const dispatch = useDispatch();
   const [protocolName, setProtocolName] = useState("");
-  
+
   useEffect(() => {
     if (Object.keys(vaultsMetadata).length === 0) {
       dispatch(fetchStrategyMetadata());

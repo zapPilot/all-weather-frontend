@@ -61,7 +61,7 @@ export default function ExampleUI() {
       tvl: strategyMetadata?.["Metis Vault"]?.portfolioTVL,
       portfolioHelper: getPortfolioHelper("Metis Vault"),
     },
-  ]
+  ];
   const maxAPREntry = Object.entries(strategyMetadata).reduce(
     (max, [key, strategy]) => {
       const apr = strategy.portfolioAPR * 100;
