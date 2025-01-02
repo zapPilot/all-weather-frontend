@@ -3,54 +3,14 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { Spin } from "antd";
-import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
-import { useActiveAccount } from "thirdweb/react";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 
-export default function Vaults() {
-  const account = useActiveAccount();
+export default function Vaults({ vaults }) {
   const { strategyMetadata: vaultsMetadata } = useSelector(
     (state) => state.strategyMetadata,
   );
   const dispatch = useDispatch();
-  const [tvl, setTvl] = useState(0);
-  const [apr, setApr] = useState(0);
-  const [diyToken, setDIYToken] = useState("");
   const [protocolName, setProtocolName] = useState("");
-  const [usdBalances, setUsdBalances] = useState({});
-  const [earnedDict, setEarnedDict] = useState({});
-  const vaults = [
-    {
-      id: 1,
-      portfolioName: "ETH Vault",
-      href: "/indexes/indexOverviews/?portfolioName=ETH+Vault",
-      imageSrc: "eth",
-      imageAlt: "ETH Vault",
-      apr: vaultsMetadata?.["ETH Vault"]?.portfolioAPR * 100,
-      tvl: vaultsMetadata?.["ETH Vault"]?.portfolioTVL,
-      portfolioHelper: getPortfolioHelper("ETH Vault"),
-    },
-    {
-      id: 2,
-      portfolioName: "Stablecoin Vault",
-      href: "/indexes/indexOverviews/?portfolioName=Stablecoin+Vault",
-      imageSrc: "usdc",
-      imageAlt: "Stablecoin Vault",
-      apr: vaultsMetadata?.["Stablecoin Vault"]?.portfolioAPR * 100,
-      tvl: vaultsMetadata?.["Stablecoin Vault"]?.portfolioTVL,
-      portfolioHelper: getPortfolioHelper("Stablecoin Vault"),
-    },
-    {
-      id: 3,
-      portfolioName: "Metis Vault",
-      href: "/indexes/indexOverviews/?portfolioName=Metis+Vault",
-      imageSrc: "metis",
-      imageAlt: "Metis Vault",
-      apr: vaultsMetadata?.["Metis Vault"]?.portfolioAPR * 100,
-      tvl: vaultsMetadata?.["Metis Vault"]?.portfolioTVL,
-      portfolioHelper: getPortfolioHelper("Metis Vault"),
-    },
-  ];
 
   useEffect(() => {
     if (Object.keys(vaultsMetadata).length === 0) {
@@ -76,9 +36,6 @@ export default function Vaults() {
           },
         );
         const json = await response.json();
-        setApr(json.data[1].data[0].apr.value);
-        setTvl(json.data[1].data[0].tvlUsd);
-        setDIYToken(json.data[1].data[0].symbol);
         setProtocolName(json.data[1].data[0].pool.name);
       } catch (error) {
         console.log("failed to fetch pool data", error);
@@ -87,33 +44,11 @@ export default function Vaults() {
 
     fetchDefaultPools();
   }, []);
-  useEffect(() => {
-    if (account?.address === undefined) return;
-    async function fetchBalances() {
-      let usdBalances = {};
-      for (const vault of vaults) {
-        if (vault.portfolioName === "Build Your Own Vault with") {
-          usdBalances["Build Your Own Vault with"] = "?";
-          continue;
-        }
-        if (vault.portfolioHelper === undefined) continue;
-        const [_, usdBalanceDict] = await vault.portfolioHelper.usdBalanceOf(
-          account.address,
-          vaultsMetadata,
-        );
-        usdBalances[vault.portfolioName] = Object.values(usdBalanceDict)
-          .reduce((a, b) => a + b.usdBalance, 0)
-          .toFixed(2);
-      }
-      setUsdBalances(usdBalances);
-    }
-    fetchBalances();
-  }, [account, vaults]);
 
   return (
     <div className="px-4 py-8">
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {vaults.map((product) => (
+        {vaults?.map((product) => (
           <div
             key={product.id}
             className="bg-gray-800 p-4 border rounded border-transparent hover:border-emerald-400"
