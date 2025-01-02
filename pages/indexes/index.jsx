@@ -48,7 +48,7 @@ export default function Vaults({ vaults }) {
   return (
     <div className="px-4 py-8">
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {vaults.map((product) => (
+        {vaults?.map((product) => (
           <div
             key={product.id}
             className="bg-gray-800 p-4 border rounded border-transparent hover:border-emerald-400"

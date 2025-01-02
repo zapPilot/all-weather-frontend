@@ -20,7 +20,21 @@ vi.mock("next/navigation", async () => {
 
 describe("Indexes Component", () => {
   it("fetch indexes data", async () => {
-    render(<IndexesIndex />);
+    render(
+      <IndexesIndex
+        vaults={[
+          {
+            id: 3,
+            portfolioName: "Metis Vault",
+            href: "/indexes/indexOverviews/?portfolioName=Metis+Vault",
+            imageSrc: "metis",
+            imageAlt: "Metis Vault",
+            apr: 100,
+            tvl: 100,
+          },
+        ]}
+      />,
+    );
     const indexesAprElements = await screen.findAllByRole("apr");
     indexesAprElements.forEach((element) => {
       // Check if the APR is shown
