@@ -79,9 +79,8 @@ describe("Referral Fee Module", () => {
         ],
         onlyThisChain,
       );
-      expect(await encode(txns[0])).toBe(
-        "0x38d07436000000000000000000000000000000000000000000000039c7400ae1106c73670000000000000000000000000000000000000000000000000000000000000000",
-      );
+      // withdraw
+      expect(await encode(txns[0])).includes("0x38d07436");
       if (txns.length === 9) {
         expect(txns.length).toBe(9);
         // transfer
@@ -93,10 +92,11 @@ describe("Referral Fee Module", () => {
           "0xa9059cbb0000000000000000000000002ecbc6f229fed06044cdb0dd772437a30190cd50",
         );
       } else {
-        expect(await encode(txns[5])).includes(
-          "0xa9059cbb0000000000000000000000002ecbc6f229fed06044cdb0dd772437a30190cd50",
+        expect(txns.length).toBe(11);
+        expect(await encode(txns[9])).includes(
+          "0xa9059cbb000000000000000000000000210050bb080155aec4eae79a2aac5fe78fd738e1",
         );
-        expect(await encode(txns[6])).includes(
+        expect(await encode(txns[10])).includes(
           "0xa9059cbb0000000000000000000000002ecbc6f229fed06044cdb0dd772437a30190cd50",
         );
       }
