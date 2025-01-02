@@ -117,7 +117,6 @@ export class BasePortfolio {
           .usdBalanceOf(address, tokenPricesMappingTable)
           .then((balance) => ({ protocol, balance })),
       );
-
     const pendingRewardsPromise = this.pendingRewards(address, () => {}).then(
       (pendingRewards) => ({
         rewardUsdBalance: this.sumUsdDenominatedValues(pendingRewards),
@@ -473,7 +472,10 @@ export class BasePortfolio {
         );
         if (protocolUsdBalance === 0) return null;
         let normalizedZapOutPercentage = actionParams.zapOutPercentage;
-        if (protocolUsdBalance * actionParams.zapOutPercentage < 1) {
+        if (
+          protocolUsdBalance > 1 &&
+          protocolUsdBalance * actionParams.zapOutPercentage < 1
+        ) {
           // to avoid high slippage, we need to zap out at least 1 dollar
           normalizedZapOutPercentage = 1 / protocolUsdBalance;
         }

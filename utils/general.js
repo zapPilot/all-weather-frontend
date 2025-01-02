@@ -9,7 +9,7 @@ import {
 } from "thirdweb/chains";
 import { ERC20_ABI } from "../node_modules/@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
 import permanentPortfolioJson from "../lib/contracts/PermanentPortfolioLPToken.json" assert { type: "json" };
-import { prepareContractCall, getContract } from "thirdweb";
+import { prepareContractCall, getContract, defineChain } from "thirdweb";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 export const CHAIN_ID_TO_CHAIN = {
   8453: base,
@@ -18,6 +18,7 @@ export const CHAIN_ID_TO_CHAIN = {
   56: bsc,
   137: polygon,
   5000: mantle,
+  1088: defineChain(1088),
 };
 export const CHAIN_TO_CHAIN_ID = {
   arbitrum: 42161,
@@ -26,7 +27,12 @@ export const CHAIN_TO_CHAIN_ID = {
   bsc: 56,
   polygon: 137,
   mantle: 5000,
+  metis: 1088,
 };
+// reverse CHAIN_TO_CHAIN_ID
+export const CHAIN_ID_TO_CHAIN_STRING = Object.fromEntries(
+  Object.entries(CHAIN_TO_CHAIN_ID).map(([key, value]) => [value, key]),
+);
 export const TOKEN_ADDRESS_MAP = {
   usdc: {
     arbitrum: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
@@ -52,12 +58,15 @@ export const PROVIDER = (chain) => {
     "arbitrum one": process.env.NEXT_PUBLIC_ARBITRUM_RPC_PROVIDER_URL,
     base: process.env.NEXT_PUBLIC_BASE_RPC_PROVIDER_URL,
     optimism: process.env.NEXT_PUBLIC_OPTIMISM_RPC_PROVIDER_URL,
+    metis: "https://metis-rpc.publicnode.com",
     // Add other chains as needed
   };
 
   const providerUrl = rpcProviders[chain.toLowerCase()];
   if (!providerUrl) {
-    console.warn(`Warning: No RPC provider URL found for chain: ${chain}`);
+    console.warn(
+      `Warning: No RPC provider URL found for chain: ${chain}, need to update PROVIDER in general.js`,
+    );
   }
 
   return new ethers.providers.JsonRpcProvider(providerUrl);

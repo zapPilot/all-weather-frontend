@@ -40,6 +40,16 @@ export default function Vaults() {
       tvl: vaultsMetadata?.["Stablecoin Vault"]?.portfolioTVL,
       portfolioHelper: getPortfolioHelper("Stablecoin Vault"),
     },
+    {
+      id: 3,
+      portfolioName: "Metis Vault",
+      href: "/indexes/indexOverviews/?portfolioName=Metis+Vault",
+      imageSrc: "metis",
+      imageAlt: "Metis Vault",
+      apr: vaultsMetadata?.["Metis Vault"]?.portfolioAPR * 100,
+      tvl: vaultsMetadata?.["Metis Vault"]?.portfolioTVL,
+      portfolioHelper: getPortfolioHelper("Metis Vault"),
+    },
   ];
 
   useEffect(() => {
