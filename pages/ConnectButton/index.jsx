@@ -27,7 +27,6 @@ export default function ConfiguredConnectButton() {
     name: CHAIN_ID_TO_CHAIN_STRING[activeChain?.id],
     ...activeChain,
   };
-  console.log("activeChain", extendedActiveChain);
   const chainName =
     extendedActiveChain && extendedActiveChain.name
       ? extendedActiveChain.name.toLowerCase().split(" ")[0]
