@@ -2,7 +2,6 @@
 "use client";
 import BasePage from "../basePage.tsx";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import DecimalStep from "./DecimalStep";
 import Image from "next/image";
 import Link from "next/link";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
@@ -11,7 +10,6 @@ import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
 import TransacitonHistory from "./transactionHistory.jsx";
 import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
-import ConfiguredConnectButton from "../ConnectButton";
 import { base, arbitrum } from "thirdweb/chains";
 import PopUpModal from "../Modal";
 import {
@@ -62,6 +60,7 @@ import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
 import tokens from "../views/components/tokens.json";
+import useTabItems from "../../hooks/useTabItems";
 
 export default function IndexOverviews() {
   const router = useRouter();
@@ -470,329 +469,7 @@ export default function IndexOverviews() {
       ) + portfolioHelper?.sumUsdDenominatedValues(pendingRewards)
     );
   };
-  const calCurrentAPR = (rebalancableUsdBalanceDict) =>
-    Object.entries(rebalancableUsdBalanceDict)
-      .filter(([key]) => !["pendingRewards", "metadata"].includes(key))
-      .reduce(
-        (sum, [_, { currentWeight, APR }]) => currentWeight * APR + sum,
-        0,
-      ) || 0;
 
-  const items = [
-    {
-      key: "1",
-      label: "Zap In",
-      children: (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <div
-              className={`mt-4 sm:mt-0 ${nextStepChain ? "hidden" : "block"}`}
-            >
-              <p>
-                Step 1: Choose a chain to zap in and bridge to another chain.
-              </p>
-              <TokenDropdownInput
-                selectedToken={selectedToken}
-                setSelectedToken={handleSetSelectedToken}
-                setInvestmentAmount={handleSetInvestmentAmount}
-                tokenPricesMappingTable={tokenPricesMappingTable}
-              />
-              {account === undefined ? (
-                <ConfiguredConnectButton />
-              ) : Object.values(
-                  protocolAssetDustInWallet?.[
-                    chainId?.name?.toLowerCase()?.replace(" one", "")
-                  ] || {},
-                ).reduce(
-                  (sum, protocolObj) =>
-                    sum + (protocolObj.assetUsdBalanceOf || 0),
-                  0,
-                ) /
-                  usdBalance >
-                0.05 ? (
-                <Button
-                  type="primary"
-                  className="w-full my-2"
-                  onClick={() => handleAAWalletAction("stake", true)}
-                  loading={protocolAssetDustInWalletLoading}
-                  disabled={usdBalanceLoading}
-                >
-                  {`Stake Available Assets ($${Object.values(
-                    protocolAssetDustInWallet?.[
-                      chainId?.name?.toLowerCase()?.replace(" one", "")
-                    ] || {},
-                  )
-                    .reduce(
-                      (sum, protocolObj) =>
-                        sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
-                      0,
-                    )
-                    .toFixed(2)})`}
-                </Button>
-              ) : (
-                <Button
-                  type="primary"
-                  className="w-full my-2"
-                  onClick={() => handleAAWalletAction("zapIn", false)}
-                  loading={zapInIsLoading}
-                  disabled={
-                    Number(investmentAmount) === 0 ||
-                    Number(investmentAmount) > tokenBalance
-                  }
-                >
-                  Zap In
-                </Button>
-              )}
-            </div>
-            <div
-              className={`mt-4 
-              ${
-                nextStepChain
-                  ? nextChainInvestmentAmount > 0
-                    ? "hidden"
-                    : "block"
-                  : "hidden"
-              }
-            `}
-            >
-              <p>
-                Step 2: Once bridging is complete, switch to the other chain to
-                calculate the investment amount.
-              </p>
-              <Button
-                type="primary"
-                className={`w-full my-2 
-                  ${
-                    chainId?.name?.toLowerCase()?.replace(" one", "").trim() ===
-                    nextStepChain
-                      ? "hidden"
-                      : "block"
-                  }`}
-                onClick={() => {
-                  setPreviousTokenSymbol(
-                    selectedToken.split("-")[0].toLowerCase(),
-                  );
-                  switchNextStepChain(nextStepChain);
-                  setNextChainInvestmentAmount(
-                    parseFloat(walletBalanceData?.displayValue),
-                  );
-                }}
-              >
-                switch to {nextStepChain} Chain
-              </Button>
-            </div>
-            <div
-              className={`mt-4 ${
-                nextChainInvestmentAmount > 0 &&
-                nextStepChain ===
-                  chainId?.name?.toLowerCase()?.replace(" one", "")
-                  ? "block"
-                  : "hidden"
-              }`}
-            >
-              <p>
-                Step 3: After calculating the investment amount, click to zap
-                in.
-              </p>
-
-              <Button
-                type="primary"
-                className={`w-full my-2 ${showZapIn ? "hidden" : "block"}`}
-                onClick={() => {
-                  setInvestmentAmount(
-                    nextChainInvestmentAmount >
-                      parseFloat(walletBalanceData?.displayValue)
-                      ? parseFloat(walletBalanceData?.displayValue)
-                      : nextChainInvestmentAmount,
-                  );
-                  setFinishedTxn(false);
-                  setShowZapIn(true);
-                }}
-              >
-                Set Investment Amount to{" "}
-                {nextChainInvestmentAmount >
-                parseFloat(walletBalanceData?.displayValue)
-                  ? parseFloat(walletBalanceData?.displayValue) < 0.01
-                    ? "< 0.01"
-                    : parseFloat(walletBalanceData?.displayValue).toFixed(2)
-                  : nextChainInvestmentAmount < 0.01
-                  ? "< 0.01"
-                  : nextChainInvestmentAmount.toFixed(2)}{" "}
-                on {nextStepChain} Chain
-              </Button>
-              <Button
-                type="primary"
-                className={`w-full my-2 ${showZapIn ? "block" : "hidden"}`}
-                onClick={() => handleAAWalletAction("zapIn", true)}
-                loading={zapInIsLoading}
-                disabled={
-                  Number(investmentAmount) === 0 ||
-                  Number(investmentAmount) > tokenBalance
-                }
-              >
-                Zap In{" "}
-                {Number(investmentAmount) < 0.01
-                  ? "< 0.01"
-                  : Number(investmentAmount)?.toFixed(2)}{" "}
-                {selectedToken?.split("-")[0]} on {nextStepChain} Chain
-              </Button>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "2",
-      label: "Rebalance",
-      children: (
-        <div>
-          <p>Follow these steps to rebalance your portfolio:</p>
-          {rebalancableUsdBalanceDictLoading ? <Spin /> : null}
-          {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
-            (data, index) => {
-              const isCurrentChain =
-                chainId?.name?.toLowerCase().replace(" one", "").trim() ===
-                data.chain;
-              const isFirstPendingAction = index === 0;
-
-              return (
-                <div key={`${data.chain}-${data.actionName}`} className="mb-4">
-                  <p className="text-gray-400 mb-2">
-                    Step {index + 1}: {isCurrentChain ? "Execute" : "Switch to"}{" "}
-                    {data.chain} chain
-                    {isCurrentChain ? ` and ${data.actionName}` : ""}
-                  </p>
-
-                  {isCurrentChain ? (
-                    <Button
-                      type="primary"
-                      className="w-full"
-                      onClick={() =>
-                        handleAAWalletAction(data.actionName, true)
-                      }
-                      loading={
-                        rebalanceIsLoading || rebalancableUsdBalanceDictLoading
-                      }
-                      disabled={
-                        getRebalanceReinvestUsdAmount() / usdBalance <
-                          portfolioHelper?.rebalanceThreshold() ||
-                        usdBalance <= 0 ||
-                        Math.abs(
-                          calCurrentAPR(rebalancableUsdBalanceDict) -
-                            portfolioApr[portfolioName]?.portfolioAPR * 100,
-                        ) < 5
-                      }
-                    >
-                      {data.actionName} on {data.chain}
-                    </Button>
-                  ) : (
-                    <Button
-                      type="primary"
-                      className="w-full"
-                      onClick={() =>
-                        switchChain(
-                          CHAIN_ID_TO_CHAIN[CHAIN_TO_CHAIN_ID[data.chain]],
-                        )
-                      }
-                      disabled={!isFirstPendingAction}
-                    >
-                      Switch to {data.chain} Chain
-                    </Button>
-                  )}
-                </div>
-              );
-            },
-          )}
-
-          <div className="mt-4 text-gray-400">
-            <p>Expected APR after rebalance: </p>
-            <div className="flex items-center gap-2">
-              <span className="text-red-500">
-                {calCurrentAPR(rebalancableUsdBalanceDict).toFixed(2)}%
-              </span>
-              <span>→</span>
-              <span className="text-green-400">
-                {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}%
-              </span>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "3",
-      label: "Zap Out",
-      children: (
-        <div>
-          <DecimalStep
-            selectedToken={selectedToken}
-            setSelectedToken={handleSetSelectedToken}
-            depositBalance={usdBalance}
-            setZapOutPercentage={setZapOutPercentage}
-            currency="$"
-            noTokenSelect={false}
-          />
-          {account === undefined ? (
-            <ConfiguredConnectButton />
-          ) : (
-            <Button
-              type="primary"
-              className="w-full"
-              onClick={() => handleAAWalletAction("zapOut", true)}
-              loading={zapOutIsLoading || usdBalanceLoading}
-              disabled={
-                usdBalance < 0.01 ||
-                zapOutPercentage === 0 ||
-                selectedToken?.split("-")[0].toLowerCase() === "eth"
-              }
-            >
-              Withdraw
-            </Button>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "4",
-      label: "Transfer",
-      children: (
-        <div>
-          <DecimalStep
-            selectedToken={selectedToken}
-            setSelectedToken={handleSetSelectedToken}
-            depositBalance={usdBalance}
-            setZapOutPercentage={setZapOutPercentage}
-            currency="$"
-            noTokenSelect={true}
-          />
-          <Input
-            status={recipientError ? "error" : ""}
-            placeholder="Recipient Address"
-            onChange={(e) => validateRecipient(e.target.value)}
-            value={recipient}
-          />
-          {recipientError && (
-            <div className="text-red-500 text-sm mt-1">
-              Please enter a valid Ethereum address different from your own
-            </div>
-          )}
-          {account === undefined ? (
-            <ConfiguredConnectButton />
-          ) : (
-            <Button
-              type="primary"
-              className="w-full"
-              onClick={() => handleAAWalletAction("transfer", true)}
-              loading={transferLoading || usdBalanceLoading}
-              disabled={usdBalance < 0.01 || recipientError}
-            >
-              Transfer
-            </Button>
-          )}
-        </div>
-      ),
-    },
-  ];
   useEffect(() => {
     if (
       portfolioApr[portfolioName] === undefined ||
@@ -807,10 +484,18 @@ export default function IndexOverviews() {
   useEffect(() => {
     let isMounted = true;
 
+    // Clear states on initial load/refresh
+    setUsdBalance(0);
+    setUsdBalanceLoading(true);
+    setPendingRewardsLoading(true);
+    setrebalancableUsdBalanceDictLoading(true);
+    setProtocolAssetDustInWalletLoading(true);
+
     if (!portfolioName || account === undefined || !chainId) {
       return;
     }
-    if (portfolioApr[portfolioName] === undefined) {
+    // We still need basic portfolio data, but don't need to wait for accurate APR
+    if (!portfolioApr[portfolioName]) {
       return;
     }
 
@@ -821,9 +506,7 @@ export default function IndexOverviews() {
 
     const timeoutId = setTimeout(() => {
       const fetchUsdBalance = async () => {
-        if (!isMounted) {
-          return;
-        }
+        if (!isMounted) return;
 
         try {
           isProcessingChainChangeRef.current = true;
@@ -837,7 +520,6 @@ export default function IndexOverviews() {
             await portfolioHelper.getTokenPricesMappingTable(() => {});
           if (!isMounted) return;
           setTokenPricesMappingTable(tokenPricesMappingTable);
-
           const [usdBalance, usdBalanceDict] =
             await portfolioHelper.usdBalanceOf(
               account.address,
@@ -855,7 +537,11 @@ export default function IndexOverviews() {
           setUsdBalanceLoading(false);
           setrebalancableUsdBalanceDict(usdBalanceDict);
           setrebalancableUsdBalanceDictLoading(false);
-          setPendingRewards(usdBalanceDict.pendingRewards.pendingRewardsDict);
+          const pendingRewards = await portfolioHelper.pendingRewards(
+            account.address,
+            () => {},
+          );
+          setPendingRewards(pendingRewards.pendingRewardsDict);
           setPendingRewardsLoading(false);
 
           if (Object.values(tokenPricesMappingTable).length === 0) {
@@ -889,7 +575,7 @@ export default function IndexOverviews() {
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
-      // Don't reset processing flag in cleanup to prevent re-runs during chain change
+      isProcessingChainChangeRef.current = false;
     };
   }, [portfolioName, account, chainId]);
   useEffect(() => {
@@ -957,7 +643,51 @@ export default function IndexOverviews() {
       }, 100);
     }
   }, [chainId, previousTokenSymbol, nextStepChain]);
+  const tabProps = {
+    CHAIN_ID_TO_CHAIN,
+    CHAIN_TO_CHAIN_ID,
+    account,
+    chainId,
+    getRebalanceReinvestUsdAmount,
+    handleAAWalletAction,
+    handleSetInvestmentAmount,
+    handleSetSelectedToken,
+    investmentAmount,
+    nextChainInvestmentAmount,
+    nextStepChain,
+    portfolioApr,
+    portfolioHelper,
+    portfolioName,
+    protocolAssetDustInWallet,
+    protocolAssetDustInWalletLoading,
+    rebalancableUsdBalanceDict,
+    rebalancableUsdBalanceDictLoading,
+    rebalanceIsLoading,
+    recipient,
+    recipientError,
+    selectedToken,
+    setFinishedTxn,
+    setInvestmentAmount,
+    setNextChainInvestmentAmount,
+    setPreviousTokenSymbol,
+    setShowZapIn,
+    setZapOutPercentage,
+    showZapIn,
+    switchChain,
+    switchNextStepChain,
+    tokenBalance,
+    tokenPricesMappingTable,
+    transferLoading,
+    usdBalance,
+    usdBalanceLoading,
+    validateRecipient,
+    walletBalanceData,
+    zapInIsLoading,
+    zapOutIsLoading,
+    zapOutPercentage,
+  };
 
+  const items = useTabItems(tabProps);
   return (
     <BasePage>
       {notificationContextHolder}
@@ -1180,37 +910,6 @@ export default function IndexOverviews() {
                         <ArrowTopRightOnSquareIcon className="h-6 w-5 text-gray-500" />
                       </a>
                     </dd>
-                  </div>
-                  <div className="flex-none self-end w-full">
-                    <ul className="mt-3 text-white">
-                      <li>
-                        <div className="text-gray-400">
-                          Rebalance Cost: {portfolioHelper?.swapFeeRate() * 100}
-                          %
-                        </div>
-                        {calCurrentAPR(rebalancableUsdBalanceDict) >
-                        portfolioApr[portfolioName]?.portfolioAPR * 100 ? (
-                          <>
-                            {formatBalance(getRebalanceReinvestUsdAmount())} has
-                            outperformed. It&apos;s time to rebalance and take
-                            the profit!
-                          </>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            window.open(
-                              "https://t.me/all_weather_protocol_bot",
-                              "_blank",
-                            )
-                          }
-                          className="inline-flex items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-                        >
-                          Subscribe for Rebalance Notifications
-                          <span className="fi fi-brands-telegram ml-2"></span>
-                        </button>
-                      </li>
-                    </ul>
                   </div>
                   {/* <div className="mt-6 flex w-full flex-none gap-x-4">
                     <dt className="flex-none">
@@ -1497,16 +1196,16 @@ export default function IndexOverviews() {
                   </tr>
                 </tfoot>
                 <div>
-                  <span className="text-gray-500">Lock-up Period</span>{" "}
+                  <span className="text-gray-500" role="lockUpPeriod">
+                    Lock-up Period
+                  </span>{" "}
                   {usdBalanceLoading === true ? (
                     <Spin />
                   ) : typeof lockUpPeriod === "number" ? (
                     lockUpPeriod === 0 ? (
-                      <span className="text-green-500" role="lockUpPeriod">
-                        Unlocked
-                      </span>
+                      <span className="text-green-500">Unlocked</span>
                     ) : (
-                      <span className="text-red-500" role="lockUpPeriod">
+                      <span className="text-red-500">
                         {Math.floor(lockUpPeriod / 86400)} d{" "}
                         {Math.ceil((lockUpPeriod % 86400) / 3600)
                           ? Math.ceil((lockUpPeriod % 86400) / 3600) + "h"
