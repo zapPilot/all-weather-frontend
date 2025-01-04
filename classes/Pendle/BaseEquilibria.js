@@ -326,6 +326,9 @@ export class BaseEquilibria extends BaseProtocol {
     ].includes(reward.toLowerCase());
   }
   customRedeemVestingRewards(pendingRewards) {
+    if (pendingRewards[this.XEQB_TOKEN_ADDR].balance.toString() === "0") {
+      return [];
+    }
     const maxRedeemDuration = 14515200;
     const redeemTxn = prepareContractCall({
       contract: this.xEqbContract,
