@@ -71,19 +71,20 @@ export class BasePortfolio {
     return 0.05;
   }
   async usdBalanceOf(address, portfolioAprDict) {
+    // Get token prices
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable(
       () => {},
     );
 
     // Get balances and rewards
-    const [balanceResults, rewardsData] = await this._getBalancesAndRewards(
+    const balanceResults = await this._getBalances(
       address,
       tokenPricesMappingTable,
     );
 
     // Initialize balance dictionary with rewards
-    let usdBalance = rewardsData.rewardUsdBalance;
-    const usdBalanceDict = this._initializeBalanceDict(rewardsData);
+    let usdBalance = 0;
+    const usdBalanceDict = this._initializeBalanceDict();
 
     // Process protocol balances
     this._processProtocolBalances(
@@ -91,6 +92,8 @@ export class BasePortfolio {
       portfolioAprDict,
       usdBalanceDict,
     );
+
+    // Calculate total balance
     usdBalance += this._calculateTotalBalance(balanceResults);
 
     // Calculate weights and differences
@@ -108,7 +111,7 @@ export class BasePortfolio {
     return [usdBalance, usdBalanceDict];
   }
 
-  async _getBalancesAndRewards(address, tokenPricesMappingTable) {
+  async _getBalances(address, tokenPricesMappingTable) {
     const balancePromises = Object.values(this.strategy)
       .flatMap((category) => Object.values(category))
       .flat()
@@ -117,25 +120,15 @@ export class BasePortfolio {
           .usdBalanceOf(address, tokenPricesMappingTable)
           .then((balance) => ({ protocol, balance })),
       );
-    const pendingRewardsPromise = this.pendingRewards(address, () => {}).then(
-      (pendingRewards) => ({
-        rewardUsdBalance: this.sumUsdDenominatedValues(pendingRewards),
-        pendingRewardsDict: pendingRewards,
-      }),
-    );
-
-    return await Promise.all([
-      Promise.all(balancePromises),
-      pendingRewardsPromise,
-    ]);
+    return await Promise.all(balancePromises);
   }
 
-  _initializeBalanceDict(rewardsData) {
+  _initializeBalanceDict() {
     return {
       pendingRewards: {
-        usdBalance: rewardsData.rewardUsdBalance,
+        usdBalance: 0,
         weightDiff: 1,
-        pendingRewardsDict: rewardsData.pendingRewardsDict,
+        pendingRewardsDict: {},
         weight: 0,
         APR: 0,
         currentWeight: 0,
@@ -271,7 +264,10 @@ export class BasePortfolio {
       return acc;
     }, {});
 
-    return rewardsMappingTable;
+    return {
+      rewardUsdBalance: this.sumUsdDenominatedValues(rewardsMappingTable),
+      pendingRewardsDict: rewardsMappingTable,
+    };
   }
 
   // Function to sum up the usdDenominatedValue
