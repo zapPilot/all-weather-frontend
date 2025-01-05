@@ -324,11 +324,9 @@ export class BasePortfolio {
       }
       return acc;
     }, {});
-
-    const totalTvl = Object.values(aprMappingTable).reduce(
-      (sum, pool) => sum + pool.tvl,
-      0,
-    );
+    const totalTvl = Object.values(aprMappingTable)
+      .filter((pool) => pool.weight > 0)
+      .reduce((sum, pool) => sum + pool.tvl, 0);
 
     aprMappingTable["portfolioAPR"] = Object.values(aprMappingTable).reduce(
       (sum, pool) => sum + pool.apr * pool.weight,
@@ -376,10 +374,6 @@ export class BasePortfolio {
         actionParams.tokenInAddress = wethAddress;
         totalTxns.push(wethTxn);
       }
-      const platformFee = this.mulSwapFeeRate(actionParams.zapInAmount);
-      const normalizedPlatformFeeUSD =
-        ethers.utils.formatUnits(platformFee, actionParams.tokenDecimals) *
-        actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol];
       totalTxns.push(
         approve(
           actionParams.tokenInAddress,
@@ -389,16 +383,22 @@ export class BasePortfolio {
           actionParams.chainMetadata.id,
         ),
       );
-      const referrer = await this._getReferrer(actionParams.account);
-      const platformFeeTxns = await this._getPlatformFeeTxns(
-        actionParams.tokenInAddress,
-        actionParams.chainMetadata,
-        platformFee,
-        referrer,
-      );
-      actionParams.zapInAmount = actionParams.zapInAmount.sub(platformFee);
-      actionParams.setPlatformFee(-normalizedPlatformFeeUSD);
-      totalTxns = totalTxns.concat(platformFeeTxns);
+      if (actionParams.onlyThisChain === false) {
+        const platformFee = this.mulSwapFeeRate(actionParams.zapInAmount);
+        const normalizedPlatformFeeUSD =
+          ethers.utils.formatUnits(platformFee, actionParams.tokenDecimals) *
+          actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol];
+        const referrer = await this._getReferrer(actionParams.account);
+        const platformFeeTxns = await this._getPlatformFeeTxns(
+          actionParams.tokenInAddress,
+          actionParams.chainMetadata,
+          platformFee,
+          referrer,
+        );
+        actionParams.zapInAmount = actionParams.zapInAmount.sub(platformFee);
+        actionParams.setPlatformFee(-normalizedPlatformFeeUSD);
+        totalTxns = totalTxns.concat(platformFeeTxns);
+      }
     } else if (actionName === "rebalance") {
       return await this._generateRebalanceTxns(actionParams);
     } else if (actionName === "stake") {
