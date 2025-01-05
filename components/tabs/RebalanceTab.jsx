@@ -51,12 +51,12 @@ export default function RebalanceTab({
                   }
                   disabled={
                     getRebalanceReinvestUsdAmount() / usdBalance <
-                      portfolioHelper?.rebalanceThreshold() || usdBalance <= 0
-                    //  ||
-                    // Math.abs(
-                    //   calCurrentAPR(rebalancableUsdBalanceDict) -
-                    //     portfolioApr[portfolioName]?.portfolioAPR * 100,
-                    // ) < 5
+                      portfolioHelper?.rebalanceThreshold() ||
+                    usdBalance <= 0 ||
+                    Math.abs(
+                      calCurrentAPR(rebalancableUsdBalanceDict) -
+                        portfolioApr[portfolioName]?.portfolioAPR * 100,
+                    ) < 5
                   }
                 >
                   {data.actionName} on {data.chain}
