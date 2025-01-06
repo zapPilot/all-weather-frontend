@@ -155,7 +155,7 @@ export default function PortfolioComposition({
                 <Spin />
               ) : (
                 `${(
-                  (portfolioApr[portfolioName]?.portfolioAPR || 0) * 100
+                  (portfolioApr?.[portfolioName]?.portfolioAPR || 0) * 100
                 ).toFixed(2)}%`
               )}
             </td>

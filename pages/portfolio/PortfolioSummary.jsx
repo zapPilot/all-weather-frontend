@@ -26,7 +26,7 @@ export default function PortfolioSummary({
             <dd className="mt-1 text-base font-semibold leading-6 text-white flex">
               <span className="mr-2">
                 {usdBalanceLoading === true ||
-                Object.values(tokenPricesMappingTable).length === 0 ? (
+                Object.values(tokenPricesMappingTable ?? {}).length === 0 ? (
                   <Spin />
                 ) : portfolioName === "ETH Vault" ? (
                   <>
