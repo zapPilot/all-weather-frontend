@@ -1108,7 +1108,7 @@ export class BasePortfolio {
       frax: 0.997,
       usde: 1,
       susd: 0.9952,
-      msusd: 0.9972,
+      msusd: 0.985,
       zunusd: 0.9953,
       eusd: 0.9999,
       gusdc: 1.13,

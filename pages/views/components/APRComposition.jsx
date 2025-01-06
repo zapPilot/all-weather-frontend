@@ -13,7 +13,7 @@ const APRComposition = ({
       return <Spin size="small" />;
     }
     if (mode === "pendingRewards") {
-      return Object.entries(APRData).map(([key, value]) => {
+      return Object.entries(APRData ?? {}).map(([key, value]) => {
         return (
           <div key={key}>
             <Image
