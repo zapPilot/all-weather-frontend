@@ -1,7 +1,9 @@
-import { Button } from "antd";
+import { Button, Statistic } from "antd";
 import TokenDropdownInput from "../../pages/views/TokenDropdownInput.jsx";
 import ConfiguredConnectButton from "../../pages/ConnectButton";
-
+import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
+import { useState } from "react";
+const { Countdown } = Statistic;
 export default function ZapInTab({
   nextStepChain,
   selectedToken,
@@ -28,6 +30,26 @@ export default function ZapInTab({
   setFinishedTxn,
   setShowZapIn,
 }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [showCountdown, setShowCountdown] = useState(false);
+  const [deadline, setDeadline] = useState(null);
+
+  const handleSwitchChain = async () => {
+    setIsLoading(true);
+    const deadlineTime = getCurrentTimeSeconds() + 4;
+    setDeadline(deadlineTime * 1000); // Convert to milliseconds for antd Countdown
+    setShowCountdown(true);
+
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+
+    setPreviousTokenSymbol(selectedToken.split("-")[0].toLowerCase());
+    switchNextStepChain(nextStepChain);
+    setNextChainInvestmentAmount(parseFloat(walletBalanceData?.displayValue));
+
+    setShowCountdown(false);
+    setIsLoading(false);
+  };
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
@@ -100,22 +122,33 @@ export default function ZapInTab({
             Step 2: Once bridging is complete, switch to the other chain to
             calculate the investment amount.
           </p>
+
+          {showCountdown && deadline && (
+            <div className="mb-4">
+              <Countdown
+                title="Bridging tokens..."
+                value={deadline}
+                onFinish={() => setShowCountdown(false)}
+                style={{
+                  backgroundColor: "#ffffff", // Ant Design's default primary color
+                  padding: "10px",
+                  borderRadius: "8px",
+                }}
+                className="text-white"
+              />
+            </div>
+          )}
+
           <Button
             type="primary"
-            className={`w-full my-2 
-                  ${
-                    chainId?.name?.toLowerCase()?.replace(" one", "").trim() ===
-                    nextStepChain
-                      ? "hidden"
-                      : "block"
-                  }`}
-            onClick={() => {
-              setPreviousTokenSymbol(selectedToken.split("-")[0].toLowerCase());
-              switchNextStepChain(nextStepChain);
-              setNextChainInvestmentAmount(
-                parseFloat(walletBalanceData?.displayValue),
-              );
-            }}
+            className={`w-full my-2 ${
+              chainId?.name?.toLowerCase()?.replace(" one", "").trim() ===
+              nextStepChain
+                ? "hidden"
+                : "block"
+            }`}
+            onClick={handleSwitchChain}
+            loading={isLoading}
           >
             switch to {nextStepChain} Chain
           </Button>
