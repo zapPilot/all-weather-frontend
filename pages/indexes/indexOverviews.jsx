@@ -4,13 +4,11 @@ import BasePage from "../basePage.tsx";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
-import TransacitonHistory from "./transactionHistory.jsx";
-import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
 import { base, arbitrum } from "thirdweb/chains";
+import { getGasPrice } from "thirdweb";
 import PopUpModal from "../Modal";
 import {
   TOKEN_ADDRESS_MAP,
@@ -28,10 +26,8 @@ import {
   Tabs,
   Dropdown,
   Popover,
-  Input,
   Space,
 } from "antd";
-import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import {
   useActiveAccount,
   useSendBatchTransaction,
@@ -41,21 +37,12 @@ import {
 } from "thirdweb/react";
 
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
-import { formatBalance } from "../../utils/general.js";
 import axios from "axios";
 import openNotificationWithIcon from "../../utils/notification.js";
 import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
-import {
-  ArrowTopRightOnSquareIcon,
-  ChartBarIcon,
-} from "@heroicons/react/20/solid";
-import {
-  SettingOutlined,
-  InfoCircleOutlined,
-  DownOutlined,
-} from "@ant-design/icons";
+import { SettingOutlined, DownOutlined } from "@ant-design/icons";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
@@ -197,6 +184,23 @@ export default function IndexOverviews() {
   const dispatch = useDispatch();
 
   const handleAAWalletAction = async (actionName, onlyThisChain = false) => {
+    const gasPrice = await getGasPrice({
+      client: THIRDWEB_CLIENT,
+      chain: chainId,
+    });
+    const gasPriceInGwei = Number(gasPrice) / 1e9;
+    if (gasPriceInGwei > 0.1) {
+      openNotificationWithIcon(
+        notificationAPI,
+        "Gas Price Too High",
+        "error",
+        `Current gas price is ${gasPriceInGwei.toFixed(
+          2,
+        )} gwei, please try again later.`,
+      );
+      return;
+    }
+
     setOpen(true);
     setActionName(actionName);
     setOnlyThisChain(onlyThisChain);
