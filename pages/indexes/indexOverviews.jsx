@@ -61,6 +61,10 @@ import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
 import tokens from "../views/components/tokens.json";
 import useTabItems from "../../hooks/useTabItems";
+import PortfolioSummary from "../portfolio/PortfolioSummary";
+import PortfolioComposition from "../portfolio/PortfolioComposition";
+import HistoricalData from "../portfolio/HistoricalData";
+import TransactionHistoryPanel from "../portfolio/TransactionHistoryPanel";
 
 export default function IndexOverviews() {
   const router = useRouter();
@@ -326,7 +330,7 @@ export default function IndexOverviews() {
           errorReadableMsg = "bridgequote expired, please try again";
         } else if (error.message.includes("0x203d82d8")) {
           errorReadableMsg =
-            "DeFi pool quote has expired. Please contact support.";
+            "DeFi pool quote has expired. Please refresh the page and try again.";
         } else if (error.message.includes("User rejected the request")) {
           return;
         } else {
@@ -876,368 +880,33 @@ export default function IndexOverviews() {
             </div>
           </div>
           <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
-            {/* Invoice summary */}
-            <div className="lg:col-start-3 lg:row-span-1 lg:row-end-1 h-full shadow-sm border border-white/50">
-              <div className="p-6">
-                <dl className="flex flex-wrap">
-                  <div className="flex-auto">
-                    <dt className="text-sm font-semibold leading-6 text-white">
-                      Your Balance
-                    </dt>
-                    <dd className="mt-1 text-base font-semibold leading-6 text-white flex">
-                      <span className="mr-2">
-                        {usdBalanceLoading === true ||
-                        Object.values(tokenPricesMappingTable).length === 0 ? (
-                          <Spin />
-                        ) : portfolioName === "ETH Vault" ? (
-                          <>
-                            ${usdBalance.toFixed(2)}
-                            <div className="text-gray-500">
-                              {portfolioHelper?.denomination()}
-                              {(
-                                usdBalance / tokenPricesMappingTable["weth"]
-                              ).toFixed(2)}
-                            </div>
-                          </>
-                        ) : (
-                          `$${usdBalance.toFixed(2)}`
-                        )}
-                      </span>
-                      <a
-                        href={`https://debank.com/profile/${account?.address}`}
-                        target="_blank"
-                      >
-                        <ArrowTopRightOnSquareIcon className="h-6 w-5 text-gray-500" />
-                      </a>
-                    </dd>
-                  </div>
-                  {/* <div className="mt-6 flex w-full flex-none gap-x-4">
-                    <dt className="flex-none">
-                      <BanknotesIcon
-                        aria-hidden="true"
-                        className="h-6 w-5 text-gray-500"
-                      />
-                    </dt>
-                    <dd className="text-sm font-medium leading-6 text-white">
-                      Principal:{" "}
-                      {usdBalanceLoading && principalBalance === 0 ? (
-                        <Spin />
-                      ) : (
-                        `${portfolioHelper?.denomination()}${
-                          principalBalance > 0.01
-                            ? principalBalance?.toFixed(2)
-                            : "< 0.01"
-                        }`
-                      )}
-                    </dd>
-                  </div>
-                  <div className="mt-6 flex w-full flex-none gap-x-4">
-                    <dt className="flex-none">
-                      <CurrencyDollarIcon
-                        aria-hidden="true"
-                        className="h-6 w-5 text-gray-500"
-                      />
-                    </dt>
-                    <dd className="text-sm font-medium leading-6 text-white">
-                      Profit:{" "}
-                      {usdBalanceLoading ||
-                      Object.values(tokenPricesMappingTable).length === 0 ? (
-                        <Spin />
-                      ) : (
-                        <span
-                          className={
-                            portfolioName === "Stablecoin Vault"
-                              ? usdBalance - principalBalance < 0
-                                ? "text-red-500"
-                                : "text-green-500"
-                              : portfolioName === "ETH Vault"
-                              ? usdBalance / tokenPricesMappingTable["weth"] -
-                                  principalBalance <
-                                0
-                                ? "text-red-500"
-                                : "text-green-500"
-                              : portfolioName === "BTC Vault"
-                              ? usdBalance / tokenPricesMappingTable["wbtc"] -
-                                  principalBalance <
-                                0
-                                ? "text-red-500"
-                                : "text-green-500"
-                              : "text-white"
-                          }
-                        >
-                          {portfolioHelper?.denomination()}
-                          {usdBalance === 0
-                            ? 0
-                            : portfolioName === "ETH Vault"
-                            ? (
-                                usdBalance / tokenPricesMappingTable["weth"] -
-                                principalBalance
-                              ).toFixed(2)
-                            : portfolioName === "BTC Vault"
-                            ? (
-                                usdBalance / tokenPricesMappingTable["wbtc"] -
-                                principalBalance
-                              ).toFixed(2)
-                            : (usdBalance - principalBalance).toFixed(2)}
-                        </span>
-                      )}
-                    </dd>
-                  </div> */}
-                  <div className="mt-6 flex w-full flex-none gap-x-4">
-                    <dt className="flex-none">
-                      <ChartBarIcon
-                        aria-hidden="true"
-                        className="h-6 w-5 text-gray-500"
-                      />
-                    </dt>
-                    <dd className="text-sm font-medium leading-6 text-white">
-                      <Link
-                        href={`/profile/#historical-balances?address=${account?.address}`}
-                        target="_blank"
-                        className="text-blue-400"
-                      >
-                        Historical Balances
-                      </Link>{" "}
-                    </dd>
-                  </div>
+            <PortfolioSummary
+              usdBalanceLoading={usdBalanceLoading}
+              tokenPricesMappingTable={tokenPricesMappingTable}
+              portfolioName={portfolioName}
+              usdBalance={usdBalance}
+              portfolioHelper={portfolioHelper}
+              account={account}
+              pendingRewards={pendingRewards}
+              pendingRewardsLoading={pendingRewardsLoading}
+            />
 
-                  <div className="mt-6 flex w-full flex-none gap-x-4">
-                    <dt className="flex-none">
-                      <APRComposition
-                        APRData={pendingRewards}
-                        mode="pendingRewards"
-                        currency="$"
-                        exchangeRateWithUSD={1}
-                        pendingRewardsLoading={pendingRewardsLoading}
-                      />
-                    </dt>
-                    <dd className="text-sm leading-6 text-white">
-                      Rewards:{" "}
-                      {pendingRewardsLoading === true ? (
-                        <Spin />
-                      ) : (
-                        <span className="text-green-500">
-                          {formatBalance(
-                            portfolioHelper?.sumUsdDenominatedValues(
-                              pendingRewards,
-                            ),
-                          )}
-                        </span>
-                      )}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-            </div>
+            <PortfolioComposition
+              portfolioName={portfolioName}
+              portfolioHelper={portfolioHelper}
+              portfolioApr={portfolioApr}
+              loading={loading}
+              usdBalanceLoading={usdBalanceLoading}
+              lockUpPeriod={lockUpPeriod}
+              yieldContent={yieldContent}
+            />
 
-            {/* Invoice */}
-            <div className="lg:col-span-2 lg:row-span-1">
-              <div className="shadow-sm border border-white/50 p-6">
-                <h2 className="text-base font-semibold leading-6 text-white">
-                  {portfolioName} Composition
-                </h2>
-                {portfolioHelper &&
-                  Object.entries(portfolioHelper.strategy).map(
-                    ([category, protocols]) =>
-                      Object.entries(protocols).map(
-                        ([chain, protocolArray], index) => (
-                          <div key={`${chain}-${index}`}>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-white font-semibold">
-                                Protocols on
-                              </span>
-                              <Image
-                                src={`/chainPicturesWebp/${chain}.webp`}
-                                alt={chain}
-                                height={25}
-                                width={25}
-                                className="rounded-full"
-                              />
-                            </div>
-                            <table className="mt-3 w-full whitespace-nowrap text-left text-sm leading-6">
-                              <thead className="border-b border-gray-200 text-white">
-                                <tr>
-                                  <th
-                                    scope="col"
-                                    className="py-3 font-semibold"
-                                  >
-                                    <span>POOL</span>
-                                  </th>
-                                  <th
-                                    scope="col"
-                                    width={50}
-                                    className="py-3 text-right font-semibold"
-                                  >
-                                    <span>APR</span>
-                                    <Popover
-                                      content={yieldContent}
-                                      title="Source of Yield"
-                                      trigger="hover"
-                                    >
-                                      <InfoCircleOutlined className="ms-2 text-gray-500" />
-                                    </Popover>
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {protocolArray
-                                  .sort((a, b) => b.weight - a.weight)
-                                  .sort(
-                                    (a, b) =>
-                                      portfolioApr?.[portfolioName]?.[
-                                        b.interface.uniqueId()
-                                      ]?.apr -
-                                      portfolioApr?.[portfolioName]?.[
-                                        a.interface.uniqueId()
-                                      ]?.apr,
-                                  )
-                                  .map((protocol, index) => {
-                                    // set weight to 0 for old protocols, these are protocols used to be the best choice but its reward decreased
-                                    // so we opt out of them
-                                    // need to keep them in the portfolio so users can zap out
-                                    if (protocol.weight === 0) return null;
-                                    return (
-                                      <tr key={index} className="">
-                                        <td className="max-w-0 px-0 py-4">
-                                          <div className="text-white flex items-center gap-3">
-                                            <div className="relative flex items-center gap-1">
-                                              <div className="relative flex items-center">
-                                                {protocol.interface.symbolList.map(
-                                                  (symbol, idx) => {
-                                                    return (
-                                                      <ImageWithFallback
-                                                        key={idx}
-                                                        className="me-1 rounded-full"
-                                                        domKey={`${protocol.interface.protocolName}-${symbol}-${index}-${idx}`}
-                                                        token={symbol.replace(
-                                                          "(bridged)",
-                                                          "",
-                                                        )}
-                                                        height={25}
-                                                        width={25}
-                                                      />
-                                                    );
-                                                  },
-                                                )}
-                                              </div>
-                                              <div className="absolute -bottom-3 -right-3 sm:-bottom-1 sm:-right-1">
-                                                <Image
-                                                  src={`/projectPictures/${protocol.interface.protocolName}.webp`}
-                                                  alt={
-                                                    protocol.interface
-                                                      .protocolName
-                                                  }
-                                                  height={20}
-                                                  width={20}
-                                                  className="rounded-full"
-                                                />
-                                              </div>
-                                            </div>
-                                            <div className="ms-2 truncate">
-                                              <p className="font-semibold truncate ...">
-                                                {protocol.interface.symbolList.join(
-                                                  "-",
-                                                )}
-                                              </p>
-                                              <p className="text-gray-500 truncate ...">
-                                                {
-                                                  protocol.interface
-                                                    .protocolName
-                                                }
-                                                -
-                                                {(
-                                                  protocol.weight * 100
-                                                ).toFixed(0)}
-                                                %
-                                              </p>
-                                            </div>
-                                          </div>
-                                        </td>
-                                        <td className="py-4 pl-8 pr-0 text-right tabular-nums text-white">
-                                          <span>
-                                            {isNaN(
-                                              portfolioApr?.[portfolioName]?.[
-                                                protocol.interface.uniqueId()
-                                              ]?.apr * 100,
-                                            ) ? (
-                                              <Spin />
-                                            ) : (
-                                              `${(
-                                                portfolioApr?.[portfolioName]?.[
-                                                  protocol.interface.uniqueId()
-                                                ]?.apr * 100 || 0
-                                              ).toFixed(2)}%`
-                                            )}
-                                          </span>
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                              </tbody>
-                            </table>
-                          </div>
-                        ),
-                      ),
-                  )}
-                <tfoot>
-                  <tr className="border-t border-gray-200">
-                    <th scope="row" className="pt-6 font-semibold text-white">
-                      Avg. APR
-                    </th>
-                    <td className="pt-6 font-semibold text-right text-green-500">
-                      {loading ? (
-                        <Spin />
-                      ) : (
-                        `${(
-                          (portfolioApr[portfolioName]?.portfolioAPR || 0) * 100
-                        ).toFixed(2)}%`
-                      )}
-                    </td>
-                  </tr>
-                </tfoot>
-                <div>
-                  <span className="text-gray-500" role="lockUpPeriod">
-                    Lock-up Period
-                  </span>{" "}
-                  {usdBalanceLoading === true ? (
-                    <Spin />
-                  ) : typeof lockUpPeriod === "number" ? (
-                    lockUpPeriod === 0 ? (
-                      <span className="text-green-500">Unlocked</span>
-                    ) : (
-                      <span className="text-red-500">
-                        {Math.floor(lockUpPeriod / 86400)} d{" "}
-                        {Math.ceil((lockUpPeriod % 86400) / 3600)
-                          ? Math.ceil((lockUpPeriod % 86400) / 3600) + "h"
-                          : null}
-                      </span>
-                    )
-                  ) : null}
-                </div>
-              </div>
-            </div>
-            <div className="lg:col-span-2 lg:row-span-1 lg:row-end-2 h-full border border-white/50">
-              <div className="p-6">
-                <h2 className="text-base font-semibold leading-6 text-white">
-                  Historical Data
-                </h2>
-                <HistoricalDataChart portfolioName={portfolioName} />
-              </div>
-            </div>
-            <div className="lg:col-start-3 h-full border border-white/50">
-              {/* Activity feed */}
-              <div className="h-96 overflow-y-scroll shadow-sm p-6">
-                <h2 className="text-sm font-semibold leading-6 text-white">
-                  History
-                </h2>
-                <ul role="list" className="mt-6 space-y-6">
-                  <TransacitonHistory
-                    setPrincipalBalance={setPrincipalBalance}
-                    tokenPricesMappingTable={tokenPricesMappingTable}
-                  />
-                </ul>
-              </div>
-            </div>
+            <HistoricalData portfolioName={portfolioName} />
+
+            <TransactionHistoryPanel
+              setPrincipalBalance={setPrincipalBalance}
+              tokenPricesMappingTable={tokenPricesMappingTable}
+            />
           </div>
         </div>
       </main>
