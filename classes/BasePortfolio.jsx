@@ -10,12 +10,11 @@ import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import WETH from "../lib/contracts/Weth.json" assert { type: "json" };
 import ReactMarkdown from "react-markdown";
 import getTheBestBridge from "./bridges/bridgeFactory";
-import {
-  CHAIN_ID_TO_CHAIN,
-  CHAIN_TO_CHAIN_ID,
-  TOKEN_ADDRESS_MAP,
-} from "../utils/general";
+import { CHAIN_ID_TO_CHAIN, CHAIN_TO_CHAIN_ID, TOKEN_ADDRESS_MAP } from "../utils/general";
 import { toWei } from "thirdweb/utils";
+import { fetch1InchSwapData } from "../utils/oneInch";
+import { _updateProgressAndWait } from "../utils/general";
+import { prepareTransaction } from "thirdweb";
 import { fetch1InchSwapData } from "../utils/oneInch";
 import { _updateProgressAndWait } from "../utils/general";
 import { prepareTransaction } from "thirdweb";
@@ -613,7 +612,7 @@ export class BasePortfolio {
     toTokenSymbol,
     toTokenDecimals,
     tokenPricesMappingTable,
-    actionParams,
+    actionParams
   ) {
     if (fromTokenAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
       return;
