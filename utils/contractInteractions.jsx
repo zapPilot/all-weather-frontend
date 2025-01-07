@@ -7,18 +7,75 @@ import axios from "axios";
 import Image from "next/image";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
-  usdc: 3408,
-  usdt: 825,
-  "usdc.e": 3408,
-  weth: 2396,
-  eth: 2396,
-  dai: 4943,
-  usde: 29470,
-  wbtc: 3717,
-  eurc: 20641,
-  mseth: 2396,
-  zuneth: 2396,
-  metis: 9640,
+  usdc: {
+    coinmarketcapApiId: 3408,
+  },
+  usdt: {
+    coinmarketcapApiId: 825,
+  },
+  "usdc.e": {
+    coinmarketcapApiId: 3408,
+  },
+  weth: {
+    coinmarketcapApiId: 2396,
+  },
+  eth: {
+    coinmarketcapApiId: 2396,
+  },
+  dai: {
+    coinmarketcapApiId: 4943,
+  },
+  usde: {
+    coinmarketcapApiId: 29470,
+  },
+  wbtc: {
+    coinmarketcapApiId: 3717,
+  },
+  eurc: {
+    coinmarketcapApiId: 20641,
+  },
+  mseth: {
+    geckoterminal: {
+      chain: "base",
+      address: "0x7Ba6F01772924a82D9626c126347A28299E98c98",
+    },
+  },
+  zuneth: {
+    geckoterminal: {
+      chain: "arbitrum",
+      address: "0x06d65ec13465ac5a4376dc101e1141252c4addf8",
+    },
+  },
+  metis: {
+    coinmarketcapApiId: 9640,
+  },
+  susd: {
+    geckoterminal: {
+      chain: "arbitrum",
+      address: "0xb2f30a7c980f052f02563fb518dcc39e6bf38175",
+    },
+  },
+  msusd: {
+    geckoterminal: {
+      chain: "base",
+      address: "0x526728DBc96689597F85ae4cd716d4f7fCcBAE9d",
+    },
+  },
+  eusd: {
+    geckoterminal: {
+      chain: "arbitrum",
+      address: "0x12275DCB9048680c4Be40942eA4D92c74C63b844",
+    },
+  },
+  gusdc: {
+    geckoterminal: {
+      chain: "arbitrum",
+      address: "0xd3443ee1e91aF28e5FB858Fbd0D72A63bA8046E0",
+    },
+  },
+  dusdc: {
+    coinmarketcapApiId: 3408,
+  },
 };
 export const tokensForDropDown = [
   "eth",

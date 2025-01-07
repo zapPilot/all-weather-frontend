@@ -15,6 +15,116 @@ import { toWei } from "thirdweb/utils";
 
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
+
+class PriceService {
+  static STATIC_PRICES = {
+    usdc: 1,
+    usdt: 1,
+    dai: 1,
+    frax: 0.997,
+    usde: 1,
+  };
+
+  constructor(apiUrl) {
+    this.apiUrl = apiUrl;
+    this.cache = {};
+  }
+
+  async fetchPrice(token, priceID) {
+    const { key, provider } = this._getPriceServiceInfo(priceID);
+
+    try {
+      const endpoint = this._buildEndpoint(provider, key);
+      const response = await axios.get(endpoint);
+      return response.data.price;
+    } catch (error) {
+      console.error(
+        `Failed to fetch price for ${token} from ${provider}:`,
+        error,
+      );
+      return null;
+    }
+  }
+
+  _getPriceServiceInfo(priceID) {
+    if (priceID?.coinmarketcapApiId) {
+      return {
+        key: priceID.coinmarketcapApiId,
+        provider: "coinmarketcap",
+        uniqueId: priceID.coinmarketcapApiId,
+      };
+    } else if (priceID?.geckoterminal) {
+      return {
+        key: priceID.geckoterminal,
+        provider: "geckoterminal",
+        uniqueId: priceID.geckoterminal.chain + priceID.geckoterminal.address,
+      };
+    }
+    throw new Error(`Invalid price ID format: ${JSON.stringify(priceID)}`);
+  }
+
+  _buildEndpoint(provider, key) {
+    if (provider === "coinmarketcap") {
+      return `${this.apiUrl}/token/${key}/price`;
+    } else if (provider === "geckoterminal") {
+      return `${this.apiUrl}/token/${key.chain}/${key.address}/price`;
+    }
+    throw new Error(`Unsupported provider: ${provider}`);
+  }
+}
+
+class TokenPriceBatcher {
+  static BATCH_SIZE = 3;
+  static DELAY_MS = 1000;
+
+  constructor(priceService) {
+    this.priceService = priceService;
+  }
+
+  async fetchPrices(tokensToFetch) {
+    const prices = { ...PriceService.STATIC_PRICES };
+
+    for (
+      let i = 0;
+      i < tokensToFetch.length;
+      i += TokenPriceBatcher.BATCH_SIZE
+    ) {
+      const batch = tokensToFetch.slice(i, i + TokenPriceBatcher.BATCH_SIZE);
+      await this._processBatch(batch, prices);
+
+      if (i + TokenPriceBatcher.BATCH_SIZE < tokensToFetch.length) {
+        await this._delay();
+      }
+    }
+
+    return prices;
+  }
+
+  async _processBatch(batch, prices) {
+    const batchPromises = batch.map(async ([token, priceID]) => {
+      const { uniqueId } = this.priceService._getPriceServiceInfo(priceID);
+      if (this.priceService.cache[uniqueId]) {
+        prices[token] = this.priceService.cache[uniqueId];
+        return;
+      }
+
+      const price = await this.priceService.fetchPrice(token, priceID);
+      if (price !== null) {
+        prices[token] = price;
+        this.priceService.cache[uniqueId] = price;
+      }
+    });
+
+    await Promise.all(batchPromises);
+  }
+
+  _delay() {
+    return new Promise((resolve) =>
+      setTimeout(resolve, TokenPriceBatcher.DELAY_MS),
+    );
+  }
+}
+
 export class BasePortfolio {
   constructor(strategy, weightMapping) {
     this.strategy = strategy;
@@ -72,9 +182,7 @@ export class BasePortfolio {
   }
   async usdBalanceOf(address, portfolioAprDict) {
     // Get token prices
-    const tokenPricesMappingTable = await this.getTokenPricesMappingTable(
-      () => {},
-    );
+    const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
 
     // Get balances and rewards
     const balanceResults = await this._getBalances(
@@ -227,8 +335,7 @@ export class BasePortfolio {
   }
 
   async pendingRewards(owner, updateProgress) {
-    const tokenPricesMappingTable =
-      await this.getTokenPricesMappingTable(updateProgress);
+    const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
 
     // Flatten the strategy structure and create pending rewards calculation promises
     const rewardsPromises = Object.values(this.strategy)
@@ -1067,7 +1174,7 @@ export class BasePortfolio {
         for (const protocol of protocols) {
           let apiSymbolToIdMapping = {};
           for (const reward of protocol.interface.rewards()) {
-            apiSymbolToIdMapping[reward.symbol] = reward.coinmarketcapApiId;
+            apiSymbolToIdMapping[reward.symbol] = reward.priceId;
           }
           coinMarketCapIdSet = {
             ...coinMarketCapIdSet,
@@ -1099,67 +1206,18 @@ export class BasePortfolio {
     }
     return assetAddressSetByChain;
   }
-  async getTokenPricesMappingTable(updateProgress) {
-    // Static prices remain the same
-    let tokenPricesMappingTable = {
-      usdc: 1,
-      usdt: 1,
-      dai: 1,
-      frax: 0.997,
-      usde: 1,
-      susd: 0.9952,
-      msusd: 0.985,
-      zunusd: 0.9953,
-      eusd: 0.9999,
-      gusdc: 1.13,
-      dusdc: 1,
-    };
 
-    let tokenPriceCache = {};
+  async getTokenPricesMappingTable() {
+    const priceService = new PriceService(process.env.NEXT_PUBLIC_API_URL);
+    const batcher = new TokenPriceBatcher(priceService);
 
-    // Group tokens that need price fetching
     const tokensToFetch = Object.entries(
       this.uniqueTokenIdsForCurrentPrice,
     ).filter(
-      ([token]) => !Object.keys(tokenPricesMappingTable).includes(token),
+      ([token]) => !Object.keys(PriceService.STATIC_PRICES).includes(token),
     );
 
-    // Batch requests with delay to respect rate limits
-    const batchSize = 3; // Adjust based on rate limit
-    const delayMs = 1000; // 1 second delay between batches
-
-    for (let i = 0; i < tokensToFetch.length; i += batchSize) {
-      const batch = tokensToFetch.slice(i, i + batchSize);
-
-      // Process batch concurrently
-      const batchPromises = batch.map(async ([token, coinMarketCapId]) => {
-        if (tokenPriceCache[coinMarketCapId]) {
-          tokenPricesMappingTable[token] = tokenPriceCache[coinMarketCapId];
-          return;
-        }
-
-        try {
-          const response = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL}/token/${coinMarketCapId}/price`,
-          );
-          tokenPricesMappingTable[token] = response.data.price;
-          tokenPriceCache[coinMarketCapId] = response.data.price;
-        } catch (error) {
-          console.error(`Failed to fetch price for ${token}:`, error);
-          // You might want to set a fallback price or handle the error differently
-        }
-      });
-
-      // Wait for current batch to complete
-      await Promise.all(batchPromises);
-
-      // Add delay before next batch (skip delay for last batch)
-      if (i + batchSize < tokensToFetch.length) {
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-      }
-    }
-
-    return tokenPricesMappingTable;
+    return await batcher.fetchPrices(tokensToFetch);
   }
   validateStrategyWeights() {
     let totalWeight = 0;
