@@ -2,17 +2,13 @@
 "use client";
 import BasePage from "../basePage.tsx";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import DecimalStep from "./DecimalStep";
 import Image from "next/image";
 import Link from "next/link";
-import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { useDispatch, useSelector } from "react-redux";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
-import TransacitonHistory from "./transactionHistory.jsx";
-import HistoricalDataChart from "../views/HistoricalDataChart.jsx";
-import ConfiguredConnectButton from "../ConnectButton";
 import { base, arbitrum } from "thirdweb/chains";
+import { getGasPrice } from "thirdweb";
 import PopUpModal from "../Modal";
 import {
   TOKEN_ADDRESS_MAP,
@@ -30,10 +26,8 @@ import {
   Tabs,
   Dropdown,
   Popover,
-  Input,
   Space,
 } from "antd";
-import TokenDropdownInput from "../views/TokenDropdownInput.jsx";
 import {
   useActiveAccount,
   useSendBatchTransaction,
@@ -43,25 +37,21 @@ import {
 } from "thirdweb/react";
 
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
-import { formatBalance } from "../../utils/general.js";
 import axios from "axios";
 import openNotificationWithIcon from "../../utils/notification.js";
 import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
-import {
-  ArrowTopRightOnSquareIcon,
-  ChartBarIcon,
-} from "@heroicons/react/20/solid";
-import {
-  SettingOutlined,
-  InfoCircleOutlined,
-  DownOutlined,
-} from "@ant-design/icons";
+import { SettingOutlined, DownOutlined } from "@ant-design/icons";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
 import tokens from "../views/components/tokens.json";
+import useTabItems from "../../hooks/useTabItems";
+import PortfolioSummary from "../portfolio/PortfolioSummary";
+import PortfolioComposition from "../portfolio/PortfolioComposition";
+import HistoricalData from "../portfolio/HistoricalData";
+import TransactionHistoryPanel from "../portfolio/TransactionHistoryPanel";
 
 export default function IndexOverviews() {
   const router = useRouter();
@@ -194,6 +184,23 @@ export default function IndexOverviews() {
   const dispatch = useDispatch();
 
   const handleAAWalletAction = async (actionName, onlyThisChain = false) => {
+    const gasPrice = await getGasPrice({
+      client: THIRDWEB_CLIENT,
+      chain: chainId,
+    });
+    const gasPriceInGwei = Number(gasPrice) / 1e9;
+    if (gasPriceInGwei > 0.1) {
+      openNotificationWithIcon(
+        notificationAPI,
+        "Gas Price Too High",
+        "error",
+        `Current gas price is ${gasPriceInGwei.toFixed(
+          2,
+        )} gwei, please try again later.`,
+      );
+      return;
+    }
+
     setOpen(true);
     setActionName(actionName);
     setOnlyThisChain(onlyThisChain);
@@ -327,7 +334,7 @@ export default function IndexOverviews() {
           errorReadableMsg = "bridgequote expired, please try again";
         } else if (error.message.includes("0x203d82d8")) {
           errorReadableMsg =
-            "DeFi pool quote has expired. Please contact support.";
+            "DeFi pool quote has expired. Please refresh the page and try again.";
         } else if (error.message.includes("User rejected the request")) {
           return;
         } else {
@@ -470,329 +477,7 @@ export default function IndexOverviews() {
       ) + portfolioHelper?.sumUsdDenominatedValues(pendingRewards)
     );
   };
-  const calCurrentAPR = (rebalancableUsdBalanceDict) =>
-    Object.entries(rebalancableUsdBalanceDict)
-      .filter(([key]) => !["pendingRewards", "metadata"].includes(key))
-      .reduce(
-        (sum, [_, { currentWeight, APR }]) => currentWeight * APR + sum,
-        0,
-      ) || 0;
 
-  const items = [
-    {
-      key: "1",
-      label: "Zap In",
-      children: (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <div
-              className={`mt-4 sm:mt-0 ${nextStepChain ? "hidden" : "block"}`}
-            >
-              <p>
-                Step 1: Choose a chain to zap in and bridge to another chain.
-              </p>
-              <TokenDropdownInput
-                selectedToken={selectedToken}
-                setSelectedToken={handleSetSelectedToken}
-                setInvestmentAmount={handleSetInvestmentAmount}
-                tokenPricesMappingTable={tokenPricesMappingTable}
-              />
-              {account === undefined ? (
-                <ConfiguredConnectButton />
-              ) : Object.values(
-                  protocolAssetDustInWallet?.[
-                    chainId?.name?.toLowerCase()?.replace(" one", "")
-                  ] || {},
-                ).reduce(
-                  (sum, protocolObj) =>
-                    sum + (protocolObj.assetUsdBalanceOf || 0),
-                  0,
-                ) /
-                  usdBalance >
-                0.05 ? (
-                <Button
-                  type="primary"
-                  className="w-full my-2"
-                  onClick={() => handleAAWalletAction("stake", true)}
-                  loading={protocolAssetDustInWalletLoading}
-                  disabled={usdBalanceLoading}
-                >
-                  {`Stake Available Assets ($${Object.values(
-                    protocolAssetDustInWallet?.[
-                      chainId?.name?.toLowerCase()?.replace(" one", "")
-                    ] || {},
-                  )
-                    .reduce(
-                      (sum, protocolObj) =>
-                        sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
-                      0,
-                    )
-                    .toFixed(2)})`}
-                </Button>
-              ) : (
-                <Button
-                  type="primary"
-                  className="w-full my-2"
-                  onClick={() => handleAAWalletAction("zapIn", false)}
-                  loading={zapInIsLoading}
-                  disabled={
-                    Number(investmentAmount) === 0 ||
-                    Number(investmentAmount) > tokenBalance
-                  }
-                >
-                  Zap In
-                </Button>
-              )}
-            </div>
-            <div
-              className={`mt-4 
-              ${
-                nextStepChain
-                  ? nextChainInvestmentAmount > 0
-                    ? "hidden"
-                    : "block"
-                  : "hidden"
-              }
-            `}
-            >
-              <p>
-                Step 2: Once bridging is complete, switch to the other chain to
-                calculate the investment amount.
-              </p>
-              <Button
-                type="primary"
-                className={`w-full my-2 
-                  ${
-                    chainId?.name?.toLowerCase()?.replace(" one", "").trim() ===
-                    nextStepChain
-                      ? "hidden"
-                      : "block"
-                  }`}
-                onClick={() => {
-                  setPreviousTokenSymbol(
-                    selectedToken.split("-")[0].toLowerCase(),
-                  );
-                  switchNextStepChain(nextStepChain);
-                  setNextChainInvestmentAmount(
-                    parseFloat(walletBalanceData?.displayValue),
-                  );
-                }}
-              >
-                switch to {nextStepChain} Chain
-              </Button>
-            </div>
-            <div
-              className={`mt-4 ${
-                nextChainInvestmentAmount > 0 &&
-                nextStepChain ===
-                  chainId?.name?.toLowerCase()?.replace(" one", "")
-                  ? "block"
-                  : "hidden"
-              }`}
-            >
-              <p>
-                Step 3: After calculating the investment amount, click to zap
-                in.
-              </p>
-
-              <Button
-                type="primary"
-                className={`w-full my-2 ${showZapIn ? "hidden" : "block"}`}
-                onClick={() => {
-                  setInvestmentAmount(
-                    nextChainInvestmentAmount >
-                      parseFloat(walletBalanceData?.displayValue)
-                      ? parseFloat(walletBalanceData?.displayValue)
-                      : nextChainInvestmentAmount,
-                  );
-                  setFinishedTxn(false);
-                  setShowZapIn(true);
-                }}
-              >
-                Set Investment Amount to{" "}
-                {nextChainInvestmentAmount >
-                parseFloat(walletBalanceData?.displayValue)
-                  ? parseFloat(walletBalanceData?.displayValue) < 0.01
-                    ? "< 0.01"
-                    : parseFloat(walletBalanceData?.displayValue).toFixed(2)
-                  : nextChainInvestmentAmount < 0.01
-                  ? "< 0.01"
-                  : nextChainInvestmentAmount.toFixed(2)}{" "}
-                on {nextStepChain} Chain
-              </Button>
-              <Button
-                type="primary"
-                className={`w-full my-2 ${showZapIn ? "block" : "hidden"}`}
-                onClick={() => handleAAWalletAction("zapIn", true)}
-                loading={zapInIsLoading}
-                disabled={
-                  Number(investmentAmount) === 0 ||
-                  Number(investmentAmount) > tokenBalance
-                }
-              >
-                Zap In{" "}
-                {Number(investmentAmount) < 0.01
-                  ? "< 0.01"
-                  : Number(investmentAmount)?.toFixed(2)}{" "}
-                {selectedToken?.split("-")[0]} on {nextStepChain} Chain
-              </Button>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "2",
-      label: "Rebalance",
-      children: (
-        <div>
-          <p>Follow these steps to rebalance your portfolio:</p>
-          {rebalancableUsdBalanceDictLoading ? <Spin /> : null}
-          {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
-            (data, index) => {
-              const isCurrentChain =
-                chainId?.name?.toLowerCase().replace(" one", "").trim() ===
-                data.chain;
-              const isFirstPendingAction = index === 0;
-
-              return (
-                <div key={`${data.chain}-${data.actionName}`} className="mb-4">
-                  <p className="text-gray-400 mb-2">
-                    Step {index + 1}: {isCurrentChain ? "Execute" : "Switch to"}{" "}
-                    {data.chain} chain
-                    {isCurrentChain ? ` and ${data.actionName}` : ""}
-                  </p>
-
-                  {isCurrentChain ? (
-                    <Button
-                      type="primary"
-                      className="w-full"
-                      onClick={() =>
-                        handleAAWalletAction(data.actionName, true)
-                      }
-                      loading={
-                        rebalanceIsLoading || rebalancableUsdBalanceDictLoading
-                      }
-                      disabled={
-                        getRebalanceReinvestUsdAmount() / usdBalance <
-                          portfolioHelper?.rebalanceThreshold() ||
-                        usdBalance <= 0 ||
-                        Math.abs(
-                          calCurrentAPR(rebalancableUsdBalanceDict) -
-                            portfolioApr[portfolioName]?.portfolioAPR * 100,
-                        ) < 5
-                      }
-                    >
-                      {data.actionName} on {data.chain}
-                    </Button>
-                  ) : (
-                    <Button
-                      type="primary"
-                      className="w-full"
-                      onClick={() =>
-                        switchChain(
-                          CHAIN_ID_TO_CHAIN[CHAIN_TO_CHAIN_ID[data.chain]],
-                        )
-                      }
-                      disabled={!isFirstPendingAction}
-                    >
-                      Switch to {data.chain} Chain
-                    </Button>
-                  )}
-                </div>
-              );
-            },
-          )}
-
-          <div className="mt-4 text-gray-400">
-            <p>Expected APR after rebalance: </p>
-            <div className="flex items-center gap-2">
-              <span className="text-red-500">
-                {calCurrentAPR(rebalancableUsdBalanceDict).toFixed(2)}%
-              </span>
-              <span>→</span>
-              <span className="text-green-400">
-                {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}%
-              </span>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "3",
-      label: "Zap Out",
-      children: (
-        <div>
-          <DecimalStep
-            selectedToken={selectedToken}
-            setSelectedToken={handleSetSelectedToken}
-            depositBalance={usdBalance}
-            setZapOutPercentage={setZapOutPercentage}
-            currency="$"
-            noTokenSelect={false}
-          />
-          {account === undefined ? (
-            <ConfiguredConnectButton />
-          ) : (
-            <Button
-              type="primary"
-              className="w-full"
-              onClick={() => handleAAWalletAction("zapOut", true)}
-              loading={zapOutIsLoading || usdBalanceLoading}
-              disabled={
-                usdBalance < 0.01 ||
-                zapOutPercentage === 0 ||
-                selectedToken?.split("-")[0].toLowerCase() === "eth"
-              }
-            >
-              Withdraw
-            </Button>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "4",
-      label: "Transfer",
-      children: (
-        <div>
-          <DecimalStep
-            selectedToken={selectedToken}
-            setSelectedToken={handleSetSelectedToken}
-            depositBalance={usdBalance}
-            setZapOutPercentage={setZapOutPercentage}
-            currency="$"
-            noTokenSelect={true}
-          />
-          <Input
-            status={recipientError ? "error" : ""}
-            placeholder="Recipient Address"
-            onChange={(e) => validateRecipient(e.target.value)}
-            value={recipient}
-          />
-          {recipientError && (
-            <div className="text-red-500 text-sm mt-1">
-              Please enter a valid Ethereum address different from your own
-            </div>
-          )}
-          {account === undefined ? (
-            <ConfiguredConnectButton />
-          ) : (
-            <Button
-              type="primary"
-              className="w-full"
-              onClick={() => handleAAWalletAction("transfer", true)}
-              loading={transferLoading || usdBalanceLoading}
-              disabled={usdBalance < 0.01 || recipientError}
-            >
-              Transfer
-            </Button>
-          )}
-        </div>
-      ),
-    },
-  ];
   useEffect(() => {
     if (
       portfolioApr[portfolioName] === undefined ||
@@ -807,10 +492,18 @@ export default function IndexOverviews() {
   useEffect(() => {
     let isMounted = true;
 
+    // Clear states on initial load/refresh
+    setUsdBalance(0);
+    setUsdBalanceLoading(true);
+    setPendingRewardsLoading(true);
+    setrebalancableUsdBalanceDictLoading(true);
+    setProtocolAssetDustInWalletLoading(true);
+
     if (!portfolioName || account === undefined || !chainId) {
       return;
     }
-    if (portfolioApr[portfolioName] === undefined) {
+    // We still need basic portfolio data, but don't need to wait for accurate APR
+    if (!portfolioApr[portfolioName]) {
       return;
     }
 
@@ -821,9 +514,7 @@ export default function IndexOverviews() {
 
     const timeoutId = setTimeout(() => {
       const fetchUsdBalance = async () => {
-        if (!isMounted) {
-          return;
-        }
+        if (!isMounted) return;
 
         try {
           isProcessingChainChangeRef.current = true;
@@ -837,7 +528,6 @@ export default function IndexOverviews() {
             await portfolioHelper.getTokenPricesMappingTable(() => {});
           if (!isMounted) return;
           setTokenPricesMappingTable(tokenPricesMappingTable);
-
           const [usdBalance, usdBalanceDict] =
             await portfolioHelper.usdBalanceOf(
               account.address,
@@ -855,7 +545,11 @@ export default function IndexOverviews() {
           setUsdBalanceLoading(false);
           setrebalancableUsdBalanceDict(usdBalanceDict);
           setrebalancableUsdBalanceDictLoading(false);
-          setPendingRewards(usdBalanceDict.pendingRewards.pendingRewardsDict);
+          const pendingRewards = await portfolioHelper.pendingRewards(
+            account.address,
+            () => {},
+          );
+          setPendingRewards(pendingRewards.pendingRewardsDict);
           setPendingRewardsLoading(false);
 
           if (Object.values(tokenPricesMappingTable).length === 0) {
@@ -889,7 +583,7 @@ export default function IndexOverviews() {
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
-      // Don't reset processing flag in cleanup to prevent re-runs during chain change
+      isProcessingChainChangeRef.current = false;
     };
   }, [portfolioName, account, chainId]);
   useEffect(() => {
@@ -957,7 +651,51 @@ export default function IndexOverviews() {
       }, 100);
     }
   }, [chainId, previousTokenSymbol, nextStepChain]);
+  const tabProps = {
+    CHAIN_ID_TO_CHAIN,
+    CHAIN_TO_CHAIN_ID,
+    account,
+    chainId,
+    getRebalanceReinvestUsdAmount,
+    handleAAWalletAction,
+    handleSetInvestmentAmount,
+    handleSetSelectedToken,
+    investmentAmount,
+    nextChainInvestmentAmount,
+    nextStepChain,
+    portfolioApr,
+    portfolioHelper,
+    portfolioName,
+    protocolAssetDustInWallet,
+    protocolAssetDustInWalletLoading,
+    rebalancableUsdBalanceDict,
+    rebalancableUsdBalanceDictLoading,
+    rebalanceIsLoading,
+    recipient,
+    recipientError,
+    selectedToken,
+    setFinishedTxn,
+    setInvestmentAmount,
+    setNextChainInvestmentAmount,
+    setPreviousTokenSymbol,
+    setShowZapIn,
+    setZapOutPercentage,
+    showZapIn,
+    switchChain,
+    switchNextStepChain,
+    tokenBalance,
+    tokenPricesMappingTable,
+    transferLoading,
+    usdBalance,
+    usdBalanceLoading,
+    validateRecipient,
+    walletBalanceData,
+    zapInIsLoading,
+    zapOutIsLoading,
+    zapOutPercentage,
+  };
 
+  const items = useTabItems(tabProps);
   return (
     <BasePage>
       {notificationContextHolder}
@@ -1146,399 +884,33 @@ export default function IndexOverviews() {
             </div>
           </div>
           <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
-            {/* Invoice summary */}
-            <div className="lg:col-start-3 lg:row-span-1 lg:row-end-1 h-full shadow-sm border border-white/50">
-              <div className="p-6">
-                <dl className="flex flex-wrap">
-                  <div className="flex-auto">
-                    <dt className="text-sm font-semibold leading-6 text-white">
-                      Your Balance
-                    </dt>
-                    <dd className="mt-1 text-base font-semibold leading-6 text-white flex">
-                      <span className="mr-2">
-                        {usdBalanceLoading === true ||
-                        Object.values(tokenPricesMappingTable).length === 0 ? (
-                          <Spin />
-                        ) : portfolioName === "ETH Vault" ? (
-                          <>
-                            ${usdBalance.toFixed(2)}
-                            <div className="text-gray-500">
-                              {portfolioHelper?.denomination()}
-                              {(
-                                usdBalance / tokenPricesMappingTable["weth"]
-                              ).toFixed(2)}
-                            </div>
-                          </>
-                        ) : (
-                          `$${usdBalance.toFixed(2)}`
-                        )}
-                      </span>
-                      <a
-                        href={`https://debank.com/profile/${account?.address}`}
-                        target="_blank"
-                      >
-                        <ArrowTopRightOnSquareIcon className="h-6 w-5 text-gray-500" />
-                      </a>
-                    </dd>
-                  </div>
-                  <div className="flex-none self-end w-full">
-                    <ul className="mt-3 text-white">
-                      <li>
-                        <div className="text-gray-400">
-                          Rebalance Cost: {portfolioHelper?.swapFeeRate() * 100}
-                          %
-                        </div>
-                        {calCurrentAPR(rebalancableUsdBalanceDict) >
-                        portfolioApr[portfolioName]?.portfolioAPR * 100 ? (
-                          <>
-                            {formatBalance(getRebalanceReinvestUsdAmount())} has
-                            outperformed. It&apos;s time to rebalance and take
-                            the profit!
-                          </>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            window.open(
-                              "https://t.me/all_weather_protocol_bot",
-                              "_blank",
-                            )
-                          }
-                          className="inline-flex items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-                        >
-                          Subscribe for Rebalance Notifications
-                          <span className="fi fi-brands-telegram ml-2"></span>
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
-                  {/* <div className="mt-6 flex w-full flex-none gap-x-4">
-                    <dt className="flex-none">
-                      <BanknotesIcon
-                        aria-hidden="true"
-                        className="h-6 w-5 text-gray-500"
-                      />
-                    </dt>
-                    <dd className="text-sm font-medium leading-6 text-white">
-                      Principal:{" "}
-                      {usdBalanceLoading && principalBalance === 0 ? (
-                        <Spin />
-                      ) : (
-                        `${portfolioHelper?.denomination()}${
-                          principalBalance > 0.01
-                            ? principalBalance?.toFixed(2)
-                            : "< 0.01"
-                        }`
-                      )}
-                    </dd>
-                  </div>
-                  <div className="mt-6 flex w-full flex-none gap-x-4">
-                    <dt className="flex-none">
-                      <CurrencyDollarIcon
-                        aria-hidden="true"
-                        className="h-6 w-5 text-gray-500"
-                      />
-                    </dt>
-                    <dd className="text-sm font-medium leading-6 text-white">
-                      Profit:{" "}
-                      {usdBalanceLoading ||
-                      Object.values(tokenPricesMappingTable).length === 0 ? (
-                        <Spin />
-                      ) : (
-                        <span
-                          className={
-                            portfolioName === "Stablecoin Vault"
-                              ? usdBalance - principalBalance < 0
-                                ? "text-red-500"
-                                : "text-green-500"
-                              : portfolioName === "ETH Vault"
-                              ? usdBalance / tokenPricesMappingTable["weth"] -
-                                  principalBalance <
-                                0
-                                ? "text-red-500"
-                                : "text-green-500"
-                              : portfolioName === "BTC Vault"
-                              ? usdBalance / tokenPricesMappingTable["wbtc"] -
-                                  principalBalance <
-                                0
-                                ? "text-red-500"
-                                : "text-green-500"
-                              : "text-white"
-                          }
-                        >
-                          {portfolioHelper?.denomination()}
-                          {usdBalance === 0
-                            ? 0
-                            : portfolioName === "ETH Vault"
-                            ? (
-                                usdBalance / tokenPricesMappingTable["weth"] -
-                                principalBalance
-                              ).toFixed(2)
-                            : portfolioName === "BTC Vault"
-                            ? (
-                                usdBalance / tokenPricesMappingTable["wbtc"] -
-                                principalBalance
-                              ).toFixed(2)
-                            : (usdBalance - principalBalance).toFixed(2)}
-                        </span>
-                      )}
-                    </dd>
-                  </div> */}
-                  <div className="mt-6 flex w-full flex-none gap-x-4">
-                    <dt className="flex-none">
-                      <ChartBarIcon
-                        aria-hidden="true"
-                        className="h-6 w-5 text-gray-500"
-                      />
-                    </dt>
-                    <dd className="text-sm font-medium leading-6 text-white">
-                      <Link
-                        href={`/profile/#historical-balances?address=${account?.address}`}
-                        target="_blank"
-                        className="text-blue-400"
-                      >
-                        Historical Balances
-                      </Link>{" "}
-                    </dd>
-                  </div>
+            <PortfolioSummary
+              usdBalanceLoading={usdBalanceLoading}
+              tokenPricesMappingTable={tokenPricesMappingTable}
+              portfolioName={portfolioName}
+              usdBalance={usdBalance}
+              portfolioHelper={portfolioHelper}
+              account={account}
+              pendingRewards={pendingRewards}
+              pendingRewardsLoading={pendingRewardsLoading}
+            />
 
-                  <div className="mt-6 flex w-full flex-none gap-x-4">
-                    <dt className="flex-none">
-                      <APRComposition
-                        APRData={pendingRewards}
-                        mode="pendingRewards"
-                        currency="$"
-                        exchangeRateWithUSD={1}
-                        pendingRewardsLoading={pendingRewardsLoading}
-                      />
-                    </dt>
-                    <dd className="text-sm leading-6 text-white">
-                      Rewards:{" "}
-                      {pendingRewardsLoading === true ? (
-                        <Spin />
-                      ) : (
-                        <span className="text-green-500">
-                          {formatBalance(
-                            portfolioHelper?.sumUsdDenominatedValues(
-                              pendingRewards,
-                            ),
-                          )}
-                        </span>
-                      )}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-            </div>
+            <PortfolioComposition
+              portfolioName={portfolioName}
+              portfolioHelper={portfolioHelper}
+              portfolioApr={portfolioApr}
+              loading={loading}
+              usdBalanceLoading={usdBalanceLoading}
+              lockUpPeriod={lockUpPeriod}
+              yieldContent={yieldContent}
+            />
 
-            {/* Invoice */}
-            <div className="lg:col-span-2 lg:row-span-1">
-              <div className="shadow-sm border border-white/50 p-6">
-                <h2 className="text-base font-semibold leading-6 text-white">
-                  {portfolioName} Composition
-                </h2>
-                {portfolioHelper &&
-                  Object.entries(portfolioHelper.strategy).map(
-                    ([category, protocols]) =>
-                      Object.entries(protocols).map(
-                        ([chain, protocolArray], index) => (
-                          <div key={`${chain}-${index}`}>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-white font-semibold">
-                                Protocols on
-                              </span>
-                              <Image
-                                src={`/chainPicturesWebp/${chain}.webp`}
-                                alt={chain}
-                                height={25}
-                                width={25}
-                                className="rounded-full"
-                              />
-                            </div>
-                            <table className="mt-3 w-full whitespace-nowrap text-left text-sm leading-6">
-                              <thead className="border-b border-gray-200 text-white">
-                                <tr>
-                                  <th
-                                    scope="col"
-                                    className="py-3 font-semibold"
-                                  >
-                                    <span>POOL</span>
-                                  </th>
-                                  <th
-                                    scope="col"
-                                    width={50}
-                                    className="py-3 text-right font-semibold"
-                                  >
-                                    <span>APR</span>
-                                    <Popover
-                                      content={yieldContent}
-                                      title="Source of Yield"
-                                      trigger="hover"
-                                    >
-                                      <InfoCircleOutlined className="ms-2 text-gray-500" />
-                                    </Popover>
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {protocolArray
-                                  .sort((a, b) => b.weight - a.weight)
-                                  .sort(
-                                    (a, b) =>
-                                      portfolioApr?.[portfolioName]?.[
-                                        b.interface.uniqueId()
-                                      ]?.apr -
-                                      portfolioApr?.[portfolioName]?.[
-                                        a.interface.uniqueId()
-                                      ]?.apr,
-                                  )
-                                  .map((protocol, index) => {
-                                    // set weight to 0 for old protocols, these are protocols used to be the best choice but its reward decreased
-                                    // so we opt out of them
-                                    // need to keep them in the portfolio so users can zap out
-                                    if (protocol.weight === 0) return null;
-                                    return (
-                                      <tr key={index} className="">
-                                        <td className="max-w-0 px-0 py-4">
-                                          <div className="text-white flex items-center gap-3">
-                                            <div className="relative flex items-center gap-1">
-                                              <div className="relative flex items-center">
-                                                {protocol.interface.symbolList.map(
-                                                  (symbol, idx) => {
-                                                    return (
-                                                      <ImageWithFallback
-                                                        key={idx}
-                                                        className="me-1 rounded-full"
-                                                        domKey={`${protocol.interface.protocolName}-${symbol}-${index}-${idx}`}
-                                                        token={symbol.replace(
-                                                          "(bridged)",
-                                                          "",
-                                                        )}
-                                                        height={25}
-                                                        width={25}
-                                                      />
-                                                    );
-                                                  },
-                                                )}
-                                              </div>
-                                              <div className="absolute -bottom-3 -right-3 sm:-bottom-1 sm:-right-1">
-                                                <Image
-                                                  src={`/projectPictures/${protocol.interface.protocolName}.webp`}
-                                                  alt={
-                                                    protocol.interface
-                                                      .protocolName
-                                                  }
-                                                  height={20}
-                                                  width={20}
-                                                  className="rounded-full"
-                                                />
-                                              </div>
-                                            </div>
-                                            <div className="ms-2 truncate">
-                                              <p className="font-semibold truncate ...">
-                                                {protocol.interface.symbolList.join(
-                                                  "-",
-                                                )}
-                                              </p>
-                                              <p className="text-gray-500 truncate ...">
-                                                {
-                                                  protocol.interface
-                                                    .protocolName
-                                                }
-                                                -
-                                                {(
-                                                  protocol.weight * 100
-                                                ).toFixed(0)}
-                                                %
-                                              </p>
-                                            </div>
-                                          </div>
-                                        </td>
-                                        <td className="py-4 pl-8 pr-0 text-right tabular-nums text-white">
-                                          <span>
-                                            {isNaN(
-                                              portfolioApr?.[portfolioName]?.[
-                                                protocol.interface.uniqueId()
-                                              ]?.apr * 100,
-                                            ) ? (
-                                              <Spin />
-                                            ) : (
-                                              `${(
-                                                portfolioApr?.[portfolioName]?.[
-                                                  protocol.interface.uniqueId()
-                                                ]?.apr * 100 || 0
-                                              ).toFixed(2)}%`
-                                            )}
-                                          </span>
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                              </tbody>
-                            </table>
-                          </div>
-                        ),
-                      ),
-                  )}
-                <tfoot>
-                  <tr className="border-t border-gray-200">
-                    <th scope="row" className="pt-6 font-semibold text-white">
-                      Avg. APR
-                    </th>
-                    <td className="pt-6 font-semibold text-right text-green-500">
-                      {loading ? (
-                        <Spin />
-                      ) : (
-                        `${(
-                          (portfolioApr[portfolioName]?.portfolioAPR || 0) * 100
-                        ).toFixed(2)}%`
-                      )}
-                    </td>
-                  </tr>
-                </tfoot>
-                <div>
-                  <span className="text-gray-500">Lock-up Period</span>{" "}
-                  {usdBalanceLoading === true ? (
-                    <Spin />
-                  ) : typeof lockUpPeriod === "number" ? (
-                    lockUpPeriod === 0 ? (
-                      <span className="text-green-500" role="lockUpPeriod">
-                        Unlocked
-                      </span>
-                    ) : (
-                      <span className="text-red-500" role="lockUpPeriod">
-                        {Math.floor(lockUpPeriod / 86400)} d{" "}
-                        {Math.ceil((lockUpPeriod % 86400) / 3600)
-                          ? Math.ceil((lockUpPeriod % 86400) / 3600) + "h"
-                          : null}
-                      </span>
-                    )
-                  ) : null}
-                </div>
-              </div>
-            </div>
-            <div className="lg:col-span-2 lg:row-span-1 lg:row-end-2 h-full border border-white/50">
-              <div className="p-6">
-                <h2 className="text-base font-semibold leading-6 text-white">
-                  Historical Data
-                </h2>
-                <HistoricalDataChart portfolioName={portfolioName} />
-              </div>
-            </div>
-            <div className="lg:col-start-3 h-full border border-white/50">
-              {/* Activity feed */}
-              <div className="h-96 overflow-y-scroll shadow-sm p-6">
-                <h2 className="text-sm font-semibold leading-6 text-white">
-                  History
-                </h2>
-                <ul role="list" className="mt-6 space-y-6">
-                  <TransacitonHistory
-                    setPrincipalBalance={setPrincipalBalance}
-                    tokenPricesMappingTable={tokenPricesMappingTable}
-                  />
-                </ul>
-              </div>
-            </div>
+            <HistoricalData portfolioName={portfolioName} />
+
+            <TransactionHistoryPanel
+              setPrincipalBalance={setPrincipalBalance}
+              tokenPricesMappingTable={tokenPricesMappingTable}
+            />
           </div>
         </div>
       </main>

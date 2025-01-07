@@ -74,19 +74,20 @@ export class BasePortfolio {
     return 0.05;
   }
   async usdBalanceOf(address, portfolioAprDict) {
+    // Get token prices
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable(
       () => {},
     );
 
     // Get balances and rewards
-    const [balanceResults, rewardsData] = await this._getBalancesAndRewards(
+    const balanceResults = await this._getBalances(
       address,
       tokenPricesMappingTable,
     );
 
     // Initialize balance dictionary with rewards
-    let usdBalance = rewardsData.rewardUsdBalance;
-    const usdBalanceDict = this._initializeBalanceDict(rewardsData);
+    let usdBalance = 0;
+    const usdBalanceDict = this._initializeBalanceDict();
 
     // Process protocol balances
     this._processProtocolBalances(
@@ -94,6 +95,8 @@ export class BasePortfolio {
       portfolioAprDict,
       usdBalanceDict,
     );
+
+    // Calculate total balance
     usdBalance += this._calculateTotalBalance(balanceResults);
 
     // Calculate weights and differences
@@ -111,7 +114,7 @@ export class BasePortfolio {
     return [usdBalance, usdBalanceDict];
   }
 
-  async _getBalancesAndRewards(address, tokenPricesMappingTable) {
+  async _getBalances(address, tokenPricesMappingTable) {
     const balancePromises = Object.values(this.strategy)
       .flatMap((category) => Object.values(category))
       .flat()
@@ -120,25 +123,15 @@ export class BasePortfolio {
           .usdBalanceOf(address, tokenPricesMappingTable)
           .then((balance) => ({ protocol, balance })),
       );
-    const pendingRewardsPromise = this.pendingRewards(address, () => {}).then(
-      (pendingRewards) => ({
-        rewardUsdBalance: this.sumUsdDenominatedValues(pendingRewards),
-        pendingRewardsDict: pendingRewards,
-      }),
-    );
-
-    return await Promise.all([
-      Promise.all(balancePromises),
-      pendingRewardsPromise,
-    ]);
+    return await Promise.all(balancePromises);
   }
 
-  _initializeBalanceDict(rewardsData) {
+  _initializeBalanceDict() {
     return {
       pendingRewards: {
-        usdBalance: rewardsData.rewardUsdBalance,
+        usdBalance: 0,
         weightDiff: 1,
-        pendingRewardsDict: rewardsData.pendingRewardsDict,
+        pendingRewardsDict: {},
         weight: 0,
         APR: 0,
         currentWeight: 0,
@@ -274,7 +267,10 @@ export class BasePortfolio {
       return acc;
     }, {});
 
-    return rewardsMappingTable;
+    return {
+      rewardUsdBalance: this.sumUsdDenominatedValues(rewardsMappingTable),
+      pendingRewardsDict: rewardsMappingTable,
+    };
   }
 
   // Function to sum up the usdDenominatedValue
@@ -331,11 +327,9 @@ export class BasePortfolio {
       }
       return acc;
     }, {});
-
-    const totalTvl = Object.values(aprMappingTable).reduce(
-      (sum, pool) => sum + pool.tvl,
-      0,
-    );
+    const totalTvl = Object.values(aprMappingTable)
+      .filter((pool) => pool.weight > 0)
+      .reduce((sum, pool) => sum + pool.tvl, 0);
 
     aprMappingTable["portfolioAPR"] = Object.values(aprMappingTable).reduce(
       (sum, pool) => sum + pool.apr * pool.weight,
@@ -383,10 +377,6 @@ export class BasePortfolio {
         actionParams.tokenInAddress = wethAddress;
         totalTxns.push(wethTxn);
       }
-      const platformFee = this.mulSwapFeeRate(actionParams.zapInAmount);
-      const normalizedPlatformFeeUSD =
-        ethers.utils.formatUnits(platformFee, actionParams.tokenDecimals) *
-        actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol];
       totalTxns.push(
         approve(
           actionParams.tokenInAddress,
@@ -396,16 +386,22 @@ export class BasePortfolio {
           actionParams.chainMetadata.id,
         ),
       );
-      const referrer = await this._getReferrer(actionParams.account);
-      const platformFeeTxns = await this._getPlatformFeeTxns(
-        actionParams.tokenInAddress,
-        actionParams.chainMetadata,
-        platformFee,
-        referrer,
-      );
-      actionParams.zapInAmount = actionParams.zapInAmount.sub(platformFee);
-      actionParams.setPlatformFee(-normalizedPlatformFeeUSD);
-      totalTxns = totalTxns.concat(platformFeeTxns);
+      if (actionParams.onlyThisChain === false) {
+        const platformFee = this.mulSwapFeeRate(actionParams.zapInAmount);
+        const normalizedPlatformFeeUSD =
+          ethers.utils.formatUnits(platformFee, actionParams.tokenDecimals) *
+          actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol];
+        const referrer = await this._getReferrer(actionParams.account);
+        const platformFeeTxns = await this._getPlatformFeeTxns(
+          actionParams.tokenInAddress,
+          actionParams.chainMetadata,
+          platformFee,
+          referrer,
+        );
+        actionParams.zapInAmount = actionParams.zapInAmount.sub(platformFee);
+        actionParams.setPlatformFee(-normalizedPlatformFeeUSD);
+        totalTxns = totalTxns.concat(platformFeeTxns);
+      }
     } else if (actionName === "rebalance") {
       return await this._generateRebalanceTxns(actionParams);
     } else if (actionName === "stake") {
@@ -1210,7 +1206,7 @@ export class BasePortfolio {
       frax: 0.997,
       usde: 1,
       susd: 0.9952,
-      msusd: 0.9972,
+      msusd: 0.985,
       zunusd: 0.9953,
       eusd: 0.9999,
       gusdc: 1.13,
