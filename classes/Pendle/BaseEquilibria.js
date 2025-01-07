@@ -79,31 +79,41 @@ export class BaseEquilibria extends BaseProtocol {
     return [
       {
         symbol: "arb",
-        coinmarketcapApiId: 11841,
+        priceId: {
+          coinmarketcapApiId: 11841,
+        },
         address: "0x912ce59144191c1204e64559fe8253a0e49e6548",
         decimals: 18,
       },
       {
         symbol: "oarb",
-        coinmarketcapApiId: 11841,
+        priceId: {
+          coinmarketcapApiId: 11841,
+        },
         address: "0x03b611858f8E8913F8DB7d9fDBF59e352b0c83E8",
         decimals: 18,
       },
       {
         symbol: "pendle",
-        coinmarketcapApiId: 9481,
+        priceId: {
+          coinmarketcapApiId: 9481,
+        },
         address: "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
         decimals: 18,
       },
       {
         symbol: "eqb",
-        coinmarketcapApiId: 26556,
+        priceId: {
+          coinmarketcapApiId: 26556,
+        },
         address: "0xbfbcfe8873fe28dfa25f1099282b088d52bbad9c",
         decimals: 18,
       },
       {
         symbol: "xeqb",
-        coinmarketcapApiId: 26556,
+        priceId: {
+          coinmarketcapApiId: 26556,
+        },
         address: "0x96C4A48Abdf781e9c931cfA92EC0167Ba219ad8E",
         decimals: 18,
       },

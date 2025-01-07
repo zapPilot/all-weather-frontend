@@ -59,7 +59,9 @@ export class BaseMoonwell extends BaseProtocol {
     return [
       {
         symbol: "well",
-        coinmarketcapApiId: 20734,
+        priceId: {
+          coinmarketcapApiId: 20734,
+        },
         address: "0xA88594D404727625A9437C3f886C7643872296AE",
         decimals: 18,
         chain: "base",

@@ -1,4 +1,3 @@
-import { AllWeatherPortfolio } from "../classes/AllWeatherPortfolio";
 import { StablecoinVault } from "../classes/Vaults/StablecoinVault";
 import { EthVault } from "../classes/Vaults/EthVault";
 import { BtcVault } from "../classes/Vaults/BtcVault";
@@ -10,11 +9,9 @@ import { MoonwellStablecoinVault } from "../classes/Vaults/Tests/MoonwellStablec
 import { MetisVault } from "../classes/Vaults/MetisVault";
 export function getPortfolioHelper(
   portfolioName: string,
-): AllWeatherPortfolio | BasePortfolio | undefined {
-  let portfolioHelper: AllWeatherPortfolio | BasePortfolio;
-  if (portfolioName === "AllWeatherPortfolio") {
-    portfolioHelper = new AllWeatherPortfolio();
-  } else if (portfolioName === "Stablecoin Vault") {
+): BasePortfolio | undefined {
+  let portfolioHelper: BasePortfolio;
+  if (portfolioName === "Stablecoin Vault") {
     portfolioHelper = new StablecoinVault();
   } else if (portfolioName === "ETH Vault") {
     portfolioHelper = new EthVault();

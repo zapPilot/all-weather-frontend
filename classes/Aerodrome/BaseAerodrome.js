@@ -59,7 +59,9 @@ export class BaseAerodrome extends BaseProtocol {
     return [
       {
         symbol: "aero",
-        coinmarketcapApiId: 29270,
+        priceId: {
+          coinmarketcapApiId: 29270,
+        },
         address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
         decimals: 18,
       },
