@@ -525,7 +525,7 @@ export default function IndexOverviews() {
           setProtocolAssetDustInWalletLoading(true);
 
           const tokenPricesMappingTable =
-            await portfolioHelper.getTokenPricesMappingTable(() => {});
+            await portfolioHelper.getTokenPricesMappingTable();
           if (!isMounted) return;
           setTokenPricesMappingTable(tokenPricesMappingTable);
           const [usdBalance, usdBalanceDict] =

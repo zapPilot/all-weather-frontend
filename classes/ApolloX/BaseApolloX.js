@@ -44,7 +44,9 @@ export class BaseApolloX extends BaseProtocol {
     return [
       {
         symbol: "arb",
-        coinmarketcapApiId: 11841,
+        priceId: {
+          coinmarketcapApiId: 11841,
+        },
         address: "0x912ce59144191c1204e64559fe8253a0e49e6548",
         decimals: this.assetDecimals,
       },
