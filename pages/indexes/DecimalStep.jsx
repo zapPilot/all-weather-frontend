@@ -1,4 +1,4 @@
-import { Space, InputNumber, Slider } from "antd";
+import { Space, InputNumber, Slider, Button } from "antd";
 import { useState, useEffect } from "react";
 import { selectBefore } from "../../utils/contractInteractions";
 import { useActiveWalletChain } from "thirdweb/react";
@@ -10,6 +10,8 @@ const DecimalStep = ({
   selectedToken,
   setSelectedToken,
   noTokenSelect,
+  zapOutIsLoading,
+  usdBalanceLoading,
 }) => {
   const [inputValue, setInputValue] = useState(0);
   const [sliderValue, setSliderValue] = useState(0);
@@ -46,6 +48,12 @@ const DecimalStep = ({
     setInputValue(clampedValue);
   };
 
+  const handleOnClickMax = () => {
+    setInputValue(depositBalance);
+    setSliderValue(100);
+    setZapOutPercentage(1);
+  };
+
   return (
     <>
       <Space.Compact>
@@ -62,6 +70,13 @@ const DecimalStep = ({
           }
           parser={(value) => value.replace(/[^\d.]/g, "")}
         />
+        <Button
+          type="primary"
+          onClick={handleOnClickMax}
+          disabled={zapOutIsLoading || usdBalanceLoading}
+        >
+          Max
+        </Button>
       </Space.Compact>
       <Slider
         min={0}
@@ -69,6 +84,7 @@ const DecimalStep = ({
         onChange={onSliderChange}
         value={sliderValue}
         step={1}
+        disabled={zapOutIsLoading || usdBalanceLoading}
       />
     </>
   );

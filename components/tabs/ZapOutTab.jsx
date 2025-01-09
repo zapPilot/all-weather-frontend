@@ -22,6 +22,8 @@ export default function ZapOutTab({
         setZapOutPercentage={setZapOutPercentage}
         currency="$"
         noTokenSelect={false}
+        zapOutIsLoading={zapOutIsLoading}
+        usdBalanceLoading={usdBalanceLoading}
       />
       {account === undefined ? (
         <ConfiguredConnectButton />
