@@ -2,7 +2,9 @@ import { Button, Statistic } from "antd";
 import TokenDropdownInput from "../../pages/views/TokenDropdownInput.jsx";
 import ConfiguredConnectButton from "../../pages/ConnectButton";
 import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
-import { useState } from "react";
+import { useState } from "react"
+import { TOKEN_ADDRESS_MAP } from "../../utils/general";
+import { chain } from "lodash";
 const { Countdown } = Statistic;
 export default function ZapInTab({
   nextStepChain,
@@ -35,8 +37,9 @@ export default function ZapInTab({
   const [deadline, setDeadline] = useState(null);
 
   const handleSwitchChain = async () => {
+    console.log("handleSwitchChain");
     setIsLoading(true);
-    const deadlineTime = getCurrentTimeSeconds() + 4;
+    const deadlineTime = getCurrentTimeSeconds() + 7;
     setDeadline(deadlineTime * 1000); // Convert to milliseconds for antd Countdown
     setShowCountdown(true);
 
@@ -44,6 +47,12 @@ export default function ZapInTab({
 
     setPreviousTokenSymbol(selectedToken.split("-")[0].toLowerCase());
     switchNextStepChain(nextStepChain);
+    if(selectedToken.split("-")[0].toLowerCase() === "usdt") {
+      let chainName = chainId.name.toLowerCase();
+      if(chainName === "arbitrum one") {chainName = "arbitrum"}
+      const usdcAddress = TOKEN_ADDRESS_MAP["usdc"][chainName];
+      handleSetSelectedToken(`usdc-${usdcAddress}-6`);
+    }
     setNextChainInvestmentAmount(parseFloat(walletBalanceData?.displayValue));
 
     setShowCountdown(false);
@@ -53,7 +62,10 @@ export default function ZapInTab({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
-        <div className={`mt-4 sm:mt-0 ${nextStepChain ? "hidden" : "block"}`}>
+        <div 
+        className={`mt-4 sm:mt-0 ${nextStepChain ? "hidden" : "block"}`}
+        // className={'mt-4 hidden'}
+        >
           <p>Step 1: Choose a chain to zap in and bridge to another chain.</p>
           <TokenDropdownInput
             selectedToken={selectedToken}
@@ -76,7 +88,11 @@ export default function ZapInTab({
             <Button
               type="primary"
               className="w-full my-2"
-              onClick={() => handleAAWalletAction("stake", true)}
+              onClick={() => {
+                handleAAWalletAction("stake", true);
+                console.log("nextChainInvestmentAmount", nextChainInvestmentAmount);
+                console.log("WalletBalanceData", walletBalanceData);
+              }}
               loading={protocolAssetDustInWalletLoading}
               disabled={usdBalanceLoading}
             >
@@ -96,7 +112,11 @@ export default function ZapInTab({
             <Button
               type="primary"
               className="w-full my-2"
-              onClick={() => handleAAWalletAction("zapIn", false)}
+              onClick={() => {
+                handleAAWalletAction("zapIn", false);
+                console.log("nextChainInvestmentAmount", nextChainInvestmentAmount);
+                console.log("WalletBalanceData", walletBalanceData);
+              }}
               loading={zapInIsLoading}
               disabled={
                 Number(investmentAmount) === 0 ||
@@ -147,7 +167,11 @@ export default function ZapInTab({
                 ? "hidden"
                 : "block"
             }`}
-            onClick={handleSwitchChain}
+            onClick={() => {
+              handleSwitchChain();
+              console.log("nextChainInvestmentAmount", nextChainInvestmentAmount);
+              console.log("WalletBalanceData", walletBalanceData);
+            }}
             loading={isLoading}
           >
             switch to {nextStepChain} Chain
@@ -160,6 +184,7 @@ export default function ZapInTab({
               ? "block"
               : "hidden"
           }`}
+          // className={'mt-4 block'}
         >
           <p>
             Step 3: After calculating the investment amount, click to zap in.
@@ -169,14 +194,24 @@ export default function ZapInTab({
             type="primary"
             className={`w-full my-2 ${showZapIn ? "hidden" : "block"}`}
             onClick={() => {
+              setShowZapIn(true);
+              // console.log("selectedToken", selectedToken);
+              // console.log("chainId", chainId);
+              console.log("nextChainInvestmentAmount", nextChainInvestmentAmount);
+              console.log("WalletBalanceData", walletBalanceData);
+              // console.log("the display value", parseFloat(walletBalanceData?.displayValue));
+              // if(selectedToken.split("-")[0].toLowerCase() === "usdt") {
+              //   let chainName = chainId.name.toLowerCase();
+              //   if(chainName === "arbitrum one") {chainName = "arbitrum"}
+              //   const usdcAddress = TOKEN_ADDRESS_MAP["usdc"][chainName];
+              //   handleSetSelectedToken(`usdc-${usdcAddress}-6`);
+              // }
               setInvestmentAmount(
-                nextChainInvestmentAmount >
-                  parseFloat(walletBalanceData?.displayValue)
+                nextChainInvestmentAmount > parseFloat(walletBalanceData?.displayValue)
                   ? parseFloat(walletBalanceData?.displayValue)
                   : nextChainInvestmentAmount,
               );
               setFinishedTxn(false);
-              setShowZapIn(true);
             }}
           >
             Set Investment Amount to{" "}
@@ -193,7 +228,10 @@ export default function ZapInTab({
           <Button
             type="primary"
             className={`w-full my-2 ${showZapIn ? "block" : "hidden"}`}
-            onClick={() => handleAAWalletAction("zapIn", true)}
+            onClick={() => {
+              handleAAWalletAction("zapIn", true);
+              console.log("WalletBalanceData", walletBalanceData);
+            }}
             loading={zapInIsLoading}
             disabled={
               Number(investmentAmount) === 0 ||
