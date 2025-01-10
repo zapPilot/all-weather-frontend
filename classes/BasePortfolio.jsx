@@ -10,7 +10,11 @@ import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import WETH from "../lib/contracts/Weth.json" assert { type: "json" };
 import ReactMarkdown from "react-markdown";
 import getTheBestBridge from "./bridges/bridgeFactory";
-import { CHAIN_ID_TO_CHAIN, CHAIN_TO_CHAIN_ID, TOKEN_ADDRESS_MAP } from "../utils/general";
+import {
+  CHAIN_ID_TO_CHAIN,
+  CHAIN_TO_CHAIN_ID,
+  TOKEN_ADDRESS_MAP,
+} from "../utils/general";
 import { toWei } from "thirdweb/utils";
 import { fetch1InchSwapData } from "../utils/oneInch";
 import { _updateProgressAndWait } from "../utils/general";
@@ -558,7 +562,7 @@ export class BasePortfolio {
     toTokenSymbol,
     toTokenDecimals,
     tokenPricesMappingTable,
-    actionParams
+    actionParams,
   ) {
     if (fromTokenAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
       return;
@@ -701,8 +705,13 @@ export class BasePortfolio {
       },
       bridge: async (chain, totalWeight) => {
         if (totalWeight === 0) return [];
-        let inputToken = TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol][currentChain];
-        let inputAmount = Math.floor((actionParams.zapInAmount)*(totalWeight)*(1-actionParams.slippage/100));
+        let inputToken =
+          TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol][currentChain];
+        let inputAmount = Math.floor(
+          actionParams.zapInAmount *
+            totalWeight *
+            (1 - actionParams.slippage / 100),
+        );
         let txns = [];
         const allowedTokens = ["usdc", "eth", "weth"];
         if (!allowedTokens.includes(actionParams.tokenInSymbol.toLowerCase())) {
@@ -727,9 +736,9 @@ export class BasePortfolio {
         }
 
         const inputAmountBN = ethers.BigNumber.from(inputAmount);
-        console.log({ 
+        console.log({
           fromChain: actionParams.chainMetadata.name,
-          toChain: chain
+          toChain: chain,
         });
         const bridge = await getTheBestBridge();
         const bridgeTxns = await bridge.getBridgeTxns(

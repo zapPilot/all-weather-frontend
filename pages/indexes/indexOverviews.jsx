@@ -212,7 +212,7 @@ export default function IndexOverviews() {
     setStepName("");
 
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
-    
+
     if (!tokenSymbolAndAddress) {
       alert("Please select a token");
       return;
@@ -478,83 +478,7 @@ export default function IndexOverviews() {
       ) + portfolioHelper?.sumUsdDenominatedValues(pendingRewards)
     );
   };
-  // Function to log state for debugging
-  useEffect(() => {
-    console.log("Debugging State:", {
-      selectedToken,
-      previousTokenSymbol,
-      investmentAmount,
-      zapInIsLoading,
-      zapOutIsLoading,
-      claimIsLoading,
-      transferLoading,
-      rebalanceIsLoading,
-      protocolAssetDustInWalletLoading,
-      actionName,
-      onlyThisChain,
-      totalTradingLoss,
-      tradingLoss,
-      platformFee,
-      costsCalculated,
-      stepName,
-      slippage,
-      zapOutPercentage,
-      usdBalance,
-      pendingRewards,
-      rebalancableUsdBalanceDict,
-      recipient,
-      protocolAssetDustInWallet,
-      usdBalanceLoading,
-      pendingRewardsLoading,
-      rebalancableUsdBalanceDictLoading,
-      principalBalance,
-      open,
-      finishedTxn,
-      txnLink,
-      tokenPricesMappingTable,
-      tabKey,
-      lockUpPeriod,
-      recipientError,
-      showZapIn,
-    });
-  }, [
-    selectedToken,
-    previousTokenSymbol,
-    investmentAmount,
-    zapInIsLoading,
-    zapOutIsLoading,
-    claimIsLoading,
-    transferLoading,
-    rebalanceIsLoading,
-    protocolAssetDustInWalletLoading,
-    actionName,
-    onlyThisChain,
-    totalTradingLoss,
-    tradingLoss,
-    platformFee,
-    costsCalculated,
-    stepName,
-    slippage,
-    zapOutPercentage,
-    usdBalance,
-    pendingRewards,
-    rebalancableUsdBalanceDict,
-    recipient,
-    protocolAssetDustInWallet,
-    usdBalanceLoading,
-    pendingRewardsLoading,
-    rebalancableUsdBalanceDictLoading,
-    principalBalance,
-    open,
-    finishedTxn,
-    txnLink,
-    tokenPricesMappingTable,
-    tabKey,
-    lockUpPeriod,
-    recipientError,
-    showZapIn,
-  ]);
-  
+
   useEffect(() => {
     if (
       portfolioApr[portfolioName] === undefined ||
