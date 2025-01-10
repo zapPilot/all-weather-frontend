@@ -10,11 +10,11 @@ import Image from "next/image";
 // Constants
 const VAULT_CONFIGS = {
   "ETH Vault": {
-    baseDenom: "weth",
+    baseDenom: "usd",
     tokens: ["weth", "usd", "wbtc"],
   },
   "BTC Vault": {
-    baseDenom: "wbtc",
+    baseDenom: "usd",
     tokens: ["wbtc", "usd", "weth"],
   },
   "Stablecoin Vault": {
@@ -28,12 +28,15 @@ const ACTION_LABELS = {
   zapOut: "Withdraw",
   transfer: "Transfer",
   rebalance: "Rebalance",
+  receive: "Receive",
 };
 
 const ACTION_COLORS = {
   zapIn: "text-green-500",
   zapOut: "text-orange-500",
   transfer: "text-orange-500",
+  receive: "text-green-500",
+  rebalance: "text-blue-500",
   default: "text-blue-500",
 };
 
@@ -97,20 +100,30 @@ export default function TransactionHistory({
 
     for (const txn of transactions) {
       if (txn.metadata.portfolioName !== portfolioName) continue;
-
-      const { actionName, tokenSymbol, investmentAmount, zapOutAmount } =
-        txn.metadata;
+      const {
+        actionName,
+        tokenSymbol,
+        zapOutAmount,
+        zapInAmountOnThisChain,
+        stakeAmountOnThisChain,
+      } = txn.metadata;
       const principalSymbol = refineSymbol(tokenSymbol);
 
       if (actionName === "zapIn") {
         balance = updateBalance(
           balance,
-          principalSymbol,
-          parseFloat(investmentAmount) || 0,
+          "usd",
+          parseFloat(zapInAmountOnThisChain) || 0,
         );
       }
-
-      if (["transfer"].includes(actionName)) {
+      if (actionName === "stake") {
+        balance = updateBalance(
+          balance,
+          "usd",
+          parseFloat(stakeAmountOnThisChain) || 0,
+        );
+      }
+      if (["zapOut", "transfer"].includes(actionName)) {
         balance = updateBalance(
           balance,
           principalSymbol,
@@ -124,7 +137,6 @@ export default function TransactionHistory({
         });
       }
     }
-
     return balance;
   };
 
@@ -138,7 +150,6 @@ export default function TransactionHistory({
         tokenPricesMappingTable[toToken]
       );
     };
-
     const config = VAULT_CONFIGS[portfolioName];
     if (!config) return 0;
 
@@ -178,7 +189,13 @@ export default function TransactionHistory({
 
   const renderSingleTransaction = (activityItem) => {
     const {
-      metadata: { actionName, tokenSymbol, investmentAmount, zapOutAmount },
+      metadata: {
+        actionName,
+        tokenSymbol,
+        zapOutAmount,
+        zapInAmountOnThisChain,
+        stakeAmountOnThisChain,
+      },
       gotRefundData,
     } = activityItem;
     const tokenDict = {};
@@ -190,12 +207,13 @@ export default function TransactionHistory({
       });
     }
 
-    const actionAmount =
-      actionName === "zapIn"
-        ? parseFloat(investmentAmount)
-        : ["transfer"].includes(actionName)
-        ? parseFloat(zapOutAmount)
-        : 0;
+    const actionAmount = ["receive", "zapIn"].includes(actionName)
+      ? parseFloat(zapInAmountOnThisChain)
+      : ["transfer", "zapOut"].includes(actionName)
+      ? parseFloat(zapOutAmount)
+      : actionName === "stake"
+      ? parseFloat(stakeAmountOnThisChain)
+      : 0;
 
     if (actionAmount) {
       tokenDict[tokenSymbol] = (tokenDict[tokenSymbol] || 0) + actionAmount;

@@ -6,14 +6,7 @@ import {
   useActiveAccount,
 } from "thirdweb/react";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
-import {
-  arbitrum,
-  base,
-  optimism,
-  bsc,
-  polygon,
-  mantle,
-} from "thirdweb/chains";
+import { arbitrum, base, optimism, bsc, polygon } from "thirdweb/chains";
 import { defineChain } from "thirdweb";
 import NumericInput from "./NumberInput";
 import { selectBefore } from "../../utils/contractInteractions";
@@ -24,7 +17,6 @@ const chainIdToChain = {
   10: optimism,
   56: bsc,
   137: polygon,
-  5000: mantle,
   1088: defineChain(1088),
 };
 

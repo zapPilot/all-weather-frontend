@@ -12,6 +12,8 @@ const DecimalStep = ({
   noTokenSelect,
   zapOutIsLoading,
   usdBalanceLoading,
+  portfolioHelper,
+  pendingRewards,
 }) => {
   const [inputValue, setInputValue] = useState(0);
   const [sliderValue, setSliderValue] = useState(0);
@@ -60,7 +62,9 @@ const DecimalStep = ({
         {!noTokenSelect &&
           selectBefore(handleTokenChange, chainId?.id, selectedToken)}
         <InputNumber
-          min={0}
+          min={
+            portfolioHelper?.sumUsdDenominatedValues(pendingRewards || {}) || 0
+          }
           max={depositBalance}
           step={1}
           value={inputValue?.toFixed(0)}
