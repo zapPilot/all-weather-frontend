@@ -157,16 +157,7 @@ export class BaseConvex extends BaseProtocol {
       totalNormalizedAmount * lpPrice * Math.pow(10, this.assetDecimals);
 
     // TODO(david): the asset price is not correct here, so we just reduce 0.03% swap fee to estimate the trading loss
-    const tradingLoss =
-      outputPrice * 0.9997 -
-      (Number(
-        ethers.utils.formatUnits(amounts[0].toString(), tokenAmetadata[2]),
-      ) *
-        tokenPricesMappingTable[tokenAmetadata[0]] +
-        Number(
-          ethers.utils.formatUnits(amounts[1].toString(), tokenBmetadata[2]),
-        ) *
-          tokenPricesMappingTable[tokenBmetadata[0]]);
+    const tradingLoss = 0;
 
     const minMintAmount = ethers.BigNumber.from(
       String(Math.floor((outputPrice * (100 - slippage)) / 100)),

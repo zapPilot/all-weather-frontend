@@ -12,7 +12,6 @@ import { getGasPrice } from "thirdweb";
 import PopUpModal from "../Modal";
 import {
   TOKEN_ADDRESS_MAP,
-  truncateToFixed,
   CHAIN_ID_TO_CHAIN,
   CHAIN_TO_CHAIN_ID,
   CHAIN_ID_TO_CHAIN_STRING,
@@ -118,7 +117,6 @@ export default function IndexOverviews() {
   const [investmentAmount, setInvestmentAmount] = useState(0);
   const [zapInIsLoading, setZapInIsLoading] = useState(false);
   const [zapOutIsLoading, setZapOutIsLoading] = useState(false);
-  const [claimIsLoading, setClaimIsLoading] = useState(false);
   const [transferLoading, setTransferLoading] = useState(false);
   const [rebalanceIsLoading, setRebalanceIsLoading] = useState(false);
   const [
@@ -220,8 +218,6 @@ export default function IndexOverviews() {
       setZapInIsLoading(true);
     } else if (actionName === "zapOut") {
       setZapOutIsLoading(true);
-    } else if (actionName === "claimAndSwap") {
-      setClaimIsLoading(true);
     } else if (actionName === "rebalance") {
       setRebalanceIsLoading(true);
     } else if (actionName === "transfer") {
@@ -267,7 +263,21 @@ export default function IndexOverviews() {
       // Reset the processing flag before changing chain
       hasProcessedChainChangeRef.current = false;
       preservedAmountRef.current = investmentAmount;
-
+      const investmentAmountAfterFee =
+        investmentAmount *
+        (1 - portfolioHelper.swapFeeRate()) *
+        (1 - slippage / 100) *
+        (1 - slippage / 100);
+      const chainWeight = calCrossChainInvestmentAmount(
+        chainId?.name?.toLowerCase().replace(" one", ""),
+      );
+      const chainWeightPerYourPortfolio =
+        Object.values(rebalancableUsdBalanceDict)
+          .filter(
+            ({ chain }) =>
+              chain === chainId?.name?.toLowerCase().replace(" one", ""),
+          )
+          .reduce((sum, value) => sum + value.usdBalance, 0) / usdBalance;
       // Call sendBatchTransaction and wait for the result
       try {
         await new Promise((resolve, reject) => {
@@ -288,19 +298,63 @@ export default function IndexOverviews() {
                       portfolioName,
                       actionName,
                       tokenSymbol,
-                      investmentAmount:
-                        investmentAmount *
-                        (1 - slippage / 100 - portfolioHelper.swapFeeRate()),
-                      zapOutAmount: usdBalance * zapOutPercentage,
+                      investmentAmount: investmentAmountAfterFee,
+                      zapOutAmount:
+                        usdBalance *
+                        zapOutPercentage *
+                        chainWeightPerYourPortfolio,
                       rebalanceAmount: getRebalanceReinvestUsdAmount(),
                       timestamp: Math.floor(Date.now() / 1000),
                       swapFeeRate: portfolioHelper.swapFeeRate(),
                       referralFeeRate: portfolioHelper.referralFeeRate(),
                       chain:
                         CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
+                      zapInAmountOnThisChain:
+                        investmentAmountAfterFee * chainWeight,
+                      stakeAmountOnThisChain: Object.values(
+                        protocolAssetDustInWallet?.[
+                          chainId?.name?.toLowerCase()?.replace(" one", "")
+                        ] || {},
+                      ).reduce(
+                        (sum, protocolObj) =>
+                          sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
+                        0,
+                      ),
                     }),
                   },
                 });
+                if (actionName === "transfer") {
+                  await axios({
+                    method: "post",
+                    url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    data: {
+                      user_api_key: "placeholder",
+                      tx_hash: data.transactionHash,
+                      address: recipient,
+                      metadata: JSON.stringify({
+                        portfolioName,
+                        actionName: "receive",
+                        tokenSymbol,
+                        investmentAmount: investmentAmountAfterFee,
+                        zapOutAmount: 0,
+                        rebalanceAmount: 0,
+                        timestamp: Math.floor(Date.now() / 1000),
+                        swapFeeRate: portfolioHelper.swapFeeRate(),
+                        referralFeeRate: portfolioHelper.referralFeeRate(),
+                        chain:
+                          CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
+                        zapInAmountOnThisChain:
+                          usdBalance *
+                          zapOutPercentage *
+                          chainWeightPerYourPortfolio,
+                        sender: account.address,
+                      }),
+                    },
+                  });
+                }
               } catch (error) {
                 console.log("category API error", error);
               }
@@ -364,8 +418,6 @@ export default function IndexOverviews() {
       setZapInIsLoading(false);
     } else if (actionName === "zapOut") {
       setZapOutIsLoading(false);
-    } else if (actionName === "claimAndSwap") {
-      setClaimIsLoading(false);
     } else if (actionName === "rebalance") {
       setRebalanceIsLoading(false);
     } else if (actionName === "stake") {
@@ -396,7 +448,7 @@ export default function IndexOverviews() {
   // calculate the investment amount for next chain
   const calCrossChainInvestmentAmount = (nextChain) => {
     if (portfolioHelper?.strategy === undefined) return 0;
-    const chainWeight = Object.entries(portfolioHelper.strategy).reduce(
+    return Object.entries(portfolioHelper.strategy).reduce(
       (sum, [category, protocols]) => {
         return (
           sum +
@@ -417,10 +469,6 @@ export default function IndexOverviews() {
         );
       },
       0,
-    );
-    return truncateToFixed(
-      allInvestmentAmount * chainWeight,
-      selectedToken?.split("-")[2],
     );
   };
   const [nextChainInvestmentAmount, setNextChainInvestmentAmount] = useState(0);
@@ -498,15 +546,9 @@ export default function IndexOverviews() {
     setPendingRewardsLoading(true);
     setrebalancableUsdBalanceDictLoading(true);
     setProtocolAssetDustInWalletLoading(true);
-
     if (!portfolioName || account === undefined || !chainId) {
       return;
     }
-    // We still need basic portfolio data, but don't need to wait for accurate APR
-    if (!portfolioApr[portfolioName]) {
-      return;
-    }
-
     // Add guard against multiple chain change processing
     if (isProcessingChainChangeRef.current) {
       return;
@@ -523,7 +565,6 @@ export default function IndexOverviews() {
           setPendingRewardsLoading(true);
           setrebalancableUsdBalanceDictLoading(true);
           setProtocolAssetDustInWalletLoading(true);
-
           const tokenPricesMappingTable =
             await portfolioHelper.getTokenPricesMappingTable();
           if (!isMounted) return;
@@ -579,7 +620,6 @@ export default function IndexOverviews() {
 
       fetchUsdBalance();
     }, 500);
-
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
@@ -693,6 +733,7 @@ export default function IndexOverviews() {
     zapInIsLoading,
     zapOutIsLoading,
     zapOutPercentage,
+    pendingRewards,
   };
 
   const items = useTabItems(tabProps);
@@ -887,12 +928,9 @@ export default function IndexOverviews() {
             <PortfolioSummary
               usdBalanceLoading={usdBalanceLoading}
               tokenPricesMappingTable={tokenPricesMappingTable}
-              portfolioName={portfolioName}
               usdBalance={usdBalance}
-              portfolioHelper={portfolioHelper}
               account={account}
-              pendingRewards={pendingRewards}
-              pendingRewardsLoading={pendingRewardsLoading}
+              principalBalance={principalBalance}
             />
 
             <PortfolioComposition
