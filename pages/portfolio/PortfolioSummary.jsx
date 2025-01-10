@@ -27,7 +27,7 @@ export default function PortfolioSummary({
               ) : (
                 <div>
                   <div className="flex items-center">
-                    <span>${usdBalance.toFixed(2)}</span>
+                    <span>${usdBalance?.toFixed(2)}</span>
                     <a
                       href={`https://debank.com/profile/${account?.address}`}
                       target="_blank"
@@ -63,7 +63,7 @@ export default function PortfolioSummary({
             <dd className="text-sm font-medium leading-6 text-white">
               Profit:{" "}
               {usdBalanceLoading ||
-              Object.values(tokenPricesMappingTable).length === 0 ? (
+              Object.values(tokenPricesMappingTable || {}).length === 0 ? (
                 <Spin />
               ) : (
                 <span
@@ -76,7 +76,7 @@ export default function PortfolioSummary({
                   $
                   {usdBalance === 0
                     ? 0
-                    : (usdBalance - principalBalance).toFixed(2)}
+                    : (usdBalance - principalBalance)?.toFixed(2)}
                 </span>
               )}
             </dd>
