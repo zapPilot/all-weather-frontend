@@ -36,7 +36,7 @@ export default function ZapInTab({
 
   const handleSwitchChain = async () => {
     setIsLoading(true);
-    const deadlineTime = getCurrentTimeSeconds() + 4;
+    const deadlineTime = getCurrentTimeSeconds() + 12;
     setDeadline(deadlineTime * 1000); // Convert to milliseconds for antd Countdown
     setShowCountdown(true);
 
