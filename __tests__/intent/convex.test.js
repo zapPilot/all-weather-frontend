@@ -12,6 +12,9 @@ const slippage = 0.5;
 const rebalancableUsdBalanceDict = {};
 const protocolAssetDustInWallet = {};
 const onlyThisChain = false;
+const protocolReferralWalletSubstring =
+  "2ecbc6f229fed06044cdb0dd772437a30190cd5";
+const sunReferralWalletSubString = "aa930eeb6d749ed0b2d31d9afb37582a947c2688";
 describe("Convex", () => {
   it("should be able to zap-in Convex's Stablecoin Vault", async () => {
     const actionName = "zapIn";
@@ -50,12 +53,8 @@ describe("Convex", () => {
       "0x095ea7b30000000000000000000000001111111254eeb25477b68fb85ed929f73a9605820000000000000000000000000000000000000000000000000de0b6b3a7640000",
     );
     // referral fee
-    expect(await encode(txns[1])).includes(
-      "2ecbc6f229fed06044cdb0dd772437a30190cd50",
-    );
-    expect(await encode(txns[2])).includes(
-      "2ecbc6f229fed06044cdb0dd772437a30190cd50",
-    );
+    expect(await encode(txns[1])).includes(protocolReferralWalletSubstring);
+    expect(await encode(txns[2])).includes(protocolReferralWalletSubstring);
     expect(
       (await encode(txns[4])).includes(
         userAddress.replace("0x", "").toLowerCase(),
@@ -65,7 +64,7 @@ describe("Convex", () => {
   });
   it("should be able to zap-out Convex's Stablecoin Vault", async () => {
     const actionName = "zapOut";
-    const userAddress = "0x04B79E6394a8200DF40d1b7fb2eC310B2e45D232";
+    const userAddress = "0x39551EC839f10C235ec8DB062A93e89d3c0E6134";
     const recipientInEncodeData = "c774806f9ff5f3d8aabb6b70d0ed509e42afe6f0";
     const tokenSymbol = "weth";
     const tokenAddress = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1";

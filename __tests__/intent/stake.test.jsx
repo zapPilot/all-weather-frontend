@@ -11,7 +11,7 @@ describe("Stake module", () => {
   it(
     "should be able to stake",
     async () => {
-      const userAddress = "0x04B79E6394a8200DF40d1b7fb2eC310B2e45D232";
+      const userAddress = "0x39551EC839f10C235ec8DB062A93e89d3c0E6134";
       const portfolioHelper = getPortfolioHelper("Equilibria ETH Vault");
       const dust = await portfolioHelper.calProtocolAssetDustInWalletDictionary(
         userAddress,

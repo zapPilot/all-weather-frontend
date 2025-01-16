@@ -15,7 +15,6 @@ export default function ZapInTab({
   account,
   protocolAssetDustInWallet,
   chainId,
-  usdBalance,
   handleAAWalletAction,
   protocolAssetDustInWalletLoading,
   usdBalanceLoading,
@@ -25,8 +24,6 @@ export default function ZapInTab({
   setPreviousTokenSymbol,
   switchNextStepChain,
   walletBalanceData,
-  setNextChainInvestmentAmount,
-  nextChainInvestmentAmount,
   showZapIn,
   setInvestmentAmount,
   setFinishedTxn,
@@ -35,27 +32,17 @@ export default function ZapInTab({
   const [isLoading, setIsLoading] = useState(false);
   const [showCountdown, setShowCountdown] = useState(false);
   const [deadline, setDeadline] = useState(null);
-
+  const countdownTime = 9;
   const handleSwitchChain = async () => {
     setIsLoading(true);
-    const deadlineTime = getCurrentTimeSeconds() + 7;
+    const deadlineTime = getCurrentTimeSeconds() + countdownTime;
     setDeadline(deadlineTime * 1000); // Convert to milliseconds for antd Countdown
     setShowCountdown(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 4000));
+    switchNextStepChain(nextStepChain);
+    await new Promise((resolve) => setTimeout(resolve, countdownTime * 1000));
 
     setPreviousTokenSymbol(selectedToken.split("-")[0].toLowerCase());
-    switchNextStepChain(nextStepChain);
-    if (selectedToken.split("-")[0].toLowerCase() === "usdt") {
-      let chainName = chainId.name.toLowerCase();
-      if (chainName === "arbitrum one") {
-        chainName = "arbitrum";
-      }
-      const usdcAddress = TOKEN_ADDRESS_MAP["usdc"][chainName];
-      handleSetSelectedToken(`usdc-${usdcAddress}-6`);
-    }
-    setNextChainInvestmentAmount(parseFloat(walletBalanceData?.displayValue));
-
     setShowCountdown(false);
     setIsLoading(false);
   };
@@ -83,9 +70,7 @@ export default function ZapInTab({
             ).reduce(
               (sum, protocolObj) => sum + (protocolObj.assetUsdBalanceOf || 0),
               0,
-            ) /
-              usdBalance >
-            0.05 ? (
+            ) > 100 ? (
             <Button
               type="primary"
               className="w-full my-2"
@@ -124,17 +109,7 @@ export default function ZapInTab({
             </Button>
           )}
         </div>
-        <div
-          className={`mt-4 
-              ${
-                nextStepChain
-                  ? nextChainInvestmentAmount > 0
-                    ? "hidden"
-                    : "block"
-                  : "hidden"
-              }
-            `}
-        >
+        <div className={`mt-4 ${nextStepChain ? "block" : "hidden"}`}>
           <p>
             Step 2: Once bridging is complete, switch to the other chain to
             calculate the investment amount.
@@ -174,7 +149,6 @@ export default function ZapInTab({
         </div>
         <div
           className={`mt-4 ${
-            nextChainInvestmentAmount > 0 &&
             nextStepChain === chainId?.name?.toLowerCase()?.replace(" one", "")
               ? "block"
               : "hidden"
@@ -189,36 +163,14 @@ export default function ZapInTab({
             type="primary"
             className={`w-full my-2 ${showZapIn ? "hidden" : "block"}`}
             onClick={() => {
-              setShowZapIn(true);
-              // console.log("selectedToken", selectedToken);
-              // console.log("chainId", chainId);
-              // console.log("nextChainInvestmentAmount", nextChainInvestmentAmount);
-              // console.log("WalletBalanceData", walletBalanceData);
-              // console.log("the display value", parseFloat(walletBalanceData?.displayValue));
-              // if(selectedToken.split("-")[0].toLowerCase() === "usdt") {
-              //   let chainName = chainId.name.toLowerCase();
-              //   if(chainName === "arbitrum one") {chainName = "arbitrum"}
-              //   const usdcAddress = TOKEN_ADDRESS_MAP["usdc"][chainName];
-              //   handleSetSelectedToken(`usdc-${usdcAddress}-6`);
-              // }
-              setInvestmentAmount(
-                nextChainInvestmentAmount >
-                  parseFloat(walletBalanceData?.displayValue)
-                  ? parseFloat(walletBalanceData?.displayValue)
-                  : nextChainInvestmentAmount,
-              );
+              setInvestmentAmount(walletBalanceData?.displayValue);
               setFinishedTxn(false);
             }}
           >
             Set Investment Amount to{" "}
-            {nextChainInvestmentAmount >
-            parseFloat(walletBalanceData?.displayValue)
-              ? parseFloat(walletBalanceData?.displayValue) < 0.01
-                ? "< 0.01"
-                : parseFloat(walletBalanceData?.displayValue).toFixed(2)
-              : nextChainInvestmentAmount < 0.01
-              ? "< 0.01"
-              : nextChainInvestmentAmount?.toFixed(2)}{" "}
+            {walletBalanceData?.displayValue !== undefined
+              ? Number(walletBalanceData.displayValue).toFixed(2)
+              : "0.00"}{" "}
             on {nextStepChain} Chain
           </Button>
           <Button

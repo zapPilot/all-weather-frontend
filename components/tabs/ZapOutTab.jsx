@@ -12,6 +12,8 @@ export default function ZapOutTab({
   zapOutIsLoading,
   zapOutPercentage,
   usdBalanceLoading,
+  portfolioHelper,
+  pendingRewards,
 }) {
   return (
     <div>
@@ -22,6 +24,10 @@ export default function ZapOutTab({
         setZapOutPercentage={setZapOutPercentage}
         currency="$"
         noTokenSelect={false}
+        zapOutIsLoading={zapOutIsLoading}
+        usdBalanceLoading={usdBalanceLoading}
+        portfolioHelper={portfolioHelper}
+        pendingRewards={pendingRewards}
       />
       {account === undefined ? (
         <ConfiguredConnectButton />
