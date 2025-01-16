@@ -52,7 +52,7 @@ describe("Bridge with USDT -> USDC Swap", () => {
       rebalancableUsdBalanceDict,
       userAddress,
       protocolAssetDustInWallet,
-      onlyThisChain
+      onlyThisChain,
     );
 
     // Ensure we got some transactions
@@ -61,7 +61,9 @@ describe("Bridge with USDT -> USDC Swap", () => {
 
     // Find the bridging transaction
     const bridgeAddress = "0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64";
-    const bridgeIndex = txns.findIndex((txn) => txn.to.toLowerCase() === bridgeAddress.toLowerCase());
+    const bridgeIndex = txns.findIndex(
+      (txn) => txn.to.toLowerCase() === bridgeAddress.toLowerCase(),
+    );
     expect(bridgeIndex).toBeGreaterThan(-1);
 
     // The transaction right before bridging should be the aggregator swap
@@ -77,6 +79,8 @@ describe("Bridge with USDT -> USDC Swap", () => {
     const bridgeTxn = txns[bridgeIndex];
     expect(bridgeTxn).toBeDefined();
 
-    console.log("✅ The aggregator swap is right before bridging, USDT -> USDC.");
+    console.log(
+      "✅ The aggregator swap is right before bridging, USDT -> USDC.",
+    );
   });
 });
