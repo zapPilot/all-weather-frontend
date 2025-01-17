@@ -112,7 +112,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 59,
                 },
               ),
-              weight: 0.18,
+              weight: 0.5,
             },
             {
               interface: new BaseEquilibria(
@@ -300,7 +300,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.82,
+              weight: 0.5,
             },
           ],
         },
