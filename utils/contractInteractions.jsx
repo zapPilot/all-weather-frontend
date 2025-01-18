@@ -94,13 +94,13 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   wausdcn: {
     geckoterminal: {
       chain: "arbitrum",
-      address: "0x125bc5a031b2db6733bfa35d914ffa428095978b",
+      address: "0x7CFaDFD5645B50bE87d546f42699d863648251ad",
     },
   },
   susdz: {
     geckoterminal: {
       chain: "base",
-      address: "0x5346a22ee56d200971ec63f98c83e233bd07648d",
+      address: "0xe31ee12bdfdd0573d634124611e85338e2cbf0cf",
     },
   },
 };
