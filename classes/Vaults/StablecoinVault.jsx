@@ -439,7 +439,7 @@ export class StablecoinVault extends BasePortfolio {
                 protocolAddress: "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
                 assetDecimals: 8,
               }),
-              weight: 0,
+              weight: 0.05,
             },
             {
               interface: new BaseMoonwell("base", 8453, ["dai"], "single", {
@@ -498,7 +498,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 5,
                 },
               ),
-              weight: 0.05,
+              weight: 0,
             },
           ],
         },
