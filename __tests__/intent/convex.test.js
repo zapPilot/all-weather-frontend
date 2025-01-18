@@ -53,7 +53,7 @@ describe("Convex", () => {
       "0x095ea7b30000000000000000000000001111111254eeb25477b68fb85ed929f73a9605820000000000000000000000000000000000000000000000000de0b6b3a7640000",
     );
     // referral fee
-    expect(await encode(txns[1])).includes(protocolReferralWalletSubstring);
+    expect(await encode(txns[1])).includes(sunReferralWalletSubString);
     expect(await encode(txns[2])).includes(protocolReferralWalletSubstring);
     expect(
       (await encode(txns[4])).includes(
