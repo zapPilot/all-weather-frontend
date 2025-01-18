@@ -481,9 +481,6 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-<<<<<<< HEAD
-              weight: 0.5,
-=======
               weight: 0.45,
             },
             {
@@ -502,7 +499,6 @@ export class StablecoinVault extends BasePortfolio {
                 },
               ),
               weight: 0.05,
->>>>>>> 5263e7d ([feat](aura): integrate aura)
             },
           ],
         },
