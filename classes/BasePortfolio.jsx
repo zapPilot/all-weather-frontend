@@ -25,6 +25,10 @@ class PriceService {
     usde: 1,
   };
 
+  static MAX_RETRIES = 5;
+  static RETRY_DELAY = 2000;
+  static TIMEOUT = 8000;
+
   constructor(apiUrl) {
     this.apiUrl = apiUrl;
     this.cache = {};
@@ -32,18 +36,62 @@ class PriceService {
 
   async fetchPrice(token, priceID) {
     const { key, provider } = this._getPriceServiceInfo(priceID);
+    let lastError;
+    let backoffDelay = PriceService.RETRY_DELAY;
 
-    try {
-      const endpoint = this._buildEndpoint(provider, key);
-      const response = await axios.get(endpoint);
-      return response.data.price;
-    } catch (error) {
-      console.error(
-        `Failed to fetch price for ${token} from ${provider}:`,
-        error,
-      );
-      return null;
+    for (let attempt = 1; attempt <= PriceService.MAX_RETRIES; attempt++) {
+      try {
+        const endpoint = this._buildEndpoint(provider, key);
+        const response = await axios.get(endpoint, {
+          timeout: PriceService.TIMEOUT,
+          headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
+          validateStatus: (status) => status >= 200 && status < 500,
+          maxRedirects: 5,
+        });
+
+        if (response.data?.price != null) {
+          return response.data.price;
+        }
+        throw new Error("Invalid price data received");
+      } catch (error) {
+        lastError = error;
+        const errorMessage = error.response?.data?.message || error.message;
+        console.warn(
+          `Attempt ${attempt}/${PriceService.MAX_RETRIES} failed to fetch price for ${token} from ${provider}:`,
+          errorMessage,
+        );
+
+        if (attempt < PriceService.MAX_RETRIES) {
+          const jitter = Math.random() * 1000;
+          await new Promise((resolve) =>
+            setTimeout(resolve, backoffDelay + jitter),
+          );
+          backoffDelay *= 2;
+        }
+      }
     }
+
+    const fallbackPrice = this._getFallbackPrice(token);
+    if (fallbackPrice !== null) {
+      console.warn(`Using fallback price for ${token}: ${fallbackPrice}`);
+      return fallbackPrice;
+    }
+
+    console.error(
+      `All attempts failed to fetch price for ${token} from ${provider}:`,
+      lastError,
+    );
+    return null;
+  }
+
+  _getFallbackPrice(token) {
+    if (token.toLowerCase() in PriceService.STATIC_PRICES) {
+      return PriceService.STATIC_PRICES[token.toLowerCase()];
+    }
+    return null;
   }
 
   _getPriceServiceInfo(priceID) {
@@ -74,7 +122,7 @@ class PriceService {
 }
 
 class TokenPriceBatcher {
-  static BATCH_SIZE = 3;
+  static BATCH_SIZE = 5;
   static DELAY_MS = 1000;
 
   constructor(priceService) {
@@ -101,21 +149,23 @@ class TokenPriceBatcher {
   }
 
   async _processBatch(batch, prices) {
-    const batchPromises = batch.map(async ([token, priceID]) => {
+    // Process requests sequentially instead of concurrently
+    for (const [token, priceID] of batch) {
       const { uniqueId } = this.priceService._getPriceServiceInfo(priceID);
       if (this.priceService.cache[uniqueId]) {
         prices[token] = this.priceService.cache[uniqueId];
-        return;
+        continue;
       }
+
+      // Add small delay between individual requests
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       const price = await this.priceService.fetchPrice(token, priceID);
       if (price !== null) {
         prices[token] = price;
         this.priceService.cache[uniqueId] = price;
       }
-    });
-
-    await Promise.all(batchPromises);
+    }
   }
 
   _delay() {
@@ -705,6 +755,7 @@ export class BasePortfolio {
 
     // Execute protocol transactions first
     const protocolTxns = await processProtocolTxns(currentChain);
+    if (protocolTxns.length === 0) throw new Error("No protocol txns");
     // Then execute bridge transactions if needed
     const bridgeTxns =
       actionParams.onlyThisChain === true
