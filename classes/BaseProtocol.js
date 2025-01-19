@@ -86,8 +86,9 @@ export default class BaseProtocol extends BaseUniswap {
   }
 
   _addSingleModeNodes(nodes, inputToken, tokenInAddress) {
-    const [bestTokenSymbol, bestTokenAddressToZapIn] =
+    const [bestTokenSymbol, bestTokenAddressToZapIn, decimals] =
       this._getTheBestTokenAddressToZapIn(
+        inputToken,
         tokenInAddress,
         18, // inputTokenDecimalsPlaceholder
       );

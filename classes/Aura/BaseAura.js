@@ -170,6 +170,7 @@ export class BaseAura extends BaseProtocol {
       client: THIRDWEB_CLIENT,
       data: callData,
       gasLimit: 680000n,
+      gas: 680000n,
     });
     // Get staking transactions and combine all transactions
     const stakeTxns = await this._stakeLP(min_mint_amount, updateProgress);

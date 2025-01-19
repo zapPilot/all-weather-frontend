@@ -243,7 +243,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.125,
+              weight: 0.1,
             },
             {
               interface: new BaseAura(
@@ -320,7 +320,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.125,
+              weight: 0.1,
             },
             // {
             //   interface: new BaseAura(
@@ -366,7 +366,7 @@ export class StablecoinVault extends BasePortfolio {
             //       ],
             //     },
             //   ),
-            //   weight: 0,
+            //   weight: 0.05,
             // },
             {
               interface: new BaseConvex(
@@ -413,7 +413,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0,
+              weight: 0.05,
             },
           ],
 
@@ -463,7 +463,7 @@ export class StablecoinVault extends BasePortfolio {
                 protocolAddress: "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22",
                 assetDecimals: 8,
               }),
-              weight: 0,
+              weight: 0.05,
             },
             {
               interface: new BaseAerodrome(
@@ -481,7 +481,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.45,
+              weight: 0.4,
             },
             {
               interface: new BaseEquilibria(

@@ -107,7 +107,11 @@ export class BaseAave extends BaseProtocol {
     return ethers.BigNumber.from(0);
   }
 
-  _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
+  _getTheBestTokenAddressToZapIn(
+    inputToken,
+    tokenInAddress,
+    InputTokenDecimals,
+  ) {
     return [inputToken, this.zapInOutTokenAddress, this.assetDecimals];
   }
   _getTheBestTokenAddressToZapOut() {

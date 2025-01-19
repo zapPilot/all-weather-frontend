@@ -111,7 +111,11 @@ export class Vela extends BaseProtocol {
       (await protocolContractInstance.functions.getVLPPrice()) / 1e5;
     return vlpPrice / Math.pow(10, this.assetDecimals);
   }
-  _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
+  _getTheBestTokenAddressToZapIn(
+    inputToken,
+    tokenInAddress,
+    InputTokenDecimals,
+  ) {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
     const usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
     return ["usdc", usdcAddress, 6];

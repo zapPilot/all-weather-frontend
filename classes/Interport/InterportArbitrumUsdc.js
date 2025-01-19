@@ -138,7 +138,11 @@ export class InterportArbitrumUsdc extends BaseProtocol {
     return (userBalance * tokenPricesMappingTable["usdc"]) / 1e6;
   }
 
-  _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
+  _getTheBestTokenAddressToZapIn(
+    inputToken,
+    tokenInAddress,
+    InputTokenDecimals,
+  ) {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
     const usdc = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
     return ["usdc", usdc, 6];
