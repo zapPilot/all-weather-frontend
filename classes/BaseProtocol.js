@@ -86,21 +86,18 @@ export default class BaseProtocol extends BaseUniswap {
   }
 
   _addSingleModeNodes(nodes, inputToken, tokenInAddress) {
-    const [bestTokenAddressToZapIn] = this._getTheBestTokenAddressToZapIn(
-      tokenInAddress,
-      18, // inputTokenDecimalsPlaceholder
-    );
-
+    const [bestTokenSymbol, bestTokenAddressToZapIn] =
+      this._getTheBestTokenAddressToZapIn(
+        tokenInAddress,
+        18, // inputTokenDecimalsPlaceholder
+      );
     if (
       bestTokenAddressToZapIn.toLowerCase() !== tokenInAddress.toLowerCase()
     ) {
-      nodes.push(
-        this._createSwapNode(
-          inputToken,
-          tokenInAddress,
-          bestTokenAddressToZapIn,
-        ),
-      );
+      nodes.push({
+        id: `${this.uniqueId()}-${inputToken}-${bestTokenSymbol}-swap`,
+        name: `Swap ${inputToken} to ${bestTokenSymbol}`,
+      });
     }
 
     this._addCommonNodes(nodes);
@@ -140,13 +137,6 @@ export default class BaseProtocol extends BaseUniswap {
     ];
 
     nodes.push(...commonNodes);
-  }
-
-  _createSwapNode(inputToken, tokenInAddress, bestTokenAddressToZapIn) {
-    return {
-      id: `${this.uniqueId()}-${tokenInAddress}-${bestTokenAddressToZapIn}-swap`,
-      name: `Swap ${inputToken}`,
-    };
   }
 
   _generateEdges(nodes, weight) {

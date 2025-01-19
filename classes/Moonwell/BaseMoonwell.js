@@ -189,7 +189,7 @@ export class BaseMoonwell extends BaseProtocol {
 
   _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
     return [
-      inputToken,
+      this.symbolOfBestTokenToZapInOut,
       this.zapInOutTokenAddress,
       this.decimalsOfZapInOutToken,
     ];
