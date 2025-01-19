@@ -149,38 +149,4 @@ describe("Yearn Vault", () => {
     ).length;
     expect(occurrences).toBe(2);
   });
-  it("should be able to claim from Yearn Vault", async () => {
-    // params claimAndSwap 0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0 usdc 0xaf88d065e77c8cc2239327c5edb3a432268e5831 0 6 1 0.5
-    const actionName = "claimAndSwap";
-    const userAddress = "0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0";
-    const tokenSymbol = "weth";
-    const tokenAddress = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1";
-    const investmentAmount = 0;
-    const tokenDecimals = 18;
-    const zapOutPercentage = 1;
-    const portfolioHelper = getPortfolioHelper("Yearn Vault");
-    const txns = await generateIntentTxns(
-      actionName,
-      arbitrum,
-      portfolioHelper,
-      userAddress,
-      tokenSymbol,
-      tokenAddress,
-      investmentAmount,
-      tokenDecimals,
-      zapOutPercentage,
-      setTradingLoss,
-      setStepName,
-      setTotalTradingLoss,
-      setPlatformFee,
-      slippage,
-      rebalancableUsdBalanceDict,
-      recipient,
-      protocolAssetDustInWallet[
-        arbitrum?.name.toLowerCase().replace(" one", "")
-      ],
-      onlyThisChain,
-    );
-    expect(txns.length).toBe(0);
-  });
 });

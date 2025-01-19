@@ -34,6 +34,9 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   eurc: {
     coinmarketcapApiId: 20641,
   },
+  bal: {
+    coinmarketcapApiId: 5728,
+  },
   mseth: {
     geckoterminal: {
       chain: "base",
@@ -75,6 +78,30 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   dusdc: {
     coinmarketcapApiId: 3408,
+  },
+  usdx: {
+    coinmarketcapApiId: 34060,
+  },
+  susdx: {
+    coinmarketcapApiId: 34088,
+  },
+  gho: {
+    coinmarketcapApiId: 23508,
+  },
+  gyd: {
+    coinmarketcapApiId: 31996,
+  },
+  wausdcn: {
+    geckoterminal: {
+      chain: "arbitrum",
+      address: "0x7CFaDFD5645B50bE87d546f42699d863648251ad",
+    },
+  },
+  susdz: {
+    geckoterminal: {
+      chain: "base",
+      address: "0xe31ee12bdfdd0573d634124611e85338e2cbf0cf",
+    },
   },
 };
 export const tokensForDropDown = [
