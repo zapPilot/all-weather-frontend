@@ -113,6 +113,11 @@ export class BaseMoonwell extends BaseProtocol {
     slippage,
     updateProgress,
   ) {
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-deposit`,
+      0,
+    );
     const approveTxn = approve(
       bestTokenAddressToZapIn,
       this.protocolContract.address,
@@ -125,6 +130,7 @@ export class BaseMoonwell extends BaseProtocol {
       method: "mint",
       params: [amountToZapIn],
     });
+    await this._stake(amountToZapIn, updateProgress);
     return [approveTxn, depositTxn];
   }
 
