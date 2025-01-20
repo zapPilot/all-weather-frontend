@@ -37,7 +37,10 @@ export default function RebalanceTab({
           const isFirstPendingAction = index === 0;
 
           return (
-            <div key={`${data.chain}-${data.actionName}`} className={currentStep === index ? "mb-4" : "hidden"}>
+            <div
+              key={`${data.chain}-${data.actionName}`}
+              className={currentStep === index ? "mb-4" : "hidden"}
+            >
               <p className="text-gray-400 mb-2">
                 Step {index + 1}: {isCurrentChain ? "Execute" : "Switch to"}{" "}
                 {data.chain} chain
@@ -48,12 +51,10 @@ export default function RebalanceTab({
                 <Button
                   type="primary"
                   className="w-full"
-                  onClick={
-                    () => {
-                      handleAAWalletAction(data.actionName, true)
-                      setCurrentStep(currentStep + 1);
-                    }
-                  }
+                  onClick={() => {
+                    handleAAWalletAction(data.actionName, true);
+                    setCurrentStep(currentStep + 1);
+                  }}
                   loading={
                     rebalanceIsLoading || rebalancableUsdBalanceDictLoading
                   }
