@@ -27,7 +27,6 @@ export default function RebalanceTab({
       ) || 0;
   return (
     <div>
-      <p>Follow these steps to rebalance your portfolio:</p>
       {rebalancableUsdBalanceDictLoading ? <Spin /> : null}
       {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
         (data, index) => {
