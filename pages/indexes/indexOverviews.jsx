@@ -338,6 +338,7 @@ export default function IndexOverviews() {
                           sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
                         0,
                       ),
+                      transferTo: recipient,
                     }),
                   },
                 });
@@ -357,11 +358,7 @@ export default function IndexOverviews() {
                         actionName: "receive",
                         tokenSymbol,
                         investmentAmount: investmentAmountAfterFee,
-                        zapOutAmount: 0,
-                        rebalanceAmount: 0,
                         timestamp: Math.floor(Date.now() / 1000),
-                        swapFeeRate: portfolioHelper.swapFeeRate(),
-                        referralFeeRate: portfolioHelper.referralFeeRate(),
                         chain:
                           CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
                         zapInAmountOnThisChain:
