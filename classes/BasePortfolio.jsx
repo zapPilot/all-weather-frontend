@@ -736,20 +736,13 @@ export class BasePortfolio {
         }
 
         const inputAmountBN = ethers.BigNumber.from(inputAmount);
-        console.log({
-          fromChain: actionParams.chainMetadata.name,
-          toChain: chain,
-        });
         const bridge = await getTheBestBridge();
         const bridgeTxns = await bridge.getBridgeTxns(
           actionParams.account,
           actionParams.chainMetadata.id,
           CHAIN_TO_CHAIN_ID[chain],
-          // TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol][currentChain],
           inputToken,
-          // TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol][chain],
           TOKEN_ADDRESS_MAP["usdc"][chain],
-          // actionParams.zapInAmount.mul(percentageBN).div(10000),
           inputAmountBN,
           actionParams.updateProgress,
         );

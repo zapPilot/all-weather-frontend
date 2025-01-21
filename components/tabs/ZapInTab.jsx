@@ -52,7 +52,6 @@ export default function ZapInTab({
       <div>
         <div
           className={`mt-4 sm:mt-0 ${nextStepChain ? "hidden" : "block"}`}
-          // className={'mt-4 hidden'}
         >
           <p>Step 1: Choose a chain to zap in and bridge to another chain.</p>
           <TokenDropdownInput
@@ -165,6 +164,7 @@ export default function ZapInTab({
             onClick={() => {
               setInvestmentAmount(walletBalanceData?.displayValue);
               setFinishedTxn(false);
+              setShowZapIn(true);
             }}
           >
             Set Investment Amount to{" "}
