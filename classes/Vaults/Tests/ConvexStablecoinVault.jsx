@@ -26,13 +26,17 @@ export class ConvexStablecoinVault extends BasePortfolio {
                   rewards: [
                     {
                       symbol: "crv",
-                      coinmarketcapApiId: 6538,
+                      priceId: {
+                        coinmarketcapApiId: 6538,
+                      },
                       address: "0x11cDb42B0EB46D95f990BeDD4695A6e3fA034978",
                       decimals: 18,
                     },
                     {
                       symbol: "cvx",
-                      coinmarketcapApiId: 9903,
+                      priceId: {
+                        coinmarketcapApiId: 9903,
+                      },
                       address: "0xaAFcFD42c9954C6689ef1901e03db742520829c5",
                       decimals: 18,
                     },

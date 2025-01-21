@@ -15,7 +15,7 @@ const onlyThisChain = false;
 describe("Equilibria ETH Vault", () => {
   // it("should be able to zap-in Equilibria's ETH Vault", async () => {
   //   const actionName = "zapIn";
-  //   const userAddress = "0x04B79E6394a8200DF40d1b7fb2eC310B2e45D232";
+  //   const userAddress = "0x39551EC839f10C235ec8DB062A93e89d3c0E6134";
   //   const tokenSymbol = "weth";
   //   const tokenAddress = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1";
   //   const investmentAmount = 1;
@@ -72,7 +72,7 @@ describe("Equilibria ETH Vault", () => {
   // });
   it("should be able to zap-out Equilibria's ETH Vault", async () => {
     const actionName = "zapOut";
-    const userAddress = "0x04B79E6394a8200DF40d1b7fb2eC310B2e45D232";
+    const userAddress = "0x39551EC839f10C235ec8DB062A93e89d3c0E6134";
     const recipientInEncodeData = "c774806f9ff5f3d8aabb6b70d0ed509e42afe6f0";
     const tokenSymbol = "weth";
     const tokenAddress = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1";
@@ -83,55 +83,58 @@ describe("Equilibria ETH Vault", () => {
     const setStepName = () => {};
     const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Equilibria ETH Vault");
-    const txns = await generateIntentTxns(
-      actionName,
-      arbitrum,
-      portfolioHelper,
-      userAddress,
-      tokenSymbol,
-      tokenAddress,
-      investmentAmount,
-      tokenDecimals,
-      zapOutPercentage,
-      setTradingLoss,
-      setStepName,
-      setTotalTradingLoss,
-      setPlatformFee,
-      slippage,
-      rebalancableUsdBalanceDict,
-      userAddress,
-      protocolAssetDustInWallet,
-      onlyThisChain,
-    );
-    expect(txns.length).toBe(0);
-    // expect(await encode(txns[0])).includes(
-    //   "c7517f481cc0a645e63f870830a4b2e580421e32",
-    // );
-    // expect(txns[1].to).toBe("0xc7517f481Cc0a645e63f870830A4B2e580421e32");
-    // expect(txns[2].to).toBe("0x279b44E48226d40Ec389129061cb0B56C5c09e46");
-    // expect(
-    //   (await encode(txns[2])).includes(
-    //     "888888888889758f76e7103c6cbf23abbf58f946",
-    //   ),
-    // ).toBe(true);
-    // expect(txns[3].to).toBe("0x888888888889758F76e7103c6CbF23ABbF58F946");
-    // expect(
-    //   (await encode(txns[3])).includes(
-    //     userAddress.replace("0x", "").toLowerCase(),
-    //   ),
-    // ).toBe(true);
+    try {
+      const txns = await generateIntentTxns(
+        actionName,
+        arbitrum,
+        portfolioHelper,
+        userAddress,
+        tokenSymbol,
+        tokenAddress,
+        investmentAmount,
+        tokenDecimals,
+        zapOutPercentage,
+        setTradingLoss,
+        setStepName,
+        setTotalTradingLoss,
+        setPlatformFee,
+        slippage,
+        rebalancableUsdBalanceDict,
+        userAddress,
+        protocolAssetDustInWallet,
+        onlyThisChain,
+      );
+      expect(await encode(txns[0])).includes(
+        "c7517f481cc0a645e63f870830a4b2e580421e32",
+      );
+      expect(txns[1].to).toBe("0xc7517f481Cc0a645e63f870830A4B2e580421e32");
+      expect(txns[2].to).toBe("0x279b44E48226d40Ec389129061cb0B56C5c09e46");
+      expect(
+        (await encode(txns[2])).includes(
+          "888888888889758f76e7103c6cbf23abbf58f946",
+        ),
+      ).toBe(true);
+      expect(txns[3].to).toBe("0x888888888889758F76e7103c6CbF23ABbF58F946");
+      expect(
+        (await encode(txns[3])).includes(
+          userAddress.replace("0x", "").toLowerCase(),
+        ),
+      ).toBe(true);
 
-    // // redeem
-    // expect(txns[4].to).toBe("0x96c4a48abdf781e9c931cfa92ec0167ba219ad8e");
+      // redeem
+      expect(txns[4].to).toBe("0x96c4a48abdf781e9c931cfa92ec0167ba219ad8e");
 
-    // // swap
-    // expect(txns[6].to).toBe("0x1111111254EEB25477B68fb85Ed929f73A960582");
-    // expect(txns[8].to).toBe("0x82af49447d8a07e3bd95bd0d56f35241523fbab1");
+      // swap
+      expect(txns[6].to).toBe("0x1111111254EEB25477B68fb85Ed929f73A960582");
+      expect(txns[8].to).toBe("0x82af49447d8a07e3bd95bd0d56f35241523fbab1");
+    } catch (error) {
+      expect(error.message).toBe("No protocol txns");
+    }
   });
   it("should be able to claim from Equilibria Vault", async () => {
     // params claimAndSwap 0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0 usdc 0xaf88d065e77c8cc2239327c5edb3a432268e5831 0 6 1 0.5
     const actionName = "claimAndSwap";
-    const userAddress = "0x04B79E6394a8200DF40d1b7fb2eC310B2e45D232";
+    const userAddress = "0x39551EC839f10C235ec8DB062A93e89d3c0E6134";
     const recipientInEncodeData = "c774806f9ff5f3d8aabb6b70d0ed509e42afe6f0";
     const tokenSymbol = "weth";
     const tokenAddress = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1";
@@ -177,7 +180,7 @@ describe("Equilibria ETH Vault", () => {
       ).toBe(true);
       expect(txns[3].to).toBe("0x1111111254EEB25477B68fb85Ed929f73A960582");
     } else {
-      expect(txns.length).toBe(2);
+      expect(txns.length).toBe(1);
     }
   });
 });

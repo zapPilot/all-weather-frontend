@@ -8,6 +8,7 @@ import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import { BaseMoonwell } from "../Moonwell/BaseMoonwell";
 import { BaseAerodrome } from "../Aerodrome/BaseAerodrome";
 import { BaseAave } from "../Aave/BaseAave";
+import { BaseAura } from "../Aura/BaseAura";
 export class StablecoinVault extends BasePortfolio {
   constructor() {
     super(
@@ -112,7 +113,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 59,
                 },
               ),
-              weight: 0.18,
+              weight: 0.25,
             },
             {
               interface: new BaseEquilibria(
@@ -168,13 +169,17 @@ export class StablecoinVault extends BasePortfolio {
                   rewards: [
                     {
                       symbol: "crv",
-                      coinmarketcapApiId: 6538,
+                      priceId: {
+                        coinmarketcapApiId: 6538,
+                      },
                       address: "0x11cDb42B0EB46D95f990BeDD4695A6e3fA034978",
                       decimals: 18,
                     },
                     {
                       symbol: "cvx",
-                      coinmarketcapApiId: 9903,
+                      priceId: {
+                        coinmarketcapApiId: 9903,
+                      },
                       address: "0xaAFcFD42c9954C6689ef1901e03db742520829c5",
                       decimals: 18,
                     },
@@ -183,6 +188,186 @@ export class StablecoinVault extends BasePortfolio {
               ),
               weight: 0,
             },
+            {
+              interface: new BaseAura(
+                "arbitrum",
+                42161,
+                ["wausdcn", "gho"],
+                "LP",
+                {
+                  pid: 69,
+                  // poolId: asset.getPoolId()
+                  assetAddress: "0x46472CBA35E6800012aA9fcC7939Ff07478C473E",
+                  assetDecimals: 18,
+                  poolId:
+                    "0x46472cba35e6800012aa9fcc7939ff07478c473e00020000000000000000056c",
+                  lpTokens: [
+                    [
+                      "wausdcn",
+                      "0x7CFaDFD5645B50bE87d546f42699d863648251ad",
+                      6,
+                    ],
+                    ["gho", "0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33", 18],
+                  ],
+                  originalRewards: [
+                    {
+                      symbol: "bal",
+                      priceId: {
+                        coinmarketcapApiId: 5728,
+                      },
+                      address: "0x040d1edc9569d4bab2d15287dc5a4f10f56a56b8",
+                      decimals: 18,
+                    },
+                  ],
+                  rewards: [
+                    {
+                      symbol: "aura",
+                      priceId: {
+                        coinmarketcapApiId: 21532,
+                      },
+                      address: "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                      stashAddress:
+                        "0xDfb793eE33AF74ad17E86B337b5996e75bf16cfd",
+                      decimals: 18,
+                    },
+                    {
+                      symbol: "gho",
+                      priceId: {
+                        coinmarketcapApiId: 23508,
+                      },
+                      address: "0x7dff72693f6a4149b17e7c6314655f6a9f7c8b33",
+                      stashAddress:
+                        "0x3ABC7f66972C06eBa17Bf5fbd4C78076c3fd5E16",
+                      decimals: 18,
+                    },
+                  ],
+                },
+              ),
+              weight: 0.125,
+            },
+            {
+              interface: new BaseAura(
+                "arbitrum",
+                42161,
+                ["susdx", "usdx"],
+                "LP",
+                {
+                  pid: 93,
+                  // poolId: asset.getPoolId()
+                  assetAddress: "0xb3047330c1cb5eb1a3670fabfb99bdc106d631eb",
+                  assetDecimals: 18,
+                  poolId:
+                    "0xb3047330c1cb5eb1a3670fabfb99bdc106d631eb0000000000000000000005e4",
+                  lpTokens: [
+                    ["susdx", "0x7788a3538c5fc7f9c7c8a74eac4c898fc8d87d92", 18],
+                    ["usdx", "0xf3527ef8de265eaa3716fb312c12847bfba66cef", 18],
+                  ],
+                  originalRewards: [],
+                  rewards: [
+                    {
+                      symbol: "aura",
+                      priceId: {
+                        coinmarketcapApiId: 21532,
+                      },
+                      address: "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                      stashAddress:
+                        "0xDfb793eE33AF74ad17E86B337b5996e75bf16cfd",
+                      decimals: 18,
+                    },
+                  ],
+                },
+              ),
+              // weight: 0.15,
+              weight: 0,
+            },
+            {
+              interface: new BaseAura(
+                "arbitrum",
+                42161,
+                ["susdx", "usdt"],
+                "LP",
+                {
+                  pid: 94,
+                  assetAddress: "0x85564af67760063b994599b640552614238c9ee6",
+                  assetDecimals: 18,
+                  poolId:
+                    "0x85564af67760063b994599b640552614238c9ee60000000000000000000005e3",
+                  lpTokens: [
+                    ["susdx", "0xf3527ef8de265eaa3716fb312c12847bfba66cef", 18],
+                    ["usdt", "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9", 6],
+                  ],
+                  originalRewards: [
+                    {
+                      symbol: "bal",
+                      priceId: {
+                        coinmarketcapApiId: 5728,
+                      },
+                      address: "0x040d1edc9569d4bab2d15287dc5a4f10f56a56b8",
+                      decimals: 18,
+                    },
+                  ],
+                  rewards: [
+                    {
+                      symbol: "aura",
+                      priceId: {
+                        coinmarketcapApiId: 21532,
+                      },
+                      address: "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                      stashAddress:
+                        "0xDfb793eE33AF74ad17E86B337b5996e75bf16cfd",
+                      decimals: 18,
+                    },
+                  ],
+                },
+              ),
+              weight: 0.125,
+            },
+            // {
+            //   interface: new BaseAura(
+            //     "arbitrum",
+            //     42161,
+            //     ["wausdcn", "gyd"],
+            //     "LP",
+            //     {
+            //       pid: 74,
+            //       assetAddress: "0x6e822c64c00393b2078f2a5bb75c575ab505b55c",
+            //       assetDecimals: 18,
+            //       poolId:
+            //         "0x6e822c64c00393b2078f2a5bb75c575ab505b55c000200000000000000000548",
+            //       lpTokens: [
+            //         [
+            //           "wausdcn",
+            //           "0x7cfadfd5645b50be87d546f42699d863648251ad",
+            //           18,
+            //         ],
+            //         ["gyd", "0xca5d8f8a8d49439357d3cf46ca2e720702f132b8", 18],
+            //       ],
+            //       originalRewards: [
+            //         {
+            //           symbol: "bal",
+            //           priceId: {
+            //             coinmarketcapApiId: 5728,
+            //           },
+            //           address: "0x040d1edc9569d4bab2d15287dc5a4f10f56a56b8",
+            //           decimals: 18,
+            //         },
+            //       ],
+            //       rewards: [
+            //         {
+            //           symbol: "aura",
+            //           priceId: {
+            //             coinmarketcapApiId: 21532,
+            //           },
+            //           address: "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+            //           stashAddress:
+            //             "0xDfb793eE33AF74ad17E86B337b5996e75bf16cfd",
+            //           decimals: 18,
+            //         },
+            //       ],
+            //     },
+            //   ),
+            //   weight: 0,
+            // },
             {
               interface: new BaseConvex(
                 "arbitrum",
@@ -203,19 +388,25 @@ export class StablecoinVault extends BasePortfolio {
                   rewards: [
                     {
                       symbol: "crv",
-                      coinmarketcapApiId: 6538,
+                      priceId: {
+                        coinmarketcapApiId: 6538,
+                      },
                       address: "0x11cDb42B0EB46D95f990BeDD4695A6e3fA034978",
                       decimals: 18,
                     },
                     {
                       symbol: "cvx",
-                      coinmarketcapApiId: 9903,
+                      priceId: {
+                        coinmarketcapApiId: 9903,
+                      },
                       address: "0xaAFcFD42c9954C6689ef1901e03db742520829c5",
                       decimals: 18,
                     },
                     {
                       symbol: "arb",
-                      coinmarketcapApiId: 11841,
+                      priceId: {
+                        coinmarketcapApiId: 11841,
+                      },
                       address: "0x912CE59144191C1204E64559FE8253a0e49E6548",
                       decimals: 18,
                     },
@@ -248,7 +439,7 @@ export class StablecoinVault extends BasePortfolio {
                 protocolAddress: "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
                 assetDecimals: 8,
               }),
-              weight: 0,
+              weight: 0.05,
             },
             {
               interface: new BaseMoonwell("base", 8453, ["dai"], "single", {
@@ -290,7 +481,24 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.82,
+              weight: 0.45,
+            },
+            {
+              interface: new BaseEquilibria(
+                "base",
+                8453,
+                ["susdz", "pt susdz 27mar2025"],
+                "single",
+                {
+                  assetAddress: "0x14936C9B8eb798cA6291c2d6CE5de2c6cB5f1f9C",
+                  symbolOfBestTokenToZapOut: "usdc",
+                  bestTokenAddressToZapOut:
+                    "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                  decimalOfBestTokenToZapOut: 6,
+                  pidOfEquilibria: 5,
+                },
+              ),
+              weight: 0,
             },
           ],
         },

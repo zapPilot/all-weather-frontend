@@ -1,19 +1,17 @@
-import { ChartBarIcon } from "@heroicons/react/20/solid";
-import { ArrowTopRightOnSquareIcon } from "@heroicons/react/20/solid";
+import {
+  ArrowTopRightOnSquareIcon,
+  CurrencyDollarIcon,
+  ChartBarIcon,
+} from "@heroicons/react/20/solid";
 import Link from "next/link";
 import { Spin } from "antd";
-import APRComposition from "../views/components/APRComposition";
-import { formatBalance } from "../../utils/general";
 
 export default function PortfolioSummary({
   usdBalanceLoading,
   tokenPricesMappingTable,
-  portfolioName,
   usdBalance,
-  portfolioHelper,
   account,
-  pendingRewards,
-  pendingRewardsLoading,
+  principalBalance,
 }) {
   return (
     <div className="lg:col-start-3 lg:row-span-1 lg:row-end-1 h-full shadow-sm border border-white/50">
@@ -23,34 +21,71 @@ export default function PortfolioSummary({
             <dt className="text-sm font-semibold leading-6 text-white">
               Your Balance
             </dt>
-            <dd className="mt-1 text-base font-semibold leading-6 text-white flex">
-              <span className="mr-2">
-                {usdBalanceLoading === true ||
-                Object.values(tokenPricesMappingTable ?? {}).length === 0 ? (
+            <dd className="mt-1 text-base font-semibold leading-6 text-white">
+              <div>
+                <div className="flex items-center justify-between">
+                  <a
+                    href={`https://debank.com/profile/${account?.address}`}
+                    target="_blank"
+                    className="flex items-center text-gray-500 hover:text-gray-400"
+                  >
+                    View on Debank
+                    <ArrowTopRightOnSquareIcon className="h-6 w-5 ml-1" />
+                  </a>
+                </div>
+                {usdBalanceLoading ? (
                   <Spin />
-                ) : portfolioName === "ETH Vault" ? (
-                  <>
-                    ${usdBalance.toFixed(2)}
+                ) : (
+                  <div>
+                    <div className="flex items-center mt-2">
+                      <span>${usdBalance?.toFixed(2)}</span>
+                    </div>
                     <div className="text-gray-500">
-                      {portfolioHelper?.denomination()}
-                      {(usdBalance / tokenPricesMappingTable["weth"]).toFixed(
-                        2,
+                      {principalBalance === 0 ? (
+                        <Spin />
+                      ) : (
+                        <div>
+                          principal: $
+                          {principalBalance > 0.01
+                            ? principalBalance?.toFixed(2)
+                            : "< 0.01"}
+                        </div>
                       )}
                     </div>
-                  </>
-                ) : (
-                  `$${usdBalance.toFixed(2)}`
+                  </div>
                 )}
-              </span>
-              <a
-                href={`https://debank.com/profile/${account?.address}`}
-                target="_blank"
-              >
-                <ArrowTopRightOnSquareIcon className="h-6 w-5 text-gray-500" />
-              </a>
+              </div>
             </dd>
           </div>
 
+          <div className="mt-6 flex w-full flex-none gap-x-4">
+            <dt className="flex-none">
+              <CurrencyDollarIcon
+                aria-hidden="true"
+                className="h-6 w-5 text-gray-500"
+              />
+            </dt>
+            <dd className="text-sm font-medium leading-6 text-white">
+              Profit:{" "}
+              {usdBalanceLoading ||
+              Object.values(tokenPricesMappingTable || {}).length === 0 ? (
+                <Spin />
+              ) : (
+                <span
+                  className={
+                    usdBalance - principalBalance < 0
+                      ? "text-red-500"
+                      : "text-green-500"
+                  }
+                >
+                  $
+                  {usdBalance === 0
+                    ? 0
+                    : (usdBalance - principalBalance)?.toFixed(2)}
+                </span>
+              )}
+            </dd>
+          </div>
           <div className="mt-6 flex w-full flex-none gap-x-4">
             <dt className="flex-none">
               <ChartBarIcon
@@ -66,30 +101,6 @@ export default function PortfolioSummary({
               >
                 Historical Balances
               </Link>
-            </dd>
-          </div>
-
-          <div className="mt-6 flex w-full flex-none gap-x-4">
-            <dt className="flex-none">
-              <APRComposition
-                APRData={pendingRewards}
-                mode="pendingRewards"
-                currency="$"
-                exchangeRateWithUSD={1}
-                pendingRewardsLoading={pendingRewardsLoading}
-              />
-            </dt>
-            <dd className="text-sm leading-6 text-white">
-              Rewards:{" "}
-              {pendingRewardsLoading === true ? (
-                <Spin />
-              ) : (
-                <span className="text-green-500">
-                  {formatBalance(
-                    portfolioHelper?.sumUsdDenominatedValues(pendingRewards),
-                  )}
-                </span>
-              )}
             </dd>
           </div>
         </dl>

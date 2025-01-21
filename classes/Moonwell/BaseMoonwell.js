@@ -59,7 +59,9 @@ export class BaseMoonwell extends BaseProtocol {
     return [
       {
         symbol: "well",
-        coinmarketcapApiId: 20734,
+        priceId: {
+          coinmarketcapApiId: 20734,
+        },
         address: "0xA88594D404727625A9437C3f886C7643872296AE",
         decimals: 18,
         chain: "base",
@@ -111,6 +113,11 @@ export class BaseMoonwell extends BaseProtocol {
     slippage,
     updateProgress,
   ) {
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-deposit`,
+      0,
+    );
     const approveTxn = approve(
       bestTokenAddressToZapIn,
       this.protocolContract.address,
@@ -123,6 +130,7 @@ export class BaseMoonwell extends BaseProtocol {
       method: "mint",
       params: [amountToZapIn],
     });
+    await this._stake(amountToZapIn, updateProgress);
     return [approveTxn, depositTxn];
   }
 
@@ -179,9 +187,9 @@ export class BaseMoonwell extends BaseProtocol {
     return result;
   }
 
-  _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
+  _getTheBestTokenAddressToZapIn(inputToken, tokenAddress, InputTokenDecimals) {
     return [
-      inputToken,
+      this.symbolOfBestTokenToZapInOut,
       this.zapInOutTokenAddress,
       this.decimalsOfZapInOutToken,
     ];

@@ -66,19 +66,28 @@ export class EthVault extends BasePortfolio {
                   rewards: [
                     {
                       symbol: "crv",
-                      coinmarketcapApiId: 6538,
+                      priceId: {
+                        coinmarketcapApiId: 6538,
+                      },
                       address: "0x11cDb42B0EB46D95f990BeDD4695A6e3fA034978",
                       decimals: 18,
                     },
                     {
                       symbol: "cvx",
-                      coinmarketcapApiId: 9903,
+                      priceId: {
+                        coinmarketcapApiId: 9903,
+                      },
                       address: "0xaAFcFD42c9954C6689ef1901e03db742520829c5",
                       decimals: 18,
                     },
                     {
                       symbol: "zuneth",
-                      coinmarketcapApiId: 1027,
+                      priceId: {
+                        geckoterminal: {
+                          chain: "arbitrum",
+                          address: "0x06d65ec13465ac5a4376dc101e1141252c4addf8",
+                        },
+                      },
                       address: "0x06D65eC13465Ac5A4376dc101e1141252c4adDf8",
                       decimals: 18,
                     },

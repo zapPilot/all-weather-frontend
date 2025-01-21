@@ -1,6 +1,5 @@
 import { BasePortfolio } from "../../BasePortfolio";
 import { BaseEquilibria } from "../../Pendle/BaseEquilibria";
-import ReactMarkdown from "react-markdown";
 export class EquilibriaETHVault extends BasePortfolio {
   constructor() {
     super(

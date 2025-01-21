@@ -12,7 +12,6 @@ import { getGasPrice } from "thirdweb";
 import PopUpModal from "../Modal";
 import {
   TOKEN_ADDRESS_MAP,
-  truncateToFixed,
   CHAIN_ID_TO_CHAIN,
   CHAIN_TO_CHAIN_ID,
   CHAIN_ID_TO_CHAIN_STRING,
@@ -118,7 +117,6 @@ export default function IndexOverviews() {
   const [investmentAmount, setInvestmentAmount] = useState(0);
   const [zapInIsLoading, setZapInIsLoading] = useState(false);
   const [zapOutIsLoading, setZapOutIsLoading] = useState(false);
-  const [claimIsLoading, setClaimIsLoading] = useState(false);
   const [transferLoading, setTransferLoading] = useState(false);
   const [rebalanceIsLoading, setRebalanceIsLoading] = useState(false);
   const [
@@ -189,7 +187,7 @@ export default function IndexOverviews() {
       chain: chainId,
     });
     const gasPriceInGwei = Number(gasPrice) / 1e9;
-    if (gasPriceInGwei > 0.1) {
+    if (gasPriceInGwei > 0.05) {
       openNotificationWithIcon(
         notificationAPI,
         "Gas Price Too High",
@@ -220,14 +218,14 @@ export default function IndexOverviews() {
       setZapInIsLoading(true);
     } else if (actionName === "zapOut") {
       setZapOutIsLoading(true);
-    } else if (actionName === "claimAndSwap") {
-      setClaimIsLoading(true);
     } else if (actionName === "rebalance") {
       setRebalanceIsLoading(true);
     } else if (actionName === "transfer") {
       setTransferLoading(true);
     } else if (actionName === "stake") {
       setZapInIsLoading(true);
+    } else if (actionName === "claimAndSwap") {
+      // placeholder
     } else {
       throw new Error(`Invalid action name: ${actionName}`);
     }
@@ -260,19 +258,49 @@ export default function IndexOverviews() {
         onlyThisChain,
       );
       setCostsCalculated(true);
-      if (txns.length < 2) {
+      if (
+        ["zapIn", "zapOut", "rebalance", "transfer"].includes(actionName) &&
+        txns.length < 2
+      ) {
         throw new Error("No transactions to send");
       }
 
       // Reset the processing flag before changing chain
       hasProcessedChainChangeRef.current = false;
       preservedAmountRef.current = investmentAmount;
-
+      const investmentAmountAfterFee =
+        investmentAmount *
+        (1 - portfolioHelper.swapFeeRate()) *
+        (1 - slippage / 100) *
+        (1 - slippage / 100);
+      const chainWeight = calCrossChainInvestmentAmount(
+        chainId?.name?.toLowerCase().replace(" one", ""),
+      );
+      const chainWeightPerYourPortfolio =
+        Object.values(rebalancableUsdBalanceDict)
+          .filter(
+            ({ chain }) =>
+              chain === chainId?.name?.toLowerCase().replace(" one", ""),
+          )
+          .reduce((sum, value) => sum + value.usdBalance, 0) / usdBalance;
       // Call sendBatchTransaction and wait for the result
       try {
         await new Promise((resolve, reject) => {
           sendBatchTransaction(txns.flat(Infinity), {
             onSuccess: async (data) => {
+              const explorerUrl =
+                data?.chain?.blockExplorers !== undefined
+                  ? data.chain.blockExplorers[0].url
+                  : `https://explorer.${CHAIN_ID_TO_CHAIN_STRING[
+                      chainId?.id
+                    ].toLowerCase()}.io`;
+              openNotificationWithIcon(
+                notificationAPI,
+                "Transaction Result",
+                "success",
+                `${explorerUrl}/tx/${data.transactionHash}`,
+              );
+              resolve(data); // Resolve the promise successfully
               try {
                 await axios({
                   method: "post",
@@ -288,35 +316,63 @@ export default function IndexOverviews() {
                       portfolioName,
                       actionName,
                       tokenSymbol,
-                      investmentAmount:
-                        investmentAmount *
-                        (1 - slippage / 100 - portfolioHelper.swapFeeRate()),
-                      zapOutAmount: usdBalance * zapOutPercentage,
+                      investmentAmount: investmentAmountAfterFee,
+                      zapOutAmount:
+                        usdBalance *
+                        zapOutPercentage *
+                        chainWeightPerYourPortfolio,
                       rebalanceAmount: getRebalanceReinvestUsdAmount(),
                       timestamp: Math.floor(Date.now() / 1000),
                       swapFeeRate: portfolioHelper.swapFeeRate(),
                       referralFeeRate: portfolioHelper.referralFeeRate(),
                       chain:
                         CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
+                      zapInAmountOnThisChain:
+                        investmentAmountAfterFee * chainWeight,
+                      stakeAmountOnThisChain: Object.values(
+                        protocolAssetDustInWallet?.[
+                          chainId?.name?.toLowerCase()?.replace(" one", "")
+                        ] || {},
+                      ).reduce(
+                        (sum, protocolObj) =>
+                          sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
+                        0,
+                      ),
+                      transferTo: recipient,
                     }),
                   },
                 });
+                if (actionName === "transfer") {
+                  await axios({
+                    method: "post",
+                    url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    data: {
+                      user_api_key: "placeholder",
+                      tx_hash: data.transactionHash,
+                      address: recipient,
+                      metadata: JSON.stringify({
+                        portfolioName,
+                        actionName: "receive",
+                        tokenSymbol,
+                        investmentAmount: investmentAmountAfterFee,
+                        timestamp: Math.floor(Date.now() / 1000),
+                        chain:
+                          CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
+                        zapInAmountOnThisChain:
+                          usdBalance *
+                          zapOutPercentage *
+                          chainWeightPerYourPortfolio,
+                        sender: account.address,
+                      }),
+                    },
+                  });
+                }
               } catch (error) {
                 console.log("category API error", error);
               }
-              const explorerUrl =
-                data?.chain?.blockExplorers !== undefined
-                  ? data.chain.blockExplorers[0].url
-                  : `https://explorer.${CHAIN_ID_TO_CHAIN_STRING[
-                      chainId?.id
-                    ].toLowerCase()}.io`;
-              openNotificationWithIcon(
-                notificationAPI,
-                "Transaction Result",
-                "success",
-                `${explorerUrl}/tx/${data.transactionHash}`,
-              );
-              resolve(data); // Resolve the promise successfully
               setFinishedTxn(true);
               // get current chain from Txn data
               const newNextChain = switchNextChain(data.chain.name);
@@ -364,8 +420,6 @@ export default function IndexOverviews() {
       setZapInIsLoading(false);
     } else if (actionName === "zapOut") {
       setZapOutIsLoading(false);
-    } else if (actionName === "claimAndSwap") {
-      setClaimIsLoading(false);
     } else if (actionName === "rebalance") {
       setRebalanceIsLoading(false);
     } else if (actionName === "stake") {
@@ -396,7 +450,7 @@ export default function IndexOverviews() {
   // calculate the investment amount for next chain
   const calCrossChainInvestmentAmount = (nextChain) => {
     if (portfolioHelper?.strategy === undefined) return 0;
-    const chainWeight = Object.entries(portfolioHelper.strategy).reduce(
+    return Object.entries(portfolioHelper.strategy).reduce(
       (sum, [category, protocols]) => {
         return (
           sum +
@@ -417,10 +471,6 @@ export default function IndexOverviews() {
         );
       },
       0,
-    );
-    return truncateToFixed(
-      allInvestmentAmount * chainWeight,
-      selectedToken?.split("-")[2],
     );
   };
   const [nextChainInvestmentAmount, setNextChainInvestmentAmount] = useState(0);
@@ -498,15 +548,9 @@ export default function IndexOverviews() {
     setPendingRewardsLoading(true);
     setrebalancableUsdBalanceDictLoading(true);
     setProtocolAssetDustInWalletLoading(true);
-
     if (!portfolioName || account === undefined || !chainId) {
       return;
     }
-    // We still need basic portfolio data, but don't need to wait for accurate APR
-    if (!portfolioApr[portfolioName]) {
-      return;
-    }
-
     // Add guard against multiple chain change processing
     if (isProcessingChainChangeRef.current) {
       return;
@@ -523,9 +567,8 @@ export default function IndexOverviews() {
           setPendingRewardsLoading(true);
           setrebalancableUsdBalanceDictLoading(true);
           setProtocolAssetDustInWalletLoading(true);
-
           const tokenPricesMappingTable =
-            await portfolioHelper.getTokenPricesMappingTable(() => {});
+            await portfolioHelper.getTokenPricesMappingTable();
           if (!isMounted) return;
           setTokenPricesMappingTable(tokenPricesMappingTable);
           const [usdBalance, usdBalanceDict] =
@@ -579,7 +622,6 @@ export default function IndexOverviews() {
 
       fetchUsdBalance();
     }, 500);
-
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
@@ -693,6 +735,7 @@ export default function IndexOverviews() {
     zapInIsLoading,
     zapOutIsLoading,
     zapOutPercentage,
+    pendingRewards,
   };
 
   const items = useTabItems(tabProps);
@@ -887,12 +930,9 @@ export default function IndexOverviews() {
             <PortfolioSummary
               usdBalanceLoading={usdBalanceLoading}
               tokenPricesMappingTable={tokenPricesMappingTable}
-              portfolioName={portfolioName}
               usdBalance={usdBalance}
-              portfolioHelper={portfolioHelper}
               account={account}
-              pendingRewards={pendingRewards}
-              pendingRewardsLoading={pendingRewardsLoading}
+              principalBalance={principalBalance}
             />
 
             <PortfolioComposition
