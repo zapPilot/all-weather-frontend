@@ -35,7 +35,7 @@ const AmountDisplay = ({
           <Spin key={`spin-${amount}`} />
         ) : (
           `${(
-            (((portfolioHelper?.constructor?.name === "EthVault" ? 2 : 5) *
+            (((portfolioHelper?.constructor?.name === "EthVault" ? 2 : 4) *
               0.00299 *
               2 *
               0.5 +
@@ -245,7 +245,7 @@ export default function PopUpModal({
                                   (portfolioHelper?.constructor?.name ===
                                   "EthVault"
                                     ? 2
-                                    : 5) *
+                                    : 4) *
                                   0.5) /
                                 portfolioAPR) *
                               100

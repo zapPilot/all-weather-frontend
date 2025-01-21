@@ -86,7 +86,7 @@ export default class BaseProtocol extends BaseUniswap {
   }
 
   _addSingleModeNodes(nodes, inputToken, tokenInAddress) {
-    const [bestTokenSymbol, bestTokenAddressToZapIn] =
+    const [bestTokenSymbol, bestTokenAddressToZapIn, decimals] =
       this._getTheBestTokenAddressToZapIn(
         inputToken,
         tokenInAddress,
@@ -646,7 +646,7 @@ export default class BaseProtocol extends BaseUniswap {
     return [];
   }
 
-  _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
+  _getTheBestTokenAddressToZapIn(inputToken, tokenAddress, InputTokenDecimals) {
     throw new Error(
       "Method '_getTheBestTokenAddressToZapIn()' must be implemented.",
     );
