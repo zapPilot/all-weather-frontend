@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button, Modal, ConfigProvider } from "antd";
-import { fetch1InchSwapData } from "./oneInch";
+import { fetchSwapData } from "./oneInch";
 import tokens from "../pages/views/components/tokens.json";
 import { portfolioVaults } from "./oneInch";
 import axios from "axios";
@@ -261,7 +261,7 @@ export const getAggregatorData = async (
     };
   }
   const [apolloxAggregatorData] = await Promise.all([
-    fetch1InchSwapData(
+    fetchSwapData(
       chainID,
       chosenTokenFor1Inch,
       toToken,

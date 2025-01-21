@@ -414,6 +414,53 @@ export class StablecoinVault extends BasePortfolio {
               ),
               weight: 0.025,
             },
+            {
+              interface: new BaseConvex(
+                "arbitrum",
+                42161,
+                ["crvusd", "usdt"],
+                "LP",
+                {
+                  pid: 18,
+                  assetDecimals: 18,
+                  assetAddress: "0x73af1150f265419ef8a5db41908b700c32d49135",
+                  protocolAddress: "0x73af1150f265419ef8a5db41908b700c32d49135",
+                  convexRewardPool:
+                    "0xf74d4C9b0F49fb70D8Ff6706ddF39e3a16D61E67",
+                  lpTokens: [
+                    ["crvusd", "0x498Bf2B1e120FeD3ad3D42EA2165E9b73f99C1e5", 18],
+                    ["usdt", "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", 6],
+                  ],
+                  rewards: [
+                    {
+                      symbol: "crv",
+                      priceId: {
+                        coinmarketcapApiId: 6538,
+                      },
+                      address: "0x11cDb42B0EB46D95f990BeDD4695A6e3fA034978",
+                      decimals: 18,
+                    },
+                    {
+                      symbol: "cvx",
+                      priceId: {
+                        coinmarketcapApiId: 9903,
+                      },
+                      address: "0xaAFcFD42c9954C6689ef1901e03db742520829c5",
+                      decimals: 18,
+                    },
+                    {
+                      symbol: "arb",
+                      priceId: {
+                        coinmarketcapApiId: 11841,
+                      },
+                      address: "0x912CE59144191C1204E64559FE8253a0e49E6548",
+                      decimals: 18,
+                    },
+                  ],
+                },
+              ),
+              weight: 0.82,
+            },
           ],
 
           base: [

@@ -33,7 +33,6 @@ export class BaseConvex extends BaseProtocol {
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: CurveStableSwapNG,
     });
-    // stakeFarmContract is null not used in this protocol
     this.stakeFarmContract = getContract({
       client: THIRDWEB_CLIENT,
       address: "0xF403C135812408BFbE8713b5A23a04b3D48AAE31",
@@ -222,7 +221,7 @@ export class BaseConvex extends BaseProtocol {
   }
   _calculateLpPrice(tokenPricesMappingTable) {
     // TODO(david): need to calculate the correct LP price
-    if (this.pid === 34 || this.pid === 36) {
+    if (this.pid === 34 || this.pid === 36|| this.pid === 18) {
       // it's a stablecoin pool
       return 1 / Math.pow(10, this.assetDecimals);
     } else if (this.pid === 28) {
