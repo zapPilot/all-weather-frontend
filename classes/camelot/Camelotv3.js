@@ -3,7 +3,7 @@ import { ERC20_ABI } from "../../node_modules/@etherspot/prime-sdk/dist/sdk/help
 import { encodeFunctionData } from "viem";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json" assert { type: "json" };
 import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
-import { fetch1InchSwapData } from "../../utils/oneInch.js";
+import { fetchSwapData } from "../../utils/oneInch.js";
 import { CHAIN_ID_TO_CHAIN } from "../../utils/general.js";
 import assert from "assert";
 import BaseUniswap from "../uniswapv3/BaseUniswap.js";
@@ -222,7 +222,7 @@ export class CamelotV3 extends BaseUniswap {
     throw new Error("This function is not implemented yet.");
   }
   async _swap(fromTokenAddress, toTokenAddress, amount, slippage) {
-    const swapCallData = await fetch1InchSwapData(
+    const swapCallData = await fetchSwapData(
       this.chainId,
       fromTokenAddress,
       toTokenAddress,

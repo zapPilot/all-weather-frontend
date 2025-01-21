@@ -43,6 +43,7 @@ export default function ZapInTab({
     await new Promise((resolve) => setTimeout(resolve, countdownTime * 1000));
 
     setPreviousTokenSymbol(selectedToken.split("-")[0].toLowerCase());
+    setShowZapIn(false);
     setShowCountdown(false);
     setIsLoading(false);
   };
@@ -141,6 +142,7 @@ export default function ZapInTab({
             }`}
             onClick={() => {
               handleSwitchChain();
+              setShowZapIn(true);
             }}
             loading={isLoading}
           >
@@ -153,7 +155,6 @@ export default function ZapInTab({
               ? "block"
               : "hidden"
           }`}
-          // className={'mt-4 block'}
         >
           <p>
             Step 3: After calculating the investment amount, click to zap in.

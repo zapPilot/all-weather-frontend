@@ -1,6 +1,6 @@
 import { tokensAndCoinmarketcapIdsFromDropdownOptions } from "../utils/contractInteractions";
 import assert from "assert";
-import { oneInchAddress } from "../utils/oneInch";
+import { oneInchAddress} from "../utils/oneInch";
 import axios from "axios";
 import { getTokenDecimal, approve } from "../utils/general";
 import { ethers } from "ethers";
@@ -14,9 +14,11 @@ import {
   CHAIN_ID_TO_CHAIN,
   CHAIN_TO_CHAIN_ID,
   TOKEN_ADDRESS_MAP,
+  CHAIN_ID_TO_PARASWAP_ADDR,
+  CHAIN_ID_TO_PARASWAP_PROXY_ADDR
 } from "../utils/general";
 import { toWei } from "thirdweb/utils";
-import { fetch1InchSwapData } from "../utils/oneInch";
+import { fetchSwapData } from "../utils/oneInch";
 import { _updateProgressAndWait } from "../utils/general";
 import { prepareTransaction } from "thirdweb";
 
@@ -551,6 +553,7 @@ export class BasePortfolio {
   }
 
   async _swap(
+    chainId,
     walletAddress,
     fromTokenAddress,
     toTokenAddress,
@@ -562,32 +565,95 @@ export class BasePortfolio {
     toTokenSymbol,
     toTokenDecimals,
     tokenPricesMappingTable,
-    actionParams,
   ) {
+    console.log('called from usdt to usdc');
     if (fromTokenAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
       return;
     }
-    const swapCallData = await fetch1InchSwapData(
-      actionParams.chainMetadata.id,
+    const swapTxns = [];
+    const oneInchSwapCallData = await fetchSwapData(
+      chainId,
       fromTokenAddress,
+      fromTokenDecimals,
       toTokenAddress,
+      toTokenDecimals,
       amount,
       walletAddress,
       slippage,
+      "1inch"
     );
 
-    if (swapCallData["data"] === undefined) {
-      throw new Error("Swap data is undefined. Cannot proceed with swapping.");
+    const paraSwapCallData = await fetchSwapData(
+      chainId,
+      fromTokenAddress,
+      fromTokenDecimals,
+      toTokenAddress,
+      toTokenDecimals,
+      amount,
+      walletAddress,
+      slippage,
+      "paraswap"
+    );
+
+    if (!paraSwapCallData || !paraSwapCallData.data || paraSwapCallData.data.value === 0) {
+      throw new Error("Paraswap swap data is undefined or invalid. Cannot proceed.");
     }
-    if (swapCallData["toAmount"] === 0) {
-      throw new Error("To amount is 0. Cannot proceed with swapping.");
+
+    // Normalize output amounts
+    const oneInchToAmount = ethers.utils.formatUnits(
+      oneInchSwapCallData.toAmount,
+      toTokenDecimals
+    );
+    const paraSwapToAmount = ethers.utils.formatUnits(
+      paraSwapCallData.toAmount,
+      toTokenDecimals
+    );
+    let selectedProvider, selectedCallData, selectedGasFee, selectedToAmount, selectedAddress;
+    if (Number(oneInchToAmount) > Number(paraSwapToAmount)) {
+      // 1inch has a better quote
+      selectedProvider = "1inch";
+      selectedAddress = oneInchAddress;
+      selectedCallData = oneInchSwapCallData.data;
+      selectedToAmount = oneInchSwapCallData.toAmount;
+      selectedGasFee = oneInchSwapCallData.gasFee || 0; 
+    } else if (Number(paraSwapToAmount) > Number(oneInchToAmount)) {
+      selectedAddress = CHAIN_ID_TO_PARASWAP_ADDR[chainId];
+      selectedProvider = "paraswap";
+      selectedCallData = paraSwapCallData.data;
+      selectedToAmount = paraSwapCallData.toAmount;
+      selectedGasFee = paraSwapCallData.gasFee || 0;
+    } else {
+      const oneInchGasFee = oneInchSwapCallData.gasFee || 0;
+      const paraSwapGasFee = paraSwapCallData.gasFee || 0;
+  
+      if (oneInchGasFee < paraSwapGasFee) {
+        selectedCallData = oneInchSwapCallData.data;
+        selectedToAmount = oneInchSwapCallData.toAmount;
+        selectedGasFee = oneInchGasFee;
+      } else {
+        selectedCallData = paraSwapCallData.data;
+        selectedToAmount = paraSwapCallData.toAmount;
+        selectedGasFee = paraSwapGasFee;
+      }
+    }
+    console.log("selectedProvider", selectedProvider);
+    if(selectedProvider === "paraswap") {
+      const proxyAddress = CHAIN_ID_TO_PARASWAP_PROXY_ADDR[chainId];
+      const approveTxn = approve(
+        fromTokenAddress,
+        proxyAddress,
+        amount,
+        updateProgress,
+        chainId
+      );
+      swapTxns.push(approveTxn);
     }
     const normalizedInputAmout = ethers.utils.formatUnits(
       amount,
       fromTokenDecimals,
     );
     const normalizedOutputAmount = ethers.utils.formatUnits(
-      swapCallData["toAmount"],
+      selectedToAmount,
       toTokenDecimals,
     );
     const tradingLoss =
@@ -599,21 +665,16 @@ export class BasePortfolio {
     //   `${this.uniqueId()}-${fromToken}-${toTokenSymbol}-swap`,
     //   tradingLoss,
     // );
-    console.log({
-      oneInchAddress,
-      chain: CHAIN_ID_TO_CHAIN[actionParams.chainMetadata.id],
+
+    const swapTxn = prepareTransaction({
+      to: selectedAddress,
+      chain: CHAIN_ID_TO_CHAIN[chainId],
       client: THIRDWEB_CLIENT,
-      data: swapCallData["data"],
+      data: selectedCallData,
     });
-    return [
-      prepareTransaction({
-        to: oneInchAddress,
-        chain: CHAIN_ID_TO_CHAIN[actionParams.chainMetadata.id],
-        client: THIRDWEB_CLIENT,
-        data: swapCallData["data"],
-      }),
-      swapCallData["toAmount"],
-    ];
+    swapTxns.push(swapTxn);
+
+    return [swapTxns, selectedToAmount];
   }
   async _processProtocolActions(actionName, actionParams) {
     const currentChain = actionParams.chainMetadata.name
@@ -716,6 +777,7 @@ export class BasePortfolio {
         const allowedTokens = ["usdc", "eth", "weth"];
         if (!allowedTokens.includes(actionParams.tokenInSymbol.toLowerCase())) {
           const swapResult = await this._swap(
+            actionParams.chainMetadata.id,
             actionParams.account,
             inputToken,
             TOKEN_ADDRESS_MAP["usdc"][currentChain],
