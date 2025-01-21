@@ -566,7 +566,6 @@ export class BasePortfolio {
     toTokenDecimals,
     tokenPricesMappingTable,
   ) {
-    console.log('called from usdt to usdc');
     if (fromTokenAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
       return;
     }
@@ -636,7 +635,6 @@ export class BasePortfolio {
         selectedGasFee = paraSwapGasFee;
       }
     }
-    console.log("selectedProvider", selectedProvider);
     if(selectedProvider === "paraswap") {
       const proxyAddress = CHAIN_ID_TO_PARASWAP_PROXY_ADDR[chainId];
       const approveTxn = approve(
@@ -659,12 +657,6 @@ export class BasePortfolio {
     const tradingLoss =
       Number(normalizedOutputAmount) * tokenPricesMappingTable[toTokenSymbol] -
       Number(normalizedInputAmout) * tokenPricesMappingTable[fromToken];
-    // If you need to wait for the progress update
-    // await this._updateProgressAndWait(
-    //   updateProgress,
-    //   `${this.uniqueId()}-${fromToken}-${toTokenSymbol}-swap`,
-    //   tradingLoss,
-    // );
 
     const swapTxn = prepareTransaction({
       to: selectedAddress,
@@ -798,20 +790,13 @@ export class BasePortfolio {
         }
 
         const inputAmountBN = ethers.BigNumber.from(inputAmount);
-        console.log({
-          fromChain: actionParams.chainMetadata.name,
-          toChain: chain,
-        });
         const bridge = await getTheBestBridge();
         const bridgeTxns = await bridge.getBridgeTxns(
           actionParams.account,
           actionParams.chainMetadata.id,
           CHAIN_TO_CHAIN_ID[chain],
-          // TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol][currentChain],
           inputToken,
-          // TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol][chain],
           TOKEN_ADDRESS_MAP["usdc"][chain],
-          // actionParams.zapInAmount.mul(percentageBN).div(10000),
           inputAmountBN,
           actionParams.updateProgress,
         );

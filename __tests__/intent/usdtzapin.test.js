@@ -27,12 +27,6 @@ describe("Bridge with USDT -> USDC Swap", () => {
     const zapOutPercentage = NaN;
     const chainMetadata = base;
 
-    // Mock token prices
-    // const tokenPricesMappingTable = {
-    //   usdt: 1,
-    //   usdc: 1,
-    // };
-
     // Generate transactions
     const txns = await generateIntentTxns(
       actionName,
