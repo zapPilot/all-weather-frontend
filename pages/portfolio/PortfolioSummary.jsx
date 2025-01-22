@@ -22,34 +22,39 @@ export default function PortfolioSummary({
               Your Balance
             </dt>
             <dd className="mt-1 text-base font-semibold leading-6 text-white">
-              {usdBalanceLoading ? (
-                <Spin />
-              ) : (
-                <div>
-                  <div className="flex items-center">
-                    <span>${usdBalance?.toFixed(2)}</span>
-                    <a
-                      href={`https://debank.com/profile/${account?.address}`}
-                      target="_blank"
-                      className="ml-2"
-                    >
-                      <ArrowTopRightOnSquareIcon className="h-6 w-5 text-gray-500" />
-                    </a>
-                  </div>
-                  <div className="text-gray-500">
-                    {principalBalance === 0 ? (
-                      <Spin />
-                    ) : (
-                      <div>
-                        principal: $
-                        {principalBalance > 0.01
-                          ? principalBalance?.toFixed(2)
-                          : "< 0.01"}
-                      </div>
-                    )}
-                  </div>
+              <div>
+                <div className="flex items-center justify-between">
+                  <a
+                    href={`https://debank.com/profile/${account?.address}`}
+                    target="_blank"
+                    className="flex items-center text-gray-500 hover:text-gray-400"
+                  >
+                    View on Debank
+                    <ArrowTopRightOnSquareIcon className="h-6 w-5 ml-1" />
+                  </a>
                 </div>
-              )}
+                {usdBalanceLoading ? (
+                  <Spin />
+                ) : (
+                  <div>
+                    <div className="flex items-center mt-2">
+                      <span>${usdBalance?.toFixed(2)}</span>
+                    </div>
+                    <div className="text-gray-500">
+                      {principalBalance === 0 ? (
+                        <Spin />
+                      ) : (
+                        <div>
+                          principal: $
+                          {principalBalance > 0.01
+                            ? principalBalance?.toFixed(2)
+                            : "< 0.01"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </dd>
           </div>
 

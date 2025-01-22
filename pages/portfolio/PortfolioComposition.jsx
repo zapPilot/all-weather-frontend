@@ -59,20 +59,26 @@ export default function PortfolioComposition({
                     </thead>
                     <tbody>
                       {protocolArray
-                        .sort((a, b) => b.weight - a.weight)
-                        .sort(
-                          (a, b) =>
-                            portfolioApr?.[portfolioName]?.[
-                              b.interface.uniqueId()
-                            ]?.apr -
+                        .sort((a, b) => {
+                          // First priority: non-zero weight protocols
+                          if (a.weight === 0 && b.weight !== 0) return 1;
+                          if (a.weight !== 0 && b.weight === 0) return -1;
+
+                          // Second priority: APR
+                          const aprA =
                             portfolioApr?.[portfolioName]?.[
                               a.interface.uniqueId()
-                            ]?.apr,
-                        )
+                            ]?.apr || 0;
+                          const aprB =
+                            portfolioApr?.[portfolioName]?.[
+                              b.interface.uniqueId()
+                            ]?.apr || 0;
+                          if (aprA !== aprB) return aprB - aprA;
+
+                          // Third priority: weight
+                          return b.weight - a.weight;
+                        })
                         .map((protocol, index) => {
-                          // set weight to 0 for old protocols, these are protocols used to be the best choice but its reward decreased
-                          // so we opt out of them
-                          // need to keep them in the portfolio so users can zap out
                           if (protocol.weight === 0) return null;
                           return (
                             <tr key={index} className="">
@@ -82,11 +88,14 @@ export default function PortfolioComposition({
                                     <div className="relative flex items-center">
                                       {protocol.interface.symbolList.map(
                                         (symbol, idx) => {
+                                          const uniqueTokenKey = `${protocol.interface.uniqueId()}-${protocol.interface.symbolList.join(
+                                            "",
+                                          )}-${symbol}-${idx}`;
                                           return (
                                             <ImageWithFallback
-                                              key={idx}
+                                              key={uniqueTokenKey}
                                               className="me-1 rounded-full"
-                                              domKey={`${protocol.interface.protocolName}-${symbol}-${index}-${idx}`}
+                                              domKey={uniqueTokenKey}
                                               token={symbol.replace(
                                                 "(bridged)",
                                                 "",

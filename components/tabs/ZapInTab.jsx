@@ -50,10 +50,7 @@ export default function ZapInTab({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
-        <div
-          className={`mt-4 sm:mt-0 ${nextStepChain ? "hidden" : "block"}`}
-        >
-          <p>Step 1: Choose a chain to zap in and bridge to another chain.</p>
+        <div className={`mt-4 sm:mt-0 ${nextStepChain ? "hidden" : "block"}`}>
           <TokenDropdownInput
             selectedToken={selectedToken}
             setSelectedToken={handleSetSelectedToken}
@@ -109,11 +106,6 @@ export default function ZapInTab({
           )}
         </div>
         <div className={`mt-4 ${nextStepChain ? "block" : "hidden"}`}>
-          <p>
-            Step 2: Once bridging is complete, switch to the other chain to
-            calculate the investment amount.
-          </p>
-
           {showCountdown && deadline && (
             <div className="mb-4">
               <Countdown
@@ -154,10 +146,6 @@ export default function ZapInTab({
           }`}
           // className={'mt-4 block'}
         >
-          <p>
-            Step 3: After calculating the investment amount, click to zap in.
-          </p>
-
           <Button
             type="primary"
             className={`w-full my-2 ${showZapIn ? "hidden" : "block"}`}

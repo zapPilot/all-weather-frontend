@@ -122,7 +122,7 @@ export class YearnV3Vault extends BaseProtocol {
       1e18
     );
   }
-  _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
+  _getTheBestTokenAddressToZapIn(inputToken, tokenAddress, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of VLP to get the cheapest token to zap in
     const weth = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
     return ["weth", weth, 18];

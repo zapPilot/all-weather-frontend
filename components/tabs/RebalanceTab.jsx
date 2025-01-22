@@ -1,4 +1,5 @@
 import { Button, Spin } from "antd";
+import { useState } from "react";
 
 export default function RebalanceTab({
   rebalancableUsdBalanceDictLoading,
@@ -15,6 +16,8 @@ export default function RebalanceTab({
   CHAIN_ID_TO_CHAIN,
   CHAIN_TO_CHAIN_ID,
 }) {
+  const [currentStep, setCurrentStep] = useState(0);
+
   const calCurrentAPR = (rebalancableUsdBalanceDict) =>
     Object.entries(rebalancableUsdBalanceDict)
       .filter(([key]) => !["pendingRewards", "metadata"].includes(key))
@@ -24,7 +27,6 @@ export default function RebalanceTab({
       ) || 0;
   return (
     <div>
-      <p>Follow these steps to rebalance your portfolio:</p>
       {rebalancableUsdBalanceDictLoading ? <Spin /> : null}
       {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
         (data, index) => {
@@ -34,7 +36,10 @@ export default function RebalanceTab({
           const isFirstPendingAction = index === 0;
 
           return (
-            <div key={`${data.chain}-${data.actionName}`} className="mb-4">
+            <div
+              key={`${data.chain}-${data.actionName}`}
+              className={currentStep === index ? "mb-4" : "hidden"}
+            >
               <p className="text-gray-400 mb-2">
                 Step {index + 1}: {isCurrentChain ? "Execute" : "Switch to"}{" "}
                 {data.chain} chain
@@ -45,7 +50,10 @@ export default function RebalanceTab({
                 <Button
                   type="primary"
                   className="w-full"
-                  onClick={() => handleAAWalletAction(data.actionName, true)}
+                  onClick={() => {
+                    handleAAWalletAction(data.actionName, true);
+                    setCurrentStep(currentStep + 1);
+                  }}
                   loading={
                     rebalanceIsLoading || rebalancableUsdBalanceDictLoading
                   }

@@ -24,7 +24,30 @@ const AmountDisplay = ({
   showEmoji = false,
   isGreen = false,
   isLoading = false,
+  showOnlyPercentage = false,
+  portfolioHelper,
+  portfolioAPR,
 }) => {
+  if (showOnlyPercentage) {
+    return (
+      <span className={isGreen ? "text-green-500" : ""} key={propKey}>
+        {isLoading ? (
+          <Spin key={`spin-${amount}`} />
+        ) : (
+          `${(
+            (((portfolioHelper?.constructor?.name === "EthVault" ? 2 : 4) *
+              0.00299 *
+              2 *
+              0.5 +
+              0.00299 * 2) /
+              portfolioAPR) *
+            100
+          ).toFixed(2)}%`
+        )}
+      </span>
+    );
+  }
+
   return (
     <span className={isGreen ? "text-green-500" : ""} key={propKey}>
       {showEmoji && "🎉 Earned "}
@@ -96,7 +119,9 @@ export default function PopUpModal({
                 </div>
               </div>
               <div className="flex-grow">
-                {finishedTxn === false && actionName !== "" ? (
+                {finishedTxn === false &&
+                actionName !== "" &&
+                actionName !== "claimAndSwap" ? (
                   <DemoFlowDirectionGraph
                     data={portfolioHelper?.getFlowChartData(actionName, {
                       tokenInSymbol:
@@ -178,6 +203,8 @@ export default function PopUpModal({
                       showEmoji={totalTradingLoss > 0 && costsCalculated}
                       isGreen={totalTradingLoss > 0}
                       isLoading={!costsCalculated}
+                      portfolioHelper={portfolioHelper}
+                      portfolioAPR={portfolioAPR}
                     />
                   </dd>
                 </div>
@@ -218,7 +245,7 @@ export default function PopUpModal({
                                   (portfolioHelper?.constructor?.name ===
                                   "EthVault"
                                     ? 2
-                                    : 5) *
+                                    : 4) *
                                   0.5) /
                                 portfolioAPR) *
                               100
@@ -238,70 +265,16 @@ export default function PopUpModal({
                   </dt>
                   <dd className="text-sm font-medium text-gray-900">
                     Performance fee{" "}
-                    {isNaN(
-                      (((portfolioHelper?.constructor?.name === "EthVault"
-                        ? 2
-                        : 5) *
-                        0.00299 *
-                        2 *
-                        0.5 +
-                        0.00299 * 2) /
-                        portfolioAPR) *
-                        100,
-                    ) ? (
-                      <Spin />
-                    ) : (
-                      `${(
-                        (((portfolioHelper?.constructor?.name === "EthVault"
-                          ? 2
-                          : 5) *
-                          0.00299 *
-                          2 *
-                          0.5 +
-                          0.00299 * 2) /
-                          portfolioAPR) *
-                        100
-                      ).toFixed(2)}%`
-                    )}{" "}
-                    ≈{" "}
                     <AmountDisplay
                       propKey="platformFee"
                       amount={platformFee}
-                      showEmoji={platformFee > 0 && costsCalculated}
-                      isGreen={platformFee > 0}
+                      showEmoji={false}
+                      isGreen={false}
                       isLoading={!costsCalculated}
+                      showOnlyPercentage={true}
+                      portfolioHelper={portfolioHelper}
+                      portfolioAPR={portfolioAPR}
                     />
-                  </dd>
-                </div>
-                <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                  <dt className="text-base font-medium text-gray-900">
-                    {totalTradingLoss + platformFee > 0
-                      ? "Total profit"
-                      : "Total cost"}
-                  </dt>
-                  <dd className="text-base font-medium text-gray-900">
-                    <AmountDisplay
-                      propKey="total"
-                      amount={totalTradingLoss + platformFee}
-                      showEmoji={
-                        totalTradingLoss + platformFee > 0 && costsCalculated
-                      }
-                      isGreen={totalTradingLoss + platformFee > 0}
-                      isLoading={!costsCalculated}
-                    />
-                    {costsCalculated && actionName === "zapIn"
-                      ? `(Zap in ${investmentAmount} ${
-                          selectedToken?.split("-")[0]
-                        })`
-                      : actionName === "zapOut"
-                      ? `(Zap out $${zapOutAmount.toFixed(2)} worth of ${
-                          selectedToken?.split("-")[0]
-                        })`
-                      : actionName === "rebalance"
-                      ? `(Rebalance ${rebalanceAmount.toFixed(2)} ${
-                          selectedToken?.split("-")[0]
-                        })`
-                      : ""}
                   </dd>
                 </div>
               </dl>

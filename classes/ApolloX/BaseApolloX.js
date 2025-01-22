@@ -200,7 +200,7 @@ export class BaseApolloX extends BaseProtocol {
     const latestPrice = response.data.data[0].price;
     return latestPrice / Math.pow(10, this.assetDecimals);
   }
-  _getTheBestTokenAddressToZapIn(inputToken, InputTokenDecimals) {
+  _getTheBestTokenAddressToZapIn(inputToken, tokenAddress, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of ALP to get the cheapest token to zap in
     const usdcBridgedAddress = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8";
     return ["usdc", usdcBridgedAddress, 6];

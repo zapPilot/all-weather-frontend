@@ -110,25 +110,10 @@ export class BaseAerodrome extends BaseProtocol {
       }),
     );
     const min_mint_amount = this._calculateMintLP(tokens[0], tokens[1]);
-    const lpPrice = await this._calculateLpPrice(tokenPricesMappingTable);
-    const tradingLoss =
-      Number(
-        min_mint_amount
-          .mul(
-            ethers.BigNumber.from(
-              String(Math.floor(lpPrice * 10 ** this.assetDecimals)),
-            ),
-          )
-          .div(ethers.BigNumber.from(String(10 ** this.assetDecimals))),
-      ) -
-      ethers.utils.formatUnits(tokens[0].minAmount, tokens[0].decimals) *
-        tokenPricesMappingTable[tokens[0].symbol] -
-      ethers.utils.formatUnits(tokens[1].minAmount, tokens[1].decimals) *
-        tokenPricesMappingTable[tokens[1].symbol];
     await this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-deposit`,
-      tradingLoss,
+      0,
     );
     // Generate approve transactions
     const approveTxns = tokens.map((token) =>
@@ -302,21 +287,15 @@ export class BaseAerodrome extends BaseProtocol {
     const lpTokens = this._getLPTokenPairesToZapIn();
 
     // Get pool reserves and calculate withdrawal amounts
-    const {
-      minAmount0,
-      minAmount1,
-      estimatedNormalizedAmount0,
-      estimatedNormalizedAmount1,
-    } = await this._calculateWithdrawalAmounts(amount, slippage, lpTokens);
-    const lpPrice = await this._calculateLpPrice(tokenPricesMappingTable);
-    const tradingLoss =
-      estimatedNormalizedAmount0 * tokenPricesMappingTable[lpTokens[0][0]] +
-      estimatedNormalizedAmount1 * tokenPricesMappingTable[lpTokens[1][0]] -
-      amount * lpPrice;
+    const { minAmount0, minAmount1 } = await this._calculateWithdrawalAmounts(
+      amount,
+      slippage,
+      lpTokens,
+    );
     await this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-withdraw`,
-      tradingLoss,
+      0,
     );
     const withdrawTxn = prepareContractCall({
       contract: this.protocolContract,
