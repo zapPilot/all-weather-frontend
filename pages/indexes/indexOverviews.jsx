@@ -210,6 +210,7 @@ export default function IndexOverviews() {
     setStepName("");
 
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
+
     if (!tokenSymbolAndAddress) {
       alert("Please select a token");
       return;

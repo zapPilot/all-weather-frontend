@@ -50,6 +50,10 @@ export const TOKEN_ADDRESS_MAP = {
     arbitrum: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
     base: "0x4200000000000000000000000000000000000006",
   },
+  usdt: {
+    arbitrum: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+    base: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
+  },
 };
 export const PROVIDER = (chain) => {
   // Use a predefined mapping of chains to their RPC provider URLs

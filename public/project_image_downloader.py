@@ -1,6 +1,7 @@
 """
 Use this script to download all the project images from defillama
 """
+
 import requests, os
 
 res = requests.get("https://yields.llama.fi/pools")

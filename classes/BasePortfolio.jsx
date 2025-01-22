@@ -10,8 +10,15 @@ import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import WETH from "../lib/contracts/Weth.json" assert { type: "json" };
 import ReactMarkdown from "react-markdown";
 import getTheBestBridge from "./bridges/bridgeFactory";
-import { CHAIN_TO_CHAIN_ID, TOKEN_ADDRESS_MAP } from "../utils/general";
+import {
+  CHAIN_ID_TO_CHAIN,
+  CHAIN_TO_CHAIN_ID,
+  TOKEN_ADDRESS_MAP,
+} from "../utils/general";
 import { toWei } from "thirdweb/utils";
+import { fetch1InchSwapData } from "../utils/oneInch";
+import { _updateProgressAndWait } from "../utils/general";
+import { prepareTransaction } from "thirdweb";
 
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
@@ -593,6 +600,71 @@ export class BasePortfolio {
     return totalTxns;
   }
 
+  async _swap(
+    walletAddress,
+    fromTokenAddress,
+    toTokenAddress,
+    amount,
+    slippage,
+    updateProgress,
+    fromToken,
+    fromTokenDecimals,
+    toTokenSymbol,
+    toTokenDecimals,
+    tokenPricesMappingTable,
+    actionParams,
+  ) {
+    if (fromTokenAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
+      return;
+    }
+    const swapCallData = await fetch1InchSwapData(
+      actionParams.chainMetadata.id,
+      fromTokenAddress,
+      toTokenAddress,
+      amount,
+      walletAddress,
+      slippage,
+    );
+
+    if (swapCallData["data"] === undefined) {
+      throw new Error("Swap data is undefined. Cannot proceed with swapping.");
+    }
+    if (swapCallData["toAmount"] === 0) {
+      throw new Error("To amount is 0. Cannot proceed with swapping.");
+    }
+    const normalizedInputAmout = ethers.utils.formatUnits(
+      amount,
+      fromTokenDecimals,
+    );
+    const normalizedOutputAmount = ethers.utils.formatUnits(
+      swapCallData["toAmount"],
+      toTokenDecimals,
+    );
+    const tradingLoss =
+      Number(normalizedOutputAmount) * tokenPricesMappingTable[toTokenSymbol] -
+      Number(normalizedInputAmout) * tokenPricesMappingTable[fromToken];
+    // If you need to wait for the progress update
+    // await this._updateProgressAndWait(
+    //   updateProgress,
+    //   `${this.uniqueId()}-${fromToken}-${toTokenSymbol}-swap`,
+    //   tradingLoss,
+    // );
+    console.log({
+      oneInchAddress,
+      chain: CHAIN_ID_TO_CHAIN[actionParams.chainMetadata.id],
+      client: THIRDWEB_CLIENT,
+      data: swapCallData["data"],
+    });
+    return [
+      prepareTransaction({
+        to: oneInchAddress,
+        chain: CHAIN_ID_TO_CHAIN[actionParams.chainMetadata.id],
+        client: THIRDWEB_CLIENT,
+        data: swapCallData["data"],
+      }),
+      swapCallData["toAmount"],
+    ];
+  }
   async _processProtocolActions(actionName, actionParams) {
     const currentChain = actionParams.chainMetadata.name
       .toLowerCase()
@@ -683,20 +755,48 @@ export class BasePortfolio {
       },
       bridge: async (chain, totalWeight) => {
         if (totalWeight === 0) return [];
-        const percentageBN = ethers.BigNumber.from(
-          String(Math.floor(totalWeight * 10000)),
+        let inputToken =
+          TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol][currentChain];
+        let inputAmount = Math.floor(
+          actionParams.zapInAmount *
+            totalWeight *
+            (1 - actionParams.slippage / 100),
         );
+        let txns = [];
+        const allowedTokens = ["usdc", "eth", "weth"];
+        if (!allowedTokens.includes(actionParams.tokenInSymbol.toLowerCase())) {
+          const swapResult = await this._swap(
+            actionParams.account,
+            inputToken,
+            TOKEN_ADDRESS_MAP["usdc"][currentChain],
+            inputAmount,
+            actionParams.slippage,
+            actionParams.updateProgress,
+            actionParams.tokenInSymbol,
+            actionParams.tokenDecimals,
+            "usdc",
+            6,
+            actionParams.tokenPricesMappingTable,
+            actionParams,
+          );
+          // Update input token and amount after the swap
+          txns.push(swapResult[0]);
+          inputToken = TOKEN_ADDRESS_MAP["usdc"][currentChain];
+          inputAmount = swapResult[1]; // Resulting amount after the swap
+        }
+
+        const inputAmountBN = ethers.BigNumber.from(inputAmount);
         const bridge = await getTheBestBridge();
         const bridgeTxns = await bridge.getBridgeTxns(
           actionParams.account,
           actionParams.chainMetadata.id,
           CHAIN_TO_CHAIN_ID[chain],
-          TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol][currentChain],
-          TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol][chain],
-          actionParams.zapInAmount.mul(percentageBN).div(10000),
+          inputToken,
+          TOKEN_ADDRESS_MAP["usdc"][chain],
+          inputAmountBN,
           actionParams.updateProgress,
         );
-        return bridgeTxns;
+        return [...txns, ...bridgeTxns];
       },
     };
     // Separate function to process protocol transactions

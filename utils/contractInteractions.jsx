@@ -108,7 +108,7 @@ export const tokensForDropDown = [
   "eth",
   "usdc",
   "usdc.e",
-  // "usdt",
+  "usdt",
   "dai",
   // "wbtc",
   "weth",
