@@ -1,6 +1,6 @@
 import { tokensAndCoinmarketcapIdsFromDropdownOptions } from "../utils/contractInteractions";
 import assert from "assert";
-import { oneInchAddress} from "../utils/oneInch";
+import { oneInchAddress } from "../utils/oneInch";
 import axios from "axios";
 import { getTokenDecimal, approve } from "../utils/general";
 import { ethers } from "ethers";
@@ -15,7 +15,7 @@ import {
   CHAIN_TO_CHAIN_ID,
   TOKEN_ADDRESS_MAP,
   CHAIN_ID_TO_PARASWAP_ADDR,
-  CHAIN_ID_TO_PARASWAP_PROXY_ADDR
+  CHAIN_ID_TO_PARASWAP_PROXY_ADDR,
 } from "../utils/general";
 import { toWei } from "thirdweb/utils";
 import { fetchSwapData } from "../utils/oneInch";
@@ -620,7 +620,7 @@ export class BasePortfolio {
     toTokenDecimals,
     tokenPricesMappingTable,
   ) {
-    console.log('called from usdt to usdc');
+    console.log("called from usdt to usdc");
     if (fromTokenAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
       return;
     }
@@ -634,7 +634,7 @@ export class BasePortfolio {
       amount,
       walletAddress,
       slippage,
-      "1inch"
+      "1inch",
     );
 
     const paraSwapCallData = await fetchSwapData(
@@ -646,30 +646,40 @@ export class BasePortfolio {
       amount,
       walletAddress,
       slippage,
-      "paraswap"
+      "paraswap",
     );
 
-    if (!paraSwapCallData || !paraSwapCallData.data || paraSwapCallData.data.value === 0) {
-      throw new Error("Paraswap swap data is undefined or invalid. Cannot proceed.");
+    if (
+      !paraSwapCallData ||
+      !paraSwapCallData.data ||
+      paraSwapCallData.data.value === 0
+    ) {
+      throw new Error(
+        "Paraswap swap data is undefined or invalid. Cannot proceed.",
+      );
     }
 
     // Normalize output amounts
     const oneInchToAmount = ethers.utils.formatUnits(
       oneInchSwapCallData.toAmount,
-      toTokenDecimals
+      toTokenDecimals,
     );
     const paraSwapToAmount = ethers.utils.formatUnits(
       paraSwapCallData.toAmount,
-      toTokenDecimals
+      toTokenDecimals,
     );
-    let selectedProvider, selectedCallData, selectedGasFee, selectedToAmount, selectedAddress;
+    let selectedProvider,
+      selectedCallData,
+      selectedGasFee,
+      selectedToAmount,
+      selectedAddress;
     if (Number(oneInchToAmount) > Number(paraSwapToAmount)) {
       // 1inch has a better quote
       selectedProvider = "1inch";
       selectedAddress = oneInchAddress;
       selectedCallData = oneInchSwapCallData.data;
       selectedToAmount = oneInchSwapCallData.toAmount;
-      selectedGasFee = oneInchSwapCallData.gasFee || 0; 
+      selectedGasFee = oneInchSwapCallData.gasFee || 0;
     } else if (Number(paraSwapToAmount) > Number(oneInchToAmount)) {
       selectedAddress = CHAIN_ID_TO_PARASWAP_ADDR[chainId];
       selectedProvider = "paraswap";
@@ -679,7 +689,7 @@ export class BasePortfolio {
     } else {
       const oneInchGasFee = oneInchSwapCallData.gasFee || 0;
       const paraSwapGasFee = paraSwapCallData.gasFee || 0;
-  
+
       if (oneInchGasFee < paraSwapGasFee) {
         selectedCallData = oneInchSwapCallData.data;
         selectedToAmount = oneInchSwapCallData.toAmount;
@@ -691,14 +701,14 @@ export class BasePortfolio {
       }
     }
     console.log("selectedProvider", selectedProvider);
-    if(selectedProvider === "paraswap") {
+    if (selectedProvider === "paraswap") {
       const proxyAddress = CHAIN_ID_TO_PARASWAP_PROXY_ADDR[chainId];
       const approveTxn = approve(
         fromTokenAddress,
         proxyAddress,
         amount,
         updateProgress,
-        chainId
+        chainId,
       );
       swapTxns.push(approveTxn);
     }

@@ -1,5 +1,5 @@
 // const API_URL = process.env.NEXT_PUBLIC_API_URL;
-const API_URL = 'http://127.0.0.1:3001'
+const API_URL = "http://127.0.0.1:3001";
 
 export const portfolioContractAddress =
   "0xD188492217F09D18f2B0ecE3F8948015981e961a";
@@ -38,13 +38,13 @@ export async function fetchSwapData(
   provider,
 ) {
   if (!fromAddress || !toTokenAddress) {
-    console.error('Invalid addresses:', { fromAddress, toTokenAddress });
+    console.error("Invalid addresses:", { fromAddress, toTokenAddress });
     throw new Error("fromAddress or toTokenAddress is undefined");
   }
   if (fromAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
     throw new Error("fromTokenAddress and toTokenAddress are the same");
   }
-  console.log('chainId:', chainId);
+  console.log("chainId:", chainId);
   const url = `${API_URL}/the_best_swap_data?chainId=${chainId}&fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount.toString()}&fromAddress=${fromAddress}&slippage=${slippage}&provider=${provider}&fromTokenDecimals=${fromTokenDecimals}&toTokenDecimals=${toTokenDecimals}`;
   const retryLimit = 3;
   const retryStatusCodes = [429, 500, 502, 503, 504];

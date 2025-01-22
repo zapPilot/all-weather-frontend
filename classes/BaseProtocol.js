@@ -1,12 +1,23 @@
 import { ethers } from "ethers";
-import { fetchSwapData, oneInchAddress} from "../utils/oneInch.js";
-import { CHAIN_ID_TO_CHAIN, PROVIDER, NULL_ADDRESS, CHAIN_ID_TO_PARASWAP_ADDR, CHAIN_ID_TO_PARASWAP_PROXY_ADDR } from "../utils/general.js";
+import { fetchSwapData, oneInchAddress } from "../utils/oneInch.js";
+import {
+  CHAIN_ID_TO_CHAIN,
+  PROVIDER,
+  NULL_ADDRESS,
+  CHAIN_ID_TO_PARASWAP_ADDR,
+  CHAIN_ID_TO_PARASWAP_PROXY_ADDR,
+} from "../utils/general.js";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import BaseUniswap from "./uniswapv3/BaseUniswap.js";
 import assert from "assert";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 import { approve } from "../utils/general";
-import { prepareTransaction, prepareContractCall, getContract, toTokens } from "thirdweb";
+import {
+  prepareTransaction,
+  prepareContractCall,
+  getContract,
+  toTokens,
+} from "thirdweb";
 
 export default class BaseProtocol extends BaseUniswap {
   // arbitrum's Apollox is staked on PancakeSwap
@@ -942,7 +953,7 @@ export default class BaseProtocol extends BaseUniswap {
       amount,
       walletAddress,
       slippage,
-      "1inch"
+      "1inch",
     );
 
     const paraSwapCallData = await fetchSwapData(
@@ -954,30 +965,40 @@ export default class BaseProtocol extends BaseUniswap {
       amount,
       walletAddress,
       slippage,
-      "paraswap"
+      "paraswap",
     );
 
-    if (!paraSwapCallData || !paraSwapCallData.data || paraSwapCallData.data.value === 0) {
-      throw new Error("Paraswap swap data is undefined or invalid. Cannot proceed.");
+    if (
+      !paraSwapCallData ||
+      !paraSwapCallData.data ||
+      paraSwapCallData.data.value === 0
+    ) {
+      throw new Error(
+        "Paraswap swap data is undefined or invalid. Cannot proceed.",
+      );
     }
 
     // Normalize output amounts
     const oneInchToAmount = ethers.utils.formatUnits(
       oneInchSwapCallData.toAmount,
-      toTokenDecimals
+      toTokenDecimals,
     );
     const paraSwapToAmount = ethers.utils.formatUnits(
       paraSwapCallData.toAmount,
-      toTokenDecimals
+      toTokenDecimals,
     );
-    let selectedProvider, selectedCallData, selectedGasFee, selectedToAmount, selectedAddress;
+    let selectedProvider,
+      selectedCallData,
+      selectedGasFee,
+      selectedToAmount,
+      selectedAddress;
     if (Number(oneInchToAmount) > Number(paraSwapToAmount)) {
       // 1inch has a better quote
       selectedProvider = "1inch";
       selectedAddress = oneInchAddress;
       selectedCallData = oneInchSwapCallData.data;
       selectedToAmount = oneInchSwapCallData.toAmount;
-      selectedGasFee = oneInchSwapCallData.gasFee || 0; 
+      selectedGasFee = oneInchSwapCallData.gasFee || 0;
     } else if (Number(paraSwapToAmount) > Number(oneInchToAmount)) {
       selectedAddress = CHAIN_ID_TO_PARASWAP_ADDR[this.chainId];
       selectedProvider = "paraswap";
@@ -987,7 +1008,7 @@ export default class BaseProtocol extends BaseUniswap {
     } else {
       const oneInchGasFee = oneInchSwapCallData.gasFee || 0;
       const paraSwapGasFee = paraSwapCallData.gasFee || 0;
-  
+
       if (oneInchGasFee < paraSwapGasFee) {
         selectedCallData = oneInchSwapCallData.data;
         selectedToAmount = oneInchSwapCallData.toAmount;
@@ -1000,14 +1021,14 @@ export default class BaseProtocol extends BaseUniswap {
     }
     console.log("selectedProvider", selectedProvider);
 
-    if(selectedProvider === "paraswap") {
+    if (selectedProvider === "paraswap") {
       const proxyAddress = CHAIN_ID_TO_PARASWAP_PROXY_ADDR[this.chainId];
       const approveTxn = await this.approve(
         fromTokenAddress,
         proxyAddress,
         amount,
         updateProgress,
-        this.chainId
+        this.chainId,
       );
       swapTxns.push(approveTxn);
     }

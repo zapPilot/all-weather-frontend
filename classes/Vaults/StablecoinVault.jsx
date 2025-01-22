@@ -428,7 +428,11 @@ export class StablecoinVault extends BasePortfolio {
                   convexRewardPool:
                     "0xf74d4C9b0F49fb70D8Ff6706ddF39e3a16D61E67",
                   lpTokens: [
-                    ["crvusd", "0x498Bf2B1e120FeD3ad3D42EA2165E9b73f99C1e5", 18],
+                    [
+                      "crvusd",
+                      "0x498Bf2B1e120FeD3ad3D42EA2165E9b73f99C1e5",
+                      18,
+                    ],
                     ["usdt", "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", 6],
                   ],
                   rewards: [

@@ -221,7 +221,7 @@ export class BaseConvex extends BaseProtocol {
   }
   _calculateLpPrice(tokenPricesMappingTable) {
     // TODO(david): need to calculate the correct LP price
-    if (this.pid === 34 || this.pid === 36|| this.pid === 18) {
+    if (this.pid === 34 || this.pid === 36 || this.pid === 18) {
       // it's a stablecoin pool
       return 1 / Math.pow(10, this.assetDecimals);
     } else if (this.pid === 28) {
