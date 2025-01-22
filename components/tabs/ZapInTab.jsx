@@ -145,6 +145,7 @@ export default function ZapInTab({
               setFinishedTxn(false);
               setShowZapIn(true);
             }}
+            disabled={showCountdown}
           >
             Set Investment Amount to{" "}
             {walletBalanceData?.displayValue !== undefined
