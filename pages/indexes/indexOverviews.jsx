@@ -187,7 +187,7 @@ export default function IndexOverviews() {
       chain: chainId,
     });
     const gasPriceInGwei = Number(gasPrice) / 1e9;
-    if (gasPriceInGwei > 0.1) {
+    if (gasPriceInGwei > 0.05) {
       openNotificationWithIcon(
         notificationAPI,
         "Gas Price Too High",
@@ -225,6 +225,8 @@ export default function IndexOverviews() {
       setTransferLoading(true);
     } else if (actionName === "stake") {
       setZapInIsLoading(true);
+    } else if (actionName === "claimAndSwap") {
+      // placeholder
     } else {
       throw new Error(`Invalid action name: ${actionName}`);
     }
@@ -257,7 +259,10 @@ export default function IndexOverviews() {
         onlyThisChain,
       );
       setCostsCalculated(true);
-      if (txns.length < 2) {
+      if (
+        ["zapIn", "zapOut", "rebalance", "transfer"].includes(actionName) &&
+        txns.length < 2
+      ) {
         throw new Error("No transactions to send");
       }
 
@@ -284,6 +289,19 @@ export default function IndexOverviews() {
         await new Promise((resolve, reject) => {
           sendBatchTransaction(txns.flat(Infinity), {
             onSuccess: async (data) => {
+              const explorerUrl =
+                data?.chain?.blockExplorers !== undefined
+                  ? data.chain.blockExplorers[0].url
+                  : `https://explorer.${CHAIN_ID_TO_CHAIN_STRING[
+                      chainId?.id
+                    ].toLowerCase()}.io`;
+              openNotificationWithIcon(
+                notificationAPI,
+                "Transaction Result",
+                "success",
+                `${explorerUrl}/tx/${data.transactionHash}`,
+              );
+              resolve(data); // Resolve the promise successfully
               try {
                 await axios({
                   method: "post",
@@ -321,6 +339,7 @@ export default function IndexOverviews() {
                           sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
                         0,
                       ),
+                      transferTo: recipient,
                     }),
                   },
                 });
@@ -340,11 +359,7 @@ export default function IndexOverviews() {
                         actionName: "receive",
                         tokenSymbol,
                         investmentAmount: investmentAmountAfterFee,
-                        zapOutAmount: 0,
-                        rebalanceAmount: 0,
                         timestamp: Math.floor(Date.now() / 1000),
-                        swapFeeRate: portfolioHelper.swapFeeRate(),
-                        referralFeeRate: portfolioHelper.referralFeeRate(),
                         chain:
                           CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
                         zapInAmountOnThisChain:
@@ -359,19 +374,6 @@ export default function IndexOverviews() {
               } catch (error) {
                 console.log("category API error", error);
               }
-              const explorerUrl =
-                data?.chain?.blockExplorers !== undefined
-                  ? data.chain.blockExplorers[0].url
-                  : `https://explorer.${CHAIN_ID_TO_CHAIN_STRING[
-                      chainId?.id
-                    ].toLowerCase()}.io`;
-              openNotificationWithIcon(
-                notificationAPI,
-                "Transaction Result",
-                "success",
-                `${explorerUrl}/tx/${data.transactionHash}`,
-              );
-              resolve(data); // Resolve the promise successfully
               setFinishedTxn(true);
               // get current chain from Txn data
               const newNextChain = switchNextChain(data.chain.name);

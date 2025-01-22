@@ -109,7 +109,7 @@ export default function TransactionHistory({
       } = txn.metadata;
       const principalSymbol = refineSymbol(tokenSymbol);
 
-      if (actionName === "zapIn") {
+      if (["zapIn", "receive"].includes(actionName)) {
         balance = updateBalance(
           balance,
           "usd",

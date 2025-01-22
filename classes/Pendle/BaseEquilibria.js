@@ -17,6 +17,10 @@ import { ERC20_ABI } from "@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.j
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 export class BaseEquilibria extends BaseProtocol {
+  static equilibriaFarmAddressMap = {
+    8453: "0x2583A2538272f31e9A15dD12A432B8C96Ab4821d",
+    42161: "0x4D32C8Ff2fACC771eC7Efc70d6A8468bC30C26bF",
+  };
   constructor(chain, chaindId, symbolList, mode, customParams) {
     super(chain, chaindId, symbolList, mode, customParams);
     // arbitrum's Apollox is staked on PancakeSwap
@@ -24,7 +28,10 @@ export class BaseEquilibria extends BaseProtocol {
     this.protocolVersion = "0";
     this.assetDecimals = 18;
     this.pidOfEquilibria = customParams.pidOfEquilibria;
-    this.PENDLE_TOKEN_ADDR = "0x0c880f6761f1af8d9aa9c466984b80dab9a8c9e8";
+    this.PENDLE_TOKEN_ADDR_MAP = {
+      8453: "0xa99f6e6785da0f5d6fb42495fe424bce029eeb3e",
+      42161: "0x0c880f6761f1af8d9aa9c466984b80dab9a8c9e8",
+    };
     this.EQB_TOKEN_ADDR = "0xbfbcfe8873fe28dfa25f1099282b088d52bbad9c";
     this.XEQB_TOKEN_ADDR = "0x96c4a48abdf781e9c931cfa92ec0167ba219ad8e";
     this.OARB_TOKEN_ADDR = "0x03b611858f8e8913f8db7d9fdbf59e352b0c83e8";
@@ -42,7 +49,7 @@ export class BaseEquilibria extends BaseProtocol {
     });
     this.stakeFarmContract = getContract({
       client: THIRDWEB_CLIENT,
-      address: "0x4D32C8Ff2fACC771eC7Efc70d6A8468bC30C26bF",
+      address: BaseEquilibria.equilibriaFarmAddressMap[String(this.chainId)],
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: PendleBoosterSidechain,
     });
@@ -76,48 +83,61 @@ export class BaseEquilibria extends BaseProtocol {
     this._checkIfParamsAreSet();
   }
   rewards() {
-    return [
-      {
-        symbol: "arb",
-        priceId: {
-          coinmarketcapApiId: 11841,
+    if (this.chainId === 8453) {
+      return [
+        {
+          symbol: "pendle",
+          priceId: {
+            coinmarketcapApiId: 9481,
+          },
+          address: "0xa99f6e6785da0f5d6fb42495fe424bce029eeb3e",
+          decimals: 18,
         },
-        address: "0x912ce59144191c1204e64559fe8253a0e49e6548",
-        decimals: 18,
-      },
-      {
-        symbol: "oarb",
-        priceId: {
-          coinmarketcapApiId: 11841,
+      ];
+    } else if (this.chainId === 42161) {
+      return [
+        {
+          symbol: "arb",
+          priceId: {
+            coinmarketcapApiId: 11841,
+          },
+          address: "0x912ce59144191c1204e64559fe8253a0e49e6548",
+          decimals: 18,
         },
-        address: "0x03b611858f8E8913F8DB7d9fDBF59e352b0c83E8",
-        decimals: 18,
-      },
-      {
-        symbol: "pendle",
-        priceId: {
-          coinmarketcapApiId: 9481,
+        {
+          symbol: "oarb",
+          priceId: {
+            coinmarketcapApiId: 11841,
+          },
+          address: "0x03b611858f8E8913F8DB7d9fDBF59e352b0c83E8",
+          decimals: 18,
         },
-        address: "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
-        decimals: 18,
-      },
-      {
-        symbol: "eqb",
-        priceId: {
-          coinmarketcapApiId: 26556,
+        {
+          symbol: "pendle",
+          priceId: {
+            coinmarketcapApiId: 9481,
+          },
+          address: "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
+          decimals: 18,
         },
-        address: "0xbfbcfe8873fe28dfa25f1099282b088d52bbad9c",
-        decimals: 18,
-      },
-      {
-        symbol: "xeqb",
-        priceId: {
-          coinmarketcapApiId: 26556,
+        {
+          symbol: "eqb",
+          priceId: {
+            coinmarketcapApiId: 26556,
+          },
+          address: "0xbfbcfe8873fe28dfa25f1099282b088d52bbad9c",
+          decimals: 18,
         },
-        address: "0x96C4A48Abdf781e9c931cfA92EC0167Ba219ad8E",
-        decimals: 18,
-      },
-    ];
+        {
+          symbol: "xeqb",
+          priceId: {
+            coinmarketcapApiId: 26556,
+          },
+          address: "0x96C4A48Abdf781e9c931cfA92EC0167Ba219ad8E",
+          decimals: 18,
+        },
+      ];
+    }
   }
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     let rewardBalance = {};
@@ -140,6 +160,10 @@ export class BaseEquilibria extends BaseProtocol {
         await rewardPoolContractInstance.functions.earned(owner, reward)
       )[0];
       const metadata = this._getRewardMetadata(reward);
+      if (!metadata) {
+        // reward not found
+        continue;
+      }
       rewardBalance[reward] = {
         symbol: metadata.symbol,
         balance: earnedReward,
@@ -149,7 +173,10 @@ export class BaseEquilibria extends BaseProtocol {
         decimals: metadata.decimals,
         vesting: this._checkIfVesting(reward),
       };
-      if (reward.toLowerCase() == this.PENDLE_TOKEN_ADDR.toLowerCase()) {
+      if (
+        reward.toLowerCase() ==
+        this.PENDLE_TOKEN_ADDR_MAP[String(this.chainId)].toLowerCase()
+      ) {
         pendleAmount = earnedReward;
       }
     }
@@ -174,26 +201,30 @@ export class BaseEquilibria extends BaseProtocol {
       .mul(farmEqbShare)
       .div(PENDLE_BOOSTER_DENOMINATOR);
     const eqbMetadata = this._getRewardMetadata(this.EQB_TOKEN_ADDR);
-    rewardBalance[this.EQB_TOKEN_ADDR] = {
-      symbol: eqbMetadata.symbol,
-      balance: eqbAmount,
-      usdDenominatedValue:
-        (tokenPricesMappingTable["eqb"] * eqbAmount) /
-        Math.pow(10, eqbMetadata.decimals),
-      decimals: eqbMetadata.decimals,
-    };
+    if (eqbMetadata) {
+      rewardBalance[this.EQB_TOKEN_ADDR] = {
+        symbol: eqbMetadata.symbol,
+        balance: eqbAmount,
+        usdDenominatedValue:
+          (tokenPricesMappingTable["eqb"] * eqbAmount) /
+          Math.pow(10, eqbMetadata.decimals),
+        decimals: eqbMetadata.decimals,
+      };
+    }
 
     const xeqbAmount = sumOfEqbAndXeqb.sub(eqbAmount);
     const xeqbMetadata = this._getRewardMetadata(this.XEQB_TOKEN_ADDR);
-    rewardBalance[this.XEQB_TOKEN_ADDR] = {
-      symbol: xeqbMetadata.symbol,
-      balance: xeqbAmount,
-      usdDenominatedValue:
-        (tokenPricesMappingTable["eqb"] * xeqbAmount) /
-        Math.pow(10, xeqbMetadata.decimals),
-      decimals: xeqbMetadata.decimals,
-      vesting: true,
-    };
+    if (xeqbMetadata) {
+      rewardBalance[this.XEQB_TOKEN_ADDR] = {
+        symbol: xeqbMetadata.symbol,
+        balance: xeqbAmount,
+        usdDenominatedValue:
+          (tokenPricesMappingTable["eqb"] * xeqbAmount) /
+          Math.pow(10, xeqbMetadata.decimals),
+        decimals: xeqbMetadata.decimals,
+        vesting: true,
+      };
+    }
     // TODO: arbitrum incentive
     return rewardBalance;
   }
@@ -215,7 +246,7 @@ export class BaseEquilibria extends BaseProtocol {
       this.chainId,
     );
     const resp = await axios.get(
-      `https://api-v2.pendle.finance/core/v1/sdk/42161/markets/${this.assetContract.address}/add-liquidity`,
+      `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/markets/${this.assetContract.address}/add-liquidity`,
       {
         params: {
           receiver: owner,
@@ -272,8 +303,8 @@ export class BaseEquilibria extends BaseProtocol {
       method: "claimRewards",
       params: [[this.pidOfEquilibria]],
     });
-    const redeemTxn = this.customRedeemVestingRewards(pendingRewards);
-    return [[claimTxn, redeemTxn], pendingRewards];
+    const redeemTxns = this.customRedeemVestingRewards(pendingRewards);
+    return [[claimTxn, ...redeemTxns], pendingRewards];
   }
 
   async usdBalanceOf(owner, tokenPricesMappingTable) {
@@ -301,7 +332,7 @@ export class BaseEquilibria extends BaseProtocol {
 
   async _fetchPendleAssetPrice(updateProgress) {
     const resp = await axios.get(
-      "https://api-v2.pendle.finance/core/v1/42161/prices/assets/addresses",
+      `https://api-v2.pendle.finance/core/v1/${this.chainId}/prices/assets/addresses`,
       {
         params: {
           addresses: this.assetContract.address,
@@ -327,7 +358,6 @@ export class BaseEquilibria extends BaseProtocol {
         return rewardMetadata;
       }
     }
-    throw new Error(`Unknown reward ${address}`);
   }
   _checkIfVesting(reward) {
     return [
@@ -336,7 +366,10 @@ export class BaseEquilibria extends BaseProtocol {
     ].includes(reward.toLowerCase());
   }
   customRedeemVestingRewards(pendingRewards) {
-    if (pendingRewards[this.XEQB_TOKEN_ADDR].balance.toString() === "0") {
+    if (
+      pendingRewards[this.XEQB_TOKEN_ADDR] === undefined ||
+      pendingRewards[this.XEQB_TOKEN_ADDR].balance.toString() === "0"
+    ) {
       return [];
     }
     const maxRedeemDuration = 14515200;
@@ -422,7 +455,7 @@ export class BaseEquilibria extends BaseProtocol {
       decimalOfBestTokenToZapOut,
     ] = this._getTheBestTokenAddressToZapOut();
     const zapOutResp = await axios.get(
-      `https://api-v2.pendle.finance/core/v1/sdk/42161/markets/${this.assetContract.address}/remove-liquidity`,
+      `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/markets/${this.assetContract.address}/remove-liquidity`,
       {
         params: {
           receiver: owner,
