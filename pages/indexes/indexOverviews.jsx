@@ -569,16 +569,19 @@ export default function IndexOverviews() {
           setPendingRewardsLoading(true);
           setrebalancableUsdBalanceDictLoading(true);
           setProtocolAssetDustInWalletLoading(true);
-          const tokenPricesMappingTable =
-            await portfolioHelper.getTokenPricesMappingTable();
+
+          // Fetch token prices and balances in parallel
+          const [tokenPricesMappingTable, [usdBalance, usdBalanceDict]] =
+            await Promise.all([
+              portfolioHelper.getTokenPricesMappingTable(),
+              portfolioHelper.usdBalanceOf(
+                account.address,
+                portfolioApr[portfolioName],
+              ),
+            ]);
+
           if (!isMounted) return;
           setTokenPricesMappingTable(tokenPricesMappingTable);
-          const [usdBalance, usdBalanceDict] =
-            await portfolioHelper.usdBalanceOf(
-              account.address,
-              portfolioApr[portfolioName],
-            );
-          if (!isMounted) return;
 
           const portfolioLockUpPeriod = await portfolioHelper.lockUpPeriod(
             account.address,
@@ -590,25 +593,26 @@ export default function IndexOverviews() {
           setUsdBalanceLoading(false);
           setrebalancableUsdBalanceDict(usdBalanceDict);
           setrebalancableUsdBalanceDictLoading(false);
+
+          // Pass tokenPricesMappingTable to pendingRewards call
           const pendingRewards = await portfolioHelper.pendingRewards(
             account.address,
             () => {},
+            tokenPricesMappingTable, // Add this parameter
           );
           setPendingRewards(pendingRewards.pendingRewardsDict);
           setPendingRewardsLoading(false);
 
-          if (Object.values(tokenPricesMappingTable).length === 0) {
-            return;
+          if (Object.values(tokenPricesMappingTable).length > 0) {
+            const dust =
+              await portfolioHelper.calProtocolAssetDustInWalletDictionary(
+                account.address,
+                tokenPricesMappingTable,
+              );
+            if (!isMounted) return;
+
+            setProtocolAssetDustInWallet(dust);
           }
-
-          const dust =
-            await portfolioHelper.calProtocolAssetDustInWalletDictionary(
-              account.address,
-              tokenPricesMappingTable,
-            );
-          if (!isMounted) return;
-
-          setProtocolAssetDustInWallet(dust);
           setProtocolAssetDustInWalletLoading(false);
         } catch (error) {
           console.error("Error in fetchUsdBalance:", error);
@@ -791,7 +795,7 @@ export default function IndexOverviews() {
                     className="h-6 w-6 text-green-600"
                   />
                   <Popover
-                    content="All Weather Protocol is a zero-smart-contract protocol. It’s a pure JavaScript project built with an Account Abstraction (AA) wallet. Here is the audit report for the AA wallet."
+                    content="All Weather Protocol is a zero-smart-contract protocol. It's a pure JavaScript project built with an Account Abstraction (AA) wallet. Here is the audit report for the AA wallet."
                     trigger="hover"
                   >
                     <span className="text-white">

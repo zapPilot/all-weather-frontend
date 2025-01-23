@@ -112,28 +112,26 @@ export default function TransactionHistory({
       if (["zapIn", "receive"].includes(actionName)) {
         balance = updateBalance(
           balance,
-          "usd",
+          principalSymbol,
           parseFloat(zapInAmountOnThisChain) || 0,
-        );
-      }
-      if (actionName === "stake") {
-        balance = updateBalance(
-          balance,
-          "usd",
-          parseFloat(stakeAmountOnThisChain) || 0,
         );
       }
       if (["zapOut", "transfer"].includes(actionName)) {
         balance = updateBalance(
           balance,
           principalSymbol,
-          -(parseFloat(zapOutAmount) || 0),
+          -(parseFloat(zapOutAmount) || 0) /
+            tokenPricesMappingTable[principalSymbol],
         );
       }
 
       if (["zapOut", "rebalance"].includes(actionName)) {
         Object.values(txn.gotRefundData || {}).forEach(({ symbol, amount }) => {
-          balance = updateBalance(balance, refineSymbol(symbol), -amount);
+          balance = updateBalance(
+            balance,
+            refineSymbol(symbol),
+            -amount / tokenPricesMappingTable[symbol],
+          );
         });
       }
     }
@@ -161,13 +159,11 @@ export default function TransactionHistory({
 
   // Transaction rendering
   const renderTokenAmount = (symbol, amount, actionName, isStablecoin) => {
-    const showDollarSign =
-      !isStablecoin || ["zapOut", "transfer"].includes(actionName);
+    const showDollarSign = !isStablecoin && actionName !== "zapIn";
     const amountDisplay = amount > 0.01 ? amount.toFixed(2) : "< 0.01";
 
     return (
       <div key={symbol} className="flex gap-1 items-center">
-        {showDollarSign && "$"}
         {amountDisplay}
         {showDollarSign && " worth of "}
         {actionName === "transfer" ? (
