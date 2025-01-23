@@ -210,6 +210,7 @@ export default function IndexOverviews() {
     setStepName("");
 
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
+
     if (!tokenSymbolAndAddress) {
       alert("Please select a token");
       return;
@@ -395,7 +396,8 @@ export default function IndexOverviews() {
           return;
         } else {
           errorReadableMsg =
-            "Increase Slippage and Try Again! error:" + error.message;
+            "Increase Slippage and Try Again! Or out of gas error:" +
+            error.message;
         }
         openNotificationWithIcon(
           notificationAPI,

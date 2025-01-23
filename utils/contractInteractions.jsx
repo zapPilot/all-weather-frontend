@@ -103,12 +103,15 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
       address: "0xe31ee12bdfdd0573d634124611e85338e2cbf0cf",
     },
   },
+  wsteth: {
+    coinmarketcapApiId: 12409,
+  },
 };
 export const tokensForDropDown = [
   "eth",
   "usdc",
   "usdc.e",
-  // "usdt",
+  "usdt",
   "dai",
   // "wbtc",
   "weth",

@@ -3,6 +3,8 @@ import TokenDropdownInput from "../../pages/views/TokenDropdownInput.jsx";
 import ConfiguredConnectButton from "../../pages/ConnectButton";
 import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
 import { useState } from "react";
+import { TOKEN_ADDRESS_MAP } from "../../utils/general";
+import { chain } from "lodash";
 const { Countdown } = Statistic;
 export default function ZapInTab({
   nextStepChain,
@@ -68,7 +70,9 @@ export default function ZapInTab({
             <Button
               type="primary"
               className="w-full my-2"
-              onClick={() => handleAAWalletAction("stake", true)}
+              onClick={() => {
+                handleAAWalletAction("stake", true);
+              }}
               loading={protocolAssetDustInWalletLoading}
               disabled={usdBalanceLoading}
             >
@@ -88,7 +92,9 @@ export default function ZapInTab({
             <Button
               type="primary"
               className="w-full my-2"
-              onClick={() => handleAAWalletAction("zapIn", false)}
+              onClick={() => {
+                handleAAWalletAction("zapIn", false);
+              }}
               loading={zapInIsLoading}
               disabled={
                 Number(investmentAmount) === 0 ||
@@ -124,7 +130,9 @@ export default function ZapInTab({
                 ? "hidden"
                 : "block"
             }`}
-            onClick={handleSwitchChain}
+            onClick={() => {
+              handleSwitchChain();
+            }}
             loading={isLoading}
           >
             switch to {nextStepChain} Chain
@@ -136,6 +144,7 @@ export default function ZapInTab({
               ? "block"
               : "hidden"
           }`}
+          // className={'mt-4 block'}
         >
           <Button
             type="primary"
@@ -145,6 +154,7 @@ export default function ZapInTab({
               setFinishedTxn(false);
               setShowZapIn(true);
             }}
+            disabled={showCountdown}
           >
             Set Investment Amount to{" "}
             {walletBalanceData?.displayValue !== undefined
@@ -155,7 +165,9 @@ export default function ZapInTab({
           <Button
             type="primary"
             className={`w-full my-2 ${showZapIn ? "block" : "hidden"}`}
-            onClick={() => handleAAWalletAction("zapIn", true)}
+            onClick={() => {
+              handleAAWalletAction("zapIn", true);
+            }}
             loading={zapInIsLoading}
             disabled={
               Number(investmentAmount) === 0 ||
