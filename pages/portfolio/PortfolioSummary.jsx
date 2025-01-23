@@ -68,7 +68,8 @@ export default function PortfolioSummary({
             <dd className="text-sm font-medium leading-6 text-white">
               Profit:{" "}
               {usdBalanceLoading ||
-              Object.values(tokenPricesMappingTable || {}).length === 0 ? (
+              Object.values(tokenPricesMappingTable || {}).length === 0 ||
+              principalBalance === 0 ? (
                 <Spin />
               ) : (
                 <span

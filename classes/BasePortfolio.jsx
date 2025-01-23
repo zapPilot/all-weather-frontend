@@ -25,6 +25,7 @@ const REWARD_SLIPPAGE = 0.8;
 
 class PriceService {
   static STATIC_PRICES = {
+    usd: 1,
     usdc: 1,
     usdt: 1,
     dai: 1,
