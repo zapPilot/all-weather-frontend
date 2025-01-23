@@ -1184,4 +1184,7 @@ export default class BaseProtocol extends BaseUniswap {
       setTimeout(resolve, 30);
     });
   }
+  getDeadline() {
+    return Math.floor(Date.now() / 1000) + 600; // 10 minute deadline
+  }
 }
