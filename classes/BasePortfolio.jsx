@@ -788,16 +788,24 @@ export class BasePortfolio {
 
         const inputAmountBN = ethers.BigNumber.from(inputAmount);
         const bridge = await getTheBestBridge();
+        const targetToken = allowedTokens.includes(
+          actionParams.tokenInSymbol.toLowerCase(),
+        )
+          ? TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol.toLowerCase()][chain]
+          : TOKEN_ADDRESS_MAP["usdc"][chain];
+
         const bridgeTxns = await bridge.getBridgeTxns(
           actionParams.account,
           actionParams.chainMetadata.id,
           CHAIN_TO_CHAIN_ID[chain],
           inputToken,
-          TOKEN_ADDRESS_MAP["usdc"][chain],
+          targetToken,
           inputAmountBN,
           actionParams.updateProgress,
         );
+
         return [...txns, ...bridgeTxns];
+        // return [...txns, ...bridgeTxns];
       },
     };
     // Separate function to process protocol transactions
