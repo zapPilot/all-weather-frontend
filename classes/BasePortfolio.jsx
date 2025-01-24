@@ -787,7 +787,9 @@ export class BasePortfolio {
 
         const inputAmountBN = ethers.BigNumber.from(inputAmount);
         const bridge = await getTheBestBridge();
-        const targetToken = allowedTokens.includes(actionParams.tokenInSymbol.toLowerCase())
+        const targetToken = allowedTokens.includes(
+          actionParams.tokenInSymbol.toLowerCase(),
+        )
           ? TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol.toLowerCase()][chain]
           : TOKEN_ADDRESS_MAP["usdc"][chain];
 
