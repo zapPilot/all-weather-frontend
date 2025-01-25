@@ -23,7 +23,7 @@ describe("Bridge with USDT -> USDC Swap", () => {
     // base USDT address
     const tokenInAddress = "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2";
     const tokenDecimals = 6;
-    const zapInAmount = 4;
+    const zapInAmount = 400;
     const zapOutPercentage = NaN;
     const chainMetadata = base;
 

@@ -87,6 +87,7 @@ class AcrossBridge extends BaseBridge {
         0,
         quote.deposit.message,
       ],
+      extraGas: 150000n,
     });
     return [bridgeTxn, bridgeAddress];
   }

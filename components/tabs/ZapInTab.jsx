@@ -43,6 +43,11 @@ export default function ZapInTab({
     await new Promise((resolve) => setTimeout(resolve, countdownTime * 1000));
 
     setPreviousTokenSymbol(selectedToken.split("-")[0].toLowerCase());
+    const tokenSymbol = selectedToken.split("-")[0].toLowerCase();
+    if (tokenSymbol === "usdt") {
+      const newSelectedToken = `usdc-${TOKEN_ADDRESS_MAP["usdc"][nextStepChain]}-6`;
+      handleSetSelectedToken(newSelectedToken);
+    }
     setShowCountdown(false);
     setIsLoading(false);
   };

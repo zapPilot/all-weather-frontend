@@ -396,7 +396,7 @@ export default function IndexOverviews() {
           return;
         } else {
           errorReadableMsg =
-            "Increase Slippage and Try Again! Or out of gas error:" +
+            "Transaction failed. Please try increasing slippage tolerance or notify customer support to increase gas limit." +
             error.message;
         }
         openNotificationWithIcon(
@@ -791,7 +791,7 @@ export default function IndexOverviews() {
                     className="h-6 w-6 text-green-600"
                   />
                   <Popover
-                    content="All Weather Protocol is a zero-smart-contract protocol. It’s a pure JavaScript project built with an Account Abstraction (AA) wallet. Here is the audit report for the AA wallet."
+                    content="All Weather Protocol is a zero-smart-contract protocol. It's a pure JavaScript project built with an Account Abstraction (AA) wallet. Here is the audit report for the AA wallet."
                     trigger="hover"
                   >
                     <span className="text-white">

@@ -112,7 +112,7 @@ export class EthVault extends BasePortfolio {
                   pidOfEquilibria: 57,
                 },
               ),
-              weight: 0.2,
+              weight: 0.1,
             },
             {
               interface: new BaseEquilibria(
@@ -129,25 +129,25 @@ export class EthVault extends BasePortfolio {
                   pidOfEquilibria: 56,
                 },
               ),
-              weight: 0.15,
+              weight: 0.1,
             },
-            //         {
-            //   interface: new BaseEquilibria(
-            //     "arbitrum",
-            //     42161,
-            //     ["pt eeth 26jun2025", "eeth"],
-            //     "single",
-            //     {
-            //       assetAddress: "0xBf5E60ddf654085F80DAe9DD33Ec0E345773E1F8",
-            //       symbolOfBestTokenToZapOut: "weth",
-            //       bestTokenAddressToZapOut:
-            //         "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-            //       decimalOfBestTokenToZapOut: 18,
-            //       pidOfEquilibria: 55,
-            //     },
-            //   ),
-            //   weight: 0.1,
-            // },
+            {
+              interface: new BaseEquilibria(
+                "arbitrum",
+                42161,
+                ["pt eeth 26jun2025", "eeth"],
+                "single",
+                {
+                  assetAddress: "0xBf5E60ddf654085F80DAe9DD33Ec0E345773E1F8",
+                  symbolOfBestTokenToZapOut: "weth",
+                  bestTokenAddressToZapOut:
+                    "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                  decimalOfBestTokenToZapOut: 18,
+                  pidOfEquilibria: 55,
+                },
+              ),
+              weight: 0.1,
+            },
             {
               interface: new BaseEquilibria(
                 "arbitrum",
@@ -163,25 +163,25 @@ export class EthVault extends BasePortfolio {
                   pidOfEquilibria: 8,
                 },
               ),
-              weight: 0.15,
+              weight: 0.1,
             },
-            // {
-            //   interface: new BaseEquilibria(
-            //     "arbitrum",
-            //     42161,
-            //     ["pt wsteth 26jun2025", "wsteth"],
-            //     "single",
-            //     {
-            //       assetAddress: "0x08a152834de126d2ef83D612ff36e4523FD0017F",
-            //       symbolOfBestTokenToZapOut: "weth",
-            //       bestTokenAddressToZapOut:
-            //         "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-            //       decimalOfBestTokenToZapOut: 18,
-            //       pidOfEquilibria: 7,
-            //     },
-            //   ),
-            //   weight: 0.1,
-            // },
+            {
+              interface: new BaseEquilibria(
+                "arbitrum",
+                42161,
+                ["pt wsteth 26jun2025", "wsteth"],
+                "single",
+                {
+                  assetAddress: "0x08a152834de126d2ef83D612ff36e4523FD0017F",
+                  symbolOfBestTokenToZapOut: "weth",
+                  bestTokenAddressToZapOut:
+                    "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                  decimalOfBestTokenToZapOut: 18,
+                  pidOfEquilibria: 7,
+                },
+              ),
+              weight: 0.1,
+            },
           ],
           base: [
             {

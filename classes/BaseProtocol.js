@@ -971,6 +971,7 @@ export default class BaseProtocol extends BaseUniswap {
         chain: CHAIN_ID_TO_CHAIN[this.chainId],
         client: THIRDWEB_CLIENT,
         data: swapCallData["data"],
+        extraGas: 550000n,
       }),
       swapCallData["toAmount"],
     ];
