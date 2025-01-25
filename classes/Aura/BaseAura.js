@@ -168,7 +168,7 @@ export class BaseAura extends BaseProtocol {
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
       client: THIRDWEB_CLIENT,
       data: callData,
-      gasLimit: 680000n,
+      extraGas: 600000n,
     });
     // Get staking transactions and combine all transactions
     const stakeTxns = await this._stakeLP(min_mint_amount, updateProgress);
@@ -219,7 +219,7 @@ export class BaseAura extends BaseProtocol {
     );
     return (await rewardPoolInstance.functions.balanceOf(owner))[0];
   }
-  async _calculateTokenAmountsForLP(tokenMetadatas) {
+  async _calculateTokenAmountsForLP(usdAmount, tokenMetadatas, tickers, tokenPricesMappingTable) {
     const { maxAmountsIn } = await this._calculateMintLP({
       rpcUrl: PROVIDER(this.chain).rpcUrl,
       chainId: this.chainId,
@@ -330,7 +330,7 @@ export class BaseAura extends BaseProtocol {
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
       client: THIRDWEB_CLIENT,
       data: call.callData,
-      gasLimit: 460000n,
+      extraGas: 500000n,
     });
     return [
       [withdrawTxn],

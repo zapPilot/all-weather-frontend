@@ -105,7 +105,7 @@ export default class BaseProtocol extends BaseUniswap {
   }
 
   _addLPModeNodes(nodes, inputToken, tokenInAddress) {
-    const tokenMetadatas = this._getLPTokenPairesToZapIn();
+    const {lpTokens: tokenMetadatas} = this._getLPTokenPairesToZapIn();
 
     for (const [bestTokenSymbol, bestTokenAddressToZapIn] of tokenMetadatas) {
       if (
@@ -227,7 +227,7 @@ export default class BaseProtocol extends BaseUniswap {
       ]) {
         nodes.push(node);
       }
-      const tokenMetadatas = this._getLPTokenAddressesToZapOut();
+      const {lpTokens: tokenMetadatas} = this._getLPTokenAddressesToZapOut();
       for (const [
         bestTokenSymbol,
         bestTokenAddressToZapOut,
@@ -651,7 +651,10 @@ export default class BaseProtocol extends BaseUniswap {
     );
   }
   _getLPTokenPairesToZapIn() {
-    return this.customParams.lpTokens;
+    return {
+      lpTokens: this.customParams.lpTokens,
+      tickers: this.customParams.tickers,
+    };
   }
   _getTheBestTokenAddressToZapOut() {
     throw new Error(
@@ -718,7 +721,7 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
   ) {
     // Validate and get token pairs
-    const tokenMetadatas = this._getLPTokenPairesToZapIn();
+    const {lpTokens: tokenMetadatas, tickers} = this._getLPTokenPairesToZapIn();
     if (tokenMetadatas.length !== 2) {
       throw new Error(
         `Currently only support 2 tokens in LP, but got ${tokenMetadatas.length}`,
@@ -726,7 +729,8 @@ export default class BaseProtocol extends BaseUniswap {
     }
 
     // Calculate initial ratios
-    const lpTokenRatio = await this._calculateTokenAmountsForLP(tokenMetadatas);
+    const usdAmount = investmentAmountInThisPosition * tokenPricesMappingTable[inputToken]
+    const lpTokenRatio = await this._calculateTokenAmountsForLP(usdAmount, tokenMetadatas, tickers, tokenPricesMappingTable);
     const sumOfLPTokenRatio = lpTokenRatio.reduce(
       (acc, value) => acc.add(value),
       ethers.BigNumber.from(0),
@@ -746,20 +750,18 @@ export default class BaseProtocol extends BaseUniswap {
       updateProgress,
       tokenPricesMappingTable,
     );
-
     // Balance token ratios
     const balancedAmounts = this._balanceTokenRatios(
       amountsAfterSwap,
       tokenMetadatas,
       lpTokenRatio,
+      tokenPricesMappingTable
     );
-
     // Format final metadata
     const swappedTokenMetadatas = tokenMetadatas.map((metadata, index) => [
       ...metadata.slice(0, 3),
       balancedAmounts[index],
     ]);
-
     return [swapTxns, swappedTokenMetadatas[0], swappedTokenMetadatas[1]];
   }
 
@@ -814,13 +816,15 @@ export default class BaseProtocol extends BaseUniswap {
     return [swapTxns, amountsAfterSwap];
   }
 
-  _balanceTokenRatios(amounts, tokenMetadatas, lpTokenRatio) {
+  _balanceTokenRatios(amounts, tokenMetadatas, lpTokenRatio, tokenPricesMappingTable) {
     const precision = 1000000000;
 
-    // Calculate current and target ratios
-    const currentRatio =
-      Number(ethers.utils.formatUnits(amounts[0], tokenMetadatas[0][2])) /
-      Number(ethers.utils.formatUnits(amounts[1], tokenMetadatas[1][2]));
+    // Calculate current ratio including token prices
+    const amount0Usd = Number(ethers.utils.formatUnits(amounts[0], tokenMetadatas[0][2])) * 
+      tokenPricesMappingTable[tokenMetadatas[0][0]];
+    const amount1Usd = Number(ethers.utils.formatUnits(amounts[1], tokenMetadatas[1][2])) * 
+      tokenPricesMappingTable[tokenMetadatas[1][0]];
+    const currentRatio = amount0Usd / amount1Usd;
     const targetRatio = lpTokenRatio[0] / lpTokenRatio[1];
 
     // Convert to BigNumber for precise calculations
@@ -1180,7 +1184,7 @@ export default class BaseProtocol extends BaseUniswap {
     );
     // child class should implement this
   }
-  async _calculateTokenAmountsForLP(tokenMetadatas) {
+  async _calculateTokenAmountsForLP(usdAmount, tokenMetadatas, tickers, tokenPricesMappingTable) {
     throw new Error(
       'Method "_calculateTokenAmountsForLP()" must be implemented.',
     );

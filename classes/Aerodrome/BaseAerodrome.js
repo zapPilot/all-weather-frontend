@@ -174,7 +174,7 @@ export class BaseAerodrome extends BaseProtocol {
     );
     return (await stakeFarmContractInstance.functions.balanceOf(owner))[0];
   }
-  async _calculateTokenAmountsForLP(tokenMetadatas) {
+  async _calculateTokenAmountsForLP(usdAmount, tokenMetadatas, tickers, tokenPricesMappingTable) {
     const metadata = await this.assetContractInstance.functions.metadata();
     const [r0, r1] = [metadata.r0, metadata.r1];
     const [dec0, dec1] = [metadata.dec0, metadata.dec1];

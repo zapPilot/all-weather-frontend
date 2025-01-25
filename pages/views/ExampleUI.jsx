@@ -49,6 +49,16 @@ export default function ExampleUI() {
       tvl: strategyMetadata?.["Stablecoin Vault"]?.portfolioTVL,
       portfolioHelper: getPortfolioHelper("Stablecoin Vault"),
     },
+    {
+      id: 3,
+      portfolioName: "All Weather Vault",
+      href: "/indexes/indexOverviews/?portfolioName=All+Weather+Vault",
+      imageSrc: "allweather",
+      imageAlt: "All Weather Vault",
+      apr: strategyMetadata?.["All Weather Vault"]?.portfolioAPR * 100,
+      tvl: strategyMetadata?.["All Weather Vault"]?.portfolioTVL,
+      portfolioHelper: getPortfolioHelper("All Weather Vault"),
+    },
   ];
   const partnershipVaults = [
     {
