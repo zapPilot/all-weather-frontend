@@ -373,7 +373,6 @@ export default class BaseProtocol extends BaseUniswap {
         tokenDecimals,
         tokenPricesMappingTable,
       );
-
       const zapinTxns = await this.customDeposit(
         recipient,
         inputToken,
@@ -696,7 +695,9 @@ export default class BaseProtocol extends BaseUniswap {
         bestTokenToZapInDecimal,
         tokenPricesMappingTable,
       );
-      amountToZapIn = Math.floor((swapEstimateAmount * (100 - slippage)) / 100);
+      amountToZapIn = String(
+        Math.floor((swapEstimateAmount * (100 - slippage)) / 100),
+      );
       swapTxns.push(swapTxn);
     }
     return [
