@@ -250,7 +250,6 @@ export class BasePortfolio {
     // Initialize balance dictionary with rewards
     let usdBalance = 0;
     const usdBalanceDict = this._initializeBalanceDict();
-
     // Process protocol balances
     this._processProtocolBalances(
       balanceResults,
@@ -280,11 +279,11 @@ export class BasePortfolio {
     const balancePromises = Object.values(this.strategy)
       .flatMap((category) => Object.values(category))
       .flat()
-      .map((protocol) =>
-        protocol.interface
+      .map((protocol) => {
+        return protocol.interface
           .usdBalanceOf(address, tokenPricesMappingTable)
-          .then((balance) => ({ protocol, balance })),
-      );
+          .then((balance) => ({ protocol, balance }));
+      });
     return await Promise.all(balancePromises);
   }
 
@@ -649,7 +648,6 @@ export class BasePortfolio {
     //   `${this.uniqueId()}-${fromToken}-${toTokenSymbol}-swap`,
     //   tradingLoss,
     // );
-
     return [
       prepareTransaction({
         to: oneInchAddress,

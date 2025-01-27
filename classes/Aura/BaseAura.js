@@ -219,7 +219,12 @@ export class BaseAura extends BaseProtocol {
     );
     return (await rewardPoolInstance.functions.balanceOf(owner))[0];
   }
-  async _calculateTokenAmountsForLP(usdAmount, tokenMetadatas, tickers, tokenPricesMappingTable) {
+  async _calculateTokenAmountsForLP(
+    usdAmount,
+    tokenMetadatas,
+    tickers,
+    tokenPricesMappingTable,
+  ) {
     const { maxAmountsIn } = await this._calculateMintLP({
       rpcUrl: PROVIDER(this.chain).rpcUrl,
       chainId: this.chainId,

@@ -3,21 +3,24 @@ import { ERC20_ABI } from "@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.j
 import { encodeFunctionData } from "viem";
 import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import { fetch1InchSwapData } from "../../utils/oneInch.js";
-import { approve, CHAIN_ID_TO_CHAIN, PROVIDER, CHAIN_TO_CHAIN_ID } from "../../utils/general.js";
+import {
+  approve,
+  CHAIN_ID_TO_CHAIN,
+  PROVIDER,
+  CHAIN_TO_CHAIN_ID,
+} from "../../utils/general.js";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb.js";
 import BaseProtocol from "../BaseProtocol.js";
-import { approvalBufferParam, slippageForLPV2 } from "../slippageUtils.js";
-import assert from "assert";
+import AlgebraPool from "../../lib/contracts/Camelot/AlgebraPool.json" assert { type: "json" };
 
 export class BaseCamelot extends BaseProtocol {
-  static lpTokenAddress = "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15";
-
   constructor(chain, chainId, symbolList, mode, customParams) {
     super(chain, chainId, symbolList, mode, customParams);
     this.protocolName = "camelot";
     this.protocolVersion = "v3";
     this.assetDecimals = 18;
+    this.token_id;
 
     this.assetContract = getContract({
       client: THIRDWEB_CLIENT,
@@ -29,13 +32,13 @@ export class BaseCamelot extends BaseProtocol {
       client: THIRDWEB_CLIENT,
       address: this.customParams.protocolAddress,
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
-      abi: CamelotNFTPositionManager,
+      abi: AlgebraPool,
     });
     this.stakeFarmContract = getContract({
       client: THIRDWEB_CLIENT,
       address: this.customParams.protocolAddress,
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
-      abi: CamelotNFTPositionManager,
+      abi: ERC20_ABI,
     });
 
     this.assetContractInstance = new ethers.Contract(
@@ -43,14 +46,9 @@ export class BaseCamelot extends BaseProtocol {
       CamelotNFTPositionManager,
       PROVIDER(this.chain),
     );
-    this.assetContractInstance = new ethers.Contract(
-      this.assetContract.address,
-      ERC20_ABI,
-      PROVIDER(this.chain),
-    );
     this.protocolContractInstance = new ethers.Contract(
       this.protocolContract.address,
-      ERC20_ABI,
+      AlgebraPool,
       PROVIDER(this.chain),
     );
     this.stakeFarmContractInstance = new ethers.Contract(
@@ -59,7 +57,6 @@ export class BaseCamelot extends BaseProtocol {
       PROVIDER(this.chain),
     );
     this._checkIfParamsAreSet();
-    
   }
   rewards() {
     return [
@@ -73,36 +70,99 @@ export class BaseCamelot extends BaseProtocol {
       },
     ];
   }
+  async assetBalanceOf(recipient) {
+    console.log("assetBalanceOf");
+    if (!this.token_id) {
+      this.token_id = await this._getNftID(recipient);
+    }
+    if (this.token_id === 0) {
+      return 0;
+    }
+    console.log("assetBalanceOf token_id", this.token_id);
+    if (!this.token_id) {
+      return ethers.BigNumber.from(0);
+    }
+    console.log("assetBalanceOf position");
+    const position = await this.assetContractInstance.functions.positions(
+      this.token_id,
+    );
+    console.log("assetBalanceOf position", position);
+    return position.liquidity;
+  }
   async usdBalanceOf(owner, tokenPricesMappingTable) {
-    // const lpBalance = await this.stakeBalanceOf(owner, () => {});
-    // const lpPrice = await this._calculateLpPrice(tokenPricesMappingTable);
-    // return lpBalance * lpPrice;
-    return 0
-    return 0
+    console.log("usdBalanceOf", this.token_id, !this.token_id);
+    if (!this.token_id) {
+      this.token_id = await this._getNftID(owner);
+    }
+    if (this.token_id === 0) {
+      return 0;
+    }
+    console.log("token_id", this.token_id);
+    return await this.getNFTValue(
+      this.token_id,
+      this.protocolContractInstance,
+      this.assetContractInstance,
+      tokenPricesMappingTable,
+      this.customParams.lpTokens[0][0],
+      this.customParams.lpTokens[1][0],
+    );
   }
   async assetUsdPrice(tokenPricesMappingTable) {
-    return 0
-
-    const assetUsdPrice = await this._calculateLpPrice(tokenPricesMappingTable);
-    return assetUsdPrice;
+    return 0;
   }
-  async stakeBalanceOf(owner, updateProgress) {
-    return 0
 
-    const stakeFarmContractInstance = new ethers.Contract(
-      this.stakeFarmContract.address,
-      ERC20_ABI,
-      PROVIDER(this.chain),
-    );
-    return (await stakeFarmContractInstance.functions.balanceOf(owner))[0];
+  async stakeBalanceOf(owner) {
+    // Get NFT positions balance
+    return ethers.BigNumber.from(0);
   }
   rewards() {
-    return []; // Implement if Camelot has rewards
+    return this.customParams.rewards;
   }
 
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
-    // Implement if Camelot has rewards
-    return {};
+    // TODO(david): we're missing Grail rewards
+    if (!this.token_id) {
+      this.token_id = await this._getNftID(owner);
+    }
+    console.log("pendingRewards token_id", this.token_id);
+    if (this.token_id === 0) {
+      return {};
+    }
+    const [
+      [token0, token0Address, token0Decimals],
+      [token1, token1Address, token1Decimals],
+    ] = this.customParams.lpTokens;
+    const { fees0, fees1 } = await this.getUncollectedFees(
+      this.token_id,
+      this.assetContractInstance,
+      this.protocolContractInstance,
+    );
+    console.log(
+      "token1",
+      token1,
+      "tokenPricesMappingTable",
+      tokenPricesMappingTable,
+      tokenPricesMappingTable[token1],
+      BigInt(fees1),
+    );
+    const rewardBalance = {
+      [token0Address]: {
+        symbol: token0,
+        balance: ethers.BigNumber.from(String(fees0)),
+        usdDenominatedValue:
+          tokenPricesMappingTable[token0] * (fees0 / 10 ** token0Decimals),
+        decimals: token0Decimals,
+      },
+      [token1Address]: {
+        symbol: token1,
+        balance: ethers.BigNumber.from(String(fees1)),
+        usdDenominatedValue:
+          tokenPricesMappingTable[token1] * (fees1 / 10 ** token1Decimals),
+        decimals: token1Decimals,
+      },
+    };
+    console.log("rewardBalance", rewardBalance);
+    return rewardBalance;
   }
 
   async customDepositLP(
@@ -144,76 +204,101 @@ export class BaseCamelot extends BaseProtocol {
         this.chainId,
       ),
     );
-    const nftPositionUniqueKey = this._getNFTPositionUniqueKey(tokenAmetadata[1], tokenBmetadata[1], this.customParams.tickers.tickLower, this.customParams.tickers.tickUpper);
-    let depositTxn; 
-    const token_id = await this._getExistingInvestmentPositionsByChain(owner, nftPositionUniqueKey)
-    console.log("existingInvestmentPositionId", token_id)
-    if (
-      token_id
-    ) {
-      console.log("increasing liquidity to existing NFT", owner, tokens[0].amount, tokens[1].amount, slippage)
-      depositTxn = 
-        this._increateLiquidityToExistingNFT(
-          token_id,
-          tokens[0].amount,
-          tokens[1].amount,
-          slippage,
-        );
+    let depositTxn;
+    if (!this.token_id) {
+      this.token_id = await this._getNftID(owner);
+    }
+    console.log("existingInvestmentPositionId", this.token_id);
+    if (this.token_id) {
+      console.log(
+        "increasing liquidity to existing NFT",
+        owner,
+        tokens[0].amount,
+        tokens[1].amount,
+        slippage,
+      );
+      depositTxn = this._increateLiquidityToExistingNFT(
+        this.token_id,
+        tokens[0].amount,
+        tokens[1].amount,
+        slippage,
+      );
     } else {
-      console.log("minting new NFT", owner, tokens[0].amount, tokens[1].amount, slippage)
-      depositTxn = this._mintLpNFT(owner, tokens[0].amount, tokens[1].amount, slippage);
+      console.log(
+        "minting new NFT",
+        owner,
+        tokens[0].amount,
+        tokens[1].amount,
+        slippage,
+      );
+      depositTxn = this._mintLpNFT(
+        owner,
+        tokens[0].amount,
+        tokens[1].amount,
+        slippage,
+      );
     }
     return [approveTxns, depositTxn];
   }
-  async _calculateTokenAmountsForLP(usdAmount, tokenMetadatas, tickers, tokenPricesMappingTable) {
+  async _calculateTokenAmountsForLP(
+    usdAmount,
+    tokenMetadatas,
+    tickers,
+    tokenPricesMappingTable,
+  ) {
     const { tickLower, tickUpper } = tickers;
-    const token0 = tokenMetadatas[0][0]
-    const token1 = tokenMetadatas[1][0]
+    const token0 = tokenMetadatas[0][0];
+    const token1 = tokenMetadatas[1][0];
     const token0Decimals = tokenMetadatas[0][2];
     const token1Decimals = tokenMetadatas[1][2];
     const minPrice =
-      1.0001 ** tickLower *
-      10 ** (18 * 2 - token0Decimals - token1Decimals);
+      1.0001 ** tickLower * 10 ** (18 * 2 - token0Decimals - token1Decimals);
     const maxPrice =
-      1.0001 ** tickUpper *
-      10 ** (18 * 2 - token0Decimals - token1Decimals);
+      1.0001 ** tickUpper * 10 ** (18 * 2 - token0Decimals - token1Decimals);
     const ratio = this.calculateUniswapV3LP(
-      usdAmount, 
+      usdAmount,
       tokenPricesMappingTable[tokenMetadatas[0][0]],
       tokenPricesMappingTable[tokenMetadatas[1][0]],
-      tokenPricesMappingTable[tokenMetadatas[0][0]] / tokenPricesMappingTable[tokenMetadatas[1][0]],
+      tokenPricesMappingTable[tokenMetadatas[0][0]] /
+        tokenPricesMappingTable[tokenMetadatas[1][0]],
       minPrice,
       maxPrice,
       tokenPricesMappingTable[token0],
-      tokenPricesMappingTable[token1]
-    )
-    return ratio
+      tokenPricesMappingTable[token1],
+    );
+    return ratio;
   }
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
-    // Implement if Camelot has claimable rewards
-    return [[], {}];
-  }
-
-  async usdBalanceOf(owner, tokenPricesMappingTable) {
-    const lpBalance = await this.stakeBalanceOf(owner);
-    const lpPrice = await this._calculateLpPrice(tokenPricesMappingTable);
-    return lpBalance * lpPrice;
-  }
-
-  async assetUsdPrice(tokenPricesMappingTable) {
-    return await this._calculateLpPrice(tokenPricesMappingTable);
-  }
-
-  async stakeBalanceOf(owner) {
-    // Get NFT positions balance
-    const balance = await this.assetContractInstance.functions.balanceOf(owner);
-    return balance[0];
-  }
-
-  async _calculateLpPrice(tokenPricesMappingTable) {
-    // Implement LP price calculation based on token reserves and prices
-    // This is a placeholder - you'll need to implement the actual calculation
-    return 0;
+    const [
+      [token0, token0Address, token0Decimals],
+      [token1, token1Address, token1Decimals],
+    ] = this.customParams.lpTokens;
+    const pendingRewards = await this.pendingRewards(
+      owner,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
+    console.log(
+      "pendingRewards",
+      pendingRewards,
+      "token0Address",
+      token0Address,
+      "token1Address",
+      token1Address,
+    );
+    const claimTxn = prepareContractCall({
+      contract: this.assetContract,
+      method: "collect",
+      params: [
+        {
+          tokenId: this.token_id,
+          recipient: owner,
+          amount0Max: pendingRewards[token0Address].balance,
+          amount1Max: pendingRewards[token1Address].balance,
+        },
+      ],
+    });
+    return [[claimTxn], pendingRewards];
   }
 
   async lockUpPeriod() {
@@ -221,12 +306,7 @@ export class BaseCamelot extends BaseProtocol {
   }
   async _stakeLP(amount, updateProgress) {
     await super._stakeLP(amount, updateProgress);
-    return []
-  }
-  _getNFTPositionUniqueKey(token0, token1, tickLower, tickUpper) {
-    return `${BaseCamelot.lpTokenAddress.toLowerCase()}/${token0.toLowerCase()}/${token1.toLowerCase()}/${
-      tickLower
-    }/${tickUpper}`;
+    return [];
   }
   _increateLiquidityToExistingNFT(
     tokenId,
@@ -270,20 +350,27 @@ export class BaseCamelot extends BaseProtocol {
     });
   }
 
-  async _getExistingInvestmentPositionsByChain(address, uniqueKey) {
-    const chainString = Object.entries(CHAIN_TO_CHAIN_ID).find(([key, value]) => value === this.chainId)[0];
+  async _getNftID(address) {
+    const { tickLower, tickUpper } = this.customParams.tickers;
+    const uniqueKey = `${this.assetContract.address.toLowerCase()}/${this.customParams.lpTokens[0][1].toLowerCase()}/${this.customParams.lpTokens[1][1].toLowerCase()}/${tickLower}/${tickUpper}`;
+    const chainString = Object.entries(CHAIN_TO_CHAIN_ID).find(
+      ([key, value]) => value === this.chainId,
+    )[0];
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/${address}/nft/tvl_highest?token_addresses=${this.assetContract.address}&chain=${chainString}`,
     );
     const data = await response.json();
     // Filter entries by uniqueKey before sorting
-    const filteredData = Object.entries(data).filter(([key]) => key === uniqueKey);
-    const sortedData = filteredData.sort((a, b) => b[1].liquidity - a[1].liquidity);
+    const filteredData = Object.entries(data).filter(
+      ([key]) => key === uniqueKey,
+    );
+    const sortedData = filteredData.sort(
+      (a, b) => b[1].liquidity - a[1].liquidity,
+    );
     if (sortedData.length < 1) {
-      return undefined
+      return 0;
     }
-    console.log("sortedData", sortedData, sortedData[0][1]?.token_id)
-    return sortedData[0][1]?.token_id ?? undefined;
+    console.log("sortedData", sortedData, sortedData[0][1]?.token_id);
+    return sortedData[0][1]?.token_id ?? 0;
   }
 }
-
