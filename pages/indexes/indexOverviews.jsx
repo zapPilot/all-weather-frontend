@@ -389,9 +389,11 @@ export default function IndexOverviews() {
         let errorReadableMsg;
         if (error.message.includes("0x495d907f")) {
           errorReadableMsg = "bridgequote expired, please try again";
-        } else if (error.message.includes("0x203d82d8")) {
-          errorReadableMsg =
-            "DeFi pool quote has expired. Please refresh the page and try again.";
+        } else if (
+          error.message.includes("0x203d82d8") ||
+          error.message.includes("0xf71fbda2")
+        ) {
+          errorReadableMsg = "quote has expired. Please try again.";
         } else if (error.message.includes("User rejected the request")) {
           return;
         } else {
