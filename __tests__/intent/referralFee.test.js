@@ -53,7 +53,7 @@ describe("Referral Fee Module", () => {
       const userAddress = "0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0";
       const tokenSymbol = "usdc";
       const tokenAddress = "0xaf88d065e77c8cc2239327c5edb3a432268e5831";
-      const investmentAmount = 1;
+      const investmentAmount = 10;
       const tokenDecimals = 6;
       const zapOutPercentage = 1;
       const portfolioHelper = getPortfolioHelper("Convex Stablecoin Vault");
@@ -101,6 +101,6 @@ describe("Referral Fee Module", () => {
         );
       }
     },
-    { timeout: 140000 },
+    { timeout: 200000 },
   );
 });

@@ -43,30 +43,82 @@ export async function fetchSwapData(
   if (fromAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
     throw new Error("fromTokenAddress and toTokenAddress are the same");
   }
-  console.log("chainId:", chainId);
-  const url = `${API_URL}/the_best_swap_data?chainId=${chainId}&fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount.toString()}&fromAddress=${fromAddress}&slippage=${slippage}&provider=${provider}&fromTokenDecimals=${fromTokenDecimals}&toTokenDecimals=${toTokenDecimals}`;
+
   const retryLimit = 3;
   const retryStatusCodes = [429, 500, 502, 503, 504];
+  let currentProvider = provider;
 
   for (let attempt = 0; attempt < retryLimit; attempt++) {
+    const url = new URL(`${API_URL}/the_best_swap_data`);
+    url.searchParams.set("chainId", chainId);
+    url.searchParams.set("fromTokenAddress", fromTokenAddress);
+    url.searchParams.set("toTokenAddress", toTokenAddress);
+    url.searchParams.set("amount", amount.toString());
+    url.searchParams.set("fromAddress", fromAddress);
+    url.searchParams.set("slippage", slippage);
+    url.searchParams.set("provider", currentProvider);
+    url.searchParams.set("fromTokenDecimals", fromTokenDecimals);
+    url.searchParams.set("toTokenDecimals", toTokenDecimals);
+
     try {
       const res = await fetch(url);
 
-      if (!res.ok && !retryStatusCodes.includes(res.status)) {
-        throw new Error(`HTTP error! status: ${res.status}`);
+      // Handle non-2xx responses
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({})); // Safely parse JSON
+        console.error("Error response:", errorData);
+
+        // Check for empty or invalid error data
+        if (
+          currentProvider === "paraswap" &&
+          (Object.keys(errorData).length === 0 || res.status >= 400)
+        ) {
+          console.log(
+            `Paraswap failed with empty/invalid response or status ${res.status}. Switching to 1inch.`,
+          );
+          currentProvider = "1inch";
+          attempt = -1;
+          continue;
+        }
+
+        if (!retryStatusCodes.includes(res.status)) {
+          throw new Error(
+            `HTTP error! status: ${res.status}, error: ${
+              errorData.error || "Unknown error"
+            }`,
+          );
+        }
       }
 
+      // Success case
       if (res.ok) {
-        return res.json(); // This parses the JSON body for you
+        console.log("Fetch successful. Provider:", currentProvider);
+        return await res.json();
       }
     } catch (error) {
+      console.error(
+        `Error on attempt ${attempt + 1} with provider ${currentProvider}:`,
+        error.message,
+      );
+
+      if (attempt === retryLimit - 1 && currentProvider === "paraswap") {
+        console.log("Exhausted retries for Paraswap. Switching to 1inch.");
+        currentProvider = "1inch"; // Switch to 1inch
+        attempt = -1; // Reset attempts for the new provider
+        data = undefined;
+        continue; // Retry with updated provider
+      }
+
       if (attempt === retryLimit - 1) {
-        throw error; // Re-throw the error on the last attempt
+        throw new Error(
+          `Failed to fetch data after retries. Last error: ${error.message}`,
+        );
       }
     }
 
-    // Delay before retrying; you can adjust the delay as needed
+    // Delay before retrying
     await new Promise((resolve) => setTimeout(resolve, (attempt + 1) * 3000));
   }
-  throw new Error(`Failed to fetch data after retries, url: ${url}`);
+
+  throw new Error(`Failed to fetch data after retries for all providers.`);
 }

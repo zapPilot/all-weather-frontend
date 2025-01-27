@@ -48,6 +48,7 @@ describe("Convex", () => {
       ],
       onlyThisChain,
     );
+    // console.log("Generated txns:", txns);
     expect(txns.length).toBe(10);
     expect(await encode(txns[0])).toBe(
       "0x095ea7b30000000000000000000000001111111254eeb25477b68fb85ed929f73a9605820000000000000000000000000000000000000000000000000de0b6b3a7640000",
@@ -56,12 +57,13 @@ describe("Convex", () => {
     expect(await encode(txns[1])).includes(sunReferralWalletSubString);
     expect(await encode(txns[2])).includes(protocolReferralWalletSubstring);
     expect(
-      (await encode(txns[4])).includes(
+      (await encode(txns[4][0])).includes(
         userAddress.replace("0x", "").toLowerCase(),
       ),
     ).toBe(true);
+
     expect(txns[5].to).toBe("0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34");
-  });
+  }, 300000);
   it("should be able to zap-out Convex's Stablecoin Vault", async () => {
     const actionName = "zapOut";
     const userAddress = "0x39551EC839f10C235ec8DB062A93e89d3c0E6134";

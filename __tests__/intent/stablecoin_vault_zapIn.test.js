@@ -45,5 +45,5 @@ describe("Stablecoin Vault", () => {
       ],
       onlyThisChain,
     );
-  });
+  }, 300000);
 });
