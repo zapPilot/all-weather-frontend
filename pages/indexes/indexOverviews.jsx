@@ -923,11 +923,6 @@ export default function IndexOverviews() {
 
             <div className="mt-2 flex align-items-center">
               ⛽<span className="text-emerald-400">Free</span>
-              {tabKey === "3" ? (
-                <span className="text-gray-400">
-                  , Exit Fee: {portfolioHelper?.swapFeeRate() * 100}%
-                </span>
-              ) : null}
             </div>
           </div>
           <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
