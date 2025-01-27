@@ -71,33 +71,27 @@ export class BaseCamelot extends BaseProtocol {
     ];
   }
   async assetBalanceOf(recipient) {
-    console.log("assetBalanceOf");
     if (!this.token_id) {
       this.token_id = await this._getNftID(recipient);
     }
     if (this.token_id === 0) {
       return 0;
     }
-    console.log("assetBalanceOf token_id", this.token_id);
     if (!this.token_id) {
       return ethers.BigNumber.from(0);
     }
-    console.log("assetBalanceOf position");
     const position = await this.assetContractInstance.functions.positions(
       this.token_id,
     );
-    console.log("assetBalanceOf position", position);
     return position.liquidity;
   }
   async usdBalanceOf(owner, tokenPricesMappingTable) {
-    console.log("usdBalanceOf", this.token_id, !this.token_id);
     if (!this.token_id) {
       this.token_id = await this._getNftID(owner);
     }
     if (this.token_id === 0) {
       return 0;
     }
-    console.log("token_id", this.token_id);
     return await this.getNFTValue(
       this.token_id,
       this.protocolContractInstance,
@@ -124,7 +118,6 @@ export class BaseCamelot extends BaseProtocol {
     if (!this.token_id) {
       this.token_id = await this._getNftID(owner);
     }
-    console.log("pendingRewards token_id", this.token_id);
     if (this.token_id === 0) {
       return {};
     }
@@ -136,14 +129,6 @@ export class BaseCamelot extends BaseProtocol {
       this.token_id,
       this.assetContractInstance,
       this.protocolContractInstance,
-    );
-    console.log(
-      "token1",
-      token1,
-      "tokenPricesMappingTable",
-      tokenPricesMappingTable,
-      tokenPricesMappingTable[token1],
-      BigInt(fees1),
     );
     const rewardBalance = {
       [token0Address]: {
@@ -161,7 +146,6 @@ export class BaseCamelot extends BaseProtocol {
         decimals: token1Decimals,
       },
     };
-    console.log("rewardBalance", rewardBalance);
     return rewardBalance;
   }
 
@@ -173,7 +157,6 @@ export class BaseCamelot extends BaseProtocol {
     slippage,
     updateProgress,
   ) {
-    console.log("start customDepositLP");
     // Prepare token amounts and approvals
     const tokens = [tokenAmetadata, tokenBmetadata].map(
       ([symbol, address, decimals, amount]) => ({
@@ -208,15 +191,7 @@ export class BaseCamelot extends BaseProtocol {
     if (!this.token_id) {
       this.token_id = await this._getNftID(owner);
     }
-    console.log("existingInvestmentPositionId", this.token_id);
     if (this.token_id) {
-      console.log(
-        "increasing liquidity to existing NFT",
-        owner,
-        tokens[0].amount,
-        tokens[1].amount,
-        slippage,
-      );
       depositTxn = this._increateLiquidityToExistingNFT(
         this.token_id,
         tokens[0].amount,
@@ -224,13 +199,6 @@ export class BaseCamelot extends BaseProtocol {
         slippage,
       );
     } else {
-      console.log(
-        "minting new NFT",
-        owner,
-        tokens[0].amount,
-        tokens[1].amount,
-        slippage,
-      );
       depositTxn = this._mintLpNFT(
         owner,
         tokens[0].amount,
@@ -278,14 +246,6 @@ export class BaseCamelot extends BaseProtocol {
       tokenPricesMappingTable,
       updateProgress,
     );
-    console.log(
-      "pendingRewards",
-      pendingRewards,
-      "token0Address",
-      token0Address,
-      "token1Address",
-      token1Address,
-    );
     const claimTxn = prepareContractCall({
       contract: this.assetContract,
       method: "collect",
@@ -307,6 +267,77 @@ export class BaseCamelot extends BaseProtocol {
   async _stakeLP(amount, updateProgress) {
     await super._stakeLP(amount, updateProgress);
     return [];
+  }
+  async _unstakeLP(owner, percentage, updateProgress) {
+    await super._unstakeLP(owner, percentage, updateProgress);
+    const percentageBN = ethers.BigNumber.from(
+      String(Math.floor(percentage * 10000)),
+    );
+    const assetBalance = await this.assetBalanceOf(owner);
+    const amount = assetBalance.mul(percentageBN).div(10000);
+    return [[], amount];
+  }
+  async _withdrawLPAndClaim(
+    owner,
+    amount,
+    slippage,
+    tokenPricesMappingTable,
+    updateProgress,
+  ) {
+    await super._withdrawLPAndClaim(
+      owner,
+      amount,
+      slippage,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
+    if (!this.token_id) {
+      this.token_id = await this._getNftID(owner);
+    }
+
+    // Get pool reserves and calculate withdrawal amounts
+    const { amount0, amount1 } = await this.getWithdrawalAmounts(
+      this.token_id,
+      this.assetContractInstance,
+      this.protocolContractInstance,
+      amount,
+    );
+    const amount0Min = this.mul_with_slippage_in_bignumber_format(
+      amount0,
+      slippage,
+    );
+    const amount1Min = this.mul_with_slippage_in_bignumber_format(
+      amount1,
+      slippage,
+    );
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-withdraw`,
+      0,
+    );
+    const withdrawTxn = prepareContractCall({
+      contract: this.assetContract,
+      method: "decreaseLiquidity",
+      params: [
+        {
+          tokenId: this.token_id,
+          liquidity: amount,
+          amount0Min,
+          amount1Min,
+          deadline: this.getDeadline(),
+        },
+      ],
+    });
+    const [claimTxns, _] = await this.customClaim(
+      owner,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
+    return [
+      [withdrawTxn, ...claimTxns],
+      this.customParams.lpTokens,
+      [amount0Min, amount1Min],
+    ];
   }
   _increateLiquidityToExistingNFT(
     tokenId,
@@ -370,7 +401,6 @@ export class BaseCamelot extends BaseProtocol {
     if (sortedData.length < 1) {
       return 0;
     }
-    console.log("sortedData", sortedData, sortedData[0][1]?.token_id);
     return sortedData[0][1]?.token_id ?? 0;
   }
 }

@@ -289,7 +289,6 @@ export class BaseAerodrome extends BaseProtocol {
       updateProgress,
       this.chainId,
     );
-    const lpTokens = this._getLPTokenPairesToZapIn();
 
     // Get pool reserves and calculate withdrawal amounts
     const { minAmount0, minAmount1 } = await this._calculateWithdrawalAmounts(
@@ -323,7 +322,7 @@ export class BaseAerodrome extends BaseProtocol {
     );
     return [
       [approveTxn, withdrawTxn, ...claimTxns],
-      lpTokens,
+      this.customParams.lpTokens,
       [minAmount0, minAmount1],
     ];
   }
