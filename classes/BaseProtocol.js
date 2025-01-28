@@ -693,7 +693,7 @@ export default class BaseProtocol extends BaseUniswap {
     if (
       tokenInAddress.toLowerCase() !== bestTokenAddressToZapIn.toLowerCase()
     ) {
-      const [swapTxn, swapEstimateAmount] = await this._swap(
+      const swapResult = await this._swap(
         recipient,
         tokenInAddress,
         bestTokenAddressToZapIn,
@@ -706,10 +706,11 @@ export default class BaseProtocol extends BaseUniswap {
         bestTokenToZapInDecimal,
         tokenPricesMappingTable,
       );
+      let swapEstimateAmount = swapResult[swapResult.length - 1];
       amountToZapIn = String(
         Math.floor((swapEstimateAmount * (100 - slippage)) / 100),
       );
-      swapTxns.push(swapTxn);
+      swapTxns.push(...swapResult.slice(0, -1));
     }
     return [
       swapTxns,
@@ -799,7 +800,7 @@ export default class BaseProtocol extends BaseUniswap {
         .div(sumOfLPTokenRatio);
 
       if (tokenInAddress.toLowerCase() !== bestTokenAddress.toLowerCase()) {
-        const [swapTxn, swapEstimateAmount] = await this._swap(
+        const swapResult = await this._swap(
           recipient,
           tokenInAddress,
           bestTokenAddress,
@@ -812,11 +813,11 @@ export default class BaseProtocol extends BaseUniswap {
           bestTokenToZapInDecimal,
           tokenPricesMappingTable,
         );
-
+        let swapEstimateAmount = swapResult[swapResult.length - 1];
         amountToZapIn = ethers.BigNumber.from(swapEstimateAmount)
           .mul((100 - slippage) * 10000)
           .div(100 * 10000);
-        swapTxns.push(swapTxn);
+        swapTxns.push(...swapResult.slice(0, -1));
       }
 
       amountsAfterSwap.push(amountToZapIn);
@@ -901,7 +902,7 @@ export default class BaseProtocol extends BaseUniswap {
       if (swapTxnResult === undefined) {
         continue;
       }
-      txns = txns.concat([approveTxn, swapTxnResult[0]]);
+      txns = txns.concat([approveTxn, ...swapTxnResult.slice(0, -1)]);
     }
     return txns;
   }
@@ -992,34 +993,34 @@ export default class BaseProtocol extends BaseUniswap {
       selectedGasFee,
       selectedToAmount,
       selectedAddress;
-    if (Number(oneInchToAmount) > Number(paraSwapToAmount)) {
-      // 1inch has a better quote
-      selectedProvider = "1inch";
-      selectedAddress = oneInchAddress;
-      selectedCallData = oneInchSwapCallData.data;
-      selectedToAmount = oneInchSwapCallData.toAmount;
-      selectedGasFee = oneInchSwapCallData.gasFee || 0;
-    } else if (Number(paraSwapToAmount) > Number(oneInchToAmount)) {
-      selectedAddress = CHAIN_ID_TO_PARASWAP_ADDR[this.chainId];
-      selectedProvider = "paraswap";
-      selectedCallData = paraSwapCallData.data;
-      selectedToAmount = paraSwapCallData.toAmount;
-      selectedGasFee = paraSwapCallData.gasFee || 0;
-    } else {
-      const oneInchGasFee = oneInchSwapCallData.gasFee || 0;
-      const paraSwapGasFee = paraSwapCallData.gasFee || 0;
+    // if (Number(oneInchToAmount) > Number(paraSwapToAmount)) {
+    // 1inch has a better quote
+    // selectedProvider = "1inch";
+    // selectedAddress = oneInchAddress;
+    // selectedCallData = oneInchSwapCallData.data;
+    // selectedToAmount = oneInchSwapCallData.toAmount;
+    // selectedGasFee = oneInchSwapCallData.gasFee || 0;
+    // } else if (Number(paraSwapToAmount) > Number(oneInchToAmount)) {
+    selectedAddress = CHAIN_ID_TO_PARASWAP_ADDR[this.chainId];
+    selectedProvider = "paraswap";
+    selectedCallData = paraSwapCallData.data;
+    selectedToAmount = paraSwapCallData.toAmount;
+    selectedGasFee = paraSwapCallData.gasFee || 0;
+    // } else {
+    //   const oneInchGasFee = oneInchSwapCallData.gasFee || 0;
+    //   const paraSwapGasFee = paraSwapCallData.gasFee || 0;
 
-      if (oneInchGasFee < paraSwapGasFee) {
-        selectedCallData = oneInchSwapCallData.data;
-        selectedToAmount = oneInchSwapCallData.toAmount;
-        selectedGasFee = oneInchGasFee;
-      } else {
-        selectedCallData = paraSwapCallData.data;
-        selectedToAmount = paraSwapCallData.toAmount;
-        selectedGasFee = paraSwapGasFee;
-      }
-    }
-    console.log("selectedProvider", selectedProvider);
+    //   if (oneInchGasFee < paraSwapGasFee) {
+    //     selectedCallData = oneInchSwapCallData.data;
+    //     selectedToAmount = oneInchSwapCallData.toAmount;
+    //     selectedGasFee = oneInchGasFee;
+    //   } else {
+    //     selectedCallData = paraSwapCallData.data;
+    //     selectedToAmount = paraSwapCallData.toAmount;
+    //     selectedGasFee = paraSwapGasFee;
+    //   }
+    // }
+    // console.log("selectedProvider", selectedProvider);
 
     if (selectedProvider === "paraswap") {
       const proxyAddress = CHAIN_ID_TO_PARASWAP_PROXY_ADDR[this.chainId];
@@ -1058,7 +1059,7 @@ export default class BaseProtocol extends BaseUniswap {
     });
     swapTxns.push(swapTxn);
 
-    return [swapTxns, selectedToAmount];
+    return [...swapTxns, selectedToAmount];
   }
   async _calculateWithdrawTokenAndBalance(
     recipient,

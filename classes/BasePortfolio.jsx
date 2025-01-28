@@ -754,7 +754,7 @@ export class BasePortfolio {
     });
     swapTxns.push(swapTxn);
 
-    return [swapTxns, selectedToAmount];
+    return [...swapTxns, selectedToAmount];
   }
   async _processProtocolActions(actionName, actionParams) {
     const currentChain = actionParams.chainMetadata.name
@@ -874,10 +874,11 @@ export class BasePortfolio {
             actionParams,
           );
           // Update input token and amount after the swap
-          txns.push(swapResult[0]);
+          txns.push(...swapResult.slice(0, -1));
           inputToken = TOKEN_ADDRESS_MAP["usdc"][currentChain];
-          inputAmount = swapResult[1]; // Resulting amount after the swap
+          inputAmount = swapResult[swapResult.length - 1]; // Resulting amount after the swap
         }
+        // console.log("input amount", inputAmount);
         const inputAmountBN = ethers.BigNumber.from(inputAmount);
         const bridge = await getTheBestBridge();
         const targetToken = allowedTokens.includes(

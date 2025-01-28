@@ -92,7 +92,6 @@ export async function fetchSwapData(
 
       // Success case
       if (res.ok) {
-        console.log("Fetch successful. Provider:", currentProvider);
         return await res.json();
       }
     } catch (error) {

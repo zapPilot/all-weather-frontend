@@ -56,20 +56,22 @@ describe("Bridge with USDT -> USDC Swap", () => {
     // Find the bridging transaction
     const bridgeAddress = "0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64";
     const bridgeIndex = txns.findIndex(
-      (txn) => txn.to.toLowerCase() === bridgeAddress.toLowerCase(),
+      (txn) => txn.to && txn.to.toLowerCase() === bridgeAddress.toLowerCase(),
     );
     expect(bridgeIndex).toBeGreaterThan(-1);
 
     // The transaction right before bridging should be the aggregator swap
     const oneInchArbAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
+    const paraSwapAddress = "0x9509665d015Bfe3C77AA5ad6Ca20C8Afa1d98989";
     const swapTxn = txns[bridgeIndex - 2];
-
+    console.log("txn:", txns);
     // 1) Check the 'to' address is the 1inch aggregator
-    expect(swapTxn.to.toLowerCase()).toBe(oneInchArbAddress.toLowerCase());
+    expect([
+      oneInchArbAddress.toLowerCase(),
+      paraSwapAddress.toLowerCase(),
+    ]).toContain(swapTxn.to.toLowerCase());
 
-    // 2) Check the call data references USDT -> USDC
-    const swapData = await encode(swapTxn);
-    // 3) Confirm bridging is indeed after the swap
+    // 2) Confirm bridging is indeed after the swap
     const bridgeTxn = txns[bridgeIndex];
     expect(bridgeTxn).toBeDefined();
 
