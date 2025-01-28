@@ -716,7 +716,7 @@ export class BasePortfolio {
     console.log("selectedProvider", selectedProvider);
     if (selectedProvider === "paraswap") {
       const proxyAddress = CHAIN_ID_TO_PARASWAP_PROXY_ADDR[chainId];
-      const approveTxn = await approve(
+      const approveTxn = approve(
         fromTokenAddress,
         proxyAddress,
         amount,

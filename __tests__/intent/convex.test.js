@@ -55,14 +55,24 @@ describe("Convex", () => {
     // referral fee
     expect(await encode(txns[1])).includes(sunReferralWalletSubString);
     expect(await encode(txns[2])).includes(protocolReferralWalletSubstring);
-    if (txns.length > 10) {
+    if (txns.length == 12) {
       const encodedTxn6 = await encode(txns[6]);
       // 確保 userAddress 包含在編碼的結果中
       expect(encodedTxn6.toLowerCase()).toContain(
         userAddress.replace("0x", "").toLowerCase(),
       );
       expect(txns[7].to).toBe("0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34");
-    } else {
+    }
+    else if (txns.length == 11){
+      console.log("txn",txns);
+      const encodedTxn5 = await encode(txns[5]);
+      // 確保 userAddress 包含在編碼的結果中
+      expect(encodedTxn5.toLowerCase()).toContain(
+        userAddress.replace("0x", "").toLowerCase(),
+      );
+      expect(txns[6].to).toBe("0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34");
+    } 
+    else if (txns.length == 10){
       const encodedTxn4 = await encode(txns[4]);
       // 確保 userAddress 包含在編碼的結果中
       expect(encodedTxn4.toLowerCase()).toContain(

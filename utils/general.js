@@ -138,7 +138,7 @@ export async function getTokenDecimal(tokenAddress, chain) {
   return (await tokenInstance.functions.decimals())[0];
 }
 
-export async function approve(
+export function approve(
   tokenAddress,
   spenderAddress,
   amount,

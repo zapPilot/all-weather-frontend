@@ -977,7 +977,7 @@ export default class BaseProtocol extends BaseUniswap {
       console.log("Paraswap failed. Defaulting to 1inch.");
       const swapTxn = prepareTransaction({
         to: oneInchAddress,
-        chain: CHAIN_ID_TO_CHAIN[chainId],
+        chain: CHAIN_ID_TO_CHAIN[this.chainId],
         client: THIRDWEB_CLIENT,
         data: oneInchSwapCallData.data,
       });
