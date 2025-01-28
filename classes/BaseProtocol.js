@@ -706,7 +706,7 @@ export default class BaseProtocol extends BaseUniswap {
         bestTokenToZapInDecimal,
         tokenPricesMappingTable,
       );
-      let swapEstimateAmount = swapResult[swapResult.length - 1];
+      const swapEstimateAmount = swapResult[swapResult.length - 1];
       amountToZapIn = String(
         Math.floor((swapEstimateAmount * (100 - slippage)) / 100),
       );
@@ -813,7 +813,7 @@ export default class BaseProtocol extends BaseUniswap {
           bestTokenToZapInDecimal,
           tokenPricesMappingTable,
         );
-        let swapEstimateAmount = swapResult[swapResult.length - 1];
+        const swapEstimateAmount = swapResult[swapResult.length - 1];
         amountToZapIn = ethers.BigNumber.from(swapEstimateAmount)
           .mul((100 - slippage) * 10000)
           .div(100 * 10000);
