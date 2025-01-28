@@ -545,7 +545,7 @@ export default function IndexOverviews() {
         (selectedTokenSymbol === "eth" || selectedTokenSymbol === "weth") &&
         portfolioName === "Stablecoin Vault"
       ) {
-        setSlippage(10);
+        setSlippage(3);
       } else if (portfolioName === "ETH Vault") {
         setSlippage(3);
       } else {
