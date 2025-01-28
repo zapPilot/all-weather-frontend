@@ -993,34 +993,33 @@ export default class BaseProtocol extends BaseUniswap {
       selectedGasFee,
       selectedToAmount,
       selectedAddress;
-    // if (Number(oneInchToAmount) > Number(paraSwapToAmount)) {
-    // 1inch has a better quote
-    // selectedProvider = "1inch";
-    // selectedAddress = oneInchAddress;
-    // selectedCallData = oneInchSwapCallData.data;
-    // selectedToAmount = oneInchSwapCallData.toAmount;
-    // selectedGasFee = oneInchSwapCallData.gasFee || 0;
-    // } else if (Number(paraSwapToAmount) > Number(oneInchToAmount)) {
-    selectedAddress = CHAIN_ID_TO_PARASWAP_ADDR[this.chainId];
-    selectedProvider = "paraswap";
-    selectedCallData = paraSwapCallData.data;
-    selectedToAmount = paraSwapCallData.toAmount;
-    selectedGasFee = paraSwapCallData.gasFee || 0;
-    // } else {
-    //   const oneInchGasFee = oneInchSwapCallData.gasFee || 0;
-    //   const paraSwapGasFee = paraSwapCallData.gasFee || 0;
+    if (Number(oneInchToAmount) > Number(paraSwapToAmount)) {
+      // 1inch has a better quote
+      selectedProvider = "1inch";
+      selectedAddress = oneInchAddress;
+      selectedCallData = oneInchSwapCallData.data;
+      selectedToAmount = oneInchSwapCallData.toAmount;
+      selectedGasFee = oneInchSwapCallData.gasFee || 0;
+    } else if (Number(paraSwapToAmount) > Number(oneInchToAmount)) {
+      selectedAddress = CHAIN_ID_TO_PARASWAP_ADDR[this.chainId];
+      selectedProvider = "paraswap";
+      selectedCallData = paraSwapCallData.data;
+      selectedToAmount = paraSwapCallData.toAmount;
+      selectedGasFee = paraSwapCallData.gasFee || 0;
+    } else {
+      const oneInchGasFee = oneInchSwapCallData.gasFee || 0;
+      const paraSwapGasFee = paraSwapCallData.gasFee || 0;
 
-    //   if (oneInchGasFee < paraSwapGasFee) {
-    //     selectedCallData = oneInchSwapCallData.data;
-    //     selectedToAmount = oneInchSwapCallData.toAmount;
-    //     selectedGasFee = oneInchGasFee;
-    //   } else {
-    //     selectedCallData = paraSwapCallData.data;
-    //     selectedToAmount = paraSwapCallData.toAmount;
-    //     selectedGasFee = paraSwapGasFee;
-    //   }
-    // }
-    // console.log("selectedProvider", selectedProvider);
+      if (oneInchGasFee < paraSwapGasFee) {
+        selectedCallData = oneInchSwapCallData.data;
+        selectedToAmount = oneInchSwapCallData.toAmount;
+        selectedGasFee = oneInchGasFee;
+      } else {
+        selectedCallData = paraSwapCallData.data;
+        selectedToAmount = paraSwapCallData.toAmount;
+        selectedGasFee = paraSwapGasFee;
+      }
+    }
 
     if (selectedProvider === "paraswap") {
       const proxyAddress = CHAIN_ID_TO_PARASWAP_PROXY_ADDR[this.chainId];

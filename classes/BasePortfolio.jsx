@@ -21,8 +21,6 @@ import { toWei } from "thirdweb/utils";
 import { fetchSwapData } from "../utils/oneInch";
 import { _updateProgressAndWait } from "../utils/general";
 import { prepareTransaction } from "thirdweb";
-import { fetch1InchSwapData } from "../utils/oneInch";
-import { _updateProgressAndWait } from "../utils/general";
 import { prepareTransaction } from "thirdweb";
 
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
