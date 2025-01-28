@@ -942,7 +942,7 @@ export class BasePortfolio {
     );
     txns.push(...zapInTxns);
     const rebalancableUsdBalanceDictOnOtherChains =
-      this._filterProtocolsForOtherChains(
+      this.filterProtocolsForOtherChains(
         rebalancableUsdBalanceDict,
         currentChain,
       );
@@ -999,7 +999,7 @@ export class BasePortfolio {
     );
   }
 
-  _filterProtocolsForOtherChains(rebalancableUsdBalanceDict, currentChain) {
+  filterProtocolsForOtherChains(rebalancableUsdBalanceDict, currentChain) {
     // First filter protocols from other chains
     const otherChainProtocols = Object.entries(
       rebalancableUsdBalanceDict,

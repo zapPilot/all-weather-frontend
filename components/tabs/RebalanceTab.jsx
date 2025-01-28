@@ -58,7 +58,7 @@ export default function RebalanceTab({
                     rebalanceIsLoading || rebalancableUsdBalanceDictLoading
                   }
                   disabled={
-                    getRebalanceReinvestUsdAmount() / usdBalance <
+                    getRebalanceReinvestUsdAmount(chainId?.name) / usdBalance <
                       portfolioHelper?.rebalanceThreshold() ||
                     usdBalance <= 0 ||
                     Math.abs(
