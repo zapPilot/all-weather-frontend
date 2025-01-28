@@ -93,7 +93,7 @@ export default function TransactionHistory({
         balance = updateBalance(balance, principalSymbol, amount);
       }
 
-      if (["zapOut", "transfer"].includes(actionName)) {
+      if (["zapOut", "transfer", "rebalance"].includes(actionName)) {
         if (!zapOutAmount) continue;
         const amount = parseFloat(zapOutAmount) || 0;
         const price = tokenPricesMappingTable[principalSymbol];
@@ -210,9 +210,10 @@ export default function TransactionHistory({
           on{" "}
           {
             <Image
-              src={`/chainPicturesWebp/${
-                activityItem.metadata.chain || "arbitrum"
-              }.webp`}
+              src={`/chainPicturesWebp/${activityItem.metadata.chain?.replace(
+                " one",
+                "",
+              )}.webp`}
               height={20}
               width={20}
             />
@@ -285,9 +286,10 @@ export default function TransactionHistory({
                 {renderSingleTransaction(activityItem)}
               </span>{" "}
               <a
-                href={`https://${
-                  activityItem.metadata.chain?.replace(" one", "") || "arbitrum"
-                }.blockscout.com/tx/${activityItem.tx_hash}`}
+                href={`https://${activityItem.metadata.chain?.replace(
+                  " one",
+                  "",
+                )}.blockscout.com/tx/${activityItem.tx_hash}`}
                 target="_blank"
               >
                 tx:{" "}

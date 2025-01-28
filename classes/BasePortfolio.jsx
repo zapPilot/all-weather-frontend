@@ -758,10 +758,12 @@ export class BasePortfolio {
         if (totalWeight === 0) return [];
         let inputToken =
           TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol][currentChain];
-        let inputAmount = Math.floor(
-          actionParams.zapInAmount *
-            totalWeight *
-            (1 - actionParams.slippage / 100),
+        let inputAmount = String(
+          Math.floor(
+            actionParams.zapInAmount *
+              totalWeight *
+              (1 - actionParams.slippage / 100),
+          ),
         );
         let txns = [];
         const allowedTokens = ["usdc", "eth", "weth"];
@@ -785,7 +787,6 @@ export class BasePortfolio {
           inputToken = TOKEN_ADDRESS_MAP["usdc"][currentChain];
           inputAmount = swapResult[1]; // Resulting amount after the swap
         }
-
         const inputAmountBN = ethers.BigNumber.from(inputAmount);
         const bridge = await getTheBestBridge();
         const targetToken = allowedTokens.includes(
@@ -805,7 +806,6 @@ export class BasePortfolio {
         );
 
         return [...txns, ...bridgeTxns];
-        // return [...txns, ...bridgeTxns];
       },
     };
     // Separate function to process protocol transactions
@@ -942,7 +942,7 @@ export class BasePortfolio {
     );
     txns.push(...zapInTxns);
     const rebalancableUsdBalanceDictOnOtherChains =
-      this._filterProtocolsForOtherChains(
+      this.filterProtocolsForOtherChains(
         rebalancableUsdBalanceDict,
         currentChain,
       );
@@ -999,7 +999,7 @@ export class BasePortfolio {
     );
   }
 
-  _filterProtocolsForOtherChains(rebalancableUsdBalanceDict, currentChain) {
+  filterProtocolsForOtherChains(rebalancableUsdBalanceDict, currentChain) {
     // First filter protocols from other chains
     const otherChainProtocols = Object.entries(
       rebalancableUsdBalanceDict,

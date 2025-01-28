@@ -303,6 +303,7 @@ export default function IndexOverviews() {
               );
               resolve(data); // Resolve the promise successfully
               try {
+                bridgeOutAmount = getRebalanceReinvestUsdAmount(chainId?.name);
                 await axios({
                   method: "post",
                   url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
@@ -319,10 +320,14 @@ export default function IndexOverviews() {
                       tokenSymbol,
                       investmentAmount: investmentAmountAfterFee,
                       zapOutAmount:
-                        usdBalance *
-                        zapOutPercentage *
-                        chainWeightPerYourPortfolio,
-                      rebalanceAmount: getRebalanceReinvestUsdAmount(),
+                        actionName === "rebalance"
+                          ? getRebalanceReinvestUsdAmount(currentChain?.name)
+                          : usdBalance *
+                            zapOutPercentage *
+                            chainWeightPerYourPortfolio,
+                      rebalanceAmount: getRebalanceReinvestUsdAmount(
+                        currentChain?.name,
+                      ),
                       timestamp: Math.floor(Date.now() / 1000),
                       swapFeeRate: portfolioHelper.swapFeeRate(),
                       referralFeeRate: portfolioHelper.referralFeeRate(),
@@ -389,9 +394,11 @@ export default function IndexOverviews() {
         let errorReadableMsg;
         if (error.message.includes("0x495d907f")) {
           errorReadableMsg = "bridgequote expired, please try again";
-        } else if (error.message.includes("0x203d82d8")) {
-          errorReadableMsg =
-            "DeFi pool quote has expired. Please refresh the page and try again.";
+        } else if (
+          error.message.includes("0x203d82d8") ||
+          error.message.includes("0xf71fbda2")
+        ) {
+          errorReadableMsg = "quote has expired. Please try again.";
         } else if (error.message.includes("User rejected the request")) {
           return;
         } else {
@@ -517,17 +524,19 @@ export default function IndexOverviews() {
     </>
   );
 
-  const getRebalanceReinvestUsdAmount = () => {
-    return (
-      Object.values(rebalancableUsdBalanceDict).reduce(
-        (sum, { usdBalance, zapOutPercentage }) => {
-          return zapOutPercentage > 0
-            ? sum + usdBalance * zapOutPercentage
-            : sum;
-        },
-        0,
-      ) + portfolioHelper?.sumUsdDenominatedValues(pendingRewards)
-    );
+  const getRebalanceReinvestUsdAmount = (chainFilter) => {
+    const chain = chainFilter?.replace(" one", "").toLowerCase();
+    if (chain === undefined) return 0;
+    const filteredBalances = chain
+      ? Object.values(rebalancableUsdBalanceDict).filter(
+          (item) => item.chain === chain,
+        )
+      : Object.values(rebalancableUsdBalanceDict);
+    const result =
+      filteredBalances.reduce((sum, { usdBalance, zapOutPercentage }) => {
+        return zapOutPercentage > 0 ? sum + usdBalance * zapOutPercentage : sum;
+      }, 0) + portfolioHelper?.sumUsdDenominatedValues(pendingRewards);
+    return result;
   };
 
   useEffect(() => {
@@ -767,7 +776,7 @@ export default function IndexOverviews() {
         platformFee={platformFee}
         rebalancableUsdBalanceDict={rebalancableUsdBalanceDict}
         chainMetadata={chainId}
-        rebalanceAmount={getRebalanceReinvestUsdAmount()}
+        rebalanceAmount={getRebalanceReinvestUsdAmount(chainId?.name)}
         zapOutAmount={usdBalance * zapOutPercentage}
       />
       <main className={styles.bgStyle}>
