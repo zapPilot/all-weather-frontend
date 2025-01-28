@@ -970,6 +970,22 @@ export default class BaseProtocol extends BaseUniswap {
     );
 
     if (
+      paraSwapCallData &&
+      paraSwapCallData.data &&
+      paraSwapCallData.data === oneInchSwapCallData.data
+    ) {
+      console.log("Paraswap failed. Defaulting to 1inch.");
+      const swapTxn = prepareTransaction({
+        to: oneInchAddress,
+        chain: CHAIN_ID_TO_CHAIN[chainId],
+        client: THIRDWEB_CLIENT,
+        data: oneInchSwapCallData.data,
+      });
+      swapTxns.push(swapTxn);
+      return [swapTxns, oneInchSwapCallData.toAmount];
+    }
+
+    if (
       !paraSwapCallData ||
       !paraSwapCallData.data ||
       paraSwapCallData.data.value === 0
