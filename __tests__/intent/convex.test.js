@@ -64,7 +64,6 @@ describe("Convex", () => {
       expect(txns[7].to).toBe("0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34");
     }
     else if (txns.length == 11){
-      console.log("txn",txns);
       const encodedTxn5 = await encode(txns[5]);
       // 確保 userAddress 包含在編碼的結果中
       expect(encodedTxn5.toLowerCase()).toContain(
