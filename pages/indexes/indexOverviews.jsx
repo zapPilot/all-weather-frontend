@@ -393,7 +393,7 @@ export default function IndexOverviews() {
           error.message.includes("0x203d82d8") ||
           error.message.includes("0xf71fbda2")
         ) {
-          errorReadableMsg = "quote has expired. Please try again.";
+          errorReadableMsg = `quote has expired. Please increase slippage tolerance and try again. Error msg: ${error.message}`;
         } else if (error.message.includes("User rejected the request")) {
           return;
         } else {
@@ -540,9 +540,19 @@ export default function IndexOverviews() {
       dispatch(fetchStrategyMetadata());
     }
     if (portfolioName !== undefined) {
-      setSlippage(portfolioName.includes("Stablecoin") ? 1 : 3);
+      const selectedTokenSymbol = selectedToken?.toLowerCase()?.split("-")[0];
+      if (
+        (selectedTokenSymbol === "eth" || selectedTokenSymbol === "weth") &&
+        portfolioName === "Stablecoin Vault"
+      ) {
+        setSlippage(10);
+      } else if (portfolioName === "ETH Vault") {
+        setSlippage(3);
+      } else {
+        setSlippage(1);
+      }
     }
-  }, [portfolioName]);
+  }, [portfolioName, selectedToken]);
   useEffect(() => {
     let isMounted = true;
 
