@@ -55,7 +55,7 @@ describe("Bridge with USDT -> USDC Swap", () => {
 
     // Find the bridging transaction
     const bridgeAddress = "0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64";
-    console.log("txn",txns);
+    console.log("txn", txns);
     const bridgeIndex = txns.findIndex(
       (txn) => txn.to && txn.to.toLowerCase() === bridgeAddress.toLowerCase(),
     );
@@ -78,5 +78,5 @@ describe("Bridge with USDT -> USDC Swap", () => {
     console.log(
       "✅ The aggregator swap is right before bridging, USDT -> USDC.",
     );
-    }, 200000); // Set a time limit of 30 seconds for the test
-  });
+  }, 200000); // Set a time limit of 30 seconds for the test
+});
