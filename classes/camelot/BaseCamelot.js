@@ -162,7 +162,6 @@ export class BaseCamelot extends BaseProtocol {
       ([symbol, address, decimals, amount]) => ({
         address,
         amount,
-        minAmount: this.mul_with_slippage_in_bignumber_format(amount, slippage),
         decimals,
         symbol,
       }),
@@ -181,7 +180,7 @@ export class BaseCamelot extends BaseProtocol {
     const approveTxns = tokens.map((token) =>
       approve(
         token.address,
-        this.protocolContract.address,
+        this.assetContract.address,
         token.amount,
         updateProgress,
         this.chainId,
@@ -346,7 +345,7 @@ export class BaseCamelot extends BaseProtocol {
     slippage,
   ) {
     return prepareContractCall({
-      contract: this.protocolContract,
+      contract: this.assetContract,
       method: "increaseLiquidity",
       params: [
         {
@@ -362,7 +361,7 @@ export class BaseCamelot extends BaseProtocol {
   }
   _mintLpNFT(owner, token0Amount, token1Amount, slippage) {
     return prepareContractCall({
-      contract: this.protocolContract,
+      contract: this.assetContract,
       method: "mint",
       params: [
         {

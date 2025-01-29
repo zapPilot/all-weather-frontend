@@ -109,6 +109,9 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   pendle: {
     coinmarketcapApiId: 9481,
   },
+  link: {
+    coinmarketcapApiId: 1975,
+  },
 };
 export const tokensForDropDown = [
   "eth",
