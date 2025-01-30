@@ -71,31 +71,6 @@ export default function TransactionHistory({
 
   // Balance calculation functions
   const calculatePrincipalBalance = (transactions) => {
-    // here's the sample data of txn
-    // {
-    //   "gotRefundData": {
-    //     "0xaf88d065e77c8cc2239327c5edb3a432268e5831": {
-    //       "amount": 8.149597999999997,
-    //       "symbol": "usdc"
-    //     },
-    //     "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8": {
-    //       "amount": 0.0006669999999999732,
-    //       "symbol": "usdc"
-    //     }
-    //   },
-    //   "metadata": {
-    //     "actionName": "zapOut",
-    //     "investmentAmount": 0,
-    //     "portfolioName": "Stablecoin Vault",
-    //     "referralFeeRate": 0.7,
-    //     "swapFeeRate": 0.00299,
-    //     "timestamp": 1729756193,
-    //     "tokenSymbol": "usdc",
-    //     "zapOutAmount": 1.0000000000000002
-    //   },
-    //   "tx_hash": "0x5d41e027678cb6fdc6fa9aac2631af15d222a62d47fcf98af6458ab736372156",
-    //   "user_address": "0x210050bB080155AEc4EAE79a2aAC5fe78FD738E1"
-    // }
     let balance = {};
 
     for (const txn of transactions) {
@@ -103,37 +78,37 @@ export default function TransactionHistory({
       const {
         actionName,
         tokenSymbol,
-        zapOutAmount,
-        zapInAmountOnThisChain,
-        stakeAmountOnThisChain,
-      } = txn.metadata;
+        zapOutAmount = 0,
+        zapInAmountOnThisChain = 0,
+      } = txn.metadata || {};
+
+      // Skip if required fields are missing
+      if (!actionName || !tokenSymbol) continue;
+
       const principalSymbol = refineSymbol(tokenSymbol);
 
       if (["zapIn", "receive"].includes(actionName)) {
-        balance = updateBalance(
-          balance,
-          "usd",
-          parseFloat(zapInAmountOnThisChain) || 0,
-        );
-      }
-      if (actionName === "stake") {
-        balance = updateBalance(
-          balance,
-          "usd",
-          parseFloat(stakeAmountOnThisChain) || 0,
-        );
-      }
-      if (["zapOut", "transfer"].includes(actionName)) {
-        balance = updateBalance(
-          balance,
-          principalSymbol,
-          -(parseFloat(zapOutAmount) || 0),
-        );
+        if (!zapInAmountOnThisChain) continue;
+        const amount = parseFloat(zapInAmountOnThisChain) || 0;
+        balance = updateBalance(balance, principalSymbol, amount);
       }
 
-      if (["zapOut", "rebalance"].includes(actionName)) {
-        Object.values(txn.gotRefundData || {}).forEach(({ symbol, amount }) => {
-          balance = updateBalance(balance, refineSymbol(symbol), -amount);
+      if (["zapOut", "transfer", "rebalance"].includes(actionName)) {
+        if (!zapOutAmount) continue;
+        const amount = parseFloat(zapOutAmount) || 0;
+        const price = tokenPricesMappingTable[principalSymbol];
+        balance = updateBalance(balance, principalSymbol, -amount / price);
+      }
+
+      if (["zapOut", "rebalance"].includes(actionName) && txn.gotRefundData) {
+        Object.entries(txn.gotRefundData).forEach(([_, data]) => {
+          if (!data?.symbol || !data?.amount) return;
+          const price = tokenPricesMappingTable[data.symbol];
+          balance = updateBalance(
+            balance,
+            refineSymbol(data.symbol),
+            -data.amount / price,
+          );
         });
       }
     }
@@ -161,13 +136,11 @@ export default function TransactionHistory({
 
   // Transaction rendering
   const renderTokenAmount = (symbol, amount, actionName, isStablecoin) => {
-    const showDollarSign =
-      !isStablecoin || ["zapOut", "transfer"].includes(actionName);
+    const showDollarSign = !isStablecoin && actionName !== "zapIn";
     const amountDisplay = amount > 0.01 ? amount.toFixed(2) : "< 0.01";
 
     return (
       <div key={symbol} className="flex gap-1 items-center">
-        {showDollarSign && "$"}
         {amountDisplay}
         {showDollarSign && " worth of "}
         {actionName === "transfer" ? (
@@ -237,9 +210,10 @@ export default function TransactionHistory({
           on{" "}
           {
             <Image
-              src={`/chainPicturesWebp/${
-                activityItem.metadata.chain || "arbitrum"
-              }.webp`}
+              src={`/chainPicturesWebp/${activityItem.metadata.chain?.replace(
+                " one",
+                "",
+              )}.webp`}
               height={20}
               width={20}
             />
@@ -312,9 +286,10 @@ export default function TransactionHistory({
                 {renderSingleTransaction(activityItem)}
               </span>{" "}
               <a
-                href={`https://${
-                  activityItem.metadata.chain?.replace(" one", "") || "arbitrum"
-                }.blockscout.com/tx/${activityItem.tx_hash}`}
+                href={`https://${activityItem.metadata.chain?.replace(
+                  " one",
+                  "",
+                )}.blockscout.com/tx/${activityItem.tx_hash}`}
                 target="_blank"
               >
                 tx:{" "}

@@ -2,6 +2,7 @@ import { BasePortfolio } from "../BasePortfolio";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import { BaseConvex } from "../Convex/BaseConvex";
 import { BaseAerodrome } from "../Aerodrome/BaseAerodrome";
+import { BaseMoonwell } from "../Moonwell/BaseMoonwell";
 export class EthVault extends BasePortfolio {
   constructor() {
     super(
@@ -94,6 +95,91 @@ export class EthVault extends BasePortfolio {
                   ],
                 },
               ),
+              weight: 0.0,
+            },
+            {
+              interface: new BaseEquilibria(
+                "arbitrum",
+                42161,
+                ["pt bedrock unieth 26jun2025", "unieth"],
+                "single",
+                {
+                  assetAddress: "0x3E4e3291Ed667FB4Dee680D19e5702eF8275493D",
+                  symbolOfBestTokenToZapOut: "weth",
+                  bestTokenAddressToZapOut:
+                    "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                  decimalOfBestTokenToZapOut: 18,
+                  pidOfEquilibria: 57,
+                },
+              ),
+              weight: 0.1,
+            },
+            {
+              interface: new BaseEquilibria(
+                "arbitrum",
+                42161,
+                ["pt rseth 26jun2025", "rseth"],
+                "single",
+                {
+                  assetAddress: "0x816F59FfA2239Fd7106F94eAbdC0a9547a892F2f",
+                  symbolOfBestTokenToZapOut: "weth",
+                  bestTokenAddressToZapOut:
+                    "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                  decimalOfBestTokenToZapOut: 18,
+                  pidOfEquilibria: 56,
+                },
+              ),
+              weight: 0.1,
+            },
+            {
+              interface: new BaseEquilibria(
+                "arbitrum",
+                42161,
+                ["pt eeth 26jun2025", "eeth"],
+                "single",
+                {
+                  assetAddress: "0xBf5E60ddf654085F80DAe9DD33Ec0E345773E1F8",
+                  symbolOfBestTokenToZapOut: "weth",
+                  bestTokenAddressToZapOut:
+                    "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                  decimalOfBestTokenToZapOut: 18,
+                  pidOfEquilibria: 55,
+                },
+              ),
+              weight: 0.1,
+            },
+            {
+              interface: new BaseEquilibria(
+                "arbitrum",
+                42161,
+                ["pt reth 26jun2025", "reth"],
+                "single",
+                {
+                  assetAddress: "0x14FbC760eFaF36781cB0eb3Cb255aD976117B9Bd",
+                  symbolOfBestTokenToZapOut: "weth",
+                  bestTokenAddressToZapOut:
+                    "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                  decimalOfBestTokenToZapOut: 18,
+                  pidOfEquilibria: 8,
+                },
+              ),
+              weight: 0.1,
+            },
+            {
+              interface: new BaseEquilibria(
+                "arbitrum",
+                42161,
+                ["pt wsteth 26jun2025", "wsteth"],
+                "single",
+                {
+                  assetAddress: "0x08a152834de126d2ef83D612ff36e4523FD0017F",
+                  symbolOfBestTokenToZapOut: "weth",
+                  bestTokenAddressToZapOut:
+                    "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                  decimalOfBestTokenToZapOut: 18,
+                  pidOfEquilibria: 7,
+                },
+              ),
               weight: 0.1,
             },
           ],
@@ -114,7 +200,19 @@ export class EthVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.9,
+              weight: 0.1,
+            },
+            {
+              interface: new BaseMoonwell("base", 8453, ["wsteth"], "single", {
+                symbolOfBestTokenToZapInOut: "wsteth",
+                zapInOutTokenAddress:
+                  "0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452",
+                decimalsOfZapInOutToken: 18,
+                assetAddress: "0x627Fe393Bc6EdDA28e99AE648fD6fF362514304b",
+                protocolAddress: "0x627Fe393Bc6EdDA28e99AE648fD6fF362514304b",
+                assetDecimals: 8,
+              }),
+              weight: 0.4,
             },
           ],
         },

@@ -210,6 +210,7 @@ export default function IndexOverviews() {
     setStepName("");
 
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
+
     if (!tokenSymbolAndAddress) {
       alert("Please select a token");
       return;
@@ -302,6 +303,7 @@ export default function IndexOverviews() {
               );
               resolve(data); // Resolve the promise successfully
               try {
+                bridgeOutAmount = getRebalanceReinvestUsdAmount(chainId?.name);
                 await axios({
                   method: "post",
                   url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
@@ -318,10 +320,14 @@ export default function IndexOverviews() {
                       tokenSymbol,
                       investmentAmount: investmentAmountAfterFee,
                       zapOutAmount:
-                        usdBalance *
-                        zapOutPercentage *
-                        chainWeightPerYourPortfolio,
-                      rebalanceAmount: getRebalanceReinvestUsdAmount(),
+                        actionName === "rebalance"
+                          ? getRebalanceReinvestUsdAmount(currentChain?.name)
+                          : usdBalance *
+                            zapOutPercentage *
+                            chainWeightPerYourPortfolio,
+                      rebalanceAmount: getRebalanceReinvestUsdAmount(
+                        currentChain?.name,
+                      ),
                       timestamp: Math.floor(Date.now() / 1000),
                       swapFeeRate: portfolioHelper.swapFeeRate(),
                       referralFeeRate: portfolioHelper.referralFeeRate(),
@@ -389,14 +395,17 @@ export default function IndexOverviews() {
         let errorReadableMsg;
         if (error.message.includes("0x495d907f")) {
           errorReadableMsg = "bridgequote expired, please try again";
-        } else if (error.message.includes("0x203d82d8")) {
-          errorReadableMsg =
-            "DeFi pool quote has expired. Please refresh the page and try again.";
+        } else if (
+          error.message.includes("0x203d82d8") ||
+          error.message.includes("0xf71fbda2")
+        ) {
+          errorReadableMsg = `quote has expired. Please increase slippage tolerance and try again. Error msg: ${error.message}`;
         } else if (error.message.includes("User rejected the request")) {
           return;
         } else {
           errorReadableMsg =
-            "Increase Slippage and Try Again! error:" + error.message;
+            "Transaction failed. Please try increasing slippage tolerance or notify customer support to increase gas limit." +
+            error.message;
         }
         openNotificationWithIcon(
           notificationAPI,
@@ -539,17 +548,19 @@ export default function IndexOverviews() {
     </>
   );
 
-  const getRebalanceReinvestUsdAmount = () => {
-    return (
-      Object.values(rebalancableUsdBalanceDict).reduce(
-        (sum, { usdBalance, zapOutPercentage }) => {
-          return zapOutPercentage > 0
-            ? sum + usdBalance * zapOutPercentage
-            : sum;
-        },
-        0,
-      ) + portfolioHelper?.sumUsdDenominatedValues(pendingRewards)
-    );
+  const getRebalanceReinvestUsdAmount = (chainFilter) => {
+    const chain = chainFilter?.replace(" one", "").toLowerCase();
+    if (chain === undefined) return 0;
+    const filteredBalances = chain
+      ? Object.values(rebalancableUsdBalanceDict).filter(
+          (item) => item.chain === chain,
+        )
+      : Object.values(rebalancableUsdBalanceDict);
+    const result =
+      filteredBalances.reduce((sum, { usdBalance, zapOutPercentage }) => {
+        return zapOutPercentage > 0 ? sum + usdBalance * zapOutPercentage : sum;
+      }, 0) + portfolioHelper?.sumUsdDenominatedValues(pendingRewards);
+    return result;
   };
 
   useEffect(() => {
@@ -560,9 +571,19 @@ export default function IndexOverviews() {
       dispatch(fetchStrategyMetadata());
     }
     if (portfolioName !== undefined) {
-      setSlippage(portfolioName.includes("Stablecoin") ? 1 : 3);
+      const selectedTokenSymbol = selectedToken?.toLowerCase()?.split("-")[0];
+      if (
+        (selectedTokenSymbol === "eth" || selectedTokenSymbol === "weth") &&
+        portfolioName === "Stablecoin Vault"
+      ) {
+        setSlippage(3);
+      } else if (portfolioName === "ETH Vault") {
+        setSlippage(3);
+      } else {
+        setSlippage(1);
+      }
     }
-  }, [portfolioName]);
+  }, [portfolioName, selectedToken]);
   useEffect(() => {
     let isMounted = true;
 
@@ -791,7 +812,7 @@ export default function IndexOverviews() {
         platformFee={platformFee}
         rebalancableUsdBalanceDict={rebalancableUsdBalanceDict}
         chainMetadata={chainId}
-        rebalanceAmount={getRebalanceReinvestUsdAmount()}
+        rebalanceAmount={getRebalanceReinvestUsdAmount(chainId?.name)}
         zapOutAmount={usdBalance * zapOutPercentage}
       />
       <main className={styles.bgStyle}>
@@ -815,7 +836,7 @@ export default function IndexOverviews() {
                     className="h-6 w-6 text-green-600"
                   />
                   <Popover
-                    content="All Weather Protocol is a zero-smart-contract protocol. It’s a pure JavaScript project built with an Account Abstraction (AA) wallet. Here is the audit report for the AA wallet."
+                    content="All Weather Protocol is a zero-smart-contract protocol. It's a pure JavaScript project built with an Account Abstraction (AA) wallet. Here is the audit report for the AA wallet."
                     trigger="hover"
                   >
                     <span className="text-white">
@@ -945,11 +966,6 @@ export default function IndexOverviews() {
 
             <div className="mt-2 flex align-items-center">
               ⛽<span className="text-emerald-400">Free</span>
-              {tabKey === "3" ? (
-                <span className="text-gray-400">
-                  , Exit Fee: {portfolioHelper?.swapFeeRate() * 100}%
-                </span>
-              ) : null}
             </div>
           </div>
           <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">

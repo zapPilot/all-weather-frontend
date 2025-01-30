@@ -35,7 +35,7 @@ const AmountDisplay = ({
           <Spin key={`spin-${amount}`} />
         ) : (
           `${(
-            (((portfolioHelper?.constructor?.name === "EthVault" ? 2 : 4) *
+            (((portfolioHelper?.constructor?.name === "EthVault" ? 0 : 4) *
               0.00299 *
               2 *
               0.5 +
@@ -227,16 +227,16 @@ export default function PopUpModal({
                             <br />
                             (zap-in * 1 time + zap-out * 1 time + rebalance *
                             {portfolioHelper?.constructor?.name === "EthVault"
-                              ? 1
-                              : 5}
+                              ? 0
+                              : 4}
                             {""}
                             times per year * 50%) / APR = <br />
                             (usually of 50% of your money needs to be
                             rebalanced) <br />
                             (0.00299 * 1 + 0.00299 * 1 + 0.00598 *{" "}
                             {portfolioHelper?.constructor?.name === "EthVault"
-                              ? 2
-                              : 5}{" "}
+                              ? 0
+                              : 4}{" "}
                             * 0.5) / {portfolioAPR} = <br />
                             {(
                               ((0.00299 * 1 +
@@ -244,7 +244,7 @@ export default function PopUpModal({
                                 0.00598 *
                                   (portfolioHelper?.constructor?.name ===
                                   "EthVault"
-                                    ? 2
+                                    ? 0
                                     : 4) *
                                   0.5) /
                                 portfolioAPR) *

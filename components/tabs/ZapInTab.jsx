@@ -4,6 +4,8 @@ import ConfiguredConnectButton from "../../pages/ConnectButton";
 import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
+import { TOKEN_ADDRESS_MAP } from "../../utils/general";
+import { chain } from "lodash";
 const { Countdown } = Statistic;
 export default function ZapInTab({
   nextStepChain,
@@ -46,6 +48,11 @@ export default function ZapInTab({
     await new Promise((resolve) => setTimeout(resolve, countdownTime * 1000));
 
     setPreviousTokenSymbol(selectedToken.split("-")[0].toLowerCase());
+    const tokenSymbol = selectedToken.split("-")[0].toLowerCase();
+    if (tokenSymbol === "usdt") {
+      const newSelectedToken = `usdc-${TOKEN_ADDRESS_MAP["usdc"][nextStepChain]}-6`;
+      handleSetSelectedToken(newSelectedToken);
+    }
     setShowCountdown(false);
     setIsLoading(false);
   };
@@ -98,7 +105,9 @@ export default function ZapInTab({
             <Button
               type="primary"
               className="w-full my-2"
-              onClick={() => handleAAWalletAction("stake", true)}
+              onClick={() => {
+                handleAAWalletAction("stake", true);
+              }}
               loading={protocolAssetDustInWalletLoading}
               disabled={usdBalanceLoading}
             >
@@ -118,9 +127,8 @@ export default function ZapInTab({
             <Button
               type="primary"
               className="w-full my-2"
-              onClick={async () => {
-                handleAAWalletAction("zapIn", falseChains.length === 1);
-                await new Promise((resolve) => setTimeout(resolve, 1000));
+              onClick={() => {
+                handleAAWalletAction("zapIn", false);
               }}
               loading={zapInIsLoading}
               disabled={

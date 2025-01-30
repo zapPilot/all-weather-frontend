@@ -22,7 +22,6 @@ import { prepareTransaction } from "thirdweb";
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 export class BaseAura extends BaseProtocol {
-  static deadline = Math.floor(Date.now() / 1000) + 600; // 10 minute deadline
   constructor(chain, chaindId, symbolList, mode, customParams) {
     super(chain, chaindId, symbolList, mode, customParams);
     this.protocolName = "aura";

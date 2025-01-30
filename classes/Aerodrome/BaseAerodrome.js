@@ -13,7 +13,6 @@ import ERC20_ABI from "../../lib/contracts/ERC20.json" assert { type: "json" };
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 export class BaseAerodrome extends BaseProtocol {
-  static deadline = Math.floor(Date.now() / 1000) + 600; // 10 minute deadline
   constructor(chain, chaindId, symbolList, mode, customParams) {
     super(chain, chaindId, symbolList, mode, customParams);
     this.protocolName = "aerodrome";
@@ -91,6 +90,7 @@ export class BaseAerodrome extends BaseProtocol {
     }
     return rewardBalance;
   }
+
   async customDepositLP(
     owner,
     tokenAmetadata,
@@ -137,7 +137,7 @@ export class BaseAerodrome extends BaseProtocol {
         tokens[0].minAmount,
         tokens[1].minAmount,
         owner,
-        BaseAerodrome.deadline,
+        this.getDeadline(),
       ],
     });
     // Get staking transactions and combine all transactions
@@ -301,14 +301,14 @@ export class BaseAerodrome extends BaseProtocol {
       contract: this.protocolContract,
       method: "removeLiquidity",
       params: [
-        lpTokens[0][1], // token0 address
-        lpTokens[1][1], // token1 address
-        true, // stable
-        amount, // LP amount to withdraw
-        minAmount0, // min amount token0
-        minAmount1, // min amount token1
+        lpTokens[0][1],
+        lpTokens[1][1],
+        true,
+        amount,
+        minAmount0,
+        minAmount1,
         owner,
-        BaseAerodrome.deadline,
+        this.getDeadline(),
       ],
     });
     const [claimTxns, _] = await this.customClaim(

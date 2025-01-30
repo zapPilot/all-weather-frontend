@@ -243,7 +243,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.125,
+              weight: 0.1,
             },
             {
               interface: new BaseAura(
@@ -277,8 +277,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              // weight: 0.15,
-              weight: 0,
+              weight: 0.025,
             },
             {
               interface: new BaseAura(
@@ -320,7 +319,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.125,
+              weight: 0.1,
             },
             // {
             //   interface: new BaseAura(
@@ -413,7 +412,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0,
+              weight: 0.025,
             },
           ],
 
