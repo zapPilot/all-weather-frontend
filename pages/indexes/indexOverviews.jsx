@@ -377,6 +377,7 @@ export default function IndexOverviews() {
               // get current chain from Txn data
               const newNextChain = switchNextChain(data.chain.name);
               setNextStepChain(newNextChain);
+              setChainStatus({ ...chainStatus, [currentChain]: true })
               setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
             },
             onError: (error) => {
@@ -436,8 +437,31 @@ export default function IndexOverviews() {
       : chain;
     return nextChain === "arbitrum" ? "base" : "arbitrum";
   };
-  const switchNextStepChain = (chain, action) => {
-    chain === "arbitrum" ? switchChain(arbitrum) : switchChain(base);
+
+  const currentChain = chainId?.name?.toLowerCase().replace(" one", "").trim();
+  // get all available chains
+  const availableAssetChains = Object.entries(portfolioHelper?.strategy || {}).flatMap(
+    ([category, protocols]) =>
+      Object.entries(protocols).map(([chain, protocolArray]) => chain)
+  );
+  // get chain status
+  const [chainStatus, setChainStatus] = useState({
+    base: false,
+    arbitrum: false,
+  });
+  // prepare chain object for switch chain
+  const chainMap = {
+    arbitrum: arbitrum,
+    base: base,
+  };
+
+  const switchNextStepChain = (chain) => {
+    const selectedChain = chainMap[chain];
+    if (selectedChain) {
+      switchChain(selectedChain);
+    } else {
+      console.error(`Invalid chain: ${chain}`);
+    }
   };
 
   // calculate the total investment amount
@@ -736,6 +760,8 @@ export default function IndexOverviews() {
     zapOutIsLoading,
     zapOutPercentage,
     pendingRewards,
+    availableAssetChains,
+    chainStatus,
   };
 
   const items = useTabItems(tabProps);
