@@ -933,6 +933,61 @@ export default class BaseProtocol extends BaseUniswap {
       return;
     }
 
+    // First attempt
+    let result = await this._attemptSwap(
+      walletAddress,
+      fromTokenAddress,
+      toTokenAddress,
+      amount,
+      slippage,
+      fromToken,
+      fromTokenDecimals,
+      toTokenSymbol,
+      toTokenDecimals,
+      tokenPricesMappingTable,
+    );
+
+    // If trading gain is more than 1%, retry once
+    if (
+      result.tradingLoss > 0 &&
+      result.tradingLoss / result.inputValue > 0.01
+    ) {
+      result = await this._attemptSwap(
+        walletAddress,
+        fromTokenAddress,
+        toTokenAddress,
+        amount,
+        slippage,
+        fromToken,
+        fromTokenDecimals,
+        toTokenSymbol,
+        toTokenDecimals,
+        tokenPricesMappingTable,
+      );
+    }
+
+    // Update progress with final trading loss/gain
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-${fromToken}-${toTokenSymbol}-swap`,
+      result.tradingLoss,
+    );
+
+    return [result.transaction, result.toAmount];
+  }
+
+  async _attemptSwap(
+    walletAddress,
+    fromTokenAddress,
+    toTokenAddress,
+    amount,
+    slippage,
+    fromToken,
+    fromTokenDecimals,
+    toTokenSymbol,
+    toTokenDecimals,
+    tokenPricesMappingTable,
+  ) {
     const swapCallData = await fetch1InchSwapData(
       this.chainId,
       fromTokenAddress,
@@ -948,7 +1003,8 @@ export default class BaseProtocol extends BaseUniswap {
     if (swapCallData["toAmount"] === 0) {
       throw new Error("To amount is 0. Cannot proceed with swapping.");
     }
-    const normalizedInputAmout = ethers.utils.formatUnits(
+
+    const normalizedInputAmount = ethers.utils.formatUnits(
       amount,
       fromTokenDecimals,
     );
@@ -956,27 +1012,27 @@ export default class BaseProtocol extends BaseUniswap {
       swapCallData["toAmount"],
       toTokenDecimals,
     );
-    const tradingLoss =
-      Number(normalizedOutputAmount) * tokenPricesMappingTable[toTokenSymbol] -
-      Number(normalizedInputAmout) * tokenPricesMappingTable[fromToken];
-    // If you need to wait for the progress update
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-${fromToken}-${toTokenSymbol}-swap`,
-      tradingLoss,
-    );
 
-    return [
-      prepareTransaction({
+    const inputValue =
+      Number(normalizedInputAmount) * tokenPricesMappingTable[fromToken];
+    const outputValue =
+      Number(normalizedOutputAmount) * tokenPricesMappingTable[toTokenSymbol];
+    const tradingLoss = outputValue - inputValue;
+
+    return {
+      transaction: prepareTransaction({
         to: oneInchAddress,
         chain: CHAIN_ID_TO_CHAIN[this.chainId],
         client: THIRDWEB_CLIENT,
         data: swapCallData["data"],
         extraGas: 550000n,
       }),
-      swapCallData["toAmount"],
-    ];
+      toAmount: swapCallData["toAmount"],
+      tradingLoss,
+      inputValue,
+    };
   }
+
   async _calculateWithdrawTokenAndBalance(
     recipient,
     symbolOfBestTokenToZapOut,

@@ -17,7 +17,6 @@ export default function RebalanceTab({
   CHAIN_TO_CHAIN_ID,
 }) {
   const [currentStep, setCurrentStep] = useState(0);
-
   const calCurrentAPR = (rebalancableUsdBalanceDict) =>
     Object.entries(rebalancableUsdBalanceDict)
       .filter(([key]) => !["pendingRewards", "metadata"].includes(key))
