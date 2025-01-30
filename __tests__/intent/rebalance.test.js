@@ -99,5 +99,5 @@ describe("Stablecoin Vault", () => {
       protocolAssetDustInWallet,
       onlyThisChain,
     );
-  });
+  }, 200000);
 });

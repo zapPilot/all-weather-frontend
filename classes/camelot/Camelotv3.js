@@ -176,7 +176,7 @@ export class CamelotV3 extends BaseUniswap {
           ),
         );
       } else {
-        const [swapTxn, swapEstimateAmount] = await this._swap(
+        const [swapTxn, , swapEstimateAmount] = await this._swap(
           chosenToken,
           token,
           ethers.utils.parseUnits(

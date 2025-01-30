@@ -693,7 +693,7 @@ export default class BaseProtocol extends BaseUniswap {
     if (
       tokenInAddress.toLowerCase() !== bestTokenAddressToZapIn.toLowerCase()
     ) {
-      const swapResult = await this._swap(
+      const [txns, swapEstimateAmount] = await this._swap(
         recipient,
         tokenInAddress,
         bestTokenAddressToZapIn,
@@ -706,11 +706,10 @@ export default class BaseProtocol extends BaseUniswap {
         bestTokenToZapInDecimal,
         tokenPricesMappingTable,
       );
-      const swapEstimateAmount = swapResult[swapResult.length - 1];
       amountToZapIn = String(
         Math.floor((swapEstimateAmount * (100 - slippage)) / 100),
       );
-      swapTxns.push(...swapResult.slice(0, -1));
+      swapTxns.push(...txns.flat());
     }
     return [
       swapTxns,
@@ -800,7 +799,7 @@ export default class BaseProtocol extends BaseUniswap {
         .div(sumOfLPTokenRatio);
 
       if (tokenInAddress.toLowerCase() !== bestTokenAddress.toLowerCase()) {
-        const swapResult = await this._swap(
+        const [txns, swapEstimateAmount] = await this._swap(
           recipient,
           tokenInAddress,
           bestTokenAddress,
@@ -813,11 +812,10 @@ export default class BaseProtocol extends BaseUniswap {
           bestTokenToZapInDecimal,
           tokenPricesMappingTable,
         );
-        const swapEstimateAmount = swapResult[swapResult.length - 1];
         amountToZapIn = ethers.BigNumber.from(swapEstimateAmount)
           .mul((100 - slippage) * 10000)
           .div(100 * 10000);
-        swapTxns.push(...swapResult.slice(0, -1));
+        swapTxns.push(...txns.flat());
       }
 
       amountsAfterSwap.push(amountToZapIn);
@@ -886,7 +884,7 @@ export default class BaseProtocol extends BaseUniswap {
         updateProgress,
         this.chainId,
       );
-      const swapTxnResult = await this._swap(
+      const [swapTxns, toAmount] = await this._swap(
         recipient,
         address,
         outputToken,
@@ -899,10 +897,8 @@ export default class BaseProtocol extends BaseUniswap {
         outputTokenDecimals,
         tokenPricesMappingTable,
       );
-      if (swapTxnResult === undefined) {
-        continue;
-      }
-      txns = txns.concat([approveTxn, ...swapTxnResult.slice(0, -1)]);
+
+      txns = txns.concat([approveTxn, ...swapTxns.flat()]);
     }
     return txns;
   }
@@ -1074,7 +1070,7 @@ export default class BaseProtocol extends BaseUniswap {
     });
     swapTxns.push(swapTxn);
 
-    return [...swapTxns, selectedToAmount];
+    return [swapTxns, selectedToAmount];
   }
   async _calculateWithdrawTokenAndBalance(
     recipient,

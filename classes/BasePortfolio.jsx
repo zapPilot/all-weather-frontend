@@ -713,7 +713,6 @@ export class BasePortfolio {
         selectedGasFee = paraSwapGasFee;
       }
     }
-    console.log("selectedProvider", selectedProvider);
     if (selectedProvider === "paraswap") {
       const proxyAddress = CHAIN_ID_TO_PARASWAP_PROXY_ADDR[chainId];
       const approveTxn = approve(
@@ -751,7 +750,7 @@ export class BasePortfolio {
     });
     swapTxns.push(swapTxn);
 
-    return [...swapTxns, selectedToAmount];
+    return [swapTxns, selectedToAmount];
   }
   async _processProtocolActions(actionName, actionParams) {
     const currentChain = actionParams.chainMetadata.name
@@ -855,7 +854,7 @@ export class BasePortfolio {
         let txns = [];
         const allowedTokens = ["usdc", "eth", "weth"];
         if (!allowedTokens.includes(actionParams.tokenInSymbol.toLowerCase())) {
-          const swapResult = await this._swap(
+          const [swapTxns, toAmount] = await this._swap(
             actionParams.chainMetadata.id,
             actionParams.account,
             inputToken,
@@ -871,9 +870,9 @@ export class BasePortfolio {
             actionParams,
           );
           // Update input token and amount after the swap
-          txns.push(...swapResult.slice(0, -1));
+          txns.push(...swapTxns.flat());
           inputToken = TOKEN_ADDRESS_MAP["usdc"][currentChain];
-          inputAmount = swapResult[swapResult.length - 1]; // Resulting amount after the swap
+          inputAmount = toAmount; // Resulting amount after the swap
         }
         // console.log("input amount", inputAmount);
         const inputAmountBN = ethers.BigNumber.from(inputAmount);

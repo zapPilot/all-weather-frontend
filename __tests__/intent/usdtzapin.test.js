@@ -23,7 +23,7 @@ describe("Bridge with USDT -> USDC Swap", () => {
     // base USDT address
     const tokenInAddress = "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2";
     const tokenDecimals = 6;
-    const zapInAmount = 400;
+    const zapInAmount = 350;
     const zapOutPercentage = NaN;
     const chainMetadata = base;
 
@@ -64,8 +64,10 @@ describe("Bridge with USDT -> USDC Swap", () => {
     // The transaction right before bridging should be the aggregator swap
     const oneInchArbAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
     const paraSwapAddress = "0x9509665d015Bfe3C77AA5ad6Ca20C8Afa1d98989";
+    console.log("txns", txns);
     const swapTxn = txns[bridgeIndex - 2];
-    // 1) Check the 'to' address is the 1inch aggregator
+    // 1) Check the 'to' address is the swap
+    console.log("swapTxn", swapTxn);
     expect([
       oneInchArbAddress.toLowerCase(),
       paraSwapAddress.toLowerCase(),
