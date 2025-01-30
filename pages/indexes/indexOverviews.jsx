@@ -383,7 +383,7 @@ export default function IndexOverviews() {
               // get current chain from Txn data
               const newNextChain = switchNextChain(data.chain.name);
               setNextStepChain(newNextChain);
-              setChainStatus({ ...chainStatus, [currentChain]: true })
+              setChainStatus({ ...chainStatus, [currentChain]: true });
               setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
             },
             onError: (error) => {
@@ -449,9 +449,10 @@ export default function IndexOverviews() {
 
   const currentChain = chainId?.name?.toLowerCase().replace(" one", "").trim();
   // get all available chains
-  const availableAssetChains = Object.entries(portfolioHelper?.strategy || {}).flatMap(
-    ([category, protocols]) =>
-      Object.entries(protocols).map(([chain, protocolArray]) => chain)
+  const availableAssetChains = Object.entries(
+    portfolioHelper?.strategy || {},
+  ).flatMap(([category, protocols]) =>
+    Object.entries(protocols).map(([chain, protocolArray]) => chain),
   );
   // get chain status
   const [chainStatus, setChainStatus] = useState({

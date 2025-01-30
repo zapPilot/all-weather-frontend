@@ -31,14 +31,16 @@ export default function ZapInTab({
   setShowZapIn,
   portfolioHelper,
   availableAssetChains,
-  chainStatus
+  chainStatus,
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showCountdown, setShowCountdown] = useState(false);
   const [deadline, setDeadline] = useState(null);
   const countdownTime = 9;
   const currentChain = chainId?.name?.toLowerCase().replace(" one", "").trim();
-  const falseChains = availableAssetChains.filter(chain => !chainStatus[chain]);
+  const falseChains = availableAssetChains.filter(
+    (chain) => !chainStatus[chain],
+  );
   const handleSwitchChain = async (chain) => {
     setIsLoading(true);
     const deadlineTime = getCurrentTimeSeconds() + countdownTime;
@@ -63,15 +65,24 @@ export default function ZapInTab({
         <div className="mb-2">
           <p className="text-base font-semibold leading-6">Complete chain</p>
           <div className="flex items-center">
-            {availableAssetChains.map((chain) => (
-              <img src={`/chainPicturesWebp/${chain}.webp`} alt={chain} className={`w-6 h-6 m-1 rounded-full ${chainStatus[chain] ? "" : "opacity-10"}`} />
+            {availableAssetChains.map((chain, index) => (
+              <img
+                key={index}
+                src={`/chainPicturesWebp/${chain}.webp`}
+                alt={chain}
+                className={`w-6 h-6 m-1 rounded-full ${
+                  chainStatus[chain] ? "" : "opacity-10"
+                }`}
+              />
             ))}
           </div>
-          {falseChains?.length === 0 && availableAssetChains?.length > 0 && 
+          {falseChains?.length === 0 && availableAssetChains?.length > 0 && (
             <div className="flex flex-col text-green-500 text-center">
               <CheckCircleIcon className="w-12 h-12 mx-auto" />
               <p className="mt-2">Deposit is complete!</p>
-              <p className="mt-2">Your assets have been successfully deposited.</p>
+              <p className="mt-2">
+                Your assets have been successfully deposited.
+              </p>
               <Button
                 type="primary"
                 className="mt-4"
@@ -82,10 +93,13 @@ export default function ZapInTab({
                 Go to Profile
               </Button>
             </div>
-          }
+          )}
         </div>
-        <div className={`mt-4 sm:mt-0 ${chainStatus[currentChain] ? "hidden" : "block"}`}>
-          
+        <div
+          className={`mt-4 sm:mt-0 ${
+            chainStatus[currentChain] ? "hidden" : "block"
+          }`}
+        >
           <TokenDropdownInput
             selectedToken={selectedToken}
             setSelectedToken={handleSetSelectedToken}
@@ -140,7 +154,13 @@ export default function ZapInTab({
             </Button>
           )}
         </div>
-        <div className={`mt-4 ${chainStatus[currentChain] && falseChains.length > 0 ? "block" : "hidden"}`}>
+        <div
+          className={`mt-4 ${
+            chainStatus[currentChain] && falseChains.length > 0
+              ? "block"
+              : "hidden"
+          }`}
+        >
           {showCountdown && deadline && (
             <div className="mb-4">
               <Countdown
@@ -160,17 +180,21 @@ export default function ZapInTab({
           <Button
             type="primary"
             className={`w-full my-2 ${
-              currentChain === availableAssetChains.find(chain => !chainStatus[chain])
+              currentChain ===
+              availableAssetChains.find((chain) => !chainStatus[chain])
                 ? "hidden"
                 : "block"
             }`}
             onClick={() => {
-              handleSwitchChain(availableAssetChains.find(chain => !chainStatus[chain]))
+              handleSwitchChain(
+                availableAssetChains.find((chain) => !chainStatus[chain]),
+              );
               setFinishedTxn(false);
             }}
             loading={isLoading}
           >
-            switch to {availableAssetChains.find(chain => !chainStatus[chain])} Chain
+            switch to{" "}
+            {availableAssetChains.find((chain) => !chainStatus[chain])} Chain
           </Button>
         </div>
       </div>
