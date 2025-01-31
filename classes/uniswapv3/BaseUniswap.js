@@ -96,7 +96,10 @@ class BaseUniswap {
     liquidityToRemove,
   ) {
     const position = await positionManager.positions(token_id);
-    const { tickLower, tickUpper } = position;
+    const { tickLower, tickUpper, liquidity } = position;
+    if (liquidity.toString() === "0") {
+      return { amount0: 0, amount1: 0 };
+    }
 
     // Fetch current price from the pool
     const slot0 = await poolContract.globalState();
@@ -110,10 +113,67 @@ class BaseUniswap {
       (liquidityToRemove * (Math.sqrt(P_upper) - Math.sqrt(P))) /
       (Math.sqrt(P) * Math.sqrt(P_upper));
     const amount1 = liquidityToRemove * (Math.sqrt(P) - Math.sqrt(P_lower));
-    return { amount0, amount1 };
+    return { amount0: Math.floor(amount0), amount1: Math.floor(amount1) };
   }
+  async getUncollectedFeesForUniswapV3(
+    token_id,
+    positionManager,
+    poolContract,
+  ) {
+    // Fetch global fee growth
+    // const feeGrowthGlobal0X128 = BigInt(2035451573126599860634365713953696819624);
+    const position = await positionManager.positions(token_id);
+    let fees0 = position.tokensOwed0;
+    let fees1 = position.tokensOwed1;
 
-  async getUncollectedFees(token_id, positionManager, poolContract) {
+    if (fees0 > 0n || fees1 > 0n) {
+      return { fees0, fees1 }; // Return directly if unclaimed fees are already tracked
+    }
+    const feeGrowthGlobal0X128 =
+      await poolContract.functions.totalFeeGrowth0Token();
+    const feeGrowthGlobal1X128 =
+      await poolContract.functions.totalFeeGrowth1Token();
+
+    // Fetch fee growth outside the tick range
+
+    const liquidity = position.liquidity;
+    const tickLower = position.tickLower;
+    const tickUpper = position.tickUpper;
+    const feeGrowthInside0LastX128 = position.feeGrowthInside0LastX128;
+    const feeGrowthInside1LastX128 = position.feeGrowthInside1LastX128;
+
+    // const feeGrowthOutsideLower0X128 = BigInt(1038699449216320604781002198732142450014)
+    const lowerTicks = await poolContract.functions.ticks(tickLower);
+    const feeGrowthOutsideLower0X128 = lowerTicks.outerFeeGrowth0Token;
+    const feeGrowthOutsideLower1X128 = lowerTicks.outerFeeGrowth1Token;
+    // const feeGrowthOutsideLower1X128 =  511396598114141877833919722086195606)
+    // const feeGrowthOutsideLower1X128 =  511396598114141877833919722086195606)
+    const upperTicks = await poolContract.functions.ticks(tickUpper);
+    const feeGrowthOutsideUpper0X128 = upperTicks.outerFeeGrowth0Token;
+    const feeGrowthOutsideUpper1X128 = upperTicks.outerFeeGrowth1Token;
+    // const feeGrowthOutsideUpper0X128 = 30521569702293137486123643089129302063)
+    // const feeGrowthOutsideUpper1X128 = 25634207230629328784956795027271311)
+
+    // Compute fee growth inside tick range
+
+    const feeGrowthInside0Current =
+      feeGrowthGlobal0X128 -
+      feeGrowthOutsideLower0X128 -
+      feeGrowthOutsideUpper0X128;
+    const feeGrowthInside1Current =
+      feeGrowthGlobal1X128 -
+      feeGrowthOutsideLower1X128 -
+      feeGrowthOutsideUpper1X128;
+    // Compute actual uncollected fees
+    fees0 =
+      ((feeGrowthInside0Current - feeGrowthInside0LastX128) * liquidity) /
+      2 ** 128;
+    fees1 =
+      ((feeGrowthInside1Current - feeGrowthInside1LastX128) * liquidity) /
+      2 ** 128;
+    return { fees0, fees1 };
+  }
+  async getUncollectedFeesForCamelot(token_id, positionManager, poolContract) {
     // Fetch global fee growth
     // const feeGrowthGlobal0X128 = BigInt(2035451573126599860634365713953696819624);
     const position = await positionManager.positions(token_id);
@@ -174,10 +234,12 @@ class BaseUniswap {
     tokenPricesMappingTable,
     token0Symbol,
     token1Symbol,
+    token0Decimals,
+    token1Decimals,
   ) {
     const position = await positionManager.positions(tokenId);
-    const { tickLower, tickUpper, liquidity } = position;
-
+    const { tickLower, tickUpper, liquidity, tokensOwed0, tokensOwed1 } =
+      position;
     // Fetch current price from the pool
     const slot0 = await poolContract.globalState();
     const sqrtPriceX96 = slot0.price;
@@ -194,9 +256,12 @@ class BaseUniswap {
     const priceToken0 = tokenPricesMappingTable[token0Symbol];
     const priceToken1 = tokenPricesMappingTable[token1Symbol];
     // Convert to USD
-    const valueToken0 = amount0 * priceToken0;
-    const valueToken1 = amount1 * priceToken1;
-    return (valueToken0 + valueToken1) / 10 ** 18;
+    const valueToken0 = (amount0 / 10 ** token0Decimals) * priceToken0;
+    const valueToken1 = (amount1 / 10 ** token1Decimals) * priceToken1;
+
+    const tokensOwed0Value = (tokensOwed0 / 10 ** token0Decimals) * priceToken0;
+    const tokensOwed1Value = (tokensOwed1 / 10 ** token1Decimals) * priceToken1;
+    return tokensOwed0Value + tokensOwed1Value + valueToken0 + valueToken1;
   }
   getPositionKey(owner, tickLower, tickUpper) {
     return ethers.utils.keccak256(

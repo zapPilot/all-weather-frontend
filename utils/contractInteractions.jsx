@@ -112,6 +112,15 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   link: {
     coinmarketcapApiId: 1975,
   },
+  sol: {
+    coinmarketcapApiId: 5426,
+  },
+  gmx: {
+    coinmarketcapApiId: 11857,
+  },
+  magic: {
+    coinmarketcapApiId: 14783,
+  },
 };
 export const tokensForDropDown = [
   "eth",

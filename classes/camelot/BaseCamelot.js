@@ -99,6 +99,8 @@ export class BaseCamelot extends BaseProtocol {
       tokenPricesMappingTable,
       this.customParams.lpTokens[0][0],
       this.customParams.lpTokens[1][0],
+      this.customParams.lpTokens[0][2],
+      this.customParams.lpTokens[1][2],
     );
   }
   async assetUsdPrice(tokenPricesMappingTable) {
@@ -114,7 +116,7 @@ export class BaseCamelot extends BaseProtocol {
   }
 
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
-    // TODO(david): we're missing Grail rewards
+    // TODO(david): we're missing Grail rewards + fee: https://docs.algebra.finance/algebra-integral-documentation/algebra-integral-technical-reference/integration-process/subgraphs-and-analytics/examples-of-queries#general-position-data
     if (!this.token_id) {
       this.token_id = await this._getNftID(owner);
     }
@@ -125,7 +127,7 @@ export class BaseCamelot extends BaseProtocol {
       [token0, token0Address, token0Decimals],
       [token1, token1Address, token1Decimals],
     ] = this.customParams.lpTokens;
-    const { fees0, fees1 } = await this.getUncollectedFees(
+    const { fees0, fees1 } = await this.getUncollectedFeesForCamelot(
       this.token_id,
       this.assetContractInstance,
       this.protocolContractInstance,
@@ -133,14 +135,14 @@ export class BaseCamelot extends BaseProtocol {
     const rewardBalance = {
       [token0Address]: {
         symbol: token0,
-        balance: ethers.BigNumber.from(String(fees0)),
+        balance: ethers.BigNumber.from(String(Math.floor(fees0))),
         usdDenominatedValue:
           tokenPricesMappingTable[token0] * (fees0 / 10 ** token0Decimals),
         decimals: token0Decimals,
       },
       [token1Address]: {
         symbol: token1,
-        balance: ethers.BigNumber.from(String(fees1)),
+        balance: ethers.BigNumber.from(String(Math.floor(fees1))),
         usdDenominatedValue:
           tokenPricesMappingTable[token1] * (fees1 / 10 ** token1Decimals),
         decimals: token1Decimals,
@@ -252,8 +254,8 @@ export class BaseCamelot extends BaseProtocol {
         {
           tokenId: this.token_id,
           recipient: owner,
-          amount0Max: pendingRewards[token0Address].balance,
-          amount1Max: pendingRewards[token1Address].balance,
+          amount0Max: pendingRewards[token0Address].balance.mul(2),
+          amount1Max: pendingRewards[token1Address].balance.mul(2),
         },
       ],
     });
@@ -290,31 +292,62 @@ export class BaseCamelot extends BaseProtocol {
       tokenPricesMappingTable,
       updateProgress,
     );
+
     if (!this.token_id) {
       this.token_id = await this._getNftID(owner);
     }
 
-    // Get pool reserves and calculate withdrawal amounts
     const { amount0, amount1 } = await this.getWithdrawalAmounts(
       this.token_id,
       this.assetContractInstance,
       this.protocolContractInstance,
       amount,
     );
-    const amount0Min = this.mul_with_slippage_in_bignumber_format(
-      amount0,
-      slippage,
-    );
-    const amount1Min = this.mul_with_slippage_in_bignumber_format(
-      amount1,
-      slippage,
-    );
+
     await this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-withdraw`,
       0,
     );
-    const withdrawTxn = prepareContractCall({
+
+    const [claimTxns] = await this.customClaim(
+      owner,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
+    const burnTxn = this._prepareBurnTransaction();
+
+    if (amount.toString() === "0") {
+      return [
+        [...claimTxns, burnTxn],
+        this.customParams.lpTokens,
+        [amount0, amount1],
+      ];
+    }
+
+    const liquidity = await this.assetBalanceOf(owner);
+    const withdrawTxn = this._prepareWithdrawTransaction(
+      amount,
+      amount0,
+      amount1,
+    );
+    const transactions = amount.eq(liquidity)
+      ? [withdrawTxn, ...claimTxns, burnTxn]
+      : [withdrawTxn, ...claimTxns];
+
+    return [transactions, this.customParams.lpTokens, [amount0, amount1]];
+  }
+
+  _prepareBurnTransaction() {
+    return prepareContractCall({
+      contract: this.assetContract,
+      method: "burn",
+      params: [this.token_id],
+    });
+  }
+
+  _prepareWithdrawTransaction(amount, amount0Min, amount1Min) {
+    return prepareContractCall({
       contract: this.assetContract,
       method: "decreaseLiquidity",
       params: [
@@ -327,17 +360,8 @@ export class BaseCamelot extends BaseProtocol {
         },
       ],
     });
-    const [claimTxns, _] = await this.customClaim(
-      owner,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    return [
-      [withdrawTxn, ...claimTxns],
-      this.customParams.lpTokens,
-      [amount0Min, amount1Min],
-    ];
   }
+
   _increateLiquidityToExistingNFT(
     tokenId,
     token0Amount,
@@ -391,6 +415,7 @@ export class BaseCamelot extends BaseProtocol {
     );
     const data = await response.json();
     // Filter entries by uniqueKey before sorting
+
     const filteredData = Object.entries(data).filter(
       ([key]) => key === uniqueKey,
     );

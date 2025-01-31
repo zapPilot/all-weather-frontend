@@ -974,6 +974,12 @@ export class BasePortfolio {
         address: TOKEN_ADDRESS_MAP["weth"][chain],
         decimals: 18,
       };
+    } else if (this.constructor.name === "AllWeatherVault") {
+      return {
+        symbol: "weth",
+        address: TOKEN_ADDRESS_MAP["weth"][chain],
+        decimals: 18,
+      };
     }
     return {
       symbol: "usdc",

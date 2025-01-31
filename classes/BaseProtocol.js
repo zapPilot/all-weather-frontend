@@ -912,28 +912,6 @@ export default class BaseProtocol extends BaseUniswap {
     }
     return txns;
   }
-  calculateTokensAddressAndBalances(
-    withdrawTokenAndBalance,
-    estimatedClaimTokensAddressAndBalance,
-  ) {
-    for (const [address, balance] of Object.entries(
-      estimatedClaimTokensAddressAndBalance,
-    )) {
-      if (!withdrawTokenAndBalance[address]) {
-        withdrawTokenAndBalance[address] = ethers.BigNumber.from(0);
-      }
-
-      // Ensure balance is a ethers.BigNumber
-      const balanceBN = ethers.BigNumber.isBigNumber(balance)
-        ? balance
-        : ethers.BigNumber.from(String(balance));
-
-      // Add balances
-      withdrawTokenAndBalance[address] =
-        withdrawTokenAndBalance[address].add(balanceBN);
-    }
-    return withdrawTokenAndBalance;
-  }
   async _swap(
     walletAddress,
     fromTokenAddress,
