@@ -17,25 +17,40 @@ class BaseUniswap {
     Pu,
     token0Price,
     token1Price,
+    token0Decimals,
+    token1Decimals,
   ) {
+    // GPT: https://chatgpt.com/c/67a5ba5e-543c-8005-b3ea-5af487c58b4c
+    // whitepaper: https://app.uniswap.org/whitepaper-v3.pdf
+
     // priceUSDX: token0
     // priceUSDY: token1
-    // P = token0 / token1
+    // P: current price (token1/token0)
+    // Pl: lower price bound
+    // Pu: upper price bound
+    // Formula: ΔX⋅priceUSDX+ΔY⋅priceUSDY=depositAmountUSD
+    // ΔX = ΔL * (1/sqrt(P) - 1/sqrt(Pu)) (6.29)
+    // ΔY = ΔL * (sqrt(P) - sqrt(Pl)) (6.30)
+    // what we really want to know is ΔX and ΔY
+    // so we can replace ΔX and ΔY in the formula with ΔL
+    // ΔL * (1/sqrt(P) - 1/sqrt(Pu)) * priceUSDX + ΔL * (sqrt(P) - sqrt(Pl)) * priceUSDY = depositAmountUSD
+    // then we can solve for ΔL
+    // ΔL = depositAmountUSD / ((sqrt(P) - sqrt(Pl)) * priceUSDY + (1/sqrt(P) - 1/sqrt(Pu)) * priceUSDX)
+    // finally, we can solve for ΔX and ΔY
     const deltaL =
       depositAmountUSD /
       ((Math.sqrt(P) - Math.sqrt(Pl)) * priceUSDY +
         (1 / Math.sqrt(P) - 1 / Math.sqrt(Pu)) * priceUSDX);
     const deltaY = deltaL * (Math.sqrt(P) - Math.sqrt(Pl));
     const deltaX = deltaL * (1 / Math.sqrt(P) - 1 / Math.sqrt(Pu));
-
     return [
       ethers.utils.parseUnits(
-        (deltaX * token0Price).toFixed(18).toString(),
-        18,
+        String(BigInt(deltaX * token0Price)),
+        token0Decimals,
       ),
       ethers.utils.parseUnits(
-        (deltaY * token1Price).toFixed(18).toString(),
-        18,
+        String(BigInt(deltaY * token1Price)),
+        token1Decimals,
       ),
     ];
   }
@@ -98,7 +113,55 @@ class BaseUniswap {
     const position = await positionManager.positions(token_id);
     const { tickLower, tickUpper, liquidity } = position;
     if (liquidity.toString() === "0") {
-      return { amount0: 0, amount1: 0 };
+      return {
+        amount0: ethers.BigNumber.from(0),
+        amount1: ethers.BigNumber.from(0),
+      };
+    }
+
+    // Fetch current price from the pool
+    const slot0 = await poolContract.globalState();
+    const sqrtPriceX96 = slot0.price;
+    // Convert price to decimal
+    const P = (Number(sqrtPriceX96) / 2 ** 96) ** 2;
+    const P_upper = 1.0001 ** tickUpper;
+    const P_lower = 1.0001 ** tickLower;
+    // Calculate token0 and token1 amounts based on price position
+    let amount0, amount1;
+    if (P >= P_upper) {
+      // Current price is above range
+      amount0 = 0;
+      amount1 = liquidityToRemove * (-Math.sqrt(P_upper) + Math.sqrt(P_lower));
+    } else if (P < P_lower) {
+      // Current price is below range
+      amount0 =
+        liquidityToRemove * (-1 / Math.sqrt(P_upper) + 1 / Math.sqrt(P_lower));
+      amount1 = 0;
+    } else {
+      // Current price is within range
+      amount0 =
+        liquidityToRemove * (-1 / Math.sqrt(P_upper) + 1 / Math.sqrt(P));
+      amount1 = liquidityToRemove * (Math.sqrt(P) - Math.sqrt(P_lower));
+    }
+
+    return {
+      amount0: ethers.BigNumber.from(String(Math.floor(amount0))),
+      amount1: ethers.BigNumber.from(String(Math.floor(amount1))),
+    };
+  }
+  async getWithdrawalAmountsForUniswapV3(
+    token_id,
+    positionManager,
+    poolContract,
+    liquidityToRemove,
+  ) {
+    const position = await positionManager.positions(token_id);
+    const { tickLower, tickUpper, liquidity } = position;
+    if (liquidity.toString() === "0") {
+      return {
+        amount0: ethers.BigNumber.from(0),
+        amount1: ethers.BigNumber.from(0),
+      };
     }
 
     // Fetch current price from the pool
@@ -113,7 +176,10 @@ class BaseUniswap {
       (liquidityToRemove * (Math.sqrt(P_upper) - Math.sqrt(P))) /
       (Math.sqrt(P) * Math.sqrt(P_upper));
     const amount1 = liquidityToRemove * (Math.sqrt(P) - Math.sqrt(P_lower));
-    return { amount0: Math.floor(amount0), amount1: Math.floor(amount1) };
+    return {
+      amount0: ethers.BigNumber.from(String(Math.floor(amount0))),
+      amount1: ethers.BigNumber.from(String(Math.floor(amount1))),
+    };
   }
   async getUncollectedFeesForUniswapV3(
     token_id,
@@ -237,7 +303,13 @@ class BaseUniswap {
     token0Decimals,
     token1Decimals,
   ) {
-    const position = await positionManager.positions(tokenId);
+    let position;
+    try {
+      position = await positionManager.positions(tokenId);
+    } catch (error) {
+      // it means the NFT has been burned
+      return undefined;
+    }
     const { tickLower, tickUpper, liquidity, tokensOwed0, tokensOwed1 } =
       position;
     // Fetch current price from the pool

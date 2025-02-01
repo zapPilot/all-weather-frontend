@@ -104,6 +104,7 @@ export class BaseAerodrome extends BaseProtocol {
       ([symbol, address, decimals, amount]) => ({
         address,
         amount,
+        minAmount: this.mul_with_slippage_in_bignumber_format(amount, slippage),
         decimals,
         symbol,
       }),

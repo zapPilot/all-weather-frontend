@@ -44,10 +44,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
     },
   },
   zuneth: {
-    geckoterminal: {
-      chain: "arbitrum",
-      address: "0x06d65ec13465ac5a4376dc101e1141252c4addf8",
-    },
+    coinmarketcapApiId: 2396,
   },
   metis: {
     coinmarketcapApiId: 9640,

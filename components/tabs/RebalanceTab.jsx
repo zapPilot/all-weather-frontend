@@ -57,13 +57,12 @@ export default function RebalanceTab({
                     rebalanceIsLoading || rebalancableUsdBalanceDictLoading
                   }
                   disabled={
-                    getRebalanceReinvestUsdAmount(chainId?.name) / usdBalance <
-                      portfolioHelper?.rebalanceThreshold() ||
                     usdBalance <= 0 ||
                     Math.abs(
                       calCurrentAPR(rebalancableUsdBalanceDict) -
                         portfolioApr[portfolioName]?.portfolioAPR * 100,
-                    ) < 5
+                    ) <
+                      portfolioHelper?.rebalanceThreshold() * 100
                   }
                 >
                   {data.actionName} on {data.chain}
@@ -91,11 +90,20 @@ export default function RebalanceTab({
         <p>Expected APR after rebalance: </p>
         <div className="flex items-center gap-2">
           <span className="text-red-500">
-            {calCurrentAPR(rebalancableUsdBalanceDict).toFixed(2)}%
+            {rebalancableUsdBalanceDictLoading ? (
+              <Spin />
+            ) : (
+              calCurrentAPR(rebalancableUsdBalanceDict).toFixed(2)
+            )}
           </span>
           <span>→</span>
           <span className="text-green-400">
-            {(portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)}%
+            {portfolioApr[portfolioName]?.portfolioAPR ? (
+              (portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)
+            ) : (
+              <Spin />
+            )}
+            %
           </span>
         </div>
       </div>

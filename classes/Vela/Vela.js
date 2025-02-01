@@ -96,7 +96,7 @@ export class Vela extends BaseProtocol {
       )
     )[0];
     const latestVlpPrice = await this._fetchVlpPrice(() => {});
-    return (userBalance / Math.pow(10, this.assetDecimals)) * latestVlpPrice;
+    return userBalance * latestVlpPrice;
   }
   async assetUsdPrice(tokenPricesMappingTable) {
     return await this._fetchVlpPrice(() => {});

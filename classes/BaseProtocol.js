@@ -458,6 +458,14 @@ export default class BaseProtocol extends BaseUniswap {
           tokenPricesMappingTable,
           updateProgress,
         );
+      if (
+        withdrawLPTxns === undefined &&
+        tokenMetadatas === undefined &&
+        minPairAmounts === undefined
+      ) {
+        // it means the NFT has been burned, so we don't need to do anything
+        return [];
+      }
       const [redeemTxnsFromLP, withdrawTokenAndBalanceFromLP] =
         await this._calculateWithdrawLPTokenAndBalance(
           recipient,
@@ -622,6 +630,10 @@ export default class BaseProtocol extends BaseUniswap {
       percentage,
       updateProgress,
     );
+    if (unstakedAmount === undefined) {
+      // it means the NFT has been burned
+      return [undefined, undefined, undefined];
+    }
     const [withdrawAndClaimTxns, tokenMetadatas, minPairAmounts] =
       await this._withdrawLPAndClaim(
         owner,
@@ -1058,10 +1070,19 @@ export default class BaseProtocol extends BaseUniswap {
         withdrawTokenAndBalance[address].balance = withdrawTokenAndBalance[
           address
         ].balance.add(metadata.balance);
-        withdrawTokenAndBalance[address].usdDenominatedValue =
-          (tokenPricesMappingTable[withdrawTokenAndBalance[metadata.symbol]] *
-            withdrawTokenAndBalance[address].balance) /
-          Math.pow(10, withdrawTokenAndBalance[address].decimals);
+        const tokenPrice = tokenPricesMappingTable[metadata.symbol];
+        if (tokenPrice === undefined) {
+          throw new Error(`No price found for token ${metadata.symbol}`);
+        } else {
+          withdrawTokenAndBalance[address].usdDenominatedValue =
+            tokenPrice *
+            Number(
+              ethers.utils.formatUnits(
+                withdrawTokenAndBalance[address].balance,
+                withdrawTokenAndBalance[address].decimals,
+              ),
+            );
+        }
       } else {
         withdrawTokenAndBalance[address] = metadata;
       }
@@ -1090,10 +1111,18 @@ export default class BaseProtocol extends BaseUniswap {
         symbol: symbolOfBestTokenToZapOut,
         balance: minOutAmount,
         usdDenominatedValue:
-          (tokenPricesMappingTable[symbolOfBestTokenToZapOut] * minOutAmount) /
-          Math.pow(10, decimalOfBestTokenToZapOut),
+          tokenPricesMappingTable[symbolOfBestTokenToZapOut] *
+          Number(
+            ethers.utils.formatUnits(minOutAmount, decimalOfBestTokenToZapOut),
+          ),
         decimals: decimalOfBestTokenToZapOut,
       };
+      assert(
+        !isNaN(
+          withdrawTokenAndBalance[bestTokenAddressToZapOut].usdDenominatedValue,
+        ),
+        `usdDenominatedValue is NaN for ${symbolOfBestTokenToZapOut}`,
+      );
     }
     const pendingRewards = await this.pendingRewards(
       recipient,
@@ -1106,10 +1135,19 @@ export default class BaseProtocol extends BaseUniswap {
         withdrawTokenAndBalance[address].balance = withdrawTokenAndBalance[
           address
         ].balance.add(metadata.balance);
-        withdrawTokenAndBalance[address].usdDenominatedValue =
-          (tokenPricesMappingTable[withdrawTokenAndBalance[metadata.symbol]] *
-            withdrawTokenAndBalance[address].balance) /
-          Math.pow(10, withdrawTokenAndBalance[address].decimals);
+        const tokenPrice = tokenPricesMappingTable[metadata.symbol];
+        if (tokenPrice === undefined) {
+          withdrawTokenAndBalance[address].usdDenominatedValue = 0;
+        } else {
+          withdrawTokenAndBalance[address].usdDenominatedValue =
+            tokenPrice *
+            Number(
+              ethers.utils.formatUnits(
+                withdrawTokenAndBalance[address].balance,
+                withdrawTokenAndBalance[address].decimals,
+              ),
+            );
+        }
       } else {
         withdrawTokenAndBalance[address] = metadata;
       }

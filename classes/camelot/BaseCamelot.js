@@ -74,16 +74,18 @@ export class BaseCamelot extends BaseProtocol {
     if (!this.token_id) {
       this.token_id = await this._getNftID(recipient);
     }
-    if (this.token_id === 0) {
-      return 0;
-    }
     if (!this.token_id) {
-      return ethers.BigNumber.from(0);
+      return undefined;
     }
-    const position = await this.assetContractInstance.functions.positions(
-      this.token_id,
-    );
-    return position.liquidity;
+    try {
+      const position = await this.assetContractInstance.functions.positions(
+        this.token_id,
+      );
+      return position.liquidity;
+    } catch (error) {
+      // it means the NFT has been burned
+      return undefined;
+    }
   }
   async usdBalanceOf(owner, tokenPricesMappingTable) {
     if (!this.token_id) {
@@ -234,6 +236,8 @@ export class BaseCamelot extends BaseProtocol {
       maxPrice,
       tokenPricesMappingTable[token0],
       tokenPricesMappingTable[token1],
+      token0Decimals,
+      token1Decimals,
     );
     return ratio;
   }
@@ -254,8 +258,12 @@ export class BaseCamelot extends BaseProtocol {
         {
           tokenId: this.token_id,
           recipient: owner,
-          amount0Max: pendingRewards[token0Address].balance.mul(2),
-          amount1Max: pendingRewards[token1Address].balance.mul(2),
+          amount0Max: ethers.BigNumber.from(
+            "340282366920938463463374607431768211455",
+          ), // 2^128 - 1
+          amount1Max: ethers.BigNumber.from(
+            "340282366920938463463374607431768211455",
+          ), // 2^128 - 1
         },
       ],
     });
@@ -275,6 +283,9 @@ export class BaseCamelot extends BaseProtocol {
       String(Math.floor(percentage * 10000)),
     );
     const assetBalance = await this.assetBalanceOf(owner);
+    if (assetBalance === undefined) {
+      return [[], undefined];
+    }
     const amount = assetBalance.mul(percentageBN).div(10000);
     return [[], amount];
   }
@@ -292,18 +303,23 @@ export class BaseCamelot extends BaseProtocol {
       tokenPricesMappingTable,
       updateProgress,
     );
-
     if (!this.token_id) {
       this.token_id = await this._getNftID(owner);
     }
-
     const { amount0, amount1 } = await this.getWithdrawalAmounts(
       this.token_id,
       this.assetContractInstance,
       this.protocolContractInstance,
       amount,
     );
-
+    const amount0Min = this.mul_with_slippage_in_bignumber_format(
+      amount0,
+      slippage,
+    );
+    const amount1Min = this.mul_with_slippage_in_bignumber_format(
+      amount1,
+      slippage,
+    );
     await this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-withdraw`,
@@ -316,7 +332,6 @@ export class BaseCamelot extends BaseProtocol {
       updateProgress,
     );
     const burnTxn = this._prepareBurnTransaction();
-
     if (amount.toString() === "0") {
       return [
         [...claimTxns, burnTxn],
@@ -328,8 +343,8 @@ export class BaseCamelot extends BaseProtocol {
     const liquidity = await this.assetBalanceOf(owner);
     const withdrawTxn = this._prepareWithdrawTransaction(
       amount,
-      amount0,
-      amount1,
+      amount0Min,
+      amount1Min,
     );
     const transactions = amount.eq(liquidity)
       ? [withdrawTxn, ...claimTxns, burnTxn]
@@ -347,6 +362,8 @@ export class BaseCamelot extends BaseProtocol {
   }
 
   _prepareWithdrawTransaction(amount, amount0Min, amount1Min) {
+    // 0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000014507269636520736c69707061676520636865636b000000000000000000000000
+    // means the return amount is less than amount0Min and amount1Min
     return prepareContractCall({
       contract: this.assetContract,
       method: "decreaseLiquidity",
@@ -354,6 +371,8 @@ export class BaseCamelot extends BaseProtocol {
         {
           tokenId: this.token_id,
           liquidity: amount,
+          // amount0Min: 0,
+          // amount1Min: 0,
           amount0Min,
           amount1Min,
           deadline: this.getDeadline(),
