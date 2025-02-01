@@ -303,7 +303,6 @@ export default function IndexOverviews() {
               );
               resolve(data); // Resolve the promise successfully
               try {
-                bridgeOutAmount = getRebalanceReinvestUsdAmount(chainId?.name);
                 await axios({
                   method: "post",
                   url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
@@ -651,7 +650,19 @@ export default function IndexOverviews() {
               tokenPricesMappingTable,
             );
           if (!isMounted) return;
+          const dustTotalUsdBalance = Object.values(dust).reduce(
+            (sum, protocolObj) => {
+              return (
+                sum +
+                Object.values(protocolObj).reduce((protocolSum, asset) => {
+                  return protocolSum + (Number(asset.assetUsdBalanceOf) || 0);
+                }, 0)
+              );
+            },
+            0,
+          );
 
+          setUsdBalance(usdBalance + dustTotalUsdBalance);
           setProtocolAssetDustInWallet(dust);
           setProtocolAssetDustInWalletLoading(false);
         } catch (error) {

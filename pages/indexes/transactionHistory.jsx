@@ -167,7 +167,6 @@ export default function TransactionHistory({
         tokenSymbol,
         zapOutAmount,
         zapInAmountOnThisChain,
-        stakeAmountOnThisChain,
       },
       gotRefundData,
     } = activityItem;
@@ -184,8 +183,6 @@ export default function TransactionHistory({
       ? parseFloat(zapInAmountOnThisChain)
       : ["transfer", "zapOut"].includes(actionName)
       ? parseFloat(zapOutAmount)
-      : actionName === "stake"
-      ? parseFloat(stakeAmountOnThisChain)
       : 0;
 
     if (actionAmount) {
