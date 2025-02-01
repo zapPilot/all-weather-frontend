@@ -247,7 +247,6 @@ export class BasePortfolio {
       address,
       tokenPricesMappingTable,
     );
-
     // Initialize balance dictionary with rewards
     let usdBalance = 0;
     const usdBalanceDict = this._initializeBalanceDict();
@@ -650,12 +649,7 @@ export class BasePortfolio {
     //   `${this.uniqueId()}-${fromToken}-${toTokenSymbol}-swap`,
     //   tradingLoss,
     // );
-    console.log({
-      oneInchAddress,
-      chain: CHAIN_ID_TO_CHAIN[actionParams.chainMetadata.id],
-      client: THIRDWEB_CLIENT,
-      data: swapCallData["data"],
-    });
+
     return [
       prepareTransaction({
         to: oneInchAddress,
@@ -1221,7 +1215,9 @@ export class BasePortfolio {
 
   async _generateStakeTxns(protocolAssetDustInWallet, updateProgress) {
     let txns = [];
-    for (const { protocol } of Object.values(protocolAssetDustInWallet)) {
+    for (const metadata of Object.values(protocolAssetDustInWallet)) {
+      if (metadata.assetBalance.toString() === "0") continue;
+      const protocol = metadata.protocol;
       const stakeTxns = await protocol.stake(
         protocolAssetDustInWallet,
         updateProgress,
