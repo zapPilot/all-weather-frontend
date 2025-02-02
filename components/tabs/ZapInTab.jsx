@@ -5,7 +5,7 @@ import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import { TOKEN_ADDRESS_MAP } from "../../utils/general";
-import { chain } from "lodash";
+import { useNavigate } from 'react-router-dom';
 const { Countdown } = Statistic;
 export default function ZapInTab({
   nextStepChain,
@@ -58,6 +58,7 @@ export default function ZapInTab({
     setShowCountdown(false);
     setIsLoading(false);
   };
+  const navigate = useNavigate();
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
