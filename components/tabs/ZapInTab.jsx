@@ -5,7 +5,7 @@ import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import { TOKEN_ADDRESS_MAP } from "../../utils/general";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 const { Countdown } = Statistic;
 export default function ZapInTab({
   nextStepChain,
