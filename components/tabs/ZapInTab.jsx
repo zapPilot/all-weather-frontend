@@ -5,7 +5,7 @@ import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import { TOKEN_ADDRESS_MAP } from "../../utils/general";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from 'next/router';
 const { Countdown } = Statistic;
 export default function ZapInTab({
   nextStepChain,
@@ -58,7 +58,7 @@ export default function ZapInTab({
     setShowCountdown(false);
     setIsLoading(false);
   };
-  const navigate = useNavigate();
+  const router = useRouter();
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -88,7 +88,7 @@ export default function ZapInTab({
                 type="primary"
                 className="mt-4"
                 onClick={() => {
-                  navigate("/profile");
+                  router.push("/profile");
                 }}
               >
                 Go to Profile
