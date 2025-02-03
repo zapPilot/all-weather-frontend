@@ -996,6 +996,18 @@ export default class BaseProtocol extends BaseUniswap {
     toTokenDecimals,
     tokenPricesMappingTable,
   ) {
+    const oneInchSwapCallData = await fetchSwapData(
+      this.chainId,
+      fromTokenAddress,
+      fromTokenDecimals,
+      toTokenAddress,
+      toTokenDecimals,
+      amount,
+      walletAddress,
+      slippage,
+      "1inch",
+    );
+
     const paraSwapCallData = await fetchSwapData(
       this.chainId,
       fromTokenAddress,
@@ -1007,22 +1019,6 @@ export default class BaseProtocol extends BaseUniswap {
       slippage,
       "paraswap",
     );
-
-    if (
-      paraSwapCallData &&
-      paraSwapCallData.data &&
-      paraSwapCallData.data === oneInchSwapCallData.data
-    ) {
-      console.log("Paraswap failed. Defaulting to 1inch.");
-      const swapTxn = prepareTransaction({
-        to: oneInchAddress,
-        chain: CHAIN_ID_TO_CHAIN[this.chainId],
-        client: THIRDWEB_CLIENT,
-        data: oneInchSwapCallData.data,
-      });
-      swapTxns.push(swapTxn);
-      return [swapTxns, oneInchSwapCallData.toAmount];
-    }
 
     if (
       !paraSwapCallData ||
@@ -1105,13 +1101,13 @@ export default class BaseProtocol extends BaseUniswap {
 
     return {
       transaction: prepareTransaction({
-        to: oneInchAddress,
+        to: selectedAddress,
         chain: CHAIN_ID_TO_CHAIN[this.chainId],
         client: THIRDWEB_CLIENT,
-        data: swapCallData["data"],
+        data: selectedCallData["data"],
         extraGas: 550000n,
       }),
-      toAmount: swapCallData["toAmount"],
+      toAmount: selectedCallData["toAmount"],
       tradingLoss,
       inputValue,
     };
