@@ -940,20 +940,63 @@ export default class BaseProtocol extends BaseUniswap {
     if (fromTokenAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
       return;
     }
-    const swapTxns = [];
-    const oneInchSwapCallData = await fetchSwapData(
-      this.chainId,
-      fromTokenAddress,
-      fromTokenDecimals,
-      toTokenAddress,
-      toTokenDecimals,
-      amount,
+
+    // First attempt
+    let result = await this._attemptSwap(
       walletAddress,
+      fromTokenAddress,
+      toTokenAddress,
+      amount,
       slippage,
-      "1inch",
+      fromToken,
+      fromTokenDecimals,
+      toTokenSymbol,
+      toTokenDecimals,
+      tokenPricesMappingTable,
     );
 
-    const paraSwapCallData = await fetchSwapData(
+    // If trading gain is more than 1%, retry once
+    if (
+      result.tradingLoss > 0 &&
+      result.tradingLoss / result.inputValue > 0.01
+    ) {
+      result = await this._attemptSwap(
+        walletAddress,
+        fromTokenAddress,
+        toTokenAddress,
+        amount,
+        slippage,
+        fromToken,
+        fromTokenDecimals,
+        toTokenSymbol,
+        toTokenDecimals,
+        tokenPricesMappingTable,
+      );
+    }
+
+    // Update progress with final trading loss/gain
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-${fromToken}-${toTokenSymbol}-swap`,
+      result.tradingLoss,
+    );
+
+    return [result.transaction, result.toAmount];
+  }
+
+  async _attemptSwap(
+    walletAddress,
+    fromTokenAddress,
+    toTokenAddress,
+    amount,
+    slippage,
+    fromToken,
+    fromTokenDecimals,
+    toTokenSymbol,
+    toTokenDecimals,
+    tokenPricesMappingTable,
+  ) {
+    const swapCallData = await fetchSwapData(
       this.chainId,
       fromTokenAddress,
       fromTokenDecimals,
@@ -1044,7 +1087,8 @@ export default class BaseProtocol extends BaseUniswap {
       );
       swapTxns.push(approveTxn);
     }
-    const normalizedInputAmout = ethers.utils.formatUnits(
+
+    const normalizedInputAmount = ethers.utils.formatUnits(
       amount,
       fromTokenDecimals,
     );
@@ -1052,26 +1096,27 @@ export default class BaseProtocol extends BaseUniswap {
       selectedToAmount,
       toTokenDecimals,
     );
-    const tradingLoss =
-      Number(normalizedOutputAmount) * tokenPricesMappingTable[toTokenSymbol] -
-      Number(normalizedInputAmout) * tokenPricesMappingTable[fromToken];
-    // If you need to wait for the progress update
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-${fromToken}-${toTokenSymbol}-swap`,
+
+    const inputValue =
+      Number(normalizedInputAmount) * tokenPricesMappingTable[fromToken];
+    const outputValue =
+      Number(normalizedOutputAmount) * tokenPricesMappingTable[toTokenSymbol];
+    const tradingLoss = outputValue - inputValue;
+
+    return {
+      transaction: prepareTransaction({
+        to: oneInchAddress,
+        chain: CHAIN_ID_TO_CHAIN[this.chainId],
+        client: THIRDWEB_CLIENT,
+        data: swapCallData["data"],
+        extraGas: 550000n,
+      }),
+      toAmount: swapCallData["toAmount"],
       tradingLoss,
-    );
-
-    const swapTxn = prepareTransaction({
-      to: selectedAddress,
-      chain: CHAIN_ID_TO_CHAIN[this.chainId],
-      client: THIRDWEB_CLIENT,
-      data: selectedCallData,
-    });
-    swapTxns.push(swapTxn);
-
-    return [swapTxns, selectedToAmount];
+      inputValue,
+    };
   }
+
   async _calculateWithdrawTokenAndBalance(
     recipient,
     symbolOfBestTokenToZapOut,

@@ -303,7 +303,6 @@ export default function IndexOverviews() {
               );
               resolve(data); // Resolve the promise successfully
               try {
-                bridgeOutAmount = getRebalanceReinvestUsdAmount(chainId?.name);
                 await axios({
                   method: "post",
                   url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
@@ -383,6 +382,7 @@ export default function IndexOverviews() {
               // get current chain from Txn data
               const newNextChain = switchNextChain(data.chain.name);
               setNextStepChain(newNextChain);
+              setChainStatus({ ...chainStatus, [currentChain]: true });
               setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
             },
             onError: (error) => {
@@ -398,7 +398,7 @@ export default function IndexOverviews() {
           error.message.includes("0x203d82d8") ||
           error.message.includes("0xf71fbda2")
         ) {
-          errorReadableMsg = "quote has expired. Please try again.";
+          errorReadableMsg = `quote has expired. Please increase slippage tolerance and try again. Error msg: ${error.message}`;
         } else if (error.message.includes("User rejected the request")) {
           return;
         } else {
@@ -445,8 +445,32 @@ export default function IndexOverviews() {
       : chain;
     return nextChain === "arbitrum" ? "base" : "arbitrum";
   };
-  const switchNextStepChain = (chain, action) => {
-    chain === "arbitrum" ? switchChain(arbitrum) : switchChain(base);
+
+  const currentChain = chainId?.name?.toLowerCase().replace(" one", "").trim();
+  // get all available chains
+  const availableAssetChains = Object.entries(
+    portfolioHelper?.strategy || {},
+  ).flatMap(([category, protocols]) =>
+    Object.entries(protocols).map(([chain, protocolArray]) => chain),
+  );
+  // get chain status
+  const [chainStatus, setChainStatus] = useState({
+    base: false,
+    arbitrum: false,
+  });
+  // prepare chain object for switch chain
+  const chainMap = {
+    arbitrum: arbitrum,
+    base: base,
+  };
+
+  const switchNextStepChain = (chain) => {
+    const selectedChain = chainMap[chain];
+    if (selectedChain) {
+      switchChain(selectedChain);
+    } else {
+      console.error(`Invalid chain: ${chain}`);
+    }
   };
 
   // calculate the total investment amount
@@ -547,9 +571,19 @@ export default function IndexOverviews() {
       dispatch(fetchStrategyMetadata());
     }
     if (portfolioName !== undefined) {
-      setSlippage(portfolioName.includes("Stablecoin") ? 1 : 3);
+      const selectedTokenSymbol = selectedToken?.toLowerCase()?.split("-")[0];
+      if (
+        (selectedTokenSymbol === "eth" || selectedTokenSymbol === "weth") &&
+        portfolioName === "Stablecoin Vault"
+      ) {
+        setSlippage(3);
+      } else if (portfolioName === "ETH Vault") {
+        setSlippage(3);
+      } else {
+        setSlippage(1);
+      }
     }
-  }, [portfolioName]);
+  }, [portfolioName, selectedToken]);
   useEffect(() => {
     let isMounted = true;
 
@@ -616,7 +650,19 @@ export default function IndexOverviews() {
               tokenPricesMappingTable,
             );
           if (!isMounted) return;
+          const dustTotalUsdBalance = Object.values(dust).reduce(
+            (sum, protocolObj) => {
+              return (
+                sum +
+                Object.values(protocolObj).reduce((protocolSum, asset) => {
+                  return protocolSum + (Number(asset.assetUsdBalanceOf) || 0);
+                }, 0)
+              );
+            },
+            0,
+          );
 
+          setUsdBalance(usdBalance + dustTotalUsdBalance);
           setProtocolAssetDustInWallet(dust);
           setProtocolAssetDustInWalletLoading(false);
         } catch (error) {
@@ -747,6 +793,8 @@ export default function IndexOverviews() {
     zapOutIsLoading,
     zapOutPercentage,
     pendingRewards,
+    availableAssetChains,
+    chainStatus,
   };
 
   const items = useTabItems(tabProps);
@@ -930,11 +978,6 @@ export default function IndexOverviews() {
 
             <div className="mt-2 flex align-items-center">
               ⛽<span className="text-emerald-400">Free</span>
-              {tabKey === "3" ? (
-                <span className="text-gray-400">
-                  , Exit Fee: {portfolioHelper?.swapFeeRate() * 100}%
-                </span>
-              ) : null}
             </div>
           </div>
           <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
