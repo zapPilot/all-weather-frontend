@@ -996,7 +996,7 @@ export default class BaseProtocol extends BaseUniswap {
     toTokenDecimals,
     tokenPricesMappingTable,
   ) {
-    const swapCallData = await fetchSwapData(
+    const paraSwapCallData = await fetchSwapData(
       this.chainId,
       fromTokenAddress,
       fromTokenDecimals,
