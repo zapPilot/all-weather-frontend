@@ -63,7 +63,7 @@ export default function ZapInTab({
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
         <div className="mb-2">
-          <p className="text-base font-semibold leading-6">Complete chain</p>
+          <p className="text-base font-semibold leading-6">Completed chains</p>
           <div className="flex items-center">
             {availableAssetChains.map((chain, index) => (
               <img
@@ -150,7 +150,7 @@ export default function ZapInTab({
                 Number(investmentAmount) > tokenBalance
               }
             >
-              Zap In {falseChains.length === 1 ? "true" : "false"}
+              Zap In
             </Button>
           )}
         </div>
