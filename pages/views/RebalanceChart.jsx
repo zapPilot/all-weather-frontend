@@ -288,10 +288,11 @@ export default function RebalanceChart(props) {
           // TODO: about to deprecate
           portfolioHelper = getPortfolioHelper(portfolioStrategyName);
           portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
-          const [chartData, totalAPR] =
-            convertPortfolioStrategyToChartData(portfolioHelper);
-          setData(chartData);
-          setAPR(totalAPR);
+          // convertPortfolioStrategyToChartData is deprecated
+          // const [chartData, totalAPR] =
+          //   convertPortfolioStrategyToChartData(portfolioHelper);
+          // setData(chartData);
+          // setAPR(totalAPR);
         } else {
           portfolioHelper = getPortfolioHelper(portfolioStrategyName);
           const [chartData, totalAPR] =
