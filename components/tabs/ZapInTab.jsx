@@ -63,8 +63,18 @@ export default function ZapInTab({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
-        <div className="mb-2">
-          <p className="text-base font-semibold leading-6">Completed chains</p>
+        <div className="flex justify-center">
+          <div className={`flex flex-col items-center mx-2 ${falseChains.length === availableAssetChains?.length ? "text-white font-semibold" : "text-gray-500"}`}>
+            <div className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${falseChains.length === availableAssetChains?.length ? "border-white" : "border-gray-500"}`}>1</div>
+            <p>Deposit & bridge</p>
+          </div>
+          <div className={`flex flex-col items-center mx-2 ${falseChains.length < availableAssetChains?.length ? "text-white font-semibold" : "text-gray-500"}`}>
+            <div className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${falseChains.length < availableAssetChains?.length ? "border-white" : "border-gray-500"}`}>2</div>
+            <p>Deposit every chain</p>
+          </div>
+        </div>
+        <div className="mt-2 p-2">
+          <p className="font-medium">Completed chains</p>
           <div className="flex items-center">
             {availableAssetChains.map((chain, index) => (
               <img
@@ -143,7 +153,7 @@ export default function ZapInTab({
               type="primary"
               className="w-full my-2"
               onClick={() => {
-                handleAAWalletAction("zapIn", false);
+                handleAAWalletAction("zapIn", falseChains.length === 1);
               }}
               loading={zapInIsLoading}
               disabled={
