@@ -64,12 +64,40 @@ export default function ZapInTab({
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
         <div className="flex justify-center">
-          <div className={`flex flex-col items-center mx-2 ${falseChains.length === availableAssetChains?.length ? "text-white font-semibold" : "text-gray-500"}`}>
-            <div className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${falseChains.length === availableAssetChains?.length ? "border-white" : "border-gray-500"}`}>1</div>
+          <div
+            className={`flex flex-col items-center mx-2 ${
+              falseChains.length === availableAssetChains?.length
+                ? "text-white font-semibold"
+                : "text-gray-500"
+            }`}
+          >
+            <div
+              className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${
+                falseChains.length === availableAssetChains?.length
+                  ? "border-white"
+                  : "border-gray-500"
+              }`}
+            >
+              1
+            </div>
             <p>Deposit & bridge</p>
           </div>
-          <div className={`flex flex-col items-center mx-2 ${falseChains.length < availableAssetChains?.length ? "text-white font-semibold" : "text-gray-500"}`}>
-            <div className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${falseChains.length < availableAssetChains?.length ? "border-white" : "border-gray-500"}`}>2</div>
+          <div
+            className={`flex flex-col items-center mx-2 ${
+              falseChains.length < availableAssetChains?.length
+                ? "text-white font-semibold"
+                : "text-gray-500"
+            }`}
+          >
+            <div
+              className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${
+                falseChains.length < availableAssetChains?.length
+                  ? "border-white"
+                  : "border-gray-500"
+              }`}
+            >
+              2
+            </div>
             <p>Deposit every chain</p>
           </div>
         </div>
