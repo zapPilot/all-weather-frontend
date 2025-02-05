@@ -51,6 +51,116 @@ import PortfolioSummary from "../portfolio/PortfolioSummary";
 import PortfolioComposition from "../portfolio/PortfolioComposition";
 import HistoricalData from "../portfolio/HistoricalData";
 import TransactionHistoryPanel from "../portfolio/TransactionHistoryPanel";
+import LZString from "lz-string";
+import { ethers } from "ethers";
+
+const safeSetLocalStorage = (key, value) => {
+  try {
+    const cacheData = {
+      tokenPricesMappingTable: value.tokenPricesMappingTable,
+      usdBalance: value.usdBalance,
+      usdBalanceDict: value.usdBalanceDict,
+      lockUpPeriod: value.lockUpPeriod,
+      pendingRewards: value.pendingRewards,
+      dust: {},
+      timestamp: value.timestamp,
+      __className: "PortfolioCache",
+    };
+
+    // Only store the uniqueId for protocol lookup
+    if (value.dust) {
+      Object.keys(value.dust).forEach((chain) => {
+        if (value.dust[chain]) {
+          cacheData.dust[chain] = {};
+          Object.keys(value.dust[chain]).forEach((protocol) => {
+            if (value.dust[chain][protocol]) {
+              cacheData.dust[chain][protocol] = {
+                assetBalance: value.dust[chain][protocol].assetBalance,
+                assetUsdBalanceOf:
+                  value.dust[chain][protocol].assetUsdBalanceOf,
+                protocolId: value.dust[chain][protocol].protocol.uniqueId(),
+              };
+            }
+          });
+        }
+      });
+    }
+
+    const compressedValue = LZString.compressToUTF16(JSON.stringify(cacheData));
+    localStorage.setItem(key, compressedValue);
+  } catch (e) {
+    console.error("Error in safeSetLocalStorage:", e);
+    throw e;
+  }
+};
+
+const safeGetLocalStorage = (key, portfolioHelper) => {
+  try {
+    const compressed = localStorage.getItem(key);
+    if (!compressed) {
+      return null;
+    }
+
+    const decompressedData = JSON.parse(
+      LZString.decompressFromUTF16(compressed),
+    );
+
+    if (decompressedData.__className === "PortfolioCache") {
+      const { __className, ...cacheData } = decompressedData;
+
+      // Reconstruct dust objects using protocolId
+      if (cacheData.dust && portfolioHelper?.strategy) {
+        Object.keys(cacheData.dust).forEach((chain) => {
+          if (cacheData.dust[chain]) {
+            Object.keys(cacheData.dust[chain]).forEach((protocol) => {
+              if (cacheData.dust[chain][protocol]) {
+                const cachedData = cacheData.dust[chain][protocol];
+                const protocolId = cachedData.protocolId;
+
+                // Find the protocol instance in portfolioHelper.strategy
+                const protocolInstance = findProtocolByUniqueId(
+                  protocolId,
+                  portfolioHelper.strategy,
+                );
+
+                if (protocolInstance) {
+                  cacheData.dust[chain][protocol] = {
+                    assetBalance: ethers.BigNumber.from(
+                      cachedData.assetBalance.hex,
+                    ),
+                    assetUsdBalanceOf: cachedData.assetUsdBalanceOf,
+                    protocol: protocolInstance,
+                  };
+                }
+              }
+            });
+          }
+        });
+      }
+
+      return cacheData;
+    }
+
+    return decompressedData;
+  } catch (e) {
+    console.error("Error retrieving from localStorage:", e);
+    throw e;
+  }
+};
+
+// Helper function to find protocol by uniqueId in strategy
+const findProtocolByUniqueId = (targetId, strategy) => {
+  for (const allocation of Object.values(strategy)) {
+    for (const chainData of Object.values(allocation)) {
+      for (const protocolData of chainData) {
+        if (protocolData.interface.uniqueId() === targetId) {
+          return protocolData.interface;
+        }
+      }
+    }
+  }
+  return null;
+};
 
 export default function IndexOverviews() {
   const router = useRouter();
@@ -164,6 +274,8 @@ export default function IndexOverviews() {
   const [showZapIn, setShowZapIn] = useState(false);
 
   const preservedAmountRef = useRef(null);
+
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleSetSelectedToken = useCallback((token) => {
     setSelectedToken(token);
@@ -303,7 +415,6 @@ export default function IndexOverviews() {
               );
               resolve(data); // Resolve the promise successfully
               try {
-                bridgeOutAmount = getRebalanceReinvestUsdAmount(chainId?.name);
                 await axios({
                   method: "post",
                   url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
@@ -377,7 +488,7 @@ export default function IndexOverviews() {
                   });
                 }
               } catch (error) {
-                console.log("category API error", error);
+                console.error("category API error", error);
               }
               setFinishedTxn(true);
               // get current chain from Txn data
@@ -395,11 +506,10 @@ export default function IndexOverviews() {
         let errorReadableMsg;
         if (error.message.includes("0x495d907f")) {
           errorReadableMsg = "bridgequote expired, please try again";
-        } else if (
-          error.message.includes("0x203d82d8") ||
-          error.message.includes("0xf71fbda2")
-        ) {
-          errorReadableMsg = `quote has expired. Please increase slippage tolerance and try again. Error msg: ${error.message}`;
+        } else if (error.message.includes("0x203d82d8")) {
+          errorReadableMsg = "DeFi pool quote has expired. Please try again.";
+        } else if (error.message.includes("0x6f6dd725")) {
+          errorReadableMsg = "Swap quote has expired. Please try again.";
         } else if (error.message.includes("User rejected the request")) {
           return;
         } else {
@@ -586,8 +696,6 @@ export default function IndexOverviews() {
     }
   }, [portfolioName, selectedToken]);
   useEffect(() => {
-    let isMounted = true;
-
     // Clear states on initial load/refresh
     setUsdBalance(0);
     setUsdBalanceLoading(true);
@@ -597,83 +705,115 @@ export default function IndexOverviews() {
     if (!portfolioName || account === undefined || !chainId) {
       return;
     }
-    // Add guard against multiple chain change processing
     if (isProcessingChainChangeRef.current) {
       return;
     }
+    const timeoutId = setTimeout(async () => {
+      try {
+        isProcessingChainChangeRef.current = true;
+        // Check cache first
+        const cachedData = safeGetLocalStorage(
+          `portfolio-${portfolioName}-${account.address}`,
+          portfolioHelper,
+        );
+        // If we have valid cached data that's less than 24 hours old
+        if (
+          cachedData &&
+          cachedData.timestamp &&
+          Date.now() - cachedData.timestamp < 86400 * 1000
+        ) {
+          // Use cached data
+          setTokenPricesMappingTable(cachedData.tokenPricesMappingTable);
+          setUsdBalance(cachedData.usdBalance);
+          setrebalancableUsdBalanceDict(cachedData.usdBalanceDict);
+          setLockUpPeriod(cachedData.lockUpPeriod);
+          setPendingRewards(cachedData.pendingRewards);
+          setProtocolAssetDustInWallet(cachedData.dust);
 
-    const timeoutId = setTimeout(() => {
-      const fetchUsdBalance = async () => {
-        if (!isMounted) return;
-
-        try {
-          isProcessingChainChangeRef.current = true;
-
-          setUsdBalanceLoading(true);
-          setPendingRewardsLoading(true);
-          setrebalancableUsdBalanceDictLoading(true);
-          setProtocolAssetDustInWalletLoading(true);
-          const tokenPricesMappingTable =
-            await portfolioHelper.getTokenPricesMappingTable();
-          if (!isMounted) return;
-          setTokenPricesMappingTable(tokenPricesMappingTable);
-          const [usdBalance, usdBalanceDict] =
-            await portfolioHelper.usdBalanceOf(
-              account.address,
-              portfolioApr[portfolioName],
-            );
-          if (!isMounted) return;
-
-          const portfolioLockUpPeriod = await portfolioHelper.lockUpPeriod(
-            account.address,
-          );
-          if (!isMounted) return;
-
-          setLockUpPeriod(portfolioLockUpPeriod);
-          setUsdBalance(usdBalance);
-          setUsdBalanceLoading(false);
-          setrebalancableUsdBalanceDict(usdBalanceDict);
-          setrebalancableUsdBalanceDictLoading(false);
-          const pendingRewards = await portfolioHelper.pendingRewards(
-            account.address,
-            () => {},
-          );
-          setPendingRewards(pendingRewards.pendingRewardsDict);
-          setPendingRewardsLoading(false);
-
-          if (Object.values(tokenPricesMappingTable).length === 0) {
-            return;
-          }
-
-          const dust =
-            await portfolioHelper.calProtocolAssetDustInWalletDictionary(
-              account.address,
-              tokenPricesMappingTable,
-            );
-          if (!isMounted) return;
-
-          setProtocolAssetDustInWallet(dust);
-          setProtocolAssetDustInWalletLoading(false);
-        } catch (error) {
-          console.error("Error in fetchUsdBalance:", error);
-          if (!isMounted) return;
-          // Reset loading states and processing flags on error
+          // Reset loading states
           setUsdBalanceLoading(false);
           setPendingRewardsLoading(false);
           setrebalancableUsdBalanceDictLoading(false);
           setProtocolAssetDustInWalletLoading(false);
-          isProcessingChainChangeRef.current = false;
+          return; // Exit early - don't make API calls
         }
-      };
+        // If we reach here, either there's no cache or it's stale
+        // Fetch fresh data
+        const tokenPricesMappingTable =
+          await portfolioHelper.getTokenPricesMappingTable();
+        let [usdBalance, usdBalanceDict] = await portfolioHelper.usdBalanceOf(
+          account.address,
+          portfolioApr[portfolioName],
+        );
+        const portfolioLockUpPeriod = await portfolioHelper.lockUpPeriod(
+          account.address,
+        );
+        const pendingRewards = await portfolioHelper.pendingRewards(
+          account.address,
+          () => {},
+        );
 
-      fetchUsdBalance();
+        const dust =
+          await portfolioHelper.calProtocolAssetDustInWalletDictionary(
+            account.address,
+            tokenPricesMappingTable,
+          );
+        const dustTotalUsdBalance = Object.values(dust).reduce(
+          (sum, protocolObj) => {
+            return (
+              sum +
+              Object.values(protocolObj).reduce((protocolSum, asset) => {
+                return protocolSum + (Number(asset.assetUsdBalanceOf) || 0);
+              }, 0)
+            );
+          },
+          0,
+        );
+        usdBalance += dustTotalUsdBalance;
+
+        // Cache the fresh data
+        const newCacheData = {
+          tokenPricesMappingTable,
+          usdBalance,
+          usdBalanceDict,
+          lockUpPeriod: portfolioLockUpPeriod,
+          pendingRewards: pendingRewards.pendingRewardsDict,
+          dust,
+          timestamp: Date.now(),
+        };
+        try {
+          safeSetLocalStorage(
+            `portfolio-${portfolioName}-${account.address}`,
+            newCacheData,
+          );
+        } catch (error) {
+          console.warn("Failed to cache portfolio data:", error);
+        }
+
+        // Update state with fresh data
+        setTokenPricesMappingTable(tokenPricesMappingTable);
+        setUsdBalance(usdBalance);
+        setrebalancableUsdBalanceDict(usdBalanceDict);
+        setLockUpPeriod(portfolioLockUpPeriod);
+        setPendingRewards(pendingRewards.pendingRewardsDict);
+        setProtocolAssetDustInWallet(dust);
+      } catch (error) {
+        console.error("Error in fetchUsdBalance:", error);
+      } finally {
+        // Reset loading and processing states
+        setUsdBalanceLoading(false);
+        setPendingRewardsLoading(false);
+        setrebalancableUsdBalanceDictLoading(false);
+        setProtocolAssetDustInWalletLoading(false);
+        isProcessingChainChangeRef.current = false;
+      }
     }, 500);
+
     return () => {
-      isMounted = false;
       clearTimeout(timeoutId);
       isProcessingChainChangeRef.current = false;
     };
-  }, [portfolioName, account, chainId]);
+  }, [portfolioName, account, chainId, refreshTrigger]);
   useEffect(() => {
     return () => {
       isProcessingChainChangeRef.current = false;
@@ -739,6 +879,25 @@ export default function IndexOverviews() {
       }, 100);
     }
   }, [chainId, previousTokenSymbol, nextStepChain]);
+
+  // Add this function outside useEffect
+  const handleRefresh = useCallback(async () => {
+    if (!portfolioName || !account?.address) return;
+
+    // Clear cached data
+    localStorage.removeItem(`portfolio-${portfolioName}-${account.address}`);
+
+    // Reset states
+    setUsdBalance(0);
+    setUsdBalanceLoading(true);
+    setPendingRewardsLoading(true);
+    setrebalancableUsdBalanceDictLoading(true);
+    setProtocolAssetDustInWalletLoading(true);
+
+    // Trigger the useEffect by updating a dependency
+    setRefreshTrigger(Date.now());
+  }, [portfolioName, account]);
+
   const tabProps = {
     CHAIN_ID_TO_CHAIN,
     CHAIN_TO_CHAIN_ID,
@@ -784,6 +943,7 @@ export default function IndexOverviews() {
     pendingRewards,
     availableAssetChains,
     chainStatus,
+    onRefresh: handleRefresh,
   };
 
   const items = useTabItems(tabProps);
@@ -976,6 +1136,7 @@ export default function IndexOverviews() {
               usdBalance={usdBalance}
               account={account}
               principalBalance={principalBalance}
+              onRefresh={handleRefresh}
             />
 
             <PortfolioComposition

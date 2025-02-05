@@ -5,7 +5,7 @@ import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import { TOKEN_ADDRESS_MAP } from "../../utils/general";
-import { chain } from "lodash";
+import { useRouter } from "next/router";
 const { Countdown } = Statistic;
 export default function ZapInTab({
   nextStepChain,
@@ -58,12 +58,13 @@ export default function ZapInTab({
     setShowCountdown(false);
     setIsLoading(false);
   };
+  const router = useRouter();
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
         <div className="mb-2">
-          <p className="text-base font-semibold leading-6">Complete chain</p>
+          <p className="text-base font-semibold leading-6">Completed chains</p>
           <div className="flex items-center">
             {availableAssetChains.map((chain, index) => (
               <img
@@ -87,7 +88,7 @@ export default function ZapInTab({
                 type="primary"
                 className="mt-4"
                 onClick={() => {
-                  navigate("/profile");
+                  router.push("/profile");
                 }}
               >
                 Go to Profile
@@ -150,7 +151,7 @@ export default function ZapInTab({
                 Number(investmentAmount) > tokenBalance
               }
             >
-              Zap In {falseChains.length === 1 ? "true" : "false"}
+              Zap In
             </Button>
           )}
         </div>
