@@ -41,6 +41,7 @@ export default function ZapInTab({
   const falseChains = availableAssetChains.filter(
     (chain) => !chainStatus[chain],
   );
+  const skipBridge = availableAssetChains.length > falseChains.length;
   const handleSwitchChain = async (chain) => {
     setIsLoading(true);
     const deadlineTime = getCurrentTimeSeconds() + countdownTime;
@@ -181,7 +182,7 @@ export default function ZapInTab({
               type="primary"
               className="w-full my-2"
               onClick={() => {
-                handleAAWalletAction("zapIn", falseChains.length === 1);
+                handleAAWalletAction("zapIn", skipBridge);
               }}
               loading={zapInIsLoading}
               disabled={
