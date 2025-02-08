@@ -79,10 +79,10 @@ export default function PortfolioSummary({
                             .filter(([key, value]) => value.usdBalance > 0)
                             .sort(([, a], [, b]) => b.usdBalance - a.usdBalance)
                             .map(([key, value]) => (
-                            <div key={key}>
-                              {key}: ${value.usdBalance?.toFixed(2)}
-                            </div>
-                          ))
+                              <div key={key}>
+                                {key}: ${value.usdBalance?.toFixed(2)}
+                              </div>
+                            ))
                         ) : (
                           <Spin />
                         )}
