@@ -21,6 +21,10 @@ const VAULT_CONFIGS = {
     baseDenom: "usd",
     tokens: ["usd", "weth", "wbtc"],
   },
+  "All Weather Vault": {
+    baseDenom: "usd",
+    tokens: ["usd", "weth"],
+  },
 };
 
 const ACTION_LABELS = {

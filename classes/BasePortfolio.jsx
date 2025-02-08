@@ -33,7 +33,7 @@ class PriceService {
     usde: 1,
   };
 
-  static MAX_RETRIES = 5;
+  static MAX_RETRIES = 2;
   static RETRY_DELAY = 2000;
   static TIMEOUT = 8000;
 
@@ -192,6 +192,7 @@ export class BasePortfolio {
     this.uniqueTokenIdsForCurrentPrice =
       this._getUniqueTokenIdsForCurrentPrice();
     this.weightMapping = weightMapping;
+    this.bridgeUsdThreshold = 10;
   }
   async initialize() {
     this.existingInvestmentPositions =
@@ -250,14 +251,12 @@ export class BasePortfolio {
     // Initialize balance dictionary with rewards
     let usdBalance = 0;
     const usdBalanceDict = this._initializeBalanceDict();
-
     // Process protocol balances
     this._processProtocolBalances(
       balanceResults,
       portfolioAprDict,
       usdBalanceDict,
     );
-
     // Calculate total balance
     usdBalance += this._calculateTotalBalance(balanceResults);
 
@@ -280,11 +279,11 @@ export class BasePortfolio {
     const balancePromises = Object.values(this.strategy)
       .flatMap((category) => Object.values(category))
       .flat()
-      .map((protocol) =>
-        protocol.interface
+      .map((protocol) => {
+        return protocol.interface
           .usdBalanceOf(address, tokenPricesMappingTable)
-          .then((balance) => ({ protocol, balance })),
-      );
+          .then((balance) => ({ protocol, balance }));
+      });
     return await Promise.all(balancePromises);
   }
 
@@ -303,8 +302,9 @@ export class BasePortfolio {
 
   _processProtocolBalances(balanceResults, portfolioAprDict, usdBalanceDict) {
     for (const { protocol, balance } of balanceResults) {
-      const protocolUniqueId =
-        protocol.interface.uniqueId() + protocol.interface.constructor.name;
+      const protocolUniqueId = `${protocol.interface.uniqueId()}/${
+        protocol.interface.constructor.name
+      }`;
       usdBalanceDict[protocolUniqueId] = {
         chain: protocol.interface.chain,
         usdBalance: balance,
@@ -384,7 +384,7 @@ export class BasePortfolio {
     metadata.rebalanceActionsByChain = sortedChains.map(
       ([chain, weightDiff]) => ({
         chain,
-        actionName: weightDiff > 0 ? "rebalance" : "zapIn",
+        actionName: weightDiff >= 0 ? "rebalance" : "zapIn",
       }),
     );
 
@@ -498,7 +498,6 @@ export class BasePortfolio {
     );
 
     aprMappingTable["portfolioTVL"] = `${(totalTvl / 1000000).toFixed(2)}M`;
-
     return aprMappingTable;
   }
 
@@ -571,7 +570,6 @@ export class BasePortfolio {
         actionParams.updateProgress,
       );
     }
-
     // Process each protocol
     const protocolTxns = await this._processProtocolActions(
       actionName,
@@ -632,24 +630,6 @@ export class BasePortfolio {
     if (swapCallData["toAmount"] === 0) {
       throw new Error("To amount is 0. Cannot proceed with swapping.");
     }
-    const normalizedInputAmout = ethers.utils.formatUnits(
-      amount,
-      fromTokenDecimals,
-    );
-    const normalizedOutputAmount = ethers.utils.formatUnits(
-      swapCallData["toAmount"],
-      toTokenDecimals,
-    );
-    const tradingLoss =
-      Number(normalizedOutputAmount) * tokenPricesMappingTable[toTokenSymbol] -
-      Number(normalizedInputAmout) * tokenPricesMappingTable[fromToken];
-    // If you need to wait for the progress update
-    // await this._updateProgressAndWait(
-    //   updateProgress,
-    //   `${this.uniqueId()}-${fromToken}-${toTokenSymbol}-swap`,
-    //   tradingLoss,
-    // );
-
     return [
       prepareTransaction({
         to: oneInchAddress,
@@ -940,19 +920,28 @@ export class BasePortfolio {
         rebalancableUsdBalanceDict,
         currentChain,
       );
+    if (Object.keys(rebalancableUsdBalanceDictOnOtherChains).length === 0)
+      return txns;
     for (const [chain, metadata] of Object.entries(
       rebalancableUsdBalanceDictOnOtherChains,
     )) {
       const totalWeight = metadata.totalWeight;
+      const bridgeAmount = ethers.BigNumber.from(
+        String(Math.floor(Number(zapInAmountAfterFee) * totalWeight)),
+      );
+      const bridgeUsd =
+        Number(bridgeAmount.toString()) *
+        tokenPricesMappingTable[
+          this._getRebalanceMiddleTokenConfig(currentChain).symbol
+        ];
+      if (bridgeUsd < this.bridgeUsdThreshold) continue;
       const bridgeToOtherChainTxns = await bridge.getBridgeTxns(
         owner,
         chainMetadata.id,
         CHAIN_TO_CHAIN_ID[chain],
         this._getRebalanceMiddleTokenConfig(currentChain).address,
         this._getRebalanceMiddleTokenConfig(chain).address,
-        ethers.BigNumber.from(
-          String(Math.floor(Number(zapInAmountAfterFee) * totalWeight)),
-        ),
+        bridgeAmount,
         updateProgress,
       );
       this._updateProgressAndWait(actionParams.updateProgress, chain, 0);
@@ -971,6 +960,12 @@ export class BasePortfolio {
         decimals: 6,
       };
     } else if (this.constructor.name === "EthVault") {
+      return {
+        symbol: "weth",
+        address: TOKEN_ADDRESS_MAP["weth"][chain],
+        decimals: 18,
+      };
+    } else if (this.constructor.name === "AllWeatherVault") {
       return {
         symbol: "weth",
         address: TOKEN_ADDRESS_MAP["weth"][chain],
@@ -1004,6 +999,7 @@ export class BasePortfolio {
         key !== "metadata" &&
         metadata.weightDiff < 0,
     );
+    if (otherChainProtocols.length === 0) return {};
     const negativeWeigtDiffSum = otherChainProtocols[0][1].negativeWeigtDiffSum;
     // Group protocols by chain
     return otherChainProtocols.reduce((acc, [key, metadata]) => {
@@ -1086,8 +1082,9 @@ export class BasePortfolio {
     );
     if (usdBalance === 0) return [[], 0];
 
-    const protocolClassName =
-      protocol.interface.uniqueId() + protocol.interface.constructor.name;
+    const protocolClassName = `${protocol.interface.uniqueId()}/${
+      protocol.interface.constructor.name
+    }`;
     const zapOutPercentage =
       rebalancableDict[protocolClassName]?.zapOutPercentage;
     if (!zapOutPercentage || zapOutPercentage <= 0) return [[], 0];

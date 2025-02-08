@@ -204,7 +204,12 @@ export class BaseConvex extends BaseProtocol {
     );
     return (await rewardPoolContractInstance.functions.balanceOf(owner))[0];
   }
-  async _calculateTokenAmountsForLP(tokenMetadatas) {
+  async _calculateTokenAmountsForLP(
+    usdAmount,
+    tokenMetadatas,
+    tickers,
+    tokenPricesMappingTable,
+  ) {
     const [reserve0, reserve1] = (
       await this.assetContractInstance.functions.get_balances()
     )[0];
@@ -343,8 +348,11 @@ export class BaseConvex extends BaseProtocol {
       tokenPricesMappingTable,
       updateProgress,
     );
-    const tokenMetadatas = this._getLPTokenPairesToZapIn();
-    return [[withdrawTxn, ...claimTxns], tokenMetadatas, minPairAmounts];
+    return [
+      [withdrawTxn, ...claimTxns],
+      this.customParams.lpTokens,
+      minPairAmounts,
+    ];
   }
   async lockUpPeriod() {
     return 0;

@@ -174,7 +174,12 @@ export class BaseAerodrome extends BaseProtocol {
     );
     return (await stakeFarmContractInstance.functions.balanceOf(owner))[0];
   }
-  async _calculateTokenAmountsForLP(tokenMetadatas) {
+  async _calculateTokenAmountsForLP(
+    usdAmount,
+    tokenMetadatas,
+    tickers,
+    tokenPricesMappingTable,
+  ) {
     const metadata = await this.assetContractInstance.functions.metadata();
     const [r0, r1] = [metadata.r0, metadata.r1];
     const [dec0, dec1] = [metadata.dec0, metadata.dec1];
@@ -284,7 +289,6 @@ export class BaseAerodrome extends BaseProtocol {
       updateProgress,
       this.chainId,
     );
-    const lpTokens = this._getLPTokenPairesToZapIn();
 
     // Get pool reserves and calculate withdrawal amounts
     const { minAmount0, minAmount1 } = await this._calculateWithdrawalAmounts(
@@ -318,7 +322,7 @@ export class BaseAerodrome extends BaseProtocol {
     );
     return [
       [approveTxn, withdrawTxn, ...claimTxns],
-      lpTokens,
+      this.customParams.lpTokens,
       [minAmount0, minAmount1],
     ];
   }

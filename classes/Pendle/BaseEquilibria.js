@@ -476,7 +476,7 @@ export class BaseEquilibria extends BaseProtocol {
     const tradingLoss =
       Number(
         ethers.utils.formatUnits(
-          zapOutResp.data.contractCallParams[3].minTokenOut,
+          zapOutResp.data.data.amountOut,
           decimalOfBestTokenToZapOut,
         ),
       ) *

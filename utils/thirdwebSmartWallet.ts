@@ -6,6 +6,7 @@ import { YearnVault } from "../classes/Vaults/Tests/YearnVault";
 import { EquilibriaETHVault } from "../classes/Vaults/Tests/EquilibriaETHVault";
 import { BasePortfolio } from "../classes/BasePortfolio";
 import { MoonwellStablecoinVault } from "../classes/Vaults/Tests/MoonwellStablecoinVault";
+import { AllWeatherVault } from "../classes/Vaults/AllWeatherVault";
 import { MetisVault } from "../classes/Vaults/MetisVault";
 export function getPortfolioHelper(
   portfolioName: string,
@@ -31,6 +32,8 @@ export function getPortfolioHelper(
   } else if (portfolioName === "Moonwell Stablecoin Vault") {
     // for testing
     portfolioHelper = new MoonwellStablecoinVault();
+  } else if (portfolioName === "All Weather Vault") {
+    portfolioHelper = new AllWeatherVault();
   } else {
     return;
   }
