@@ -125,6 +125,10 @@ export class BaseCamelot extends BaseProtocol {
     if (this.token_id === 0) {
       return {};
     }
+    const existed = await this._checkIfNFTExists(this.token_id);
+    if (!existed) {
+      return {};
+    }
     const [
       [token0, token0Address, token0Decimals],
       [token1, token1Address, token1Decimals],
@@ -445,5 +449,13 @@ export class BaseCamelot extends BaseProtocol {
       return 0;
     }
     return sortedData[0][1]?.token_id ?? 0;
+  }
+  async _checkIfNFTExists(token_id) {
+    try {
+      await this.assetContractInstance.positions(token_id);
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 }

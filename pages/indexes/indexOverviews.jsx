@@ -436,6 +436,12 @@ export default function IndexOverviews() {
                   : `https://explorer.${CHAIN_ID_TO_CHAIN_STRING[
                       chainId?.id
                     ].toLowerCase()}.io`;
+
+              // Clear the cache for this portfolio and account
+              localStorage.removeItem(
+                `portfolio-${portfolioName}-${account.address}`,
+              );
+
               openNotificationWithIcon(
                 notificationAPI,
                 "Transaction Result",
@@ -787,7 +793,6 @@ export default function IndexOverviews() {
           account.address,
           () => {},
         );
-
         const dust =
           await portfolioHelper.calProtocolAssetDustInWalletDictionary(
             account.address,
@@ -805,7 +810,6 @@ export default function IndexOverviews() {
           0,
         );
         usdBalance += dustTotalUsdBalance;
-
         // Cache the fresh data
         const newCacheData = {
           tokenPricesMappingTable,
