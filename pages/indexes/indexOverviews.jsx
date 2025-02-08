@@ -137,6 +137,35 @@ const safeGetLocalStorage = (key, portfolioHelper) => {
           }
         });
       }
+      // Reconstruct usdBalanceDict objects using protocolId
+      if (cacheData.usdBalanceDict && portfolioHelper?.strategy) {
+        Object.keys(cacheData.usdBalanceDict).forEach(
+          (protocolIdWithClassName) => {
+            const lastSlashIndex = protocolIdWithClassName.lastIndexOf("/");
+            const protocolId = protocolIdWithClassName.substring(
+              0,
+              lastSlashIndex,
+            );
+            const cachedData =
+              cacheData.usdBalanceDict[protocolIdWithClassName];
+
+            // Find the protocol instance in portfolioHelper.strategy
+            const protocolInstance = findProtocolByUniqueId(
+              protocolId,
+              portfolioHelper.strategy,
+            );
+            if (protocolInstance) {
+              cacheData.usdBalanceDict[protocolIdWithClassName] = {
+                ...cachedData,
+                protocol: {
+                  ...cachedData.protocol,
+                  interface: protocolInstance,
+                },
+              };
+            }
+          },
+        );
+      }
 
       return cacheData;
     }
@@ -444,8 +473,9 @@ export default function IndexOverviews() {
                       referralFeeRate: portfolioHelper.referralFeeRate(),
                       chain:
                         CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
-                      zapInAmountOnThisChain:
-                        investmentAmountAfterFee * chainWeight,
+                      zapInAmountOnThisChain: onlyThisChain
+                        ? investmentAmountAfterFee
+                        : investmentAmountAfterFee * chainWeight,
                       stakeAmountOnThisChain: Object.values(
                         protocolAssetDustInWallet?.[
                           chainId?.name?.toLowerCase()?.replace(" one", "")
@@ -510,6 +540,8 @@ export default function IndexOverviews() {
           errorReadableMsg = "DeFi pool quote has expired. Please try again.";
         } else if (error.message.includes("0x6f6dd725")) {
           errorReadableMsg = "Swap quote has expired. Please try again.";
+        } else if (error.message.includes("0xf4059071")) {
+          errorReadableMsg = "Please increase slippage tolerance";
         } else if (error.message.includes("User rejected the request")) {
           return;
         } else {
@@ -702,9 +734,12 @@ export default function IndexOverviews() {
     setPendingRewardsLoading(true);
     setrebalancableUsdBalanceDictLoading(true);
     setProtocolAssetDustInWalletLoading(true);
+
     if (!portfolioName || account === undefined || !chainId) {
       return;
     }
+
+    // Add guard against multiple chain change processing
     if (isProcessingChainChangeRef.current) {
       return;
     }
@@ -1058,7 +1093,7 @@ export default function IndexOverviews() {
                         size="small"
                         onChange={(e) => setSlippage(e.target.value)}
                       >
-                        {[1, 3, 5, 7, 10].map((slippageValue) => (
+                        {[1, 3, 5, 7].map((slippageValue) => (
                           <Radio.Button
                             value={slippageValue}
                             key={slippageValue}
@@ -1137,6 +1172,7 @@ export default function IndexOverviews() {
               account={account}
               principalBalance={principalBalance}
               onRefresh={handleRefresh}
+              rebalancableUsdBalanceDict={rebalancableUsdBalanceDict}
             />
 
             <PortfolioComposition

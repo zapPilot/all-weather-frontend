@@ -16,7 +16,7 @@ export default function PortfolioComposition({
     <div className="lg:col-span-2 lg:row-span-1">
       <div className="shadow-sm border border-white/50 p-6">
         <h2 className="text-base font-semibold leading-6 text-white">
-          {portfolioName} Composition
+          {portfolioName} Constituents
         </h2>
         {portfolioHelper &&
           Object.entries(portfolioHelper.strategy).map(

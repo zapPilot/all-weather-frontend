@@ -105,7 +105,7 @@ export default class BaseProtocol extends BaseUniswap {
   }
 
   _addLPModeNodes(nodes, inputToken, tokenInAddress) {
-    const tokenMetadatas = this._getLPTokenPairesToZapIn();
+    const { lpTokens: tokenMetadatas } = this._getLPTokenPairesToZapIn();
 
     for (const [bestTokenSymbol, bestTokenAddressToZapIn] of tokenMetadatas) {
       if (
@@ -227,7 +227,7 @@ export default class BaseProtocol extends BaseUniswap {
       ]) {
         nodes.push(node);
       }
-      const tokenMetadatas = this._getLPTokenAddressesToZapOut();
+      const { lpTokens: tokenMetadatas } = this._getLPTokenAddressesToZapOut();
       for (const [
         bestTokenSymbol,
         bestTokenAddressToZapOut,
@@ -458,6 +458,14 @@ export default class BaseProtocol extends BaseUniswap {
           tokenPricesMappingTable,
           updateProgress,
         );
+      if (
+        withdrawLPTxns === undefined &&
+        tokenMetadatas === undefined &&
+        minPairAmounts === undefined
+      ) {
+        // it means the NFT has been burned, so we don't need to do anything
+        return [];
+      }
       const [redeemTxnsFromLP, withdrawTokenAndBalanceFromLP] =
         await this._calculateWithdrawLPTokenAndBalance(
           recipient,
@@ -622,6 +630,10 @@ export default class BaseProtocol extends BaseUniswap {
       percentage,
       updateProgress,
     );
+    if (unstakedAmount === undefined) {
+      // it means the NFT has been burned
+      return [undefined, undefined, undefined];
+    }
     const [withdrawAndClaimTxns, tokenMetadatas, minPairAmounts] =
       await this._withdrawLPAndClaim(
         owner,
@@ -651,7 +663,10 @@ export default class BaseProtocol extends BaseUniswap {
     );
   }
   _getLPTokenPairesToZapIn() {
-    return this.customParams.lpTokens;
+    return {
+      lpTokens: this.customParams.lpTokens,
+      tickers: this.customParams.tickers,
+    };
   }
   _getTheBestTokenAddressToZapOut() {
     throw new Error(
@@ -718,7 +733,8 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
   ) {
     // Validate and get token pairs
-    const tokenMetadatas = this._getLPTokenPairesToZapIn();
+    const { lpTokens: tokenMetadatas, tickers } =
+      this._getLPTokenPairesToZapIn();
     if (tokenMetadatas.length !== 2) {
       throw new Error(
         `Currently only support 2 tokens in LP, but got ${tokenMetadatas.length}`,
@@ -726,7 +742,14 @@ export default class BaseProtocol extends BaseUniswap {
     }
 
     // Calculate initial ratios
-    const lpTokenRatio = await this._calculateTokenAmountsForLP(tokenMetadatas);
+    const usdAmount =
+      investmentAmountInThisPosition * tokenPricesMappingTable[inputToken];
+    const lpTokenRatio = await this._calculateTokenAmountsForLP(
+      usdAmount,
+      tokenMetadatas,
+      tickers,
+      tokenPricesMappingTable,
+    );
     const sumOfLPTokenRatio = lpTokenRatio.reduce(
       (acc, value) => acc.add(value),
       ethers.BigNumber.from(0),
@@ -746,20 +769,18 @@ export default class BaseProtocol extends BaseUniswap {
       updateProgress,
       tokenPricesMappingTable,
     );
-
     // Balance token ratios
     const balancedAmounts = this._balanceTokenRatios(
       amountsAfterSwap,
       tokenMetadatas,
       lpTokenRatio,
+      tokenPricesMappingTable,
     );
-
     // Format final metadata
     const swappedTokenMetadatas = tokenMetadatas.map((metadata, index) => [
       ...metadata.slice(0, 3),
       balancedAmounts[index],
     ]);
-
     return [swapTxns, swappedTokenMetadatas[0], swappedTokenMetadatas[1]];
   }
 
@@ -814,13 +835,22 @@ export default class BaseProtocol extends BaseUniswap {
     return [swapTxns, amountsAfterSwap];
   }
 
-  _balanceTokenRatios(amounts, tokenMetadatas, lpTokenRatio) {
+  _balanceTokenRatios(
+    amounts,
+    tokenMetadatas,
+    lpTokenRatio,
+    tokenPricesMappingTable,
+  ) {
     const precision = 1000000000;
 
-    // Calculate current and target ratios
-    const currentRatio =
-      Number(ethers.utils.formatUnits(amounts[0], tokenMetadatas[0][2])) /
-      Number(ethers.utils.formatUnits(amounts[1], tokenMetadatas[1][2]));
+    // Calculate current ratio including token prices
+    const amount0Usd =
+      Number(ethers.utils.formatUnits(amounts[0], tokenMetadatas[0][2])) *
+      tokenPricesMappingTable[tokenMetadatas[0][0]];
+    const amount1Usd =
+      Number(ethers.utils.formatUnits(amounts[1], tokenMetadatas[1][2])) *
+      tokenPricesMappingTable[tokenMetadatas[1][0]];
+    const currentRatio = amount0Usd / amount1Usd;
     const targetRatio = lpTokenRatio[0] / lpTokenRatio[1];
 
     // Convert to BigNumber for precise calculations
@@ -893,28 +923,6 @@ export default class BaseProtocol extends BaseUniswap {
       txns = txns.concat([approveTxn, swapTxnResult[0]]);
     }
     return txns;
-  }
-  calculateTokensAddressAndBalances(
-    withdrawTokenAndBalance,
-    estimatedClaimTokensAddressAndBalance,
-  ) {
-    for (const [address, balance] of Object.entries(
-      estimatedClaimTokensAddressAndBalance,
-    )) {
-      if (!withdrawTokenAndBalance[address]) {
-        withdrawTokenAndBalance[address] = ethers.BigNumber.from(0);
-      }
-
-      // Ensure balance is a ethers.BigNumber
-      const balanceBN = ethers.BigNumber.isBigNumber(balance)
-        ? balance
-        : ethers.BigNumber.from(String(balance));
-
-      // Add balances
-      withdrawTokenAndBalance[address] =
-        withdrawTokenAndBalance[address].add(balanceBN);
-    }
-    return withdrawTokenAndBalance;
   }
   async _swap(
     walletAddress,
@@ -1062,10 +1070,19 @@ export default class BaseProtocol extends BaseUniswap {
         withdrawTokenAndBalance[address].balance = withdrawTokenAndBalance[
           address
         ].balance.add(metadata.balance);
-        withdrawTokenAndBalance[address].usdDenominatedValue =
-          (tokenPricesMappingTable[withdrawTokenAndBalance[metadata.symbol]] *
-            withdrawTokenAndBalance[address].balance) /
-          Math.pow(10, withdrawTokenAndBalance[address].decimals);
+        const tokenPrice = tokenPricesMappingTable[metadata.symbol];
+        if (tokenPrice === undefined) {
+          throw new Error(`No price found for token ${metadata.symbol}`);
+        } else {
+          withdrawTokenAndBalance[address].usdDenominatedValue =
+            tokenPrice *
+            Number(
+              ethers.utils.formatUnits(
+                withdrawTokenAndBalance[address].balance,
+                withdrawTokenAndBalance[address].decimals,
+              ),
+            );
+        }
       } else {
         withdrawTokenAndBalance[address] = metadata;
       }
@@ -1094,10 +1111,18 @@ export default class BaseProtocol extends BaseUniswap {
         symbol: symbolOfBestTokenToZapOut,
         balance: minOutAmount,
         usdDenominatedValue:
-          (tokenPricesMappingTable[symbolOfBestTokenToZapOut] * minOutAmount) /
-          Math.pow(10, decimalOfBestTokenToZapOut),
+          tokenPricesMappingTable[symbolOfBestTokenToZapOut] *
+          Number(
+            ethers.utils.formatUnits(minOutAmount, decimalOfBestTokenToZapOut),
+          ),
         decimals: decimalOfBestTokenToZapOut,
       };
+      assert(
+        !isNaN(
+          withdrawTokenAndBalance[bestTokenAddressToZapOut].usdDenominatedValue,
+        ),
+        `usdDenominatedValue is NaN for ${symbolOfBestTokenToZapOut}`,
+      );
     }
     const pendingRewards = await this.pendingRewards(
       recipient,
@@ -1110,10 +1135,19 @@ export default class BaseProtocol extends BaseUniswap {
         withdrawTokenAndBalance[address].balance = withdrawTokenAndBalance[
           address
         ].balance.add(metadata.balance);
-        withdrawTokenAndBalance[address].usdDenominatedValue =
-          (tokenPricesMappingTable[withdrawTokenAndBalance[metadata.symbol]] *
-            withdrawTokenAndBalance[address].balance) /
-          Math.pow(10, withdrawTokenAndBalance[address].decimals);
+        const tokenPrice = tokenPricesMappingTable[metadata.symbol];
+        if (tokenPrice === undefined) {
+          withdrawTokenAndBalance[address].usdDenominatedValue = 0;
+        } else {
+          withdrawTokenAndBalance[address].usdDenominatedValue =
+            tokenPrice *
+            Number(
+              ethers.utils.formatUnits(
+                withdrawTokenAndBalance[address].balance,
+                withdrawTokenAndBalance[address].decimals,
+              ),
+            );
+        }
       } else {
         withdrawTokenAndBalance[address] = metadata;
       }
@@ -1180,7 +1214,12 @@ export default class BaseProtocol extends BaseUniswap {
     );
     // child class should implement this
   }
-  async _calculateTokenAmountsForLP(tokenMetadatas) {
+  async _calculateTokenAmountsForLP(
+    usdAmount,
+    tokenMetadatas,
+    tickers,
+    tokenPricesMappingTable,
+  ) {
     throw new Error(
       'Method "_calculateTokenAmountsForLP()" must be implemented.',
     );
