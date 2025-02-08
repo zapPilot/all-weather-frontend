@@ -28,34 +28,39 @@ export default function RebalanceTab({
     <div>
       {rebalancableUsdBalanceDictLoading ? <Spin /> : null}
       <div className="flex justify-center mb-4">
-        {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map((data, index) => (
-          <div
-            className={`flex flex-col items-center mx-2 ${
-              currentStep === index ? "text-white font-semibold" : "text-gray-500"
-            }`}
-          >
+        {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
+          (data, index) => (
             <div
-              className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${
-                currentStep === index ? "border-white" : "border-gray-500"
+              className={`flex flex-col items-center mx-2 ${
+                currentStep === index
+                  ? "text-white font-semibold"
+                  : "text-gray-500"
               }`}
             >
-              {index + 1}
+              <div
+                className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${
+                  currentStep === index ? "border-white" : "border-gray-500"
+                }`}
+              >
+                {index + 1}
+              </div>
+              <p>
+                {data.actionName === "rebalance"
+                  ? "Rebalance"
+                  : data.actionName === "zapIn"
+                  ? "Deposit"
+                  : data.actionName}
+              </p>
             </div>
-            <p>
-              {data.actionName === "rebalance" ?
-              "Rebalance"
-              : data.actionName === "zapIn" ?
-              "Deposit"
-              : data.actionName}
-            </p>
-          </div>
-        ))}
+          ),
+        )}
       </div>
-      { currentStep == rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.length ?
+      {currentStep ==
+      rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.length ? (
         <div className="text-green-400 text-center mb-2">
           You have completed all rebalance actions.
         </div>
-      : null}
+      ) : null}
       {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
         (data, index) => {
           const isCurrentChain =
@@ -69,16 +74,18 @@ export default function RebalanceTab({
               className={currentStep === index ? "mb-4" : "hidden"}
             >
               <p className="text-gray-400 text-center mb-2">
-                { isCurrentChain ? (
-                  (getRebalanceReinvestUsdAmount(chainId?.name) / usdBalance < portfolioHelper?.rebalanceThreshold() ||
-                  Math.abs(
-                    calCurrentAPR(rebalancableUsdBalanceDict) -
-                      portfolioApr[portfolioName]?.portfolioAPR * 100,
-                  ) < 5) ? "Your investment portfolio is still healthy, and no rebalancing is needed."
-                  : null
-                ) : (usdBalance <= 0
+                {isCurrentChain
+                  ? getRebalanceReinvestUsdAmount(chainId?.name) / usdBalance <
+                      portfolioHelper?.rebalanceThreshold() ||
+                    Math.abs(
+                      calCurrentAPR(rebalancableUsdBalanceDict) -
+                        portfolioApr[portfolioName]?.portfolioAPR * 100,
+                    ) < 5
+                    ? "Your investment portfolio is still healthy, and no rebalancing is needed."
+                    : null
+                  : usdBalance <= 0
                   ? "You have no balance in your portfolio. Please deposit some assets."
-                  : null)}
+                  : null}
               </p>
               {isCurrentChain ? (
                 <Button
