@@ -259,7 +259,6 @@ export class BasePortfolio {
     );
     // Calculate total balance
     usdBalance += this._calculateTotalBalance(balanceResults);
-
     // Calculate weights and differences
     const { negativeWeigtDiffSum, positiveWeigtDiffSum } =
       this._calculateWeightDifferences(usdBalanceDict, usdBalance);
@@ -317,7 +316,17 @@ export class BasePortfolio {
   }
 
   _calculateTotalBalance(balanceResults) {
-    return balanceResults.reduce((sum, { balance }) => sum + balance, 0);
+    return balanceResults.reduce((sum, { balance }, index) => {
+      if (
+        balance === undefined ||
+        typeof balance !== "number" ||
+        isNaN(balance)
+      ) {
+        return sum;
+      }
+      const newSum = sum + balance;
+      return newSum;
+    }, 0);
   }
 
   _calculateWeightDifferences(usdBalanceDict, totalUsdBalance) {
@@ -393,7 +402,6 @@ export class BasePortfolio {
 
   async pendingRewards(owner, updateProgress) {
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
-
     // Flatten the strategy structure and create pending rewards calculation promises
     const rewardsPromises = Object.values(this.strategy)
       .flatMap((category) => Object.values(category))
@@ -405,7 +413,6 @@ export class BasePortfolio {
           updateProgress,
         ),
       );
-
     // Wait for all promises to resolve
     const allRewards = await Promise.all(rewardsPromises);
     // Combine all rewards
@@ -427,7 +434,6 @@ export class BasePortfolio {
       }
       return acc;
     }, {});
-
     return {
       rewardUsdBalance: this.sumUsdDenominatedValues(rewardsMappingTable),
       pendingRewardsDict: rewardsMappingTable,

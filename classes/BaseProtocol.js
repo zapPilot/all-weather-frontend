@@ -1011,7 +1011,6 @@ export default class BaseProtocol extends BaseUniswap {
     if (swapCallData["toAmount"] === 0) {
       throw new Error("To amount is 0. Cannot proceed with swapping.");
     }
-
     const normalizedInputAmount = ethers.utils.formatUnits(
       amount,
       fromTokenDecimals,

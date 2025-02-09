@@ -21,7 +21,6 @@ import Vaults from "../indexes/index.jsx";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export default function ExampleUI() {
-  const windowHeight = useWindowHeight();
   const dispatch = useDispatch();
   const account = useActiveAccount();
   const walletAddress = account?.address.toLocaleLowerCase();

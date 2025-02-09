@@ -93,6 +93,24 @@ const TokenDropdownInput = memo(
             }
           >
             {isLoading ? "Loading..." : data?.displayValue || "0"}
+            {tokenPricesMappingTable &&
+              tokenPricesMappingTable[
+                selectedToken?.split("-")[0].toLowerCase()
+              ] && (
+                <span className="text-gray-400">
+                  {" "}
+                  (≈ $
+                  {(
+                    tokenPricesMappingTable[
+                      selectedToken?.split("-")[0].toLowerCase()
+                    ] * localInvestmentAmount
+                  ).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  USD)
+                </span>
+              )}
           </span>
           {localInvestmentAmount > parseFloat(data?.displayValue) && (
             <p className="text-red-400">
@@ -101,23 +119,6 @@ const TokenDropdownInput = memo(
               Click on the top-right corner to get your AA Wallet address.
             </p>
           )}
-          {tokenPricesMappingTable &&
-            tokenPricesMappingTable[
-              selectedToken?.split("-")[0].toLowerCase()
-            ] && (
-              <p className="text-gray-400">
-                ≈ $
-                {(
-                  tokenPricesMappingTable[
-                    selectedToken?.split("-")[0].toLowerCase()
-                  ] * localInvestmentAmount
-                ).toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{" "}
-                USD
-              </p>
-            )}
         </div>
       </>
     );
