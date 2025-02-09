@@ -31,6 +31,7 @@ export default function RebalanceTab({
         {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
           (data, index) => (
             <div
+              key={`${data.chain}-${data.actionName}`}
               className={`flex flex-col items-center mx-2 ${
                 currentStep === index
                   ? "text-white font-semibold"
