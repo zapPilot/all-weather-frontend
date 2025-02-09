@@ -1,5 +1,7 @@
 import { Button, Spin } from "antd";
 import { useState } from "react";
+import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import { useRouter } from "next/router";
 
 export default function RebalanceTab({
   rebalancableUsdBalanceDictLoading,
@@ -15,6 +17,7 @@ export default function RebalanceTab({
   switchChain,
   CHAIN_ID_TO_CHAIN,
   CHAIN_TO_CHAIN_ID,
+  chainStatus,
 }) {
   const [currentStep, setCurrentStep] = useState(0);
   const calCurrentAPR = (rebalancableUsdBalanceDict) =>
@@ -24,9 +27,59 @@ export default function RebalanceTab({
         (sum, [_, { currentWeight, APR }]) => currentWeight * APR + sum,
         0,
       ) || 0;
+  const router = useRouter();
   return (
     <div>
       {rebalancableUsdBalanceDictLoading ? <Spin /> : null}
+      <div className="flex justify-center mb-4">
+        {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
+          (data, index) => (
+            <div
+              key={`${data.chain}-${data.actionName}`}
+              className={`flex flex-col items-center mx-2 ${
+                currentStep === index
+                  ? "text-white font-semibold"
+                  : "text-gray-500"
+              }`}
+            >
+              <div
+                className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${
+                  currentStep === index ? "border-white" : "border-gray-500"
+                }`}
+              >
+                {index + 1}
+              </div>
+              <p>
+                {data.actionName === "rebalance"
+                  ? "Rebalance"
+                  : data.actionName === "zapIn"
+                  ? "Deposit"
+                  : data.actionName}
+              </p>
+            </div>
+          ),
+        )}
+      </div>
+      <div>
+        {chainStatus &&
+        rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.every(
+          (data) => chainStatus[data.chain],
+        ) ? (
+          <div className={"text-green-400 text-center mb-2"}>
+            <CheckCircleIcon className="w-12 h-12 mx-auto" />
+            <p>You have completed all rebalance actions.</p>
+            <Button
+              type="primary"
+              className="mt-4 w-full"
+              onClick={() => {
+                router.push("/profile");
+              }}
+            >
+              Go to Profile
+            </Button>
+          </div>
+        ) : null}
+      </div>
       {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
         (data, index) => {
           const isCurrentChain =
@@ -39,12 +92,20 @@ export default function RebalanceTab({
               key={`${data.chain}-${data.actionName}`}
               className={currentStep === index ? "mb-4" : "hidden"}
             >
-              <p className="text-gray-400 mb-2">
-                Step {index + 1}: {isCurrentChain ? "Execute" : "Switch to"}{" "}
-                {data.chain} chain
-                {isCurrentChain ? ` and ${data.actionName}` : ""}
+              <p className="text-gray-400 text-center mb-2">
+                {isCurrentChain
+                  ? getRebalanceReinvestUsdAmount(chainId?.name) / usdBalance <
+                      portfolioHelper?.rebalanceThreshold() ||
+                    Math.abs(
+                      calCurrentAPR(rebalancableUsdBalanceDict) -
+                        portfolioApr[portfolioName]?.portfolioAPR * 100,
+                    ) < 5
+                    ? "Your investment portfolio is still healthy, and no rebalancing is needed."
+                    : null
+                  : usdBalance <= 0
+                  ? "You have no balance in your portfolio. Please deposit some assets."
+                  : null}
               </p>
-
               {isCurrentChain ? (
                 <Button
                   type="primary"
@@ -76,7 +137,6 @@ export default function RebalanceTab({
                       CHAIN_ID_TO_CHAIN[CHAIN_TO_CHAIN_ID[data.chain]],
                     )
                   }
-                  disabled={!isFirstPendingAction}
                 >
                   Switch to {data.chain} Chain
                 </Button>
