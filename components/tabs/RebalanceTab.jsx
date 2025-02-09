@@ -1,5 +1,7 @@
 import { Button, Spin } from "antd";
 import { useState } from "react";
+import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import { useRouter } from "next/router";
 
 export default function RebalanceTab({
   rebalancableUsdBalanceDictLoading,
@@ -15,6 +17,7 @@ export default function RebalanceTab({
   switchChain,
   CHAIN_ID_TO_CHAIN,
   CHAIN_TO_CHAIN_ID,
+  chainStatus,
 }) {
   const [currentStep, setCurrentStep] = useState(0);
   const calCurrentAPR = (rebalancableUsdBalanceDict) =>
@@ -24,6 +27,7 @@ export default function RebalanceTab({
         (sum, [_, { currentWeight, APR }]) => currentWeight * APR + sum,
         0,
       ) || 0;
+  const router = useRouter();
   return (
     <div>
       {rebalancableUsdBalanceDictLoading ? <Spin /> : null}
@@ -56,12 +60,26 @@ export default function RebalanceTab({
           ),
         )}
       </div>
-      {currentStep ==
-      rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.length ? (
-        <div className="text-green-400 text-center mb-2">
-          You have completed all rebalance actions.
-        </div>
-      ) : null}
+      <div>
+        {chainStatus &&
+        rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.every(
+          (data) => chainStatus[data.chain],
+        ) ? (
+          <div className={"text-green-400 text-center mb-2"}>
+            <CheckCircleIcon className="w-12 h-12 mx-auto" />
+            <p>You have completed all rebalance actions.</p>
+            <Button
+              type="primary"
+              className="mt-4 w-full"
+              onClick={() => {
+                router.push("/profile");
+              }}
+            >
+              Go to Profile
+            </Button>
+          </div>
+        ) : null}
+      </div>
       {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
         (data, index) => {
           const isCurrentChain =
