@@ -548,6 +548,12 @@ export default function IndexOverviews() {
           errorReadableMsg = "Swap quote has expired. Please try again.";
         } else if (error.message.includes("0xf4059071")) {
           errorReadableMsg = "Please increase slippage tolerance";
+        } else if (
+          error.message.includes(
+            "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002c4552433732313a206f70657261746f7220717565727920666f72206e6f6e6578697374656e7420746f6b656e0000000000000000000000000000000000000000",
+          )
+        ) {
+          errorReadableMsg = "ERC721: operator query for nonexistent token";
         } else if (error.message.includes("User rejected the request")) {
           return;
         } else {

@@ -303,7 +303,7 @@ export class BaseEquilibria extends BaseProtocol {
       method: "claimRewards",
       params: [[this.pidOfEquilibria]],
     });
-    const redeemTxns = this.customRedeemVestingRewards(pendingRewards);
+    const redeemTxns = this.customRedeemVestingRewards(pendingRewards, owner);
     return [[claimTxn, ...redeemTxns], pendingRewards];
   }
 
@@ -365,7 +365,7 @@ export class BaseEquilibria extends BaseProtocol {
       this.XEQB_TOKEN_ADDR.toLowerCase(),
     ].includes(reward.toLowerCase());
   }
-  customRedeemVestingRewards(pendingRewards) {
+  async customRedeemVestingRewards(pendingRewards, owner) {
     if (
       pendingRewards[this.XEQB_TOKEN_ADDR] === undefined ||
       pendingRewards[this.XEQB_TOKEN_ADDR].balance.toString() === "0"

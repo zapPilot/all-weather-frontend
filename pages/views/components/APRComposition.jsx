@@ -22,7 +22,7 @@ const APRComposition = ({
               height={20}
               alt={key}
             />
-            {value.symbol} {value.usdDenominatedValue}{" "}
+            {value.symbol} ${value.usdDenominatedValue.toFixed(2)}{" "}
             <span style={{ fontSize: "12px", color: "grey" }}>
               {value.balance.toString() / Math.pow(10, value.decimals)}
             </span>

@@ -41,6 +41,14 @@ export class AllWeatherVault extends BasePortfolio {
                       decimals: 18,
                     },
                     {
+                      symbol: "xgrail",
+                      priceId: {
+                        coinmarketcapApiId: 22949,
+                      },
+                      address: "0x3caae25ee616f2c8e13c74da0813402eae3f496b",
+                      decimals: 18,
+                    },
+                    {
                       symbol: "pendle",
                       priceId: {
                         coinmarketcapApiId: 9481,
@@ -94,6 +102,14 @@ export class AllWeatherVault extends BasePortfolio {
                         coinmarketcapApiId: 22949,
                       },
                       address: "0x3d9907F9a368ad0a51Be60f7Da3b97cf940982D8",
+                      decimals: 18,
+                    },
+                    {
+                      symbol: "xgrail",
+                      priceId: {
+                        coinmarketcapApiId: 22949,
+                      },
+                      address: "0x3caae25ee616f2c8e13c74da0813402eae3f496b",
                       decimals: 18,
                     },
                     {
@@ -153,6 +169,14 @@ export class AllWeatherVault extends BasePortfolio {
                       decimals: 18,
                     },
                     {
+                      symbol: "xgrail",
+                      priceId: {
+                        coinmarketcapApiId: 22949,
+                      },
+                      address: "0x3caae25ee616f2c8e13c74da0813402eae3f496b",
+                      decimals: 18,
+                    },
+                    {
                       symbol: "tia",
                       priceId: {
                         coinmarketcapApiId: 22861,
@@ -209,6 +233,14 @@ export class AllWeatherVault extends BasePortfolio {
                       decimals: 18,
                     },
                     {
+                      symbol: "xgrail",
+                      priceId: {
+                        coinmarketcapApiId: 22949,
+                      },
+                      address: "0x3caae25ee616f2c8e13c74da0813402eae3f496b",
+                      decimals: 18,
+                    },
+                    {
                       symbol: "sol",
                       priceId: {
                         coinmarketcapApiId: 5426,
@@ -262,6 +294,14 @@ export class AllWeatherVault extends BasePortfolio {
                         coinmarketcapApiId: 22949,
                       },
                       address: "0x3d9907F9a368ad0a51Be60f7Da3b97cf940982D8",
+                      decimals: 18,
+                    },
+                    {
+                      symbol: "xgrail",
+                      priceId: {
+                        coinmarketcapApiId: 22949,
+                      },
+                      address: "0x3caae25ee616f2c8e13c74da0813402eae3f496b",
                       decimals: 18,
                     },
                     {
@@ -325,6 +365,14 @@ export class AllWeatherVault extends BasePortfolio {
                       decimals: 18,
                     },
                     {
+                      symbol: "xgrail",
+                      priceId: {
+                        coinmarketcapApiId: 22949,
+                      },
+                      address: "0x3caae25ee616f2c8e13c74da0813402eae3f496b",
+                      decimals: 18,
+                    },
+                    {
                       symbol: "weth",
                       priceId: {
                         coinmarketcapApiId: 2396,
@@ -378,6 +426,14 @@ export class AllWeatherVault extends BasePortfolio {
                         coinmarketcapApiId: 22949,
                       },
                       address: "0x3d9907F9a368ad0a51Be60f7Da3b97cf940982D8",
+                      decimals: 18,
+                    },
+                    {
+                      symbol: "xgrail",
+                      priceId: {
+                        coinmarketcapApiId: 22949,
+                      },
+                      address: "0x3caae25ee616f2c8e13c74da0813402eae3f496b",
                       decimals: 18,
                     },
                     {

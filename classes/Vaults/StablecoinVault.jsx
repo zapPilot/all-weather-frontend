@@ -113,7 +113,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 59,
                 },
               ),
-              weight: 0.375,
+              weight: 0.2,
             },
             {
               interface: new BaseEquilibria(
@@ -130,7 +130,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 52,
                 },
               ),
-              weight: 0,
+              weight: 0.15,
             },
             {
               interface: new BaseEquilibria(
@@ -283,7 +283,7 @@ export class StablecoinVault extends BasePortfolio {
               interface: new BaseAura(
                 "arbitrum",
                 42161,
-                ["susdx", "usdt"],
+                ["usdx", "usdt"],
                 "LP",
                 {
                   pid: 94,
@@ -292,7 +292,7 @@ export class StablecoinVault extends BasePortfolio {
                   poolId:
                     "0x85564af67760063b994599b640552614238c9ee60000000000000000000005e3",
                   lpTokens: [
-                    ["susdx", "0xf3527ef8de265eaa3716fb312c12847bfba66cef", 18],
+                    ["usdx", "0xf3527ef8de265eaa3716fb312c12847bfba66cef", 18],
                     ["usdt", "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9", 6],
                   ],
                   originalRewards: [
@@ -319,7 +319,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0,
+              weight: 0.05,
             },
             // {
             //   interface: new BaseAura(
@@ -412,7 +412,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.025,
+              weight: 0,
             },
           ],
 
