@@ -294,7 +294,7 @@ export class BaseAerodrome extends BaseProtocol {
     const { minAmount0, minAmount1 } = await this._calculateWithdrawalAmounts(
       amount,
       slippage,
-      lpTokens,
+      this.customParams.lpTokens,
     );
     await this._updateProgressAndWait(
       updateProgress,
@@ -305,8 +305,8 @@ export class BaseAerodrome extends BaseProtocol {
       contract: this.protocolContract,
       method: "removeLiquidity",
       params: [
-        lpTokens[0][1],
-        lpTokens[1][1],
+        this.customParams.lpTokens[0][1],
+        this.customParams.lpTokens[1][1],
         true,
         amount,
         minAmount0,

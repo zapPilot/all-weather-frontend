@@ -811,17 +811,19 @@ export default function IndexOverviews() {
           portfolioHelper.lockUpPeriod(account.address),
           portfolioHelper.pendingRewards(account.address, () => {}),
         ];
-
+        console.time("tokenPricesMappingTablePromise");
         // Update token prices as soon as available
         const tokenPricesMappingTable = await tokenPricesMappingTablePromise;
         setTokenPricesMappingTable(tokenPricesMappingTable);
-
+        console.timeEnd("getTokenPricesMappingTable");
         // Update USD balance and dict as soon as available
+        console.time("usdBalanceOf");
         const [usdBalance, usdBalanceDict] = await usdBalancePromise;
         setUsdBalance(usdBalance);
         setUsdBalanceLoading(false);
         setrebalancableUsdBalanceDict(usdBalanceDict);
         setrebalancableUsdBalanceDictLoading(false);
+        console.timeEnd("usdBalanceOf");
 
         // Update lockup period as soon as available
         const portfolioLockUpPeriod = await lockUpPeriodPromise;
