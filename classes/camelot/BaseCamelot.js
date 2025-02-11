@@ -275,7 +275,7 @@ export class BaseCamelot extends BaseProtocol {
         slippage,
       );
     }
-    return [approveTxns, depositTxn];
+    return [...approveTxns, depositTxn];
   }
   async _calculateTokenAmountsForLP(
     usdAmount,
@@ -315,15 +315,9 @@ export class BaseCamelot extends BaseProtocol {
       updateProgress,
     );
 
-    // Get vesting rewards transactions
-    const vestingRewardsTxns = await this.customRedeemVestingRewards(
-      pendingRewards,
-      owner,
-    );
-
     // If no NFT exists, only return vesting rewards
     if (this.token_id === 0) {
-      return [vestingRewardsTxns, pendingRewards];
+      return [[], pendingRewards];
     }
 
     // Prepare transaction to collect LP fees
@@ -345,7 +339,7 @@ export class BaseCamelot extends BaseProtocol {
     });
 
     // Return combined transactions and rewards
-    return [[lpFeesTxn, ...vestingRewardsTxns], pendingRewards];
+    return [[lpFeesTxn], pendingRewards];
   }
 
   async lockUpPeriod() {
@@ -593,15 +587,13 @@ export class BaseCamelot extends BaseProtocol {
     const userRedeemsLength =
       await this.xgrailContractInstance.functions.getUserRedeemsLength(owner);
     for (let i = 0; i < userRedeemsLength; i++) {
-      const userRedeem = await this.xgrailContractInstance.functions.userRedeem(
-        owner,
-        i,
-      );
+      const userRedeem =
+        await this.xgrailContractInstance.functions.getUserRedeem(owner, i);
       if (userRedeem.endTime < Math.floor(Date.now() / 1000)) {
         // Vesting period ended - count as grail and track index
         finalizableRewards[this.grailContract.address].balance =
           finalizableRewards[this.grailContract.address].balance.add(
-            userRedeem.xgrailAmount,
+            userRedeem.xGrailAmount,
           );
         finalizableRewards[this.grailContract.address].finalizableIndexes.push(
           i,
@@ -610,7 +602,7 @@ export class BaseCamelot extends BaseProtocol {
         // Still vesting - count as xgrail
         finalizableRewards[this.xgrailContract.address].balance =
           finalizableRewards[this.xgrailContract.address].balance.add(
-            userRedeem.xgrailAmount,
+            userRedeem.xGrailAmount,
           );
       }
     }
@@ -635,8 +627,8 @@ export class BaseCamelot extends BaseProtocol {
     const data = response.data;
     for (const reward of data.data.rewards) {
       if (Number(reward.positionIdentifierDecoded) === this.token_id) {
-        const claimableAmount = Number(reward.rewards) - Number(reward.claimed);
         const vestingDuration = 15552000;
+        const claimableAmount = Number(reward.rewards) - Number(reward.claimed);
         const harvestTxn = prepareContractCall({
           contract: this.rewardContract,
           method: "harvest",
@@ -644,7 +636,7 @@ export class BaseCamelot extends BaseProtocol {
             owner,
             reward.poolAddress,
             reward.tokenAddress,
-            claimableAmount,
+            Number(reward.rewards),
             reward.positionIdentifier,
             reward.proof,
           ],

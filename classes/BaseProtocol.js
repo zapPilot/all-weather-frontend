@@ -1065,7 +1065,7 @@ export default class BaseProtocol extends BaseUniswap {
     );
     const redeemTxns = await this.customRedeemVestingRewards(
       pendingRewards,
-      owner,
+      recipient,
     );
     for (const [address, metadata] of Object.entries(pendingRewards)) {
       if (withdrawTokenAndBalance[address]) {
@@ -1133,7 +1133,7 @@ export default class BaseProtocol extends BaseUniswap {
     );
     const redeemTxns = await this.customRedeemVestingRewards(
       pendingRewards,
-      owner,
+      recipient,
     );
     for (const [address, metadata] of Object.entries(pendingRewards)) {
       if (withdrawTokenAndBalance[address]) {

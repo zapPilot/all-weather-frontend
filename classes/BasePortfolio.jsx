@@ -35,7 +35,7 @@ class PriceService {
 
   static MAX_RETRIES = 2;
   static RETRY_DELAY = 2000;
-  static TIMEOUT = 8000;
+  static TIMEOUT = 3000;
 
   constructor(apiUrl) {
     this.apiUrl = apiUrl;
@@ -131,7 +131,7 @@ class PriceService {
 
 class TokenPriceBatcher {
   static BATCH_SIZE = 5;
-  static DELAY_MS = 100;
+  static DELAY_MS = 5000;
 
   constructor(priceService) {
     this.priceService = priceService;

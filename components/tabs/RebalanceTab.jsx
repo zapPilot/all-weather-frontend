@@ -56,14 +56,7 @@ export default function RebalanceTab({
                   loading={
                     rebalanceIsLoading || rebalancableUsdBalanceDictLoading
                   }
-                  disabled={
-                    usdBalance <= 0 ||
-                    Math.abs(
-                      calCurrentAPR(rebalancableUsdBalanceDict) -
-                        portfolioApr[portfolioName]?.portfolioAPR * 100,
-                    ) <
-                      portfolioHelper?.rebalanceThreshold() * 100
-                  }
+                  disabled={usdBalance <= 0}
                 >
                   {data.actionName} on {data.chain}
                 </Button>
