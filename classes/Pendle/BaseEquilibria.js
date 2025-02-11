@@ -303,7 +303,11 @@ export class BaseEquilibria extends BaseProtocol {
       method: "claimRewards",
       params: [[this.pidOfEquilibria]],
     });
-    const redeemTxns = this.customRedeemVestingRewards(pendingRewards, owner);
+    const redeemTxns = await this.customRedeemVestingRewards(
+      pendingRewards,
+      owner,
+    );
+    console.log(this.uniqueId(), "redeemTxns", redeemTxns);
     return [[claimTxn, ...redeemTxns], pendingRewards];
   }
 

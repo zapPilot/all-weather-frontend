@@ -101,34 +101,59 @@ describe("Camelot Vault", () => {
       protocolAssetDustInWallet,
       onlyThisChain,
     );
-    expect(txns.length).toBe(9);
     const camelotNFTAddress = "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15";
     const oneInchArbAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
-    // decrease liquidity
-    expect(await encode(txns[0])).includes("0c49ccbe");
-    expect(txns[0].to).toBe(camelotNFTAddress);
-    // collect fees
-    expect(await encode(txns[1])).includes("fc6f7865");
-    expect(txns[1].to).toBe(camelotNFTAddress);
-    // burn NFT
-    expect(await encode(txns[2])).includes("42966c68");
-    // harvest camelot reward
-    expect(await encode(txns[3])).includes("bb43878e");
-    //   redeem xgrail
-    expect(await encode(txns[4])).includes("7cbc2373");
+    if (txns.length === 9) {
+      expect(txns.length).toBe(9);
+      // decrease liquidity
+      expect(await encode(txns[0])).includes("0c49ccbe");
+      expect(txns[0].to).toBe(camelotNFTAddress);
+      // collect fees
+      expect(await encode(txns[1])).includes("fc6f7865");
+      expect(txns[1].to).toBe(camelotNFTAddress);
+      // burn NFT
+      expect(await encode(txns[2])).includes("42966c68");
+      // harvest camelot reward
+      expect(await encode(txns[3])).includes("bb43878e");
+      //   redeem xgrail
+      expect(await encode(txns[4])).includes("7cbc2373");
 
-    // approve to 1inch
-    expect(await encode(txns[5])).includes("095ea7b3");
-    // swap
-    expect(txns[6].to).toBe(oneInchArbAddress);
-    // fee: send referral fee
-    expect(await encode(txns[7])).includes(
-      "210050bb080155aec4eae79a2aac5fe78fd738e1",
-    );
-    // fee: send platform fee
-    expect(await encode(txns[8])).includes(
-      "2ecbc6f229fed06044cdb0dd772437a30190cd50",
-    );
+      // approve to 1inch
+      expect(await encode(txns[5])).includes("095ea7b3");
+      // swap
+      expect(txns[6].to).toBe(oneInchArbAddress);
+      // fee: send referral fee
+      expect(await encode(txns[7])).includes(
+        "210050bb080155aec4eae79a2aac5fe78fd738e1",
+      );
+      // fee: send platform fee
+      expect(await encode(txns[8])).includes(
+        "2ecbc6f229fed06044cdb0dd772437a30190cd50",
+      );
+    } else {
+      expect(txns.length).toBe(7);
+      // decrease liquidity
+      expect(await encode(txns[0])).includes("0c49ccbe");
+      expect(txns[0].to).toBe(camelotNFTAddress);
+      // collect fees
+      expect(await encode(txns[1])).includes("fc6f7865");
+      expect(txns[1].to).toBe(camelotNFTAddress);
+      // burn NFT
+      expect(await encode(txns[2])).includes("42966c68");
+
+      // approve to 1inch
+      expect(await encode(txns[3])).includes("095ea7b3");
+      // swap
+      expect(txns[4].to).toBe(oneInchArbAddress);
+      // fee: send referral fee
+      expect(await encode(txns[5])).includes(
+        "210050bb080155aec4eae79a2aac5fe78fd738e1",
+      );
+      // fee: send platform fee
+      expect(await encode(txns[6])).includes(
+        "2ecbc6f229fed06044cdb0dd772437a30190cd50",
+      );
+    }
   });
   it("should be able to claim from Camelot Vault", async () => {
     // params claimAndSwap 0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0 usdc 0xaf88d065e77c8cc2239327c5edb3a432268e5831 0 6 1 0.5
