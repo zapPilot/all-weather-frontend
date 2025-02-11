@@ -45,11 +45,11 @@ class BaseUniswap {
     const deltaX = deltaL * (1 / Math.sqrt(P) - 1 / Math.sqrt(Pu));
     return [
       ethers.utils.parseUnits(
-        String(BigInt(deltaX * token0Price)),
+        String(BigInt(Math.floor(deltaX * token0Price))),
         token0Decimals,
       ),
       ethers.utils.parseUnits(
-        String(BigInt(deltaY * token1Price)),
+        String(BigInt(Math.floor(deltaY * token1Price))),
         token1Decimals,
       ),
     ];

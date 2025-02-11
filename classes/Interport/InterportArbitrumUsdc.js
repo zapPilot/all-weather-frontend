@@ -125,9 +125,6 @@ export class InterportArbitrumUsdc extends BaseProtocol {
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     return [[], {}];
   }
-  customRedeemVestingRewards(pendingRewards) {
-    return [];
-  }
   async usdBalanceOf(owner, tokenPricesMappingTable) {
     const assetContractInstance = new ethers.Contract(
       this.assetContract.address,

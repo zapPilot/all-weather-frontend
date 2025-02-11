@@ -653,7 +653,7 @@ export default class BaseProtocol extends BaseUniswap {
     throw new Error("Method 'customClaim()' must be implemented.");
   }
 
-  customRedeemVestingRewards(pendingRewards) {
+  async customRedeemVestingRewards(pendingRewards, owner) {
     return [];
   }
 
@@ -1063,7 +1063,10 @@ export default class BaseProtocol extends BaseUniswap {
       tokenPricesMappingTable,
       updateProgress,
     );
-    const redeemTxns = this.customRedeemVestingRewards(pendingRewards);
+    const redeemTxns = await this.customRedeemVestingRewards(
+      pendingRewards,
+      recipient,
+    );
     for (const [address, metadata] of Object.entries(pendingRewards)) {
       if (withdrawTokenAndBalance[address]) {
         withdrawTokenAndBalance[address].balance = withdrawTokenAndBalance[
@@ -1128,7 +1131,10 @@ export default class BaseProtocol extends BaseUniswap {
       tokenPricesMappingTable,
       updateProgress,
     );
-    const redeemTxns = this.customRedeemVestingRewards(pendingRewards);
+    const redeemTxns = await this.customRedeemVestingRewards(
+      pendingRewards,
+      recipient,
+    );
     for (const [address, metadata] of Object.entries(pendingRewards)) {
       if (withdrawTokenAndBalance[address]) {
         withdrawTokenAndBalance[address].balance = withdrawTokenAndBalance[

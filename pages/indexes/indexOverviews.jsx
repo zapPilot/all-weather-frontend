@@ -548,6 +548,14 @@ export default function IndexOverviews() {
           errorReadableMsg = "Swap quote has expired. Please try again.";
         } else if (error.message.includes("0xf4059071")) {
           errorReadableMsg = "Please increase slippage tolerance";
+        } else if (
+          error.message.includes(
+            "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002c4552433732313a206f70657261746f7220717565727920666f72206e6f6e6578697374656e7420746f6b656e0000000000000000000000000000000000000000",
+          )
+        ) {
+          errorReadableMsg = "ERC721: operator query for nonexistent token";
+        } else if (error.message.includes("0x09bde339")) {
+          errorReadableMsg = "Failed to claim rewards, please try again";
         } else if (error.message.includes("User rejected the request")) {
           return;
         } else {
@@ -757,93 +765,106 @@ export default function IndexOverviews() {
           `portfolio-${portfolioName}-${account.address}`,
           portfolioHelper,
         );
-        // If we have valid cached data that's less than 24 hours old
+
         if (
-          cachedData &&
-          cachedData.timestamp &&
+          cachedData?.timestamp &&
           Date.now() - cachedData.timestamp < 86400 * 1000
         ) {
-          // Use cached data
+          // Use cached data - update states immediately for each piece of data
           setTokenPricesMappingTable(cachedData.tokenPricesMappingTable);
           setUsdBalance(cachedData.usdBalance);
-          setrebalancableUsdBalanceDict(cachedData.usdBalanceDict);
-          setLockUpPeriod(cachedData.lockUpPeriod);
-          setPendingRewards(cachedData.pendingRewards);
-          setProtocolAssetDustInWallet(cachedData.dust);
-
-          // Reset loading states
           setUsdBalanceLoading(false);
-          setPendingRewardsLoading(false);
+
+          setrebalancableUsdBalanceDict(cachedData.usdBalanceDict);
           setrebalancableUsdBalanceDictLoading(false);
+
+          setLockUpPeriod(cachedData.lockUpPeriod);
+
+          setPendingRewards(cachedData.pendingRewards);
+          setPendingRewardsLoading(false);
+
+          setProtocolAssetDustInWallet(cachedData.dust);
           setProtocolAssetDustInWalletLoading(false);
-          return; // Exit early - don't make API calls
+          return;
         }
-        // If we reach here, either there's no cache or it's stale
-        // Fetch fresh data
-        const tokenPricesMappingTable =
-          await portfolioHelper.getTokenPricesMappingTable();
-        let [usdBalance, usdBalanceDict] = await portfolioHelper.usdBalanceOf(
-          account.address,
-          portfolioApr[portfolioName],
-        );
-        const portfolioLockUpPeriod = await portfolioHelper.lockUpPeriod(
-          account.address,
-        );
-        const pendingRewards = await portfolioHelper.pendingRewards(
-          account.address,
-          () => {},
-        );
+
+        // Fetch fresh data using Promise.all to load data in parallel
+
+        // Start all async operations simultaneously
+        const [
+          tokenPricesMappingTablePromise,
+          usdBalancePromise,
+          lockUpPeriodPromise,
+          pendingRewardsPromise,
+        ] = [
+          portfolioHelper.getTokenPricesMappingTable(),
+          portfolioHelper.usdBalanceOf(
+            account.address,
+            portfolioApr[portfolioName],
+          ),
+          portfolioHelper.lockUpPeriod(account.address),
+          portfolioHelper.pendingRewards(account.address, () => {}),
+        ];
+
+        // Update token prices as soon as available
+        const tokenPricesMappingTable = await tokenPricesMappingTablePromise;
+        setTokenPricesMappingTable(tokenPricesMappingTable);
+
+        // Update USD balance and dict as soon as available
+        const [usdBalance, usdBalanceDict] = await usdBalancePromise;
+        setUsdBalance(usdBalance);
+        setUsdBalanceLoading(false);
+        setrebalancableUsdBalanceDict(usdBalanceDict);
+        setrebalancableUsdBalanceDictLoading(false);
+
+        // Update lockup period as soon as available
+        const portfolioLockUpPeriod = await lockUpPeriodPromise;
+        setLockUpPeriod(portfolioLockUpPeriod);
+
+        // Update pending rewards as soon as available
+        const pendingRewards = await pendingRewardsPromise;
+        setPendingRewards(pendingRewards.pendingRewardsDict);
+        setPendingRewardsLoading(false);
+
+        // Calculate dust after token prices are available
         const dust =
           await portfolioHelper.calProtocolAssetDustInWalletDictionary(
             account.address,
             tokenPricesMappingTable,
           );
+        setProtocolAssetDustInWallet(dust);
+        setProtocolAssetDustInWalletLoading(false);
+
+        // Update final USD balance with dust
         const dustTotalUsdBalance = Object.values(dust).reduce(
-          (sum, protocolObj) => {
-            return (
-              sum +
-              Object.values(protocolObj).reduce((protocolSum, asset) => {
-                return protocolSum + (Number(asset.assetUsdBalanceOf) || 0);
-              }, 0)
-            );
-          },
+          (sum, protocolObj) =>
+            sum +
+            Object.values(protocolObj).reduce(
+              (protocolSum, asset) =>
+                protocolSum + (Number(asset.assetUsdBalanceOf) || 0),
+              0,
+            ),
           0,
         );
-        usdBalance += dustTotalUsdBalance;
+        setUsdBalance(usdBalance + dustTotalUsdBalance);
+
         // Cache the fresh data
-        const newCacheData = {
-          tokenPricesMappingTable,
-          usdBalance,
-          usdBalanceDict,
-          lockUpPeriod: portfolioLockUpPeriod,
-          pendingRewards: pendingRewards.pendingRewardsDict,
-          dust,
-          timestamp: Date.now(),
-        };
         try {
-          safeSetLocalStorage(
-            `portfolio-${portfolioName}-${account.address}`,
-            newCacheData,
-          );
+          safeSetLocalStorage(`portfolio-${portfolioName}-${account.address}`, {
+            tokenPricesMappingTable,
+            usdBalance: usdBalance + dustTotalUsdBalance,
+            usdBalanceDict,
+            lockUpPeriod: portfolioLockUpPeriod,
+            pendingRewards: pendingRewards.pendingRewardsDict,
+            dust,
+            timestamp: Date.now(),
+          });
         } catch (error) {
           console.warn("Failed to cache portfolio data:", error);
         }
-
-        // Update state with fresh data
-        setTokenPricesMappingTable(tokenPricesMappingTable);
-        setUsdBalance(usdBalance);
-        setrebalancableUsdBalanceDict(usdBalanceDict);
-        setLockUpPeriod(portfolioLockUpPeriod);
-        setPendingRewards(pendingRewards.pendingRewardsDict);
-        setProtocolAssetDustInWallet(dust);
       } catch (error) {
         console.error("Error in fetchUsdBalance:", error);
       } finally {
-        // Reset loading and processing states
-        setUsdBalanceLoading(false);
-        setPendingRewardsLoading(false);
-        setrebalancableUsdBalanceDictLoading(false);
-        setProtocolAssetDustInWalletLoading(false);
         isProcessingChainChangeRef.current = false;
       }
     }, 500);
