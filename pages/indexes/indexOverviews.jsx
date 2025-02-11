@@ -630,13 +630,6 @@ export default function IndexOverviews() {
     }
   };
 
-  // calculate the total investment amount
-  const allInvestmentAmount = useMemo(
-    () =>
-      preservedAmountRef.current *
-      (1 - slippage / 100 - portfolioHelper?.swapFeeRate()),
-    [preservedAmountRef.current, slippage, portfolioHelper],
-  );
   // calculate the investment amount for next chain
   const calCrossChainInvestmentAmount = (nextChain) => {
     if (portfolioHelper?.strategy === undefined) return 0;
@@ -667,6 +660,19 @@ export default function IndexOverviews() {
 
   const onChange = (key) => {
     setTabKey(key);
+    // Set slippage to 3 when switching to RebalanceTab (assuming key "3" is RebalanceTab)
+    if (key === "3") {
+      setSlippage(3);
+    } else {
+      // Reset to default slippage based on portfolio type
+      if (portfolioName === "Stablecoin Vault") {
+        setSlippage(1);
+      } else if (portfolioName === "ETH Vault") {
+        setSlippage(3);
+      } else {
+        setSlippage(1);
+      }
+    }
   };
 
   const tokenAddress = selectedToken?.split("-")[1];
@@ -1006,7 +1012,13 @@ export default function IndexOverviews() {
     onRefresh: handleRefresh,
   };
 
-  const items = useTabItems(tabProps);
+  const items = useTabItems({
+    ...tabProps,
+    // Add setSlippage to tabProps
+    setSlippage,
+    // Add portfolioName to tabProps if not already included
+    portfolioName,
+  });
   return (
     <BasePage>
       {notificationContextHolder}
