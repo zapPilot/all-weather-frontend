@@ -35,7 +35,7 @@ class PriceService {
 
   static MAX_RETRIES = 2;
   static RETRY_DELAY = 2000;
-  static TIMEOUT = 8000;
+  static TIMEOUT = 3000;
 
   constructor(apiUrl) {
     this.apiUrl = apiUrl;
@@ -131,7 +131,7 @@ class PriceService {
 
 class TokenPriceBatcher {
   static BATCH_SIZE = 5;
-  static DELAY_MS = 1000;
+  static DELAY_MS = 5000;
 
   constructor(priceService) {
     this.priceService = priceService;
@@ -157,23 +157,32 @@ class TokenPriceBatcher {
   }
 
   async _processBatch(batch, prices) {
-    // Process requests sequentially instead of concurrently
-    for (const [token, priceID] of batch) {
+    // Process requests concurrently using Promise.all
+    const pricePromises = batch.map(async ([token, priceID]) => {
       const { uniqueId } = this.priceService._getPriceServiceInfo(priceID);
+
+      // Check cache first
       if (this.priceService.cache[uniqueId]) {
-        prices[token] = this.priceService.cache[uniqueId];
-        continue;
+        return { token, price: this.priceService.cache[uniqueId] };
       }
 
-      // Add small delay between individual requests
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
+      // Fetch price if not in cache
       const price = await this.priceService.fetchPrice(token, priceID);
       if (price !== null) {
-        prices[token] = price;
         this.priceService.cache[uniqueId] = price;
       }
-    }
+      return { token, price };
+    });
+
+    // Wait for all price requests to complete
+    const results = await Promise.all(pricePromises);
+
+    // Update prices object with results
+    results.forEach(({ token, price }) => {
+      if (price !== null) {
+        prices[token] = price;
+      }
+    });
   }
 
   _delay() {
@@ -248,9 +257,11 @@ export class BasePortfolio {
       address,
       tokenPricesMappingTable,
     );
+
     // Initialize balance dictionary with rewards
     let usdBalance = 0;
     const usdBalanceDict = this._initializeBalanceDict();
+
     // Process protocol balances
     this._processProtocolBalances(
       balanceResults,
@@ -270,7 +281,6 @@ export class BasePortfolio {
       positiveWeigtDiffSum,
     );
     usdBalanceDict.metadata = metadata;
-
     return [usdBalance, usdBalanceDict];
   }
 
@@ -419,18 +429,18 @@ export class BasePortfolio {
     const rewardsMappingTable = allRewards.reduce((acc, rewards) => {
       for (const [tokenAddress, rewardMetadata] of Object.entries(rewards)) {
         if (!acc[tokenAddress]) {
+          acc[tokenAddress] = rewardMetadata;
+        } else {
+          // Preserve all existing fields and only update balance and usdDenominatedValue
           acc[tokenAddress] = {
-            balance: ethers.BigNumber.from(0),
-            usdDenominatedValue: 0,
-            decimals: rewardMetadata.decimals,
-            symbol: rewardMetadata.symbol,
+            ...acc[tokenAddress],
+            ...rewardMetadata,
+            balance: acc[tokenAddress].balance.add(rewardMetadata.balance),
+            usdDenominatedValue:
+              acc[tokenAddress].usdDenominatedValue +
+              rewardMetadata.usdDenominatedValue,
           };
         }
-        acc[tokenAddress].balance = acc[tokenAddress].balance.add(
-          rewardMetadata.balance,
-        );
-        acc[tokenAddress].usdDenominatedValue +=
-          rewardMetadata.usdDenominatedValue;
       }
       return acc;
     }, {});

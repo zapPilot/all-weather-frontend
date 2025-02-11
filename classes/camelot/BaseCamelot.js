@@ -1,8 +1,6 @@
 import { ethers } from "ethers";
 import { ERC20_ABI } from "@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
-import { encodeFunctionData } from "viem";
 import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
-import { fetch1InchSwapData } from "../../utils/oneInch.js";
 import {
   approve,
   CHAIN_ID_TO_CHAIN,
@@ -13,7 +11,9 @@ import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb.js";
 import BaseProtocol from "../BaseProtocol.js";
 import AlgebraPool from "../../lib/contracts/Camelot/AlgebraPool.json" assert { type: "json" };
-
+import axios from "axios";
+import Distributor from "../../lib/contracts/Camelot/Distributor.json" assert { type: "json" };
+import XGrailToken from "../../lib/contracts/Camelot/XGrailToken.json" assert { type: "json" };
 export class BaseCamelot extends BaseProtocol {
   constructor(chain, chainId, symbolList, mode, customParams) {
     super(chain, chainId, symbolList, mode, customParams);
@@ -40,6 +40,24 @@ export class BaseCamelot extends BaseProtocol {
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: ERC20_ABI,
     });
+    this.rewardContract = getContract({
+      client: THIRDWEB_CLIENT,
+      address: this.customParams.rewardPoolAddress,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
+      abi: Distributor,
+    });
+    this.grailContract = getContract({
+      client: THIRDWEB_CLIENT,
+      address: "0x3d9907F9a368ad0a51Be60f7Da3b97cf940982D8",
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
+      abi: ERC20_ABI,
+    });
+    this.xgrailContract = getContract({
+      client: THIRDWEB_CLIENT,
+      address: "0x3caae25ee616f2c8e13c74da0813402eae3f496b",
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
+      abi: XGrailToken,
+    });
 
     this.assetContractInstance = new ethers.Contract(
       this.assetContract.address,
@@ -56,6 +74,12 @@ export class BaseCamelot extends BaseProtocol {
       ERC20_ABI,
       PROVIDER(this.chain),
     );
+    this.xgrailContractInstance = new ethers.Contract(
+      this.xgrailContract.address,
+      XGrailToken,
+      PROVIDER(this.chain),
+    );
+
     this._checkIfParamsAreSet();
   }
   rewards() {
@@ -91,7 +115,7 @@ export class BaseCamelot extends BaseProtocol {
     if (!this.token_id) {
       this.token_id = await this._getNftID(owner);
     }
-    if (this.token_id === 0) {
+    if (!this.token_id) {
       return 0;
     }
     return await this.getNFTValue(
@@ -118,27 +142,40 @@ export class BaseCamelot extends BaseProtocol {
   }
 
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
-    // TODO(david): we're missing Grail rewards + fee: https://docs.algebra.finance/algebra-integral-documentation/algebra-integral-technical-reference/integration-process/subgraphs-and-analytics/examples-of-queries#general-position-data
     if (!this.token_id) {
       this.token_id = await this._getNftID(owner);
     }
-    if (this.token_id === 0) {
+    if (!this.token_id || !(await this._checkIfNFTExists(this.token_id))) {
       return {};
     }
-    const existed = await this._checkIfNFTExists(this.token_id);
-    if (!existed) {
-      return {};
-    }
+
+    const [lpFeesRewards, marketMakerRewards, vestingRewards] =
+      await Promise.all([
+        this._getLPFeesRewards(tokenPricesMappingTable),
+        this._getMarketMakerRewards(owner, tokenPricesMappingTable),
+        this._checkIfVestingRewardsFinished(owner, tokenPricesMappingTable),
+      ]);
+
+    return this._mergeRewards(
+      lpFeesRewards,
+      marketMakerRewards,
+      vestingRewards,
+    );
+  }
+
+  async _getLPFeesRewards(tokenPricesMappingTable) {
     const [
       [token0, token0Address, token0Decimals],
       [token1, token1Address, token1Decimals],
     ] = this.customParams.lpTokens;
+
     const { fees0, fees1 } = await this.getUncollectedFeesForCamelot(
       this.token_id,
       this.assetContractInstance,
       this.protocolContractInstance,
     );
-    const rewardBalance = {
+
+    return {
       [token0Address]: {
         symbol: token0,
         balance: ethers.BigNumber.from(String(Math.floor(fees0))),
@@ -152,9 +189,34 @@ export class BaseCamelot extends BaseProtocol {
         usdDenominatedValue:
           tokenPricesMappingTable[token1] * (fees1 / 10 ** token1Decimals),
         decimals: token1Decimals,
+        vesting: false,
       },
     };
-    return rewardBalance;
+  }
+
+  _mergeRewards(rewardBalance, marketMakerRewards, vestingRewards) {
+    // Merge all rewards sources into a single array of [address, reward] entries
+    const allRewards = [
+      ...Object.entries(rewardBalance),
+      ...Object.entries(marketMakerRewards),
+      ...Object.entries(vestingRewards),
+    ];
+
+    return allRewards.reduce((acc, [address, reward]) => {
+      if (acc[address]) {
+        // Preserve all existing fields and only update balance and usdDenominatedValue
+        acc[address] = {
+          ...acc[address],
+          ...reward,
+          balance: acc[address].balance.add(reward.balance),
+          usdDenominatedValue:
+            acc[address].usdDenominatedValue + reward.usdDenominatedValue,
+        };
+      } else {
+        acc[address] = reward;
+      }
+      return acc;
+    }, {});
   }
 
   async customDepositLP(
@@ -213,7 +275,7 @@ export class BaseCamelot extends BaseProtocol {
         slippage,
       );
     }
-    return [approveTxns, depositTxn];
+    return [...approveTxns, depositTxn];
   }
   async _calculateTokenAmountsForLP(
     usdAmount,
@@ -246,16 +308,20 @@ export class BaseCamelot extends BaseProtocol {
     return ratio;
   }
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
-    const [
-      [token0, token0Address, token0Decimals],
-      [token1, token1Address, token1Decimals],
-    ] = this.customParams.lpTokens;
+    // Get pending rewards first
     const pendingRewards = await this.pendingRewards(
       owner,
       tokenPricesMappingTable,
       updateProgress,
     );
-    const claimTxn = prepareContractCall({
+
+    // If no NFT exists, only return vesting rewards
+    if (this.token_id === 0) {
+      return [[], pendingRewards];
+    }
+
+    // Prepare transaction to collect LP fees
+    const lpFeesTxn = prepareContractCall({
       contract: this.assetContract,
       method: "collect",
       params: [
@@ -271,7 +337,9 @@ export class BaseCamelot extends BaseProtocol {
         },
       ],
     });
-    return [[claimTxn], pendingRewards];
+
+    // Return combined transactions and rewards
+    return [[lpFeesTxn], pendingRewards];
   }
 
   async lockUpPeriod() {
@@ -457,5 +525,152 @@ export class BaseCamelot extends BaseProtocol {
     } catch (error) {
       return false;
     }
+  }
+  async _getMarketMakerRewards(owner, tokenPricesMappingTable) {
+    const response = await axios.get(
+      `https://api.camelot.exchange/campaigns/rewards?chainId=${this.chainId}&user=${owner}`,
+    );
+    const data = response.data;
+    const marketMakerRewards = {};
+
+    // Get rewards info from this.rewards()
+    const rewardsInfo = this.rewards().reduce((acc, reward) => {
+      acc[reward.address.toLowerCase()] = reward;
+      return acc;
+    }, {});
+
+    for (const reward of data.data.rewards) {
+      const rewardAddress = reward.tokenAddress.toLowerCase();
+      const rewardInfo = rewardsInfo[rewardAddress];
+
+      if (rewardInfo) {
+        const balance = ethers.BigNumber.from(
+          String(Math.floor(Number(reward.rewards) - Number(reward.claimed))),
+        );
+
+        const newBalance = marketMakerRewards[rewardAddress]
+          ? marketMakerRewards[rewardAddress].balance.add(balance)
+          : balance;
+
+        marketMakerRewards[rewardAddress] = {
+          symbol: rewardInfo.symbol,
+          balance: newBalance,
+          usdDenominatedValue:
+            tokenPricesMappingTable[rewardInfo.symbol] *
+            (newBalance.toString() / 10 ** rewardInfo.decimals),
+          decimals: rewardInfo.decimals,
+          vesting: true,
+        };
+      }
+    }
+    return marketMakerRewards;
+  }
+  async _checkIfVestingRewardsFinished(owner, tokenPricesMappingTable) {
+    const finalizableRewards = {
+      [this.grailContract.address]: {
+        symbol: "grail",
+        balance: ethers.BigNumber.from(0),
+        usdDenominatedValue: 0,
+        decimals: 18,
+        vesting: false,
+        finalizableIndexes: [],
+      },
+      [this.xgrailContract.address]: {
+        symbol: "xgrail",
+        balance: ethers.BigNumber.from(0),
+        usdDenominatedValue: 0,
+        decimals: 18,
+        vesting: true,
+      },
+    };
+
+    const userRedeemsLength =
+      await this.xgrailContractInstance.functions.getUserRedeemsLength(owner);
+    for (let i = 0; i < userRedeemsLength; i++) {
+      const userRedeem =
+        await this.xgrailContractInstance.functions.getUserRedeem(owner, i);
+      if (userRedeem.endTime < Math.floor(Date.now() / 1000)) {
+        // Vesting period ended - count as grail and track index
+        finalizableRewards[this.grailContract.address].balance =
+          finalizableRewards[this.grailContract.address].balance.add(
+            userRedeem.xGrailAmount,
+          );
+        finalizableRewards[this.grailContract.address].finalizableIndexes.push(
+          i,
+        );
+      } else {
+        // Still vesting - count as xgrail
+        finalizableRewards[this.xgrailContract.address].balance =
+          finalizableRewards[this.xgrailContract.address].balance.add(
+            userRedeem.xGrailAmount,
+          );
+      }
+    }
+
+    // Calculate USD values for both tokens
+    finalizableRewards[this.grailContract.address].usdDenominatedValue =
+      tokenPricesMappingTable["grail"] *
+      (finalizableRewards[this.grailContract.address].balance.toString() /
+        10 ** 18);
+
+    finalizableRewards[this.xgrailContract.address].usdDenominatedValue =
+      tokenPricesMappingTable["xgrail"] *
+      (finalizableRewards[this.xgrailContract.address].balance.toString() /
+        10 ** 18);
+
+    return finalizableRewards;
+  }
+  async customRedeemVestingRewards(pendingRewards, owner) {
+    const response = await axios.get(
+      `https://api.camelot.exchange/campaigns/rewards?chainId=${this.chainId}&user=${owner}`,
+    );
+    const data = response.data;
+    for (const reward of data.data.rewards) {
+      if (Number(reward.positionIdentifierDecoded) === this.token_id) {
+        const vestingDuration = 15552000;
+        const claimableAmount = Number(reward.rewards) - Number(reward.claimed);
+        const harvestTxn = prepareContractCall({
+          contract: this.rewardContract,
+          method: "harvest",
+          params: [
+            owner,
+            reward.poolAddress,
+            reward.tokenAddress,
+            Number(reward.rewards),
+            reward.positionIdentifier,
+            reward.proof,
+          ],
+        });
+        const redeemTxn = prepareContractCall({
+          contract: this.xgrailContract,
+          method: "redeem",
+          params: [claimableAmount, vestingDuration],
+        });
+        return [harvestTxn, redeemTxn];
+      }
+    }
+    return [];
+  }
+  async finalizeRedeem(owner, pendingRewards) {
+    // TODO, need to call this function in BasePortolio
+    const finalizeTxns = [];
+    for (const index of pendingRewards[this.grailContract.address]
+      .finalizableIndexes) {
+      const userRedeem = await this.xgrailContractInstance.functions.userRedeem(
+        owner,
+        index,
+      );
+      finalizeTxns.push(
+        prepareContractCall({
+          contract: this.xgrailContract,
+          method: "finalizeRedeem",
+          params: [index],
+        }),
+      );
+      pendingRewards[this.grailContract.address].balance = pendingRewards[
+        this.grailContract.address
+      ].balance.add(userRedeem.grailAmount);
+    }
+    return finalizeTxns;
   }
 }

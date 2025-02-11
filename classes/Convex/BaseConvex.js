@@ -328,20 +328,10 @@ export class BaseConvex extends BaseProtocol {
       method: "remove_liquidity",
       params: [amount, minPairAmounts],
     });
-
-    // TODO(david): the asset price is not correct here, so we just reduce 0.03% swap fee to estimate the trading loss
-    const lpPrice = this._calculateLpPrice(tokenPricesMappingTable);
-    const tradingLoss =
-      (normalizedAmount * ratio * tokenPricesMappingTable[tokenASymbol] +
-        normalizedAmount *
-          (1 - ratio) *
-          tokenPricesMappingTable[tokenBSymbol]) *
-        0.9997 -
-      amount * lpPrice;
     await this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-withdraw`,
-      tradingLoss,
+      0,
     );
     const [claimTxns, _] = await this.customClaim(
       owner,
