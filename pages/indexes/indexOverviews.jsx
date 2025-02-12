@@ -556,6 +556,8 @@ export default function IndexOverviews() {
           errorReadableMsg = "ERC721: operator query for nonexistent token";
         } else if (error.message.includes("0x09bde339")) {
           errorReadableMsg = "Failed to claim rewards, please try again";
+        } else if (error.message.endsWith("0x")) {
+          errorReadableMsg = "You send the transaction to the wrong address";
         } else if (error.message.includes("User rejected the request")) {
           return;
         } else {

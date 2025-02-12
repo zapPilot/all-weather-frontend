@@ -559,15 +559,6 @@ export class BasePortfolio {
         actionParams.tokenInAddress = wethAddress;
         totalTxns.push(wethTxn);
       }
-      totalTxns.push(
-        approve(
-          actionParams.tokenInAddress,
-          oneInchAddress,
-          actionParams.zapInAmount,
-          actionParams.updateProgress,
-          actionParams.chainMetadata.id,
-        ),
-      );
       if (actionParams.onlyThisChain === false) {
         const platformFee = this.mulSwapFeeRate(actionParams.zapInAmount);
         const normalizedPlatformFeeUSD =
@@ -652,13 +643,24 @@ export class BasePortfolio {
     if (swapCallData["toAmount"] === 0) {
       throw new Error("To amount is 0. Cannot proceed with swapping.");
     }
+    const approveTxn = approve(
+      fromTokenAddress,
+      swapCallData["to"],
+      amount,
+      () => {},
+      actionParams.chainMetadata.id,
+    );
     return [
-      prepareTransaction({
-        to: oneInchAddress,
-        chain: CHAIN_ID_TO_CHAIN[actionParams.chainMetadata.id],
-        client: THIRDWEB_CLIENT,
-        data: swapCallData["data"],
-      }),
+      [
+        approveTxn,
+        prepareTransaction({
+          to: swapCallData["to"],
+          chain: CHAIN_ID_TO_CHAIN[actionParams.chainMetadata.id],
+          client: THIRDWEB_CLIENT,
+          data: swapCallData["data"],
+          extraGas: BigInt(swapCallData["gasFee"]),
+        }),
+      ],
       swapCallData["toAmount"],
     ];
   }
@@ -779,7 +781,7 @@ export class BasePortfolio {
             actionParams,
           );
           // Update input token and amount after the swap
-          txns.push(swapResult[0]);
+          txns = txns.concat(swapResult[0]);
           inputToken = TOKEN_ADDRESS_MAP["usdc"][currentChain];
           inputAmount = swapResult[1]; // Resulting amount after the swap
         }

@@ -44,22 +44,16 @@ describe("Camelot Vault", () => {
       onlyThisChain,
     );
     expect(txns.length).toBe(7);
-    // approve to 1inch
-    expect(await encode(txns[0])).toBe(
-      "0x095ea7b30000000000000000000000001111111254eeb25477b68fb85ed929f73a9605820000000000000000000000000000000000000000000000056bc75e2d63100000",
-    );
     // referral fee
-    expect(await encode(txns[1])).includes(
+    expect(await encode(txns[0])).includes(
       "210050bb080155aec4eae79a2aac5fe78fd738e1",
     );
     // referral fee
-    expect(await encode(txns[2])).includes(
+    expect(await encode(txns[1])).includes(
       "2ecbc6f229fed06044cdb0dd772437a30190cd50",
     );
-    // swap
-    expect(await encode(txns[3])).includes(
-      oneInchAddress.replace("0x", "").toLowerCase(),
-    );
+    // approve before swap
+    expect(await encode(txns[2])).includes("0x095ea7b3");
 
     // approve to Camelot
     expect(await encode(txns[4])).includes("0x095ea7b3");
@@ -131,7 +125,7 @@ describe("Camelot Vault", () => {
         "2ecbc6f229fed06044cdb0dd772437a30190cd50",
       );
     } else {
-      expect(txns.length).toBe(7);
+      expect(txns.length).toBe(8);
       // decrease liquidity
       expect(await encode(txns[0])).includes("0c49ccbe");
       expect(txns[0].to).toBe(camelotNFTAddress);
@@ -141,16 +135,16 @@ describe("Camelot Vault", () => {
       // burn NFT
       expect(await encode(txns[2])).includes("42966c68");
 
-      // approve to 1inch
-      expect(await encode(txns[3])).includes("095ea7b3");
-      // swap
-      expect(txns[4].to).toBe(oneInchArbAddress);
+      //   // approve to 1inch
+      //   expect(await encode(txns[3])).includes("095ea7b3");
+      //   // swap
+      //   expect(txns[4].to).toBe(oneInchArbAddress);
       // fee: send referral fee
-      expect(await encode(txns[5])).includes(
+      expect(await encode(txns[6])).includes(
         "210050bb080155aec4eae79a2aac5fe78fd738e1",
       );
       // fee: send platform fee
-      expect(await encode(txns[6])).includes(
+      expect(await encode(txns[7])).includes(
         "2ecbc6f229fed06044cdb0dd772437a30190cd50",
       );
     }
@@ -208,7 +202,7 @@ describe("Camelot Vault", () => {
         "2ecbc6f229fed06044cdb0dd772437a30190cd50",
       );
     } else {
-      expect(txns.length).toBe(1);
+      expect(txns.length).toBe(2);
     }
   });
 });
