@@ -23,6 +23,7 @@ export class YearnVault extends BasePortfolio {
       {
         long_term_bond: 1,
       },
+      "Yearn Vault",
     );
     this.validateStrategyWeights();
   }

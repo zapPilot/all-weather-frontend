@@ -220,6 +220,7 @@ export class EthVault extends BasePortfolio {
       {
         long_term_bond: 1,
       },
+      "ETH Vault",
     );
     this.validateStrategyWeights();
   }

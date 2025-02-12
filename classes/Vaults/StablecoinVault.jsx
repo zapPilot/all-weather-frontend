@@ -505,6 +505,7 @@ export class StablecoinVault extends BasePortfolio {
       {
         gold: 1,
       },
+      "Stablecoin Vault",
     );
     this.validateStrategyWeights();
   }

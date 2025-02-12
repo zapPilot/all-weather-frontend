@@ -464,6 +464,7 @@ export class AllWeatherVault extends BasePortfolio {
       {
         long_term_bond: 1,
       },
+      "All Weather Vault",
     );
     this.validateStrategyWeights();
   }

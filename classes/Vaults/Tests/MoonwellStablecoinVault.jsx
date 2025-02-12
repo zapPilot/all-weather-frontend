@@ -24,6 +24,7 @@ export class MoonwellStablecoinVault extends BasePortfolio {
       {
         gold: 1,
       },
+      "Moonwell Stablecoin Vault",
     );
     this.validateStrategyWeights();
   }

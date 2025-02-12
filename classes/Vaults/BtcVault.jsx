@@ -69,6 +69,7 @@ export class BtcVault extends BasePortfolio {
       {
         gold: 1,
       },
+      "BTC Vault",
     );
     this.validateStrategyWeights();
   }
