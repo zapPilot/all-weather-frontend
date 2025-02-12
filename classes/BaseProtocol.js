@@ -686,7 +686,7 @@ export default class BaseProtocol extends BaseUniswap {
     tokenDecimals,
     tokenPricesMappingTable,
   ) {
-    let swapTxns = [];
+    let totalSwapTxns = [];
     const [bestTokenSymbol, bestTokenAddressToZapIn, bestTokenToZapInDecimal] =
       this._getTheBestTokenAddressToZapIn(
         inputToken,
@@ -697,7 +697,7 @@ export default class BaseProtocol extends BaseUniswap {
     if (
       tokenInAddress.toLowerCase() !== bestTokenAddressToZapIn.toLowerCase()
     ) {
-      const [swapTxn, swapEstimateAmount] = await this._swap(
+      const [swapTxns, swapEstimateAmount] = await this._swap(
         recipient,
         tokenInAddress,
         bestTokenAddressToZapIn,
@@ -713,10 +713,10 @@ export default class BaseProtocol extends BaseUniswap {
       amountToZapIn = String(
         Math.floor((swapEstimateAmount * (100 - slippage)) / 100),
       );
-      swapTxns.push(swapTxn);
+      totalSwapTxns = totalSwapTxns.concat(swapTxns);
     }
     return [
-      swapTxns,
+      totalSwapTxns,
       bestTokenAddressToZapIn,
       amountToZapIn,
       bestTokenToZapInDecimal,
@@ -797,7 +797,7 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
     tokenPricesMappingTable,
   ) {
-    const swapTxns = [];
+    let totalSwapTxns = [];
     const amountsAfterSwap = [];
 
     for (const [
@@ -809,7 +809,7 @@ export default class BaseProtocol extends BaseUniswap {
         .div(sumOfLPTokenRatio);
 
       if (tokenInAddress.toLowerCase() !== bestTokenAddress.toLowerCase()) {
-        const [swapTxn, swapEstimateAmount] = await this._swap(
+        const [swapTxns, swapEstimateAmount] = await this._swap(
           recipient,
           tokenInAddress,
           bestTokenAddress,
@@ -826,13 +826,13 @@ export default class BaseProtocol extends BaseUniswap {
         amountToZapIn = ethers.BigNumber.from(swapEstimateAmount)
           .mul((100 - slippage) * 10000)
           .div(100 * 10000);
-        swapTxns.push(swapTxn);
+        totalSwapTxns = totalSwapTxns.concat(swapTxns);
       }
 
       amountsAfterSwap.push(amountToZapIn);
     }
 
-    return [swapTxns, amountsAfterSwap];
+    return [totalSwapTxns, amountsAfterSwap];
   }
 
   _balanceTokenRatios(
@@ -897,13 +897,6 @@ export default class BaseProtocol extends BaseUniswap {
       ) {
         continue;
       }
-      const approveTxn = approve(
-        address,
-        oneInchAddress,
-        amount,
-        updateProgress,
-        this.chainId,
-      );
       const swapTxnResult = await this._swap(
         recipient,
         address,
@@ -920,7 +913,7 @@ export default class BaseProtocol extends BaseUniswap {
       if (swapTxnResult === undefined) {
         continue;
       }
-      txns = txns.concat([approveTxn, swapTxnResult[0]]);
+      txns = txns.concat([swapTxnResult[0]]);
     }
     return txns;
   }
@@ -981,7 +974,7 @@ export default class BaseProtocol extends BaseUniswap {
       result.tradingLoss,
     );
 
-    return [result.transaction, result.toAmount];
+    return [result.transactions, result.toAmount];
   }
 
   async _attemptSwap(
@@ -1004,7 +997,13 @@ export default class BaseProtocol extends BaseUniswap {
       walletAddress,
       slippage,
     );
-
+    const approveTxn = approve(
+      fromTokenAddress,
+      swapCallData["to"],
+      amount,
+      () => {},
+      this.chainId,
+    );
     if (swapCallData["data"] === undefined) {
       throw new Error("Swap data is undefined. Cannot proceed with swapping.");
     }
@@ -1027,13 +1026,16 @@ export default class BaseProtocol extends BaseUniswap {
     const tradingLoss = outputValue - inputValue;
 
     return {
-      transaction: prepareTransaction({
-        to: oneInchAddress,
-        chain: CHAIN_ID_TO_CHAIN[this.chainId],
-        client: THIRDWEB_CLIENT,
-        data: swapCallData["data"],
-        extraGas: 550000n,
-      }),
+      transactions: [
+        approveTxn,
+        prepareTransaction({
+          to: swapCallData["to"],
+          chain: CHAIN_ID_TO_CHAIN[this.chainId],
+          client: THIRDWEB_CLIENT,
+          data: swapCallData["data"],
+          extraGas: 550000n,
+        }),
+      ],
       toAmount: swapCallData["toAmount"],
       tradingLoss,
       inputValue,
