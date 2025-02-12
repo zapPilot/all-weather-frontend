@@ -713,7 +713,7 @@ export default class BaseProtocol extends BaseUniswap {
       amountToZapIn = String(
         Math.floor((swapEstimateAmount * (100 - slippage)) / 100),
       );
-      totalSwapTxns = totalSwapTxns.concat(swapTxns)
+      totalSwapTxns = totalSwapTxns.concat(swapTxns);
     }
     return [
       totalSwapTxns,
@@ -826,7 +826,7 @@ export default class BaseProtocol extends BaseUniswap {
         amountToZapIn = ethers.BigNumber.from(swapEstimateAmount)
           .mul((100 - slippage) * 10000)
           .div(100 * 10000);
-        totalSwapTxns = totalSwapTxns.concat(swapTxns)
+        totalSwapTxns = totalSwapTxns.concat(swapTxns);
       }
 
       amountsAfterSwap.push(amountToZapIn);

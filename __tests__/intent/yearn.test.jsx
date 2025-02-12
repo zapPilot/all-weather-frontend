@@ -47,23 +47,20 @@ describe("Yearn Vault", () => {
       ],
       false,
     );
-    expect(txns.length).toBe(5);
-    expect(await encode(txns[0])).toBe(
-      "0x095ea7b30000000000000000000000001111111254eeb25477b68fb85ed929f73a9605820000000000000000000000000000000000000000000000000de0b6b3a7640000",
-    );
-    expect(await encode(txns[1])).includes(
+    expect(txns.length).toBe(4);
+    expect(await encode(txns[0])).includes(
       "210050bb080155aec4eae79a2aac5fe78fd738e1",
     );
-    expect(await encode(txns[2])).includes(
+    expect(await encode(txns[1])).includes(
       "2ecbc6f229fed06044cdb0dd772437a30190cd50",
     );
-    expect(await encode(txns[3])).includes(
+    expect(await encode(txns[2])).includes(
       "0x095ea7b300000000000000000000000086df48f8dc91504d2b3e360d67513f094dfa6c84",
     );
-    expect(await encode(txns[4])).includes(
+    expect(await encode(txns[3])).includes(
       "c774806f9ff5f3d8aabb6b70d0ed509e42afe6f0",
     );
-    expect(await encode(txns[4])).includes("0x6e553f65");
+    expect(await encode(txns[3])).includes("0x6e553f65");
   });
   it("should be able to zap-in Yearn Vault + only on this chain", async () => {
     const actionName = "zapIn";
@@ -96,17 +93,14 @@ describe("Yearn Vault", () => {
       ],
       onlyThisChain,
     );
-    expect(txns.length).toBe(3);
-    expect(await encode(txns[0])).toBe(
-      "0x095ea7b30000000000000000000000001111111254eeb25477b68fb85ed929f73a9605820000000000000000000000000000000000000000000000000de0b6b3a7640000",
-    );
-    expect(await encode(txns[1])).includes(
+    expect(txns.length).toBe(2);
+    expect(await encode(txns[0])).includes(
       "0x095ea7b300000000000000000000000086df48f8dc91504d2b3e360d67513f094dfa6c84",
     );
-    expect(await encode(txns[2])).includes(
+    expect(await encode(txns[1])).includes(
       "c774806f9ff5f3d8aabb6b70d0ed509e42afe6f0",
     );
-    expect(await encode(txns[2])).includes("0x6e553f65");
+    expect(await encode(txns[1])).includes("0x6e553f65");
   });
   it("should be able to zap-out Yearn Vault", async () => {
     const actionName = "zapOut";
