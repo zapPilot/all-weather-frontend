@@ -559,15 +559,6 @@ export class BasePortfolio {
         actionParams.tokenInAddress = wethAddress;
         totalTxns.push(wethTxn);
       }
-      totalTxns.push(
-        approve(
-          actionParams.tokenInAddress,
-          oneInchAddress,
-          actionParams.zapInAmount,
-          actionParams.updateProgress,
-          actionParams.chainMetadata.id,
-        ),
-      );
       if (actionParams.onlyThisChain === false) {
         const platformFee = this.mulSwapFeeRate(actionParams.zapInAmount);
         const normalizedPlatformFeeUSD =
@@ -652,12 +643,21 @@ export class BasePortfolio {
     if (swapCallData["toAmount"] === 0) {
       throw new Error("To amount is 0. Cannot proceed with swapping.");
     }
-    return [
+    const approveTxn = approve(
+      fromTokenAddress,
+      swapCallData["to"],
+      amount,
+      () => {},
+      actionParams.chainMetadata.id,
+    );
+    return [approveTxn,
+ 
       prepareTransaction({
-        to: oneInchAddress,
+        to: swapCallData["to"],
         chain: CHAIN_ID_TO_CHAIN[actionParams.chainMetadata.id],
         client: THIRDWEB_CLIENT,
         data: swapCallData["data"],
+        extraGas: BigInt(swapCallData["gasFee"]),
       }),
       swapCallData["toAmount"],
     ];

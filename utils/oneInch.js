@@ -36,7 +36,7 @@ export async function fetch1InchSwapData(
   if (fromAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
     throw new Error("fromTokenAddress and toTokenAddress are the same");
   }
-  const url = `${API_URL}/the_best_swap_data?chainId=${chainId}&fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount.toString()}&fromAddress=${fromAddress}&slippage=${slippage}&provider=1inch`;
+  const url = `${API_URL}/the_best_swap_data?chainId=${chainId}&fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount.toString()}&fromAddress=${fromAddress}&slippage=${slippage}&provider=0x`;
   const retryLimit = 3;
   const retryStatusCodes = [429, 500, 502, 503, 504];
 
