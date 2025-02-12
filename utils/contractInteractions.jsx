@@ -21,11 +21,11 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   weth: {
     coinmarketcapApiId: 2396,
-    vaults: ["All Weather Vault", "ETH Vault"],
+    vaults: ["All Weather Vault", "ETH Vault", "Camelot Vault", "Yearn Vault"],
   },
   eth: {
     coinmarketcapApiId: 2396,
-    vaults: ["All Weather Vault", "ETH Vault"],
+    vaults: ["All Weather Vault", "ETH Vault", "Camelot Vault", "Yearn Vault"],
   },
   dai: {
     coinmarketcapApiId: 4943,
@@ -33,7 +33,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   usde: {
     coinmarketcapApiId: 29470,
-    vaults: ["Stablecoin Vault"],
+    vaults: ["Stablecoin Vault", "Convex Vault"],
   },
   wbtc: {
     coinmarketcapApiId: 3717,
@@ -41,7 +41,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   eurc: {
     coinmarketcapApiId: 20641,
-    vaults: ["Stablecoin Vault"],
+    vaults: ["Stablecoin Vault", "Moonwell Vault"],
   },
   bal: {
     coinmarketcapApiId: 5728,
@@ -67,7 +67,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
       chain: "arbitrum",
       address: "0xb2f30a7c980f052f02563fb518dcc39e6bf38175",
     },
-    vaults: ["Stablecoin Vault"],
+    vaults: ["Stablecoin Vault", "Convex Vault"],
   },
   msusd: {
     geckoterminal: {
@@ -88,7 +88,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
       chain: "arbitrum",
       address: "0xd3443ee1e91aF28e5FB858Fbd0D72A63bA8046E0",
     },
-    vaults: ["Stablecoin Vault"],
+    vaults: ["Stablecoin Vault", "Equilibria Vault"],
   },
   dusdc: {
     coinmarketcapApiId: 3408,
@@ -96,7 +96,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   usdx: {
     coinmarketcapApiId: 34060,
-    vaults: ["Stablecoin Vault"],
+    vaults: ["Stablecoin Vault", "Convex Vault"],
   },
   susdx: {
     coinmarketcapApiId: 34088,
@@ -130,7 +130,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   pendle: {
     coinmarketcapApiId: 9481,
-    vaults: ["All Weather Vault", "ETH Vault", "Stablecoin Vault"],
+    vaults: ["All Weather Vault", "ETH Vault", "Stablecoin Vault", "Camelot Vault"],
   },
   link: {
     coinmarketcapApiId: 1975,
