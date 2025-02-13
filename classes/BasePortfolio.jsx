@@ -1,7 +1,6 @@
 import { tokensAndCoinmarketcapIdsFromDropdownOptions } from "../utils/contractInteractions";
 import assert from "assert";
 import { oneInchAddress } from "../utils/oneInch";
-import axios from "axios";
 import { getTokenDecimal, approve } from "../utils/general";
 import { ethers } from "ethers";
 import { getContract, prepareContractCall } from "thirdweb";
@@ -19,184 +18,16 @@ import { toWei } from "thirdweb/utils";
 import { fetch1InchSwapData } from "../utils/oneInch";
 import { _updateProgressAndWait } from "../utils/general";
 import { prepareTransaction } from "thirdweb";
-
+import { TokenPriceBatcher, PriceService } from "./TokenPriceService";
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 
-class PriceService {
-  static STATIC_PRICES = {
-    usd: 1,
-    usdc: 1,
-    usdt: 1,
-    dai: 1,
-    frax: 0.997,
-    usde: 1,
-    usdx: 0.9971,
-  };
-
-  static MAX_RETRIES = 5;
-  static RETRY_DELAY = 5000;
-  static TIMEOUT = 3000;
-
-  constructor(apiUrl) {
-    this.apiUrl = apiUrl;
-    this.cache = {};
-  }
-
-  async fetchPrice(token, priceID) {
-    const { key, provider } = this._getPriceServiceInfo(priceID);
-    let lastError;
-    let backoffDelay = PriceService.RETRY_DELAY;
-
-    for (let attempt = 1; attempt <= PriceService.MAX_RETRIES; attempt++) {
-      try {
-        const endpoint = this._buildEndpoint(provider, key);
-        const response = await axios.get(endpoint, {
-          timeout: PriceService.TIMEOUT,
-          headers: {
-            "Cache-Control": "no-cache",
-            Pragma: "no-cache",
-          },
-          validateStatus: (status) => status >= 200 && status < 500,
-          maxRedirects: 5,
-        });
-
-        if (response.data?.price != null) {
-          return response.data.price;
-        }
-        throw new Error("Invalid price data received");
-      } catch (error) {
-        lastError = error;
-        const errorMessage = error.response?.data?.message || error.message;
-        console.warn(
-          `Attempt ${attempt}/${PriceService.MAX_RETRIES} failed to fetch price for ${token} from ${provider}:`,
-          errorMessage,
-        );
-
-        if (attempt < PriceService.MAX_RETRIES) {
-          const jitter = Math.random() * 1000;
-          await new Promise((resolve) =>
-            setTimeout(resolve, backoffDelay + jitter),
-          );
-          backoffDelay *= 2;
-        }
-      }
-    }
-
-    const fallbackPrice = this._getFallbackPrice(token);
-    if (fallbackPrice !== null) {
-      console.warn(`Using fallback price for ${token}: ${fallbackPrice}`);
-      return fallbackPrice;
-    }
-
-    console.error(
-      `All attempts failed to fetch price for ${token} from ${provider}:`,
-      lastError,
-    );
-    return null;
-  }
-
-  _getFallbackPrice(token) {
-    if (token.toLowerCase() in PriceService.STATIC_PRICES) {
-      return PriceService.STATIC_PRICES[token.toLowerCase()];
-    }
-    return null;
-  }
-
-  _getPriceServiceInfo(priceID) {
-    if (priceID?.coinmarketcapApiId) {
-      return {
-        key: priceID.coinmarketcapApiId,
-        provider: "coinmarketcap",
-        uniqueId: priceID.coinmarketcapApiId,
-      };
-    } else if (priceID?.geckoterminal) {
-      return {
-        key: priceID.geckoterminal,
-        provider: "geckoterminal",
-        uniqueId: priceID.geckoterminal.chain + priceID.geckoterminal.address,
-      };
-    }
-    throw new Error(`Invalid price ID format: ${JSON.stringify(priceID)}`);
-  }
-
-  _buildEndpoint(provider, key) {
-    if (provider === "coinmarketcap") {
-      return `${this.apiUrl}/token/${key}/price`;
-    } else if (provider === "geckoterminal") {
-      return `${this.apiUrl}/token/${key.chain}/${key.address}/price`;
-    }
-    throw new Error(`Unsupported provider: ${provider}`);
-  }
-}
-
-class TokenPriceBatcher {
-  static BATCH_SIZE = 2;
-  static DELAY_MS = 2000;
-
-  constructor(priceService) {
-    this.priceService = priceService;
-  }
-
-  async fetchPrices(tokensToFetch) {
-    const prices = { ...PriceService.STATIC_PRICES };
-
-    for (
-      let i = 0;
-      i < tokensToFetch.length;
-      i += TokenPriceBatcher.BATCH_SIZE
-    ) {
-      const batch = tokensToFetch.slice(i, i + TokenPriceBatcher.BATCH_SIZE);
-      await this._processBatch(batch, prices);
-
-      if (i + TokenPriceBatcher.BATCH_SIZE < tokensToFetch.length) {
-        await this._delay();
-      }
-    }
-
-    return prices;
-  }
-
-  async _processBatch(batch, prices) {
-    // Process requests concurrently using Promise.all
-    const pricePromises = batch.map(async ([token, priceID]) => {
-      // Return price of 1 if in test mode
-      if (process.env.TEST === "true") {
-        return { token, price: 1 };
-      }
-
-      const { uniqueId } = this.priceService._getPriceServiceInfo(priceID);
-
-      // Check cache first
-      if (this.priceService.cache[uniqueId]) {
-        return { token, price: this.priceService.cache[uniqueId] };
-      }
-
-      // Fetch price if not in cache
-      const price = await this.priceService.fetchPrice(token, priceID);
-      if (price !== null) {
-        this.priceService.cache[uniqueId] = price;
-      }
-      return { token, price };
-    });
-
-    // Wait for all price requests to complete
-    const results = await Promise.all(pricePromises);
-
-    // Update prices object with results
-    results.forEach(({ token, price }) => {
-      if (price !== null) {
-        prices[token] = price;
-      }
-    });
-  }
-
-  _delay() {
-    return new Promise((resolve) =>
-      setTimeout(resolve, TokenPriceBatcher.DELAY_MS),
-    );
-  }
-}
+// Add cache for the entire mapping table
+const GLOBAL_MAPPING_CACHE = {
+  table: null,
+  lastUpdated: 0,
+  CACHE_DURATION: 60000, // 1 minute cache
+};
 
 export class BasePortfolio {
   constructor(strategy, weightMapping, portfolioName) {
@@ -423,8 +254,7 @@ export class BasePortfolio {
     return metadata;
   }
 
-  async pendingRewards(owner, updateProgress) {
-    const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
+  async pendingRewards(owner, updateProgress, tokenPricesMappingTable) {
     // Flatten the strategy structure and create pending rewards calculation promises
     const rewardsPromises = Object.values(this.strategy)
       .flatMap((category) => Object.values(category))
@@ -1454,6 +1284,15 @@ export class BasePortfolio {
   }
 
   async getTokenPricesMappingTable() {
+    // Check if we have a valid cached mapping table
+    if (
+      GLOBAL_MAPPING_CACHE.table &&
+      Date.now() - GLOBAL_MAPPING_CACHE.lastUpdated <
+        GLOBAL_MAPPING_CACHE.CACHE_DURATION
+    ) {
+      return GLOBAL_MAPPING_CACHE.table;
+    }
+
     const priceService = new PriceService(process.env.NEXT_PUBLIC_API_URL);
     const batcher = new TokenPriceBatcher(priceService);
 
@@ -1463,7 +1302,13 @@ export class BasePortfolio {
       ([token]) => !Object.keys(PriceService.STATIC_PRICES).includes(token),
     );
 
-    return await batcher.fetchPrices(tokensToFetch);
+    const prices = await batcher.fetchPrices(tokensToFetch);
+
+    // Cache the entire mapping table
+    GLOBAL_MAPPING_CACHE.table = prices;
+    GLOBAL_MAPPING_CACHE.lastUpdated = Date.now();
+
+    return prices;
   }
   validateStrategyWeights() {
     let totalWeight = 0;
@@ -1803,8 +1648,6 @@ export class BasePortfolio {
           ? { value: toWei(ethers.utils.formatEther(amount)) }
           : { params: [amount] }),
       }),
-      wrappedTokenAddress,
-      wrappedTokenSymbol,
     ];
   }
   mul_with_slippage_in_bignumber_format(amount, slippage) {

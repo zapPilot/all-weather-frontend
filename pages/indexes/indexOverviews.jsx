@@ -801,7 +801,6 @@ export default function IndexOverviews() {
           tokenPricesMappingTablePromise,
           usdBalancePromise,
           lockUpPeriodPromise,
-          pendingRewardsPromise,
         ] = [
           portfolioHelper.getTokenPricesMappingTable(),
           portfolioHelper.usdBalanceOf(
@@ -809,7 +808,6 @@ export default function IndexOverviews() {
             portfolioApr[portfolioName],
           ),
           portfolioHelper.lockUpPeriod(account.address),
-          portfolioHelper.pendingRewards(account.address, () => {}),
         ];
         console.time("tokenPricesMappingTablePromise");
         // Update token prices as soon as available
@@ -830,7 +828,11 @@ export default function IndexOverviews() {
         setLockUpPeriod(portfolioLockUpPeriod);
 
         // Update pending rewards as soon as available
-        const pendingRewards = await pendingRewardsPromise;
+        const pendingRewards = await portfolioHelper.pendingRewards(
+          account.address,
+          () => {},
+          tokenPricesMappingTable,
+        );
         setPendingRewards(pendingRewards.pendingRewardsDict);
         setPendingRewardsLoading(false);
 
