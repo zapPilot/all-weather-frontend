@@ -33,7 +33,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   usde: {
     coinmarketcapApiId: 29470,
-    vaults: ["Stablecoin Vault", "Convex Vault"],
+    vaults: ["Stablecoin Vault", "Convex Stablecoin Vault"],
   },
   wbtc: {
     coinmarketcapApiId: 3717,
@@ -67,7 +67,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
       chain: "arbitrum",
       address: "0xb2f30a7c980f052f02563fb518dcc39e6bf38175",
     },
-    vaults: ["Stablecoin Vault", "Convex Vault"],
+    vaults: ["Stablecoin Vault", "Convex Stablecoin Vault"],
   },
   msusd: {
     geckoterminal: {
@@ -96,7 +96,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   usdx: {
     coinmarketcapApiId: 34060,
-    vaults: ["Stablecoin Vault", "Convex Vault"],
+    vaults: ["Stablecoin Vault", "Convex Stablecoin Vault"],
   },
   susdx: {
     coinmarketcapApiId: 34088,
@@ -130,7 +130,12 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   pendle: {
     coinmarketcapApiId: 9481,
-    vaults: ["All Weather Vault", "ETH Vault", "Stablecoin Vault", "Camelot Vault"],
+    vaults: [
+      "All Weather Vault",
+      "ETH Vault",
+      "Stablecoin Vault",
+      "Camelot Vault",
+    ],
   },
   link: {
     coinmarketcapApiId: 1975,

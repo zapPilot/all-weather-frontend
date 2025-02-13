@@ -136,16 +136,15 @@ describe("Yearn Vault", () => {
       onlyThisChain,
     );
     if (txns.length === 3) {
-    expect(txns.length).toBe(3);
-    const encodedData = await encode(txns[0]);
-    expect(encodedData.includes(recipientInEncodeData)).toBe(true);
-    const occurrences = (
-      encodedData.match(new RegExp(recipientInEncodeData, "gi")) || []
-    ).length;
-    expect(occurrences).toBe(2);
+      expect(txns.length).toBe(3);
+      const encodedData = await encode(txns[0]);
+      expect(encodedData.includes(recipientInEncodeData)).toBe(true);
+      const occurrences = (
+        encodedData.match(new RegExp(recipientInEncodeData, "gi")) || []
+      ).length;
+      expect(occurrences).toBe(2);
     } else {
       expect(txns.length).toBe(1);
     }
   });
 });
-
