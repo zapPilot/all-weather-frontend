@@ -34,8 +34,8 @@ class PriceService {
     usdx: 0.9971,
   };
 
-  static MAX_RETRIES = 2;
-  static RETRY_DELAY = 3000;
+  static MAX_RETRIES = 5;
+  static RETRY_DELAY = 5000;
   static TIMEOUT = 3000;
 
   constructor(apiUrl) {
@@ -675,10 +675,9 @@ export class BasePortfolio {
     const currentChain = actionParams.chainMetadata.name
       .toLowerCase()
       .replace(" one", "");
+
     const actionHandlers = {
       zapIn: async (protocol, chain, derivative) => {
-        // TODO(david): zap in's weight should take protocolUsdBalanceDictionary into account
-        // protocolUsdBalanceDictionary = await this._getProtocolUsdBalanceDictionary(owner, actionParams.tokenPricesMappingTable)
         if (protocol.weight === 0) return null;
         const percentageBN = ethers.BigNumber.from(
           String(Math.floor(protocol.weight * derivative * 10000)),
@@ -813,68 +812,94 @@ export class BasePortfolio {
         return [...txns, ...bridgeTxns];
       },
     };
-    // Separate function to process protocol transactions
+
     const processProtocolTxns = async (currentChain) => {
-      const txns = [];
+      const protocolPromises = [];
+
       for (const protocolsInThisCategory of Object.values(this.strategy)) {
         for (const [chain, protocols] of Object.entries(
           protocolsInThisCategory,
         )) {
           if (chain.toLowerCase() !== currentChain) continue;
+
           const totalWeight = protocols.reduce(
             (sum, protocol) => sum + (protocol.weight || 0),
             0,
           );
-          let derivative = 1;
-          if (actionParams.onlyThisChain === true) {
-            derivative = 1 / totalWeight;
-          }
-          for (const protocol of protocols) {
-            const txnsForThisProtocol = await actionHandlers[actionName](
-              protocol,
-              chain,
-              derivative,
-            );
-            if (txnsForThisProtocol) {
-              txns.push(...txnsForThisProtocol);
-            }
-          }
-        }
-      }
-      return txns;
-    };
 
-    // Separate function to process bridge transactions
-    const processBridgeTxns = async (currentChain) => {
-      const txns = [];
-      for (const protocolsInThisCategory of Object.values(this.strategy)) {
-        const targetChains = Object.entries(protocolsInThisCategory)
-          .filter(([chain, protocols]) => chain.toLowerCase() !== currentChain)
-          .map(([chain, protocols]) => {
-            const totalWeight = protocols.reduce(
-              (sum, protocol) => sum + (protocol.weight || 0),
-              0,
-            );
-            return { chain, totalWeight };
+          const derivative =
+            actionParams.onlyThisChain === true ? 1 / totalWeight : 1;
+
+          // Process all protocols in parallel
+          const chainProtocolPromises = protocols.map(async (protocol) => {
+            try {
+              const txns = await actionHandlers[actionName](
+                protocol,
+                chain,
+                derivative,
+              );
+              return txns || [];
+            } catch (error) {
+              console.error(
+                `Error processing protocol ${protocol.interface?.uniqueId?.()}:`,
+                error,
+              );
+              return [];
+            }
           });
 
-        for (const { chain, totalWeight } of targetChains) {
-          if (totalWeight === 0) continue;
-          const bridgeTxns = await actionHandlers["bridge"](chain, totalWeight);
-          txns.push(...bridgeTxns);
+          protocolPromises.push(...chainProtocolPromises);
         }
       }
-      return txns;
+
+      // Wait for all protocol transactions to complete
+      const results = await Promise.all(protocolPromises);
+      return results.flat().filter(Boolean);
     };
 
-    // Execute protocol transactions first
-    const protocolTxns = await processProtocolTxns(currentChain);
+    const processBridgeTxns = async (currentChain) => {
+      const bridgePromises = [];
+
+      for (const protocolsInThisCategory of Object.values(this.strategy)) {
+        const targetChains = Object.entries(protocolsInThisCategory)
+          .filter(([chain]) => chain.toLowerCase() !== currentChain)
+          .map(([chain, protocols]) => ({
+            chain,
+            totalWeight: protocols.reduce(
+              (sum, protocol) => sum + (protocol.weight || 0),
+              0,
+            ),
+          }));
+
+        // Process all bridge transactions in parallel
+        const categoryBridgePromises = targetChains.map(
+          async ({ chain, totalWeight }) => {
+            if (totalWeight === 0) return [];
+            try {
+              return await actionHandlers["bridge"](chain, totalWeight);
+            } catch (error) {
+              console.error(`Error processing bridge to ${chain}:`, error);
+              return [];
+            }
+          },
+        );
+
+        bridgePromises.push(...categoryBridgePromises);
+      }
+
+      // Wait for all bridge transactions to complete
+      const results = await Promise.all(bridgePromises);
+      return results.flat().filter(Boolean);
+    };
+
+    // Execute protocol and bridge transactions in parallel
+    const [protocolTxns, bridgeTxns] = await Promise.all([
+      processProtocolTxns(currentChain),
+      actionParams.onlyThisChain ? [] : processBridgeTxns(currentChain),
+    ]);
+
     if (protocolTxns.length === 0) throw new Error("No protocol txns");
-    // Then execute bridge transactions if needed
-    const bridgeTxns =
-      actionParams.onlyThisChain === true
-        ? []
-        : await processBridgeTxns(currentChain);
+
     // Combine all transactions, with bridge transactions at the end
     return [...protocolTxns, ...bridgeTxns];
   }
@@ -889,15 +914,16 @@ export class BasePortfolio {
       chainMetadata,
       onlyThisChain,
     } = actionParams;
-    const txns = [];
+
     const currentChain = chainMetadata.name.toLowerCase().replace(" one", "");
     const middleTokenConfig = this._getRebalanceMiddleTokenConfig(currentChain);
-    const bridge = await getTheBestBridge();
-    // Filter protocols for the current chain
-    const rebalancableUsdBalanceDictOnThisChain = this._filterProtocolsForChain(
-      rebalancableUsdBalanceDict,
-      currentChain,
-    );
+
+    // Run bridge initialization and protocol filtering in parallel
+    const [bridge, rebalancableUsdBalanceDictOnThisChain] = await Promise.all([
+      getTheBestBridge(),
+      this._filterProtocolsForChain(rebalancableUsdBalanceDict, currentChain),
+    ]);
+
     // Generate zap out transactions and calculate total USDC balance
     const [zapOutTxns, zapOutUsdcBalance] = await this._generateZapOutTxns(
       owner,
@@ -909,14 +935,15 @@ export class BasePortfolio {
       currentChain,
       onlyThisChain,
     );
-    if (zapOutUsdcBalance === 0) return txns;
+
+    if (zapOutUsdcBalance === 0) return [];
+
     const zapOutAmount = ethers.utils.parseUnits(
       (
         zapOutUsdcBalance / tokenPricesMappingTable[middleTokenConfig.symbol]
       ).toFixed(middleTokenConfig.decimals),
       middleTokenConfig.decimals,
     );
-    txns.push(...zapOutTxns);
 
     // Calculate zap in amount including pending rewards
     const zapInAmount = this._calculateZapInAmount(
@@ -926,46 +953,59 @@ export class BasePortfolio {
       middleTokenConfig,
       tokenPricesMappingTable,
     );
-    // Generate approval and fee transactions
-    const [approvalAndFeeTxns, zapInAmountAfterFee] =
-      await this._generateApprovalAndFeeTxns(
+
+    // Run approval, fee, and zap in transactions generation in parallel
+    const [
+      [approvalAndFeeTxns, zapInAmountAfterFee],
+      zapInTxns,
+      rebalancableUsdBalanceDictOnOtherChains,
+    ] = await Promise.all([
+      this._generateApprovalAndFeeTxns(
         middleTokenConfig,
         zapInAmount,
         chainMetadata,
         actionParams,
-      );
-    txns.push(...approvalAndFeeTxns);
-    // Generate zap in transactions for protocols that need rebalancing
-    const zapInTxns = await this._generateZapInTxns(
-      owner,
-      rebalancableUsdBalanceDictOnThisChain,
-      zapInAmountAfterFee,
-      middleTokenConfig,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    txns.push(...zapInTxns);
-    const rebalancableUsdBalanceDictOnOtherChains =
+      ),
+      this._generateZapInTxns(
+        owner,
+        rebalancableUsdBalanceDictOnThisChain,
+        zapInAmount,
+        middleTokenConfig,
+        slippage,
+        tokenPricesMappingTable,
+        updateProgress,
+      ),
       this.filterProtocolsForOtherChains(
         rebalancableUsdBalanceDict,
         currentChain,
-      );
-    if (Object.keys(rebalancableUsdBalanceDictOnOtherChains).length === 0)
-      return txns;
-    for (const [chain, metadata] of Object.entries(
+      ),
+    ]);
+
+    // Combine initial transactions
+    const initialTxns = [...zapOutTxns, ...approvalAndFeeTxns, ...zapInTxns];
+
+    // If no other chains to process, return current transactions
+    if (Object.keys(rebalancableUsdBalanceDictOnOtherChains).length === 0) {
+      return initialTxns;
+    }
+
+    // Process bridge transactions in parallel
+    const bridgePromises = Object.entries(
       rebalancableUsdBalanceDictOnOtherChains,
-    )) {
+    ).map(async ([chain, metadata]) => {
       const totalWeight = metadata.totalWeight;
       const bridgeAmount = ethers.BigNumber.from(
         String(Math.floor(Number(zapInAmountAfterFee) * totalWeight)),
       );
+
       const bridgeUsd =
         Number(bridgeAmount.toString()) *
         tokenPricesMappingTable[
           this._getRebalanceMiddleTokenConfig(currentChain).symbol
         ];
-      if (bridgeUsd < this.bridgeUsdThreshold) continue;
+
+      if (bridgeUsd < this.bridgeUsdThreshold) return [];
+
       const bridgeToOtherChainTxns = await bridge.getBridgeTxns(
         owner,
         chainMetadata.id,
@@ -975,12 +1015,15 @@ export class BasePortfolio {
         bridgeAmount,
         updateProgress,
       );
-      this._updateProgressAndWait(actionParams.updateProgress, chain, 0);
-      txns.push(...bridgeToOtherChainTxns);
-    }
-    // Combine all transactions
 
-    return txns;
+      await this._updateProgressAndWait(actionParams.updateProgress, chain, 0);
+      return bridgeToOtherChainTxns;
+    });
+
+    const bridgeTxnsArrays = await Promise.all(bridgePromises);
+
+    // Combine all transactions and return
+    return [...initialTxns, ...bridgeTxnsArrays.flat()];
   }
 
   _getRebalanceMiddleTokenConfig(chain) {
@@ -1069,30 +1112,45 @@ export class BasePortfolio {
   ) {
     let txns = [];
     let zapOutUsdcBalance = 0;
-    for (const protocolsInThisCategory of Object.values(this.strategy)) {
-      for (const [chain, protocols] of Object.entries(
-        protocolsInThisCategory,
-      )) {
-        if (onlyThisChain && chain !== currentChain) continue;
 
-        for (const protocol of protocols) {
-          const [protocolTxns, protocolBalance] =
-            await this._processProtocolZapOut(
-              owner,
-              protocol,
-              middleTokenConfig,
-              slippage,
-              tokenPricesMappingTable,
-              updateProgress,
-              rebalancableDict,
-              chain,
+    // Process all protocols in parallel for better performance
+    const protocolPromises = Object.values(this.strategy).flatMap(
+      (protocolsInThisCategory) =>
+        Object.entries(protocolsInThisCategory).flatMap(
+          async ([chain, protocols]) => {
+            if (onlyThisChain && chain !== currentChain) return [];
+
+            // Process all protocols in this chain in parallel
+            const chainResults = await Promise.all(
+              protocols.map(async (protocol) => {
+                const [protocolTxns, protocolBalance] =
+                  await this._processProtocolZapOut(
+                    owner,
+                    protocol,
+                    middleTokenConfig,
+                    slippage,
+                    tokenPricesMappingTable,
+                    updateProgress,
+                    rebalancableDict,
+                    chain,
+                  );
+                return { txns: protocolTxns, balance: protocolBalance };
+              }),
             );
 
-          txns = txns.concat(protocolTxns);
-          zapOutUsdcBalance += protocolBalance;
-        }
-      }
-    }
+            return chainResults;
+          },
+        ),
+    );
+
+    // Wait for all protocol processing to complete
+    const results = await Promise.all(protocolPromises);
+
+    // Combine results
+    results.flat().forEach((result) => {
+      txns = txns.concat(result.txns);
+      zapOutUsdcBalance += result.balance;
+    });
 
     return [txns, zapOutUsdcBalance];
   }
