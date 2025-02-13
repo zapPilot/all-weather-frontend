@@ -842,7 +842,6 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
   ) {
     const precision = 1000000000;
-
     // Calculate current ratio including token prices
     const amount0Usd =
       Number(ethers.utils.formatUnits(amounts[0], tokenMetadatas[0][2])) *
