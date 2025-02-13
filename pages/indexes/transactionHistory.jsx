@@ -7,26 +7,8 @@ import axios from "axios";
 import { timeAgo, unixToCustomFormat } from "../../utils/general";
 import { useRouter } from "next/router";
 import Image from "next/image";
+import { token } from "@etherspot/prime-sdk/dist/sdk/contracts/@openzeppelin/contracts";
 // Constants
-const VAULT_CONFIGS = {
-  "ETH Vault": {
-    baseDenom: "usd",
-    tokens: ["weth", "usd", "wbtc"],
-  },
-  "BTC Vault": {
-    baseDenom: "usd",
-    tokens: ["wbtc", "usd", "weth"],
-  },
-  "Stablecoin Vault": {
-    baseDenom: "usd",
-    tokens: ["usd", "weth", "wbtc"],
-  },
-  "All Weather Vault": {
-    baseDenom: "usd",
-    tokens: ["usd", "weth"],
-  },
-};
-
 const ACTION_LABELS = {
   zapIn: "Deposit",
   zapOut: "Withdraw",
@@ -120,21 +102,15 @@ export default function TransactionHistory({
   };
 
   const calculateTotalBalance = (principalBalance) => {
-    const convertDenomination = (amount, fromToken, toToken) => {
-      if (fromToken === toToken) return amount;
-      if (fromToken === "usd") return amount / tokenPricesMappingTable[toToken];
-      if (toToken === "usd") return amount * tokenPricesMappingTable[fromToken];
-      return (
-        (amount * tokenPricesMappingTable[fromToken]) /
-        tokenPricesMappingTable[toToken]
-      );
-    };
-    const config = VAULT_CONFIGS[portfolioName];
-    if (!config) return 0;
+    // Ensure USD price is set
+    tokenPricesMappingTable["usd"] = 1;
+    return Object.entries(principalBalance).reduce((total, [token, amount]) => {
+      // Get the token price, default to 0 if undefined
+      const tokenPrice = tokenPricesMappingTable[token] || 0;
 
-    return config.tokens.reduce((total, token) => {
-      const amount = principalBalance[token] || 0;
-      return total + convertDenomination(amount, token, config.baseDenom);
+      // Ensure amount is a number
+      const numericAmount = Number(amount) || 0;
+      return total + numericAmount * tokenPrice;
     }, 0);
   };
 

@@ -275,8 +275,9 @@ export default function IndexOverviews() {
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
-  const [rebalancableUsdBalanceDict, setrebalancableUsdBalanceDict] =
-    useState(0);
+  const [rebalancableUsdBalanceDict, setrebalancableUsdBalanceDict] = useState(
+    {},
+  );
   const [recipient, setRecipient] = useState("");
   const [protocolAssetDustInWallet, setProtocolAssetDustInWallet] = useState(
     {},
@@ -548,6 +549,9 @@ export default function IndexOverviews() {
           errorReadableMsg = "Swap quote has expired. Please try again.";
         } else if (error.message.includes("0xf4059071")) {
           errorReadableMsg = "Please increase slippage tolerance";
+        } else if (error.message.includes("0x8f66ec14")) {
+          errorReadableMsg =
+            "The zap in amount is too small, or slippage is too low";
         } else if (
           error.message.includes(
             "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002c4552433732313a206f70657261746f7220717565727920666f72206e6f6e6578697374656e7420746f6b656e0000000000000000000000000000000000000000",
@@ -797,7 +801,6 @@ export default function IndexOverviews() {
           tokenPricesMappingTablePromise,
           usdBalancePromise,
           lockUpPeriodPromise,
-          pendingRewardsPromise,
         ] = [
           portfolioHelper.getTokenPricesMappingTable(),
           portfolioHelper.usdBalanceOf(
@@ -805,7 +808,6 @@ export default function IndexOverviews() {
             portfolioApr[portfolioName],
           ),
           portfolioHelper.lockUpPeriod(account.address),
-          portfolioHelper.pendingRewards(account.address, () => {}),
         ];
         console.time("tokenPricesMappingTablePromise");
         // Update token prices as soon as available
@@ -815,7 +817,6 @@ export default function IndexOverviews() {
         // Update USD balance and dict as soon as available
         console.time("outer usdBalanceOf");
         const [usdBalance, usdBalanceDict] = await usdBalancePromise;
-        console.log("usdBalance", usdBalance);
         setUsdBalance(usdBalance);
         setUsdBalanceLoading(false);
         setrebalancableUsdBalanceDict(usdBalanceDict);
@@ -827,7 +828,11 @@ export default function IndexOverviews() {
         setLockUpPeriod(portfolioLockUpPeriod);
 
         // Update pending rewards as soon as available
-        const pendingRewards = await pendingRewardsPromise;
+        const pendingRewards = await portfolioHelper.pendingRewards(
+          account.address,
+          () => {},
+          tokenPricesMappingTable,
+        );
         setPendingRewards(pendingRewards.pendingRewardsDict);
         setPendingRewardsLoading(false);
 

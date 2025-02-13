@@ -99,7 +99,7 @@ export default function ZapInTab({
             >
               2
             </div>
-            <p>Deposit every chain</p>
+            <p>Deposit on every chain</p>
           </div>
         </div>
         <div className="mt-2 p-2">

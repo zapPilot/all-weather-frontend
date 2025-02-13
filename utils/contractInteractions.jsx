@@ -21,11 +21,23 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   weth: {
     coinmarketcapApiId: 2396,
-    vaults: ["All Weather Vault", "ETH Vault", "Camelot Vault", "Yearn Vault"],
+    vaults: [
+      "All Weather Vault",
+      "ETH Vault",
+      "Camelot Vault",
+      "Yearn Vault",
+      "Stablecoin Vault",
+    ],
   },
   eth: {
     coinmarketcapApiId: 2396,
-    vaults: ["All Weather Vault", "ETH Vault", "Camelot Vault", "Yearn Vault"],
+    vaults: [
+      "All Weather Vault",
+      "ETH Vault",
+      "Camelot Vault",
+      "Yearn Vault",
+      "Stablecoin Vault",
+    ],
   },
   dai: {
     coinmarketcapApiId: 4943,

@@ -754,7 +754,6 @@ export default class BaseProtocol extends BaseUniswap {
       (acc, value) => acc.add(value),
       ethers.BigNumber.from(0),
     );
-
     // Process swaps for each token
     const [swapTxns, amountsAfterSwap] = await this._processTokenSwaps(
       recipient,
@@ -841,36 +840,85 @@ export default class BaseProtocol extends BaseUniswap {
     lpTokenRatio,
     tokenPricesMappingTable,
   ) {
-    const precision = 1000000000;
+    const PRECISION = 1000000000;
+    const MAX_UINT256 = ethers.BigNumber.from("2").pow(256).sub(1);
 
-    // Calculate current ratio including token prices
-    const amount0Usd =
-      Number(ethers.utils.formatUnits(amounts[0], tokenMetadatas[0][2])) *
-      tokenPricesMappingTable[tokenMetadatas[0][0]];
-    const amount1Usd =
-      Number(ethers.utils.formatUnits(amounts[1], tokenMetadatas[1][2])) *
-      tokenPricesMappingTable[tokenMetadatas[1][0]];
-    const currentRatio = amount0Usd / amount1Usd;
-    const targetRatio = lpTokenRatio[0] / lpTokenRatio[1];
-
-    // Convert to BigNumber for precise calculations
-    const currentRatioBN = ethers.BigNumber.from(
-      String(Math.floor(currentRatio * precision)),
+    // Calculate USD values and ratios
+    const usdValues = this._calculateUsdValues(
+      amounts,
+      tokenMetadatas,
+      tokenPricesMappingTable,
     );
-    const targetRatioBN = ethers.BigNumber.from(
-      String(Math.floor(targetRatio * precision)),
+    const { currentRatio, targetRatio } = this._calculateRatios(
+      usdValues,
+      lpTokenRatio,
     );
 
-    // Adjust amounts to match target ratio
+    // Convert ratios to BigNumber format
+    const ratios = this._convertRatiosToBigNumber(
+      currentRatio,
+      targetRatio,
+      PRECISION,
+    );
+
+    // Balance the amounts based on ratios
+    return this._adjustAmountsToMatchRatio(amounts, ratios, MAX_UINT256);
+  }
+
+  _calculateUsdValues(amounts, tokenMetadatas, tokenPricesMappingTable) {
+    return amounts.map((amount, index) => {
+      const tokenDecimals = tokenMetadatas[index][2];
+      const tokenSymbol = tokenMetadatas[index][0];
+      const normalizedAmount = Number(
+        ethers.utils.formatUnits(amount, tokenDecimals),
+      );
+      return normalizedAmount * tokenPricesMappingTable[tokenSymbol];
+    });
+  }
+
+  _calculateRatios(usdValues, lpTokenRatio) {
+    return {
+      currentRatio: usdValues[0] / usdValues[1],
+      targetRatio: lpTokenRatio[0] / lpTokenRatio[1],
+    };
+  }
+
+  _convertRatiosToBigNumber(currentRatio, targetRatio, precision) {
+    return {
+      current: ethers.BigNumber.from(
+        String(Math.floor(currentRatio * precision)),
+      ),
+      target: ethers.BigNumber.from(
+        String(Math.floor(targetRatio * precision)),
+      ),
+    };
+  }
+
+  _adjustAmountsToMatchRatio(amounts, ratios, maxUint256) {
     const balancedAmounts = [...amounts];
-    if (currentRatioBN.gt(targetRatioBN)) {
-      balancedAmounts[0] = amounts[0].mul(targetRatioBN).div(currentRatioBN);
+    const isCurrentRatioHigher = ratios.current.gt(ratios.target);
+    const indexToAdjust = isCurrentRatioHigher ? 0 : 1;
+
+    const newAmount = isCurrentRatioHigher
+      ? amounts[0].mul(ratios.target).div(ratios.current)
+      : amounts[1].mul(ratios.current).div(ratios.target);
+
+    if (this._isAmountInValidRange(newAmount, maxUint256)) {
+      balancedAmounts[indexToAdjust] = newAmount;
     } else {
-      balancedAmounts[1] = amounts[1].mul(currentRatioBN).div(targetRatioBN);
+      console.error(
+        `Amount[${indexToAdjust}] outside safe uint256 range - setting to 0`,
+      );
+      balancedAmounts[indexToAdjust] = ethers.BigNumber.from("0");
     }
 
     return balancedAmounts;
   }
+
+  _isAmountInValidRange(amount, maxUint256) {
+    return !amount.lt(0) && !amount.gt(maxUint256);
+  }
+
   async _batchSwap(
     recipient,
     withdrawTokenAndBalance,

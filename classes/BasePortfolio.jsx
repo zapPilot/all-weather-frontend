@@ -1,7 +1,6 @@
 import { tokensAndCoinmarketcapIdsFromDropdownOptions } from "../utils/contractInteractions";
 import assert from "assert";
 import { oneInchAddress } from "../utils/oneInch";
-import axios from "axios";
 import { getTokenDecimal, approve } from "../utils/general";
 import { ethers } from "ethers";
 import { getContract, prepareContractCall } from "thirdweb";
@@ -19,178 +18,16 @@ import { toWei } from "thirdweb/utils";
 import { fetch1InchSwapData } from "../utils/oneInch";
 import { _updateProgressAndWait } from "../utils/general";
 import { prepareTransaction } from "thirdweb";
-
+import { TokenPriceBatcher, PriceService } from "./TokenPriceService";
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 
-class PriceService {
-  static STATIC_PRICES = {
-    usd: 1,
-    usdc: 1,
-    usdt: 1,
-    dai: 1,
-    frax: 0.997,
-    usde: 1,
-  };
-
-  static MAX_RETRIES = 2;
-  static RETRY_DELAY = 2000;
-  static TIMEOUT = 3000;
-
-  constructor(apiUrl) {
-    this.apiUrl = apiUrl;
-    this.cache = {};
-  }
-
-  async fetchPrice(token, priceID) {
-    const { key, provider } = this._getPriceServiceInfo(priceID);
-    let lastError;
-    let backoffDelay = PriceService.RETRY_DELAY;
-
-    for (let attempt = 1; attempt <= PriceService.MAX_RETRIES; attempt++) {
-      try {
-        const endpoint = this._buildEndpoint(provider, key);
-        const response = await axios.get(endpoint, {
-          timeout: PriceService.TIMEOUT,
-          headers: {
-            "Cache-Control": "no-cache",
-            Pragma: "no-cache",
-          },
-          validateStatus: (status) => status >= 200 && status < 500,
-          maxRedirects: 5,
-        });
-
-        if (response.data?.price != null) {
-          return response.data.price;
-        }
-        throw new Error("Invalid price data received");
-      } catch (error) {
-        lastError = error;
-        const errorMessage = error.response?.data?.message || error.message;
-        console.warn(
-          `Attempt ${attempt}/${PriceService.MAX_RETRIES} failed to fetch price for ${token} from ${provider}:`,
-          errorMessage,
-        );
-
-        if (attempt < PriceService.MAX_RETRIES) {
-          const jitter = Math.random() * 1000;
-          await new Promise((resolve) =>
-            setTimeout(resolve, backoffDelay + jitter),
-          );
-          backoffDelay *= 2;
-        }
-      }
-    }
-
-    const fallbackPrice = this._getFallbackPrice(token);
-    if (fallbackPrice !== null) {
-      console.warn(`Using fallback price for ${token}: ${fallbackPrice}`);
-      return fallbackPrice;
-    }
-
-    console.error(
-      `All attempts failed to fetch price for ${token} from ${provider}:`,
-      lastError,
-    );
-    return null;
-  }
-
-  _getFallbackPrice(token) {
-    if (token.toLowerCase() in PriceService.STATIC_PRICES) {
-      return PriceService.STATIC_PRICES[token.toLowerCase()];
-    }
-    return null;
-  }
-
-  _getPriceServiceInfo(priceID) {
-    if (priceID?.coinmarketcapApiId) {
-      return {
-        key: priceID.coinmarketcapApiId,
-        provider: "coinmarketcap",
-        uniqueId: priceID.coinmarketcapApiId,
-      };
-    } else if (priceID?.geckoterminal) {
-      return {
-        key: priceID.geckoterminal,
-        provider: "geckoterminal",
-        uniqueId: priceID.geckoterminal.chain + priceID.geckoterminal.address,
-      };
-    }
-    throw new Error(`Invalid price ID format: ${JSON.stringify(priceID)}`);
-  }
-
-  _buildEndpoint(provider, key) {
-    if (provider === "coinmarketcap") {
-      return `${this.apiUrl}/token/${key}/price`;
-    } else if (provider === "geckoterminal") {
-      return `${this.apiUrl}/token/${key.chain}/${key.address}/price`;
-    }
-    throw new Error(`Unsupported provider: ${provider}`);
-  }
-}
-
-class TokenPriceBatcher {
-  static BATCH_SIZE = 2;
-  static DELAY_MS = 2000;
-
-  constructor(priceService) {
-    this.priceService = priceService;
-  }
-
-  async fetchPrices(tokensToFetch) {
-    const prices = { ...PriceService.STATIC_PRICES };
-
-    for (
-      let i = 0;
-      i < tokensToFetch.length;
-      i += TokenPriceBatcher.BATCH_SIZE
-    ) {
-      const batch = tokensToFetch.slice(i, i + TokenPriceBatcher.BATCH_SIZE);
-      await this._processBatch(batch, prices);
-
-      if (i + TokenPriceBatcher.BATCH_SIZE < tokensToFetch.length) {
-        await this._delay();
-      }
-    }
-
-    return prices;
-  }
-
-  async _processBatch(batch, prices) {
-    // Process requests concurrently using Promise.all
-    const pricePromises = batch.map(async ([token, priceID]) => {
-      const { uniqueId } = this.priceService._getPriceServiceInfo(priceID);
-
-      // Check cache first
-      if (this.priceService.cache[uniqueId]) {
-        return { token, price: this.priceService.cache[uniqueId] };
-      }
-
-      // Fetch price if not in cache
-      const price = await this.priceService.fetchPrice(token, priceID);
-      if (price !== null) {
-        this.priceService.cache[uniqueId] = price;
-      }
-      return { token, price };
-    });
-
-    // Wait for all price requests to complete
-    const results = await Promise.all(pricePromises);
-
-    // Update prices object with results
-    results.forEach(({ token, price }) => {
-      if (price !== null) {
-        prices[token] = price;
-      }
-    });
-  }
-
-  _delay() {
-    return new Promise((resolve) =>
-      setTimeout(resolve, TokenPriceBatcher.DELAY_MS),
-    );
-  }
-}
+// Add cache for the entire mapping table
+const GLOBAL_MAPPING_CACHE = {
+  table: null,
+  lastUpdated: 0,
+  CACHE_DURATION: 60000, // 1 minute cache
+};
 
 export class BasePortfolio {
   constructor(strategy, weightMapping, portfolioName) {
@@ -417,8 +254,7 @@ export class BasePortfolio {
     return metadata;
   }
 
-  async pendingRewards(owner, updateProgress) {
-    const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
+  async pendingRewards(owner, updateProgress, tokenPricesMappingTable) {
     // Flatten the strategy structure and create pending rewards calculation promises
     const rewardsPromises = Object.values(this.strategy)
       .flatMap((category) => Object.values(category))
@@ -669,10 +505,9 @@ export class BasePortfolio {
     const currentChain = actionParams.chainMetadata.name
       .toLowerCase()
       .replace(" one", "");
+
     const actionHandlers = {
       zapIn: async (protocol, chain, derivative) => {
-        // TODO(david): zap in's weight should take protocolUsdBalanceDictionary into account
-        // protocolUsdBalanceDictionary = await this._getProtocolUsdBalanceDictionary(owner, actionParams.tokenPricesMappingTable)
         if (protocol.weight === 0) return null;
         const percentageBN = ethers.BigNumber.from(
           String(Math.floor(protocol.weight * derivative * 10000)),
@@ -807,68 +642,94 @@ export class BasePortfolio {
         return [...txns, ...bridgeTxns];
       },
     };
-    // Separate function to process protocol transactions
+
     const processProtocolTxns = async (currentChain) => {
-      const txns = [];
+      const protocolPromises = [];
+
       for (const protocolsInThisCategory of Object.values(this.strategy)) {
         for (const [chain, protocols] of Object.entries(
           protocolsInThisCategory,
         )) {
           if (chain.toLowerCase() !== currentChain) continue;
+
           const totalWeight = protocols.reduce(
             (sum, protocol) => sum + (protocol.weight || 0),
             0,
           );
-          let derivative = 1;
-          if (actionParams.onlyThisChain === true) {
-            derivative = 1 / totalWeight;
-          }
-          for (const protocol of protocols) {
-            const txnsForThisProtocol = await actionHandlers[actionName](
-              protocol,
-              chain,
-              derivative,
-            );
-            if (txnsForThisProtocol) {
-              txns.push(...txnsForThisProtocol);
-            }
-          }
-        }
-      }
-      return txns;
-    };
 
-    // Separate function to process bridge transactions
-    const processBridgeTxns = async (currentChain) => {
-      const txns = [];
-      for (const protocolsInThisCategory of Object.values(this.strategy)) {
-        const targetChains = Object.entries(protocolsInThisCategory)
-          .filter(([chain, protocols]) => chain.toLowerCase() !== currentChain)
-          .map(([chain, protocols]) => {
-            const totalWeight = protocols.reduce(
-              (sum, protocol) => sum + (protocol.weight || 0),
-              0,
-            );
-            return { chain, totalWeight };
+          const derivative =
+            actionParams.onlyThisChain === true ? 1 / totalWeight : 1;
+
+          // Process all protocols in parallel
+          const chainProtocolPromises = protocols.map(async (protocol) => {
+            try {
+              const txns = await actionHandlers[actionName](
+                protocol,
+                chain,
+                derivative,
+              );
+              return txns || [];
+            } catch (error) {
+              console.error(
+                `Error processing protocol ${protocol.interface?.uniqueId?.()}:`,
+                error,
+              );
+              return [];
+            }
           });
 
-        for (const { chain, totalWeight } of targetChains) {
-          if (totalWeight === 0) continue;
-          const bridgeTxns = await actionHandlers["bridge"](chain, totalWeight);
-          txns.push(...bridgeTxns);
+          protocolPromises.push(...chainProtocolPromises);
         }
       }
-      return txns;
+
+      // Wait for all protocol transactions to complete
+      const results = await Promise.all(protocolPromises);
+      return results.flat().filter(Boolean);
     };
 
-    // Execute protocol transactions first
-    const protocolTxns = await processProtocolTxns(currentChain);
+    const processBridgeTxns = async (currentChain) => {
+      const bridgePromises = [];
+
+      for (const protocolsInThisCategory of Object.values(this.strategy)) {
+        const targetChains = Object.entries(protocolsInThisCategory)
+          .filter(([chain]) => chain.toLowerCase() !== currentChain)
+          .map(([chain, protocols]) => ({
+            chain,
+            totalWeight: protocols.reduce(
+              (sum, protocol) => sum + (protocol.weight || 0),
+              0,
+            ),
+          }));
+
+        // Process all bridge transactions in parallel
+        const categoryBridgePromises = targetChains.map(
+          async ({ chain, totalWeight }) => {
+            if (totalWeight === 0) return [];
+            try {
+              return await actionHandlers["bridge"](chain, totalWeight);
+            } catch (error) {
+              console.error(`Error processing bridge to ${chain}:`, error);
+              return [];
+            }
+          },
+        );
+
+        bridgePromises.push(...categoryBridgePromises);
+      }
+
+      // Wait for all bridge transactions to complete
+      const results = await Promise.all(bridgePromises);
+      return results.flat().filter(Boolean);
+    };
+
+    // Execute protocol and bridge transactions in parallel
+    const [protocolTxns, bridgeTxns] = await Promise.all([
+      processProtocolTxns(currentChain),
+      actionParams.onlyThisChain ? [] : processBridgeTxns(currentChain),
+    ]);
+
     if (protocolTxns.length === 0) throw new Error("No protocol txns");
-    // Then execute bridge transactions if needed
-    const bridgeTxns =
-      actionParams.onlyThisChain === true
-        ? []
-        : await processBridgeTxns(currentChain);
+
     // Combine all transactions, with bridge transactions at the end
     return [...protocolTxns, ...bridgeTxns];
   }
@@ -883,15 +744,16 @@ export class BasePortfolio {
       chainMetadata,
       onlyThisChain,
     } = actionParams;
-    const txns = [];
+
     const currentChain = chainMetadata.name.toLowerCase().replace(" one", "");
     const middleTokenConfig = this._getRebalanceMiddleTokenConfig(currentChain);
-    const bridge = await getTheBestBridge();
-    // Filter protocols for the current chain
-    const rebalancableUsdBalanceDictOnThisChain = this._filterProtocolsForChain(
-      rebalancableUsdBalanceDict,
-      currentChain,
-    );
+
+    // Run bridge initialization and protocol filtering in parallel
+    const [bridge, rebalancableUsdBalanceDictOnThisChain] = await Promise.all([
+      getTheBestBridge(),
+      this._filterProtocolsForChain(rebalancableUsdBalanceDict, currentChain),
+    ]);
+
     // Generate zap out transactions and calculate total USDC balance
     const [zapOutTxns, zapOutUsdcBalance] = await this._generateZapOutTxns(
       owner,
@@ -903,14 +765,15 @@ export class BasePortfolio {
       currentChain,
       onlyThisChain,
     );
-    if (zapOutUsdcBalance === 0) return txns;
+
+    if (zapOutUsdcBalance === 0) return [];
+
     const zapOutAmount = ethers.utils.parseUnits(
       (
         zapOutUsdcBalance / tokenPricesMappingTable[middleTokenConfig.symbol]
       ).toFixed(middleTokenConfig.decimals),
       middleTokenConfig.decimals,
     );
-    txns.push(...zapOutTxns);
 
     // Calculate zap in amount including pending rewards
     const zapInAmount = this._calculateZapInAmount(
@@ -920,46 +783,59 @@ export class BasePortfolio {
       middleTokenConfig,
       tokenPricesMappingTable,
     );
-    // Generate approval and fee transactions
-    const [approvalAndFeeTxns, zapInAmountAfterFee] =
-      await this._generateApprovalAndFeeTxns(
+
+    // Run approval, fee, and zap in transactions generation in parallel
+    const [
+      [approvalAndFeeTxns, zapInAmountAfterFee],
+      zapInTxns,
+      rebalancableUsdBalanceDictOnOtherChains,
+    ] = await Promise.all([
+      this._generateApprovalAndFeeTxns(
         middleTokenConfig,
         zapInAmount,
         chainMetadata,
         actionParams,
-      );
-    txns.push(...approvalAndFeeTxns);
-    // Generate zap in transactions for protocols that need rebalancing
-    const zapInTxns = await this._generateZapInTxns(
-      owner,
-      rebalancableUsdBalanceDictOnThisChain,
-      zapInAmountAfterFee,
-      middleTokenConfig,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    txns.push(...zapInTxns);
-    const rebalancableUsdBalanceDictOnOtherChains =
+      ),
+      this._generateZapInTxns(
+        owner,
+        rebalancableUsdBalanceDictOnThisChain,
+        zapInAmount,
+        middleTokenConfig,
+        slippage,
+        tokenPricesMappingTable,
+        updateProgress,
+      ),
       this.filterProtocolsForOtherChains(
         rebalancableUsdBalanceDict,
         currentChain,
-      );
-    if (Object.keys(rebalancableUsdBalanceDictOnOtherChains).length === 0)
-      return txns;
-    for (const [chain, metadata] of Object.entries(
+      ),
+    ]);
+
+    // Combine initial transactions
+    const initialTxns = [...zapOutTxns, ...approvalAndFeeTxns, ...zapInTxns];
+
+    // If no other chains to process, return current transactions
+    if (Object.keys(rebalancableUsdBalanceDictOnOtherChains).length === 0) {
+      return initialTxns;
+    }
+
+    // Process bridge transactions in parallel
+    const bridgePromises = Object.entries(
       rebalancableUsdBalanceDictOnOtherChains,
-    )) {
+    ).map(async ([chain, metadata]) => {
       const totalWeight = metadata.totalWeight;
       const bridgeAmount = ethers.BigNumber.from(
         String(Math.floor(Number(zapInAmountAfterFee) * totalWeight)),
       );
+
       const bridgeUsd =
         Number(bridgeAmount.toString()) *
         tokenPricesMappingTable[
           this._getRebalanceMiddleTokenConfig(currentChain).symbol
         ];
-      if (bridgeUsd < this.bridgeUsdThreshold) continue;
+
+      if (bridgeUsd < this.bridgeUsdThreshold) return [];
+
       const bridgeToOtherChainTxns = await bridge.getBridgeTxns(
         owner,
         chainMetadata.id,
@@ -969,12 +845,15 @@ export class BasePortfolio {
         bridgeAmount,
         updateProgress,
       );
-      this._updateProgressAndWait(actionParams.updateProgress, chain, 0);
-      txns.push(...bridgeToOtherChainTxns);
-    }
-    // Combine all transactions
 
-    return txns;
+      await this._updateProgressAndWait(actionParams.updateProgress, chain, 0);
+      return bridgeToOtherChainTxns;
+    });
+
+    const bridgeTxnsArrays = await Promise.all(bridgePromises);
+
+    // Combine all transactions and return
+    return [...initialTxns, ...bridgeTxnsArrays.flat()];
   }
 
   _getRebalanceMiddleTokenConfig(chain) {
@@ -1063,30 +942,45 @@ export class BasePortfolio {
   ) {
     let txns = [];
     let zapOutUsdcBalance = 0;
-    for (const protocolsInThisCategory of Object.values(this.strategy)) {
-      for (const [chain, protocols] of Object.entries(
-        protocolsInThisCategory,
-      )) {
-        if (onlyThisChain && chain !== currentChain) continue;
 
-        for (const protocol of protocols) {
-          const [protocolTxns, protocolBalance] =
-            await this._processProtocolZapOut(
-              owner,
-              protocol,
-              middleTokenConfig,
-              slippage,
-              tokenPricesMappingTable,
-              updateProgress,
-              rebalancableDict,
-              chain,
+    // Process all protocols in parallel for better performance
+    const protocolPromises = Object.values(this.strategy).flatMap(
+      (protocolsInThisCategory) =>
+        Object.entries(protocolsInThisCategory).flatMap(
+          async ([chain, protocols]) => {
+            if (onlyThisChain && chain !== currentChain) return [];
+
+            // Process all protocols in this chain in parallel
+            const chainResults = await Promise.all(
+              protocols.map(async (protocol) => {
+                const [protocolTxns, protocolBalance] =
+                  await this._processProtocolZapOut(
+                    owner,
+                    protocol,
+                    middleTokenConfig,
+                    slippage,
+                    tokenPricesMappingTable,
+                    updateProgress,
+                    rebalancableDict,
+                    chain,
+                  );
+                return { txns: protocolTxns, balance: protocolBalance };
+              }),
             );
 
-          txns = txns.concat(protocolTxns);
-          zapOutUsdcBalance += protocolBalance;
-        }
-      }
-    }
+            return chainResults;
+          },
+        ),
+    );
+
+    // Wait for all protocol processing to complete
+    const results = await Promise.all(protocolPromises);
+
+    // Combine results
+    results.flat().forEach((result) => {
+      txns = txns.concat(result.txns);
+      zapOutUsdcBalance += result.balance;
+    });
 
     return [txns, zapOutUsdcBalance];
   }
@@ -1390,6 +1284,15 @@ export class BasePortfolio {
   }
 
   async getTokenPricesMappingTable() {
+    // Check if we have a valid cached mapping table
+    if (
+      GLOBAL_MAPPING_CACHE.table &&
+      Date.now() - GLOBAL_MAPPING_CACHE.lastUpdated <
+        GLOBAL_MAPPING_CACHE.CACHE_DURATION
+    ) {
+      return GLOBAL_MAPPING_CACHE.table;
+    }
+
     const priceService = new PriceService(process.env.NEXT_PUBLIC_API_URL);
     const batcher = new TokenPriceBatcher(priceService);
 
@@ -1399,7 +1302,13 @@ export class BasePortfolio {
       ([token]) => !Object.keys(PriceService.STATIC_PRICES).includes(token),
     );
 
-    return await batcher.fetchPrices(tokensToFetch);
+    const prices = await batcher.fetchPrices(tokensToFetch);
+
+    // Cache the entire mapping table
+    GLOBAL_MAPPING_CACHE.table = prices;
+    GLOBAL_MAPPING_CACHE.lastUpdated = Date.now();
+
+    return prices;
   }
   validateStrategyWeights() {
     let totalWeight = 0;
@@ -1739,8 +1648,6 @@ export class BasePortfolio {
           ? { value: toWei(ethers.utils.formatEther(amount)) }
           : { params: [amount] }),
       }),
-      wrappedTokenAddress,
-      wrappedTokenSymbol,
     ];
   }
   mul_with_slippage_in_bignumber_format(amount, slippage) {
