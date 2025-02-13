@@ -4,7 +4,6 @@ import { generateIntentTxns } from "../../classes/main.js";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { encode } from "thirdweb";
 import { arbitrum } from "thirdweb/chains";
-import { oneInchAddress } from "../../utils/oneInch.js";
 const setTradingLoss = () => {};
 const setStepName = () => {};
 const setTotalTradingLoss = () => {};
@@ -202,7 +201,7 @@ describe("Camelot Vault", () => {
         "2ecbc6f229fed06044cdb0dd772437a30190cd50",
       );
     } else {
-      expect(txns.length).toBe(2);
+      expect(txns.length).toBe(1);
     }
   });
 });

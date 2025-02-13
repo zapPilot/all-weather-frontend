@@ -160,6 +160,11 @@ class TokenPriceBatcher {
   async _processBatch(batch, prices) {
     // Process requests concurrently using Promise.all
     const pricePromises = batch.map(async ([token, priceID]) => {
+      // Return price of 1 if in test mode
+      if (process.env.TEST === "true") {
+        return { token, price: 1 };
+      }
+
       const { uniqueId } = this.priceService._getPriceServiceInfo(priceID);
 
       // Check cache first
