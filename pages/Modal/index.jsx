@@ -6,6 +6,8 @@ import {
   DialogPanel,
   DialogTitle,
 } from "@headlessui/react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+
 import DemoFlowDirectionGraph from "../FlowChart";
 import { CheckIcon, QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/20/solid";
@@ -95,6 +97,16 @@ export default function PopUpModal({
             transition
             className="relative transform overflow-hidden rounded-lg bg-gray-300 px-4 pb-4 pt-5 text-left shadow-xl transition-all data-[closed]:translate-y-4 data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in sm:my-8 sm:w-full sm:max-w-5xl sm:p-6 data-[closed]:sm:translate-y-0 data-[closed]:sm:scale-95"
           >
+            <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              >
+                <span className="sr-only">Close</span>
+                <XMarkIcon aria-hidden="true" className="size-6" />
+              </button>
+            </div>
             <div className="flex flex-col h-full">
               <div>
                 <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-green-100">
@@ -278,7 +290,7 @@ export default function PopUpModal({
                   </dd>
                 </div>
               </dl>
-              <div className="mt-6">
+              <div className="mt-6 flex gap-4">
                 <button
                   type="button"
                   onClick={() =>
