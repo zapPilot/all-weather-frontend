@@ -29,6 +29,7 @@ export class EquilibriaETHVault extends BasePortfolio {
       {
         long_term_bond: 1,
       },
+      "Equilibria ETH Vault",
     );
     this.validateStrategyWeights();
   }

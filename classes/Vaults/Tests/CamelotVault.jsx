@@ -75,6 +75,7 @@ export class CamelotVault extends BasePortfolio {
       {
         gold: 1,
       },
+      "Camelot Vault",
     );
     this.validateStrategyWeights();
   }

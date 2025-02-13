@@ -9,114 +9,149 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   usdc: {
     coinmarketcapApiId: 3408,
+    vaults: ["Stablecoin Vault", "Aerodrome Vault"],
   },
   usdt: {
     coinmarketcapApiId: 825,
+    vaults: ["Stablecoin Vault"],
   },
   "usdc.e": {
     coinmarketcapApiId: 3408,
+    vaults: ["Stablecoin Vault"],
   },
   weth: {
     coinmarketcapApiId: 2396,
+    vaults: ["All Weather Vault", "ETH Vault", "Camelot Vault", "Yearn Vault"],
   },
   eth: {
     coinmarketcapApiId: 2396,
+    vaults: ["All Weather Vault", "ETH Vault", "Camelot Vault", "Yearn Vault"],
   },
   dai: {
     coinmarketcapApiId: 4943,
+    vaults: ["Stablecoin Vault"],
   },
   usde: {
     coinmarketcapApiId: 29470,
+    vaults: ["Stablecoin Vault", "Convex Stablecoin Vault"],
   },
   wbtc: {
     coinmarketcapApiId: 3717,
+    vaults: ["BTC Vault"],
   },
   eurc: {
     coinmarketcapApiId: 20641,
+    vaults: ["Stablecoin Vault", "Moonwell Vault"],
   },
   bal: {
     coinmarketcapApiId: 5728,
+    vaults: ["Stablecoin Vault"],
   },
   mseth: {
     geckoterminal: {
       chain: "base",
       address: "0x7Ba6F01772924a82D9626c126347A28299E98c98",
     },
+    vaults: ["ETH Vault"],
   },
   zuneth: {
     coinmarketcapApiId: 2396,
+    vaults: ["ETH Vault"],
   },
   metis: {
     coinmarketcapApiId: 9640,
+    vaults: ["Metis Vault"],
   },
   susd: {
     geckoterminal: {
       chain: "arbitrum",
       address: "0xb2f30a7c980f052f02563fb518dcc39e6bf38175",
     },
+    vaults: ["Stablecoin Vault", "Convex Stablecoin Vault"],
   },
   msusd: {
     geckoterminal: {
       chain: "base",
       address: "0x526728DBc96689597F85ae4cd716d4f7fCcBAE9d",
     },
+    vaults: ["Stablecoin Vault", "Aerodrome Vault"],
   },
   eusd: {
     geckoterminal: {
       chain: "arbitrum",
       address: "0x12275DCB9048680c4Be40942eA4D92c74C63b844",
     },
+    vaults: ["Stablecoin Vault"],
   },
   gusdc: {
     geckoterminal: {
       chain: "arbitrum",
       address: "0xd3443ee1e91aF28e5FB858Fbd0D72A63bA8046E0",
     },
+    vaults: ["Stablecoin Vault", "Equilibria Vault"],
   },
   dusdc: {
     coinmarketcapApiId: 3408,
+    vaults: ["Stablecoin Vault"],
   },
   usdx: {
     coinmarketcapApiId: 34060,
+    vaults: ["Stablecoin Vault", "Convex Stablecoin Vault"],
   },
   susdx: {
     coinmarketcapApiId: 34088,
+    vaults: ["Stablecoin Vault"],
   },
   gho: {
     coinmarketcapApiId: 23508,
+    vaults: ["Stablecoin Vault"],
   },
   gyd: {
     coinmarketcapApiId: 31996,
+    vaults: ["Stablecoin Vault"],
   },
   wausdcn: {
     geckoterminal: {
       chain: "arbitrum",
       address: "0x7CFaDFD5645B50bE87d546f42699d863648251ad",
     },
+    vaults: ["Stablecoin Vault"],
   },
   susdz: {
     geckoterminal: {
       chain: "base",
       address: "0xe31ee12bdfdd0573d634124611e85338e2cbf0cf",
     },
+    vaults: ["Stablecoin Vault"],
   },
   wsteth: {
     coinmarketcapApiId: 12409,
+    vaults: ["All Weather Vault"],
   },
   pendle: {
     coinmarketcapApiId: 9481,
+    vaults: [
+      "All Weather Vault",
+      "ETH Vault",
+      "Stablecoin Vault",
+      "Camelot Vault",
+    ],
   },
   link: {
     coinmarketcapApiId: 1975,
+    vaults: ["All Weather Vault"],
   },
   sol: {
     coinmarketcapApiId: 5426,
+    vaults: ["All Weather Vault"],
   },
   gmx: {
     coinmarketcapApiId: 11857,
+    vaults: ["All Weather Vault"],
   },
   magic: {
     coinmarketcapApiId: 14783,
+    vaults: ["All Weather Vault"],
   },
 };
 export const tokensForDropDown = [

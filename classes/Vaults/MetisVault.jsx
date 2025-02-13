@@ -23,6 +23,7 @@ export class MetisVault extends BasePortfolio {
       {
         gold: 1,
       },
+      "Metis Vault",
     );
     this.validateStrategyWeights();
   }
