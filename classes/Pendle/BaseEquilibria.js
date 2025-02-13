@@ -307,7 +307,6 @@ export class BaseEquilibria extends BaseProtocol {
       pendingRewards,
       owner,
     );
-    console.log(this.uniqueId(), "redeemTxns", redeemTxns);
     return [[claimTxn, ...redeemTxns], pendingRewards];
   }
 

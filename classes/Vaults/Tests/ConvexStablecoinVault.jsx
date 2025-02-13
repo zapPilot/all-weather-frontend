@@ -51,6 +51,7 @@ export class ConvexStablecoinVault extends BasePortfolio {
       {
         long_term_bond: 1,
       },
+      "Convex Stablecoin Vault",
     );
     this.validateStrategyWeights();
   }

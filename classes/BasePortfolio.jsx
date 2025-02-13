@@ -130,8 +130,8 @@ class PriceService {
 }
 
 class TokenPriceBatcher {
-  static BATCH_SIZE = 5;
-  static DELAY_MS = 5000;
+  static BATCH_SIZE = 2;
+  static DELAY_MS = 2000;
 
   constructor(priceService) {
     this.priceService = priceService;
@@ -193,7 +193,8 @@ class TokenPriceBatcher {
 }
 
 export class BasePortfolio {
-  constructor(strategy, weightMapping) {
+  constructor(strategy, weightMapping, portfolioName) {
+    this.portfolioName = portfolioName;
     this.strategy = strategy;
     this.portfolioAPR = {};
     this.existingInvestmentPositions = {};
@@ -1363,7 +1364,11 @@ export class BasePortfolio {
 
     coinMarketCapIdSet = {
       ...coinMarketCapIdSet,
-      ...tokensAndCoinmarketcapIdsFromDropdownOptions,
+      ...Object.fromEntries(
+        Object.entries(tokensAndCoinmarketcapIdsFromDropdownOptions).filter(
+          ([_, tokenData]) => tokenData.vaults?.includes(this.portfolioName),
+        ),
+      ),
     };
     return coinMarketCapIdSet;
   }

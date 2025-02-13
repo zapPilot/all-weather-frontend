@@ -665,15 +665,6 @@ export default function IndexOverviews() {
     // Set slippage to 3 when switching to RebalanceTab (assuming key "3" is RebalanceTab)
     if (key === "3") {
       setSlippage(3);
-    } else {
-      // Reset to default slippage based on portfolio type
-      if (portfolioName === "Stablecoin Vault") {
-        setSlippage(1);
-      } else if (portfolioName === "ETH Vault") {
-        setSlippage(3);
-      } else {
-        setSlippage(1);
-      }
     }
   };
 
@@ -742,7 +733,10 @@ export default function IndexOverviews() {
         portfolioName === "Stablecoin Vault"
       ) {
         setSlippage(3);
-      } else if (portfolioName === "ETH Vault") {
+      } else if (
+        portfolioName === "ETH Vault" ||
+        portfolioName === "All Weather Vault"
+      ) {
         setSlippage(3);
       } else {
         setSlippage(1);
@@ -819,13 +813,14 @@ export default function IndexOverviews() {
         setTokenPricesMappingTable(tokenPricesMappingTable);
         console.timeEnd("getTokenPricesMappingTable");
         // Update USD balance and dict as soon as available
-        console.time("usdBalanceOf");
+        console.time("outer usdBalanceOf");
         const [usdBalance, usdBalanceDict] = await usdBalancePromise;
+        console.log("usdBalance", usdBalance);
         setUsdBalance(usdBalance);
         setUsdBalanceLoading(false);
         setrebalancableUsdBalanceDict(usdBalanceDict);
         setrebalancableUsdBalanceDictLoading(false);
-        console.timeEnd("usdBalanceOf");
+        console.timeEnd("outer usdBalanceOf");
 
         // Update lockup period as soon as available
         const portfolioLockUpPeriod = await lockUpPeriodPromise;
