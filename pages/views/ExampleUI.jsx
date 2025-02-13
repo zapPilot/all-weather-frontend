@@ -1,7 +1,6 @@
 import React from "react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Image from "next/image";
-import { useWindowHeight } from "../../utils/chartUtils";
 import styles from "../../styles/Home.module.css";
 import { useDispatch, useSelector } from "react-redux";
 import { useActiveAccount } from "thirdweb/react";
@@ -196,7 +195,7 @@ export default function ExampleUI() {
       </div>
       <div className="w-full md:w-[75%] md:ml-[12.5%] text-center py-8">
         <h3 className="text-2xl text-emerald-400 font-semibold mb-4">
-          Kepp all assets in your own AA wallet
+          Keep all assets in your AA wallet.
         </h3>
         <Image
           src="/images/intro_sm.svg"

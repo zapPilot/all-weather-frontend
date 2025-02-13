@@ -31,10 +31,11 @@ class PriceService {
     dai: 1,
     frax: 0.997,
     usde: 1,
+    usdx: 0.9971,
   };
 
   static MAX_RETRIES = 2;
-  static RETRY_DELAY = 2000;
+  static RETRY_DELAY = 3000;
   static TIMEOUT = 3000;
 
   constructor(apiUrl) {
@@ -159,6 +160,11 @@ class TokenPriceBatcher {
   async _processBatch(batch, prices) {
     // Process requests concurrently using Promise.all
     const pricePromises = batch.map(async ([token, priceID]) => {
+      // Return price of 1 if in test mode
+      if (process.env.TEST === "true") {
+        return { token, price: 1 };
+      }
+
       const { uniqueId } = this.priceService._getPriceServiceInfo(priceID);
 
       // Check cache first
