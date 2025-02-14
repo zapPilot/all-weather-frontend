@@ -173,17 +173,9 @@ const Performance = ({ portfolioApr }) => {
         color="white"
         wording="Your Portfolio Chart"
       />
-      <center>
-        <a
-          className="text-xl font-semibold text-white"
-          href="#historical-balances"
-        >
-          Historical Balances
-        </a>
-      </center>
-
       {(account?.address || searchWalletAddress) && (
         <HistoricalGenericDataChart
+          title="Historical Balances"
           apiUrl={`${process.env.NEXT_PUBLIC_SDK_API_URL}/balances/${
             searchWalletAddress === undefined
               ? walletAddress
@@ -191,9 +183,62 @@ const Performance = ({ portfolioApr }) => {
           }/history`}
           dataTransformCallback={(response) => response.json()}
           yLabel={"usd_value"}
+          option="line"
         />
       )}
+      {(account?.address || searchWalletAddress) && (
+        <HistoricalGenericDataChart
+          title="Daily Balance Change"
+          apiUrl={`${process.env.NEXT_PUBLIC_SDK_API_URL}/balances/${
+            searchWalletAddress === undefined
+              ? walletAddress
+              : searchWalletAddress
+          }/history`}
+          dataTransformCallback={async (response) => {
+            const data = await response.json();
+            // Configuration for outlier detection
+            const STD_DEV_THRESHOLD = 1; // Number of standard deviations to use as threshold
 
+            // Sort data by date
+            data.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            // Calculate daily differences first
+            const dailyDifferences = data.map((entry, index) => {
+              if (index === 0)
+                return {
+                  date: entry.date,
+                  usd_value: 0,
+                };
+
+              return {
+                date: entry.date,
+                usd_value: entry.usd_value - data[index - 1].usd_value,
+              };
+            });
+
+            const values = dailyDifferences
+              .map((d) => d.usd_value)
+              .filter((v) => v !== 0);
+            const mean = values.reduce((a, b) => a + b, 0) / values.length;
+            const stdDev = Math.sqrt(
+              values.reduce((sq, n) => sq + Math.pow(n - mean, 2), 0) /
+                values.length,
+            );
+
+            const threshold = STD_DEV_THRESHOLD * stdDev;
+            const filteredDifferences = dailyDifferences.map((entry) => ({
+              date: entry.date,
+              usd_value:
+                Math.abs(entry.usd_value - mean) > threshold
+                  ? 0
+                  : entry.usd_value,
+            }));
+            return filteredDifferences;
+          }}
+          yLabel={"usd_value"}
+          option="column"
+        />
+      )}
       {data ? (
         <div className="mt-4 ps-4">
           <h4 className="text-xl font-semibold text-white">
