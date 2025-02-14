@@ -44,3 +44,7 @@ export const calculateDailyROI = (data) => {
     };
   });
 };
+
+export default function ChartUtils() {
+  return null; // This component won't render anything
+}

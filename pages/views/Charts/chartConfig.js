@@ -17,25 +17,6 @@ const COMPOUND_FREQUENCY = {
 };
 const COMPOUND_FREQ = COMPOUND_FREQUENCY.NEVER; // Using simple interest by default
 
-// Utility functions
-const calculateAnnualizedROI = (dailyROI) => {
-  if (COMPOUND_FREQ === 0) {
-    // Simple interest
-    return dailyROI * DAYS_IN_YEAR;
-  }
-  // Compound interest: (1 + R/n)^n - 1
-  const R = (dailyROI * DAYS_IN_YEAR) / 100; // Convert to decimal
-  return ((1 + R / COMPOUND_FREQ) ** COMPOUND_FREQ - 1) * 100;
-};
-
-const calculateWeightedAvgROI = (validROIs) => {
-  const totalWeight = validROIs.reduce((sum, item) => sum + item.principal, 0);
-  return (
-    validROIs.reduce((sum, item) => sum + item.roi * item.principal, 0) /
-    totalWeight
-  );
-};
-
 export const CHART_CONFIGS = {
   historicalBalances: {
     title: "Historical Balances",
@@ -114,3 +95,7 @@ export const CHART_CONFIGS = {
     },
   },
 };
+
+export default function ChartConfig() {
+  return null; // This component won't render anything
+}
