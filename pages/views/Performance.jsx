@@ -1,21 +1,67 @@
 import React from "react";
 import { ConfigProvider, Row, Col, Card, Statistic } from "antd";
-import RebalanceChart from "./RebalanceChart";
-import { useWindowWidth } from "../../utils/chartUtils";
-import APRDetails from "./APRrelated.jsx";
 import { ReloadOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
-import { timeAgo } from "../../utils/general";
+import { useRouter } from "next/router";
+import { useActiveAccount } from "thirdweb/react";
 import axios from "axios";
+import { CHART_CONFIGS } from "./Charts/chartConfig";
+import RebalanceChart from "./RebalanceChart";
+import APRDetails from "./APRrelated.jsx";
+import HistoricalGenericDataChart from "./Charts/HistoricalGenericDataChart.jsx";
+import { useWindowWidth } from "../../utils/chartUtils";
+import { timeAgo } from "../../utils/general";
 import {
   fetchDataStart,
   fetchDataSuccess,
   fetchDataFailure,
 } from "../../lib/features/apiSlice";
-import { useRouter } from "next/router";
-import { useActiveAccount } from "thirdweb/react";
-import HistoricalGenericDataChart from "./HistoricalGenericDataChart";
 
+const getBalanceHistoryUrl = (searchWalletAddress, walletAddress) =>
+  `${process.env.NEXT_PUBLIC_SDK_API_URL}/balances/${
+    searchWalletAddress === undefined ? walletAddress : searchWalletAddress
+  }/history`;
+
+const getBundlePortfolioUrl = (searchWalletAddress, walletAddress) =>
+  `${process.env.NEXT_PUBLIC_API_URL}/bundle_portfolio/${
+    searchWalletAddress === undefined ? walletAddress : searchWalletAddress
+  }`;
+
+// Enhanced Chart Component
+const ChartWithConfig = ({ chartId, searchWalletAddress, walletAddress }) => {
+  const config = CHART_CONFIGS[chartId];
+  if (!config) return null;
+
+  return (
+    <HistoricalGenericDataChart
+      title={config.title}
+      apiUrl={getBalanceHistoryUrl(searchWalletAddress, walletAddress)}
+      dataTransformCallback={async (response) => {
+        const transformedData = await config.dataTransform(response);
+        return transformedData;
+      }}
+      yLabel={config.yLabel}
+      option={config.option}
+    />
+  );
+};
+
+// Styling Functions
+const getColorStyle = (value, notSharpe = true) => {
+  if (!notSharpe) {
+    if (value < 2) return { color: "#FF6347" };
+    if (value >= 2 && value < 3) return { color: "yellow" };
+    return { color: "#FF6347" };
+  }
+  return { color: value < 0 ? "#FF6347" : "#5DFDCB" };
+};
+
+const calculateMonthlyEarnings = (deposit, apr) => {
+  if (isNaN(deposit) || isNaN(apr)) return 0;
+  return ((deposit * apr) / 100 / 12).toFixed(2);
+};
+
+// Main Component
 const Performance = ({ portfolioApr }) => {
   const windowWidth = useWindowWidth();
   const { data } = useSelector((state) => state.api);
@@ -29,73 +75,49 @@ const Performance = ({ portfolioApr }) => {
   const account = useActiveAccount();
   const walletAddress = account?.address;
 
-  const calculateMonthlyEarnings = (deposit, apr) => {
-    if (isNaN(deposit) || isNaN(apr)) return 0;
-    return ((deposit * apr) / 100 / 12).toFixed(2);
-  };
-  const colorLogic = (value, notSharpe = true) => {
-    if (notSharpe === false) {
-      if (value < 2) {
-        return { color: "#FF6347" };
-      } else if (value >= 2 && value < 3) {
-        return { color: "yellow" };
-      } else if (value >= 3) {
-        return { color: "#FF6347" };
-      }
-    } else {
-      return { color: value < 0 ? "#FF6347" : "#5DFDCB" };
+  const fetchBundlePortfolio = async (refresh = false) => {
+    dispatch(fetchDataStart());
+    try {
+      const response = await axios.get(
+        `${getBundlePortfolioUrl(
+          searchWalletAddress,
+          walletAddress,
+        )}?refresh=${refresh}`,
+      );
+      dispatch(fetchDataSuccess(response.data));
+    } catch (error) {
+      dispatch(fetchDataFailure(error.toString()));
     }
   };
-  const fetchBundlePortfolio = (refresh) => {
-    dispatch(fetchDataStart());
-    axios
-      .get(
-        `${process.env.NEXT_PUBLIC_API_URL}/bundle_portfolio/${
-          searchWalletAddress === undefined
-            ? walletAddress
-            : searchWalletAddress
-        }?refresh=${refresh}`,
-      )
-      .then((response) => response.data)
-      .then((data) => {
-        dispatch(fetchDataSuccess(data));
-      })
-      .catch((error) => dispatch(fetchDataFailure(error.toString())));
+
+  // Theme Configuration
+  const themeConfig = {
+    components: {
+      Statistic: {
+        titleFontSize: 14,
+      },
+    },
+    token: {
+      colorBgContainer: "rgb(31, 41, 55)",
+      colorBorderSecondary: "transparent",
+      colorTextDescription: "white",
+      borderRadiusLG: "0",
+    },
   };
+
+  const shouldShowCharts = account?.address || searchWalletAddress;
 
   return (
     <>
-      <ConfigProvider
-        theme={{
-          components: {
-            Statistic: {
-              titleFontSize: 14,
-            },
-          },
-          token: {
-            colorBgContainer: "rgb(31, 41, 55)",
-            colorBorderSecondary: "transparent",
-            colorTextDescription: "white",
-            borderRadiusLG: "0",
-          },
-        }}
-      >
-        <Row
-          gutter={[
-            {
-              xs: 8,
-              md: 16,
-            },
-            8,
-          ]}
-        >
+      <ConfigProvider theme={themeConfig}>
+        <Row gutter={[{ xs: 8, md: 16 }, 8]}>
           <Col xs={24} md={6}>
             <Card>
               <Statistic
                 title="Reward APR of Your Portfolio"
                 value={portfolioApr}
                 precision={2}
-                valueStyle={colorLogic(portfolioApr)}
+                valueStyle={getColorStyle(portfolioApr)}
                 suffix="%"
               />
             </Card>
@@ -106,7 +128,7 @@ const Performance = ({ portfolioApr }) => {
                 title="Net Worth"
                 value={data?.net_worth}
                 precision={0}
-                valueStyle={colorLogic(0)}
+                valueStyle={getColorStyle(0)}
                 prefix="$"
               />
             </Card>
@@ -117,7 +139,7 @@ const Performance = ({ portfolioApr }) => {
                 title="Monthly Interest"
                 value={calculateMonthlyEarnings(data?.net_worth, portfolioApr)}
                 precision={0}
-                valueStyle={colorLogic(0)}
+                valueStyle={getColorStyle(0)}
                 prefix="$"
               />
             </Card>
@@ -128,42 +150,14 @@ const Performance = ({ portfolioApr }) => {
                 title="Claimable Rewards"
                 value={data?.claimable_rewards?.toFixed(2)}
                 precision={2}
-                valueStyle={colorLogic(0)}
+                valueStyle={getColorStyle(0)}
                 prefix="$"
               />
             </Card>
           </Col>
-          {/* <Col xs={12} md={8}>
-            <Card>
-              <Statistic
-                title={
-                  <>
-                    <a href="https://www.pm-research.com/content/iijpormgmt/32/1/108">
-                      SDR Sharpe Ratio
-                    </a>{" "}
-                    365 days
-                  </>
-                }
-                value="WIP"
-                precision={2}
-                valueStyle={colorLogic(sharpeRatio["SDR Sharpe Ratio"], false)}
-                suffix=""
-              />
-            </Card>
-          </Col> */}
-          {/* <Col xs={12} md={8}>
-            <Card>
-              <Statistic
-                title="Beta"
-                value="WIP"
-                precision={2}
-                valueStyle={colorLogic(-sharpeRatio["SDR Sharpe Ratio"], false)}
-                suffix=""
-              />
-            </Card>
-          </Col> */}
         </Row>
       </ConfigProvider>
+
       <RebalanceChart
         key="double_layer_pie_chart"
         rebalanceSuggestions={data?.suggestions}
@@ -173,73 +167,28 @@ const Performance = ({ portfolioApr }) => {
         color="white"
         wording="Your Portfolio Chart"
       />
-      {(account?.address || searchWalletAddress) && (
-        <HistoricalGenericDataChart
-          title="Historical Balances"
-          apiUrl={`${process.env.NEXT_PUBLIC_SDK_API_URL}/balances/${
-            searchWalletAddress === undefined
-              ? walletAddress
-              : searchWalletAddress
-          }/history`}
-          dataTransformCallback={(response) => response.json()}
-          yLabel={"usd_value"}
-          option="line"
-        />
+
+      {shouldShowCharts && (
+        <>
+          <ChartWithConfig
+            chartId="historicalBalances"
+            searchWalletAddress={searchWalletAddress}
+            walletAddress={walletAddress}
+          />
+          <ChartWithConfig
+            chartId="dailyPnL"
+            searchWalletAddress={searchWalletAddress}
+            walletAddress={walletAddress}
+          />
+          <ChartWithConfig
+            chartId="dailyROI"
+            searchWalletAddress={searchWalletAddress}
+            walletAddress={walletAddress}
+          />
+        </>
       )}
-      {(account?.address || searchWalletAddress) && (
-        <HistoricalGenericDataChart
-          title="Daily Balance Change"
-          apiUrl={`${process.env.NEXT_PUBLIC_SDK_API_URL}/balances/${
-            searchWalletAddress === undefined
-              ? walletAddress
-              : searchWalletAddress
-          }/history`}
-          dataTransformCallback={async (response) => {
-            const data = await response.json();
-            // Configuration for outlier detection
-            const STD_DEV_THRESHOLD = 1; // Number of standard deviations to use as threshold
 
-            // Sort data by date
-            data.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            // Calculate daily differences first
-            const dailyDifferences = data.map((entry, index) => {
-              if (index === 0)
-                return {
-                  date: entry.date,
-                  usd_value: 0,
-                };
-
-              return {
-                date: entry.date,
-                usd_value: entry.usd_value - data[index - 1].usd_value,
-              };
-            });
-
-            const values = dailyDifferences
-              .map((d) => d.usd_value)
-              .filter((v) => v !== 0);
-            const mean = values.reduce((a, b) => a + b, 0) / values.length;
-            const stdDev = Math.sqrt(
-              values.reduce((sq, n) => sq + Math.pow(n - mean, 2), 0) /
-                values.length,
-            );
-
-            const threshold = STD_DEV_THRESHOLD * stdDev;
-            const filteredDifferences = dailyDifferences.map((entry) => ({
-              date: entry.date,
-              usd_value:
-                Math.abs(entry.usd_value - mean) > threshold
-                  ? 0
-                  : entry.usd_value,
-            }));
-            return filteredDifferences;
-          }}
-          yLabel={"usd_value"}
-          option="column"
-        />
-      )}
-      {data ? (
+      {data && (
         <div className="mt-4 ps-4">
           <h4 className="text-xl font-semibold text-white">
             Current Portfolio Status Update
@@ -262,11 +211,13 @@ const Performance = ({ portfolioApr }) => {
             {data?.user_record_update_times_today.limit})
           </span>
         </div>
-      ) : null}
+      )}
+
       <div className="ps-4">
         <APRDetails />
       </div>
     </>
   );
 };
+
 export default Performance;

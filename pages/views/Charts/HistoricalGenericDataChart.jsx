@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
-
+import { CHART_CONFIGS } from "./chartConfig";
 const Line = dynamic(
   () => import("@ant-design/plots").then((item) => item.Line),
   {
@@ -21,41 +21,51 @@ const HistoricalGenericDataChart = ({
   option = "line",
 }) => {
   const [data, setData] = useState([]);
-  const [calculatedTitle, setCalculatedTitle] = useState("");
+  const [calculatedTitle, setCalculatedTitle] = useState(title);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await fetch(apiUrl);
-        const json = await dataTransformCallback(response);
-        setData(json);
-        
-        const newTitle = option === "column" 
-          ? `${title} (P&L: $${calculateTotal(json)})`
-          : title;
-        setCalculatedTitle(newTitle);
+        const transformedData = await dataTransformCallback(response);
+        setData(transformedData);
+
+        // Get the title from the config
+        const config =
+          CHART_CONFIGS[
+            option === "line"
+              ? "historicalBalances"
+              : option === "column" && title.includes("ROI")
+              ? "dailyROI"
+              : "dailyPnL"
+          ];
+
+        if (config?.calculateTitle) {
+          setCalculatedTitle(config.calculateTitle(transformedData));
+        } else {
+          setCalculatedTitle(title);
+        }
       } catch (error) {
         console.error("Failed to fetch chart data:", error);
       }
     };
 
     fetchData();
-  }, [apiUrl, dataTransformCallback, option, title, yLabel]);
+  }, [apiUrl, dataTransformCallback, title, option]);
 
-  const calculateTotal = (data) => {
-    return data.reduce((sum, item) => sum + item[yLabel], 0).toFixed(2);
-  };
-
-  const config = useMemo(() => ({
-    data,
-    padding: "auto",
-    xField: "date",
-    yField: yLabel,
-    xAxis: {
-      type: "timeCat",
-      tickCount: 5,
-    },
-  }), [data, yLabel]);
+  const config = useMemo(
+    () => ({
+      data,
+      padding: "auto",
+      xField: "date",
+      yField: yLabel,
+      xAxis: {
+        type: "timeCat",
+        tickCount: 5,
+      },
+    }),
+    [data, yLabel],
+  );
 
   const chartConfig = useMemo(() => {
     if (option === "column") {
@@ -87,7 +97,11 @@ const HistoricalGenericDataChart = ({
           {calculatedTitle}
         </h2>
       </center>
-      {option === "column" ? <Column {...chartConfig} /> : <Line {...chartConfig} />}
+      {option === "column" ? (
+        <Column {...chartConfig} />
+      ) : (
+        <Line {...chartConfig} />
+      )}
     </div>
   );
 };
