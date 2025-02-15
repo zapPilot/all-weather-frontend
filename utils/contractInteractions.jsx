@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button, Modal, ConfigProvider } from "antd";
-import { fetch1InchSwapData } from "./oneInch";
+import { fetchSwapData } from "./oneInch";
 import tokens from "../pages/views/components/tokens.json";
 import { portfolioVaults } from "./oneInch";
 import axios from "axios";
@@ -300,38 +300,6 @@ export const selectBefore = (handleChange, chainID, selectedToken) => {
       </ConfigProvider>
     </>
   );
-};
-
-export const getAggregatorData = async (
-  chainID,
-  amount,
-  chosenToken,
-  toToken,
-  fromAddress,
-  slippage,
-) => {
-  const chosenTokenFor1Inch =
-    chosenToken === "0x0000000000000000000000000000000000000000"
-      ? "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-      : chosenToken;
-  if (chosenTokenFor1Inch.toLowerCase() === toToken.toLowerCase()) {
-    return {
-      apolloxAggregatorData: "",
-    };
-  }
-  const [apolloxAggregatorData] = await Promise.all([
-    fetch1InchSwapData(
-      chainID,
-      chosenTokenFor1Inch,
-      toToken,
-      amount,
-      fromAddress,
-      slippage,
-    ),
-  ]);
-  return {
-    apolloxAggregatorData: apolloxAggregatorData.tx.data,
-  };
 };
 
 export function sleep(ms) {
