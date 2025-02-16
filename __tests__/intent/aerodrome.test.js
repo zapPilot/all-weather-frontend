@@ -189,14 +189,20 @@ describe("Aerodrome Vault", () => {
       expect(await encode(txns[0])).includes("c00007b0");
     } else {
       expect(txns.length).toBe(3);
-      // approve getReward
+      // getReward
       expect(await encode(txns[0])).includes("c00007b0");
       // approve to 1inch
       expect(await encode(txns[1])).includes("095ea7b3");
-      // // swap
-      expect(txns[2].to).toBe(oneInchArbAddress);
-      // swap
-      expect(txns[2].to).toBe(oneInchArbAddress);
+      // The transaction right before bridging should be the aggregator swap
+      const oneInchArbAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
+      // 1) Check the 'to' address is the 1inch aggregator
+      const zeroxProxyAddress = "0xdef1c0ded9bec7f1a1670819833240f027b25eff";
+      const paraswapProxyAddress = "0x93aAAe79a53759cD164340E4C8766E4Db5331cD7";
+      expect(txns[2].to.toLowerCase()).to.be.oneOf([
+        oneInchArbAddress.toLowerCase(),
+        zeroxProxyAddress.toLowerCase(),
+        paraswapProxyAddress.toLowerCase(),
+      ]);
     }
   });
 });

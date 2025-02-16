@@ -968,7 +968,7 @@ export default class BaseProtocol extends BaseUniswap {
       if (swapTxnResult === undefined) {
         continue;
       }
-      txns = txns.concat([swapTxnResult[0]]);
+      txns = txns.concat(swapTxnResult[0]);
     }
     return txns;
   }

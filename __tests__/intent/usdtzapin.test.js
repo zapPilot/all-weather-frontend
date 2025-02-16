@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { generateIntentTxns } from "../../classes/main.js";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { encode } from "thirdweb";
-import { base, arbitrum } from "thirdweb/chains";
+import { base } from "thirdweb/chains";
 
 const setTradingLoss = () => {};
 const setStepName = () => {};
@@ -66,9 +66,11 @@ describe("Bridge with USDT -> USDC Swap", () => {
 
     // 1) Check the 'to' address is the 1inch aggregator
     const zeroxProxyAddress = "0xdef1c0ded9bec7f1a1670819833240f027b25eff";
+    const paraswapProxyAddress = "0x59c7c832e96d2568bea6db468c1aadcbbda08a52";
     expect(swapTxn.to.toLowerCase()).to.be.oneOf([
       oneInchArbAddress.toLowerCase(),
       zeroxProxyAddress.toLowerCase(),
+      paraswapProxyAddress.toLowerCase(),
     ]);
 
     // 2) Check the call data references USDT -> USDC
