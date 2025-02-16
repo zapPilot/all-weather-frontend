@@ -5,7 +5,7 @@ import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { Spin } from "antd";
 
 const UserFlowNode = ({
-  data,
+  nodeData,
   stepName,
   tradingLoss,
   completedSteps,
@@ -17,18 +17,17 @@ const UserFlowNode = ({
   const [nodeState, setNodeState] = useState({
     isActive: false,
   });
-
   React.useEffect(() => {
     if (stepName !== prevStepNameRef.current) {
       setCompletedSteps((prev) => new Set([...prev, prevStepNameRef.current]));
       prevStepNameRef.current = stepName;
 
-      if (data.id === stepName) {
+      if (nodeData.id === stepName) {
         tradingLossRef.current = tradingLoss;
         setNodeState({
           isActive: true,
         });
-      } else if (completedSteps?.has(data.id)) {
+      } else if (completedSteps?.has(nodeData.id)) {
         setNodeState((prev) => ({
           ...prev,
           isActive: false,
@@ -40,25 +39,28 @@ const UserFlowNode = ({
           isActive: false,
         }));
       }
-    } else if (data.id === stepName && tradingLoss !== tradingLossRef.current) {
+    } else if (
+      nodeData.id === stepName &&
+      tradingLoss !== tradingLossRef.current
+    ) {
       tradingLossRef.current = tradingLoss;
     }
-  }, [stepName, data.id, tradingLoss, setCompletedSteps, completedSteps]);
+  }, [stepName, nodeData.id, tradingLoss, setCompletedSteps, completedSteps]);
 
   const isActiveOrCompleted =
     nodeState.isActive ||
-    data.id === stepName ||
-    completedSteps?.has(data.id) ||
-    currentChain.toLowerCase().replace(" one", "") === data.id;
+    nodeData.id === stepName ||
+    completedSteps?.has(nodeData.id) ||
+    currentChain.toLowerCase().replace(" one", "") === nodeData.id;
 
-  const displayTradingLoss = completedSteps?.has(data.id)
+  const displayTradingLoss = completedSteps?.has(nodeData.id)
     ? tradingLossRef.current
-    : data.id === stepName
+    : nodeData.id === stepName
     ? tradingLoss
     : null;
 
   const formatTradingLoss = (value) => {
-    if (value === null && data.id === stepName) return <Spin />;
+    if (value === null && nodeData.id === stepName) return <Spin />;
     if (value === null) return null;
 
     const absValue = Math.abs(value);
@@ -85,13 +87,13 @@ const UserFlowNode = ({
         />
         <span className="mx-1">Swap</span>
         <ImageWithFallback
-          token={data.name.split(" to ")[0].replace("Swap ", "")}
+          token={nodeData.name.split(" to ")[0].replace("Swap ", "")}
           height={20}
           width={20}
         />
         <span className="mx-1">→</span>
         <ImageWithFallback
-          token={data.name.split(" to ")[1]}
+          token={nodeData.name.split(" to ")[1]}
           height={20}
           width={20}
         />
@@ -106,14 +108,14 @@ const UserFlowNode = ({
     <>
       <div className="flex items-center">
         <Image
-          src={data.imgSrc}
-          alt={data.name}
+          src={nodeData.imgSrc}
+          alt={nodeData.name}
           className="inline-block"
           height={20}
           width={20}
         />
         <span className="mx-1">{actionName}</span>
-        {data.name
+        {nodeData.name
           .replace(actionName, "")
           .split("-")
           .map((token, idx) => (
@@ -135,28 +137,29 @@ const UserFlowNode = ({
   const renderDefaultNode = () => (
     <>
       <Image
-        src={data.imgSrc}
-        alt={data.name}
+        src={nodeData.imgSrc}
+        alt={nodeData.name}
         className="inline-block me-1"
         height={20}
         width={20}
       />
-      {data.name}
+      {nodeData.name}
     </>
   );
   return (
     <div
-      key={`flow-node-${data.id}`}
+      key={`flow-node-${nodeData.id}`}
       className={`user-flow-node bg-white duration-300 flex items-center justify-center ${
         isActiveOrCompleted ? "opacity-100" : "opacity-40"
       }`}
     >
       <div className="user-flow-node-name flex items-center">
-        {data.name.startsWith("Swap")
+        {nodeData.name.startsWith("Swap")
           ? renderSwapNode()
-          : data.name.startsWith("Deposit") || data.name.startsWith("Withdraw")
+          : nodeData.name.startsWith("Deposit") ||
+            nodeData.name.startsWith("Withdraw")
           ? renderDepositWithdrawNode(
-              data.name.startsWith("Deposit") ? "Deposit" : "Withdraw",
+              nodeData.name.startsWith("Deposit") ? "Deposit" : "Withdraw",
             )
           : renderDefaultNode()}
       </div>
@@ -182,9 +185,9 @@ export default function DemoFlowDirectionGraph({
     data,
     node: {
       style: {
-        component: (data) => (
+        component: (nodeData) => (
           <UserFlowNode
-            data={data}
+            nodeData={nodeData}
             stepName={stepName}
             tradingLoss={tradingLoss}
             completedSteps={completedSteps}
