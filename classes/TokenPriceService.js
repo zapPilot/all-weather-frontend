@@ -19,7 +19,7 @@ class PriceService {
   };
 
   static MAX_RETRIES = 3;
-  static RETRY_DELAY = 3000;
+  static RETRY_DELAY = 5000;
   static TIMEOUT = 3000;
 
   constructor(apiUrl) {
@@ -150,7 +150,7 @@ class PriceService {
 
 class TokenPriceBatcher {
   static DEFAULT_CONFIG = {
-    batchSize: 3,
+    batchSize: 2,
     requestsPerMinute: 30, // Default to 30 requests per minute (1 request per 2 seconds)
   };
 

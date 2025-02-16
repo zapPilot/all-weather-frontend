@@ -1,13 +1,11 @@
 import { ethers } from "ethers";
-import { fetch1InchSwapData, oneInchAddress } from "../utils/oneInch.js";
 import { CHAIN_ID_TO_CHAIN, PROVIDER, NULL_ADDRESS } from "../utils/general.js";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import BaseUniswap from "./uniswapv3/BaseUniswap.js";
 import assert from "assert";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
-import { approve } from "../utils/general";
-import { prepareTransaction, prepareContractCall, getContract } from "thirdweb";
-
+import { prepareContractCall, getContract } from "thirdweb";
+import swap from "../utils/swapHelper";
 export default class BaseProtocol extends BaseUniswap {
   // arbitrum's Apollox is staked on PancakeSwap
   constructor(chain, chaindId, symbolList, mode, customParams) {
@@ -352,11 +350,6 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-approve`,
-      0,
-    );
     if (this.mode === "single") {
       const [
         beforeZapInTxns,
@@ -372,6 +365,11 @@ export default class BaseProtocol extends BaseUniswap {
         inputToken,
         tokenDecimals,
         tokenPricesMappingTable,
+      );
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-approve`,
+        0,
       );
       const zapinTxns = await this.customDeposit(
         recipient,
@@ -396,6 +394,11 @@ export default class BaseProtocol extends BaseUniswap {
           tokenDecimals,
           tokenPricesMappingTable,
         );
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-approve`,
+        0,
+      );
       const zapinTxns = await this.customDepositLP(
         recipient,
         tokenAmetadata,
@@ -697,8 +700,11 @@ export default class BaseProtocol extends BaseUniswap {
     if (
       tokenInAddress.toLowerCase() !== bestTokenAddressToZapIn.toLowerCase()
     ) {
-      const [swapTxns, swapEstimateAmount] = await this._swap(
+      const [swapTxns, swapEstimateAmount] = await swap(
         recipient,
+        this.chainId,
+        this.uniqueId(),
+        this._updateProgressAndWait,
         tokenInAddress,
         bestTokenAddressToZapIn,
         amountToZapIn,
@@ -808,8 +814,11 @@ export default class BaseProtocol extends BaseUniswap {
         .div(sumOfLPTokenRatio);
 
       if (tokenInAddress.toLowerCase() !== bestTokenAddress.toLowerCase()) {
-        const [swapTxns, swapEstimateAmount] = await this._swap(
+        const [swapTxns, swapEstimateAmount] = await swap(
           recipient,
+          this.chainId,
+          this.uniqueId(),
+          this._updateProgressAndWait,
           tokenInAddress,
           bestTokenAddress,
           amountToZapIn,
@@ -840,7 +849,7 @@ export default class BaseProtocol extends BaseUniswap {
     lpTokenRatio,
     tokenPricesMappingTable,
   ) {
-    const PRECISION = 1000000000;
+    const PRECISION = 10000000000000;
     const MAX_UINT256 = ethers.BigNumber.from("2").pow(256).sub(1);
 
     // Calculate USD values and ratios
@@ -945,8 +954,11 @@ export default class BaseProtocol extends BaseUniswap {
       ) {
         continue;
       }
-      const swapTxnResult = await this._swap(
+      const swapTxnResult = await swap(
         recipient,
+        this.chainId,
+        this.uniqueId(),
+        this._updateProgressAndWait,
         address,
         outputToken,
         amount,
@@ -961,133 +973,9 @@ export default class BaseProtocol extends BaseUniswap {
       if (swapTxnResult === undefined) {
         continue;
       }
-      txns = txns.concat([swapTxnResult[0]]);
+      txns = txns.concat(swapTxnResult[0]);
     }
     return txns;
-  }
-  async _swap(
-    walletAddress,
-    fromTokenAddress,
-    toTokenAddress,
-    amount,
-    slippage,
-    updateProgress,
-    fromToken,
-    fromTokenDecimals,
-    toTokenSymbol,
-    toTokenDecimals,
-    tokenPricesMappingTable,
-  ) {
-    if (fromTokenAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
-      return;
-    }
-
-    // First attempt
-    let result = await this._attemptSwap(
-      walletAddress,
-      fromTokenAddress,
-      toTokenAddress,
-      amount,
-      slippage,
-      fromToken,
-      fromTokenDecimals,
-      toTokenSymbol,
-      toTokenDecimals,
-      tokenPricesMappingTable,
-    );
-
-    // If trading gain is more than 1%, retry once
-    if (
-      result.tradingLoss > 0 &&
-      result.tradingLoss / result.inputValue > 0.01
-    ) {
-      result = await this._attemptSwap(
-        walletAddress,
-        fromTokenAddress,
-        toTokenAddress,
-        amount,
-        slippage,
-        fromToken,
-        fromTokenDecimals,
-        toTokenSymbol,
-        toTokenDecimals,
-        tokenPricesMappingTable,
-      );
-    }
-
-    // Update progress with final trading loss/gain
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-${fromToken}-${toTokenSymbol}-swap`,
-      result.tradingLoss,
-    );
-
-    return [result.transactions, result.toAmount];
-  }
-
-  async _attemptSwap(
-    walletAddress,
-    fromTokenAddress,
-    toTokenAddress,
-    amount,
-    slippage,
-    fromToken,
-    fromTokenDecimals,
-    toTokenSymbol,
-    toTokenDecimals,
-    tokenPricesMappingTable,
-  ) {
-    const swapCallData = await fetch1InchSwapData(
-      this.chainId,
-      fromTokenAddress,
-      toTokenAddress,
-      amount,
-      walletAddress,
-      slippage,
-    );
-    const approveTxn = approve(
-      fromTokenAddress,
-      swapCallData["to"],
-      amount,
-      () => {},
-      this.chainId,
-    );
-    if (swapCallData["data"] === undefined) {
-      throw new Error("Swap data is undefined. Cannot proceed with swapping.");
-    }
-    if (swapCallData["toAmount"] === 0) {
-      throw new Error("To amount is 0. Cannot proceed with swapping.");
-    }
-    const normalizedInputAmount = ethers.utils.formatUnits(
-      amount,
-      fromTokenDecimals,
-    );
-    const normalizedOutputAmount = ethers.utils.formatUnits(
-      swapCallData["toAmount"],
-      toTokenDecimals,
-    );
-
-    const inputValue =
-      Number(normalizedInputAmount) * tokenPricesMappingTable[fromToken];
-    const outputValue =
-      Number(normalizedOutputAmount) * tokenPricesMappingTable[toTokenSymbol];
-    const tradingLoss = outputValue - inputValue;
-
-    return {
-      transactions: [
-        approveTxn,
-        prepareTransaction({
-          to: swapCallData["to"],
-          chain: CHAIN_ID_TO_CHAIN[this.chainId],
-          client: THIRDWEB_CLIENT,
-          data: swapCallData["data"],
-          extraGas: 550000n,
-        }),
-      ],
-      toAmount: swapCallData["toAmount"],
-      tradingLoss,
-      inputValue,
-    };
   }
 
   async _calculateWithdrawTokenAndBalance(
@@ -1329,11 +1217,14 @@ export default class BaseProtocol extends BaseUniswap {
     return contractCall;
   }
   async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
-    // throw new Error("Method '_updateProgressAndWait()' must be implemented.");
+    // First, update the progress
+    updateProgress(nodeId, tradingLoss);
+
+    // Wait longer to ensure state updates are processed
     await new Promise((resolve) => {
-      updateProgress(nodeId, tradingLoss);
-      // Use setTimeout to ensure the state update is queued
-      setTimeout(resolve, 30);
+      setTimeout(() => {
+        resolve();
+      }, 500); // Increased to 500ms to ensure state updates have time to propagate
     });
   }
   getDeadline() {

@@ -25,40 +25,27 @@ export const APX = "0x78f5d389f5cdccfc41594abab4b0ed02f31398b3";
 export const USDT = "0x55d398326f99059ff775485246999027b3197955";
 export const oneInchAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
 
-export async function fetch1InchSwapData(
+export async function fetchSwapData(
   chainId,
   fromTokenAddress,
   toTokenAddress,
   amount,
   fromAddress,
   slippage,
+  provider,
+  fromTokenDecimals,
+  toTokenDecimals,
 ) {
   if (fromAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
     throw new Error("fromTokenAddress and toTokenAddress are the same");
   }
-  const url = `${API_URL}/the_best_swap_data?chainId=${chainId}&fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount.toString()}&fromAddress=${fromAddress}&slippage=${slippage}&provider=0x`;
-  const retryLimit = 3;
-  const retryStatusCodes = [429, 500, 502, 503, 504];
+  const url = `${API_URL}/the_best_swap_data?chainId=${chainId}&fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount.toString()}&fromAddress=${fromAddress}&slippage=${slippage}&provider=${provider}&fromTokenDecimals=${fromTokenDecimals}&toTokenDecimals=${toTokenDecimals}`;
 
-  for (let attempt = 0; attempt < retryLimit; attempt++) {
-    try {
-      const res = await fetch(url);
-
-      if (!res.ok && !retryStatusCodes.includes(res.status)) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
-      if (res.ok) {
-        return res.json(); // This parses the JSON body for you
-      }
-    } catch (error) {
-      if (attempt === retryLimit - 1) {
-        throw error; // Re-throw the error on the last attempt
-      }
-    }
-
-    // Delay before retrying; you can adjust the delay as needed
-    await new Promise((resolve) => setTimeout(resolve, (attempt + 1) * 3000));
+  const res = await fetch(url);
+  if (!res.ok) {
+    return {};
+    // throw new Error(`HTTP error! status: ${res.status}`);
   }
-  throw new Error(`Failed to fetch data after retries, url: ${url}`);
+
+  return res.json();
 }

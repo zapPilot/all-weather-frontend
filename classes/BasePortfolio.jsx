@@ -15,10 +15,10 @@ import {
   TOKEN_ADDRESS_MAP,
 } from "../utils/general";
 import { toWei } from "thirdweb/utils";
-import { fetch1InchSwapData } from "../utils/oneInch";
-import { _updateProgressAndWait } from "../utils/general";
+import { fetchSwapData } from "../utils/oneInch";
 import { prepareTransaction } from "thirdweb";
 import { TokenPriceBatcher, PriceService } from "./TokenPriceService";
+import swap from "../utils/swapHelper";
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 
@@ -448,59 +448,6 @@ export class BasePortfolio {
     return totalTxns;
   }
 
-  async _swap(
-    walletAddress,
-    fromTokenAddress,
-    toTokenAddress,
-    amount,
-    slippage,
-    updateProgress,
-    fromToken,
-    fromTokenDecimals,
-    toTokenSymbol,
-    toTokenDecimals,
-    tokenPricesMappingTable,
-    actionParams,
-  ) {
-    if (fromTokenAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
-      return;
-    }
-    const swapCallData = await fetch1InchSwapData(
-      actionParams.chainMetadata.id,
-      fromTokenAddress,
-      toTokenAddress,
-      amount,
-      walletAddress,
-      slippage,
-    );
-
-    if (swapCallData["data"] === undefined) {
-      throw new Error("Swap data is undefined. Cannot proceed with swapping.");
-    }
-    if (swapCallData["toAmount"] === 0) {
-      throw new Error("To amount is 0. Cannot proceed with swapping.");
-    }
-    const approveTxn = approve(
-      fromTokenAddress,
-      swapCallData["to"],
-      amount,
-      () => {},
-      actionParams.chainMetadata.id,
-    );
-    return [
-      [
-        approveTxn,
-        prepareTransaction({
-          to: swapCallData["to"],
-          chain: CHAIN_ID_TO_CHAIN[actionParams.chainMetadata.id],
-          client: THIRDWEB_CLIENT,
-          data: swapCallData["data"],
-          extraGas: BigInt(swapCallData["gasFee"]),
-        }),
-      ],
-      swapCallData["toAmount"],
-    ];
-  }
   async _processProtocolActions(actionName, actionParams) {
     const currentChain = actionParams.chainMetadata.name
       .toLowerCase()
@@ -602,8 +549,11 @@ export class BasePortfolio {
         let txns = [];
         const allowedTokens = ["usdc", "eth", "weth"];
         if (!allowedTokens.includes(actionParams.tokenInSymbol.toLowerCase())) {
-          const swapResult = await this._swap(
+          const swapResult = await swap(
             actionParams.account,
+            actionParams.chainMetadata.id,
+            actionParams.protocolUniqueId,
+            this._updateProgressAndWait,
             inputToken,
             TOKEN_ADDRESS_MAP["usdc"][currentChain],
             inputAmount,
@@ -674,7 +624,7 @@ export class BasePortfolio {
                 `Error processing protocol ${protocol.interface?.uniqueId?.()}:`,
                 error,
               );
-              return [];
+              throw error;
             }
           });
 
