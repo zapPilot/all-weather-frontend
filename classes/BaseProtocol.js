@@ -350,11 +350,6 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-approve`,
-      0,
-    );
     if (this.mode === "single") {
       const [
         beforeZapInTxns,
@@ -370,6 +365,11 @@ export default class BaseProtocol extends BaseUniswap {
         inputToken,
         tokenDecimals,
         tokenPricesMappingTable,
+      );
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-approve`,
+        0,
       );
       const zapinTxns = await this.customDeposit(
         recipient,
@@ -394,6 +394,11 @@ export default class BaseProtocol extends BaseUniswap {
           tokenDecimals,
           tokenPricesMappingTable,
         );
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-approve`,
+        0,
+      );
       const zapinTxns = await this.customDepositLP(
         recipient,
         tokenAmetadata,
@@ -844,7 +849,7 @@ export default class BaseProtocol extends BaseUniswap {
     lpTokenRatio,
     tokenPricesMappingTable,
   ) {
-    const PRECISION = 1000000000;
+    const PRECISION = 10000000000000;
     const MAX_UINT256 = ethers.BigNumber.from("2").pow(256).sub(1);
 
     // Calculate USD values and ratios
@@ -1212,11 +1217,14 @@ export default class BaseProtocol extends BaseUniswap {
     return contractCall;
   }
   async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
-    // throw new Error("Method '_updateProgressAndWait()' must be implemented.");
+    // First, update the progress
+    updateProgress(nodeId, tradingLoss);
+
+    // Wait longer to ensure state updates are processed
     await new Promise((resolve) => {
-      updateProgress(nodeId, tradingLoss);
-      // Use setTimeout to ensure the state update is queued
-      setTimeout(resolve, 30);
+      setTimeout(() => {
+        resolve();
+      }, 500); // Increased to 500ms to ensure state updates have time to propagate
     });
   }
   getDeadline() {
