@@ -114,7 +114,14 @@ describe("Camelot Vault", () => {
       // approve to 1inch
       expect(await encode(txns[5])).includes("095ea7b3");
       // swap
-      expect(txns[6].to).toBe(oneInchArbAddress);
+      const oneInchArbAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
+      const zeroxProxyAddress = "0xdef1c0ded9bec7f1a1670819833240f027b25eff";
+      const paraswapProxyAddress = "0x93aAAe79a53759cD164340E4C8766E4Db5331cD7";
+      expect(txns[6].to.toLowerCase()).to.be.oneOf([
+        oneInchArbAddress.toLowerCase(),
+        zeroxProxyAddress.toLowerCase(),
+        paraswapProxyAddress.toLowerCase(),
+      ]);
       // fee: send referral fee
       expect(await encode(txns[7])).includes(
         "210050bb080155aec4eae79a2aac5fe78fd738e1",

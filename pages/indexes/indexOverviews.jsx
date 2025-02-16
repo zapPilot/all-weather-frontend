@@ -558,6 +558,18 @@ export default function IndexOverviews() {
           )
         ) {
           errorReadableMsg = "ERC721: operator query for nonexistent token";
+        } else if (
+          error.message.includes(
+            "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002845524332303a207472616e7366657220616d6f756e74206578636565647320616c6c6f77616e6365000000000000000000000000000000000000000000000000",
+          )
+        ) {
+          errorReadableMsg = "ERC20: transfer amount exceeds allowance";
+        } else if (
+          error.message.includes(
+            "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000030526563656976656420616d6f756e74206f6620746f6b656e7320617265206c657373207468656e20657870656374656400000000000000000000000000000000",
+          )
+        ) {
+          errorReadableMsg = "Received amount of tokens are less then expected";
         } else if (error.message.includes("0x09bde339")) {
           errorReadableMsg = "Failed to claim rewards, please try again";
         } else if (error.message.endsWith("0x")) {
