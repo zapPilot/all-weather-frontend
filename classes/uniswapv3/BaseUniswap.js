@@ -145,8 +145,8 @@ class BaseUniswap {
     }
 
     return {
-      amount0: ethers.BigNumber.from(String(Math.floor(amount0))),
-      amount1: ethers.BigNumber.from(String(Math.floor(amount1))),
+      amount0: ethers.BigNumber.from(BigInt(Math.floor(amount0))),
+      amount1: ethers.BigNumber.from(BigInt(Math.floor(amount1))),
     };
   }
   async getWithdrawalAmountsForUniswapV3(
@@ -177,8 +177,8 @@ class BaseUniswap {
       (Math.sqrt(P) * Math.sqrt(P_upper));
     const amount1 = liquidityToRemove * (Math.sqrt(P) - Math.sqrt(P_lower));
     return {
-      amount0: ethers.BigNumber.from(String(Math.floor(amount0))),
-      amount1: ethers.BigNumber.from(String(Math.floor(amount1))),
+      amount0: ethers.BigNumber.from(BigInt(Math.floor(amount0))),
+      amount1: ethers.BigNumber.from(BigInt(Math.floor(amount1))),
     };
   }
   async getUncollectedFeesForUniswapV3(

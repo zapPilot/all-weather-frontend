@@ -160,7 +160,7 @@ export class BaseConvex extends BaseProtocol {
     const tradingLoss = 0;
 
     const minMintAmount = ethers.BigNumber.from(
-      String(Math.floor((outputPrice * (100 - slippage)) / 100)),
+      BigInt(Math.floor((outputPrice * (100 - slippage)) / 100)),
       this.assetDecimals,
     );
 
@@ -257,7 +257,7 @@ export class BaseConvex extends BaseProtocol {
   async _unstakeLP(owner, percentage, updateProgress) {
     await super._unstakeLP(owner, percentage, updateProgress);
     const percentageBN = ethers.BigNumber.from(
-      String(Math.floor(percentage * 10000)),
+      BigInt(Math.floor(percentage * 10000)),
     );
     const stakeBalance = await this.stakeBalanceOf(owner, updateProgress);
     const amount = stakeBalance.mul(percentageBN).div(10000);

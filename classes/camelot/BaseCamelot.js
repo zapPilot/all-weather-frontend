@@ -178,14 +178,14 @@ export class BaseCamelot extends BaseProtocol {
     return {
       [token0Address]: {
         symbol: token0,
-        balance: ethers.BigNumber.from(String(Math.floor(fees0))),
+        balance: ethers.BigNumber.from(BigInt(Math.floor(fees0))),
         usdDenominatedValue:
           tokenPricesMappingTable[token0] * (fees0 / 10 ** token0Decimals),
         decimals: token0Decimals,
       },
       [token1Address]: {
         symbol: token1,
-        balance: ethers.BigNumber.from(String(Math.floor(fees1))),
+        balance: ethers.BigNumber.from(BigInt(Math.floor(fees1))),
         usdDenominatedValue:
           tokenPricesMappingTable[token1] * (fees1 / 10 ** token1Decimals),
         decimals: token1Decimals,
@@ -352,7 +352,7 @@ export class BaseCamelot extends BaseProtocol {
   async _unstakeLP(owner, percentage, updateProgress) {
     await super._unstakeLP(owner, percentage, updateProgress);
     const percentageBN = ethers.BigNumber.from(
-      String(Math.floor(percentage * 10000)),
+      BigInt(Math.floor(percentage * 10000)),
     );
     const assetBalance = await this.assetBalanceOf(owner);
     if (assetBalance === undefined) {
@@ -545,7 +545,7 @@ export class BaseCamelot extends BaseProtocol {
 
       if (rewardInfo) {
         const balance = ethers.BigNumber.from(
-          String(Math.floor(Number(reward.rewards) - Number(reward.claimed))),
+          BigInt(Math.floor(Number(reward.rewards) - Number(reward.claimed))),
         );
 
         const newBalance = marketMakerRewards[rewardAddress]

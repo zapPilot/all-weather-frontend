@@ -895,10 +895,10 @@ export default class BaseProtocol extends BaseUniswap {
   _convertRatiosToBigNumber(currentRatio, targetRatio, precision) {
     return {
       current: ethers.BigNumber.from(
-        String(Math.floor(currentRatio * precision)),
+        BigInt(Math.floor(currentRatio * precision)),
       ),
       target: ethers.BigNumber.from(
-        String(Math.floor(targetRatio * precision)),
+        BigInt(Math.floor(targetRatio * precision)),
       ),
     };
   }
@@ -1171,11 +1171,11 @@ export default class BaseProtocol extends BaseUniswap {
     // Convert amount to BigNumber if it isn't already
     const amountBN = ethers.BigNumber.isBigNumber(amount)
       ? amount
-      : ethers.BigNumber.from(String(Math.floor(amount)));
+      : ethers.BigNumber.from(BigInt(Math.floor(amount)));
 
     // Convert slippage to basis points (e.g., 0.5% -> 50)
     const slippageBasisPoints = ethers.BigNumber.from(
-      String(Math.floor(slippage * 100)),
+      BigInt(Math.floor(slippage * 100)),
     );
 
     // Calculate (amount * (10000 - slippageBasisPoints)) / 10000
@@ -1188,7 +1188,7 @@ export default class BaseProtocol extends BaseUniswap {
   }
   async approve(tokenAddress, spenderAddress, amount, updateProgress, chainId) {
     if (typeof amount !== "object") {
-      amount = ethers.BigNumber.from(String(Math.floor(amount)));
+      amount = ethers.BigNumber.from(BigInt(Math.floor(amount)));
     }
     const approvalAmount = amount;
     if (approvalAmount === 0) {
