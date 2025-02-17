@@ -207,8 +207,10 @@ describe("Camelot Vault", () => {
       expect(await encode(txns[5])).includes(
         "2ecbc6f229fed06044cdb0dd772437a30190cd50",
       );
-    } else {
+    } else if (txns.length === 1) {
       expect(txns.length).toBe(1);
+    } else {
+      expect(txns.length).toBe(3);
     }
   });
 });

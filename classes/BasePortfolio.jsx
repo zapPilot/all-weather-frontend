@@ -457,7 +457,7 @@ export class BasePortfolio {
       zapIn: async (protocol, chain, derivative) => {
         if (protocol.weight === 0) return null;
         const percentageBN = ethers.BigNumber.from(
-          String(Math.floor(protocol.weight * derivative * 10000)),
+          BigInt(Math.floor(protocol.weight * derivative * 10000)),
         );
         return protocol.interface.zapIn(
           actionParams.account,
@@ -775,7 +775,7 @@ export class BasePortfolio {
     ).map(async ([chain, metadata]) => {
       const totalWeight = metadata.totalWeight;
       const bridgeAmount = ethers.BigNumber.from(
-        String(Math.floor(Number(zapInAmountAfterFee) * totalWeight)),
+        BigInt(Math.floor(Number(zapInAmountAfterFee) * totalWeight)),
       );
 
       const bridgeUsd =
@@ -1604,11 +1604,11 @@ export class BasePortfolio {
     // Convert amount to BigNumber if it isn't already
     const amountBN = ethers.BigNumber.isBigNumber(amount)
       ? amount
-      : ethers.BigNumber.from(String(Math.floor(amount)));
+      : ethers.BigNumber.from(BigInt(Math.floor(amount)));
 
     // Convert slippage to basis points (e.g., 0.5% -> 50)
     const slippageBasisPoints = ethers.BigNumber.from(
-      String(Math.floor(slippage * 100)),
+      BigInt(Math.floor(slippage * 100)),
     );
 
     // Calculate (amount * (10000 - slippageBasisPoints)) / 10000
