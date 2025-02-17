@@ -261,7 +261,7 @@ export class BaseEquilibria extends BaseProtocol {
     );
     const precision = Math.pow(10, 6);
     const slippageBN = ethers.BigNumber.from(
-      String(Math.floor((100 - slippage) * precision)),
+      BigInt(Math.floor((100 - slippage) * precision)),
     ).div(100);
     const minLPOutAmount = ethers.BigNumber.from(resp.data.data.amountLpOut)
       .mul(slippageBN)

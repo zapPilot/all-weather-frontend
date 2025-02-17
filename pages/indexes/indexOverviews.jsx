@@ -535,6 +535,15 @@ export default function IndexOverviews() {
               setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
             },
             onError: (error) => {
+              if (error.message.includes("User rejected the request")) {
+                return;
+              }
+              axios.post(
+                `${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`,
+                {
+                  errorMsg: `<@&1172000757764075580> ${error.message}`,
+                },
+              );
               reject(error); // Reject the promise with the error
             },
           });

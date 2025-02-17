@@ -281,7 +281,7 @@ export class BaseAura extends BaseProtocol {
   async _unstakeLP(owner, percentage, updateProgress) {
     await super._unstakeLP(owner, percentage, updateProgress);
     const percentageBN = ethers.BigNumber.from(
-      String(Math.floor(percentage * 10000)),
+      BigInt(Math.floor(percentage * 10000)),
     );
     const poolInfo = await this.stakeFarmContractInstance.functions.poolInfo(
       this.customParams.pid,

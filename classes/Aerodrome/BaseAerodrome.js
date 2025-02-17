@@ -208,7 +208,7 @@ export class BaseAerodrome extends BaseProtocol {
     const averageAmount = ((amountA + amountB) / 2).toFixed(avgPrecision);
     // Convert to BigNumber with proper scaling
     return ethers.BigNumber.from(
-      String(Math.floor(averageAmount * Math.pow(10, avgPrecision))),
+      BigInt(Math.floor(averageAmount * Math.pow(10, avgPrecision))),
     );
   }
   async _calculateLpPrice(tokenPricesMappingTable) {
@@ -257,7 +257,7 @@ export class BaseAerodrome extends BaseProtocol {
   async _unstakeLP(owner, percentage, updateProgress) {
     await super._unstakeLP(owner, percentage, updateProgress);
     const percentageBN = ethers.BigNumber.from(
-      String(Math.floor(percentage * 10000)),
+      BigInt(Math.floor(percentage * 10000)),
     );
     const stakeBalance = await this.stakeBalanceOf(owner, updateProgress);
     const amount = stakeBalance.mul(percentageBN).div(10000);
