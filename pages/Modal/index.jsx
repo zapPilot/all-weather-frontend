@@ -118,26 +118,35 @@ export default function PopUpModal({
                       .map((chain, index) => (
                         <div
                           className={`flex flex-col items-center mx-2 ${
-                            currentChain === chain ? "text-gray-900" : "text-gray-500"
-                      }`}
-                      key={index}
-                    >
-                      <div
-                        className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${
-                          currentChain === chain ? "border-gray-900" : "border-gray-500"
-                        }`}
-                      >
-                        {index + 1}
-                      </div>
-                      <p>{
-                      actionName === "zapIn"? "Deposit"
-                      : actionName === "zapOut" ? "Withdraw"
-                      : actionName === "rebalance" ? "Rebalance"
-                      : actionName === "claimAndSwap" ? "Claim and Swap"
-                      : actionName
-                      } on {chain}</p>
-                    </div>
-                    ))}
+                            currentChain === chain
+                              ? "text-gray-900"
+                              : "text-gray-500"
+                          }`}
+                          key={index}
+                        >
+                          <div
+                            className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${
+                              currentChain === chain
+                                ? "border-gray-900"
+                                : "border-gray-500"
+                            }`}
+                          >
+                            {index + 1}
+                          </div>
+                          <p>
+                            {actionName === "zapIn"
+                              ? "Deposit"
+                              : actionName === "zapOut"
+                              ? "Withdraw"
+                              : actionName === "rebalance"
+                              ? "Rebalance"
+                              : actionName === "claimAndSwap"
+                              ? "Claim and Swap"
+                              : actionName}{" "}
+                            on {chain}
+                          </p>
+                        </div>
+                      ))}
                   </div>
                 </div>
                 <div className="mx-auto flex items-center justify-center rounded-full">
@@ -149,10 +158,7 @@ export default function PopUpModal({
                       className="size-6 text-green-600"
                     />
                   )}
-                  <DialogTitle
-                    as="h3"
-                    className="ms-2 text-base text-gray-900"
-                  >
+                  <DialogTitle as="h3" className="ms-2 text-base text-gray-900">
                     {finishedTxn === false
                       ? "Bundling transactions..."
                       : "Transaction Complete"}
