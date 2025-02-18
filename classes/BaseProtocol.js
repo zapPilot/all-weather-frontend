@@ -881,6 +881,9 @@ export default class BaseProtocol extends BaseUniswap {
       const normalizedAmount = Number(
         ethers.utils.formatUnits(amount, tokenDecimals),
       );
+      if (tokenPricesMappingTable[tokenSymbol] === undefined) {
+        throw new Error(`No price found for token ${tokenSymbol}`);
+      }
       return normalizedAmount * tokenPricesMappingTable[tokenSymbol];
     });
   }

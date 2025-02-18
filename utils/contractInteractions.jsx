@@ -9,15 +9,15 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   usdc: {
     coinmarketcapApiId: 3408,
-    vaults: ["Stablecoin Vault", "Aerodrome Vault"],
+    vaults: ["Stablecoin Vault", "Aerodrome Vault", "All Weather Vault"],
   },
   usdt: {
     coinmarketcapApiId: 825,
-    vaults: ["Stablecoin Vault"],
+    vaults: ["Stablecoin Vault", "All Weather Vault"],
   },
   "usdc.e": {
     coinmarketcapApiId: 3408,
-    vaults: ["Stablecoin Vault"],
+    vaults: ["Stablecoin Vault", "All Weather Vault"],
   },
   weth: {
     coinmarketcapApiId: 2396,
@@ -41,11 +41,15 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   dai: {
     coinmarketcapApiId: 4943,
-    vaults: ["Stablecoin Vault"],
+    vaults: ["Stablecoin Vault", "All Weather Vault"],
   },
   usde: {
     coinmarketcapApiId: 29470,
-    vaults: ["Stablecoin Vault", "Convex Stablecoin Vault"],
+    vaults: [
+      "Stablecoin Vault",
+      "Convex Stablecoin Vault",
+      "All Weather Vault",
+    ],
   },
   wbtc: {
     coinmarketcapApiId: 3717,
@@ -53,11 +57,11 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   eurc: {
     coinmarketcapApiId: 20641,
-    vaults: ["Stablecoin Vault", "Moonwell Vault"],
+    vaults: ["Stablecoin Vault", "Moonwell Vault", "All Weather Vault"],
   },
   bal: {
     coinmarketcapApiId: 5728,
-    vaults: ["Stablecoin Vault"],
+    vaults: ["Stablecoin Vault", "All Weather Vault"],
   },
   mseth: {
     geckoterminal: {
@@ -79,14 +83,18 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
       chain: "arbitrum",
       address: "0xb2f30a7c980f052f02563fb518dcc39e6bf38175",
     },
-    vaults: ["Stablecoin Vault", "Convex Stablecoin Vault"],
+    vaults: [
+      "Stablecoin Vault",
+      "Convex Stablecoin Vault",
+      "All Weather Vault",
+    ],
   },
   msusd: {
     geckoterminal: {
       chain: "base",
       address: "0x526728DBc96689597F85ae4cd716d4f7fCcBAE9d",
     },
-    vaults: ["Stablecoin Vault", "Aerodrome Vault"],
+    vaults: ["Stablecoin Vault", "Aerodrome Vault", "All Weather Vault"],
   },
   eusd: {
     geckoterminal: {
@@ -104,11 +112,15 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   dusdc: {
     coinmarketcapApiId: 3408,
-    vaults: ["Stablecoin Vault"],
+    vaults: ["Stablecoin Vault", "All Weather Vault"],
   },
   usdx: {
     coinmarketcapApiId: 34060,
-    vaults: ["Stablecoin Vault", "Convex Stablecoin Vault"],
+    vaults: [
+      "Stablecoin Vault",
+      "Convex Stablecoin Vault",
+      "All Weather Vault",
+    ],
   },
   susdx: {
     coinmarketcapApiId: 34088,
@@ -116,7 +128,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   gho: {
     coinmarketcapApiId: 23508,
-    vaults: ["Stablecoin Vault"],
+    vaults: ["Stablecoin Vault", "All Weather Vault"],
   },
   gyd: {
     coinmarketcapApiId: 31996,
@@ -127,14 +139,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
       chain: "arbitrum",
       address: "0x7CFaDFD5645B50bE87d546f42699d863648251ad",
     },
-    vaults: ["Stablecoin Vault"],
-  },
-  susdz: {
-    geckoterminal: {
-      chain: "base",
-      address: "0xe31ee12bdfdd0573d634124611e85338e2cbf0cf",
-    },
-    vaults: ["Stablecoin Vault"],
+    vaults: ["Stablecoin Vault", "All Weather Vault"],
   },
   wsteth: {
     coinmarketcapApiId: 12409,

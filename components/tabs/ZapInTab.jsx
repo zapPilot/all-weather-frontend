@@ -184,7 +184,7 @@ export default function ZapInTab({
               onClick={() => {
                 handleAAWalletAction("zapIn", skipBridge);
               }}
-              loading={zapInIsLoading}
+              // loading={zapInIsLoading}
               disabled={
                 Number(investmentAmount) === 0 ||
                 Number(investmentAmount) > tokenBalance
