@@ -225,7 +225,7 @@ export default function DemoFlowDirectionGraph({
     layout: {
       type: "antv-dagre",
       nodesep: 10,
-      ranksep: 60,
+      ranksep: 5,
     },
   };
 
