@@ -329,7 +329,7 @@ export default function IndexOverviews() {
       chain: chainId,
     });
     const gasPriceInGwei = Number(gasPrice) / 1e9;
-    if (gasPriceInGwei > 0.05) {
+    if (gasPriceInGwei > 0.15) {
       openNotificationWithIcon(
         notificationAPI,
         "Gas Price Too High",
