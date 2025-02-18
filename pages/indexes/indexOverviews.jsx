@@ -1063,6 +1063,8 @@ export default function IndexOverviews() {
         chainMetadata={chainId}
         rebalanceAmount={getRebalanceReinvestUsdAmount(chainId?.name)}
         zapOutAmount={usdBalance * zapOutPercentage}
+        availableAssetChains={availableAssetChains}
+        currentChain={currentChain}
       />
       <main className={styles.bgStyle}>
         <header className="relative isolate pt-6">
