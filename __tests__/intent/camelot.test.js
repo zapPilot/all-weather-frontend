@@ -116,7 +116,7 @@ describe("Camelot Vault", () => {
       // swap
       const oneInchArbAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
       const zeroxProxyAddress = "0xdef1c0ded9bec7f1a1670819833240f027b25eff";
-      const paraswapProxyAddress = "0x93aAAe79a53759cD164340E4C8766E4Db5331cD7";
+      const paraswapProxyAddress = "0xdef171fe48cf0115b1d80b88dc8eab59176fee57";
       expect(txns[6].to.toLowerCase()).to.be.oneOf([
         oneInchArbAddress.toLowerCase(),
         zeroxProxyAddress.toLowerCase(),
