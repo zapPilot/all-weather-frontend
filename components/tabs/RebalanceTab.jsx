@@ -40,27 +40,9 @@ export default function RebalanceTab({
         chainStatus={chainStatus}
         theme="dark"
       />
-      <div>
-        {chainStatus &&
-        rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.every(
-          (data) => chainStatus[data.chain],
-        ) ? (
-          <div className={"text-green-400 text-center mb-2"}>
-            <CheckCircleIcon className="w-12 h-12 mx-auto" />
-            <p>You have completed all rebalance actions.</p>
-            <Button
-              type="primary"
-              className="mt-4 w-full"
-              onClick={() => {
-                router.push("/profile");
-              }}
-            >
-              Go to Profile
-            </Button>
-          </div>
-        ) : null}
-      </div>
-      {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
+      {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.every(action => chainStatus[action.chain])
+      ? null
+      : rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
         (data, index) => {
           const isCurrentChain =
             chainId?.name?.toLowerCase().replace(" one", "").trim() ===

@@ -28,19 +28,12 @@ export default function ZapOutTab({
   return (
     <div>
       <ActionItem
-        actionName="Withdraw"
+        actionName="zapOut"
         availableAssetChains={availableAssetChains}
         currentChain={currentChain}
         chainStatus={chainStatus}
         theme="dark"
       />
-      {Object.values(chainStatus).every((status) => status) && (
-        <div className={"text-green-400 text-center mb-2"}>
-          <CheckCircleIcon className="w-12 h-12 mx-auto" />
-          <p>You have completed all withdraw actions.</p>
-        </div>
-      )}
-
       {Object.values(chainStatus).some((status) => status) ? null : (
         <DecimalStep
           selectedToken={selectedToken}

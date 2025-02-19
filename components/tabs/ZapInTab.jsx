@@ -65,32 +65,12 @@ export default function ZapInTab({
   return (
     <div>
       <ActionItem
-        actionName="Deposit"
+        actionName="zapIn"
         availableAssetChains={availableAssetChains}
         currentChain={currentChain}
         chainStatus={chainStatus}
         theme="dark"
       />
-      <div className="mt-2 p-2">
-        {falseChains?.length === 0 && availableAssetChains?.length > 0 && (
-          <div className="flex flex-col text-green-500 text-center">
-            <CheckCircleIcon className="w-12 h-12 mx-auto" />
-            <p className="mt-2">Deposit is complete!</p>
-            <p className="mt-2">
-              Your assets have been successfully deposited.
-            </p>
-            <Button
-              type="primary"
-              className="mt-4"
-              onClick={() => {
-                router.push("/profile");
-              }}
-            >
-              Go to Profile
-            </Button>
-          </div>
-        )}
-      </div>
       <div
         className={`mt-4 sm:mt-0 ${
           chainStatus[currentChain] ? "hidden" : "block"
