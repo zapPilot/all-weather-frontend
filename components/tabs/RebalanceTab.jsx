@@ -2,6 +2,7 @@ import { Button, Spin } from "antd";
 import { useState } from "react";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
+import ActionItem from "../common/ActionItem";
 
 export default function RebalanceTab({
   rebalancableUsdBalanceDictLoading,
@@ -28,38 +29,17 @@ export default function RebalanceTab({
         0,
       ) || 0;
   const router = useRouter();
+  const currentChain = chainId?.name?.toLowerCase().replace(" one", "").trim();
   return (
     <div>
       {rebalancableUsdBalanceDictLoading ? <Spin /> : null}
-      <div className="flex justify-center mb-4">
-        {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
-          (data, index) => (
-            <div
-              key={`${data.chain}-${data.actionName}`}
-              className={`flex flex-col items-center mx-2 ${
-                currentStep === index
-                  ? "text-white font-semibold"
-                  : "text-gray-500"
-              }`}
-            >
-              <div
-                className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${
-                  currentStep === index ? "border-white" : "border-gray-500"
-                }`}
-              >
-                {index + 1}
-              </div>
-              <p>
-                {data.actionName === "rebalance"
-                  ? "Rebalance"
-                  : data.actionName === "zapIn"
-                  ? "Deposit"
-                  : data.actionName}
-              </p>
-            </div>
-          ),
-        )}
-      </div>
+      <ActionItem
+        actionName={rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(action => action.actionName)}
+        availableAssetChains={rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(action => action.chain)}
+        currentChain={currentChain}
+        chainStatus={chainStatus}
+        theme="dark"
+      />
       <div>
         {chainStatus &&
         rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.every(
@@ -92,20 +72,6 @@ export default function RebalanceTab({
               key={`${data.chain}-${data.actionName}`}
               className={currentStep === index ? "mb-4" : "hidden"}
             >
-              <p className="text-gray-400 text-center mb-2">
-                {isCurrentChain
-                  ? getRebalanceReinvestUsdAmount(chainId?.name) / usdBalance <
-                      portfolioHelper?.rebalanceThreshold() ||
-                    Math.abs(
-                      calCurrentAPR(rebalancableUsdBalanceDict) -
-                        portfolioApr[portfolioName]?.portfolioAPR * 100,
-                    ) < 5
-                    ? "Your investment portfolio is still healthy, and no rebalancing is needed."
-                    : null
-                  : usdBalance <= 0
-                  ? "You have no balance in your portfolio. Please deposit some assets."
-                  : null}
-              </p>
               {isCurrentChain ? (
                 <Button
                   type="primary"

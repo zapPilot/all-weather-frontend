@@ -6,6 +6,7 @@ import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import { TOKEN_ADDRESS_MAP } from "../../utils/general";
 import { useRouter } from "next/router";
+import ActionItem from "../common/ActionItem";
 const { Countdown } = Statistic;
 export default function ZapInTab({
   nextStepChain,
@@ -62,181 +63,135 @@ export default function ZapInTab({
   const router = useRouter();
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <div className="flex justify-center">
-          <div
-            className={`flex flex-col items-center mx-2 ${
-              falseChains.length === availableAssetChains?.length
-                ? "text-white font-semibold"
-                : "text-gray-500"
-            }`}
-          >
-            <div
-              className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${
-                falseChains.length === availableAssetChains?.length
-                  ? "border-white"
-                  : "border-gray-500"
-              }`}
+    <div>
+      <ActionItem
+        actionName="Deposit"
+        availableAssetChains={availableAssetChains}
+        currentChain={currentChain}
+        chainStatus={chainStatus}
+        theme="dark"
+      />
+      <div className="mt-2 p-2">
+        {falseChains?.length === 0 && availableAssetChains?.length > 0 && (
+          <div className="flex flex-col text-green-500 text-center">
+            <CheckCircleIcon className="w-12 h-12 mx-auto" />
+            <p className="mt-2">Deposit is complete!</p>
+            <p className="mt-2">
+              Your assets have been successfully deposited.
+            </p>
+            <Button
+              type="primary"
+              className="mt-4"
+              onClick={() => {
+                router.push("/profile");
+              }}
             >
-              1
-            </div>
-            <p>Deposit & bridge</p>
+              Go to Profile
+            </Button>
           </div>
-          <div
-            className={`flex flex-col items-center mx-2 ${
-              falseChains.length < availableAssetChains?.length
-                ? "text-white font-semibold"
-                : "text-gray-500"
-            }`}
+        )}
+      </div>
+      <div
+        className={`mt-4 sm:mt-0 ${
+          chainStatus[currentChain] ? "hidden" : "block"
+        }`}
+      >
+        <TokenDropdownInput
+          selectedToken={selectedToken}
+          setSelectedToken={handleSetSelectedToken}
+          setInvestmentAmount={handleSetInvestmentAmount}
+          tokenPricesMappingTable={tokenPricesMappingTable}
+        />
+        {account === undefined ? (
+          <ConfiguredConnectButton />
+        ) : Object.values(
+            protocolAssetDustInWallet?.[
+              chainId?.name?.toLowerCase()?.replace(" one", "")
+            ] || {},
+          ).reduce(
+            (sum, protocolObj) => sum + (protocolObj.assetUsdBalanceOf || 0),
+            0,
+          ) > 100 ? (
+          <Button
+            type="primary"
+            className="w-full my-2"
+            onClick={() => {
+              handleAAWalletAction("stake", true);
+            }}
+            loading={protocolAssetDustInWalletLoading}
+            disabled={usdBalanceLoading}
           >
-            <div
-              className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${
-                falseChains.length < availableAssetChains?.length
-                  ? "border-white"
-                  : "border-gray-500"
-              }`}
-            >
-              2
-            </div>
-            <p>Deposit on every chain</p>
-          </div>
-        </div>
-        <div className="mt-2 p-2">
-          <p className="font-medium">Completed chains</p>
-          <div className="flex items-center">
-            {availableAssetChains.map((chain, index) => (
-              <img
-                key={index}
-                src={`/chainPicturesWebp/${chain}.webp`}
-                alt={chain}
-                className={`w-6 h-6 m-1 rounded-full ${
-                  chainStatus[chain] ? "" : "opacity-10"
-                }`}
-              />
-            ))}
-          </div>
-          {falseChains?.length === 0 && availableAssetChains?.length > 0 && (
-            <div className="flex flex-col text-green-500 text-center">
-              <CheckCircleIcon className="w-12 h-12 mx-auto" />
-              <p className="mt-2">Deposit is complete!</p>
-              <p className="mt-2">
-                Your assets have been successfully deposited.
-              </p>
-              <Button
-                type="primary"
-                className="mt-4"
-                onClick={() => {
-                  router.push("/profile");
-                }}
-              >
-                Go to Profile
-              </Button>
-            </div>
-          )}
-        </div>
-        <div
-          className={`mt-4 sm:mt-0 ${
-            chainStatus[currentChain] ? "hidden" : "block"
-          }`}
-        >
-          <TokenDropdownInput
-            selectedToken={selectedToken}
-            setSelectedToken={handleSetSelectedToken}
-            setInvestmentAmount={handleSetInvestmentAmount}
-            tokenPricesMappingTable={tokenPricesMappingTable}
-          />
-          {account === undefined ? (
-            <ConfiguredConnectButton />
-          ) : Object.values(
+            {`Stake Available Assets ($${Object.values(
               protocolAssetDustInWallet?.[
                 chainId?.name?.toLowerCase()?.replace(" one", "")
               ] || {},
-            ).reduce(
-              (sum, protocolObj) => sum + (protocolObj.assetUsdBalanceOf || 0),
-              0,
-            ) > 100 ? (
-            <Button
-              type="primary"
-              className="w-full my-2"
-              onClick={() => {
-                handleAAWalletAction("stake", true);
-              }}
-              loading={protocolAssetDustInWalletLoading}
-              disabled={usdBalanceLoading}
-            >
-              {`Stake Available Assets ($${Object.values(
-                protocolAssetDustInWallet?.[
-                  chainId?.name?.toLowerCase()?.replace(" one", "")
-                ] || {},
+            )
+              .reduce(
+                (sum, protocolObj) =>
+                  sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
+                0,
               )
-                .reduce(
-                  (sum, protocolObj) =>
-                    sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
-                  0,
-                )
-                .toFixed(2)})`}
-            </Button>
-          ) : (
-            <Button
-              type="primary"
-              className="w-full my-2"
-              onClick={() => {
-                handleAAWalletAction("zapIn", skipBridge);
-              }}
-              // loading={zapInIsLoading}
-              disabled={
-                Number(investmentAmount) === 0 ||
-                Number(investmentAmount) > tokenBalance
-              }
-            >
-              Zap In
-            </Button>
-          )}
-        </div>
-        <div
-          className={`mt-4 ${
-            chainStatus[currentChain] && falseChains.length > 0
-              ? "block"
-              : "hidden"
-          }`}
-        >
-          {showCountdown && deadline && (
-            <div className="mb-4">
-              <Countdown
-                title="Bridging tokens..."
-                value={deadline}
-                onFinish={() => setShowCountdown(false)}
-                style={{
-                  backgroundColor: "#ffffff", // Ant Design's default primary color
-                  padding: "10px",
-                  borderRadius: "8px",
-                }}
-                className="text-white"
-              />
-            </div>
-          )}
-
+              .toFixed(2)})`}
+          </Button>
+        ) : (
           <Button
             type="primary"
-            className={`w-full my-2 ${
-              currentChain ===
-              availableAssetChains.find((chain) => !chainStatus[chain])
-                ? "hidden"
-                : "block"
-            }`}
+            className="w-full my-2"
             onClick={() => {
-              handleSwitchChain(
-                availableAssetChains.find((chain) => !chainStatus[chain]),
-              );
-              setFinishedTxn(false);
+              handleAAWalletAction("zapIn", skipBridge);
             }}
-            loading={isLoading}
+            // loading={zapInIsLoading}
+            disabled={
+              Number(investmentAmount) === 0 ||
+              Number(investmentAmount) > tokenBalance
+            }
           >
-            switch to{" "}
-            {availableAssetChains.find((chain) => !chainStatus[chain])} Chain
+            Zap In
           </Button>
-        </div>
+        )}
+      </div>
+      <div
+        className={`mt-4 ${
+          chainStatus[currentChain] && falseChains.length > 0
+            ? "block"
+            : "hidden"
+        }`}
+      >
+        {showCountdown && deadline && (
+          <div className="mb-4">
+            <Countdown
+              title="Bridging tokens..."
+              value={deadline}
+              onFinish={() => setShowCountdown(false)}
+              style={{
+                backgroundColor: "#ffffff", // Ant Design's default primary color
+                padding: "10px",
+                borderRadius: "8px",
+              }}
+              className="text-white"
+            />
+          </div>
+        )}
+
+        <Button
+          type="primary"
+          className={`w-full my-2 ${
+            currentChain ===
+            availableAssetChains.find((chain) => !chainStatus[chain])
+              ? "hidden"
+              : "block"
+          }`}
+          onClick={() => {
+            handleSwitchChain(
+              availableAssetChains.find((chain) => !chainStatus[chain]),
+            );
+            setFinishedTxn(false);
+          }}
+          loading={isLoading}
+        >
+          switch to{" "}
+          {availableAssetChains.find((chain) => !chainStatus[chain])} Chain
+        </Button>
       </div>
     </div>
   );
