@@ -9,14 +9,8 @@ import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import WETH from "../lib/contracts/Weth.json" assert { type: "json" };
 import ReactMarkdown from "react-markdown";
 import getTheBestBridge from "./bridges/bridgeFactory";
-import {
-  CHAIN_ID_TO_CHAIN,
-  CHAIN_TO_CHAIN_ID,
-  TOKEN_ADDRESS_MAP,
-} from "../utils/general";
+import { CHAIN_TO_CHAIN_ID, TOKEN_ADDRESS_MAP } from "../utils/general";
 import { toWei } from "thirdweb/utils";
-import { fetchSwapData } from "../utils/oneInch";
-import { prepareTransaction } from "thirdweb";
 import { TokenPriceBatcher, PriceService } from "./TokenPriceService";
 import swap from "../utils/swapHelper";
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
@@ -41,13 +35,7 @@ export class BasePortfolio {
     this.weightMapping = weightMapping;
     this.bridgeUsdThreshold = 10;
   }
-  async initialize() {
-    this.existingInvestmentPositions =
-      await this._getExistingInvestmentPositionsByChain(
-        account.address,
-        updateProgress,
-      );
-  }
+
   description() {
     return (
       <ReactMarkdown>
@@ -95,7 +83,6 @@ export class BasePortfolio {
       address,
       tokenPricesMappingTable,
     );
-
     // Initialize balance dictionary with rewards
     let usdBalance = 0;
     const usdBalanceDict = this._initializeBalanceDict();
@@ -1158,28 +1145,6 @@ export class BasePortfolio {
         };
         return acc;
       }, {});
-  }
-  async _getExistingInvestmentPositionsByChain(address, updateProgress) {
-    const chainPromises = Object.entries(this.assetAddressSetByChain).map(
-      async ([chain, lpTokens]) => {
-        const response = await fetch(
-          `${
-            process.env.NEXT_PUBLIC_API_URL
-          }/${address}/nft/tvl_highest?token_addresses=${Array.from(
-            lpTokens,
-          ).join("+")}&chain=${chain}`,
-        );
-        const data = await response.json();
-        return { chain, data };
-      },
-    );
-
-    const results = await Promise.all(chainPromises);
-
-    return results.reduce((acc, { chain, data }) => {
-      acc[chain] = data;
-      return acc;
-    }, {});
   }
 
   _getUniqueTokenIdsForCurrentPrice() {
