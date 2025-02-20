@@ -87,19 +87,14 @@ export class BasePortfolio {
     return 0.05;
   }
   async usdBalanceOf(address, portfolioAprDict) {
-    console.time("usdBalanceOf");
     // Get token prices
-    console.time("getTokenPricesMappingTable");
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
-    console.timeEnd("getTokenPricesMappingTable");
 
     // Get balances and rewards
-    console.time("getBalances");
     const balanceResults = await this._getBalances(
       address,
       tokenPricesMappingTable,
     );
-    console.timeEnd("getBalances");
 
     // Initialize balance dictionary with rewards
     let usdBalance = 0;
@@ -124,7 +119,6 @@ export class BasePortfolio {
       positiveWeigtDiffSum,
     );
     usdBalanceDict.metadata = metadata;
-    console.timeEnd("usdBalanceOf");
     return [usdBalance, usdBalanceDict];
   }
 
@@ -382,7 +376,6 @@ export class BasePortfolio {
 
   async _generateTxnsByAction(actionName, actionParams) {
     let totalTxns = [];
-
     // Handle special pre-processing for specific actions
     if (actionName === "zapIn") {
       if (actionParams.tokenInSymbol === "eth") {
@@ -1598,6 +1591,8 @@ export class BasePortfolio {
           ? { value: toWei(ethers.utils.formatEther(amount)) }
           : { params: [amount] }),
       }),
+      wrappedTokenAddress,
+      wrappedTokenSymbol,
     ];
   }
   mul_with_slippage_in_bignumber_format(amount, slippage) {
