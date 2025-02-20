@@ -497,26 +497,24 @@ export class BaseCamelot extends BaseProtocol {
 
   async _getNftID(address) {
     const { tickLower, tickUpper } = this.customParams.tickers;
-    const uniqueKey = `${this.assetContract.address.toLowerCase()}/${this.customParams.lpTokens[0][1].toLowerCase()}/${this.customParams.lpTokens[1][1].toLowerCase()}/${tickLower}/${tickUpper}`;
-    const chainString = Object.entries(CHAIN_TO_CHAIN_ID).find(
-      ([key, value]) => value === this.chainId,
-    )[0];
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/${address}/nft/tvl_highest?token_addresses=${this.assetContract.address}&chain=${chainString}`,
-    );
-    const data = await response.json();
-    // Filter entries by uniqueKey before sorting
-
-    const filteredData = Object.entries(data).filter(
-      ([key]) => key === uniqueKey,
-    );
-    const sortedData = filteredData.sort(
-      (a, b) => b[1].liquidity - a[1].liquidity,
-    );
-    if (sortedData.length < 1) {
-      return 0;
+    const [token0Metadata, token1Metadata] = this.customParams.lpTokens;
+    // const balances = await this.assetContractInstance.balanceOf(address);
+    for (let idx = 0; idx < 10; idx++) {
+      const token_id = await this.assetContractInstance.tokenOfOwnerByIndex(
+        address,
+        idx,
+      );
+      const position = await this.assetContractInstance.positions(token_id);
+      if (
+        position.tickLower === tickLower &&
+        position.tickUpper === tickUpper &&
+        position.token0.toLowerCase() === token0Metadata[1].toLowerCase() &&
+        position.token1.toLowerCase() === token1Metadata[1].toLowerCase()
+      ) {
+        return token_id;
+      }
     }
-    return sortedData[0][1]?.token_id ?? 0;
+    return 0;
   }
   async _checkIfNFTExists(token_id) {
     try {
