@@ -24,7 +24,7 @@ const ActionItem = ({ actionName, availableAssetChains, currentChain, chainStatu
             key={index}
           >
             <div
-              className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${
+              className={`w-10 h-10 border-2 rounded-full flex items-center justify-center relative ${
                 chainStatus[chain]  
                   ? "border-green-500"
                   : currentChain === chain
@@ -32,6 +32,17 @@ const ActionItem = ({ actionName, availableAssetChains, currentChain, chainStatu
                     : "border-gray-500"
               }`}
             >
+              {
+                !chainStatus[chain] && (
+                  <div className="absolute -top-2">
+                    <span class="relative flex size-3">
+                      <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                      <span class="relative inline-flex size-3 rounded-full bg-red-500"></span>
+                    </span>
+                  </div>
+                )
+              }
+              
               {index + 1}
             </div>
             <p>
