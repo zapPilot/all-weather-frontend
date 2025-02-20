@@ -169,8 +169,8 @@ export default function ZapInTab({
           }}
           loading={isLoading}
         >
-          switch to{" "}
-          {availableAssetChains.find((chain) => !chainStatus[chain])} Chain
+          switch to {availableAssetChains.find((chain) => !chainStatus[chain])}{" "}
+          Chain
         </Button>
       </div>
     </div>

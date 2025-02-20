@@ -34,58 +34,64 @@ export default function RebalanceTab({
     <div>
       {rebalancableUsdBalanceDictLoading ? <Spin /> : null}
       <ActionItem
-        actionName={rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(action => action.actionName)}
-        availableAssetChains={rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(action => action.chain)}
+        actionName={rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(
+          (action) => action.actionName,
+        )}
+        availableAssetChains={rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(
+          (action) => action.chain,
+        )}
         currentChain={currentChain}
         chainStatus={chainStatus}
         theme="dark"
       />
-      {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.every(action => chainStatus[action.chain])
-      ? null
-      : rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
-        (data, index) => {
-          const isCurrentChain =
-            chainId?.name?.toLowerCase().replace(" one", "").trim() ===
-            data.chain;
-          const isFirstPendingAction = index === 0;
+      {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.every(
+        (action) => chainStatus[action.chain],
+      )
+        ? null
+        : rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
+            (data, index) => {
+              const isCurrentChain =
+                chainId?.name?.toLowerCase().replace(" one", "").trim() ===
+                data.chain;
+              const isFirstPendingAction = index === 0;
 
-          return (
-            <div
-              key={`${data.chain}-${data.actionName}`}
-              className={currentStep === index ? "mb-4" : "hidden"}
-            >
-              {isCurrentChain ? (
-                <Button
-                  type="primary"
-                  className="w-full"
-                  onClick={() => {
-                    handleAAWalletAction(data.actionName, true);
-                    setCurrentStep(currentStep + 1);
-                  }}
-                  loading={
-                    rebalanceIsLoading || rebalancableUsdBalanceDictLoading
-                  }
-                  disabled={usdBalance <= 0}
+              return (
+                <div
+                  key={`${data.chain}-${data.actionName}`}
+                  className={currentStep === index ? "mb-4" : "hidden"}
                 >
-                  {data.actionName} on {data.chain}
-                </Button>
-              ) : (
-                <Button
-                  type="primary"
-                  className="w-full"
-                  onClick={() =>
-                    switchChain(
-                      CHAIN_ID_TO_CHAIN[CHAIN_TO_CHAIN_ID[data.chain]],
-                    )
-                  }
-                >
-                  Switch to {data.chain} Chain
-                </Button>
-              )}
-            </div>
-          );
-        },
-      )}
+                  {isCurrentChain ? (
+                    <Button
+                      type="primary"
+                      className="w-full"
+                      onClick={() => {
+                        handleAAWalletAction(data.actionName, true);
+                        setCurrentStep(currentStep + 1);
+                      }}
+                      loading={
+                        rebalanceIsLoading || rebalancableUsdBalanceDictLoading
+                      }
+                      disabled={usdBalance <= 0}
+                    >
+                      {data.actionName} on {data.chain}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="primary"
+                      className="w-full"
+                      onClick={() =>
+                        switchChain(
+                          CHAIN_ID_TO_CHAIN[CHAIN_TO_CHAIN_ID[data.chain]],
+                        )
+                      }
+                    >
+                      Switch to {data.chain} Chain
+                    </Button>
+                  )}
+                </div>
+              );
+            },
+          )}
 
       <div className="mt-4 text-gray-400">
         <p>Expected APR after rebalance: </p>
