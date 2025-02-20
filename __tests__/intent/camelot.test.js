@@ -131,7 +131,7 @@ describe("Camelot Vault", () => {
         "2ecbc6f229fed06044cdb0dd772437a30190cd50",
       );
     } else {
-      expect(txns.length).toBe(8);
+      expect(txns.length).toBe(7);
       // decrease liquidity
       expect(await encode(txns[0])).includes("0c49ccbe");
       expect(txns[0].to).toBe(camelotNFTAddress);
@@ -146,11 +146,11 @@ describe("Camelot Vault", () => {
       //   // swap
       //   expect(txns[4].to).toBe(oneInchArbAddress);
       // fee: send referral fee
-      expect(await encode(txns[6])).includes(
+      expect(await encode(txns[5])).includes(
         "210050bb080155aec4eae79a2aac5fe78fd738e1",
       );
       // fee: send platform fee
-      expect(await encode(txns[7])).includes(
+      expect(await encode(txns[6])).includes(
         "2ecbc6f229fed06044cdb0dd772437a30190cd50",
       );
     }
