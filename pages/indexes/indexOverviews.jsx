@@ -1074,6 +1074,8 @@ export default function IndexOverviews() {
         zapOutAmount={usdBalance * zapOutPercentage}
         availableAssetChains={availableAssetChains}
         currentChain={currentChain}
+        chainStatus={chainStatus}
+        currentTab={tabKey}
       />
       <main className={styles.bgStyle}>
         <header className="relative isolate pt-6">

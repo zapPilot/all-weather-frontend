@@ -2,6 +2,7 @@ import { Button } from "antd";
 import DecimalStep from "../../pages/indexes/DecimalStep";
 import ConfiguredConnectButton from "../../pages/ConnectButton";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import ActionItem from "../common/ActionItem";
 
 export default function ZapOutTab({
   selectedToken,
@@ -26,34 +27,13 @@ export default function ZapOutTab({
 
   return (
     <div>
-      <div className="flex justify-center mb-4">
-        {availableAssetChains
-          .sort((a, b) => (a === "base" ? -1 : 1))
-          .map((chain, index) => (
-            <div
-              className={`flex flex-col items-center mx-2 ${
-                currentChain === chain ? "text-white" : "text-gray-500"
-              }`}
-              key={index}
-            >
-              <div
-                className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${
-                  currentChain === chain ? "border-white" : "border-gray-500"
-                }`}
-              >
-                {index + 1}
-              </div>
-              <p>Withdraw on {chain}</p>
-            </div>
-          ))}
-      </div>
-      {Object.values(chainStatus).every((status) => status) && (
-        <div className={"text-green-400 text-center mb-2"}>
-          <CheckCircleIcon className="w-12 h-12 mx-auto" />
-          <p>You have completed all withdraw actions.</p>
-        </div>
-      )}
-
+      <ActionItem
+        actionName="zapOut"
+        availableAssetChains={availableAssetChains}
+        currentChain={currentChain}
+        chainStatus={chainStatus}
+        theme="dark"
+      />
       {Object.values(chainStatus).some((status) => status) ? null : (
         <DecimalStep
           selectedToken={selectedToken}

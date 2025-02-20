@@ -12,6 +12,7 @@ import DemoFlowDirectionGraph from "../FlowChart";
 import { CheckIcon, QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/20/solid";
 import { Popover, Spin } from "antd";
+import ActionItem from "../../components/common/ActionItem";
 
 const formatAmount = (amount) => {
   if (amount === undefined || amount === null) return <Spin />;
@@ -80,6 +81,8 @@ export default function PopUpModal({
   zapOutAmount,
   availableAssetChains,
   currentChain,
+  chainStatus,
+  currentTab,
 }) {
   return (
     <Dialog
@@ -112,42 +115,25 @@ export default function PopUpModal({
             <div className="flex flex-col h-full">
               <div>
                 <div className="text-center mt-5">
-                  <div className="flex justify-center text-base font-semibold">
-                    {availableAssetChains
-                      ?.sort((a, b) => (currentChain === a ? -1 : 1))
-                      .map((chain, index) => (
-                        <div
-                          className={`flex flex-col items-center mx-2 ${
-                            currentChain === chain
-                              ? "text-gray-900"
-                              : "text-gray-500"
-                          }`}
-                          key={index}
-                        >
-                          <div
-                            className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${
-                              currentChain === chain
-                                ? "border-gray-900"
-                                : "border-gray-500"
-                            }`}
-                          >
-                            {index + 1}
-                          </div>
-                          <p>
-                            {actionName === "zapIn"
-                              ? "Deposit"
-                              : actionName === "zapOut"
-                              ? "Withdraw"
-                              : actionName === "rebalance"
-                              ? "Rebalance"
-                              : actionName === "claimAndSwap"
-                              ? "Claim and Swap"
-                              : actionName}{" "}
-                            on {chain}
-                          </p>
-                        </div>
-                      ))}
-                  </div>
+                  <ActionItem
+                    actionName={
+                      currentTab === "3"
+                        ? rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(
+                            (action) => action.actionName,
+                          )
+                        : actionName
+                    }
+                    availableAssetChains={
+                      currentTab === "3"
+                        ? rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(
+                            (action) => action.chain,
+                          )
+                        : availableAssetChains
+                    }
+                    currentChain={currentChain}
+                    chainStatus={chainStatus}
+                    theme="light"
+                  />
                 </div>
                 <div className="mx-auto flex items-center justify-center rounded-full">
                   {costsCalculated === false ? (
