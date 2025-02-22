@@ -13,7 +13,7 @@ import { CheckIcon, QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/20/solid";
 import { Popover, Spin } from "antd";
 import ActionItem from "../../components/common/ActionItem";
-
+import EmailSubscription from "../emailsubscription";
 const formatAmount = (amount) => {
   if (amount === undefined || amount === null) return <Spin />;
 
@@ -312,19 +312,7 @@ export default function PopUpModal({
                 </div>
               </dl>
               <div className="mt-6 flex gap-4">
-                <button
-                  type="button"
-                  onClick={() =>
-                    window.open(
-                      "https://t.me/all_weather_protocol_bot",
-                      "_blank",
-                    )
-                  }
-                  className="inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
-                >
-                  Subscribe for Rebalance Notifications
-                  <span className="fi fi-brands-telegram ml-2"></span>
-                </button>
+                <EmailSubscription />
               </div>
             </div>
           </DialogPanel>
