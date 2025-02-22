@@ -77,8 +77,8 @@ const UnsubscribePage = () => {
               Unsubscribe Failed
             </h2>
             <p className="mt-2 text-gray-400">
-              Sorry, we couldn't process your unsubscribe request. Please try
-              again later.
+              Sorry, we couldn&rsquo;t process your unsubscribe request. Please
+              try again later.
             </p>
             <button
               onClick={() => router.push("/")}
