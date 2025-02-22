@@ -1,5 +1,4 @@
 import {
-  ArrowTopRightOnSquareIcon,
   CurrencyDollarIcon,
   ChartBarIcon,
   ArrowPathIcon,
@@ -8,7 +7,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { Popover, Spin } from "antd";
-
+import EmailSubscription from "../emailsubscription";
 export default function PortfolioSummary({
   usdBalanceLoading,
   tokenPricesMappingTable,
@@ -143,6 +142,11 @@ export default function PortfolioSummary({
               >
                 Historical Balances
               </Link>
+            </dd>
+          </div>
+          <div className="mt-6 flex w-full flex-none gap-x-4">
+            <dd className="text-sm font-medium leading-6 text-white">
+              <EmailSubscription />
             </dd>
           </div>
         </dl>

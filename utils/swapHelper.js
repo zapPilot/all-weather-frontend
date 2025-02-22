@@ -72,7 +72,7 @@ async function swap(
         return {
           provider,
           swapData: swapCallData,
-          toAmount: swapCallData["toAmount"],
+          minToAmount: swapCallData["minToAmount"],
           gasFee: swapCallData["gasFee"],
           tradingLoss,
           inputValue,
@@ -102,10 +102,10 @@ async function swap(
 
   // Sort first by toAmount (descending) then by gasFee (ascending)
   const bestSwap = validSwaps.sort((a, b) => {
-    if (a.toAmount === b.toAmount) {
+    if (a.minToAmount === b.minToAmount) {
       return Number(a.gasFee - b.gasFee); // Lower gas fee is better
     }
-    return Number(b.toAmount - a.toAmount); // Higher return amount is better
+    return Number(b.minToAmount - a.minToAmount); // Higher return amount is better
   })[0];
   // Update progress with final trading loss/gain
   await updateProgressAndWaitCallback(
@@ -114,6 +114,6 @@ async function swap(
     bestSwap.tradingLoss,
   );
 
-  return [bestSwap.transactions, bestSwap.toAmount];
+  return [bestSwap.transactions, bestSwap.minToAmount];
 }
 export default swap;

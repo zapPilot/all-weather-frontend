@@ -12,7 +12,8 @@ import DemoFlowDirectionGraph from "../FlowChart";
 import { CheckIcon, QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/20/solid";
 import { Popover, Spin } from "antd";
-
+import ActionItem from "../../components/common/ActionItem";
+import EmailSubscription from "../emailsubscription";
 const formatAmount = (amount) => {
   if (amount === undefined || amount === null) return <Spin />;
 
@@ -80,6 +81,8 @@ export default function PopUpModal({
   zapOutAmount,
   availableAssetChains,
   currentChain,
+  chainStatus,
+  currentTab,
 }) {
   return (
     <Dialog
@@ -112,42 +115,25 @@ export default function PopUpModal({
             <div className="flex flex-col h-full">
               <div>
                 <div className="text-center mt-5">
-                  <div className="flex justify-center text-base font-semibold">
-                    {availableAssetChains
-                      ?.sort((a, b) => (currentChain === a ? -1 : 1))
-                      .map((chain, index) => (
-                        <div
-                          className={`flex flex-col items-center mx-2 ${
-                            currentChain === chain
-                              ? "text-gray-900"
-                              : "text-gray-500"
-                          }`}
-                          key={index}
-                        >
-                          <div
-                            className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${
-                              currentChain === chain
-                                ? "border-gray-900"
-                                : "border-gray-500"
-                            }`}
-                          >
-                            {index + 1}
-                          </div>
-                          <p>
-                            {actionName === "zapIn"
-                              ? "Deposit"
-                              : actionName === "zapOut"
-                              ? "Withdraw"
-                              : actionName === "rebalance"
-                              ? "Rebalance"
-                              : actionName === "claimAndSwap"
-                              ? "Claim and Swap"
-                              : actionName}{" "}
-                            on {chain}
-                          </p>
-                        </div>
-                      ))}
-                  </div>
+                  <ActionItem
+                    actionName={
+                      currentTab === "3"
+                        ? rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(
+                            (action) => action.actionName,
+                          )
+                        : actionName
+                    }
+                    availableAssetChains={
+                      currentTab === "3"
+                        ? rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(
+                            (action) => action.chain,
+                          )
+                        : availableAssetChains
+                    }
+                    currentChain={currentChain}
+                    chainStatus={chainStatus}
+                    theme="light"
+                  />
                 </div>
                 <div className="mx-auto flex items-center justify-center rounded-full">
                   {costsCalculated === false ? (
@@ -326,19 +312,7 @@ export default function PopUpModal({
                 </div>
               </dl>
               <div className="mt-6 flex gap-4">
-                <button
-                  type="button"
-                  onClick={() =>
-                    window.open(
-                      "https://t.me/all_weather_protocol_bot",
-                      "_blank",
-                    )
-                  }
-                  className="inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
-                >
-                  Subscribe for Rebalance Notifications
-                  <span className="fi fi-brands-telegram ml-2"></span>
-                </button>
+                <EmailSubscription />
               </div>
             </div>
           </DialogPanel>

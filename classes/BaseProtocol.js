@@ -831,9 +831,9 @@ export default class BaseProtocol extends BaseUniswap {
           tokenPricesMappingTable,
         );
 
-        amountToZapIn = ethers.BigNumber.from(swapEstimateAmount)
-          .mul((100 - slippage) * 10000)
-          .div(100 * 10000);
+        amountToZapIn = ethers.BigNumber.from(
+          BigInt(Math.floor(swapEstimateAmount)),
+        );
         totalSwapTxns = totalSwapTxns.concat(swapTxns);
       }
 
