@@ -5,7 +5,9 @@ import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
 import { useState } from "react";
 import { TOKEN_ADDRESS_MAP } from "../../utils/general";
 import ActionItem from "../common/ActionItem";
+
 const { Countdown } = Statistic;
+
 export default function ZapInTab({
   nextStepChain,
   selectedToken,
@@ -35,19 +37,33 @@ export default function ZapInTab({
   const [isLoading, setIsLoading] = useState(false);
   const [showCountdown, setShowCountdown] = useState(false);
   const [deadline, setDeadline] = useState(null);
-  const countdownTime = 9;
+
+  const COUNTDOWN_TIME = 9;
   const currentChain = chainId?.name?.toLowerCase().replace(" one", "").trim();
   const falseChains = availableAssetChains.filter(
     (chain) => !chainStatus[chain],
   );
   const skipBridge = availableAssetChains.length > falseChains.length;
+
+  const getAvailableAssetBalance = () => {
+    const chainAssets =
+      protocolAssetDustInWallet?.[
+        chainId?.name?.toLowerCase()?.replace(" one", "")
+      ] || {};
+    return Object.values(chainAssets).reduce(
+      (sum, protocolObj) => sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
+      0,
+    );
+  };
+
   const handleSwitchChain = async (chain) => {
     setIsLoading(true);
-    const deadlineTime = getCurrentTimeSeconds() + countdownTime;
-    setDeadline(deadlineTime * 1000); // Convert to milliseconds for antd Countdown
+    const deadlineTime = getCurrentTimeSeconds() + COUNTDOWN_TIME;
+    setDeadline(deadlineTime * 1000);
     setShowCountdown(true);
     switchNextStepChain(chain);
-    await new Promise((resolve) => setTimeout(resolve, countdownTime * 1000));
+
+    await new Promise((resolve) => setTimeout(resolve, COUNTDOWN_TIME * 1000));
 
     setPreviousTokenSymbol(selectedToken.split("-")[0].toLowerCase());
     const tokenSymbol = selectedToken.split("-")[0].toLowerCase();
@@ -55,8 +71,87 @@ export default function ZapInTab({
       const newSelectedToken = `usdc-${TOKEN_ADDRESS_MAP["usdc"][nextStepChain]}-6`;
       handleSetSelectedToken(newSelectedToken);
     }
+
     setShowCountdown(false);
     setIsLoading(false);
+  };
+
+  const renderCountdown = () => {
+    if (!showCountdown || !deadline) return null;
+
+    return (
+      <div className="mb-4">
+        <Countdown
+          title="Bridging tokens..."
+          value={deadline}
+          onFinish={() => setShowCountdown(false)}
+          style={{
+            backgroundColor: "#ffffff",
+            padding: "10px",
+            borderRadius: "8px",
+          }}
+          className="text-white"
+        />
+      </div>
+    );
+  };
+
+  const renderActionButton = () => {
+    const availableBalance = getAvailableAssetBalance();
+
+    if (account === undefined) {
+      return <ConfiguredConnectButton />;
+    }
+
+    if (availableBalance > 100) {
+      return (
+        <Button
+          type="primary"
+          className="w-full my-2"
+          onClick={() => handleAAWalletAction("stake", true)}
+          loading={protocolAssetDustInWalletLoading}
+          disabled={usdBalanceLoading}
+        >
+          {`Stake Available Assets ($${availableBalance.toFixed(2)})`}
+        </Button>
+      );
+    }
+
+    return (
+      <Button
+        type="primary"
+        className="w-full my-2"
+        onClick={() => handleAAWalletAction("zapIn", skipBridge)}
+        loading={zapInIsLoading}
+        disabled={
+          Number(investmentAmount) === 0 ||
+          Number(investmentAmount) > tokenBalance
+        }
+      >
+        Zap In
+      </Button>
+    );
+  };
+
+  const renderSwitchChainButton = () => {
+    const nextChain = availableAssetChains.find((chain) => !chainStatus[chain]);
+    const shouldShow = currentChain !== nextChain;
+
+    if (!shouldShow) return null;
+
+    return (
+      <Button
+        type="primary"
+        className="w-full my-2"
+        onClick={() => {
+          handleSwitchChain(nextChain);
+          setFinishedTxn(false);
+        }}
+        loading={isLoading}
+      >
+        switch to {nextChain} Chain
+      </Button>
+    );
   };
 
   return (
@@ -68,65 +163,23 @@ export default function ZapInTab({
         chainStatus={chainStatus}
         theme="dark"
       />
+
       <div
         className={`mt-4 sm:mt-0 ${
           chainStatus[currentChain] ? "hidden" : "block"
         }`}
       >
-        <TokenDropdownInput
-          selectedToken={selectedToken}
-          setSelectedToken={handleSetSelectedToken}
-          setInvestmentAmount={handleSetInvestmentAmount}
-          tokenPricesMappingTable={tokenPricesMappingTable}
-        />
-        {account === undefined ? (
-          <ConfiguredConnectButton />
-        ) : Object.values(
-            protocolAssetDustInWallet?.[
-              chainId?.name?.toLowerCase()?.replace(" one", "")
-            ] || {},
-          ).reduce(
-            (sum, protocolObj) => sum + (protocolObj.assetUsdBalanceOf || 0),
-            0,
-          ) > 100 ? (
-          <Button
-            type="primary"
-            className="w-full my-2"
-            onClick={() => {
-              handleAAWalletAction("stake", true);
-            }}
-            loading={protocolAssetDustInWalletLoading}
-            disabled={usdBalanceLoading}
-          >
-            {`Stake Available Assets ($${Object.values(
-              protocolAssetDustInWallet?.[
-                chainId?.name?.toLowerCase()?.replace(" one", "")
-              ] || {},
-            )
-              .reduce(
-                (sum, protocolObj) =>
-                  sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
-                0,
-              )
-              .toFixed(2)})`}
-          </Button>
-        ) : (
-          <Button
-            type="primary"
-            className="w-full my-2"
-            onClick={() => {
-              handleAAWalletAction("zapIn", skipBridge);
-            }}
-            // loading={zapInIsLoading}
-            disabled={
-              Number(investmentAmount) === 0 ||
-              Number(investmentAmount) > tokenBalance
-            }
-          >
-            Zap In
-          </Button>
+        {getAvailableAssetBalance() <= 100 && (
+          <TokenDropdownInput
+            selectedToken={selectedToken}
+            setSelectedToken={handleSetSelectedToken}
+            setInvestmentAmount={handleSetInvestmentAmount}
+            tokenPricesMappingTable={tokenPricesMappingTable}
+          />
         )}
+        {renderActionButton()}
       </div>
+
       <div
         className={`mt-4 ${
           chainStatus[currentChain] && falseChains.length > 0
@@ -134,41 +187,8 @@ export default function ZapInTab({
             : "hidden"
         }`}
       >
-        {showCountdown && deadline && (
-          <div className="mb-4">
-            <Countdown
-              title="Bridging tokens..."
-              value={deadline}
-              onFinish={() => setShowCountdown(false)}
-              style={{
-                backgroundColor: "#ffffff", // Ant Design's default primary color
-                padding: "10px",
-                borderRadius: "8px",
-              }}
-              className="text-white"
-            />
-          </div>
-        )}
-
-        <Button
-          type="primary"
-          className={`w-full my-2 ${
-            currentChain ===
-            availableAssetChains.find((chain) => !chainStatus[chain])
-              ? "hidden"
-              : "block"
-          }`}
-          onClick={() => {
-            handleSwitchChain(
-              availableAssetChains.find((chain) => !chainStatus[chain]),
-            );
-            setFinishedTxn(false);
-          }}
-          loading={isLoading}
-        >
-          switch to {availableAssetChains.find((chain) => !chainStatus[chain])}{" "}
-          Chain
-        </Button>
+        {renderCountdown()}
+        {renderSwitchChainButton()}
       </div>
     </div>
   );
