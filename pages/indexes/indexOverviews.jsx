@@ -1032,9 +1032,11 @@ export default function IndexOverviews() {
     zapOutIsLoading,
     zapOutPercentage,
     pendingRewards,
+    pendingRewardsLoading,
     availableAssetChains,
     chainStatus,
     onRefresh: handleRefresh,
+    
   };
 
   const items = useTabItems({
