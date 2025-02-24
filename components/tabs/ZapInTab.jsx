@@ -2,10 +2,8 @@ import { Button, Statistic } from "antd";
 import TokenDropdownInput from "../../pages/views/TokenDropdownInput.jsx";
 import ConfiguredConnectButton from "../../pages/ConnectButton";
 import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
-import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import { TOKEN_ADDRESS_MAP } from "../../utils/general";
-import { useRouter } from "next/router";
 import ActionItem from "../common/ActionItem";
 const { Countdown } = Statistic;
 export default function ZapInTab({
@@ -60,7 +58,6 @@ export default function ZapInTab({
     setShowCountdown(false);
     setIsLoading(false);
   };
-  const router = useRouter();
 
   return (
     <div>

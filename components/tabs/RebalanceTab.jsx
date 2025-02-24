@@ -53,7 +53,6 @@ export default function RebalanceTab({
               const isCurrentChain =
                 chainId?.name?.toLowerCase().replace(" one", "").trim() ===
                 data.chain;
-              const isFirstPendingAction = index === 0;
 
               return (
                 <div
