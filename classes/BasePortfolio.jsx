@@ -348,9 +348,17 @@ export class BasePortfolio {
   }
 
   async portfolioAction(actionName, actionParams) {
-    const updateProgress = (nodeID, tradingLoss) => {
+    const updateProgress = async (nodeID, tradingLoss) => {
+      // Update stepName first and wait for it to complete
+      await new Promise((resolve) => {
+        actionParams.setStepName((prevStepName) => {
+          resolve();
+          return nodeID;
+        });
+      });
+
+      // Then update the other states
       actionParams.setTradingLoss(tradingLoss);
-      actionParams.setStepName(nodeID);
       actionParams.setTotalTradingLoss(
         (prevTotalTradingLoss) => prevTotalTradingLoss + tradingLoss,
       );
@@ -1241,7 +1249,6 @@ export class BasePortfolio {
       edges: [],
     };
     const chainNodes = [];
-
     if (actionName === "rebalance") {
       const chainSet = new Set();
       let chainNode;
@@ -1407,6 +1414,11 @@ export class BasePortfolio {
                 actionParams.outputToken,
                 actionParams.outputTokenAddress,
                 protocol.weight,
+              );
+            } else if (actionName === "claimAndSwap") {
+              stepsData = protocol.interface.getClaimFlowChartData(
+                actionParams.outputToken,
+                actionParams.outputTokenAddress,
               );
             } else {
               throw new Error(`Invalid action name ${actionName}`);

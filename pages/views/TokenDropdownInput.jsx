@@ -26,7 +26,7 @@ const TokenDropdownInput = memo(
     setSelectedToken,
     setInvestmentAmount,
     tokenPricesMappingTable,
-    mode
+    mode,
   }) => {
     const [localInvestmentAmount, setLocalInvestmentAmount] = useState("");
     const tokenAddress = selectedToken?.split("-")[1];
@@ -67,7 +67,9 @@ const TokenDropdownInput = memo(
 
     useEffect(() => {}, [localInvestmentAmount]);
 
-    return mode === "claim" ?  <>{selectBefore(handleTokenChange, chainId?.id, selectedToken)} </>:(
+    return mode === "claim" ? (
+      <>{selectBefore(handleTokenChange, chainId?.id, selectedToken)} </>
+    ) : (
       <>
         <Space.Compact role="crypto_input">
           {selectBefore(handleTokenChange, chainId?.id, selectedToken)}

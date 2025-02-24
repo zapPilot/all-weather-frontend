@@ -13,17 +13,20 @@ const APRComposition = ({
       return <Spin size="small" />;
     }
     if (mode === "pendingRewards") {
-      const aggregatedTokens = Object.entries(APRData ?? {}).reduce((acc, [_, value]) => {
-        const symbol = value.symbol;
-        if (!acc[symbol]) {
-          acc[symbol] = {
-            symbol,
-            usdDenominatedValue: 0,
-          };
-        }
-        acc[symbol].usdDenominatedValue += value.usdDenominatedValue || 0;
-        return acc;
-      }, {});
+      const aggregatedTokens = Object.entries(APRData ?? {}).reduce(
+        (acc, [_, value]) => {
+          const symbol = value.symbol;
+          if (!acc[symbol]) {
+            acc[symbol] = {
+              symbol,
+              usdDenominatedValue: 0,
+            };
+          }
+          acc[symbol].usdDenominatedValue += value.usdDenominatedValue || 0;
+          return acc;
+        },
+        {},
+      );
 
       return Object.values(aggregatedTokens)
         .sort((a, b) => b.usdDenominatedValue - a.usdDenominatedValue)

@@ -270,7 +270,7 @@ export default function IndexOverviews() {
   const [costsCalculated, setCostsCalculated] = useState(false);
   const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(
-    portfolioName?.includes("Stablecoin") ? 1 : 3,
+    portfolioName?.includes("Stablecoin") ? 2 : 3,
   );
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
@@ -451,6 +451,18 @@ export default function IndexOverviews() {
               );
               resolve(data); // Resolve the promise successfully
               try {
+                const isLocalhost =
+                  window.location.hostname === "localhost" ||
+                  window.location.hostname === "127.0.0.1";
+
+                if (!isLocalhost) {
+                  axios.post(
+                    `${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`,
+                    {
+                      errorMsg: `<@&1172000757764075580> ${error.message}`,
+                    },
+                  );
+                }
                 await axios({
                   method: "post",
                   url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
@@ -538,12 +550,18 @@ export default function IndexOverviews() {
               if (error.message.includes("User rejected the request")) {
                 return;
               }
-              axios.post(
-                `${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`,
-                {
-                  errorMsg: `<@&1172000757764075580> ${error.message}`,
-                },
-              );
+              const isLocalhost =
+                window.location.hostname === "localhost" ||
+                window.location.hostname === "127.0.0.1";
+
+              if (!isLocalhost) {
+                axios.post(
+                  `${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`,
+                  {
+                    errorMsg: `<@&1172000757764075580> ${error.message}`,
+                  },
+                );
+              }
               reject(error); // Reject the promise with the error
             },
           });
@@ -578,7 +596,8 @@ export default function IndexOverviews() {
             "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000030526563656976656420616d6f756e74206f6620746f6b656e7320617265206c657373207468656e20657870656374656400000000000000000000000000000000",
           )
         ) {
-          errorReadableMsg = "Received amount of tokens are less then expected";
+          errorReadableMsg =
+            "Received amount of tokens are less then expected, please increase slippage tolerance and try again";
         } else if (error.message.includes("0x09bde339")) {
           errorReadableMsg = "Failed to claim rewards, please try again";
         } else if (error.message.endsWith("0x")) {
@@ -764,7 +783,7 @@ export default function IndexOverviews() {
       ) {
         setSlippage(3);
       } else {
-        setSlippage(1);
+        setSlippage(2);
       }
     }
   }, [portfolioName, selectedToken]);
@@ -1036,7 +1055,6 @@ export default function IndexOverviews() {
     availableAssetChains,
     chainStatus,
     onRefresh: handleRefresh,
-    
   };
 
   const items = useTabItems({
@@ -1161,7 +1179,7 @@ export default function IndexOverviews() {
                         size="small"
                         onChange={(e) => setSlippage(e.target.value)}
                       >
-                        {[1, 3, 5, 7].map((slippageValue) => (
+                        {[2, 3, 5, 7].map((slippageValue) => (
                           <Radio.Button
                             value={slippageValue}
                             key={slippageValue}
