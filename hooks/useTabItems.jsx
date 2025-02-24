@@ -4,9 +4,10 @@ import ClaimTab from "../components/tabs/ClaimTab";
 import RebalanceTab from "../components/tabs/RebalanceTab";
 import TransferTab from "../components/tabs/TransferTab";
 import { Typography, Spin } from 'antd';
+import APRComposition from "../pages/views/components/APRComposition";
 
 export default function useTabItems(props) {
-  const pendingRewards = calculatePendingRewards(props.pendingRewards);
+  const sumOfPendingRewards = calculateSumOfPendingRewards(props.pendingRewards);
   const tabItems = [
     {
       key: "1",
@@ -43,13 +44,19 @@ export default function useTabItems(props) {
               fontWeight: 'bold',
               textShadow: '0 0 8px rgba(255, 184, 0, 0.3)'
             }}>
-              {pendingRewards.toLocaleString('en-US', {
+              {sumOfPendingRewards.toLocaleString('en-US', {
                 style: 'currency',
                 currency: 'USD'
               })}
             </Typography.Text>
           )}
-          )
+          )            <APRComposition
+                      APRData={props.pendingRewards}
+                      mode="pendingRewards"
+                      currency="$"
+                      exchangeRateWithUSD={1}
+                      pendingRewardsLoading={props.pendingRewardsLoading}
+                    />
         </span>
       ),
       children: <ClaimTab {...props} />,
@@ -59,7 +66,7 @@ export default function useTabItems(props) {
   return tabItems;
 }
 
-function calculatePendingRewards(pendingRewards) {
+function calculateSumOfPendingRewards(pendingRewards) {
   return Object.values(pendingRewards)
     .reduce((acc, reward) => acc + (reward.usdDenominatedValue || 0), 0);
 }
