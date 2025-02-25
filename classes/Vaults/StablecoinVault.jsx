@@ -500,6 +500,9 @@ export class StablecoinVault extends BasePortfolio {
               weight: 0,
             },
           ],
+          optimism: [
+
+          ]
         },
       },
       {

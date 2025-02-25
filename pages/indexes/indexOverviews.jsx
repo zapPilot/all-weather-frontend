@@ -214,22 +214,36 @@ export default function IndexOverviews() {
           />
         </Button>
       ),
-    },
-    {
-      key: "2",
-      label: (
-        <Button type="link" onClick={() => switchChain(base)}>
-          <Image
-            src={`/chainPicturesWebp/base.webp`}
-            alt="base"
-            height={22}
-            width={22}
-            className="rounded-full"
-          />
-        </Button>
-      ),
-    },
-  ];
+      },
+      {
+        key: "2",
+        label: (
+          <Button type="link" onClick={() => switchChain(base)}>
+            <Image
+              src={`/chainPicturesWebp/base.webp`}
+              alt="base"
+              height={22}
+              width={22}
+              className="rounded-full"
+            />
+          </Button>
+        ),
+      },
+      {
+        key: "3",
+        label: (
+          <Button type="link" onClick={() => switchChain(optimism)}>
+            <Image
+              src={`/chainPicturesWebp/optimism.webp`}
+              alt="optimism"
+              height={22}
+              width={22}
+              className="rounded-full"
+            />
+          </Button>
+        ),
+      },
+    ];
 
   const getTokenMetadata = (chainId, tokenSymbol) => {
     if (!chainId) return null;
@@ -1262,8 +1276,7 @@ export default function IndexOverviews() {
                           chainId?.name
                             ? `/chainPicturesWebp/${chainId.name
                                 .toLowerCase()
-                                .replace(" one", "")
-                                .replace(" mainnet", "")}.webp`
+                                .replace(" one", "").replace(' mainnet', "")}.webp`
                             : "/chainPicturesWebp/arbitrum.webp"
                         }
                         alt={chainId ? chainId.name : "arbitrum"}

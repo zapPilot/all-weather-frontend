@@ -40,7 +40,7 @@ export default function ConfiguredConnectButton() {
       theme={"light"}
       // here are all the supported chains
       // https://portal.thirdweb.com/connect/account-abstraction/infrastructure
-      chains={[arbitrum, base, defineChain(1088)]}
+      chains={[arbitrum, base, defineChain(1088), optimism]}
       accountAbstraction={{
         chain: base,
         sponsorGas: true,
