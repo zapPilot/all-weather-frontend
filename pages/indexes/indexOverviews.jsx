@@ -214,36 +214,36 @@ export default function IndexOverviews() {
           />
         </Button>
       ),
-      },
-      {
-        key: "2",
-        label: (
-          <Button type="link" onClick={() => switchChain(base)}>
-            <Image
-              src={`/chainPicturesWebp/base.webp`}
-              alt="base"
-              height={22}
-              width={22}
-              className="rounded-full"
-            />
-          </Button>
-        ),
-      },
-      {
-        key: "3",
-        label: (
-          <Button type="link" onClick={() => switchChain(optimism)}>
-            <Image
-              src={`/chainPicturesWebp/optimism.webp`}
-              alt="optimism"
-              height={22}
-              width={22}
-              className="rounded-full"
-            />
-          </Button>
-        ),
-      },
-    ];
+    },
+    {
+      key: "2",
+      label: (
+        <Button type="link" onClick={() => switchChain(base)}>
+          <Image
+            src={`/chainPicturesWebp/base.webp`}
+            alt="base"
+            height={22}
+            width={22}
+            className="rounded-full"
+          />
+        </Button>
+      ),
+    },
+    {
+      key: "3",
+      label: (
+        <Button type="link" onClick={() => switchChain(optimism)}>
+          <Image
+            src={`/chainPicturesWebp/optimism.webp`}
+            alt="optimism"
+            height={22}
+            width={22}
+            className="rounded-full"
+          />
+        </Button>
+      ),
+    },
+  ];
 
   const getTokenMetadata = (chainId, tokenSymbol) => {
     if (!chainId) return null;
@@ -620,6 +620,12 @@ export default function IndexOverviews() {
           )
         ) {
           errorReadableMsg = "ERC20: transfer amount exceeds allowance";
+        } else if (
+          error.message.includes(
+            "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002645524332303a207472616e7366657220616d6f756e7420657863656564732062616c616e63650000000000000000000000000000000000000000000000000000",
+          )
+        ) {
+          errorReadableMsg = "ERC20: transfer amount exceeds balance";
         } else if (
           error.message.includes(
             "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000030526563656976656420616d6f756e74206f6620746f6b656e7320617265206c657373207468656e20657870656374656400000000000000000000000000000000",
@@ -1276,7 +1282,7 @@ export default function IndexOverviews() {
                           chainId?.name
                             ? `/chainPicturesWebp/${chainId.name
                                 .toLowerCase()
-                                .replace(" one", "").replace(' mainnet', "")}.webp`
+                                .replace(" one", "")}.webp`
                             : "/chainPicturesWebp/arbitrum.webp"
                         }
                         alt={chainId ? chainId.name : "arbitrum"}

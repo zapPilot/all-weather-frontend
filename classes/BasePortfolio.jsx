@@ -444,13 +444,14 @@ export class BasePortfolio {
     const actionHandlers = {
       zapIn: async (protocol, chain, derivative) => {
         if (protocol.weight === 0) return null;
+        const zapInPrecision = 1000000;
         const percentageBN = ethers.BigNumber.from(
-          BigInt(Math.floor(protocol.weight * derivative * 10000)),
+          BigInt(Math.floor(protocol.weight * derivative * zapInPrecision)),
         );
         return protocol.interface.zapIn(
           actionParams.account,
           chain,
-          actionParams.zapInAmount.mul(percentageBN).div(10000),
+          actionParams.zapInAmount.mul(percentageBN).div(zapInPrecision),
           actionParams.tokenInSymbol,
           actionParams.tokenInAddress,
           actionParams.tokenDecimals,
@@ -649,7 +650,6 @@ export class BasePortfolio {
             }
           },
         );
-
         bridgePromises.push(...categoryBridgePromises);
       }
 
@@ -663,7 +663,6 @@ export class BasePortfolio {
       processProtocolTxns(currentChain),
       actionParams.onlyThisChain ? [] : processBridgeTxns(currentChain),
     ]);
-
     if (protocolTxns.length === 0) throw new Error("No protocol txns");
 
     // Combine all transactions, with bridge transactions at the end
@@ -1025,15 +1024,19 @@ export class BasePortfolio {
       if (key === "pendingRewards" || metadata.weightDiff >= 0) continue;
 
       // negativeWeigtDiffSum is a derivative to scale weightdiff to a [0~1] number
+      const zapInPrecision = 1000000;
       const percentageBN = ethers.BigNumber.from(
         String(
           Math.floor(
-            (-metadata.weightDiff / metadata.negativeWeigtDiffSum) * 10000,
+            (-metadata.weightDiff / metadata.negativeWeigtDiffSum) *
+              zapInPrecision,
           ),
         ),
       );
 
-      const zapInAmount = zapInAmountAfterFee.mul(percentageBN).div(10000);
+      const zapInAmount = zapInAmountAfterFee
+        .mul(percentageBN)
+        .div(zapInPrecision);
       // pendle doesn't allow zap in amount less than $0.1
       if (zapInAmount < 100000) continue;
 

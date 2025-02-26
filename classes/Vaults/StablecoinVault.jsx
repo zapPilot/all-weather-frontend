@@ -9,6 +9,7 @@ import { BaseMoonwell } from "../Moonwell/BaseMoonwell";
 import { BaseAerodrome } from "../Aerodrome/BaseAerodrome";
 import { BaseAave } from "../Aave/BaseAave";
 import { BaseAura } from "../Aura/BaseAura";
+import { BaseVelodrome } from "../Velodrome/BaseVelodrome";
 export class StablecoinVault extends BasePortfolio {
   constructor() {
     super(
@@ -113,7 +114,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 59,
                 },
               ),
-              weight: 0.125,
+              weight: 0.0825,
             },
             {
               interface: new BaseEquilibria(
@@ -130,7 +131,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 52,
                 },
               ),
-              weight: 0.125,
+              weight: 0.0825,
             },
             {
               interface: new BaseEquilibria(
@@ -243,7 +244,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.125,
+              weight: 0.0825,
             },
             {
               interface: new BaseAura(
@@ -319,7 +320,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.125,
+              weight: 0,
             },
             // {
             //   interface: new BaseAura(
@@ -438,7 +439,7 @@ export class StablecoinVault extends BasePortfolio {
                 protocolAddress: "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
                 assetDecimals: 8,
               }),
-              weight: 0.05,
+              weight: 0,
             },
             {
               interface: new BaseMoonwell("base", 8453, ["dai"], "single", {
@@ -480,7 +481,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.45,
+              weight: 0.28,
             },
             {
               interface: new BaseEquilibria(
@@ -500,9 +501,54 @@ export class StablecoinVault extends BasePortfolio {
               weight: 0,
             },
           ],
-          optimism: [
-
-          ]
+          "op mainnet": [
+            {
+              interface: new BaseVelodrome("op", 10, ["usdc", "susd"], "LP", {
+                assetAddress: "0xbC26519f936A90E78fe2C9aA2A03CC208f041234",
+                assetDecimals: 18,
+                routerAddress: "0xa062aE8A9c5e11aaA026fc2670B0D65cCc8B2858",
+                guageAddress: "0x0E4c56B4a766968b12c286f67aE341b11eDD8b8d",
+                lpTokens: [
+                  ["usdc", "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", 6],
+                  ["susd", "0x8c6f28f2F1A3C87F0f938b96d27520d9751ec8d9", 18],
+                ],
+                rewards: [
+                  {
+                    symbol: "velo",
+                    priceId: {
+                      coinmarketcapApiId: 20435,
+                    },
+                    address: "0x9560e827af36c94d2ac33a39bce1fe78631088db",
+                    decimals: 18,
+                  },
+                ],
+              }),
+              weight: 0.3075,
+            },
+            {
+              interface: new BaseVelodrome("op", 10, ["usdc", "msusd"], "LP", {
+                assetAddress: "0xe148D6Ae042De77c1f9fe0d6c495EbfD7b705B4c",
+                assetDecimals: 18,
+                routerAddress: "0xa062aE8A9c5e11aaA026fc2670B0D65cCc8B2858",
+                guageAddress: "0xf9ddd38A4e0C3237563DBB651D1a155551e54ad6",
+                lpTokens: [
+                  ["usdc", "0x7F5c764cBc14f9669B88837ca1490cCa17c31607", 6],
+                  ["msusd", "0x9dAbAE7274D28A45F0B65Bf8ED201A5731492ca0", 18],
+                ],
+                rewards: [
+                  {
+                    symbol: "velo",
+                    priceId: {
+                      coinmarketcapApiId: 20435,
+                    },
+                    address: "0x9560e827af36c94d2ac33a39bce1fe78631088db",
+                    decimals: 18,
+                  },
+                ],
+              }),
+              weight: 0.165,
+            },
+          ],
         },
       },
       {
