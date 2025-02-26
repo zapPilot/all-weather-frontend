@@ -27,7 +27,7 @@ export default function RebalanceTab({
       ) || 0;
   const router = useRouter();
   const currentChain = chainId?.name?.toLowerCase().replace(" one", "").trim();
-  
+
   return (
     <div>
       {rebalancableUsdBalanceDictLoading ? <Spin /> : null}
@@ -51,7 +51,7 @@ export default function RebalanceTab({
               const isCurrentChain =
                 chainId?.name?.toLowerCase().replace(" one", "").trim() ===
                 data.chain;
-              
+
               if (
                 Object.values(chainStatus).every((status) => !status) &&
                 index > 0
@@ -62,11 +62,7 @@ export default function RebalanceTab({
               return (
                 <div
                   key={`${data.chain}-${data.actionName}`}
-                  className={
-                    !chainStatus[data.chain]
-                      ? "mb-4"
-                      : "hidden"
-                  }
+                  className={!chainStatus[data.chain] ? "mb-4" : "hidden"}
                 >
                   {isCurrentChain ? (
                     <Button
