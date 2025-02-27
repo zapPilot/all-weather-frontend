@@ -24,6 +24,8 @@ export const CHAIN_TO_CHAIN_ID = {
   arbitrum: 42161,
   base: 8453,
   optimism: 10,
+  op: 10,
+  "op mainnet": 10,
   bsc: 56,
   polygon: 137,
   mantle: 5000,
@@ -38,26 +40,31 @@ export const TOKEN_ADDRESS_MAP = {
     arbitrum: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
     base: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
     "op mainnet": "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+    op: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
   },
   "usdc.e": {
     arbitrum: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
     base: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
     "op mainnet": "0x7F5c764cBc14f9669B88837ca1490cCa17c31607",
+    op: "0x7F5c764cBc14f9669B88837ca1490cCa17c31607",
   },
   dai: {
     arbitrum: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
     base: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
     "op mainnet": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+    op: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
   },
   weth: {
     arbitrum: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
     base: "0x4200000000000000000000000000000000000006",
     "op mainnet": "0x4200000000000000000000000000000000000006",
+    op: "0x4200000000000000000000000000000000000006",
   },
   usdt: {
     arbitrum: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
     base: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
     "op mainnet": "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
+    op: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
   },
 };
 export const PROVIDER = (chain) => {

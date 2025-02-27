@@ -17,7 +17,7 @@ const ActionItem = ({
   return (
     <>
       <div className="flex justify-center text-base font-semibold">
-        {availableAssetChains.map((chain, index) => (
+        {availableAssetChains?.map((chain, index) => (
           <div
             className={`flex flex-col items-center mx-2 ${
               chainStatus[chain]

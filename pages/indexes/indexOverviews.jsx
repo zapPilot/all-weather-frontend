@@ -640,6 +640,8 @@ export default function IndexOverviews() {
           errorReadableMsg = "You send the transaction to the wrong address";
         } else if (error.message.includes("User rejected the request")) {
           return;
+        } else if (error.message.includes("from should be same as current address")) {
+          errorReadableMsg = "You\'re sending the transaction from the wrong address";
         } else {
           errorReadableMsg =
             "Transaction failed. Please try increasing slippage tolerance or notify customer support to increase gas limit." +
@@ -748,9 +750,10 @@ export default function IndexOverviews() {
 
   const onChange = (key) => {
     setTabKey(key);
-    // Set slippage to 3 when switching to RebalanceTab (assuming key "3" is RebalanceTab)
-    if (key === "3") {
-      setSlippage(3);
+    // Find the selected tab item and check its label
+    const selectedTab = items.find(item => item.key === key);
+    if (selectedTab?.label === "Rebalance") {
+      setSlippage(5);
     }
   };
 
@@ -869,7 +872,6 @@ export default function IndexOverviews() {
           setTokenPricesMappingTable(cachedData.tokenPricesMappingTable);
           setUsdBalance(cachedData.usdBalance);
           setUsdBalanceLoading(false);
-
           setrebalancableUsdBalanceDict(cachedData.usdBalanceDict);
           setrebalancableUsdBalanceDictLoading(false);
 
