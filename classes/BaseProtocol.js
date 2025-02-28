@@ -162,6 +162,84 @@ export default class BaseProtocol extends BaseUniswap {
       node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
     }
   }
+  getClaimFlowChartData(outputToken, outputTokenAddress) {
+    function _autoGenerateEdges(uniqueId, nodes) {
+      const edges = [];
+      for (let i = 0; i < nodes.length - 1; i++) {
+        edges.push({
+          id: `edge-${uniqueId}-${i}`,
+          source: nodes[i].id,
+          target: nodes[i + 1].id,
+          data: {
+            ratio: 1,
+          },
+        });
+      }
+      return edges;
+    }
+    const nodes = [];
+
+    if (this.mode === "single") {
+      // decimals here doesn't matter
+      for (const node of [
+        {
+          id: `${this.uniqueId()}-claim`,
+          name: "Claim Rewards",
+        },
+      ]) {
+        nodes.push(node);
+      }
+      const [bestTokenSymbol, bestTokenAddressToZapIn, _] =
+        this._getTheBestTokenAddressToZapOut();
+      if (
+        outputTokenAddress.toLowerCase() !==
+        bestTokenAddressToZapIn.toLowerCase()
+      ) {
+        nodes.push({
+          id: `${this.uniqueId()}-${bestTokenSymbol}-${outputToken}-swap`,
+          name: `Swap ${bestTokenSymbol} to ${outputToken}`,
+        });
+      }
+    } else if (this.mode === "LP") {
+      for (const node of [
+        {
+          id: `${this.uniqueId()}-claim`,
+          name: "Claim Rewards",
+        },
+      ]) {
+        nodes.push(node);
+      }
+      const { lpTokens: tokenMetadatas } = this._getLPTokenAddressesToZapOut();
+      for (const [
+        bestTokenSymbol,
+        bestTokenAddressToZapOut,
+        decimals,
+      ] of tokenMetadatas) {
+        if (
+          bestTokenAddressToZapOut.toLowerCase() !==
+          outputTokenAddress.toLowerCase()
+        ) {
+          nodes.push({
+            id: `${this.uniqueId()}-${bestTokenSymbol}-${outputToken}-swap`,
+            name: `Swap ${bestTokenSymbol} to ${outputToken}`,
+          });
+        }
+      }
+    }
+    const edges = _autoGenerateEdges(this.uniqueId(), nodes);
+    // add chain, category, protocol, symbol to the nodes
+    for (const node of nodes) {
+      node.chain = this.chain;
+      node.symbolList = this.symbolList.map((symbol) =>
+        symbol.replace("(bridged)", ""),
+      );
+      node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
+    }
+    return {
+      nodes,
+      edges,
+    };
+  }
   getZapOutFlowChartData(outputToken, outputTokenAddress, weight) {
     function _autoGenerateEdges(uniqueId, nodes) {
       const edges = [];
@@ -506,6 +584,11 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
   ) {
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-claim`,
+      0,
+    );
     const [claimTxns, claimedTokenAndBalance] = await this.customClaim(
       recipient,
       tokenPricesMappingTable,
@@ -553,7 +636,7 @@ export default class BaseProtocol extends BaseUniswap {
       method: "transfer",
       params: [recipient, amount],
     });
-    this._updateProgressAndWait(
+    await this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-transfer`,
       0,

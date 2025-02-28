@@ -14,7 +14,6 @@ const ActionItem = ({
     zapOut: "Withdraw",
     rebalance: "Rebalance",
   };
-
   return (
     <>
       <div className="flex justify-center text-base font-semibold">

@@ -1,6 +1,4 @@
 import { Button, Spin } from "antd";
-import { useState } from "react";
-import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
 import ActionItem from "../common/ActionItem";
 
@@ -20,7 +18,6 @@ export default function RebalanceTab({
   CHAIN_TO_CHAIN_ID,
   chainStatus,
 }) {
-  const [currentStep, setCurrentStep] = useState(0);
   const calCurrentAPR = (rebalancableUsdBalanceDict) =>
     Object.entries(rebalancableUsdBalanceDict)
       .filter(([key]) => !["pendingRewards", "metadata"].includes(key))
@@ -30,6 +27,7 @@ export default function RebalanceTab({
       ) || 0;
   const router = useRouter();
   const currentChain = chainId?.name?.toLowerCase().replace(" one", "").trim();
+
   return (
     <div>
       {rebalancableUsdBalanceDictLoading ? <Spin /> : null}
@@ -53,12 +51,18 @@ export default function RebalanceTab({
               const isCurrentChain =
                 chainId?.name?.toLowerCase().replace(" one", "").trim() ===
                 data.chain;
-              const isFirstPendingAction = index === 0;
+
+              if (
+                Object.values(chainStatus).every((status) => !status) &&
+                index > 0
+              ) {
+                return null;
+              }
 
               return (
                 <div
                   key={`${data.chain}-${data.actionName}`}
-                  className={currentStep === index ? "mb-4" : "hidden"}
+                  className={!chainStatus[data.chain] ? "mb-4" : "hidden"}
                 >
                   {isCurrentChain ? (
                     <Button
@@ -66,7 +70,6 @@ export default function RebalanceTab({
                       className="w-full"
                       onClick={() => {
                         handleAAWalletAction(data.actionName, true);
-                        setCurrentStep(currentStep + 1);
                       }}
                       loading={
                         rebalanceIsLoading || rebalancableUsdBalanceDictLoading

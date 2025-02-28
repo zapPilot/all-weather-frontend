@@ -152,9 +152,7 @@ export default function PopUpModal({
                 </div>
               </div>
               <div className="flex-grow">
-                {finishedTxn === false &&
-                actionName !== "" &&
-                actionName !== "claimAndSwap" ? (
+                {finishedTxn === false && actionName !== "" ? (
                   <DemoFlowDirectionGraph
                     data={portfolioHelper?.getFlowChartData(actionName, {
                       tokenInSymbol:
