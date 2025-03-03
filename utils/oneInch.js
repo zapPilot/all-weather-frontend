@@ -40,12 +40,16 @@ export async function fetchSwapData(
     throw new Error("fromTokenAddress and toTokenAddress are the same");
   }
   const url = `${API_URL}/the_best_swap_data?chainId=${chainId}&fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount.toString()}&fromAddress=${fromAddress}&slippage=${slippage}&provider=${provider}&fromTokenDecimals=${fromTokenDecimals}&toTokenDecimals=${toTokenDecimals}`;
-
-  const res = await fetch(url);
+  try {
+    const res = await fetch(url);
   if (!res.ok) {
     return {};
     // throw new Error(`HTTP error! status: ${res.status}`);
   }
 
   return res.json();
+  } catch (error) {
+    console.error("Error fetching swap data:", error);
+    return {};
+  }
 }

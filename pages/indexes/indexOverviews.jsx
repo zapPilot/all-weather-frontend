@@ -375,7 +375,7 @@ export default function IndexOverviews() {
       setZapInIsLoading(true);
     } else if (actionName === "zapOut") {
       setZapOutIsLoading(true);
-    } else if (actionName === "rebalance") {
+    } else if (actionName === "rebalance" || actionName === "crossChainRebalance" || actionName === "localRebalance") {
       setRebalanceIsLoading(true);
     } else if (actionName === "transfer") {
       setTransferLoading(true);
@@ -416,10 +416,11 @@ export default function IndexOverviews() {
             .replace(" mainnet", "")
         ],
         onlyThisChain,
+        usdBalance,
       );
       setCostsCalculated(true);
       if (
-        ["zapIn", "zapOut", "rebalance", "transfer"].includes(actionName) &&
+        ["zapIn", "zapOut", "crossChainRebalance", "localRebalance", "transfer"].includes(actionName) &&
         txns.length < 2
       ) {
         throw new Error("No transactions to send");
@@ -505,7 +506,7 @@ export default function IndexOverviews() {
                       tokenSymbol,
                       investmentAmount: investmentAmountAfterFee,
                       zapOutAmount:
-                        actionName === "rebalance"
+                        actionName === "crossChainRebalance" || actionName === "localRebalance"
                           ? getRebalanceReinvestUsdAmount(currentChain?.name)
                           : usdBalance *
                             zapOutPercentage *
@@ -629,7 +630,7 @@ export default function IndexOverviews() {
         } else if (
           error.message.includes(
             "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000030526563656976656420616d6f756e74206f6620746f6b656e7320617265206c657373207468656e20657870656374656400000000000000000000000000000000",
-          )
+          ) || error.message.includes("0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000014c00000000000000000000000000000000000000000000000000000000000000")
         ) {
           errorReadableMsg =
             "Received amount of tokens are less then expected, please increase slippage tolerance and try again";
@@ -670,7 +671,7 @@ export default function IndexOverviews() {
       setZapInIsLoading(false);
     } else if (actionName === "zapOut") {
       setZapOutIsLoading(false);
-    } else if (actionName === "rebalance") {
+    } else if (actionName === "crossChainRebalance" || actionName === "localRebalance") {
       setRebalanceIsLoading(false);
     } else if (actionName === "stake") {
       setZapInIsLoading(false);
@@ -754,6 +755,9 @@ export default function IndexOverviews() {
     const selectedTab = items.find(item => item.key === key);
     if (selectedTab?.label === "Rebalance") {
       setSlippage(5);
+    } else if (selectedTab?.key === '5') {
+      // 5 stands for 'Claim'
+      setSlippage(3);
     }
   };
 
@@ -863,12 +867,11 @@ export default function IndexOverviews() {
           `portfolio-${portfolioName}-${account.address}`,
           portfolioHelper,
         );
-
         if (
-          cachedData?.timestamp &&
-          Date.now() - cachedData.timestamp < 86400 * 1000
-        ) {
-          // Use cached data - update states immediately for each piece of data
+        cachedData?.timestamp &&
+        Date.now() - cachedData.timestamp < 86400 * 1000
+      ) {
+        // Use cached data - update states immediately for each piece of data
           setTokenPricesMappingTable(cachedData.tokenPricesMappingTable);
           setUsdBalance(cachedData.usdBalance);
           setUsdBalanceLoading(false);

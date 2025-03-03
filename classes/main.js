@@ -20,6 +20,7 @@ export const generateIntentTxns = async (
   recipient,
   protocolAssetDustInWallet,
   onlyThisChain,
+  usdBalance,
 ) => {
   let txns;
   if (actionName === "zapIn") {
@@ -69,7 +70,7 @@ export const generateIntentTxns = async (
       slippage,
       onlyThisChain,
     });
-  } else if (actionName === "rebalance") {
+  } else if (actionName === "crossChainRebalance" || actionName === "localRebalance") {
     txns = await portfolioHelper.portfolioAction(actionName, {
       account: accountAddress,
       chainMetadata,
@@ -80,6 +81,14 @@ export const generateIntentTxns = async (
       slippage,
       rebalancableUsdBalanceDict,
       onlyThisChain,
+      usdBalance,
+      tokenInSymbol: tokenSymbol,
+      tokenInAddress: tokenAddress,
+      zapInAmount: ethers.utils.parseUnits(
+        toFixedString(investmentAmount, tokenDecimals),
+        tokenDecimals,
+      ),
+
     });
   } else if (actionName === "transfer") {
     txns = await portfolioHelper.portfolioAction(actionName, {

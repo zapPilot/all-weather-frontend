@@ -1,6 +1,11 @@
 import React from "react";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
-
+const actionNameMap = {
+  zapIn: "Deposit",
+  zapOut: "Withdraw",
+  crossChainRebalance: "Cross-Chain Rebalance",
+  localRebalance: "Rebalance",
+};
 const ActionItem = ({
   actionName,
   availableAssetChains,
@@ -9,11 +14,7 @@ const ActionItem = ({
   theme,
 }) => {
   const actionIsArray = Array.isArray(actionName);
-  const actionNameMap = {
-    zapIn: "Deposit",
-    zapOut: "Withdraw",
-    rebalance: "Rebalance",
-  };
+
   return (
     <>
       <div className="flex justify-center text-base font-semibold">
@@ -62,7 +63,7 @@ const ActionItem = ({
         ))}
       </div>
       <div className="mt-4">
-        {availableAssetChains.every((chain) => chainStatus[chain]) && (
+        {availableAssetChains?.every((chain) => chainStatus[chain]) && (
           <div className={"text-green-500 text-center mb-2"}>
             <CheckCircleIcon className="w-12 h-12 mx-auto" />
             <p>You have completed all actions.</p>
@@ -74,3 +75,4 @@ const ActionItem = ({
 };
 
 export default ActionItem;
+export { actionNameMap };
