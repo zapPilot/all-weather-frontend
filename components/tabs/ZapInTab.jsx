@@ -39,7 +39,11 @@ export default function ZapInTab({
   const [deadline, setDeadline] = useState(null);
 
   const COUNTDOWN_TIME = 4;
-  const currentChain = chainId?.name?.toLowerCase().replace(" one", "").replace(" mainnet", "").trim();
+  const currentChain = chainId?.name
+    ?.toLowerCase()
+    .replace(" one", "")
+    .replace(" mainnet", "")
+    .trim();
   const falseChains = availableAssetChains.filter(
     (chain) => !chainStatus[chain],
   );
@@ -48,7 +52,10 @@ export default function ZapInTab({
   const getAvailableAssetBalance = () => {
     const chainAssets =
       protocolAssetDustInWallet?.[
-        chainId?.name?.toLowerCase()?.replace(" one", "").replace(" mainnet", "")
+        chainId?.name
+          ?.toLowerCase()
+          ?.replace(" one", "")
+          .replace(" mainnet", "")
       ] || {};
     return Object.values(chainAssets).reduce(
       (sum, protocolObj) => sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
