@@ -44,7 +44,7 @@ describe("Convex", () => {
       rebalancableUsdBalanceDict,
       userAddress,
       protocolAssetDustInWallet[
-        arbitrum?.name.toLowerCase().replace(" one", "")
+        arbitrum?.name.toLowerCase().replace(" one", "").replace(" mainnet", "")
       ],
       onlyThisChain,
     );
@@ -85,7 +85,7 @@ describe("Convex", () => {
   //     rebalancableUsdBalanceDict,
   //     userAddress,
   //     protocolAssetDustInWallet[
-  //       arbitrum?.name.toLowerCase().replace(" one", "")
+  //       arbitrum?.name.toLowerCase().replace(" one", "").replace(" mainnet", "")
   //     ],
   //     onlyThisChain,
   //   );
@@ -123,7 +123,7 @@ describe("Convex", () => {
   //     rebalancableUsdBalanceDict,
   //     userAddress,
   //     protocolAssetDustInWallet[
-  //       arbitrum?.name.toLowerCase().replace(" one", "")
+  //       arbitrum?.name.toLowerCase().replace(" one", "").replace(" mainnet", "")
   //     ],
   //     onlyThisChain,
   //   );
