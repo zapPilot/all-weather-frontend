@@ -9,12 +9,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   usdc: {
     coinmarketcapApiId: 3408,
-    vaults: [
-      "Stablecoin Vault",
-      "Aerodrome Vault",
-      "All Weather Vault",
-      "Vela Vault (Deprecated)",
-    ],
+    vaults: ["Stablecoin Vault", "Aerodrome Vault", "All Weather Vault", "Vela Vault (Deprecated)"],
   },
   usdt: {
     coinmarketcapApiId: 825,
@@ -22,11 +17,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   "usdc.e": {
     coinmarketcapApiId: 3408,
-    vaults: [
-      "Stablecoin Vault",
-      "All Weather Vault",
-      "Vela Vault (Deprecated)",
-    ],
+    vaults: ["Stablecoin Vault", "All Weather Vault", "Vela Vault (Deprecated)"],
   },
   weth: {
     coinmarketcapApiId: 2396,

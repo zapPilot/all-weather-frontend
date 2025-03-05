@@ -7,15 +7,15 @@ export class VelaVault extends BasePortfolio {
         gold: {
           arbitrum: [
             {
-              interface: new Vela(
-                "arbitrum",
-                42161,
-                ["usdc(bridged)"],
-                "single",
-                {},
-              ),
-              weight: 1,
-            },
+                interface: new Vela(
+                  "arbitrum",
+                  42161,
+                  ["usdc(bridged)"],
+                  "single",
+                  {},
+                ),
+                weight: 1,
+              },
           ],
         },
       },

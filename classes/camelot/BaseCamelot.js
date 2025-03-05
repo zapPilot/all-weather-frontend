@@ -623,9 +623,7 @@ export class BaseCamelot extends BaseProtocol {
     );
     const data = response.data;
     for (const reward of data.data.rewards) {
-      if (
-        String(reward.positionIdentifierDecoded) === this.token_id.toString()
-      ) {
+      if (String(reward.positionIdentifierDecoded) === this.token_id.toString()) {
         const vestingDuration = 15552000;
         const claimableAmount = Number(reward.rewards) - Number(reward.claimed);
         const harvestTxn = prepareContractCall({
