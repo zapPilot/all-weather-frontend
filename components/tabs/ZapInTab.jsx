@@ -7,7 +7,7 @@ import { TOKEN_ADDRESS_MAP } from "../../utils/general";
 import ActionItem from "../common/ActionItem";
 
 const { Countdown } = Statistic;
-
+const STAKE_THRESHOLD = 10;
 export default function ZapInTab({
   nextStepChain,
   selectedToken,
@@ -38,8 +38,8 @@ export default function ZapInTab({
   const [showCountdown, setShowCountdown] = useState(false);
   const [deadline, setDeadline] = useState(null);
 
-  const COUNTDOWN_TIME = 9;
-  const currentChain = chainId?.name?.toLowerCase().replace(" one", "").trim();
+  const COUNTDOWN_TIME = 4;
+  const currentChain = chainId?.name?.toLowerCase().replace(" one", "").replace(" mainnet", "").trim();
   const falseChains = availableAssetChains.filter(
     (chain) => !chainStatus[chain],
   );
@@ -48,7 +48,7 @@ export default function ZapInTab({
   const getAvailableAssetBalance = () => {
     const chainAssets =
       protocolAssetDustInWallet?.[
-        chainId?.name?.toLowerCase()?.replace(" one", "")
+        chainId?.name?.toLowerCase()?.replace(" one", "").replace(" mainnet", "")
       ] || {};
     return Object.values(chainAssets).reduce(
       (sum, protocolObj) => sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
@@ -103,7 +103,7 @@ export default function ZapInTab({
       return <ConfiguredConnectButton />;
     }
 
-    if (availableBalance > 100) {
+    if (availableBalance > STAKE_THRESHOLD) {
       return (
         <Button
           type="primary"
@@ -169,7 +169,7 @@ export default function ZapInTab({
           chainStatus[currentChain] ? "hidden" : "block"
         }`}
       >
-        {getAvailableAssetBalance() <= 100 && (
+        {getAvailableAssetBalance() <= STAKE_THRESHOLD && (
           <TokenDropdownInput
             selectedToken={selectedToken}
             setSelectedToken={handleSetSelectedToken}

@@ -69,6 +69,12 @@ export default function ExampleUI() {
       tvl: strategyMetadata?.["Metis Vault"]?.portfolioTVL,
       portfolioHelper: getPortfolioHelper("Metis Vault"),
     },
+    {
+      id: 4,
+      portfolioName: "Vela Vault (Deprecated)",
+      href: "/indexes/indexOverviews/?portfolioName=Vela+Vault+(Deprecated)",
+      imageSrc: "vela",
+    }
   ];
   const maxAPREntry = Object.entries(strategyMetadata).reduce(
     (max, [key, strategy]) => {
