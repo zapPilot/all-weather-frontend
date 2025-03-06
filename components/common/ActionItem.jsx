@@ -63,10 +63,16 @@ const ActionItem = ({
         ))}
       </div>
       <div className="mt-4">
-        {availableAssetChains?.every((chain) => chainStatus[chain]) && (
-          <div className={"text-green-500 text-center mb-2"}>
-            <CheckCircleIcon className="w-12 h-12 mx-auto" />
-            <p>You have completed all actions.</p>
+        {availableAssetChains?.length > 0 ? (
+          availableAssetChains.every((chain) => chainStatus[chain]) && (
+            <div className={"text-green-500 text-center mb-2"}>
+              <CheckCircleIcon className="w-12 h-12 mx-auto" />
+              <p>You have completed all actions.</p>
+            </div>
+          )
+        ) : (
+          <div className={"text-gray-500 text-center mb-2"}>
+            <p>No actions available at this time.</p>
           </div>
         )}
       </div>

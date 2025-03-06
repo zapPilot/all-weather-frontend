@@ -74,7 +74,7 @@ export default function ExampleUI() {
       portfolioName: "Vela Vault (Deprecated)",
       href: "/indexes/indexOverviews/?portfolioName=Vela+Vault+(Deprecated)",
       imageSrc: "vela",
-    }
+    },
   ];
   const maxAPREntry = Object.entries(strategyMetadata).reduce(
     (max, [key, strategy]) => {

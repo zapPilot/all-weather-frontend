@@ -1,6 +1,11 @@
 import { Button, Spin } from "antd";
-import { useRouter } from "next/router";
+import { useState } from "react";
 import ActionItem from "../common/ActionItem";
+import TokenDropdownInput from "../../pages/views/TokenDropdownInput.jsx";
+import { actionNameMap } from "../common/ActionItem";
+
+// Add sleep utility function
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function RebalanceTab({
   rebalancableUsdBalanceDictLoading,
@@ -17,6 +22,11 @@ export default function RebalanceTab({
   CHAIN_ID_TO_CHAIN,
   CHAIN_TO_CHAIN_ID,
   chainStatus,
+  selectedToken,
+  handleSetSelectedToken,
+  handleSetInvestmentAmount,
+  investmentAmount,
+  tokenPricesMappingTable,
 }) {
   const calCurrentAPR = (rebalancableUsdBalanceDict) =>
     Object.entries(rebalancableUsdBalanceDict)
@@ -25,9 +35,11 @@ export default function RebalanceTab({
         (sum, [_, { currentWeight, APR }]) => currentWeight * APR + sum,
         0,
       ) || 0;
-  const router = useRouter();
-  const currentChain = chainId?.name?.toLowerCase().replace(" one", "").trim();
-
+  const currentChain = chainId?.name
+    ?.toLowerCase()
+    .replace(" one", "")
+    .replace(" mainnet", "")
+    .trim();
   return (
     <div>
       {rebalancableUsdBalanceDictLoading ? <Spin /> : null}
@@ -48,35 +60,53 @@ export default function RebalanceTab({
         ? null
         : rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain?.map(
             (data, index) => {
+              // Normalize chain names for comparison
+              const currentChainName = chainId?.name?.toLowerCase().trim();
+              const targetChainName = data.chain.toLowerCase().trim();
               const isCurrentChain =
-                chainId?.name?.toLowerCase().replace(" one", "").trim() ===
-                data.chain;
-
-              if (
-                Object.values(chainStatus).every((status) => !status) &&
-                index > 0
-              ) {
+                currentChainName.includes(targetChainName) ||
+                targetChainName.includes(currentChainName);
+              // Only show the current step
+              if (index !== currentStep) {
                 return null;
               }
-
               return (
-                <div
-                  key={`${data.chain}-${data.actionName}`}
-                  className={!chainStatus[data.chain] ? "mb-4" : "hidden"}
-                >
+                <div key={`${data.chain}-${data.actionName}`} className="mb-4">
+                  {data.actionName === "localRebalance" && (
+                    <TokenDropdownInput
+                      selectedToken={selectedToken}
+                      setSelectedToken={handleSetSelectedToken}
+                      setInvestmentAmount={handleSetInvestmentAmount}
+                      tokenPricesMappingTable={tokenPricesMappingTable}
+                    />
+                  )}
                   {isCurrentChain ? (
                     <Button
                       type="primary"
                       className="w-full"
-                      onClick={() => {
+                      onClick={async () => {
                         handleAAWalletAction(data.actionName, true);
+                        // Only increment step if there are more actions
+                        await sleep(3000);
+                        if (
+                          currentStep <
+                          rebalancableUsdBalanceDict.metadata
+                            .rebalanceActionsByChain.length -
+                            1
+                        ) {
+                          setCurrentStep(currentStep + 1);
+                        }
                       }}
                       loading={
                         rebalanceIsLoading || rebalancableUsdBalanceDictLoading
                       }
-                      disabled={usdBalance <= 0}
+                      disabled={
+                        usdBalance <= 0 ||
+                        (data.actionName === "localRebalance" &&
+                          Number(investmentAmount) === 0)
+                      }
                     >
-                      {data.actionName} on {data.chain}
+                      {actionNameMap[data.actionName]} on {data.chain}
                     </Button>
                   ) : (
                     <Button

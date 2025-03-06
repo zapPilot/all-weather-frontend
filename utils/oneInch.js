@@ -42,12 +42,12 @@ export async function fetchSwapData(
   const url = `${API_URL}/the_best_swap_data?chainId=${chainId}&fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount.toString()}&fromAddress=${fromAddress}&slippage=${slippage}&provider=${provider}&fromTokenDecimals=${fromTokenDecimals}&toTokenDecimals=${toTokenDecimals}`;
   try {
     const res = await fetch(url);
-  if (!res.ok) {
-    return {};
-    // throw new Error(`HTTP error! status: ${res.status}`);
-  }
+    if (!res.ok) {
+      return {};
+      // throw new Error(`HTTP error! status: ${res.status}`);
+    }
 
-  return res.json();
+    return res.json();
   } catch (error) {
     console.error("Error fetching swap data:", error);
     return {};

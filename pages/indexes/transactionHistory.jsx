@@ -82,14 +82,30 @@ export default function TransactionHistory({
         balance = updateBalance(balance, principalSymbol, amount);
       }
 
-      if (["zapOut", "transfer", "rebalance", "crossChainRebalance", "localRebalance"].includes(actionName)) {
+      if (
+        [
+          "zapOut",
+          "transfer",
+          "rebalance",
+          "crossChainRebalance",
+          "localRebalance",
+        ].includes(actionName)
+      ) {
         if (!zapOutAmount) continue;
         const amount = parseFloat(zapOutAmount) || 0;
         const price = tokenPricesMappingTable[principalSymbol];
         balance = updateBalance(balance, principalSymbol, -amount / price);
       }
 
-      if (["zapOut", "rebalance", "crossChainRebalance", "localRebalance"].includes(actionName) && txn.gotRefundData) {
+      if (
+        [
+          "zapOut",
+          "rebalance",
+          "crossChainRebalance",
+          "localRebalance",
+        ].includes(actionName) &&
+        txn.gotRefundData
+      ) {
         Object.entries(txn.gotRefundData).forEach(([_, data]) => {
           if (!data?.symbol || !data?.amount) return;
           const price = tokenPricesMappingTable[data.symbol];
@@ -156,7 +172,11 @@ export default function TransactionHistory({
     const tokenDict = {};
 
     // Calculate token amounts
-    if (["zapOut", "rebalance", "crossChainRebalance", "localRebalance"].includes(actionName)) {
+    if (
+      ["zapOut", "rebalance", "crossChainRebalance", "localRebalance"].includes(
+        actionName,
+      )
+    ) {
       Object.values(gotRefundData || {}).forEach(({ symbol, amount }) => {
         tokenDict[symbol] = (tokenDict[symbol] || 0) + amount;
       });
@@ -177,7 +197,9 @@ export default function TransactionHistory({
       0,
     );
     const actionLabel =
-      actionName === "rebalance" || actionName === "crossChainRebalance" || actionName === "localRebalance"
+      actionName === "rebalance" ||
+      actionName === "crossChainRebalance" ||
+      actionName === "localRebalance"
         ? getRebalanceLabel(tokenSum)
         : ACTION_LABELS[actionName] || actionName;
 

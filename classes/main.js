@@ -70,7 +70,10 @@ export const generateIntentTxns = async (
       slippage,
       onlyThisChain,
     });
-  } else if (actionName === "crossChainRebalance" || actionName === "localRebalance") {
+  } else if (
+    actionName === "crossChainRebalance" ||
+    actionName === "localRebalance"
+  ) {
     txns = await portfolioHelper.portfolioAction(actionName, {
       account: accountAddress,
       chainMetadata,
@@ -88,7 +91,6 @@ export const generateIntentTxns = async (
         toFixedString(investmentAmount, tokenDecimals),
         tokenDecimals,
       ),
-
     });
   } else if (actionName === "transfer") {
     txns = await portfolioHelper.portfolioAction(actionName, {

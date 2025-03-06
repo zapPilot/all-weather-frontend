@@ -98,7 +98,6 @@ export class BasePortfolio {
     // Calculate weights and differences
     const { negativeWeigtDiffSum, positiveWeigtDiffSum } =
       this._calculateWeightDifferences(usdBalanceDict, usdBalance);
-
     // Build metadata
     const metadata = this._buildMetadata(
       usdBalanceDict,
@@ -207,6 +206,14 @@ export class BasePortfolio {
       rebalanceActionsByChain: [],
     };
 
+    // Initialize chains threshold tracking object
+    let chainsExceedRebalanceThreshold = {};
+    Object.values(usdBalanceDict).forEach((data) => {
+      if (data.chain) {
+        chainsExceedRebalanceThreshold[data.chain] = false;
+      }
+    });
+
     // Group weight differences by chain
     for (const data of Object.values(usdBalanceDict)) {
       if (!data.chain) continue;
@@ -218,20 +225,48 @@ export class BasePortfolio {
 
       metadata.weightDiffGroupByChain[data.chain] =
         (metadata.weightDiffGroupByChain[data.chain] || 0) + data.weightDiff;
+      if (Math.abs(data.weightDiff) > this.rebalanceThreshold()) {
+        chainsExceedRebalanceThreshold[data.chain] = true;
+      }
     }
 
-    // Sort and determine rebalance actions
-    const sortedChains = Object.entries(metadata.weightDiffGroupByChain).sort(
-      (a, b) => b[1] - a[1],
-    );
+    // First pass: identify chains that need crossChainRebalance
+    const crossChainRebalanceChains = Object.entries(
+      metadata.weightDiffGroupByChain,
+    )
+      .filter(
+        ([chain, weightDiff]) =>
+          weightDiff > 0 && chainsExceedRebalanceThreshold[chain],
+      )
+      .map(([chain]) => chain);
 
-    metadata.rebalanceActionsByChain = sortedChains.map(
-      ([chain, weightDiff]) => ({
+    // Second pass: determine all rebalance actions
+    const rebalanceActions = Object.entries(metadata.weightDiffGroupByChain)
+      .filter(([chain, weightDiff]) => {
+        if (weightDiff > 0) {
+          // For positive weightDiff, only include if it exceeds threshold
+          return chainsExceedRebalanceThreshold[chain];
+        }
+
+        if (weightDiff < 0) {
+          // For negative weightDiff, include if:
+          // 1. This chain exceeds threshold, or
+          // 2. There are crossChainRebalance chains (we can do localRebalance regardless of threshold)
+          return (
+            chainsExceedRebalanceThreshold[chain] ||
+            crossChainRebalanceChains.length > 0
+          );
+        }
+
+        return false;
+      })
+      .sort((a, b) => b[1] - a[1]) // Sort by weightDiff descending
+      .map(([chain, weightDiff]) => ({
         chain,
-        actionName: weightDiff >= 0 ? "rebalance" : "zapIn",
-      }),
-    );
+        actionName: weightDiff > 0 ? "crossChainRebalance" : "localRebalance",
+      }));
 
+    metadata.rebalanceActionsByChain = rebalanceActions;
     return metadata;
   }
 
@@ -359,9 +394,13 @@ export class BasePortfolio {
 
       // Then update the other states
       actionParams.setTradingLoss(tradingLoss);
-      actionParams.setTotalTradingLoss(
-        (prevTotalTradingLoss) => prevTotalTradingLoss + tradingLoss,
-      );
+      if (isNaN(tradingLoss)) {
+        console.error(`${nodeID}: tradingLoss is not a number: ${tradingLoss}`);
+      } else {
+        actionParams.setTotalTradingLoss(
+          (prevTotalTradingLoss) => prevTotalTradingLoss + tradingLoss,
+        );
+      }
     };
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
     actionParams.tokenPricesMappingTable = tokenPricesMappingTable;
@@ -400,8 +439,11 @@ export class BasePortfolio {
         actionParams.setPlatformFee(-normalizedPlatformFeeUSD);
         totalTxns = totalTxns.concat(platformFeeTxns);
       }
-    } else if (actionName === "rebalance") {
-      return await this._generateRebalanceTxns(actionParams);
+    } else if (
+      actionName === "crossChainRebalance" ||
+      actionName === "localRebalance"
+    ) {
+      return await this._generateRebalanceTxns(actionName, actionParams);
     } else if (actionName === "stake") {
       return await this._generateStakeTxns(
         actionParams.protocolAssetDustInWallet,
@@ -439,7 +481,8 @@ export class BasePortfolio {
   async _processProtocolActions(actionName, actionParams) {
     const currentChain = actionParams.chainMetadata.name
       .toLowerCase()
-      .replace(" one", "");
+      .replace(" one", "")
+      .replace(" mainnet", "");
 
     const actionHandlers = {
       zapIn: async (protocol, chain, derivative) => {
@@ -669,7 +712,7 @@ export class BasePortfolio {
     return [...protocolTxns, ...bridgeTxns];
   }
 
-  async _generateRebalanceTxns(actionParams) {
+  async _generateRebalanceTxns(actionName, actionParams) {
     const {
       account: owner,
       slippage,
@@ -678,9 +721,15 @@ export class BasePortfolio {
       rebalancableUsdBalanceDict,
       chainMetadata,
       onlyThisChain,
+      usdBalance,
+      tokenInSymbol,
+      tokenInAddress,
+      zapInAmount: zapInAmountFromUI,
     } = actionParams;
-
-    const currentChain = chainMetadata.name.toLowerCase().replace(" one", "");
+    const currentChain = chainMetadata.name
+      .toLowerCase()
+      .replace(" one", "")
+      .replace(" mainnet", "");
     const middleTokenConfig = this._getRebalanceMiddleTokenConfig(currentChain);
 
     // Run bridge initialization and protocol filtering in parallel
@@ -688,7 +737,6 @@ export class BasePortfolio {
       getTheBestBridge(),
       this._filterProtocolsForChain(rebalancableUsdBalanceDict, currentChain),
     ]);
-
     // Generate zap out transactions and calculate total USDC balance
     const [zapOutTxns, zapOutUsdcBalance] = await this._generateZapOutTxns(
       owner,
@@ -700,15 +748,21 @@ export class BasePortfolio {
       currentChain,
       onlyThisChain,
     );
-
-    if (zapOutUsdcBalance === 0) return [];
-
-    const zapOutAmount = ethers.utils.parseUnits(
-      (
-        zapOutUsdcBalance / tokenPricesMappingTable[middleTokenConfig.symbol]
-      ).toFixed(middleTokenConfig.decimals),
-      middleTokenConfig.decimals,
-    );
+    if (zapOutUsdcBalance === 0 && actionName !== "localRebalance") return [];
+    // TODO(david): currently we don't support zap in different token than zap out
+    const zapOutAmount = ethers.utils
+      .parseUnits(
+        (
+          zapOutUsdcBalance / tokenPricesMappingTable[middleTokenConfig.symbol]
+        ).toFixed(middleTokenConfig.decimals),
+        middleTokenConfig.decimals,
+      )
+      .add(
+        middleTokenConfig.symbol === tokenInSymbol ||
+          zapInAmountFromUI === undefined
+          ? zapInAmountFromUI
+          : ethers.BigNumber.from(0),
+      );
 
     // Calculate zap in amount including pending rewards
     const zapInAmount = this._calculateZapInAmount(
@@ -718,11 +772,10 @@ export class BasePortfolio {
       middleTokenConfig,
       tokenPricesMappingTable,
     );
-
     // Run approval, fee, and zap in transactions generation in parallel
     const [
-      [approvalAndFeeTxns, zapInAmountAfterFee],
-      zapInTxns,
+      [approvalAndFeeTxns, _],
+      [zapInTxns, zapInAmountAfterFee],
       rebalancableUsdBalanceDictOnOtherChains,
     ] = await Promise.all([
       this._generateApprovalAndFeeTxns(
@@ -739,13 +792,13 @@ export class BasePortfolio {
         slippage,
         tokenPricesMappingTable,
         updateProgress,
+        usdBalance,
       ),
       this.filterProtocolsForOtherChains(
         rebalancableUsdBalanceDict,
         currentChain,
       ),
     ]);
-
     // Combine initial transactions
     const initialTxns = [...zapOutTxns, ...approvalAndFeeTxns, ...zapInTxns];
 
@@ -753,14 +806,16 @@ export class BasePortfolio {
     if (Object.keys(rebalancableUsdBalanceDictOnOtherChains).length === 0) {
       return initialTxns;
     }
-
+    if (actionName === "localRebalance" || zapInAmountAfterFee.eq(0)) {
+      // This means we only have inflow tokens from other chains, and we need to rebalance on this chain with no need to bridge out
+      return initialTxns;
+    }
     // Process bridge transactions in parallel
     const bridgePromises = Object.entries(
       rebalancableUsdBalanceDictOnOtherChains,
-    ).map(async ([chain, metadata]) => {
-      const totalWeight = metadata.totalWeight;
+    ).map(async ([chain, weight]) => {
       const bridgeAmount = ethers.BigNumber.from(
-        BigInt(Math.floor(Number(zapInAmountAfterFee) * totalWeight)),
+        BigInt(Math.floor(Number(zapInAmountAfterFee) * weight)),
       );
 
       const bridgeUsd =
@@ -768,7 +823,6 @@ export class BasePortfolio {
         tokenPricesMappingTable[
           this._getRebalanceMiddleTokenConfig(currentChain).symbol
         ];
-
       if (bridgeUsd < this.bridgeUsdThreshold) return [];
 
       const bridgeToOtherChainTxns = await bridge.getBridgeTxns(
@@ -828,6 +882,9 @@ export class BasePortfolio {
   }
 
   filterProtocolsForOtherChains(rebalancableUsdBalanceDict, currentChain) {
+    // 1. sum up negative weight diffs by each chain
+    // 2. and then calculate the total negative weight diff sum from step 1
+    // 3. then we'll know the ratio between each chain that I should bridge to. This function is to calculate how many tokens I should bridge to each chain
     // First filter protocols from other chains
     const otherChainProtocols = Object.entries(
       rebalancableUsdBalanceDict,
@@ -838,31 +895,33 @@ export class BasePortfolio {
         key !== "metadata" &&
         metadata.weightDiff < 0,
     );
+
     if (otherChainProtocols.length === 0) return {};
-    const negativeWeigtDiffSum = otherChainProtocols[0][1].negativeWeigtDiffSum;
-    // Group protocols by chain
-    return otherChainProtocols.reduce((acc, [key, metadata]) => {
-      if (metadata.weightDiff >= 0) return acc;
 
-      if (!acc[metadata.chain]) {
-        acc[metadata.chain] = {
-          totalWeight: 0,
-          protocols: [],
-        };
-      }
+    // First group and sum negative weight diffs by chain
+    const chainWeightDiffs = otherChainProtocols.reduce(
+      (acc, [_, metadata]) => {
+        acc[metadata.chain] =
+          (acc[metadata.chain] || 0) + Math.abs(metadata.weightDiff);
+        return acc;
+      },
+      {},
+    );
 
-      // Calculate normalized weight using existing negativeWeigtDiffSum
-      const normalizedWeight =
-        Math.abs(metadata.weightDiff) / negativeWeigtDiffSum;
-      acc[metadata.chain].totalWeight += normalizedWeight;
-      acc[metadata.chain].protocols.push({
-        key,
-        ...metadata,
-        normalizedWeight,
-      });
+    // Calculate total negative weight diff across all chains
+    const totalNegativeWeightDiff = Object.values(chainWeightDiffs).reduce(
+      (sum, diff) => sum + diff,
+      0,
+    );
 
-      return acc;
-    }, {});
+    // Calculate normalized ratios for each chain
+    return Object.entries(chainWeightDiffs).reduce(
+      (acc, [chain, weightDiff]) => {
+        acc[chain] = weightDiff / totalNegativeWeightDiff;
+        return acc;
+      },
+      {},
+    );
   }
 
   async _generateZapOutTxns(
@@ -934,14 +993,19 @@ export class BasePortfolio {
       owner,
       tokenPricesMappingTable,
     );
-    if (usdBalance === 0) return [[], 0];
 
     const protocolClassName = `${protocol.interface.uniqueId()}/${
       protocol.interface.constructor.name
     }`;
     const zapOutPercentage =
       rebalancableDict[protocolClassName]?.zapOutPercentage;
-    if (!zapOutPercentage || zapOutPercentage <= 0) return [[], 0];
+    if (
+      usdBalance === 0 ||
+      usdBalance * zapOutPercentage < 1 ||
+      !zapOutPercentage ||
+      zapOutPercentage <= 0
+    )
+      return [[], 0];
     const zapOutTxns = await protocol.interface.zapOut(
       owner,
       zapOutPercentage,
@@ -1016,29 +1080,52 @@ export class BasePortfolio {
     slippage,
     tokenPricesMappingTable,
     updateProgress,
+    usdBalance,
   ) {
     const txns = [];
     let activateStartZapInNode = false;
 
-    for (const [key, metadata] of Object.entries(rebalancableDict)) {
-      if (key === "pendingRewards" || metadata.weightDiff >= 0) continue;
+    // Sort entries by absolute weightDiff
+    const sortedEntries = Object.entries(rebalancableDict)
+      .filter(
+        ([key, metadata]) =>
+          key !== "pendingRewards" && metadata.weightDiff < 0,
+      )
+      .sort((a, b) => Math.abs(a[1].weightDiff) - Math.abs(b[1].weightDiff));
 
-      // negativeWeigtDiffSum is a derivative to scale weightdiff to a [0~1] number
-      const zapInPrecision = 1000000;
-      const percentageBN = ethers.BigNumber.from(
-        String(
+    for (const [key, metadata] of sortedEntries) {
+      let zapInUsdValue = usdBalance * Math.abs(metadata.weightDiff);
+      let zapInAmount = ethers.BigNumber.from(
+        BigInt(
           Math.floor(
-            (-metadata.weightDiff / metadata.negativeWeigtDiffSum) *
-              zapInPrecision,
+            (zapInUsdValue /
+              tokenPricesMappingTable[middleTokenConfig.symbol]) *
+              10 ** middleTokenConfig.decimals,
           ),
         ),
       );
 
-      const zapInAmount = zapInAmountAfterFee
-        .mul(percentageBN)
-        .div(zapInPrecision);
-      // pendle doesn't allow zap in amount less than $0.1
-      if (zapInAmount < 100000) continue;
+      if (zapInAmountAfterFee.eq(0)) {
+        return [txns, zapInAmountAfterFee];
+      }
+
+      if (zapInAmountAfterFee.lt(zapInAmount)) {
+        zapInAmount = zapInAmountAfterFee;
+        zapInAmountAfterFee = ethers.BigNumber.from(0);
+      } else {
+        zapInAmountAfterFee = zapInAmountAfterFee.sub(zapInAmount);
+      }
+
+      const MIN_USDC_AMOUNT = 100000; // $0.1 in USDC (6 decimals)
+      const MIN_WETH_AMOUNT = ethers.utils.parseEther("0.00001"); // 0.00001 ETH
+
+      if (
+        (middleTokenConfig.symbol === "usdc" &&
+          zapInAmount.lt(MIN_USDC_AMOUNT)) ||
+        (middleTokenConfig.symbol === "weth" && zapInAmount.lt(MIN_WETH_AMOUNT))
+      ) {
+        continue;
+      }
 
       const protocol = metadata.protocol;
       if (activateStartZapInNode === false) {
@@ -1065,7 +1152,7 @@ export class BasePortfolio {
       txns.push(...protocolTxns);
     }
 
-    return txns;
+    return [txns, zapInAmountAfterFee];
   }
 
   async _generateStakeTxns(protocolAssetDustInWallet, updateProgress) {
@@ -1202,7 +1289,7 @@ export class BasePortfolio {
   }
 
   async getTokenPricesMappingTable() {
-    // Check if we have a valid cached mapping table
+    // Check cache
     if (
       GLOBAL_MAPPING_CACHE.table &&
       Date.now() - GLOBAL_MAPPING_CACHE.lastUpdated <
@@ -1225,7 +1312,6 @@ export class BasePortfolio {
     // Cache the entire mapping table
     GLOBAL_MAPPING_CACHE.table = prices;
     GLOBAL_MAPPING_CACHE.lastUpdated = Date.now();
-
     return prices;
   }
   validateStrategyWeights() {
@@ -1251,14 +1337,23 @@ export class BasePortfolio {
       edges: [],
     };
     const chainNodes = [];
-    if (actionName === "rebalance") {
+    if (
+      actionName === "rebalance" ||
+      actionName === "crossChainRebalance" ||
+      actionName === "localRebalance"
+    ) {
       const chainSet = new Set();
       let chainNode;
       let endOfZapOutNodeOnThisChain;
       let middleTokenConfig;
       const zapOutChains =
         actionParams.rebalancableUsdBalanceDict.metadata.rebalanceActionsByChain
-          .filter((action) => action.actionName === "rebalance")
+          .filter(
+            (action) =>
+              action.actionName === "rebalance" ||
+              action.actionName === "crossChainRebalance" ||
+              action.actionName === "localRebalance",
+          )
           .map((action) => action.chain);
       for (const [key, protocolObj] of Object.entries(
         actionParams.rebalancableUsdBalanceDict,
@@ -1367,7 +1462,8 @@ export class BasePortfolio {
             source:
               actionParams.chainMetadata.name
                 .toLowerCase()
-                .replace(" one", "") === protocolObj.chain
+                .replace(" one", "")
+                .replace(" mainnet", "") === protocolObj.chain
                 ? endOfZapOutNodeOnThisChain.id
                 : protocolObj.chain,
             target: stepsData.nodes[0].id,
@@ -1551,7 +1647,10 @@ export class BasePortfolio {
     if (tokenSymbol === "eth") {
       wrappedTokenAddress =
         TOKEN_ADDRESS_MAP.weth[
-          chainMetadata.name.toLowerCase().replace(" one", "")
+          chainMetadata.name
+            .toLowerCase()
+            .replace(" one", "")
+            .replace(" mainnet", "")
         ];
       wrappedTokenSymbol = "weth";
       wrappedTokenABI = WETH;

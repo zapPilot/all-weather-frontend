@@ -114,7 +114,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 59,
                 },
               ),
-              weight: 0.0825,
+              weight: 0.1,
             },
             {
               interface: new BaseEquilibria(
@@ -131,7 +131,7 @@ export class StablecoinVault extends BasePortfolio {
                   pidOfEquilibria: 52,
                 },
               ),
-              weight: 0.0825,
+              weight: 0,
             },
             {
               interface: new BaseEquilibria(
@@ -244,7 +244,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.0825,
+              weight: 0.1,
             },
             {
               interface: new BaseAura(
@@ -458,7 +458,7 @@ export class StablecoinVault extends BasePortfolio {
                 symbolOfBestTokenToZapInOut: "usdc",
                 zapInOutTokenAddress:
                   "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-                decimalsOfZapInOutToken: 18,
+                decimalsOfZapInOutToken: 6,
                 assetAddress: "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22",
                 protocolAddress: "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22",
                 assetDecimals: 8,
@@ -481,7 +481,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.28,
+              weight: 0.05,
             },
             {
               interface: new BaseEquilibria(
@@ -501,7 +501,7 @@ export class StablecoinVault extends BasePortfolio {
               weight: 0,
             },
           ],
-          "op mainnet": [
+          op: [
             {
               interface: new BaseVelodrome("op", 10, ["usdc", "susd"], "LP", {
                 assetAddress: "0xbC26519f936A90E78fe2C9aA2A03CC208f041234",
@@ -523,7 +523,7 @@ export class StablecoinVault extends BasePortfolio {
                   },
                 ],
               }),
-              weight: 0.3075,
+              weight: 0.1,
             },
             {
               interface: new BaseVelodrome("op", 10, ["usdc", "msusd"], "LP", {
@@ -546,7 +546,7 @@ export class StablecoinVault extends BasePortfolio {
                   },
                 ],
               }),
-              weight: 0.165,
+              weight: 0.65,
             },
           ],
         },

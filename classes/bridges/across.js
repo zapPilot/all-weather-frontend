@@ -48,7 +48,11 @@ class AcrossBridge extends BaseBridge {
     const tokenInstance = new ethers.Contract(
       fromToken,
       ERC20,
-      PROVIDER(CHAIN_ID_TO_CHAIN[fromChainId].name.replace(" one", "")),
+      PROVIDER(
+        CHAIN_ID_TO_CHAIN[fromChainId].name
+          .replace(" one", "")
+          .replace(" mainnet", ""),
+      ),
     );
     const tokenDecimals = await tokenInstance.decimals();
     const quote = await this.sdk.getQuote({
