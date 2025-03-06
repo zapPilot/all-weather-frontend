@@ -13,6 +13,7 @@ import { CHAIN_TO_CHAIN_ID, TOKEN_ADDRESS_MAP } from "../utils/general";
 import { toWei } from "thirdweb/utils";
 import { TokenPriceBatcher, PriceService } from "./TokenPriceService";
 import swap from "../utils/swapHelper";
+import { PortfolioFlowChartBuilder } from "./PortfolioFlowChartBuilder";
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 
@@ -24,7 +25,7 @@ const GLOBAL_MAPPING_CACHE = {
 };
 
 export class BasePortfolio {
-  constructor(strategy, weightMapping, portfolioName) {
+  constructor(strategy, weightMapping, portfolioName, flowChartBuilder) {
     this.portfolioName = portfolioName;
     this.strategy = strategy;
     this.portfolioAPR = {};
@@ -34,6 +35,8 @@ export class BasePortfolio {
       this._getUniqueTokenIdsForCurrentPrice();
     this.weightMapping = weightMapping;
     this.bridgeUsdThreshold = 10;
+    this.flowChartBuilder =
+      flowChartBuilder || new PortfolioFlowChartBuilder(this);
   }
 
   description() {
@@ -72,7 +75,7 @@ export class BasePortfolio {
     return maxLockUpPeriod;
   }
   rebalanceThreshold() {
-    return 0.05;
+    return 0.01;
   }
   async usdBalanceOf(address, portfolioAprDict) {
     // Get token prices
@@ -1331,218 +1334,6 @@ export class BasePortfolio {
       `Total weight across all strategies should be 1, but is ${totalWeight}`,
     );
   }
-  getFlowChartData(actionName, actionParams) {
-    let flowChartData = {
-      nodes: [],
-      edges: [],
-    };
-    const chainNodes = [];
-    if (
-      actionName === "rebalance" ||
-      actionName === "crossChainRebalance" ||
-      actionName === "localRebalance"
-    ) {
-      const chainSet = new Set();
-      let chainNode;
-      let endOfZapOutNodeOnThisChain;
-      let middleTokenConfig;
-      const zapOutChains =
-        actionParams.rebalancableUsdBalanceDict.metadata.rebalanceActionsByChain
-          .filter(
-            (action) =>
-              action.actionName === "rebalance" ||
-              action.actionName === "crossChainRebalance" ||
-              action.actionName === "localRebalance",
-          )
-          .map((action) => action.chain);
-      for (const [key, protocolObj] of Object.entries(
-        actionParams.rebalancableUsdBalanceDict,
-      )) {
-        if (
-          key === "pendingRewards" ||
-          key === "metadata" ||
-          !zapOutChains.includes(protocolObj.chain)
-        )
-          continue;
-        if (protocolObj.weightDiff > this.rebalanceThreshold()) {
-          if (!chainSet.has(protocolObj.chain)) {
-            chainSet.add(protocolObj.chain);
-            chainNode = {
-              id: protocolObj.chain,
-              name: actionName,
-              chain: protocolObj.chain,
-              imgSrc: `/chainPicturesWebp/${protocolObj.chain}.webp`,
-            };
-            endOfZapOutNodeOnThisChain = {
-              id: `endOfZapOutOn${protocolObj.chain}`,
-              name: "Start Zapping In",
-              chain: protocolObj.chain,
-              imgSrc: `/chainPicturesWebp/${protocolObj.chain}.webp`,
-            };
-            chainNodes.push(chainNode);
-            flowChartData.nodes.push(endOfZapOutNodeOnThisChain);
-            middleTokenConfig = this._getRebalanceMiddleTokenConfig(
-              protocolObj.chain,
-            );
-          }
-          const rebalanceRatio =
-            protocolObj.weightDiff / protocolObj.positiveWeigtDiffSum;
-          const stepsData =
-            protocolObj.protocol.interface.getZapOutFlowChartData(
-              middleTokenConfig.symbol,
-              middleTokenConfig.address,
-              rebalanceRatio,
-            );
-          const currentChainToProtocolNodeEdge = {
-            id: `edge-${
-              chainNode.id
-            }-${protocolObj.protocol.interface.uniqueId()}`,
-            source: chainNode.id,
-            target: stepsData.nodes[0].id,
-            data: {
-              ratio: rebalanceRatio,
-            },
-          };
-          const endOfZapOutOfThisProtocolToEndOfZapOutNodeEdge = {
-            id: `edge-${
-              stepsData.nodes[stepsData.nodes.length - 1].id
-            }-endOfZapOut`,
-            source: stepsData.nodes[stepsData.nodes.length - 1].id,
-            target: endOfZapOutNodeOnThisChain.id,
-            data: {
-              ratio: rebalanceRatio,
-            },
-          };
-          flowChartData.nodes = flowChartData.nodes.concat(stepsData.nodes);
-          flowChartData.edges = flowChartData.edges.concat(
-            stepsData.edges.concat([
-              currentChainToProtocolNodeEdge,
-              endOfZapOutOfThisProtocolToEndOfZapOutNodeEdge,
-            ]),
-          );
-        }
-      }
-      // Start Zap In
-      for (const [key, protocolObj] of Object.entries(
-        actionParams.rebalancableUsdBalanceDict,
-      )) {
-        if (key === "pendingRewards" || key === "metadata") continue;
-        if (protocolObj.weightDiff < 0) {
-          const zapInRatio =
-            -protocolObj.weightDiff / protocolObj.negativeWeigtDiffSum;
-          const stepsData =
-            protocolObj.protocol.interface.getZapInFlowChartData(
-              actionParams.tokenInSymbol,
-              actionParams.tokenInAddress,
-              zapInRatio,
-            );
-          if (!chainSet.has(protocolObj.chain)) {
-            chainSet.add(protocolObj.chain);
-            chainNode = {
-              id: protocolObj.chain,
-              name: `Bridge to ${protocolObj.chain}`,
-              chain: protocolObj.chain,
-              imgSrc: `/chainPicturesWebp/${protocolObj.chain}.webp`,
-            };
-            const bridgeEdge = {
-              id: `edge-${endOfZapOutNodeOnThisChain.id}-${chainNode.id}`,
-              source: endOfZapOutNodeOnThisChain.id,
-              target: chainNode.id,
-              data: {
-                ratio: zapInRatio,
-              },
-            };
-            chainNodes.push(chainNode);
-            flowChartData.edges.push(bridgeEdge);
-          }
-          const endOfZapOutNodeToZapInNodeEdge = {
-            id: `edge-${
-              endOfZapOutNodeOnThisChain.id
-            }-${protocolObj.protocol.interface.uniqueId()}`,
-            source:
-              actionParams.chainMetadata.name
-                .toLowerCase()
-                .replace(" one", "")
-                .replace(" mainnet", "") === protocolObj.chain
-                ? endOfZapOutNodeOnThisChain.id
-                : protocolObj.chain,
-            target: stepsData.nodes[0].id,
-            data: {
-              ratio: zapInRatio,
-            },
-          };
-          flowChartData.nodes = flowChartData.nodes.concat(stepsData.nodes);
-          flowChartData.edges = flowChartData.edges.concat(
-            stepsData.edges.concat([endOfZapOutNodeToZapInNodeEdge]),
-          );
-        }
-      }
-    } else {
-      for (const [category, protocolsInThisCategory] of Object.entries(
-        this.strategy,
-      )) {
-        for (const [chain, protocolsOnThisChain] of Object.entries(
-          protocolsInThisCategory,
-        )) {
-          const chainNode = {
-            id: chain,
-            name: actionName,
-            chain: chain,
-            category: category,
-            imgSrc: `/chainPicturesWebp/${chain}.webp`,
-          };
-          chainNodes.push(chainNode);
-          for (const protocol of protocolsOnThisChain) {
-            let stepsData = [];
-            if (protocol.weight === 0) continue;
-            if (actionName === "zapIn") {
-              stepsData = protocol.interface.getZapInFlowChartData(
-                actionParams.tokenInSymbol,
-                actionParams.tokenInAddress,
-                protocol.weight,
-              );
-            } else if (actionName === "stake") {
-              stepsData = protocol.interface.getStakeFlowChartData();
-            } else if (actionName === "transfer") {
-              stepsData = protocol.interface.getTransferFlowChartData(
-                protocol.weight,
-              );
-            } else if (actionName === "zapOut") {
-              stepsData = protocol.interface.getZapOutFlowChartData(
-                actionParams.outputToken,
-                actionParams.outputTokenAddress,
-                protocol.weight,
-              );
-            } else if (actionName === "claimAndSwap") {
-              stepsData = protocol.interface.getClaimFlowChartData(
-                actionParams.outputToken,
-                actionParams.outputTokenAddress,
-              );
-            } else {
-              throw new Error(`Invalid action name ${actionName}`);
-            }
-            const currentChainToProtocolNodeEdge = {
-              id: `edge-${chainNode.id}-${protocol.interface.uniqueId()}`,
-              source: chainNode.id,
-              target: stepsData.nodes[0].id,
-              data: {
-                ratio: protocol.weight,
-              },
-            };
-            flowChartData.nodes = flowChartData.nodes.concat(stepsData.nodes);
-            flowChartData.edges = flowChartData.edges.concat(
-              stepsData.edges.concat(currentChainToProtocolNodeEdge),
-            );
-          }
-        }
-      }
-    }
-    return {
-      nodes: chainNodes.concat(flowChartData.nodes),
-      edges: flowChartData.edges,
-    };
-  }
-
   async _getSwapFeeTxnsForZapIn(actionParams, platformFee, middleTokenConfig) {
     const normalizedPlatformFeeUsd =
       ethers.utils.formatUnits(platformFee, middleTokenConfig.decimals) *
@@ -1556,7 +1347,6 @@ export class BasePortfolio {
       referrer,
     );
   }
-
   async _swapFeeTxnsForZapOut(
     owner,
     tokenOutAddress,
@@ -1669,8 +1459,6 @@ export class BasePortfolio {
           ? { value: toWei(ethers.utils.formatEther(amount)) }
           : { params: [amount] }),
       }),
-      wrappedTokenAddress,
-      wrappedTokenSymbol,
     ];
   }
   mul_with_slippage_in_bignumber_format(amount, slippage) {
@@ -1688,5 +1476,9 @@ export class BasePortfolio {
     return amountBN
       .mul(ethers.BigNumber.from(String(10000)).sub(slippageBasisPoints))
       .div(10000);
+  }
+
+  getFlowChartData(actionName, actionParams) {
+    return this.flowChartBuilder.buildFlowChart(actionName, actionParams);
   }
 }

@@ -615,6 +615,7 @@ export default function IndexOverviews() {
           });
         });
       } catch (error) {
+        throw error;
         let errorReadableMsg;
         if (error.message.includes("0x495d907f")) {
           errorReadableMsg = "bridgequote expired, please try again";
@@ -680,6 +681,7 @@ export default function IndexOverviews() {
         );
       }
     } catch (error) {
+      throw error;
       const errorMsg =
         error.name === "AxiosError"
           ? error.response?.data?.message
