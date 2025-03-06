@@ -43,7 +43,7 @@ describe("Yearn Vault", () => {
       rebalancableUsdBalanceDict,
       recipient,
       protocolAssetDustInWallet[
-        arbitrum?.name.toLowerCase().replace(" one", "")
+        arbitrum?.name.toLowerCase().replace(" one", "").replace(" mainnet", "")
       ],
       false,
     );
@@ -89,7 +89,7 @@ describe("Yearn Vault", () => {
       rebalancableUsdBalanceDict,
       recipient,
       protocolAssetDustInWallet[
-        arbitrum?.name.toLowerCase().replace(" one", "")
+        arbitrum?.name.toLowerCase().replace(" one", "").replace(" mainnet", "")
       ],
       onlyThisChain,
     );
@@ -131,7 +131,7 @@ describe("Yearn Vault", () => {
       rebalancableUsdBalanceDict,
       recipient,
       protocolAssetDustInWallet[
-        arbitrum?.name.toLowerCase().replace(" one", "")
+        arbitrum?.name.toLowerCase().replace(" one", "").replace(" mainnet", "")
       ],
       onlyThisChain,
     );

@@ -106,7 +106,7 @@ export class BasePortfolio {
       positiveWeigtDiffSum,
     );
     usdBalanceDict.metadata = metadata;
-    return [usdBalance, usdBalanceDict];
+    return [usdBalance, usdBalanceDict, tokenPricesMappingTable];
   }
 
   async _getBalances(address, tokenPricesMappingTable) {
@@ -583,7 +583,6 @@ export class BasePortfolio {
 
     const processProtocolTxns = async (currentChain) => {
       const protocolPromises = [];
-
       for (const protocolsInThisCategory of Object.values(this.strategy)) {
         for (const [chain, protocols] of Object.entries(
           protocolsInThisCategory,
@@ -619,7 +618,6 @@ export class BasePortfolio {
           protocolPromises.push(...chainProtocolPromises);
         }
       }
-
       // Wait for all protocol transactions to complete
       const results = await Promise.all(protocolPromises);
       return results.flat().filter(Boolean);
@@ -1126,7 +1124,8 @@ export class BasePortfolio {
           ) {
             return null;
           }
-          if (Object.keys(tokenPricesMappingTable).length === 0) return null;
+          if (Object.keys(tokenPricesMappingTable || {}).length === 0)
+            return null;
           return {
             chain,
             protocol: protocol.interface,

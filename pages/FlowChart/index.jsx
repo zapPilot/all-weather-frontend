@@ -51,7 +51,8 @@ const UserFlowNode = ({
     nodeState.isActive ||
     nodeData.id === stepName ||
     completedSteps?.has(nodeData.id) ||
-    currentChain.toLowerCase().replace(" one", "") === nodeData.id;
+    currentChain.toLowerCase().replace(" one", "").replace(" mainnet", "") ===
+      nodeData.id;
 
   const displayTradingLoss = completedSteps?.has(nodeData.id)
     ? tradingLossRef.current

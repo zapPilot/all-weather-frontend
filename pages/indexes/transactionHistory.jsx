@@ -213,7 +213,7 @@ export default function TransactionHistory({
     const fetchTransactionHistory = async () => {
       if (
         !account?.address ||
-        Object.values(tokenPricesMappingTable).length === 0
+        Object.values(tokenPricesMappingTable || {}).length === 0
       )
         return;
 

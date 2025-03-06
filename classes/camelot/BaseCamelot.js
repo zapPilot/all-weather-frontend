@@ -314,7 +314,6 @@ export class BaseCamelot extends BaseProtocol {
       tokenPricesMappingTable,
       updateProgress,
     );
-
     // If no NFT exists, only return vesting rewards
     if (this.token_id === 0) {
       return [[], pendingRewards];
@@ -498,8 +497,8 @@ export class BaseCamelot extends BaseProtocol {
   async _getNftID(address) {
     const { tickLower, tickUpper } = this.customParams.tickers;
     const [token0Metadata, token1Metadata] = this.customParams.lpTokens;
-    // const balances = await this.assetContractInstance.balanceOf(address);
-    for (let idx = 0; idx < 10; idx++) {
+    const balances = await this.assetContractInstance.balanceOf(address);
+    for (let idx = 0; idx < Math.min(balances, 10); idx++) {
       const token_id = await this.assetContractInstance.tokenOfOwnerByIndex(
         address,
         idx,
@@ -624,7 +623,9 @@ export class BaseCamelot extends BaseProtocol {
     );
     const data = response.data;
     for (const reward of data.data.rewards) {
-      if (Number(reward.positionIdentifierDecoded) === this.token_id) {
+      if (
+        String(reward.positionIdentifierDecoded) === this.token_id.toString()
+      ) {
         const vestingDuration = 15552000;
         const claimableAmount = Number(reward.rewards) - Number(reward.claimed);
         const harvestTxn = prepareContractCall({
