@@ -229,6 +229,20 @@ export default function IndexOverviews() {
         </Button>
       ),
     },
+    {
+      key: "3",
+      label: (
+        <Button type="link" onClick={() => switchChain(optimism)}>
+          <Image
+            src={`/chainPicturesWebp/optimism.webp`}
+            alt="optimism"
+            height={22}
+            width={22}
+            className="rounded-full"
+          />
+        </Button>
+      ),
+    },
   ];
 
   const getTokenMetadata = (chainId, tokenSymbol) => {
@@ -361,7 +375,11 @@ export default function IndexOverviews() {
       setZapInIsLoading(true);
     } else if (actionName === "zapOut") {
       setZapOutIsLoading(true);
-    } else if (actionName === "rebalance") {
+    } else if (
+      actionName === "rebalance" ||
+      actionName === "crossChainRebalance" ||
+      actionName === "localRebalance"
+    ) {
       setRebalanceIsLoading(true);
     } else if (actionName === "transfer") {
       setTransferLoading(true);
@@ -402,10 +420,17 @@ export default function IndexOverviews() {
             .replace(" mainnet", "")
         ],
         onlyThisChain,
+        usdBalance,
       );
       setCostsCalculated(true);
       if (
-        ["zapIn", "zapOut", "rebalance", "transfer"].includes(actionName) &&
+        [
+          "zapIn",
+          "zapOut",
+          "crossChainRebalance",
+          "localRebalance",
+          "transfer",
+        ].includes(actionName) &&
         txns.length < 2
       ) {
         throw new Error("No transactions to send");
@@ -447,12 +472,25 @@ export default function IndexOverviews() {
                       chainId?.id
                     ].toLowerCase()}.io`;
 
-              // Clear the cache for this portfolio and account
-              if (Object.values(chainStatus).every(Boolean)) {
-                localStorage.removeItem(
-                  `portfolio-${portfolioName}-${account.address}`,
-                );
-              }
+              // First update chainStatus
+              setChainStatus((prevStatus) => {
+                const newStatus = { ...prevStatus, [currentChain]: true };
+
+                // Check if all chains are complete after the update
+                if (Object.values(newStatus).every(Boolean)) {
+                  localStorage.removeItem(
+                    `portfolio-${portfolioName}-${account.address}`,
+                  );
+                }
+
+                return newStatus;
+              });
+
+              // Continue with other state updates
+              setFinishedTxn(true);
+              const newNextChain = switchNextChain(data.chain.name);
+              setNextStepChain(newNextChain);
+              setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
 
               openNotificationWithIcon(
                 notificationAPI,
@@ -490,7 +528,8 @@ export default function IndexOverviews() {
                       tokenSymbol,
                       investmentAmount: investmentAmountAfterFee,
                       zapOutAmount:
-                        actionName === "rebalance"
+                        actionName === "crossChainRebalance" ||
+                        actionName === "localRebalance"
                           ? getRebalanceReinvestUsdAmount(currentChain?.name)
                           : usdBalance *
                             zapOutPercentage *
@@ -553,12 +592,6 @@ export default function IndexOverviews() {
               } catch (error) {
                 console.error("category API error", error);
               }
-              setFinishedTxn(true);
-              // get current chain from Txn data
-              const newNextChain = switchNextChain(data.chain.name);
-              setNextStepChain(newNextChain);
-              setChainStatus({ ...chainStatus, [currentChain]: true });
-              setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
             },
             onError: (error) => {
               if (error.message.includes("User rejected the request")) {
@@ -607,7 +640,16 @@ export default function IndexOverviews() {
           errorReadableMsg = "ERC20: transfer amount exceeds allowance";
         } else if (
           error.message.includes(
+            "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002645524332303a207472616e7366657220616d6f756e7420657863656564732062616c616e63650000000000000000000000000000000000000000000000000000",
+          )
+        ) {
+          errorReadableMsg = "ERC20: transfer amount exceeds balance";
+        } else if (
+          error.message.includes(
             "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000030526563656976656420616d6f756e74206f6620746f6b656e7320617265206c657373207468656e20657870656374656400000000000000000000000000000000",
+          ) ||
+          error.message.includes(
+            "0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000014c00000000000000000000000000000000000000000000000000000000000000",
           )
         ) {
           errorReadableMsg =
@@ -619,6 +661,11 @@ export default function IndexOverviews() {
           errorReadableMsg = "You send the transaction to the wrong address";
         } else if (error.message.includes("User rejected the request")) {
           return;
+        } else if (
+          error.message.includes("from should be same as current address")
+        ) {
+          errorReadableMsg =
+            "You're sending the transaction from the wrong address";
         } else {
           errorReadableMsg =
             "Transaction failed. Please try increasing slippage tolerance or notify customer support to increase gas limit." +
@@ -647,7 +694,10 @@ export default function IndexOverviews() {
       setZapInIsLoading(false);
     } else if (actionName === "zapOut") {
       setZapOutIsLoading(false);
-    } else if (actionName === "rebalance") {
+    } else if (
+      actionName === "crossChainRebalance" ||
+      actionName === "localRebalance"
+    ) {
       setRebalanceIsLoading(false);
     } else if (actionName === "stake") {
       setZapInIsLoading(false);
@@ -727,8 +777,12 @@ export default function IndexOverviews() {
 
   const onChange = (key) => {
     setTabKey(key);
-    // Set slippage to 3 when switching to RebalanceTab (assuming key "3" is RebalanceTab)
-    if (key === "3") {
+    // Find the selected tab item and check its label
+    const selectedTab = items.find((item) => item.key === key);
+    if (selectedTab?.label === "Rebalance") {
+      setSlippage(5);
+    } else if (selectedTab?.key === "5") {
+      // 5 stands for 'Claim'
       setSlippage(3);
     }
   };
@@ -810,10 +864,18 @@ export default function IndexOverviews() {
       ) {
         setSlippage(3);
       } else {
-        setSlippage(2);
+        // Check if we're on the rebalance tab before setting default slippage
+        if (
+          tabKey &&
+          items.find((item) => item.key === tabKey)?.label === "Rebalance"
+        ) {
+          setSlippage(5);
+        } else {
+          setSlippage(2);
+        }
       }
     }
-  }, [portfolioName, selectedToken]);
+  }, [portfolioName, selectedToken, chainId, tabKey]);
   useEffect(() => {
     console.time("🚀 Portfolio data fetch");
     // Clear states on initial load/refresh
@@ -839,7 +901,6 @@ export default function IndexOverviews() {
           `portfolio-${portfolioName}-${account.address}`,
           portfolioHelper,
         );
-
         if (
           cachedData?.timestamp &&
           Date.now() - cachedData.timestamp < 86400 * 1000
@@ -848,7 +909,6 @@ export default function IndexOverviews() {
           setTokenPricesMappingTable(cachedData.tokenPricesMappingTable);
           setUsdBalance(cachedData.usdBalance);
           setUsdBalanceLoading(false);
-
           setrebalancableUsdBalanceDict(cachedData.usdBalanceDict);
           setrebalancableUsdBalanceDictLoading(false);
 
@@ -873,23 +933,16 @@ export default function IndexOverviews() {
           account.address,
         );
 
-        console.log("🚀 Starting to fetch portfolio data...");
         try {
           const results = await Promise.all([
             usdBalancePromise.then((result) => {
-              console.log("✅ USD balance fetched successfully:", {
-                balance: result[0],
-                dictSize: Object.keys(result[1] || {}).length,
-              });
               return result;
             }),
             lockUpPeriodPromise.then((result) => {
-              console.log("✅ Lock up period fetched successfully");
               return result;
             }),
           ]);
           console.timeEnd("🚀 Portfolio data fetch");
-          console.log("✅ All portfolio data fetched successfully");
 
           const [
             [usdBalance, usdBalanceDict, tokenPricesMappingTable],

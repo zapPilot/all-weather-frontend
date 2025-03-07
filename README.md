@@ -71,6 +71,9 @@ need a linter like this one <https://github.com/david30907d/all-weather-scaffold
    1. Create a test vault containing only your protocol, similar to [this example](https://github.com/all-weather-protocol/all-weather-frontend/blob/main/utils/thirdwebSmartWallet.ts#L17-L22)
    2. Copy existing test cases from [./**tests**/intent](./__tests__/intent/) and modify them for your protocol
 4. Update Transaction Parser in Rebalance Backend: `_find_refund_data_by_txn_hash()`
+5. Tips:
+   1. comment the `loading={zapInIsLoading}` in ZapInTab.jsx for testing
+   2. comment the `depositTxn`, `stakeTxn` etc in the new protocol class for testing
 
 ### How to Integrate New Chain
 
@@ -80,3 +83,7 @@ need a linter like this one <https://github.com/david30907d/all-weather-scaffold
 2. Update UI of course
 3. Update CHAIN_ID_TO_CHAIN, etc... in general.js
 4. Need to update the gas sponsorship settings on ThirdWeb
+5. check these funcs in indexOverviews.jsx:
+   * `switchNextChain`
+   * `const [chainStatus, setChainStatus]`
+   * `chainMap`

@@ -97,36 +97,6 @@ export default function PortfolioSummary({
               </div>
             </dd>
           </div>
-
-          <div className="mt-6 flex w-full flex-none gap-x-4">
-            <dt className="flex-none">
-              <CurrencyDollarIcon
-                aria-hidden="true"
-                className="h-6 w-5 text-gray-500"
-              />
-            </dt>
-            <dd className="text-sm font-medium leading-6 text-white">
-              Profit:{" "}
-              {usdBalanceLoading ||
-              Object.values(tokenPricesMappingTable || {}).length === 0 ||
-              principalBalance === 0 ? (
-                <Spin />
-              ) : (
-                <span
-                  className={
-                    usdBalance - principalBalance < 0
-                      ? "text-red-500"
-                      : "text-green-500"
-                  }
-                >
-                  $
-                  {usdBalance === 0
-                    ? 0
-                    : (usdBalance - principalBalance)?.toFixed(2)}
-                </span>
-              )}
-            </dd>
-          </div>
           <div className="mt-6 flex w-full flex-none gap-x-4">
             <dt className="flex-none">
               <ChartBarIcon

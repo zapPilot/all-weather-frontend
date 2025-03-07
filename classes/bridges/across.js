@@ -15,6 +15,8 @@ class AcrossBridge extends BaseBridge {
     base: "0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64",
     linea: "0x7E63A5f1a8F0B4d0934B2f2327DAED3F6bb2ee75",
     optimism: "0x6f26Bf09B1C792e3228e5467807a900A503c0281",
+    op: "0x6f26Bf09B1C792e3228e5467807a900A503c0281",
+    "op mainnet": "0x6f26Bf09B1C792e3228e5467807a900A503c0281",
     polygon: "0x9295ee1d8C5b022Be115A2AD3c30C72E34e7F096",
   };
   constructor() {
@@ -46,7 +48,11 @@ class AcrossBridge extends BaseBridge {
     const tokenInstance = new ethers.Contract(
       fromToken,
       ERC20,
-      PROVIDER(CHAIN_ID_TO_CHAIN[fromChainId].name.replace(" one", "")),
+      PROVIDER(
+        CHAIN_ID_TO_CHAIN[fromChainId].name
+          .replace(" one", "")
+          .replace(" mainnet", ""),
+      ),
     );
     const tokenDecimals = await tokenInstance.decimals();
     const quote = await this.sdk.getQuote({

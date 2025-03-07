@@ -243,7 +243,7 @@ const Dashboard: NextPage = () => {
           );
         }
       } catch (error) {
-        console.log("failed to fetch pool data", error);
+        console.error("failed to fetch pool data", error);
       }
     };
 
