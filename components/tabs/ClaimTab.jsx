@@ -29,7 +29,7 @@ export default function ClaimTab({
           title={`Minimum claim amount is ${minClaimAmount} USD`}
         >
           {sumOfPendingRewards < minClaimAmount ? (
-            `Need ${minClaimAmount} USD to claim (current: ${sumOfPendingRewards.toFixed(
+            `Need ${minClaimAmount} USD to claim, or use Rebalance instead (current: ${sumOfPendingRewards.toFixed(
               2,
             )} USD)`
           ) : (

@@ -63,7 +63,7 @@ export default function Bundle() {
           <p className="text-base text-gray-400">
             You can create 1 bundle and add up to 10 addresses per bundle!
           </p>
-          <div>
+          {/* <div>
             <Link
               className="text-base text-emerald-400 hover:text-emerald-300"
               href="/subscription"
@@ -71,7 +71,7 @@ export default function Bundle() {
               Subscription
             </Link>
             <span className="text-base text-gray-400"> to create more</span>
-          </div>
+          </div> */}
         </div>
         <div className="mt-8">
           {loading ? (

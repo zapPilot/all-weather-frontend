@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
-import { base, arbitrum } from "thirdweb/chains";
+import { base, arbitrum, optimism } from "thirdweb/chains";
 import { getGasPrice } from "thirdweb";
 import PopUpModal from "../Modal";
 import {
@@ -229,6 +229,20 @@ export default function IndexOverviews() {
         </Button>
       ),
     },
+    {
+      key: "3",
+      label: (
+        <Button type="link" onClick={() => switchChain(optimism)}>
+          <Image
+            src={`/chainPicturesWebp/optimism.webp`}
+            alt="optimism"
+            height={22}
+            width={22}
+            className="rounded-full"
+          />
+        </Button>
+      ),
+    },
   ];
 
   const getTokenMetadata = (chainId, tokenSymbol) => {
@@ -361,7 +375,11 @@ export default function IndexOverviews() {
       setZapInIsLoading(true);
     } else if (actionName === "zapOut") {
       setZapOutIsLoading(true);
-    } else if (actionName === "rebalance") {
+    } else if (
+      actionName === "rebalance" ||
+      actionName === "crossChainRebalance" ||
+      actionName === "localRebalance"
+    ) {
       setRebalanceIsLoading(true);
     } else if (actionName === "transfer") {
       setTransferLoading(true);
@@ -396,13 +414,23 @@ export default function IndexOverviews() {
         rebalancableUsdBalanceDict,
         recipient,
         protocolAssetDustInWallet[
-          chainId?.name?.toLowerCase()?.replace(" one", "")
+          chainId?.name
+            ?.toLowerCase()
+            ?.replace(" one", "")
+            .replace(" mainnet", "")
         ],
         onlyThisChain,
+        usdBalance,
       );
       setCostsCalculated(true);
       if (
-        ["zapIn", "zapOut", "rebalance", "transfer"].includes(actionName) &&
+        [
+          "zapIn",
+          "zapOut",
+          "crossChainRebalance",
+          "localRebalance",
+          "transfer",
+        ].includes(actionName) &&
         txns.length < 2
       ) {
         throw new Error("No transactions to send");
@@ -414,16 +442,22 @@ export default function IndexOverviews() {
       const investmentAmountAfterFee =
         investmentAmount *
         (1 - portfolioHelper.swapFeeRate()) *
-        (1 - slippage / 100) *
         (1 - slippage / 100);
       const chainWeight = calCrossChainInvestmentAmount(
-        chainId?.name?.toLowerCase().replace(" one", ""),
+        chainId?.name
+          ?.toLowerCase()
+          .replace(" one", "")
+          .replace(" mainnet", ""),
       );
       const chainWeightPerYourPortfolio =
         Object.values(rebalancableUsdBalanceDict)
           .filter(
             ({ chain }) =>
-              chain === chainId?.name?.toLowerCase().replace(" one", ""),
+              chain ===
+              chainId?.name
+                ?.toLowerCase()
+                .replace(" one", "")
+                .replace(" mainnet", ""),
           )
           .reduce((sum, value) => sum + value.usdBalance, 0) / usdBalance;
       // Call sendBatchTransaction and wait for the result
@@ -438,10 +472,25 @@ export default function IndexOverviews() {
                       chainId?.id
                     ].toLowerCase()}.io`;
 
-              // Clear the cache for this portfolio and account
-              localStorage.removeItem(
-                `portfolio-${portfolioName}-${account.address}`,
-              );
+              // First update chainStatus
+              setChainStatus((prevStatus) => {
+                const newStatus = { ...prevStatus, [currentChain]: true };
+
+                // Check if all chains are complete after the update
+                if (Object.values(newStatus).every(Boolean)) {
+                  localStorage.removeItem(
+                    `portfolio-${portfolioName}-${account.address}`,
+                  );
+                }
+
+                return newStatus;
+              });
+
+              // Continue with other state updates
+              setFinishedTxn(true);
+              const newNextChain = switchNextChain(data.chain.name);
+              setNextStepChain(newNextChain);
+              setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
 
               openNotificationWithIcon(
                 notificationAPI,
@@ -479,7 +528,8 @@ export default function IndexOverviews() {
                       tokenSymbol,
                       investmentAmount: investmentAmountAfterFee,
                       zapOutAmount:
-                        actionName === "rebalance"
+                        actionName === "crossChainRebalance" ||
+                        actionName === "localRebalance"
                           ? getRebalanceReinvestUsdAmount(currentChain?.name)
                           : usdBalance *
                             zapOutPercentage *
@@ -497,7 +547,10 @@ export default function IndexOverviews() {
                         : investmentAmountAfterFee * chainWeight,
                       stakeAmountOnThisChain: Object.values(
                         protocolAssetDustInWallet?.[
-                          chainId?.name?.toLowerCase()?.replace(" one", "")
+                          chainId?.name
+                            ?.toLowerCase()
+                            ?.replace(" one", "")
+                            .replace(" mainnet", "")
                         ] || {},
                       ).reduce(
                         (sum, protocolObj) =>
@@ -539,12 +592,6 @@ export default function IndexOverviews() {
               } catch (error) {
                 console.error("category API error", error);
               }
-              setFinishedTxn(true);
-              // get current chain from Txn data
-              const newNextChain = switchNextChain(data.chain.name);
-              setNextStepChain(newNextChain);
-              setChainStatus({ ...chainStatus, [currentChain]: true });
-              setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
             },
             onError: (error) => {
               if (error.message.includes("User rejected the request")) {
@@ -593,17 +640,32 @@ export default function IndexOverviews() {
           errorReadableMsg = "ERC20: transfer amount exceeds allowance";
         } else if (
           error.message.includes(
+            "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002645524332303a207472616e7366657220616d6f756e7420657863656564732062616c616e63650000000000000000000000000000000000000000000000000000",
+          )
+        ) {
+          errorReadableMsg = "ERC20: transfer amount exceeds balance";
+        } else if (
+          error.message.includes(
             "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000030526563656976656420616d6f756e74206f6620746f6b656e7320617265206c657373207468656e20657870656374656400000000000000000000000000000000",
+          ) ||
+          error.message.includes(
+            "0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000014c00000000000000000000000000000000000000000000000000000000000000",
           )
         ) {
           errorReadableMsg =
             "Received amount of tokens are less then expected, please increase slippage tolerance and try again";
         } else if (error.message.includes("0x09bde339")) {
-          errorReadableMsg = "Failed to claim rewards, please try again";
+          errorReadableMsg =
+            "Failed to claim rewards, please try again" + error.message;
         } else if (error.message.endsWith("0x")) {
           errorReadableMsg = "You send the transaction to the wrong address";
         } else if (error.message.includes("User rejected the request")) {
           return;
+        } else if (
+          error.message.includes("from should be same as current address")
+        ) {
+          errorReadableMsg =
+            "You're sending the transaction from the wrong address";
         } else {
           errorReadableMsg =
             "Transaction failed. Please try increasing slippage tolerance or notify customer support to increase gas limit." +
@@ -632,7 +694,10 @@ export default function IndexOverviews() {
       setZapInIsLoading(false);
     } else if (actionName === "zapOut") {
       setZapOutIsLoading(false);
-    } else if (actionName === "rebalance") {
+    } else if (
+      actionName === "crossChainRebalance" ||
+      actionName === "localRebalance"
+    ) {
       setRebalanceIsLoading(false);
     } else if (actionName === "stake") {
       setZapInIsLoading(false);
@@ -644,12 +709,16 @@ export default function IndexOverviews() {
   const [nextStepChain, setNextStepChain] = useState("");
   const switchNextChain = (chain) => {
     const nextChain = chain.includes(" ")
-      ? chain.toLowerCase().replace(" one", "")
+      ? chain.toLowerCase().replace(" one", "").replace(" mainnet", "")
       : chain;
     return nextChain === "arbitrum" ? "base" : "arbitrum";
   };
 
-  const currentChain = chainId?.name?.toLowerCase().replace(" one", "").trim();
+  const currentChain = chainId?.name
+    ?.toLowerCase()
+    .replace(" one", "")
+    .replace(" mainnet", "")
+    .trim();
   // get all available chains
   const availableAssetChains = Object.entries(
     portfolioHelper?.strategy || {},
@@ -660,11 +729,13 @@ export default function IndexOverviews() {
   const [chainStatus, setChainStatus] = useState({
     base: false,
     arbitrum: false,
+    op: false,
   });
   // prepare chain object for switch chain
   const chainMap = {
     arbitrum: arbitrum,
     base: base,
+    op: optimism,
   };
 
   const switchNextStepChain = (chain) => {
@@ -706,8 +777,12 @@ export default function IndexOverviews() {
 
   const onChange = (key) => {
     setTabKey(key);
-    // Set slippage to 3 when switching to RebalanceTab (assuming key "3" is RebalanceTab)
-    if (key === "3") {
+    // Find the selected tab item and check its label
+    const selectedTab = items.find((item) => item.key === key);
+    if (selectedTab?.label === "Rebalance") {
+      setSlippage(5);
+    } else if (selectedTab?.key === "5") {
+      // 5 stands for 'Claim'
       setSlippage(3);
     }
   };
@@ -726,7 +801,10 @@ export default function IndexOverviews() {
         ? {
             tokenAddress:
               TOKEN_ADDRESS_MAP["weth"][
-                chainId.name.toLowerCase().replace(" one", "")
+                chainId.name
+                  .toLowerCase()
+                  .replace(" one", "")
+                  .replace(" mainnet", "")
               ],
           }
         : { tokenAddress }),
@@ -749,7 +827,10 @@ export default function IndexOverviews() {
   );
 
   const getRebalanceReinvestUsdAmount = (chainFilter) => {
-    const chain = chainFilter?.replace(" one", "").toLowerCase();
+    const chain = chainFilter
+      ?.replace(" one", "")
+      .replace(" mainnet", "")
+      .toLowerCase();
     if (chain === undefined) return 0;
     const filteredBalances = chain
       ? Object.values(rebalancableUsdBalanceDict).filter(
@@ -783,11 +864,20 @@ export default function IndexOverviews() {
       ) {
         setSlippage(3);
       } else {
-        setSlippage(2);
+        // Check if we're on the rebalance tab before setting default slippage
+        if (
+          tabKey &&
+          items.find((item) => item.key === tabKey)?.label === "Rebalance"
+        ) {
+          setSlippage(5);
+        } else {
+          setSlippage(2);
+        }
       }
     }
-  }, [portfolioName, selectedToken]);
+  }, [portfolioName, selectedToken, chainId, tabKey]);
   useEffect(() => {
+    console.time("🚀 Portfolio data fetch");
     // Clear states on initial load/refresh
     setUsdBalance(0);
     setUsdBalanceLoading(true);
@@ -811,7 +901,6 @@ export default function IndexOverviews() {
           `portfolio-${portfolioName}-${account.address}`,
           portfolioHelper,
         );
-
         if (
           cachedData?.timestamp &&
           Date.now() - cachedData.timestamp < 86400 * 1000
@@ -820,7 +909,6 @@ export default function IndexOverviews() {
           setTokenPricesMappingTable(cachedData.tokenPricesMappingTable);
           setUsdBalance(cachedData.usdBalance);
           setUsdBalanceLoading(false);
-
           setrebalancableUsdBalanceDict(cachedData.usdBalanceDict);
           setrebalancableUsdBalanceDictLoading(false);
 
@@ -837,83 +925,97 @@ export default function IndexOverviews() {
         // Fetch fresh data using Promise.all to load data in parallel
 
         // Start all async operations simultaneously
-        const [
-          tokenPricesMappingTablePromise,
-          usdBalancePromise,
-          lockUpPeriodPromise,
-        ] = [
-          portfolioHelper.getTokenPricesMappingTable(),
-          portfolioHelper.usdBalanceOf(
-            account.address,
-            portfolioApr[portfolioName],
-          ),
-          portfolioHelper.lockUpPeriod(account.address),
-        ];
-        console.time("tokenPricesMappingTablePromise");
-        // Update token prices as soon as available
-        const tokenPricesMappingTable = await tokenPricesMappingTablePromise;
-        setTokenPricesMappingTable(tokenPricesMappingTable);
-        console.timeEnd("getTokenPricesMappingTable");
-        // Update USD balance and dict as soon as available
-        console.time("outer usdBalanceOf");
-        const [usdBalance, usdBalanceDict] = await usdBalancePromise;
-        setUsdBalance(usdBalance);
-        setUsdBalanceLoading(false);
-        setrebalancableUsdBalanceDict(usdBalanceDict);
-        setrebalancableUsdBalanceDictLoading(false);
-        console.timeEnd("outer usdBalanceOf");
-
-        // Update lockup period as soon as available
-        const portfolioLockUpPeriod = await lockUpPeriodPromise;
-        setLockUpPeriod(portfolioLockUpPeriod);
-
-        // Update pending rewards as soon as available
-        const pendingRewards = await portfolioHelper.pendingRewards(
+        const usdBalancePromise = portfolioHelper.usdBalanceOf(
           account.address,
-          () => {},
-          tokenPricesMappingTable,
+          portfolioApr[portfolioName],
         );
-        setPendingRewards(pendingRewards.pendingRewardsDict);
-        setPendingRewardsLoading(false);
+        const lockUpPeriodPromise = portfolioHelper.lockUpPeriod(
+          account.address,
+        );
 
-        // Calculate dust after token prices are available
-        const dust =
-          await portfolioHelper.calProtocolAssetDustInWalletDictionary(
+        try {
+          const results = await Promise.all([
+            usdBalancePromise.then((result) => {
+              return result;
+            }),
+            lockUpPeriodPromise.then((result) => {
+              return result;
+            }),
+          ]);
+          console.timeEnd("🚀 Portfolio data fetch");
+
+          const [
+            [usdBalance, usdBalanceDict, tokenPricesMappingTable],
+            lockUpPeriod,
+          ] = results;
+
+          setTokenPricesMappingTable(tokenPricesMappingTable);
+          // Update USD balance and dict as soon as available
+          setUsdBalance(usdBalance);
+          setUsdBalanceLoading(false);
+          setrebalancableUsdBalanceDict(usdBalanceDict);
+          setrebalancableUsdBalanceDictLoading(false);
+
+          // Update lockup period as soon as available
+          setLockUpPeriod(lockUpPeriod);
+
+          // Update pending rewards as soon as available
+          console.time("🚀 Pending rewards fetch");
+          const pendingRewards = await portfolioHelper.pendingRewards(
             account.address,
+            () => {},
             tokenPricesMappingTable,
           );
-        setProtocolAssetDustInWallet(dust);
-        setProtocolAssetDustInWalletLoading(false);
+          console.timeEnd("🚀 Pending rewards fetch");
+          setPendingRewards(pendingRewards.pendingRewardsDict);
+          setPendingRewardsLoading(false);
 
-        // Update final USD balance with dust
-        const dustTotalUsdBalance = Object.values(dust).reduce(
-          (sum, protocolObj) =>
-            sum +
-            Object.values(protocolObj).reduce(
-              (protocolSum, asset) =>
-                protocolSum + (Number(asset.assetUsdBalanceOf) || 0),
-              0,
-            ),
-          0,
-        );
-        setUsdBalance(usdBalance + dustTotalUsdBalance);
+          // Calculate dust after token prices are available
+          const dust =
+            await portfolioHelper.calProtocolAssetDustInWalletDictionary(
+              account.address,
+              tokenPricesMappingTable,
+            );
+          setProtocolAssetDustInWallet(dust);
+          setProtocolAssetDustInWalletLoading(false);
 
-        // Cache the fresh data
-        try {
-          safeSetLocalStorage(`portfolio-${portfolioName}-${account.address}`, {
-            tokenPricesMappingTable,
-            usdBalance: usdBalance + dustTotalUsdBalance,
-            usdBalanceDict,
-            lockUpPeriod: portfolioLockUpPeriod,
-            pendingRewards: pendingRewards.pendingRewardsDict,
-            dust,
-            timestamp: Date.now(),
-          });
+          // Update final USD balance with dust
+          const dustTotalUsdBalance = Object.values(dust).reduce(
+            (sum, protocolObj) =>
+              sum +
+              Object.values(protocolObj).reduce(
+                (protocolSum, asset) =>
+                  protocolSum + (Number(asset.assetUsdBalanceOf) || 0),
+                0,
+              ),
+            0,
+          );
+          setUsdBalance(usdBalance + dustTotalUsdBalance);
+
+          // Cache the fresh data
+          try {
+            safeSetLocalStorage(
+              `portfolio-${portfolioName}-${account.address}`,
+              {
+                tokenPricesMappingTable,
+                usdBalance: usdBalance + dustTotalUsdBalance,
+                usdBalanceDict,
+                lockUpPeriod: lockUpPeriod,
+                pendingRewards: pendingRewards.pendingRewardsDict,
+                dust,
+                timestamp: Date.now(),
+              },
+            );
+          } catch (error) {
+            console.warn("Failed to cache portfolio data:", error);
+          }
         } catch (error) {
-          console.warn("Failed to cache portfolio data:", error);
+          console.error("❌ Error fetching portfolio data:", {
+            message: error.message,
+            stack: error.stack,
+          });
+          throw error;
         }
-      } catch (error) {
-        console.error("Error in fetchUsdBalance:", error);
       } finally {
         isProcessingChainChangeRef.current = false;
       }
@@ -1212,7 +1314,8 @@ export default function IndexOverviews() {
                           chainId?.name
                             ? `/chainPicturesWebp/${chainId.name
                                 .toLowerCase()
-                                .replace(" one", "")}.webp`
+                                .replace(" one", "")
+                                .replace(" mainnet", "")}.webp`
                             : "/chainPicturesWebp/arbitrum.webp"
                         }
                         alt={chainId ? chainId.name : "arbitrum"}

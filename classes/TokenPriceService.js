@@ -7,6 +7,13 @@ const GLOBAL_PRICE_CACHE = {
   CACHE_DURATION: 60000, // Cache duration in milliseconds (1 minute)
 };
 
+// Add global queue at the top of the file
+const GLOBAL_QUEUE = {
+  queue: new Map(), // Map of token -> Promise
+  processing: false,
+  QUEUE_PROCESS_INTERVAL: 2000, // Process queue every 2 seconds
+};
+
 class PriceService {
   static STATIC_PRICES = {
     usd: 1,
@@ -16,11 +23,13 @@ class PriceService {
     frax: 0.997,
     usde: 1,
     usdx: 0.9971,
+    gho: 0.9986,
+    susd: 0.9837,
   };
 
   static MAX_RETRIES = 3;
   static RETRY_DELAY = 5000;
-  static TIMEOUT = 3000;
+  static TIMEOUT = 30000;
 
   constructor(apiUrl) {
     this.apiUrl = apiUrl;
@@ -52,10 +61,6 @@ class PriceService {
           const endpoint = this._buildEndpoint(provider, key);
           const response = await axios.get(endpoint, {
             timeout: PriceService.TIMEOUT,
-            headers: {
-              "Cache-Control": "no-cache",
-              Pragma: "no-cache",
-            },
             validateStatus: (status) => status >= 200 && status < 500,
             maxRedirects: 5,
           });
@@ -151,38 +156,126 @@ class PriceService {
 class TokenPriceBatcher {
   static DEFAULT_CONFIG = {
     batchSize: 2,
-    requestsPerMinute: 30, // Default to 30 requests per minute (1 request per 2 seconds)
+    requestsPerMinute: 30,
   };
 
   constructor(priceService, config = {}) {
     this.priceService = priceService;
     this.config = { ...TokenPriceBatcher.DEFAULT_CONFIG, ...config };
     this.requestTimes = [];
+    this._startQueueProcessor();
+  }
+
+  _startQueueProcessor() {
+    // Only start the processor if it's not already running
+    if (!GLOBAL_QUEUE.processing) {
+      GLOBAL_QUEUE.processing = true;
+      this._processQueue();
+    }
+  }
+
+  async _processQueue() {
+    while (true) {
+      const queuedTokens = Array.from(GLOBAL_QUEUE.queue.entries())
+        .filter(([_, { status }]) => status === "pending")
+        .map(([token, _]) => token);
+
+      if (queuedTokens.length > 0) {
+        const batch = queuedTokens.slice(0, this.config.batchSize);
+        const delayMs = await this._calculateRequiredDelay();
+
+        if (delayMs > 0) {
+          await this._delay(delayMs);
+        }
+
+        // Process the batch
+        try {
+          const results = await this._processBatch(batch);
+          results.forEach(({ token, price }) => {
+            const queueItem = GLOBAL_QUEUE.queue.get(token);
+            if (queueItem) {
+              queueItem.resolve(price);
+              GLOBAL_QUEUE.queue.delete(token);
+            }
+          });
+        } catch (error) {
+          batch.forEach((token) => {
+            const queueItem = GLOBAL_QUEUE.queue.get(token);
+            if (queueItem) {
+              queueItem.reject(error);
+              GLOBAL_QUEUE.queue.delete(token);
+            }
+          });
+        }
+      }
+
+      // Wait before processing next batch
+      await this._delay(GLOBAL_QUEUE.QUEUE_PROCESS_INTERVAL);
+    }
   }
 
   async fetchPrices(tokensToFetch) {
     const prices = { ...PriceService.STATIC_PRICES };
+    const promises = [];
 
-    for (let i = 0; i < tokensToFetch.length; i += this.config.batchSize) {
-      const batch = tokensToFetch.slice(i, i + this.config.batchSize);
-
-      // Calculate required delay based on rate limit
-      const delayMs = await this._calculateRequiredDelay();
-      if (delayMs > 0) {
-        await this._delay(delayMs);
+    for (const [token, priceID] of tokensToFetch) {
+      // Check if token is already in static prices
+      if (token.toLowerCase() in PriceService.STATIC_PRICES) {
+        prices[token] = PriceService.STATIC_PRICES[token.toLowerCase()];
+        continue;
       }
 
-      await this._processBatch(batch, prices);
-      this.requestTimes.push(Date.now());
-
-      // Clean up old request times
-      const oneMinuteAgo = Date.now() - 60000;
-      this.requestTimes = this.requestTimes.filter(
-        (time) => time > oneMinuteAgo,
-      );
+      // Add to queue if not already there
+      if (!GLOBAL_QUEUE.queue.has(token)) {
+        const promise = new Promise((resolve, reject) => {
+          GLOBAL_QUEUE.queue.set(token, {
+            priceID,
+            resolve,
+            reject,
+            status: "pending",
+            timestamp: Date.now(),
+          });
+        });
+        promises.push(
+          promise.then((price) => {
+            prices[token] = price;
+          }),
+        );
+      } else {
+        // If already in queue, wait for existing promise
+        const queueItem = GLOBAL_QUEUE.queue.get(token);
+        promises.push(
+          new Promise((resolve, reject) => {
+            queueItem.resolve = resolve;
+            queueItem.reject = reject;
+          }).then((price) => {
+            prices[token] = price;
+          }),
+        );
+      }
     }
 
+    await Promise.all(promises);
     return prices;
+  }
+
+  async _processBatch(batch) {
+    const pricePromises = batch.map(async (token) => {
+      const queueItem = GLOBAL_QUEUE.queue.get(token);
+      if (!queueItem) return { token, price: null };
+
+      if (process.env.TEST === "true") {
+        return { token, price: 1 };
+      }
+
+      const price = await this.priceService.fetchPrice(
+        token,
+        queueItem.priceID,
+      );
+      return { token, price };
+    });
+
+    return Promise.all(pricePromises);
   }
 
   _calculateRequiredDelay() {
@@ -203,25 +296,6 @@ class TokenPriceBatcher {
 
   _delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  async _processBatch(batch, prices) {
-    const pricePromises = batch.map(async ([token, priceID]) => {
-      if (process.env.TEST === "true") {
-        return { token, price: 1 };
-      }
-
-      const price = await this.priceService.fetchPrice(token, priceID);
-      return { token, price };
-    });
-
-    const results = await Promise.all(pricePromises);
-
-    results.forEach(({ token, price }) => {
-      if (price !== null) {
-        prices[token] = price;
-      }
-    });
   }
 }
 export { TokenPriceBatcher, PriceService };

@@ -23,7 +23,11 @@ export default function ZapOutTab({
   CHAIN_ID_TO_CHAIN,
   CHAIN_TO_CHAIN_ID,
 }) {
-  const currentChain = chainId?.name?.toLowerCase().replace(" one", "").trim();
+  const currentChain = chainId?.name
+    ?.toLowerCase()
+    .replace(" one", "")
+    .replace(" mainnet", "")
+    .trim();
 
   return (
     <div>
