@@ -288,10 +288,11 @@ export default function TransactionHistory({
                 {renderSingleTransaction(activityItem)}
               </span>{" "}
               <a
-                href={`https://${activityItem.metadata.chain?.replace(
-                  " one",
-                  "",
-                )}.blockscout.com/tx/${activityItem.tx_hash}`}
+                href={`https://${activityItem.metadata.chain
+                  ?.replace(" one", "")
+                  .replace(" mainnet", "timism")}.blockscout.com/tx/${
+                  activityItem.tx_hash
+                }`}
                 target="_blank"
               >
                 tx:{" "}

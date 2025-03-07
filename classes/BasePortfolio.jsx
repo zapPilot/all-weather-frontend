@@ -178,6 +178,7 @@ export class BasePortfolio {
         : data.usdBalance / totalUsdBalance;
       data.weightDiff = currentWeight - data.weight;
       data.currentWeight = currentWeight;
+      data.totalUsdBalance = totalUsdBalance;
 
       this._calculateZapOutPercentage(data, totalUsdBalance);
 
@@ -1139,7 +1140,6 @@ export class BasePortfolio {
         );
         activateStartZapInNode = true;
       }
-
       const protocolTxns = await protocol.interface.zapIn(
         owner,
         metadata.chain,

@@ -51,7 +51,6 @@ describe("Bridge with USDT -> USDC Swap", () => {
 
     // Ensure we got some transactions
     expect(txns.length).toBeGreaterThanOrEqual(2);
-    // console.log("All generated txns:", txns);
 
     // Find the bridging transaction
     const bridgeAddress = "0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64";
@@ -78,9 +77,5 @@ describe("Bridge with USDT -> USDC Swap", () => {
     // 3) Confirm bridging is indeed after the swap
     const bridgeTxn = txns[bridgeIndex];
     expect(bridgeTxn).toBeDefined();
-
-    console.log(
-      "✅ The aggregator swap is right before bridging, USDT -> USDC.",
-    );
   });
 });

@@ -38,7 +38,7 @@ export default function Vaults({ vaults }) {
         const json = await response.json();
         setProtocolName(json.data[1].data[0].pool.name);
       } catch (error) {
-        console.log("failed to fetch pool data", error);
+        console.error("failed to fetch pool data", error);
       }
     };
 

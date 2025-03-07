@@ -28,7 +28,6 @@ export default function RebalanceTab({
   investmentAmount,
   tokenPricesMappingTable,
 }) {
-  console.log("rebalancableUsdBalanceDict", rebalancableUsdBalanceDict);
   const [currentStep, setCurrentStep] = useState(0);
   const calCurrentAPR = (rebalancableUsdBalanceDict) =>
     Object.entries(rebalancableUsdBalanceDict)
@@ -87,7 +86,6 @@ export default function RebalanceTab({
                       type="primary"
                       className="w-full"
                       onClick={async () => {
-                        console.log("data.actionName", data.actionName);
                         handleAAWalletAction(data.actionName, true);
                         // Only increment step if there are more actions
                         await sleep(3000);
