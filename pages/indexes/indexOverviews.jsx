@@ -867,10 +867,18 @@ export default function IndexOverviews() {
       ) {
         setSlippage(3);
       } else {
-        setSlippage(2);
+        // Check if we're on the rebalance tab before setting default slippage
+        if (
+          tabKey &&
+          items.find((item) => item.key === tabKey)?.label === "Rebalance"
+        ) {
+          setSlippage(5);
+        } else {
+          setSlippage(2);
+        }
       }
     }
-  }, [portfolioName, selectedToken]);
+  }, [portfolioName, selectedToken, chainId, tabKey]);
   useEffect(() => {
     console.time("🚀 Portfolio data fetch");
     // Clear states on initial load/refresh
