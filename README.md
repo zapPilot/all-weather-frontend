@@ -83,3 +83,7 @@ need a linter like this one <https://github.com/david30907d/all-weather-scaffold
 2. Update UI of course
 3. Update CHAIN_ID_TO_CHAIN, etc... in general.js
 4. Need to update the gas sponsorship settings on ThirdWeb
+5. check these funcs in indexOverviews.jsx:
+   * `switchNextChain`
+   * `const [chainStatus, setChainStatus]`
+   * `chainMap`

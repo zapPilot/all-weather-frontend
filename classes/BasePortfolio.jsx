@@ -417,12 +417,13 @@ export class BasePortfolio {
     // Handle special pre-processing for specific actions
     if (actionName === "zapIn") {
       if (actionParams.tokenInSymbol === "eth") {
-        const [wethTxn, wethAddress, wethSymbol] = this._wrapNativeToken(
-          actionParams.tokenInSymbol,
-          "deposit",
-          actionParams.zapInAmount,
-          actionParams.chainMetadata,
-        );
+        const [wethTxn, wethAddress, wethSymbol] =
+          this._getWrappedEthTxnAddressSymbol(
+            actionParams.tokenInSymbol,
+            "deposit",
+            actionParams.zapInAmount,
+            actionParams.chainMetadata,
+          );
         actionParams.tokenInSymbol = wethSymbol;
         actionParams.tokenInAddress = wethAddress;
         totalTxns.push(wethTxn);
@@ -433,7 +434,7 @@ export class BasePortfolio {
           ethers.utils.formatUnits(platformFee, actionParams.tokenDecimals) *
           actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol];
         const referrer = await this._getReferrer(actionParams.account);
-        const platformFeeTxns = await this._getPlatformFeeTxns(
+        const platformFeeTxns = this._getPlatformFeeTxns(
           actionParams.tokenInAddress,
           actionParams.chainMetadata,
           platformFee,
@@ -1430,7 +1431,7 @@ export class BasePortfolio {
     txns.push(swapFeeTxn);
     return txns;
   }
-  _wrapNativeToken(tokenSymbol, action, amount, chainMetadata) {
+  _getWrappedEthTxnAddressSymbol(tokenSymbol, action, amount, chainMetadata) {
     let wrappedTokenAddress;
     let wrappedTokenSymbol;
     let wrappedTokenABI;
@@ -1459,6 +1460,8 @@ export class BasePortfolio {
           ? { value: toWei(ethers.utils.formatEther(amount)) }
           : { params: [amount] }),
       }),
+      wrappedTokenAddress,
+      wrappedTokenSymbol,
     ];
   }
   mul_with_slippage_in_bignumber_format(amount, slippage) {
