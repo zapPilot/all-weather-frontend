@@ -417,7 +417,6 @@ export default function IndexOverviews() {
       const investmentAmountAfterFee =
         investmentAmount *
         (1 - portfolioHelper.swapFeeRate()) *
-        (1 - slippage / 100) *
         (1 - slippage / 100);
       const chainWeight = calCrossChainInvestmentAmount(
         chainId?.name
