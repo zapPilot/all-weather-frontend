@@ -10,6 +10,7 @@ import { BaseAerodrome } from "../Aerodrome/BaseAerodrome";
 import { BaseAave } from "../Aave/BaseAave";
 import { BaseAura } from "../Aura/BaseAura";
 import { BaseVelodrome } from "../Velodrome/BaseVelodrome";
+import { Venus } from "../Venus/Venus";
 export class StablecoinVault extends BasePortfolio {
   constructor() {
     super(
@@ -320,6 +321,7 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
+              // weight: 0.125,
               weight: 0,
             },
             // {
@@ -413,6 +415,17 @@ export class StablecoinVault extends BasePortfolio {
                   ],
                 },
               ),
+              weight: 0,
+            },
+            {
+              interface: new Venus("arbitrum", 42161, ["usdc"], "single", {
+                symbolOfBestTokenToZapInOut: "usdc",
+                zapInOutTokenAddress:
+                  "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+                assetAddress: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+                protocolAddress: "0x7d8609f8da70ff9027e9bc5229af4f6727662707",
+                assetDecimals: 6,
+              }),
               weight: 0,
             },
           ],

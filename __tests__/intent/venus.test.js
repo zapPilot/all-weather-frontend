@@ -20,7 +20,7 @@ describe("Venus", () => {
     const setStepName = () => {};
     const setTotalTradingLoss = () => {};
     const setPlatformFee = () => {};
-    
+
     const slippage = 0.5;
     const rebalancableUsdBalanceDict = {};
     const protocolAssetDustInWallet = {};
@@ -50,13 +50,13 @@ describe("Venus", () => {
 
     expect(txns).toBeDefined();
     expect(Array.isArray(txns)).toBe(true);
-    
+
     for (const tx of txns) {
       const data = await tx.data();
       console.log("Transaction data:", data);
 
-      expect(tx).toHaveProperty('to');
-      expect(tx).toHaveProperty('data');
+      expect(tx).toHaveProperty("to");
+      expect(tx).toHaveProperty("data");
       expect(tx.to).toMatch(/^0x[a-fA-F0-9]{40}$/);
       expect(data).toMatch(/^0x[a-fA-F0-9]*$/);
     }
@@ -65,8 +65,8 @@ describe("Venus", () => {
       const firstTx = txns[0];
       const firstTxData = await firstTx.data();
       expect(firstTx.to.toLowerCase()).toBe(tokenAddress.toLowerCase());
-      
-      if (firstTxData.startsWith('0x095ea7b3')) {
+
+      if (firstTxData.startsWith("0x095ea7b3")) {
         expect(firstTxData.length).toBeGreaterThan(10);
       }
     }
@@ -80,20 +80,19 @@ describe("Venus", () => {
     const depositTxData = await depositTx.data();
 
     expect(approveTx.to.toLowerCase()).toBe(tokenAddress.toLowerCase());
-    expect(approveTxData.startsWith('0x095ea7b3')).toBe(true);
+    expect(approveTxData.startsWith("0x095ea7b3")).toBe(true);
 
-    expect(depositTxData.startsWith('0xa0712d68')).toBe(true);
+    expect(depositTxData.startsWith("0xa0712d68")).toBe(true);
 
     console.log({
       approveTx: {
         to: approveTx.to,
-        method: approveTxData.slice(0, 10)
+        method: approveTxData.slice(0, 10),
       },
       depositTx: {
         to: depositTx.to,
-        method: depositTxData.slice(0, 10)
-      }
+        method: depositTxData.slice(0, 10),
+      },
     });
   });
 });
-

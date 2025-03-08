@@ -8,7 +8,7 @@ import { ethers } from "ethers";
 export class Venus extends BaseProtocol {
   constructor(chain, chainId, symbolList, mode, customParams) {
     super(chain, chainId, symbolList, mode, customParams);
-    
+
     this.protocolName = "venus";
     this.protocolVersion = "0";
     this.assetDecimals = customParams.assetDecimals;
@@ -39,12 +39,12 @@ export class Venus extends BaseProtocol {
     this.assetContractInstance = new ethers.Contract(
       customParams.assetAddress,
       Vault,
-      PROVIDER(this.chain)
+      PROVIDER(this.chain),
     );
     this.stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       Vault,
-      PROVIDER(this.chain)
+      PROVIDER(this.chain),
     );
 
     this.symbolOfBestTokenToZapInOut = customParams.symbolOfBestTokenToZapInOut;
@@ -73,17 +73,17 @@ export class Venus extends BaseProtocol {
     await this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-deposit`,
-      0
+      0,
     );
-    
+
     const approveTxn = approve(
       bestTokenAddressToZapIn,
       this.protocolContract.address,
       amountToZapIn,
       updateProgress,
-      this.chainId
+      this.chainId,
     );
-    
+
     const depositTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "mint",
@@ -106,11 +106,16 @@ export class Venus extends BaseProtocol {
       );
 
       const userBalance = await protocolContractInstance.balanceOf(owner);
-      const usdcPrice = tokenPricesMappingTable[this.symbolOfBestTokenToZapInOut] || 1;
+      const usdcPrice =
+        tokenPricesMappingTable[this.symbolOfBestTokenToZapInOut] || 1;
       const exchangeRate = await protocolContractInstance.exchangeRateStored();
 
-      const actualBalance = userBalance.mul(exchangeRate).div(ethers.BigNumber.from(10).pow(18));
-      const balanceInUSDC = parseFloat(ethers.utils.formatUnits(actualBalance, 6));
+      const actualBalance = userBalance
+        .mul(exchangeRate)
+        .div(ethers.BigNumber.from(10).pow(18));
+      const balanceInUSDC = parseFloat(
+        ethers.utils.formatUnits(actualBalance, 6),
+      );
 
       return Number(balanceInUSDC * usdcPrice);
     } catch (error) {
@@ -188,7 +193,7 @@ export class Venus extends BaseProtocol {
       await this._updateProgressAndWait(
         updateProgress,
         `${this.uniqueId()}-withdraw`,
-        0
+        0,
       );
 
       const protocolContractInstance = new ethers.Contract(
@@ -198,7 +203,7 @@ export class Venus extends BaseProtocol {
       );
 
       const balance = await protocolContractInstance.balanceOf(recipient);
-      
+
       const percentageBN = ethers.utils.parseUnits(percentage.toString(), 18);
       const amountToWithdraw = balance
         .mul(percentageBN)
@@ -234,7 +239,7 @@ export class Venus extends BaseProtocol {
     amount,
     slippage,
     tokenPricesMappingTable,
-    updateProgress
+    updateProgress,
   ) {
     await super._withdrawAndClaim(
       owner,
@@ -282,4 +287,3 @@ export class Venus extends BaseProtocol {
     ];
   }
 }
-
