@@ -10,20 +10,27 @@ export class PortfolioFlowChartBuilder {
   }
 
   _buildStandardFlowChart(actionName, actionParams, flowChartData, chainNodes) {
+    const chainSet = new Set();
     for (const [category, protocolsInThisCategory] of Object.entries(
       this.portfolio.strategy,
     )) {
       for (const [chain, protocolsOnThisChain] of Object.entries(
         protocolsInThisCategory,
       )) {
-        const chainNode = {
-          id: chain,
-          name: actionName,
-          chain: chain,
-          category: category,
-          imgSrc: `/chainPicturesWebp/${chain}.webp`,
-        };
-        chainNodes.push(chainNode);
+        let chainNode;
+        if (!chainSet.has(chain)) {
+          chainSet.add(chain);
+          chainNode = {
+            id: chain,
+            name: actionName,
+            chain: chain,
+            category: category,
+            imgSrc: `/chainPicturesWebp/${chain}.webp`,
+          };
+          chainNodes.push(chainNode);
+        } else {
+          chainNode = chainNodes.find((node) => node.id === chain);
+        }
 
         for (const protocol of protocolsOnThisChain) {
           let stepsData = [];

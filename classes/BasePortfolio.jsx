@@ -14,6 +14,7 @@ import { toWei } from "thirdweb/utils";
 import { TokenPriceBatcher, PriceService } from "./TokenPriceService";
 import swap from "../utils/swapHelper";
 import { PortfolioFlowChartBuilder } from "./PortfolioFlowChartBuilder";
+
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 
@@ -37,6 +38,7 @@ export class BasePortfolio {
     this.bridgeUsdThreshold = 10;
     this.flowChartBuilder =
       flowChartBuilder || new PortfolioFlowChartBuilder(this);
+    this.validateStrategyWeights();
   }
 
   description() {
