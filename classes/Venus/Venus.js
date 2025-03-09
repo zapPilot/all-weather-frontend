@@ -12,6 +12,8 @@ export class Venus extends BaseProtocol {
     this.protocolName = "venus";
     this.protocolVersion = "0";
     this.assetDecimals = customParams.assetDecimals;
+    this.percentagePrecision = 18;
+    this.exchangeRatePrecision = 18;
 
     if (!customParams.assetAddress) {
       throw new Error("Asset address is required");
@@ -104,20 +106,19 @@ export class Venus extends BaseProtocol {
         Vault,
         PROVIDER(this.chain),
       );
-
       const userBalance = await protocolContractInstance.balanceOf(owner);
-      const usdcPrice =
-        tokenPricesMappingTable[this.symbolOfBestTokenToZapInOut] || 1;
       const exchangeRate = await protocolContractInstance.exchangeRateStored();
-
       const actualBalance = userBalance
         .mul(exchangeRate)
-        .div(ethers.BigNumber.from(10).pow(18));
-      const balanceInUSDC = parseFloat(
-        ethers.utils.formatUnits(actualBalance, 6),
-      );
+        .div(ethers.BigNumber.from(10).pow(this.exchangeRatePrecision));
+      const balanceInUSDCStr = ethers.utils.formatUnits(actualBalance, this.assetDecimals);
+      const balanceInUSDC = Number(
+        ethers.utils.parseUnits(balanceInUSDCStr, this.assetDecimals).toString()
+      ) / Math.pow(10, this.assetDecimals);
+      const usdcPrice = tokenPricesMappingTable[this.symbolOfBestTokenToZapInOut] || 1;
+      
+      return balanceInUSDC * usdcPrice;
 
-      return Number(balanceInUSDC * usdcPrice);
     } catch (error) {
       console.error("Error in usdBalanceOf:", error);
       return 0;
@@ -135,22 +136,24 @@ export class Venus extends BaseProtocol {
       PROVIDER(this.chain),
     );
     const exchangeRate = await protocolContractInstance.exchangeRateStored();
-    const vusdPrice = exchangeRate.div(ethers.BigNumber.from(10).pow(18));
+    const priceStr = ethers.utils.formatUnits(exchangeRate, this.exchangeRatePrecision);
+    const vusdPrice = Number(
+      ethers.utils.parseUnits(priceStr, this.exchangeRatePrecision).toString()
+    ) / Math.pow(10, this.exchangeRatePrecision);
 
     return vusdPrice;
   }
+  
   async stakeBalanceOf(owner) {
     return ethers.BigNumber.from(0);
   }
 
   _getTheBestTokenAddressToZapIn(inputToken, tokenAddress, InputTokenDecimals) {
-    const usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
-    return ["usdc", usdcAddress, 6];
+    return [inputToken, this.zapInOutTokenAddress, this.assetDecimals];
   }
 
   _getTheBestTokenAddressToZapOut() {
-    const usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
-    return ["usdc", usdcAddress, 6];
+    return [this.symbolOfBestTokenToZapInOut, this.zapInOutTokenAddress, this.assetDecimals];
   }
 
   async lockUpPeriod() {
@@ -164,9 +167,8 @@ export class Venus extends BaseProtocol {
 
   async _unstake(owner, percentage, updateProgress) {
     await super._unstake(owner, percentage, updateProgress);
-    const percentagePrecision = 18;
     const percentageStr = percentage
-      .toFixed(percentagePrecision)
+      .toFixed(this.percentagePrecision)
       .replace(".", "");
     const percentageBN = ethers.BigNumber.from(percentageStr);
     const protocolContractInstance = new ethers.Contract(
@@ -177,7 +179,7 @@ export class Venus extends BaseProtocol {
     const assetAmount = await protocolContractInstance.balanceOf(owner);
     const withdrawAmount = assetAmount
       .mul(percentageBN)
-      .div(ethers.BigNumber.from("10").pow(percentagePrecision));
+      .div(ethers.BigNumber.from("10").pow(this.percentagePrecision));
 
     return [[], withdrawAmount];
   }
@@ -204,10 +206,13 @@ export class Venus extends BaseProtocol {
 
       const balance = await protocolContractInstance.balanceOf(recipient);
 
-      const percentageBN = ethers.utils.parseUnits(percentage.toString(), 18);
+      const percentageBN = ethers.utils.parseUnits(
+        percentage.toString(),
+        this.percentagePrecision,
+      );
       const amountToWithdraw = balance
         .mul(percentageBN)
-        .div(ethers.BigNumber.from(10).pow(18));
+        .div(ethers.BigNumber.from(10).pow(this.percentagePrecision));
 
       const redeemTxn = prepareContractCall({
         contract: this.protocolContract,
@@ -267,11 +272,14 @@ export class Venus extends BaseProtocol {
       PROVIDER(this.chain),
     );
 
-    const balance = await protocolContractInstance.balanceOf(recipient);
-    const percentageBN = ethers.utils.parseUnits(percentage.toString(), 18);
+    const balance = await protocolContractInstance.balanceOf(owner);
+    const percentageBN = ethers.utils.parseUnits(
+      percentage.toString(),
+      this.percentagePrecision,
+    );
     const amountToWithdraw = balance
       .mul(percentageBN)
-      .div(ethers.BigNumber.from(10).pow(18));
+      .div(ethers.BigNumber.from(10).pow(this.percentagePrecision));
     const burnTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "redeem",
