@@ -10,6 +10,7 @@ import { AllWeatherVault } from "../classes/Vaults/AllWeatherVault";
 import { MetisVault } from "../classes/Vaults/MetisVault";
 import { CamelotVault } from "../classes/Vaults/Tests/CamelotVault";
 import { AerodromeVault } from "../classes/Vaults/Tests/AerodromeVault";
+import { VenusStablecoinVault } from "../classes/Vaults/Tests/VenusVault";
 import { VelaVault } from "../classes/Vaults/VelaVault";
 export function getPortfolioHelper(
   portfolioName: string,
@@ -41,6 +42,8 @@ export function getPortfolioHelper(
     portfolioHelper = new CamelotVault();
   } else if (portfolioName === "Aerodrome Vault") {
     portfolioHelper = new AerodromeVault();
+  } else if (portfolioName === "Venus Stablecoin Vault") {
+    portfolioHelper = new VenusStablecoinVault();
   } else if (portfolioName === "Vela Vault (Deprecated)") {
     portfolioHelper = new VelaVault();
   } else {

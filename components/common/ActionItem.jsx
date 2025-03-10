@@ -44,9 +44,9 @@ const ActionItem = ({
             >
               {!chainStatus[chain] && (
                 <div className="absolute -top-2">
-                  <span class="relative flex size-3">
-                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-                    <span class="relative inline-flex size-3 rounded-full bg-red-500"></span>
+                  <span className="relative flex size-3">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex size-3 rounded-full bg-red-500"></span>
                   </span>
                 </div>
               )}
