@@ -111,14 +111,20 @@ export class Venus extends BaseProtocol {
       const actualBalance = userBalance
         .mul(exchangeRate)
         .div(ethers.BigNumber.from(10).pow(this.exchangeRatePrecision));
-      const balanceInUSDCStr = ethers.utils.formatUnits(actualBalance, this.assetDecimals);
-      const balanceInUSDC = Number(
-        ethers.utils.parseUnits(balanceInUSDCStr, this.assetDecimals).toString()
-      ) / Math.pow(10, this.assetDecimals);
-      const usdcPrice = tokenPricesMappingTable[this.symbolOfBestTokenToZapInOut] || 1;
-      
-      return balanceInUSDC * usdcPrice;
+      const balanceInUSDCStr = ethers.utils.formatUnits(
+        actualBalance,
+        this.assetDecimals,
+      );
+      const balanceInUSDC =
+        Number(
+          ethers.utils
+            .parseUnits(balanceInUSDCStr, this.assetDecimals)
+            .toString(),
+        ) / Math.pow(10, this.assetDecimals);
+      const usdcPrice =
+        tokenPricesMappingTable[this.symbolOfBestTokenToZapInOut] || 1;
 
+      return balanceInUSDC * usdcPrice;
     } catch (error) {
       console.error("Error in usdBalanceOf:", error);
       return 0;
@@ -136,14 +142,20 @@ export class Venus extends BaseProtocol {
       PROVIDER(this.chain),
     );
     const exchangeRate = await protocolContractInstance.exchangeRateStored();
-    const priceStr = ethers.utils.formatUnits(exchangeRate, this.exchangeRatePrecision);
-    const vusdPrice = Number(
-      ethers.utils.parseUnits(priceStr, this.exchangeRatePrecision).toString()
-    ) / Math.pow(10, this.exchangeRatePrecision);
+    const priceStr = ethers.utils.formatUnits(
+      exchangeRate,
+      this.exchangeRatePrecision,
+    );
+    const vusdPrice =
+      Number(
+        ethers.utils
+          .parseUnits(priceStr, this.exchangeRatePrecision)
+          .toString(),
+      ) / Math.pow(10, this.exchangeRatePrecision);
 
     return vusdPrice;
   }
-  
+
   async stakeBalanceOf(owner) {
     return ethers.BigNumber.from(0);
   }
@@ -153,7 +165,11 @@ export class Venus extends BaseProtocol {
   }
 
   _getTheBestTokenAddressToZapOut() {
-    return [this.symbolOfBestTokenToZapInOut, this.zapInOutTokenAddress, this.assetDecimals];
+    return [
+      this.symbolOfBestTokenToZapInOut,
+      this.zapInOutTokenAddress,
+      this.assetDecimals,
+    ];
   }
 
   async lockUpPeriod() {
