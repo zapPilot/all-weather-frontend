@@ -205,7 +205,6 @@ export class Venus extends BaseProtocol {
       );
 
       const balance = await protocolContractInstance.balanceOf(recipient);
-
       const percentageBN = ethers.utils.parseUnits(
         percentage.toString(),
         this.percentagePrecision,
