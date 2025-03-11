@@ -307,39 +307,26 @@ export class StablecoinVault extends BaseVault {
                     priceId: {
                       coinmarketcapApiId: 11841,
                     },
-                    {
-                      symbol: "cvx",
-                      priceId: {
-                        coinmarketcapApiId: 9903,
-                      },
-                      address: "0xaAFcFD42c9954C6689ef1901e03db742520829c5",
-                      decimals: 18,
-                    },
-                    {
-                      symbol: "arb",
-                      priceId: {
-                        coinmarketcapApiId: 11841,
-                      },
-                      address: "0x912CE59144191C1204E64559FE8253a0e49E6548",
-                      decimals: 18,
-                    },
-                  ],
-                },
-              ),
-              weight: 0,
-            },
-            {
-              interface: new Venus("arbitrum", 42161, ["usdc"], "single", {
-                symbolOfBestTokenToZapInOut: "usdc",
-                zapInOutTokenAddress:
-                  "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-                assetAddress: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-                protocolAddress: "0x7d8609f8da70ff9027e9bc5229af4f6727662707",
-                assetDecimals: 6,
-              }),
-              weight: 0,
-            },
-          ],
+                    address: "0x912CE59144191C1204E64559FE8253a0e49E6548",
+                    decimals: 18,
+                  },
+                ],
+              },
+            ),
+            weight: 0,
+          },
+          {
+            interface: new Venus("arbitrum", 42161, ["usdc"], "single", {
+              symbolOfBestTokenToZapInOut: "usdc",
+              zapInOutTokenAddress:
+                "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+              assetAddress: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+              protocolAddress: "0x7d8609f8da70ff9027e9bc5229af4f6727662707",
+              assetDecimals: 6,
+            }),
+            weight: 0,
+          }
+        ],
 
         base: [
           {
