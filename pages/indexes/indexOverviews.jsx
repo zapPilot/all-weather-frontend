@@ -1160,6 +1160,7 @@ export default function IndexOverviews() {
     availableAssetChains,
     chainStatus,
     onRefresh: handleRefresh,
+    lockUpPeriod,
   };
 
   const items = useTabItems({

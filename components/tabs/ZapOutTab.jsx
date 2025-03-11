@@ -1,7 +1,7 @@
 import { Button } from "antd";
 import DecimalStep from "../../pages/indexes/DecimalStep";
 import ConfiguredConnectButton from "../../pages/ConnectButton";
-import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import { formatLockUpPeriod } from "../../utils/general";
 import ActionItem from "../common/ActionItem";
 
 export default function ZapOutTab({
@@ -22,6 +22,7 @@ export default function ZapOutTab({
   switchChain,
   CHAIN_ID_TO_CHAIN,
   CHAIN_TO_CHAIN_ID,
+  lockUpPeriod,
 }) {
   const currentChain = chainId?.name
     ?.toLowerCase()
@@ -89,10 +90,13 @@ export default function ZapOutTab({
           disabled={
             usdBalance < 0.01 ||
             zapOutPercentage === 0 ||
-            selectedToken?.split("-")[0].toLowerCase() === "eth"
+            selectedToken?.split("-")[0].toLowerCase() === "eth" ||
+            lockUpPeriod > 0
           }
         >
-          Withdraw
+          {lockUpPeriod > 0
+            ? `Withdraw (unlocks in ${formatLockUpPeriod(lockUpPeriod)})`
+            : "Withdraw"}
         </Button>
       )}
     </div>

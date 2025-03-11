@@ -219,3 +219,12 @@ export function truncateToFixed(num, precision) {
   const factor = Math.pow(10, precision); // e.g., 10^2 = 100 for 2 decimal places
   return Math.floor(num * factor) / factor;
 }
+
+export function formatLockUpPeriod(lockUpPeriod) {
+  if (lockUpPeriod === 0) {
+    return "Unlocked";
+  }
+  return `${Math.floor(lockUpPeriod / 86400)} d ${Math.ceil(
+    (lockUpPeriod % 86400) / 3600,
+  )} h`;
+}
