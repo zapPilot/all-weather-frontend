@@ -325,7 +325,7 @@ export class StablecoinVault extends BaseVault {
               assetDecimals: 6,
             }),
             weight: 0,
-          }
+          },
         ],
 
         base: [
