@@ -25,7 +25,7 @@ vi.mock("next/router", async () => {
   return {
     ...actual,
     useRouter: () => ({
-      query: { portfolioName: "Stablecoin Vault" },
+      query: { portfolioName: "Stable+ Vault" },
     }),
   };
 });
@@ -37,7 +37,7 @@ vi.mock("react-redux", async () => {
     ...actual,
     useSelector: vi.fn(() => ({
       strategyMetadata: {
-        "Stablecoin Vault": {
+        "Stable+ Vault": {
           portfolioAPR: 0.05,
         },
       },
@@ -121,7 +121,7 @@ describe("IndexOverviews Component", () => {
     render(<IndexOverviews />);
     const vault = await screen.findByRole("vault");
     // Check if the vault name is correct
-    expect(vault.textContent).toBe("Stablecoin Vault");
+    expect(vault.textContent).toBe("Stable+ Vault");
     const indexesAprElements = await screen.findAllByRole("apr");
     indexesAprElements.forEach((element) => {
       // Check if the APR is correct
@@ -142,7 +142,7 @@ describe("IndexOverviews Component", () => {
           loading: false,
           error: null,
           strategyMetadata: {
-            "Stablecoin Vault": {
+            "Stable+ Vault": {
               portfolioAPR: 0.05,
             },
           },

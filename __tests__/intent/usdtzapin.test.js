@@ -16,7 +16,7 @@ const onlyThisChain = false; // Must be false so bridging can occur
 describe("Bridge with USDT -> USDC Swap", () => {
   it("should swap right before bridging if input is USDT", async () => {
     const userAddress = "0x9eAe6086a8dE7D665FEB17e19853e68738e0Bd5C";
-    const portfolioHelper = getPortfolioHelper("Stablecoin Vault");
+    const portfolioHelper = getPortfolioHelper("Stable+ Vault");
 
     const actionName = "zapIn";
     const tokenInSymbol = "usdt";

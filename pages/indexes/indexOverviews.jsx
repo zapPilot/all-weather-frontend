@@ -819,7 +819,7 @@ export default function IndexOverviews() {
       <br />
       Click{" "}
       <Link
-        href="https://all-weather-protocol.gitbook.io/all-weather-protocol/vault-strategy/stablecoin-vault"
+        href="https://all-weather-protocol.gitbook.io/all-weather-protocol/vault-strategy/stable+-vault"
         target="_blank"
         className="text-blue-400"
       >
@@ -858,7 +858,7 @@ export default function IndexOverviews() {
       const selectedTokenSymbol = selectedToken?.toLowerCase()?.split("-")[0];
       if (
         (selectedTokenSymbol === "eth" || selectedTokenSymbol === "weth") &&
-        portfolioName === "Stablecoin Vault"
+        portfolioName === "Stable+ Vault"
       ) {
         setSlippage(3);
       } else if (

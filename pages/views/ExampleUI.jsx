@@ -39,13 +39,15 @@ export default function ExampleUI() {
     },
     {
       id: 2,
-      portfolioName: "Stablecoin Vault",
-      href: "/indexes/indexOverviews/?portfolioName=Stablecoin+Vault",
+      portfolioName: "Stable+ Vault",
+      href: `/indexes/indexOverviews/?portfolioName=${encodeURIComponent(
+        "Stable+ Vault",
+      )}`,
       imageSrc: "usdc",
-      imageAlt: "Stablecoin Vault",
-      apr: strategyMetadata?.["Stablecoin Vault"]?.portfolioAPR * 100,
-      tvl: strategyMetadata?.["Stablecoin Vault"]?.portfolioTVL,
-      portfolioHelper: getPortfolioHelper("Stablecoin Vault"),
+      imageAlt: "Stable+ Vault",
+      apr: strategyMetadata?.["Stable+ Vault"]?.portfolioAPR * 100,
+      tvl: strategyMetadata?.["Stable+ Vault"]?.portfolioTVL,
+      portfolioHelper: getPortfolioHelper("Stable+ Vault"),
     },
     {
       id: 3,
@@ -69,12 +71,6 @@ export default function ExampleUI() {
       tvl: strategyMetadata?.["Metis Vault"]?.portfolioTVL,
       portfolioHelper: getPortfolioHelper("Metis Vault"),
     },
-    {
-      id: 4,
-      portfolioName: "Vela Vault (Deprecated)",
-      href: "/indexes/indexOverviews/?portfolioName=Vela+Vault+(Deprecated)",
-      imageSrc: "vela",
-    },
   ];
   const maxAPREntry = Object.entries(strategyMetadata).reduce(
     (max, [key, strategy]) => {
@@ -84,8 +80,6 @@ export default function ExampleUI() {
     { key: "", apr: -Infinity },
   );
 
-  const maxAPR = maxAPREntry.apr.toFixed(2);
-  const portfolioName = maxAPREntry.key.replace(" ", "+");
   const router = useRouter();
 
   const { query } = router;
@@ -142,11 +136,11 @@ export default function ExampleUI() {
               >
                 {" "}
                 {strategyLoading ||
-                isNaN(strategyMetadata["Stablecoin Vault"]?.portfolioAPR) ? (
+                isNaN(strategyMetadata["Stable+ Vault"]?.portfolioAPR) ? (
                   <Spin />
                 ) : (
                   (
-                    strategyMetadata["Stablecoin Vault"]?.portfolioAPR * 100
+                    strategyMetadata["Stable+ Vault"]?.portfolioAPR * 100
                   ).toFixed(2)
                 )}
                 %{" "}

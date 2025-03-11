@@ -8,25 +8,10 @@ export class AllWeatherVault extends BaseVault {
     const stablecoinVault = new StablecoinVault();
     const strategies = {
       gold: {
-        arbitrum: [
-          {
-            interface: new ApolloX20240806(
-              "arbitrum",
-              42161,
-              ["btc", "dai", "eth", "usdc(bridged)", "usdt"],
-              "single",
-              {
-                stakeFarmContractAddress:
-                  "0xD2e71125ec0313874d578454E28086fba7444c0c",
-              },
-            ),
-            weight: 0.5,
-          },
-        ],
         imports: [
           {
             strategy: stablecoinVault.strategy.gold,
-            weight: 0.5,
+            weight: 1,
           },
         ],
       },

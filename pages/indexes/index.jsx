@@ -57,14 +57,6 @@ export default function Vaults({ vaults }) {
               <div className="flex justify-between">
                 <h2 className="text-xl text-white me-2">
                   <span>{product.portfolioName}</span>
-                  {product.portfolioName === "Build Your Own Vault with" &&
-                    protocolName !== "" && (
-                      <img
-                        alt={protocolName}
-                        src={`/projectPictures/${protocolName}.webp`}
-                        className="h-8 inline-block rounded-full ms-2"
-                      />
-                    )}
                 </h2>
                 <ImageWithFallback
                   className="h-8 w-auto rounded-full"
