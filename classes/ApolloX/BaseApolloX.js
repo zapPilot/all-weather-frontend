@@ -34,7 +34,7 @@ export class BaseApolloX extends BaseProtocol {
     this.stakeFarmContract = getContract({
       client: THIRDWEB_CLIENT,
       // PancakeSwap Stake would change this address from time to time
-      address: customParams.stakeFarmContractAddress,
+      address: "0xD2e71125ec0313874d578454E28086fba7444c0c",
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: SmartChefInitializable,
     });
@@ -53,6 +53,8 @@ export class BaseApolloX extends BaseProtocol {
     ];
   }
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
+    // NOTE: we don't have stake farm reward for now
+    return {};
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       SmartChefInitializable,
@@ -95,10 +97,9 @@ export class BaseApolloX extends BaseProtocol {
     const latestPrice = await this._fetchAlpPrice(updateProgress);
     // on Arbitrum, we don't stake and then put ALP to pancakeswap for higher APY
     const estimatedAlpAmount =
-      ((tokenPricesMappingTable[inputToken] * amountToZapIn) /
-        Math.pow(10, bestTokenToZapInDecimal) /
-        latestPrice) *
-      Math.pow(10, this.assetDecimals);
+      (tokenPricesMappingTable[inputToken] * amountToZapIn) /
+      Math.pow(10, bestTokenToZapInDecimal) /
+      latestPrice;
     const minAlpAmount = Math.floor(
       (estimatedAlpAmount * (100 - slippage)) / 100,
     );
@@ -106,9 +107,12 @@ export class BaseApolloX extends BaseProtocol {
       contract: this.protocolContract,
       method: "mintAlp", // <- this gets inferred from the contract
       params: [bestTokenAddressToZapIn, amountToZapIn, minAlpAmount, false],
+      // params: [bestTokenAddressToZapIn, amountToZapIn, 0, false],
     });
-    const stakeTxns = await this._stake(minAlpAmount, updateProgress);
-    return [approveForZapInTxn, mintTxn, ...stakeTxns];
+    return [approveForZapInTxn, mintTxn];
+    // NOTE: we don't have stake farm reward for now
+    // const stakeTxns = await this._stake(minAlpAmount, updateProgress);
+    // return [approveForZapInTxn, mintTxn, ...stakeTxns];
   }
   async customWithdrawAndClaim(
     owner,
@@ -117,11 +121,12 @@ export class BaseApolloX extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    const [unstakeTxns, amount] = await this._unstake(
-      owner,
-      percentage,
-      updateProgress,
-    );
+    // const [unstakeTxns, amount] = await this._unstake(
+    //   owner,
+    //   percentage,
+    //   updateProgress,
+    // );
+    const amount = userInfo.amount.mul(percentageBN).div(10000);
     const approveAlpTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,

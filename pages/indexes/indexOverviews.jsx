@@ -720,11 +720,14 @@ export default function IndexOverviews() {
     .replace(" mainnet", "")
     .trim();
   // get all available chains
-  const availableAssetChains = Object.entries(
-    portfolioHelper?.strategy || {},
-  ).flatMap(([category, protocols]) =>
-    Object.entries(protocols).map(([chain, protocolArray]) => chain),
-  );
+  const availableAssetChains = [
+    ...new Set(
+      Object.entries(portfolioHelper?.strategy || {}).flatMap(
+        ([category, protocols]) =>
+          Object.entries(protocols).map(([chain, protocolArray]) => chain),
+      ),
+    ),
+  ];
   // get chain status
   const [chainStatus, setChainStatus] = useState({
     base: false,
