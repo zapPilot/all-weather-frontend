@@ -121,12 +121,17 @@ export class BaseApolloX extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    // const [unstakeTxns, amount] = await this._unstake(
-    //   owner,
-    //   percentage,
-    //   updateProgress,
-    // );
-    const amount = userInfo.amount.mul(percentageBN).div(10000);
+    const assetContractInstance = new ethers.Contract(
+      this.assetContract.address,
+      ERC20_ABI,
+      PROVIDER(this.chain),
+    );
+    const percentagePrecision = 10000;
+    const percentageBN = ethers.BigNumber.from(
+      BigInt(Math.floor(percentage * percentagePrecision)),
+    );
+    const balance = await assetContractInstance.balanceOf(owner);
+    const amount = balance.mul(percentageBN).div(percentagePrecision);
     const approveAlpTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
@@ -161,17 +166,19 @@ export class BaseApolloX extends BaseProtocol {
     ];
   }
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
-    const pendingRewards = await this.pendingRewards(
-      owner,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    const claimTxn = prepareContractCall({
-      contract: this.stakeFarmContract,
-      method: "deposit",
-      params: [0],
-    });
-    return [[claimTxn], pendingRewards];
+    return [[], {}];
+    // NOTE: the rewardings campaign is not available for now
+    // const pendingRewards = await this.pendingRewards(
+    //   owner,
+    //   tokenPricesMappingTable,
+    //   updateProgress,
+    // );
+    // const claimTxn = prepareContractCall({
+    //   contract: this.stakeFarmContract,
+    //   method: "deposit",
+    //   params: [0],
+    // });
+    // return [[claimTxn], pendingRewards];
   }
 
   async usdBalanceOf(owner, tokenPricesMappingTable) {
