@@ -147,7 +147,9 @@ export default function ExampleUI() {
               APR
             </p>
             <Link
-              href={`/indexes/indexOverviews?portfolioName=Stablecoin+Vault`}
+              href={`/indexes/indexOverviews?portfolioName=${encodeURIComponent(
+                "Stable+ Vault",
+              )}`}
             >
               <button
                 type="button"
