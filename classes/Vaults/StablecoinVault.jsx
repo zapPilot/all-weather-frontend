@@ -1,7 +1,4 @@
-import { BasePortfolio } from "../BasePortfolio";
-import { ApolloX20240806 } from "../ApolloX/ApolloX20240806";
-import { ApolloX20240813 } from "../ApolloX/ApolloX20240813";
-import { ApolloX20240820 } from "../ApolloX/ApolloX20240820";
+import { BaseApolloX } from "../ApolloX/BaseApolloX";
 import { Vela } from "../Vela/Vela";
 import { BaseConvex } from "../Convex/BaseConvex";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
@@ -17,6 +14,16 @@ export class StablecoinVault extends BaseVault {
     const strategies = {
       gold: {
         arbitrum: [
+          {
+            interface: new BaseApolloX(
+              "arbitrum",
+              42161,
+              ["btc", "dai", "eth", "usdc(bridged)", "usdt"],
+              "single",
+              {},
+            ),
+            weight: 0.7,
+          },
           {
             interface: new Vela(
               "arbitrum",
@@ -76,7 +83,7 @@ export class StablecoinVault extends BaseVault {
                 pidOfEquilibria: 59,
               },
             ),
-            weight: 0.34,
+            weight: 0.1,
           },
           {
             interface: new BaseEquilibria(
@@ -392,7 +399,7 @@ export class StablecoinVault extends BaseVault {
                 ],
               },
             ),
-            weight: 0.33,
+            weight: 0.1,
           },
           {
             interface: new BaseEquilibria(
@@ -434,7 +441,7 @@ export class StablecoinVault extends BaseVault {
                 },
               ],
             }),
-            weight: 0.33,
+            weight: 0.1,
           },
           {
             interface: new BaseVelodrome("op", 10, ["usdc", "msusd"], "LP", {
@@ -465,6 +472,6 @@ export class StablecoinVault extends BaseVault {
     const weightMapping = {
       gold: 1,
     };
-    super(strategies, weightMapping, "Stablecoin Vault");
+    super(strategies, weightMapping, "Stable+ Vault");
   }
 }

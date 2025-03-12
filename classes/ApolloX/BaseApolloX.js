@@ -121,12 +121,17 @@ export class BaseApolloX extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    // const [unstakeTxns, amount] = await this._unstake(
-    //   owner,
-    //   percentage,
-    //   updateProgress,
-    // );
-    const amount = userInfo.amount.mul(percentageBN).div(10000);
+    const assetContractInstance = new ethers.Contract(
+      this.assetContract.address,
+      ERC20_ABI,
+      PROVIDER(this.chain),
+    );
+    const percentagePrecision = 10000;
+    const percentageBN = ethers.BigNumber.from(
+      BigInt(Math.floor(percentage * percentagePrecision)),
+    );
+    const balance = await assetContractInstance.balanceOf(owner);
+    const amount = balance.mul(percentageBN).div(percentagePrecision);
     const approveAlpTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
@@ -161,17 +166,19 @@ export class BaseApolloX extends BaseProtocol {
     ];
   }
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
-    const pendingRewards = await this.pendingRewards(
-      owner,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    const claimTxn = prepareContractCall({
-      contract: this.stakeFarmContract,
-      method: "deposit",
-      params: [0],
-    });
-    return [[claimTxn], pendingRewards];
+    return [[], {}];
+    // NOTE: the rewardings campaign is not available for now
+    // const pendingRewards = await this.pendingRewards(
+    //   owner,
+    //   tokenPricesMappingTable,
+    //   updateProgress,
+    // );
+    // const claimTxn = prepareContractCall({
+    //   contract: this.stakeFarmContract,
+    //   method: "deposit",
+    //   params: [0],
+    // });
+    // return [[claimTxn], pendingRewards];
   }
 
   async usdBalanceOf(owner, tokenPricesMappingTable) {
@@ -215,8 +222,39 @@ export class BaseApolloX extends BaseProtocol {
     const usdcBridgedAddress = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8";
     return ["usdc.e", usdcBridgedAddress, 6];
   }
-  async lockUpPeriod() {
-    return 0;
+  async lockUpPeriod(address) {
+    try {
+      if (!address || !ethers.utils.isAddress(address)) {
+        throw new Error("Invalid address");
+      }
+
+      const protocolContractInstance = new ethers.Contract(
+        this.protocolContract.address,
+        ApolloXABI,
+        PROVIDER(this.chain),
+      );
+
+      const lastMintedTimestamp =
+        await protocolContractInstance.lastMintedTimestamp(address);
+      // Return 0 if user has never minted
+      if (lastMintedTimestamp.eq(0)) {
+        return 0;
+      }
+
+      const coolingDuration = await protocolContractInstance.coolingDuration();
+      const currentTimestamp = Math.floor(Date.now() / 1000);
+
+      // Convert BigNumber to number for arithmetic
+      const unlockTimestamp =
+        lastMintedTimestamp.toNumber() + coolingDuration.toNumber();
+      if (unlockTimestamp > currentTimestamp) {
+        return unlockTimestamp - currentTimestamp;
+      }
+      return 0;
+    } catch (error) {
+      console.error("Error fetching lock-up period:", error);
+      return 0;
+    }
   }
   async _stake(amount, updateProgress) {
     const approveAlpTxn = approve(
