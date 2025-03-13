@@ -737,7 +737,7 @@ export class BasePortfolio {
       .toLowerCase()
       .replace(" one", "")
       .replace(" mainnet", "");
-    const middleTokenConfig = this._getRebalanceMiddleTokenConfig(currentChain);
+    const middleTokenConfig = this._getRebalanceMiddleTokenConfig(currentChain, false);
 
     // Run bridge initialization and protocol filtering in parallel
     const [bridge, rebalancableUsdBalanceDictOnThisChain] = await Promise.all([
@@ -828,7 +828,7 @@ export class BasePortfolio {
       const bridgeUsd =
         Number(bridgeAmount.toString()) *
         tokenPricesMappingTable[
-          this._getRebalanceMiddleTokenConfig(currentChain).symbol
+          this._getRebalanceMiddleTokenConfig(currentChain, true).symbol
         ];
       if (bridgeUsd < this.bridgeUsdThreshold) return [];
 
@@ -836,8 +836,8 @@ export class BasePortfolio {
         owner,
         chainMetadata.id,
         CHAIN_TO_CHAIN_ID[chain],
-        this._getRebalanceMiddleTokenConfig(currentChain).address,
-        this._getRebalanceMiddleTokenConfig(chain).address,
+        this._getRebalanceMiddleTokenConfig(currentChain, true).address,
+        this._getRebalanceMiddleTokenConfig(chain, true).address,
         bridgeAmount,
         updateProgress,
       );
@@ -852,7 +852,14 @@ export class BasePortfolio {
     return [...initialTxns, ...bridgeTxnsArrays.flat()];
   }
 
-  _getRebalanceMiddleTokenConfig(chain) {
+  _getRebalanceMiddleTokenConfig(chain, forBridge) {
+    if (forBridge) {
+      return {
+        symbol: "usdc",
+        address: TOKEN_ADDRESS_MAP["usdc"][chain],
+        decimals: 6,
+      };
+    }
     if (this.constructor.name === "StablecoinVault") {
       return {
         symbol: "usdc",
@@ -866,11 +873,20 @@ export class BasePortfolio {
         decimals: 18,
       };
     } else if (this.constructor.name === "AllWeatherVault") {
-      return {
-        symbol: "weth",
-        address: TOKEN_ADDRESS_MAP["weth"][chain],
-        decimals: 18,
-      };
+      if (chain === "arbitrum" || chain === "polygon") {
+        return {
+          symbol: "weth",
+          address: TOKEN_ADDRESS_MAP["weth"][chain],
+          decimals: 18,
+        };
+
+      } else {
+        return  {
+          symbol: "usdc",
+          address: TOKEN_ADDRESS_MAP["usdc"][chain],
+          decimals: 6,
+        };
+      }
     }
     return {
       symbol: "usdc",
