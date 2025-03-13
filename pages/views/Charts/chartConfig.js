@@ -33,12 +33,6 @@ export const CHART_CONFIGS = {
       const data = await response.json();
       const sortedData = sortByDate(data);
       const dailyDiffs = calculateDailyDifferences(sortedData);
-      console.log(
-        "dailyDiffs",
-        dailyDiffs,
-        "stddev",
-        calculateStdDevFilter(dailyDiffs, "pnl"),
-      );
       return calculateStdDevFilter(dailyDiffs, "pnl");
     },
     calculateTitle: (data) => {
@@ -62,16 +56,6 @@ export const CHART_CONFIGS = {
       );
 
       if (validROIs.length === 0) return "Daily ROI (Avg: 0%)";
-
-      // Debug information
-      console.log(
-        "Sample of ROIs:",
-        validROIs.slice(0, 5).map((item) => ({
-          date: item.date,
-          roi: item.roi,
-          principal: item.principal,
-        })),
-      );
 
       // Calculate weighted average
       const totalWeight = validROIs.reduce(

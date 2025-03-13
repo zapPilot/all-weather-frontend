@@ -16,7 +16,7 @@ const onlyThisChain = false; // Must be false so bridging can occur
 describe("Bridge with USDT -> USDC Swap", () => {
   it("should swap right before bridging if input is USDT", async () => {
     const userAddress = "0x9eAe6086a8dE7D665FEB17e19853e68738e0Bd5C";
-    const portfolioHelper = getPortfolioHelper("Stablecoin Vault");
+    const portfolioHelper = getPortfolioHelper("Stable+ Vault");
 
     const actionName = "zapIn";
     const tokenInSymbol = "usdt";
@@ -51,7 +51,6 @@ describe("Bridge with USDT -> USDC Swap", () => {
 
     // Ensure we got some transactions
     expect(txns.length).toBeGreaterThanOrEqual(2);
-    // console.log("All generated txns:", txns);
 
     // Find the bridging transaction
     const bridgeAddress = "0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64";
@@ -78,9 +77,5 @@ describe("Bridge with USDT -> USDC Swap", () => {
     // 3) Confirm bridging is indeed after the swap
     const bridgeTxn = txns[bridgeIndex];
     expect(bridgeTxn).toBeDefined();
-
-    console.log(
-      "✅ The aggregator swap is right before bridging, USDT -> USDC.",
-    );
   });
 });

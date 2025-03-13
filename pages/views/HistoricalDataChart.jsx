@@ -32,7 +32,7 @@ const HistoricalDataChart = ({ portfolioName }) => {
       .then((response) => response.json())
       .then((json) => setData(json))
       .catch((error) => {
-        console.log("fetch HistoricalDataChart data failed", error);
+        console.error("fetch HistoricalDataChart data failed", error);
       });
   };
   const fetchClaimableReward = () => {
@@ -43,7 +43,7 @@ const HistoricalDataChart = ({ portfolioName }) => {
       .then((response) => {
         setData(response.data);
       })
-      .catch((error) => console.log("fetchClaimableReward", error));
+      .catch((error) => console.error("fetchClaimableReward", error));
   };
 
   const config = {

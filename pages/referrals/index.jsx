@@ -8,6 +8,7 @@ import { Fragment } from "react";
 import axios from "axios";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import PopUpForReferrals from "./PopUpForReferrals";
+import content from "../../config/content";
 export default function Referrals() {
   const account = useActiveAccount();
   const [referees, setReferees] = useState([]);
@@ -164,7 +165,7 @@ export default function Referrals() {
             ),
           )}
           <CopyableReferralButton
-            referralLink={`Click Once, Yield Forever! 🚀 Join All Weather Protocol using this link:  https://all-weather-protocol.on-fleek.app?referrer=${account?.address}`}
+            referralLink={`${content.siteInfo.tagline} 🚀 Join All Weather Protocol using this link:  https://all-weather-protocol.on-fleek.app?referrer=${account?.address}`}
           />
         </p>
       </div>

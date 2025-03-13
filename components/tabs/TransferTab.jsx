@@ -1,7 +1,7 @@
 import { Button, Input } from "antd";
 import DecimalStep from "../../pages/indexes/DecimalStep";
 import ConfiguredConnectButton from "../../pages/ConnectButton";
-
+import { formatLockUpPeriod } from "../../utils/general";
 export default function TransferTab({
   selectedToken,
   handleSetSelectedToken,
@@ -14,6 +14,7 @@ export default function TransferTab({
   handleAAWalletAction,
   transferLoading,
   usdBalanceLoading,
+  lockUpPeriod,
 }) {
   return (
     <div>
@@ -44,9 +45,11 @@ export default function TransferTab({
           className="w-full"
           onClick={() => handleAAWalletAction("transfer", true)}
           loading={transferLoading || usdBalanceLoading}
-          disabled={usdBalance < 0.01 || recipientError}
+          disabled={usdBalance < 0.01 || recipientError || lockUpPeriod > 0}
         >
-          Transfer
+          {lockUpPeriod > 0
+            ? `Transfer (unlocks in ${formatLockUpPeriod(lockUpPeriod)})`
+            : "Transfer"}
         </Button>
       )}
     </div>

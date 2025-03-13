@@ -12,7 +12,7 @@ const setPlatformFee = () => {};
 const slippage = 0.5;
 const protocolAssetDustInWallet = {};
 const onlyThisChain = false;
-describe("Stablecoin Vault", () => {
+describe("Stable+ Vault", () => {
   it("should be able to rebalance from Stablecoin Vault", async () => {
     // params claimAndSwap 0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0 usdc 0xaf88d065e77c8cc2239327c5edb3a432268e5831 0 6 1 0.5
     const actionName = "rebalance";
@@ -78,7 +78,7 @@ describe("Stablecoin Vault", () => {
         },
       },
     };
-    const portfolioHelper = getPortfolioHelper("Stablecoin Vault");
+    const portfolioHelper = getPortfolioHelper("Stable+ Vault");
     const txns = await generateIntentTxns(
       actionName,
       arbitrum,

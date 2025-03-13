@@ -38,7 +38,7 @@ export default function Vaults({ vaults }) {
         const json = await response.json();
         setProtocolName(json.data[1].data[0].pool.name);
       } catch (error) {
-        console.log("failed to fetch pool data", error);
+        console.error("failed to fetch pool data", error);
       }
     };
 
@@ -57,14 +57,6 @@ export default function Vaults({ vaults }) {
               <div className="flex justify-between">
                 <h2 className="text-xl text-white me-2">
                   <span>{product.portfolioName}</span>
-                  {product.portfolioName === "Build Your Own Vault with" &&
-                    protocolName !== "" && (
-                      <img
-                        alt={protocolName}
-                        src={`/projectPictures/${protocolName}.webp`}
-                        className="h-8 inline-block rounded-full ms-2"
-                      />
-                    )}
                 </h2>
                 <ImageWithFallback
                   className="h-8 w-auto rounded-full"

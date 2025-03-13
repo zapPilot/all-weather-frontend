@@ -17,6 +17,7 @@ import axios from "axios";
 import { Spin } from "antd";
 import { useRouter } from "next/router";
 import Vaults from "../indexes/index.jsx";
+import content from "../../config/content";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export default function ExampleUI() {
@@ -39,13 +40,15 @@ export default function ExampleUI() {
     },
     {
       id: 2,
-      portfolioName: "Stablecoin Vault",
-      href: "/indexes/indexOverviews/?portfolioName=Stablecoin+Vault",
+      portfolioName: "Stable+ Vault",
+      href: `/indexes/indexOverviews/?portfolioName=${encodeURIComponent(
+        "Stable+ Vault",
+      )}`,
       imageSrc: "usdc",
-      imageAlt: "Stablecoin Vault",
-      apr: strategyMetadata?.["Stablecoin Vault"]?.portfolioAPR * 100,
-      tvl: strategyMetadata?.["Stablecoin Vault"]?.portfolioTVL,
-      portfolioHelper: getPortfolioHelper("Stablecoin Vault"),
+      imageAlt: "Stable+ Vault",
+      apr: strategyMetadata?.["Stable+ Vault"]?.portfolioAPR * 100,
+      tvl: strategyMetadata?.["Stable+ Vault"]?.portfolioTVL,
+      portfolioHelper: getPortfolioHelper("Stable+ Vault"),
     },
     {
       id: 3,
@@ -69,12 +72,6 @@ export default function ExampleUI() {
       tvl: strategyMetadata?.["Metis Vault"]?.portfolioTVL,
       portfolioHelper: getPortfolioHelper("Metis Vault"),
     },
-    {
-      id: 4,
-      portfolioName: "Vela Vault (Deprecated)",
-      href: "/indexes/indexOverviews/?portfolioName=Vela+Vault+(Deprecated)",
-      imageSrc: "vela",
-    },
   ];
   const maxAPREntry = Object.entries(strategyMetadata).reduce(
     (max, [key, strategy]) => {
@@ -84,8 +81,6 @@ export default function ExampleUI() {
     { key: "", apr: -Infinity },
   );
 
-  const maxAPR = maxAPREntry.apr.toFixed(2);
-  const portfolioName = maxAPREntry.key.replace(" ", "+");
   const router = useRouter();
 
   const { query } = router;
@@ -130,10 +125,8 @@ export default function ExampleUI() {
             <h1 className="text-5xl tracking-tight mb-8 text-[#5DFDCB]">
               All Weather Protocol
             </h1>
-            <h2 className="heading-subtitle">
-              Your Intent Centric Yield Aggregator
-            </h2>
-            <p className="heading-subtitle">Click Once, Diversify Forever!</p>
+            <h2 className="heading-subtitle">{content.siteInfo.tagline}</h2>
+            <p className="heading-subtitle">{content.siteInfo.subtitle}</p>
             <p className="heading-subtitle">
               Enjoy Up to
               <span
@@ -142,11 +135,11 @@ export default function ExampleUI() {
               >
                 {" "}
                 {strategyLoading ||
-                isNaN(strategyMetadata["Stablecoin Vault"]?.portfolioAPR) ? (
+                isNaN(strategyMetadata["Stable+ Vault"]?.portfolioAPR) ? (
                   <Spin />
                 ) : (
                   (
-                    strategyMetadata["Stablecoin Vault"]?.portfolioAPR * 100
+                    strategyMetadata["Stable+ Vault"]?.portfolioAPR * 100
                   ).toFixed(2)
                 )}
                 %{" "}
@@ -154,7 +147,9 @@ export default function ExampleUI() {
               APR
             </p>
             <Link
-              href={`/indexes/indexOverviews?portfolioName=Stablecoin+Vault`}
+              href={`/indexes/indexOverviews?portfolioName=${encodeURIComponent(
+                "Stable+ Vault",
+              )}`}
             >
               <button
                 type="button"
@@ -173,18 +168,8 @@ export default function ExampleUI() {
           </center>
         </div>
       </div>
-      <div className="w-full md:w-[75%] md:ml-[12.5%] md:flex items-center">
-        <div className="w-full md:w-1/2 px-2">
-          <h3 className="text-2xl text-emerald-400 font-semibold mb-4">
-            What is All Weather Protocol?
-          </h3>
-          <p className="text-lg mb-4">
-            We help you diversify your investments across various high-yield
-            protocols. With just one click, you can increase your returns and
-            save time on research and transactions.
-          </p>
-        </div>
-        <div className="w-full md:w-1/2">
+      <div className="w-full md:w-[75%] md:ml-[12.5%] flex justify-center items-center py-8">
+        <div className="w-full md:w-2/3 lg:w-1/2">
           <div className="relative w-full aspect-video">
             <iframe
               className="absolute top-0 left-0 w-full h-full rounded-lg"

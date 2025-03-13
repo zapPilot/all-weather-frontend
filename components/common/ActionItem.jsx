@@ -1,6 +1,11 @@
 import React from "react";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
-
+const actionNameMap = {
+  zapIn: "Deposit",
+  zapOut: "Withdraw",
+  crossChainRebalance: "Cross-Chain Rebalance",
+  localRebalance: "Rebalance",
+};
 const ActionItem = ({
   actionName,
   availableAssetChains,
@@ -9,15 +14,11 @@ const ActionItem = ({
   theme,
 }) => {
   const actionIsArray = Array.isArray(actionName);
-  const actionNameMap = {
-    zapIn: "Deposit",
-    zapOut: "Withdraw",
-    rebalance: "Rebalance",
-  };
+
   return (
     <>
       <div className="flex justify-center text-base font-semibold">
-        {availableAssetChains.map((chain, index) => (
+        {availableAssetChains?.map((chain, index) => (
           <div
             className={`flex flex-col items-center mx-2 ${
               chainStatus[chain]
@@ -43,9 +44,9 @@ const ActionItem = ({
             >
               {!chainStatus[chain] && (
                 <div className="absolute -top-2">
-                  <span class="relative flex size-3">
-                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-                    <span class="relative inline-flex size-3 rounded-full bg-red-500"></span>
+                  <span className="relative flex size-3">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex size-3 rounded-full bg-red-500"></span>
                   </span>
                 </div>
               )}
@@ -62,10 +63,16 @@ const ActionItem = ({
         ))}
       </div>
       <div className="mt-4">
-        {availableAssetChains.every((chain) => chainStatus[chain]) && (
-          <div className={"text-green-500 text-center mb-2"}>
-            <CheckCircleIcon className="w-12 h-12 mx-auto" />
-            <p>You have completed all actions.</p>
+        {availableAssetChains?.length > 0 ? (
+          availableAssetChains.every((chain) => chainStatus[chain]) && (
+            <div className={"text-green-500 text-center mb-2"}>
+              <CheckCircleIcon className="w-12 h-12 mx-auto" />
+              <p>You have completed all actions.</p>
+            </div>
+          )
+        ) : (
+          <div className={"text-gray-500 text-center mb-2"}>
+            <p>No actions available at this time.</p>
           </div>
         )}
       </div>
@@ -74,3 +81,4 @@ const ActionItem = ({
 };
 
 export default ActionItem;
+export { actionNameMap };
