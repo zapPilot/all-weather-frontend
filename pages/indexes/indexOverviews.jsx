@@ -1210,7 +1210,9 @@ export default function IndexOverviews() {
               <div className="flex items-center">
                 <img
                   alt=""
-                  src={`/indexFunds/${portfolioName?.toLowerCase()}.webp`}
+                  src={`/indexFunds/${encodeURIComponent(
+                    portfolioName?.toLowerCase(),
+                  )}.webp`}
                   className="h-8 w-8 rounded-full me-2"
                 />
                 <h1 className="text-2xl font-bold text-white" role="vault">
