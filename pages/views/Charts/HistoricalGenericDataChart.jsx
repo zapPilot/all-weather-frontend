@@ -53,39 +53,36 @@ const HistoricalGenericDataChart = ({
     fetchData();
   }, [apiUrl, dataTransformCallback, title, option]);
 
-  const config = useMemo(
-    () => {
-      const minValue = Math.min(...data.map(item => Number(item[yLabel])));
-      const maxValue = Math.max(...data.map(item => Number(item[yLabel])));
-      
-      return {
-        data,
-        padding: "auto",
-        xField: "date",
-        yField: yLabel,
-        xAxis: {
-          type: "timeCat",
-          tickCount: 5,
-        },
-        yAxis: {
-          nice: true,
-          min: minValue,
-          max: maxValue,
-          grid: {
-            line: {
-              style: {
-                stroke: '#303030',
-                lineWidth: 1,
-                lineDash: [4, 5],
-              },
+  const config = useMemo(() => {
+    const minValue = Math.min(...data.map((item) => Number(item[yLabel])));
+    const maxValue = Math.max(...data.map((item) => Number(item[yLabel])));
+
+    return {
+      data,
+      padding: "auto",
+      xField: "date",
+      yField: yLabel,
+      xAxis: {
+        type: "timeCat",
+        tickCount: 5,
+      },
+      yAxis: {
+        nice: true,
+        min: minValue,
+        max: maxValue,
+        grid: {
+          line: {
+            style: {
+              stroke: "#303030",
+              lineWidth: 1,
+              lineDash: [4, 5],
             },
           },
         },
-        smooth: true,
-      };
-    },
-    [data, yLabel],
-  );
+      },
+      smooth: true,
+    };
+  }, [data, yLabel]);
 
   const chartConfig = useMemo(() => {
     if (option === "column") {
