@@ -98,7 +98,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
       chain: "arbitrum",
       address: "0x12275DCB9048680c4Be40942eA4D92c74C63b844",
     },
-    vaults: ["Stable+ Vault"],
+    vaults: ["Stable+ Vault", "All Weather Vault"],
   },
   gusdc: {
     geckoterminal: {
@@ -117,7 +117,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   susdx: {
     coinmarketcapApiId: 34088,
-    vaults: ["Stable+ Vault"],
+    vaults: ["Stable+ Vault", "All Weather Vault"],
   },
   gho: {
     coinmarketcapApiId: 23508,
@@ -125,7 +125,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   gyd: {
     coinmarketcapApiId: 31996,
-    vaults: ["Stable+ Vault"],
+    vaults: ["Stable+ Vault", "All Weather Vault"],
   },
   wausdcn: {
     geckoterminal: {

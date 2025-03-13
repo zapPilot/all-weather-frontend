@@ -191,6 +191,36 @@ const findProtocolByUniqueId = (targetId, strategy) => {
   return null;
 };
 
+// Add this function to determine the appropriate slippage
+const determineSlippage = (params) => {
+  const { portfolioName, selectedTokenSymbol, tabLabel, actionName } = params;
+  
+  // Rebalance tab always uses 5% slippage
+  if (tabLabel === "Rebalance") {
+    return 5;
+  }
+  
+  // Claim tab uses 3% slippage
+  if (tabLabel === "Claim") {
+    return 3;
+  }
+
+  // ETH/WETH for Stable+ Vault uses 3% slippage
+  if ((selectedTokenSymbol === "eth" || selectedTokenSymbol === "weth") && 
+      portfolioName === "Stable+ Vault") {
+    return 3;
+  }
+
+  // ZapIn for ETH Vault or All Weather Vault uses 3% slippage
+  if ((portfolioName === "ETH Vault" || portfolioName === "All Weather Vault") && 
+      actionName === "zapIn") {
+    return 3;
+  }
+
+  // Default slippage based on portfolio type
+  return portfolioName?.includes("Stable") ? 2 : 3;
+};
+
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -283,8 +313,8 @@ export default function IndexOverviews() {
   const [platformFee, setPlatformFee] = useState(0);
   const [costsCalculated, setCostsCalculated] = useState(false);
   const [stepName, setStepName] = useState("");
-  const [slippage, setSlippage] = useState(
-    portfolioName?.includes("Stablecoin") ? 2 : 3,
+  const [slippage, setSlippage] = useState(() => 
+    determineSlippage({ portfolioName })
   );
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
@@ -780,14 +810,13 @@ export default function IndexOverviews() {
 
   const onChange = (key) => {
     setTabKey(key);
-    // Find the selected tab item and check its label
     const selectedTab = items.find((item) => item.key === key);
-    if (selectedTab?.label === "Rebalance") {
-      setSlippage(5);
-    } else if (selectedTab?.key === "5") {
-      // 5 stands for 'Claim'
-      setSlippage(3);
-    }
+    const newSlippage = determineSlippage({
+      portfolioName,
+      tabLabel: selectedTab?.label,
+      actionName
+    });
+    setSlippage(newSlippage);
   };
 
   const tokenAddress = selectedToken?.split("-")[1];
@@ -848,37 +877,22 @@ export default function IndexOverviews() {
   };
 
   useEffect(() => {
-    if (
-      portfolioApr[portfolioName] === undefined ||
-      Object.keys(portfolioApr).length === 0
-    ) {
+    if (portfolioApr[portfolioName] === undefined || 
+        Object.keys(portfolioApr).length === 0) {
       dispatch(fetchStrategyMetadata());
     }
+    
     if (portfolioName !== undefined) {
       const selectedTokenSymbol = selectedToken?.toLowerCase()?.split("-")[0];
-      if (
-        (selectedTokenSymbol === "eth" || selectedTokenSymbol === "weth") &&
-        portfolioName === "Stable+ Vault"
-      ) {
-        setSlippage(3);
-      } else if (
-        portfolioName === "ETH Vault" ||
-        portfolioName === "All Weather Vault"
-      ) {
-        setSlippage(3);
-      } else {
-        // Check if we're on the rebalance tab before setting default slippage
-        if (
-          tabKey &&
-          items.find((item) => item.key === tabKey)?.label === "Rebalance"
-        ) {
-          setSlippage(5);
-        } else {
-          setSlippage(2);
-        }
-      }
+      const newSlippage = determineSlippage({
+        portfolioName,
+        selectedTokenSymbol,
+        tabLabel: items.find((item) => item.key === tabKey)?.label,
+        actionName
+      });
+      setSlippage(newSlippage);
     }
-  }, [portfolioName, selectedToken, chainId, tabKey]);
+  }, [portfolioName, selectedToken, chainId, tabKey, actionName]);
   useEffect(() => {
     console.time("🚀 Portfolio data fetch");
     // Clear states on initial load/refresh
@@ -1210,7 +1224,7 @@ export default function IndexOverviews() {
               <div className="flex items-center">
                 <img
                   alt=""
-                  src={`/indexFunds/${portfolioName?.toLowerCase()}.webp`}
+                  src={`/indexFunds/${encodeURIComponent(portfolioName?.toLowerCase())}.webp`}
                   className="h-8 w-8 rounded-full me-2"
                 />
                 <h1 className="text-2xl font-bold text-white" role="vault">
