@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-
+import Image from "next/image";
 import DemoFlowDirectionGraph from "../FlowChart";
 import { CheckIcon, QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/20/solid";
@@ -60,6 +60,7 @@ const AmountDisplay = ({
 };
 
 export default function PopUpModal({
+  account,
   portfolioHelper,
   stepName,
   tradingLoss,
@@ -100,7 +101,7 @@ export default function PopUpModal({
         <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
           <DialogPanel
             transition
-            className="relative transform overflow-hidden rounded-lg bg-gray-300 px-4 pb-4 pt-5 text-left shadow-xl transition-all data-[closed]:translate-y-4 data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in sm:my-8 sm:w-full sm:max-w-5xl sm:p-6 data-[closed]:sm:translate-y-0 data-[closed]:sm:scale-95"
+            className="relative transform overflow-hidden rounded-lg bg-gray-100 px-4 pb-4 pt-5 text-left shadow-xl transition-all data-[closed]:translate-y-4 data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in sm:my-8 sm:w-full sm:max-w-5xl sm:p-6 data-[closed]:sm:translate-y-0 data-[closed]:sm:scale-95"
           >
             <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
               <button
@@ -174,13 +175,31 @@ export default function PopUpModal({
                     currentChain={chainId?.name}
                   />
                 ) : (
-                  <a
-                    href={txnLink}
-                    target="_blank"
-                    className="flex justify-center"
-                  >
-                    <ArrowTopRightOnSquareIcon className="h-6 w-5 text-gray-500" />
-                  </a>
+                  <>
+                    <div className="flex flex-col items-center gap-4 w-full mt-4">
+                      <a
+                        href={`https://debank.com/profile/${account?.address}`}
+                        target="_blank"
+                        className="w-full max-w-md flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl bg-white shadow-md hover:bg-gray-50 transition-colors text-gray-700 border border-gray-200"
+                      >
+                        <Image
+                          src="/projectPictures/debank.webp"
+                          alt="debank"
+                          height={25}
+                          width={25}
+                        />
+                        Check your portfolio on Debank
+                      </a>
+                      <a
+                        href={txnLink}
+                        target="_blank"
+                        className="flex items-center gap-1 text-gray-400 hover:text-gray-600 transition-colors text-sm"
+                      >
+                        View transaction
+                        <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                      </a>
+                    </div>
+                  </>
                 )}
               </div>
               {/* Cost summary */}

@@ -22,8 +22,8 @@ export class BaseVelodrome extends BaseProtocol {
 
   // Protocol initialization methods
   initializeProtocolDetails() {
-    this.protocolName = "velodrome";
-    this.protocolVersion = "v2";
+    this.protocolName = this.customParams.protocolName;
+    this.protocolVersion = this.customParams.protocolVersion;
     this.assetDecimals = this.customParams.assetDecimals;
   }
 

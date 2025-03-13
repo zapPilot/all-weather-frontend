@@ -11,13 +11,14 @@ class BaseBridge {
     toToken: string,
     amount: string,
     updateProgress: any,
-  ): Promise<[any, any]> {
-    const [customBridgeTxn, bridgeAddress] = await this.customBridgeTxn(
-      owner,
-      fromChainId,
-      toChainId,
-      fromToken,
-      toToken,
+  ): Promise<[any, any] | []> {
+    try {
+      const [customBridgeTxn, bridgeAddress] = await this.customBridgeTxn(
+        owner,
+        fromChainId,
+        toChainId,
+        fromToken,
+        toToken,
       amount,
       updateProgress,
     );
@@ -28,7 +29,12 @@ class BaseBridge {
       updateProgress,
       fromChainId,
     );
-    return [approveTxn, customBridgeTxn];
+
+      return [approveTxn, customBridgeTxn];
+    } catch (error) {
+      console.error("Error in getBridgeTxns:", error);
+      return []
+    }
   }
 
   async customBridgeTxn(

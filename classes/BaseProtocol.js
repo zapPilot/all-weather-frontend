@@ -1038,6 +1038,7 @@ export default class BaseProtocol extends BaseUniswap {
         // if usd value of this token is less than 1, then it's easy to suffer from high slippage
         tokenMetadata.usdDenominatedValue < 1
       ) {
+        console.warn(`Skip selling ${fromTokenSymbol} because its usdDenominatedValue is less than 1`, tokenMetadata.usdDenominatedValue, "amount:", amount)
         continue;
       }
       const swapTxnResult = await swap(
