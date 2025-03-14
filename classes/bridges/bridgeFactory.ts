@@ -1,4 +1,5 @@
 import AcrossBridge from "./across";
+import SquidBridge from "./squid";
 async function getTheBestBridge() {
   const rates = await checkRatesBetweenBridges();
   return rates[0];
