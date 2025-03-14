@@ -19,21 +19,21 @@ class BaseBridge {
         toChainId,
         fromToken,
         toToken,
-      amount,
-      updateProgress,
-    );
-    const approveTxn = approve(
-      fromToken,
-      bridgeAddress,
-      amount,
-      updateProgress,
-      fromChainId,
-    );
+        amount,
+        updateProgress,
+      );
+      const approveTxn = approve(
+        fromToken,
+        bridgeAddress,
+        amount,
+        updateProgress,
+        fromChainId,
+      );
 
       return [approveTxn, customBridgeTxn];
     } catch (error) {
       console.error("Error in getBridgeTxns:", error);
-      return []
+      return [];
     }
   }
 

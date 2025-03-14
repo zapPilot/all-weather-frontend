@@ -194,26 +194,30 @@ const findProtocolByUniqueId = (targetId, strategy) => {
 // Add this function to determine the appropriate slippage
 const determineSlippage = (params) => {
   const { portfolioName, selectedTokenSymbol, tabLabel, actionName } = params;
-  
+
   // Rebalance tab always uses 5% slippage
   if (tabLabel === "Rebalance") {
     return 5;
   }
-  
+
   // Claim tab uses 3% slippage
   if (tabLabel === "Claim") {
     return 3;
   }
 
   // ETH/WETH for Stable+ Vault uses 3% slippage
-  if ((selectedTokenSymbol === "eth" || selectedTokenSymbol === "weth") && 
-      portfolioName === "Stable+ Vault") {
+  if (
+    (selectedTokenSymbol === "eth" || selectedTokenSymbol === "weth") &&
+    portfolioName === "Stable+ Vault"
+  ) {
     return 3;
   }
 
   // ZapIn for ETH Vault or All Weather Vault uses 3% slippage
-  if ((portfolioName === "ETH Vault" || portfolioName === "All Weather Vault") && 
-      actionName === "zapIn") {
+  if (
+    (portfolioName === "ETH Vault" || portfolioName === "All Weather Vault") &&
+    actionName === "zapIn"
+  ) {
     return 3;
   }
 
@@ -313,8 +317,8 @@ export default function IndexOverviews() {
   const [platformFee, setPlatformFee] = useState(0);
   const [costsCalculated, setCostsCalculated] = useState(false);
   const [stepName, setStepName] = useState("");
-  const [slippage, setSlippage] = useState(() => 
-    determineSlippage({ portfolioName })
+  const [slippage, setSlippage] = useState(() =>
+    determineSlippage({ portfolioName }),
   );
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
@@ -814,7 +818,7 @@ export default function IndexOverviews() {
     const newSlippage = determineSlippage({
       portfolioName,
       tabLabel: selectedTab?.label,
-      actionName
+      actionName,
     });
     setSlippage(newSlippage);
   };
@@ -877,18 +881,20 @@ export default function IndexOverviews() {
   };
 
   useEffect(() => {
-    if (portfolioApr[portfolioName] === undefined || 
-        Object.keys(portfolioApr).length === 0) {
+    if (
+      portfolioApr[portfolioName] === undefined ||
+      Object.keys(portfolioApr).length === 0
+    ) {
       dispatch(fetchStrategyMetadata());
     }
-    
+
     if (portfolioName !== undefined) {
       const selectedTokenSymbol = selectedToken?.toLowerCase()?.split("-")[0];
       const newSlippage = determineSlippage({
         portfolioName,
         selectedTokenSymbol,
         tabLabel: items.find((item) => item.key === tabKey)?.label,
-        actionName
+        actionName,
       });
       setSlippage(newSlippage);
     }
@@ -1188,6 +1194,7 @@ export default function IndexOverviews() {
     <BasePage>
       {notificationContextHolder}
       <PopUpModal
+        account={account}
         portfolioHelper={portfolioHelper}
         stepName={stepName}
         tradingLoss={tradingLoss}
@@ -1224,7 +1231,9 @@ export default function IndexOverviews() {
               <div className="flex items-center">
                 <img
                   alt=""
-                  src={`/indexFunds/${encodeURIComponent(portfolioName?.toLowerCase())}.webp`}
+                  src={`/indexFunds/${encodeURIComponent(
+                    portfolioName?.toLowerCase(),
+                  )}.webp`}
                   className="h-8 w-8 rounded-full me-2"
                 />
                 <h1 className="text-2xl font-bold text-white" role="vault">

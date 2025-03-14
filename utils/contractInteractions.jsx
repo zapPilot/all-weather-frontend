@@ -105,7 +105,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
       chain: "arbitrum",
       address: "0xd3443ee1e91aF28e5FB858Fbd0D72A63bA8046E0",
     },
-    vaults: ["Stable+ Vault", "Equilibria Vault"],
+    vaults: ["Stable+ Vault", "Equilibria Vault", "All Weather Vault"],
   },
   dusdc: {
     coinmarketcapApiId: 3408,

@@ -29,14 +29,32 @@ export class BaseVelodrome extends BaseProtocol {
 
   initializeContracts() {
     // Initialize Thirdweb contracts
-    this.assetContract = this.createThirdwebContract(this.customParams.assetAddress, Pool);
-    this.protocolContract = this.createThirdwebContract(this.customParams.routerAddress, Router);
-    this.stakeFarmContract = this.createThirdwebContract(this.customParams.guageAddress, Guage);
+    this.assetContract = this.createThirdwebContract(
+      this.customParams.assetAddress,
+      Pool,
+    );
+    this.protocolContract = this.createThirdwebContract(
+      this.customParams.routerAddress,
+      Router,
+    );
+    this.stakeFarmContract = this.createThirdwebContract(
+      this.customParams.guageAddress,
+      Guage,
+    );
 
     // Initialize Ethers contracts
-    this.assetContractInstance = this.createEthersContract(this.assetContract.address, Pool);
-    this.protocolContractInstance = this.createEthersContract(this.protocolContract.address, Router);
-    this.stakeFarmContractInstance = this.createEthersContract(this.stakeFarmContract.address, Guage);
+    this.assetContractInstance = this.createEthersContract(
+      this.assetContract.address,
+      Pool,
+    );
+    this.protocolContractInstance = this.createEthersContract(
+      this.protocolContract.address,
+      Router,
+    );
+    this.stakeFarmContractInstance = this.createEthersContract(
+      this.stakeFarmContract.address,
+      Guage,
+    );
   }
 
   createThirdwebContract(address, abi) {
@@ -58,15 +76,22 @@ export class BaseVelodrome extends BaseProtocol {
   }
 
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
-    const stakeFarmContractInstance = this.createEthersContract(this.stakeFarmContract.address, Guage);
+    const stakeFarmContractInstance = this.createEthersContract(
+      this.stakeFarmContract.address,
+      Guage,
+    );
     let rewardBalance = {};
 
     for (const reward of this.rewards()) {
-      const rewardAmount = (await stakeFarmContractInstance.functions.earned(owner))[0];
+      const rewardAmount = (
+        await stakeFarmContractInstance.functions.earned(owner)
+      )[0];
       rewardBalance[reward.address] = {
         symbol: reward.symbol,
         balance: rewardAmount,
-        usdDenominatedValue: (tokenPricesMappingTable[reward.symbol] * rewardAmount) / Math.pow(10, reward.decimals),
+        usdDenominatedValue:
+          (tokenPricesMappingTable[reward.symbol] * rewardAmount) /
+          Math.pow(10, reward.decimals),
         decimals: reward.decimals,
       };
     }
@@ -77,7 +102,7 @@ export class BaseVelodrome extends BaseProtocol {
   async stakeBalanceOf(owner) {
     const stakeFarmContractInstance = this.createEthersContract(
       this.stakeFarmContract.address,
-      ERC20_ABI
+      ERC20_ABI,
     );
     return (await stakeFarmContractInstance.functions.balanceOf(owner))[0];
   }
@@ -98,34 +123,42 @@ export class BaseVelodrome extends BaseProtocol {
     return ethers.BigNumber.from(
       Math.min(
         tokenAmetadata.minAmount.mul(_totalSupply).div(reserve0),
-        tokenBmetadata.minAmount.mul(_totalSupply).div(reserve1)
-      )
+        tokenBmetadata.minAmount.mul(_totalSupply).div(reserve1),
+      ),
     );
   }
 
   async _calculateWithdrawalAmounts(lpAmount, slippage, lpTokens) {
     const [metadata, totalSupply] = await Promise.all([
       this.assetContractInstance.functions.metadata(),
-      this.assetContractInstance.functions.totalSupply()
+      this.assetContractInstance.functions.totalSupply(),
     ]);
-    
+
     const [token0Reserve, token1Reserve] = [metadata.r0, metadata.r1];
     const [token0Decimals, token1Decimals] = [lpTokens[0][2], lpTokens[1][2]];
-    
-    const share = lpAmount.mul(ethers.constants.WeiPerEther).div(totalSupply[0]);
-    
+
+    const share = lpAmount
+      .mul(ethers.constants.WeiPerEther)
+      .div(totalSupply[0]);
+
     const amount0 = token0Reserve.mul(share).div(ethers.constants.WeiPerEther);
     const amount1 = token1Reserve.mul(share).div(ethers.constants.WeiPerEther);
-    
+
     const estimatedNormalizedAmount0 = Number(
-      ethers.utils.formatUnits(amount0, token0Decimals)
+      ethers.utils.formatUnits(amount0, token0Decimals),
     );
     const estimatedNormalizedAmount1 = Number(
-      ethers.utils.formatUnits(amount1, token1Decimals)
+      ethers.utils.formatUnits(amount1, token1Decimals),
     );
 
-    const minAmount0 = this.mul_with_slippage_in_bignumber_format(amount0, slippage);
-    const minAmount1 = this.mul_with_slippage_in_bignumber_format(amount1, slippage);
+    const minAmount0 = this.mul_with_slippage_in_bignumber_format(
+      amount0,
+      slippage,
+    );
+    const minAmount1 = this.mul_with_slippage_in_bignumber_format(
+      amount1,
+      slippage,
+    );
 
     return {
       estimatedNormalizedAmount0,
@@ -158,18 +191,31 @@ export class BaseVelodrome extends BaseProtocol {
       this.customParams.lpTokens[1][2],
     ];
 
-    const normalizedReserve0 = Number(ethers.utils.formatUnits(token0Reserve, token0Decimals));
-    const normalizedReserve1 = Number(ethers.utils.formatUnits(token1Reserve, token1Decimals));
+    const normalizedReserve0 = Number(
+      ethers.utils.formatUnits(token0Reserve, token0Decimals),
+    );
+    const normalizedReserve1 = Number(
+      ethers.utils.formatUnits(token1Reserve, token1Decimals),
+    );
 
     const totalPoolValue =
-      normalizedReserve0 * tokenPricesMappingTable[this.customParams.lpTokens[0][0]] +
-      normalizedReserve1 * tokenPricesMappingTable[this.customParams.lpTokens[1][0]];
+      normalizedReserve0 *
+        tokenPricesMappingTable[this.customParams.lpTokens[0][0]] +
+      normalizedReserve1 *
+        tokenPricesMappingTable[this.customParams.lpTokens[1][0]];
 
     return totalPoolValue / totalSupply[0];
   }
 
   // Transaction methods
-  async customDepositLP(owner, tokenAmetadata, tokenBmetadata, tokenPricesMappingTable, slippage, updateProgress) {
+  async customDepositLP(
+    owner,
+    tokenAmetadata,
+    tokenBmetadata,
+    tokenPricesMappingTable,
+    slippage,
+    updateProgress,
+  ) {
     const tokens = [tokenAmetadata, tokenBmetadata].map(
       ([symbol, address, decimals, amount]) => ({
         address,
@@ -177,14 +223,24 @@ export class BaseVelodrome extends BaseProtocol {
         minAmount: this.mul_with_slippage_in_bignumber_format(amount, slippage),
         decimals,
         symbol,
-      })
+      }),
     );
 
     const min_mint_amount = await this._calculateMintLP(tokens[0], tokens[1]);
-    await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-deposit`, 0);
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-deposit`,
+      0,
+    );
 
     const approveTxns = tokens.map((token) =>
-      approve(token.address, this.protocolContract.address, token.amount, updateProgress, this.chainId)
+      approve(
+        token.address,
+        this.protocolContract.address,
+        token.amount,
+        updateProgress,
+        this.chainId,
+      ),
     );
 
     const depositTxn = prepareContractCall({
@@ -208,7 +264,11 @@ export class BaseVelodrome extends BaseProtocol {
   }
 
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
-    const pendingRewards = await this.pendingRewards(owner, tokenPricesMappingTable, updateProgress);
+    const pendingRewards = await this.pendingRewards(
+      owner,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
     const claimTxn = prepareContractCall({
       contract: this.stakeFarmContract,
       method: "getReward",
@@ -224,7 +284,7 @@ export class BaseVelodrome extends BaseProtocol {
       this.stakeFarmContract.address,
       amount,
       updateProgress,
-      this.chainId
+      this.chainId,
     );
     const stakeTxn = prepareContractCall({
       contract: this.stakeFarmContract,
@@ -236,10 +296,12 @@ export class BaseVelodrome extends BaseProtocol {
 
   async _unstakeLP(owner, percentage, updateProgress) {
     await super._unstakeLP(owner, percentage, updateProgress);
-    const percentageBN = ethers.BigNumber.from(BigInt(Math.floor(percentage * 10000)));
+    const percentageBN = ethers.BigNumber.from(
+      BigInt(Math.floor(percentage * 10000)),
+    );
     const stakeBalance = await this.stakeBalanceOf(owner, updateProgress);
     const amount = stakeBalance.mul(percentageBN).div(10000);
-    
+
     const unstakeTxn = prepareContractCall({
       contract: this.stakeFarmContract,
       method: "withdraw",
@@ -248,24 +310,40 @@ export class BaseVelodrome extends BaseProtocol {
     return [[unstakeTxn], amount];
   }
 
-  async _withdrawLPAndClaim(owner, amount, slippage, tokenPricesMappingTable, updateProgress) {
-    await super._withdrawLPAndClaim(owner, amount, slippage, tokenPricesMappingTable, updateProgress);
-    
+  async _withdrawLPAndClaim(
+    owner,
+    amount,
+    slippage,
+    tokenPricesMappingTable,
+    updateProgress,
+  ) {
+    await super._withdrawLPAndClaim(
+      owner,
+      amount,
+      slippage,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
+
     const approveTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
       amount,
       updateProgress,
-      this.chainId
+      this.chainId,
     );
 
     const { minAmount0, minAmount1 } = await this._calculateWithdrawalAmounts(
       amount,
       slippage,
-      this.customParams.lpTokens
+      this.customParams.lpTokens,
     );
 
-    await this._updateProgressAndWait(updateProgress, `${this.uniqueId()}-withdraw`, 0);
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-withdraw`,
+      0,
+    );
 
     const withdrawTxn = prepareContractCall({
       contract: this.protocolContract,
@@ -282,9 +360,17 @@ export class BaseVelodrome extends BaseProtocol {
       ],
     });
 
-    const [claimTxns, _] = await this.customClaim(owner, tokenPricesMappingTable, updateProgress);
+    const [claimTxns, _] = await this.customClaim(
+      owner,
+      tokenPricesMappingTable,
+      updateProgress,
+    );
 
-    return [[approveTxn, withdrawTxn, ...claimTxns], this.customParams.lpTokens, [minAmount0, minAmount1]];
+    return [
+      [approveTxn, withdrawTxn, ...claimTxns],
+      this.customParams.lpTokens,
+      [minAmount0, minAmount1],
+    ];
   }
 
   async lockUpPeriod() {

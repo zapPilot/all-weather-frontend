@@ -384,18 +384,31 @@ export class StablecoinVault extends BaseVault {
             weight: 0,
           },
           {
-            interface: new BaseAerodrome(
+            interface: new BaseVelodrome(
               "base",
               8453,
               ["msusd", "usdc"],
               "LP",
               {
+                protocolName: "aerodrome",
+                protocolVersion: "0",
                 assetAddress: "0xcEFC8B799a8EE5D9b312aeca73262645D664AaF7",
                 assetDecimals: 18,
+                routerAddress: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
                 guageAddress: "0xDBF852464fC906C744E52Dbd68C1b07dD33A922a",
                 lpTokens: [
                   ["msusd", "0x526728DBc96689597F85ae4cd716d4f7fCcBAE9d", 18],
                   ["usdc", "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", 6],
+                ],
+                rewards: [
+                  {
+                    symbol: "aero",
+                    priceId: {
+                      coinmarketcapApiId: 29270,
+                    },
+                    address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+                    decimals: 18,
+                  },
                 ],
               },
             ),
@@ -422,6 +435,8 @@ export class StablecoinVault extends BaseVault {
         op: [
           {
             interface: new BaseVelodrome("op", 10, ["usdc", "susd"], "LP", {
+              protocolName: "velodrome",
+              protocolVersion: "v2",
               assetAddress: "0xbC26519f936A90E78fe2C9aA2A03CC208f041234",
               assetDecimals: 18,
               routerAddress: "0xa062aE8A9c5e11aaA026fc2670B0D65cCc8B2858",
@@ -445,6 +460,8 @@ export class StablecoinVault extends BaseVault {
           },
           {
             interface: new BaseVelodrome("op", 10, ["usdc", "msusd"], "LP", {
+              protocolName: "velodrome",
+              protocolVersion: "v2",
               assetAddress: "0xe148D6Ae042De77c1f9fe0d6c495EbfD7b705B4c",
               assetDecimals: 18,
               routerAddress: "0xa062aE8A9c5e11aaA026fc2670B0D65cCc8B2858",

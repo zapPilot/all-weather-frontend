@@ -737,7 +737,10 @@ export class BasePortfolio {
       .toLowerCase()
       .replace(" one", "")
       .replace(" mainnet", "");
-    const middleTokenConfig = this._getRebalanceMiddleTokenConfig(currentChain, false);
+    const middleTokenConfig = this._getRebalanceMiddleTokenConfig(
+      currentChain,
+      false,
+    );
 
     // Run bridge initialization and protocol filtering in parallel
     const [bridge, rebalancableUsdBalanceDictOnThisChain] = await Promise.all([
@@ -873,15 +876,14 @@ export class BasePortfolio {
         decimals: 18,
       };
     } else if (this.constructor.name === "AllWeatherVault") {
-      if (chain === "arbitrum" || chain === "polygon") {
+      if (chain === "polygon") {
         return {
           symbol: "weth",
           address: TOKEN_ADDRESS_MAP["weth"][chain],
           decimals: 18,
         };
-
       } else {
-        return  {
+        return {
           symbol: "usdc",
           address: TOKEN_ADDRESS_MAP["usdc"][chain],
           decimals: 6,
