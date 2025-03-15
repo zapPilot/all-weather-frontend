@@ -760,27 +760,23 @@ export class BasePortfolio {
     );
     if (zapOutUsdcBalance === 0 && actionName !== "localRebalance") return [];
     // TODO(david): currently we don't support zap in different token than zap out
-    const zapOutAmount = ethers.utils
-      .parseUnits(
-        (
-          zapOutUsdcBalance / tokenPricesMappingTable[middleTokenConfig.symbol]
-        ).toFixed(middleTokenConfig.decimals),
-        middleTokenConfig.decimals,
-      )
-      .add(
-        middleTokenConfig.symbol === tokenInSymbol ||
-          zapInAmountFromUI === undefined
-          ? zapInAmountFromUI
-          : ethers.BigNumber.from(0),
-      );
-
-    // Calculate zap in amount including pending rewards
-    const zapInAmount = this._calculateZapInAmount(
-      zapOutAmount,
-      rebalancableUsdBalanceDictOnThisChain,
+    // Also, we don't reinvest rewards back to pools, due to the risk of slippage
+    const zapInAmount = this.mul_with_slippage_in_bignumber_format(
+      ethers.utils
+        .parseUnits(
+          (
+            zapOutUsdcBalance /
+            tokenPricesMappingTable[middleTokenConfig.symbol]
+          ).toFixed(middleTokenConfig.decimals),
+          middleTokenConfig.decimals,
+        )
+        .add(
+          middleTokenConfig.symbol === tokenInSymbol ||
+            zapInAmountFromUI === undefined
+            ? zapInAmountFromUI
+            : ethers.BigNumber.from(0),
+        ),
       slippage,
-      middleTokenConfig,
-      tokenPricesMappingTable,
     );
     // Run approval, fee, and zap in transactions generation in parallel
     const [
@@ -834,7 +830,6 @@ export class BasePortfolio {
           this._getRebalanceMiddleTokenConfig(currentChain, true).symbol
         ];
       if (bridgeUsd < this.bridgeUsdThreshold) return [];
-
       const bridgeToOtherChainTxns = await bridge.getBridgeTxns(
         owner,
         chainMetadata.id,
@@ -1494,7 +1489,6 @@ export class BasePortfolio {
     const slippageBasisPoints = ethers.BigNumber.from(
       BigInt(Math.floor(slippage * 100)),
     );
-
     // Calculate (amount * (10000 - slippageBasisPoints)) / 10000
     return amountBN
       .mul(ethers.BigNumber.from(String(10000)).sub(slippageBasisPoints))

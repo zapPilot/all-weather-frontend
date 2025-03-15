@@ -4,7 +4,7 @@ import { prepareTransaction } from "thirdweb";
 import { ethers } from "ethers";
 import { CHAIN_ID_TO_CHAIN } from "./general";
 import THIRDWEB_CLIENT from "./thirdweb";
-
+import assert from "assert";
 async function swap(
   walletAddress,
   chainId,
@@ -41,10 +41,15 @@ async function swap(
           fromTokenDecimals,
           toTokenDecimals,
         );
-        if (Object.values(swapCallData).length === 0) {
+        if (
+          Object.values(swapCallData).length === 0 ||
+          "error" in swapCallData
+        ) {
+          if ("error" in swapCallData) {
+            console.warn(`${provider} swap failed:`, swapCallData.error);
+          }
           return null;
         }
-
         const normalizedInputAmount = ethers.utils.formatUnits(
           amount,
           fromTokenDecimals,
@@ -53,7 +58,6 @@ async function swap(
           swapCallData["toAmount"],
           toTokenDecimals,
         );
-
         const inputValue =
           Number(normalizedInputAmount) * tokenPricesMappingTable[fromToken];
         const outputValue =
@@ -76,6 +80,8 @@ async function swap(
           gasFee: swapCallData["gasFee"],
           tradingLoss,
           inputValue,
+          normalizedInputAmount,
+          normalizedOutputAmount,
           transactions: [
             approveTxn,
             prepareTransaction({
@@ -107,6 +113,18 @@ async function swap(
     }
     return Number(b.minToAmount - a.minToAmount); // Higher return amount is better
   })[0];
+
+  // Check slippage for the best quote only
+  const actualPrice =
+    (bestSwap.normalizedOutputAmount * tokenPricesMappingTable[toTokenSymbol]) /
+    (bestSwap.normalizedInputAmount * tokenPricesMappingTable[fromToken]);
+  const slippagePercentage = (1 - actualPrice) * 100;
+  assert(
+    slippagePercentage <= slippage,
+    `Slippage is too high to swap ${fromToken} to ${toTokenSymbol}. Slippage: ${slippagePercentage.toFixed(
+      2,
+    )}%, Max allowed: ${slippage}%`,
+  );
   // Update progress with final trading loss/gain
   await updateProgressAndWaitCallback(
     updateProgress,

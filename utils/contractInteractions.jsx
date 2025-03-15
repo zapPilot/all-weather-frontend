@@ -130,7 +130,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   wausdcn: {
     geckoterminal: {
       chain: "arbitrum",
-      address: "0x7CFaDFD5645B50bE87d546f42699d863648251ad",
+      address: "0xca8ecd05a289b1fbc2e0eaec07360c4bfec07b61",
     },
     vaults: ["Stable+ Vault", "All Weather Vault"],
   },
