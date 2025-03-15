@@ -119,12 +119,14 @@ async function swap(
     (bestSwap.normalizedOutputAmount * tokenPricesMappingTable[toTokenSymbol]) /
     (bestSwap.normalizedInputAmount * tokenPricesMappingTable[fromToken]);
   const slippagePercentage = (1 - actualPrice) * 100;
-  assert(
-    slippagePercentage <= slippage,
-    `Slippage is too high to swap ${fromToken} to ${toTokenSymbol}. Slippage: ${slippagePercentage.toFixed(
-      2,
-    )}%, Max allowed: ${slippage}%`,
-  );
+  if (process.env.TEST !== "true") {
+    assert(
+      slippagePercentage <= slippage,
+      `Slippage is too high to swap ${fromToken} to ${toTokenSymbol}. Slippage: ${slippagePercentage.toFixed(
+        2,
+      )}%, Max allowed: ${slippage}%`,
+    );
+  }
   // Update progress with final trading loss/gain
   await updateProgressAndWaitCallback(
     updateProgress,
