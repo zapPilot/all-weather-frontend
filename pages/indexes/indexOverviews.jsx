@@ -191,6 +191,40 @@ const findProtocolByUniqueId = (targetId, strategy) => {
   return null;
 };
 
+// Add this function to determine the appropriate slippage
+const determineSlippage = (params) => {
+  const { portfolioName, selectedTokenSymbol, tabLabel, actionName } = params;
+
+  // Rebalance tab always uses 5% slippage
+  if (tabLabel === "Rebalance") {
+    return 5;
+  }
+
+  // Claim tab uses 3% slippage
+  if (tabLabel === "Claim") {
+    return 3;
+  }
+
+  // ETH/WETH for Stable+ Vault uses 3% slippage
+  if (
+    (selectedTokenSymbol === "eth" || selectedTokenSymbol === "weth") &&
+    portfolioName === "Stable+ Vault"
+  ) {
+    return 3;
+  }
+
+  // ZapIn for ETH Vault or All Weather Vault uses 3% slippage
+  if (
+    (portfolioName === "ETH Vault" || portfolioName === "All Weather Vault") &&
+    actionName === "zapIn"
+  ) {
+    return 3;
+  }
+
+  // Default slippage based on portfolio type
+  return portfolioName?.includes("Stable") ? 2 : 3;
+};
+
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -283,8 +317,8 @@ export default function IndexOverviews() {
   const [platformFee, setPlatformFee] = useState(0);
   const [costsCalculated, setCostsCalculated] = useState(false);
   const [stepName, setStepName] = useState("");
-  const [slippage, setSlippage] = useState(
-    portfolioName?.includes("Stablecoin") ? 2 : 3,
+  const [slippage, setSlippage] = useState(() =>
+    determineSlippage({ portfolioName }),
   );
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
@@ -634,19 +668,19 @@ export default function IndexOverviews() {
           errorReadableMsg = "ERC721: operator query for nonexistent token";
         } else if (
           error.message.includes(
-            "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002845524332303a207472616e7366657220616d6f756e74206578636565647320616c6c6f77616e6365000000000000000000000000000000000000000000000000",
+            "2845524332303a207472616e7366657220616d6f756e74206578636565647320616c6c6f77616e6365",
           )
         ) {
           errorReadableMsg = "ERC20: transfer amount exceeds allowance";
         } else if (
           error.message.includes(
-            "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002645524332303a207472616e7366657220616d6f756e7420657863656564732062616c616e63650000000000000000000000000000000000000000000000000000",
+            "45524332303a207472616e7366657220616d6f756e7420657863656564732062616c616e6365",
           )
         ) {
           errorReadableMsg = "ERC20: transfer amount exceeds balance";
         } else if (
           error.message.includes(
-            "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000030526563656976656420616d6f756e74206f6620746f6b656e7320617265206c657373207468656e20657870656374656400000000000000000000000000000000",
+            "526563656976656420616d6f756e74206f6620746f6b656e7320617265206c657373207468656e206578706563746564",
           ) ||
           error.message.includes(
             "0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000014c00000000000000000000000000000000000000000000000000000000000000",
@@ -780,14 +814,13 @@ export default function IndexOverviews() {
 
   const onChange = (key) => {
     setTabKey(key);
-    // Find the selected tab item and check its label
     const selectedTab = items.find((item) => item.key === key);
-    if (selectedTab?.label === "Rebalance") {
-      setSlippage(5);
-    } else if (selectedTab?.key === "5") {
-      // 5 stands for 'Claim'
-      setSlippage(3);
-    }
+    const newSlippage = determineSlippage({
+      portfolioName,
+      tabLabel: selectedTab?.label,
+      actionName,
+    });
+    setSlippage(newSlippage);
   };
 
   const tokenAddress = selectedToken?.split("-")[1];
@@ -854,31 +887,18 @@ export default function IndexOverviews() {
     ) {
       dispatch(fetchStrategyMetadata());
     }
+
     if (portfolioName !== undefined) {
       const selectedTokenSymbol = selectedToken?.toLowerCase()?.split("-")[0];
-      if (
-        (selectedTokenSymbol === "eth" || selectedTokenSymbol === "weth") &&
-        portfolioName === "Stable+ Vault"
-      ) {
-        setSlippage(3);
-      } else if (
-        portfolioName === "ETH Vault" ||
-        portfolioName === "All Weather Vault"
-      ) {
-        setSlippage(3);
-      } else {
-        // Check if we're on the rebalance tab before setting default slippage
-        if (
-          tabKey &&
-          items.find((item) => item.key === tabKey)?.label === "Rebalance"
-        ) {
-          setSlippage(5);
-        } else {
-          setSlippage(2);
-        }
-      }
+      const newSlippage = determineSlippage({
+        portfolioName,
+        selectedTokenSymbol,
+        tabLabel: items.find((item) => item.key === tabKey)?.label,
+        actionName,
+      });
+      setSlippage(newSlippage);
     }
-  }, [portfolioName, selectedToken, chainId, tabKey]);
+  }, [portfolioName, selectedToken, chainId, tabKey, actionName]);
   useEffect(() => {
     console.time("🚀 Portfolio data fetch");
     // Clear states on initial load/refresh
@@ -1174,6 +1194,7 @@ export default function IndexOverviews() {
     <BasePage>
       {notificationContextHolder}
       <PopUpModal
+        account={account}
         portfolioHelper={portfolioHelper}
         stepName={stepName}
         tradingLoss={tradingLoss}
