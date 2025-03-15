@@ -158,7 +158,7 @@ export class BaseApolloX extends BaseProtocol {
       params: [bestTokenAddressToZapOut, amount, minOutAmount, owner],
     });
     return [
-      [...unstakeTxns, approveAlpTxn, burnTxn],
+      [approveAlpTxn, burnTxn],
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
@@ -182,15 +182,9 @@ export class BaseApolloX extends BaseProtocol {
   }
 
   async usdBalanceOf(owner, tokenPricesMappingTable) {
-    const stakeFarmContractInstance = new ethers.Contract(
-      this.stakeFarmContract.address,
-      SmartChefInitializable,
-      PROVIDER(this.chain),
-    );
-    const userInfo = (await stakeFarmContractInstance.functions.userInfo(owner))
-      .amount;
+    const balance = await this.assetBalanceOf(owner);
     const latestAlpPrice = await this._fetchAlpPrice(() => {});
-    return (userInfo / Math.pow(10, this.assetDecimals)) * latestAlpPrice;
+    return balance * latestAlpPrice;
   }
   async assetUsdPrice(tokenPricesMappingTable) {
     return await this._fetchAlpPrice(() => {});

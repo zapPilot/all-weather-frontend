@@ -98,14 +98,14 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
       chain: "arbitrum",
       address: "0x12275DCB9048680c4Be40942eA4D92c74C63b844",
     },
-    vaults: ["Stable+ Vault"],
+    vaults: ["Stable+ Vault", "All Weather Vault"],
   },
   gusdc: {
     geckoterminal: {
       chain: "arbitrum",
       address: "0xd3443ee1e91aF28e5FB858Fbd0D72A63bA8046E0",
     },
-    vaults: ["Stable+ Vault", "Equilibria Vault"],
+    vaults: ["Stable+ Vault", "Equilibria Vault", "All Weather Vault"],
   },
   dusdc: {
     coinmarketcapApiId: 3408,
@@ -117,7 +117,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   susdx: {
     coinmarketcapApiId: 34088,
-    vaults: ["Stable+ Vault"],
+    vaults: ["Stable+ Vault", "All Weather Vault"],
   },
   gho: {
     coinmarketcapApiId: 23508,
@@ -125,12 +125,12 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   gyd: {
     coinmarketcapApiId: 31996,
-    vaults: ["Stable+ Vault"],
+    vaults: ["Stable+ Vault", "All Weather Vault"],
   },
   wausdcn: {
     geckoterminal: {
       chain: "arbitrum",
-      address: "0x7CFaDFD5645B50bE87d546f42699d863648251ad",
+      address: "0xca8ecd05a289b1fbc2e0eaec07360c4bfec07b61",
     },
     vaults: ["Stable+ Vault", "All Weather Vault"],
   },
