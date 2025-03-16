@@ -1234,6 +1234,10 @@ export default function IndexOverviews() {
                   src={`/indexFunds/${encodeURIComponent(
                     portfolioName?.toLowerCase(),
                   )}.webp`}
+                  onError={(e) => {
+                    e.target.onerror = null; // Prevent infinite loop
+                    e.target.src = "/indexFunds/stable+ vault.webp";
+                  }}
                   className="h-8 w-8 rounded-full me-2"
                 />
                 <h1 className="text-2xl font-bold text-white" role="vault">

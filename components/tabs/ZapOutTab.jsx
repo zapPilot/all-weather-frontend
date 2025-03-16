@@ -29,7 +29,6 @@ export default function ZapOutTab({
     .replace(" one", "")
     .replace(" mainnet", "")
     .trim();
-
   return (
     <div>
       <ActionItem

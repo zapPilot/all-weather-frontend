@@ -99,9 +99,7 @@ export default function RebalanceTab({
                           setCurrentStep(currentStep + 1);
                         }
                       }}
-                      loading={
-                        rebalanceIsLoading || rebalancableUsdBalanceDictLoading
-                      }
+                      loading={rebalancableUsdBalanceDictLoading}
                       disabled={
                         usdBalance <= 0 ||
                         (data.actionName === "localRebalance" &&
