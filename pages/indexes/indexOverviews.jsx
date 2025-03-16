@@ -1236,7 +1236,7 @@ export default function IndexOverviews() {
                   )}.webp`}
                   onError={(e) => {
                     e.target.onerror = null; // Prevent infinite loop
-                    e.target.src = "/indexFunds/stable+ vault.webp";
+                    e.target.src = "/tokenPictures/usdc.webp";
                   }}
                   className="h-8 w-8 rounded-full me-2"
                 />
