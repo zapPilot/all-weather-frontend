@@ -251,19 +251,21 @@ export class BaseApolloX extends BaseProtocol {
     }
   }
   async _stake(amount, updateProgress) {
-    const approveAlpTxn = approve(
-      this.assetContract.address,
-      this.stakeFarmContract.address,
-      amount,
-      updateProgress,
-      this.chainId,
-    );
-    const depositTxn = prepareContractCall({
-      contract: this.stakeFarmContract,
-      method: "deposit", // <- this gets inferred from the contract
-      params: [amount],
-    });
-    return [approveAlpTxn, depositTxn];
+    // NOTE: currently no staking campaign on Arbitrum, so need to return [] for the correct "dust" calculation
+    return [];
+    // const approveAlpTxn = approve(
+    //   this.assetContract.address,
+    //   this.stakeFarmContract.address,
+    //   amount,
+    //   updateProgress,
+    //   this.chainId,
+    // );
+    // const depositTxn = prepareContractCall({
+    //   contract: this.stakeFarmContract,
+    //   method: "deposit", // <- this gets inferred from the contract
+    //   params: [amount],
+    // });
+    // return [approveAlpTxn, depositTxn];
   }
   async _unstake(owner, percentage, updateProgress) {
     await super._unstake(owner, percentage, updateProgress);
