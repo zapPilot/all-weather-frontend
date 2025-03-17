@@ -494,235 +494,228 @@ export default function IndexOverviews() {
                 .replace(" mainnet", ""),
           )
           .reduce((sum, value) => sum + value.usdBalance, 0) / usdBalance;
+
       // Call sendBatchTransaction and wait for the result
-      try {
-        await new Promise((resolve, reject) => {
-          sendBatchTransaction(txns.flat(Infinity), {
-            onSuccess: async (data) => {
-              const explorerUrl =
-                data?.chain?.blockExplorers !== undefined
-                  ? data.chain.blockExplorers[0].url
-                  : `https://explorer.${CHAIN_ID_TO_CHAIN_STRING[
-                      chainId?.id
-                    ].toLowerCase()}.io`;
+      await new Promise((resolve, reject) => {
+        sendBatchTransaction(txns.flat(Infinity), {
+          onSuccess: async (data) => {
+            const explorerUrl =
+              data?.chain?.blockExplorers !== undefined
+                ? data.chain.blockExplorers[0].url
+                : `https://explorer.${CHAIN_ID_TO_CHAIN_STRING[
+                    chainId?.id
+                  ].toLowerCase()}.io`;
 
-              // First update chainStatus
-              setChainStatus((prevStatus) => {
-                const newStatus = { ...prevStatus, [currentChain]: true };
+            // First update chainStatus
+            setChainStatus((prevStatus) => {
+              const newStatus = { ...prevStatus, [currentChain]: true };
 
-                // Check if all chains are complete after the update
-                if (Object.values(newStatus).every(Boolean)) {
-                  localStorage.removeItem(
-                    `portfolio-${portfolioName}-${account.address}`,
-                  );
-                }
-
-                return newStatus;
-              });
-
-              // Continue with other state updates
-              setFinishedTxn(true);
-              const newNextChain = switchNextChain(data.chain.name);
-              setNextStepChain(newNextChain);
-              setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
-
-              openNotificationWithIcon(
-                notificationAPI,
-                "Transaction Result",
-                "success",
-                `${explorerUrl}/tx/${data.transactionHash}`,
-              );
-              resolve(data); // Resolve the promise successfully
-              try {
-                const isLocalhost =
-                  window.location.hostname === "localhost" ||
-                  window.location.hostname === "127.0.0.1";
-
-                if (!isLocalhost) {
-                  axios.post(
-                    `${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`,
-                    {
-                      errorMsg: `<@&1172000757764075580> ${error.message}`,
-                    },
-                  );
-                }
-                await axios({
-                  method: "post",
-                  url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  data: {
-                    user_api_key: "placeholder",
-                    tx_hash: data.transactionHash,
-                    address: account.address,
-                    metadata: JSON.stringify({
-                      portfolioName,
-                      actionName,
-                      tokenSymbol,
-                      investmentAmount: investmentAmountAfterFee,
-                      zapOutAmount:
-                        actionName === "crossChainRebalance" ||
-                        actionName === "localRebalance"
-                          ? getRebalanceReinvestUsdAmount(currentChain?.name)
-                          : usdBalance *
-                            zapOutPercentage *
-                            chainWeightPerYourPortfolio,
-                      rebalanceAmount: getRebalanceReinvestUsdAmount(
-                        currentChain?.name,
-                      ),
-                      timestamp: Math.floor(Date.now() / 1000),
-                      swapFeeRate: portfolioHelper.swapFeeRate(),
-                      referralFeeRate: portfolioHelper.referralFeeRate(),
-                      chain:
-                        CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
-                      zapInAmountOnThisChain: onlyThisChain
-                        ? investmentAmountAfterFee
-                        : investmentAmountAfterFee * chainWeight,
-                      stakeAmountOnThisChain: Object.values(
-                        protocolAssetDustInWallet?.[
-                          chainId?.name
-                            ?.toLowerCase()
-                            ?.replace(" one", "")
-                            .replace(" mainnet", "")
-                        ] || {},
-                      ).reduce(
-                        (sum, protocolObj) =>
-                          sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
-                        0,
-                      ),
-                      transferTo: recipient,
-                    }),
-                  },
-                });
-                if (actionName === "transfer") {
-                  await axios({
-                    method: "post",
-                    url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    data: {
-                      user_api_key: "placeholder",
-                      tx_hash: data.transactionHash,
-                      address: recipient,
-                      metadata: JSON.stringify({
-                        portfolioName,
-                        actionName: "receive",
-                        tokenSymbol,
-                        investmentAmount: investmentAmountAfterFee,
-                        timestamp: Math.floor(Date.now() / 1000),
-                        chain:
-                          CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
-                        zapInAmountOnThisChain:
-                          usdBalance *
-                          zapOutPercentage *
-                          chainWeightPerYourPortfolio,
-                        sender: account.address,
-                      }),
-                    },
-                  });
-                }
-              } catch (error) {
-                console.error("category API error", error);
-              }
-            },
-            onError: (error) => {
-              if (error.message.includes("User rejected the request")) {
-                return;
-              }
-              const isLocalhost =
-                window.location.hostname === "localhost" ||
-                window.location.hostname === "127.0.0.1";
-
-              if (!isLocalhost) {
-                axios.post(
-                  `${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`,
-                  {
-                    errorMsg: `<@&1172000757764075580> ${error.message}`,
-                  },
+              // Check if all chains are complete after the update
+              if (Object.values(newStatus).every(Boolean)) {
+                localStorage.removeItem(
+                  `portfolio-${portfolioName}-${account.address}`,
                 );
               }
-              reject(error); // Reject the promise with the error
-            },
-          });
+
+              return newStatus;
+            });
+
+            // Continue with other state updates
+            setFinishedTxn(true);
+            const newNextChain = switchNextChain(data.chain.name);
+            setNextStepChain(newNextChain);
+            setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
+
+            openNotificationWithIcon(
+              notificationAPI,
+              "Transaction Result",
+              "success",
+              `${explorerUrl}/tx/${data.transactionHash}`,
+            );
+            resolve(data); // Resolve the promise successfully
+
+            await axios({
+              method: "post",
+              url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
+              headers: {
+                "Content-Type": "application/json",
+              },
+              data: {
+                user_api_key: "placeholder",
+                tx_hash: data.transactionHash,
+                address: account.address,
+                metadata: JSON.stringify({
+                  portfolioName,
+                  actionName,
+                  tokenSymbol,
+                  investmentAmount: investmentAmountAfterFee,
+                  zapOutAmount:
+                    actionName === "crossChainRebalance" ||
+                    actionName === "localRebalance"
+                      ? getRebalanceReinvestUsdAmount(currentChain?.name)
+                      : usdBalance *
+                        zapOutPercentage *
+                        chainWeightPerYourPortfolio,
+                  rebalanceAmount: getRebalanceReinvestUsdAmount(
+                    currentChain?.name,
+                  ),
+                  timestamp: Math.floor(Date.now() / 1000),
+                  swapFeeRate: portfolioHelper.swapFeeRate(),
+                  referralFeeRate: portfolioHelper.referralFeeRate(),
+                  chain: CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
+                  zapInAmountOnThisChain: onlyThisChain
+                    ? investmentAmountAfterFee
+                    : investmentAmountAfterFee * chainWeight,
+                  stakeAmountOnThisChain: Object.values(
+                    protocolAssetDustInWallet?.[
+                      chainId?.name
+                        ?.toLowerCase()
+                        ?.replace(" one", "")
+                        .replace(" mainnet", "")
+                    ] || {},
+                  ).reduce(
+                    (sum, protocolObj) =>
+                      sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
+                    0,
+                  ),
+                  transferTo: recipient,
+                }),
+              },
+            });
+
+            if (actionName === "transfer") {
+              await axios({
+                method: "post",
+                url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                data: {
+                  user_api_key: "placeholder",
+                  tx_hash: data.transactionHash,
+                  address: recipient,
+                  metadata: JSON.stringify({
+                    portfolioName,
+                    actionName: "receive",
+                    tokenSymbol,
+                    investmentAmount: investmentAmountAfterFee,
+                    timestamp: Math.floor(Date.now() / 1000),
+                    chain: CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
+                    zapInAmountOnThisChain:
+                      usdBalance *
+                      zapOutPercentage *
+                      chainWeightPerYourPortfolio,
+                    sender: account.address,
+                  }),
+                },
+              });
+            }
+          },
+          onError: (error) => {
+            if (error.message.includes("User rejected the request")) {
+              return;
+            }
+
+            const isLocalhost =
+              window.location.hostname === "localhost" ||
+              window.location.hostname === "127.0.0.1";
+
+            if (!isLocalhost) {
+              axios.post(
+                `${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`,
+                {
+                  errorMsg: `<@&1172000757764075580> ${error.message}`,
+                },
+              );
+            }
+            reject(error); // Reject the promise with the error
+          },
         });
-      } catch (error) {
-        let errorReadableMsg;
-        if (error.message.includes("0x495d907f")) {
-          errorReadableMsg = "bridgequote expired, please try again";
-        } else if (error.message.includes("0x203d82d8")) {
-          errorReadableMsg = "DeFi pool quote has expired. Please try again.";
-        } else if (error.message.includes("0x6f6dd725")) {
-          errorReadableMsg = "Swap quote has expired. Please try again.";
-        } else if (error.message.includes("0xf4059071")) {
-          errorReadableMsg = "Please increase slippage tolerance";
-        } else if (error.message.includes("0x8f66ec14")) {
-          errorReadableMsg =
-            "The zap in amount is too small, or slippage is too low";
-        } else if (
-          error.message.includes(
-            "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002c4552433732313a206f70657261746f7220717565727920666f72206e6f6e6578697374656e7420746f6b656e0000000000000000000000000000000000000000",
-          )
-        ) {
-          errorReadableMsg = "ERC721: operator query for nonexistent token";
-        } else if (
-          error.message.includes(
-            "2845524332303a207472616e7366657220616d6f756e74206578636565647320616c6c6f77616e6365",
-          )
-        ) {
-          errorReadableMsg = "ERC20: transfer amount exceeds allowance";
-        } else if (
-          error.message.includes(
-            "45524332303a207472616e7366657220616d6f756e7420657863656564732062616c616e6365",
-          )
-        ) {
-          errorReadableMsg = "ERC20: transfer amount exceeds balance";
-        } else if (
-          error.message.includes(
-            "526563656976656420616d6f756e74206f6620746f6b656e7320617265206c657373207468656e206578706563746564",
-          ) ||
-          error.message.includes(
-            "0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000014c00000000000000000000000000000000000000000000000000000000000000",
-          )
-        ) {
-          errorReadableMsg =
-            "Received amount of tokens are less then expected, please increase slippage tolerance and try again";
-        } else if (error.message.includes("0x09bde339")) {
-          errorReadableMsg =
-            "Failed to claim rewards, please try again" + error.message;
-        } else if (error.message.endsWith("0x")) {
-          errorReadableMsg = "You send the transaction to the wrong address";
-        } else if (error.message.includes("User rejected the request")) {
-          return;
-        } else if (
-          error.message.includes("from should be same as current address")
-        ) {
-          errorReadableMsg =
-            "You're sending the transaction from the wrong address";
-        } else {
-          errorReadableMsg =
-            "Transaction failed. Please try increasing slippage tolerance or notify customer support to increase gas limit." +
-            error.message;
-        }
-        openNotificationWithIcon(
-          notificationAPI,
-          "Transaction Result",
-          "error",
-          errorReadableMsg,
-        );
-      }
+      });
     } catch (error) {
-      const errorMsg =
-        error.name === "AxiosError"
-          ? error.response?.data?.message
-          : error.message;
+      // Handle all errors in one place
+      if (error.message.includes("User rejected the request")) {
+        return; // User cancelled, no need for error notification
+      }
+
+      let errorReadableMsg;
+
+      // Error code mapping
+      if (error.message.includes("0x495d907f")) {
+        errorReadableMsg = "Bridgequote expired, please try again";
+      } else if (error.message.includes("0x203d82d8")) {
+        errorReadableMsg = "DeFi pool quote has expired. Please try again.";
+      } else if (error.message.includes("0x6f6dd725")) {
+        errorReadableMsg = "Swap quote has expired. Please try again.";
+      } else if (error.message.includes("0xf4059071")) {
+        errorReadableMsg = "Please increase slippage tolerance";
+      } else if (error.message.includes("0x8f66ec14")) {
+        errorReadableMsg =
+          "The zap in amount is too small, or slippage is too low";
+      } else if (
+        error.message.includes("0x08c379a0") &&
+        error.message.includes(
+          "4552433732313a206f70657261746f7220717565727920666f72206e6f6e6578697374656e7420746f6b656e",
+        )
+      ) {
+        errorReadableMsg = "ERC721: operator query for nonexistent token";
+      } else if (
+        error.message.includes(
+          "2845524332303a207472616e7366657220616d6f756e74206578636565647320616c6c6f77616e6365",
+        )
+      ) {
+        errorReadableMsg = "ERC20: transfer amount exceeds allowance";
+      } else if (
+        error.message.includes(
+          "45524332303a207472616e7366657220616d6f756e7420657863656564732062616c616e6365",
+        )
+      ) {
+        errorReadableMsg = "ERC20: transfer amount exceeds balance";
+      } else if (
+        error.message.includes(
+          "526563656976656420616d6f756e74206f6620746f6b656e7320617265206c657373207468656e206578706563746564",
+        ) ||
+        (error.message.includes("0x08c379a0") &&
+          error.message.includes(
+            "14c00000000000000000000000000000000000000000000000000000000000000",
+          ))
+      ) {
+        errorReadableMsg =
+          "Received amount of tokens are less than expected, please increase slippage tolerance and try again";
+      } else if (error.message.includes("0x09bde339")) {
+        errorReadableMsg = "Failed to claim rewards, please try again";
+      } else if (error.message.endsWith("0x")) {
+        errorReadableMsg = "You sent the transaction to the wrong address";
+      } else if (
+        error.message.includes("from should be same as current address")
+      ) {
+        errorReadableMsg =
+          "You're sending the transaction from the wrong address";
+      } else if (error.message === "No transactions to send") {
+        errorReadableMsg =
+          "No transactions to send. Please try again with different parameters.";
+      } else {
+        errorReadableMsg = `${error.message}: Please try increasing slippage tolerance or contact our support team for assistance.`;
+      }
+
+      // Show error notification
       openNotificationWithIcon(
         notificationAPI,
-        "Generate Transaction Error",
+        "Transaction Result",
         "error",
-        errorMsg,
+        errorReadableMsg,
       );
+
+      // Log to Discord webhook if not on localhost
+      const isLocalhost =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1";
+
+      if (!isLocalhost) {
+        axios.post(`${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`, {
+          errorMsg: `<@&1172000757764075580> ${error.message}`,
+        });
+      }
     }
     if (actionName === "zapIn") {
       setZapInIsLoading(false);
