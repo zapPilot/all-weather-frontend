@@ -534,18 +534,6 @@ export default function IndexOverviews() {
               );
               resolve(data); // Resolve the promise successfully
               try {
-                const isLocalhost =
-                  window.location.hostname === "localhost" ||
-                  window.location.hostname === "127.0.0.1";
-
-                if (!isLocalhost) {
-                  axios.post(
-                    `${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`,
-                    {
-                      errorMsg: `<@&1172000757764075580> ${error.message}`,
-                    },
-                  );
-                }
                 await axios({
                   method: "post",
                   url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
@@ -624,6 +612,17 @@ export default function IndexOverviews() {
                   });
                 }
               } catch (error) {
+                const isLocalhost =
+                  window.location.hostname === "localhost" ||
+                  window.location.hostname === "127.0.0.1";
+                if (!isLocalhost) {
+                  axios.post(
+                    `${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`,
+                    {
+                      errorMsg: `<@&1172000757764075580> ${error.message}`,
+                    },
+                  );
+                }
                 console.error("category API error", error);
               }
             },
