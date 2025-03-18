@@ -51,180 +51,9 @@ import PortfolioSummary from "../portfolio/PortfolioSummary";
 import PortfolioComposition from "../portfolio/PortfolioComposition";
 import HistoricalData from "../portfolio/HistoricalData";
 import TransactionHistoryPanel from "../portfolio/TransactionHistoryPanel";
-import LZString from "lz-string";
-import { ethers } from "ethers";
-
-const safeSetLocalStorage = (key, value) => {
-  try {
-    const cacheData = {
-      tokenPricesMappingTable: value.tokenPricesMappingTable,
-      usdBalance: value.usdBalance,
-      usdBalanceDict: value.usdBalanceDict,
-      lockUpPeriod: value.lockUpPeriod,
-      pendingRewards: value.pendingRewards,
-      dust: {},
-      timestamp: value.timestamp,
-      __className: "PortfolioCache",
-    };
-
-    // Only store the uniqueId for protocol lookup
-    if (value.dust) {
-      Object.keys(value.dust).forEach((chain) => {
-        if (value.dust[chain]) {
-          cacheData.dust[chain] = {};
-          Object.keys(value.dust[chain]).forEach((protocol) => {
-            if (value.dust[chain][protocol]) {
-              cacheData.dust[chain][protocol] = {
-                assetBalance: value.dust[chain][protocol].assetBalance,
-                assetUsdBalanceOf:
-                  value.dust[chain][protocol].assetUsdBalanceOf,
-                protocolId: value.dust[chain][protocol].protocol.uniqueId(),
-              };
-            }
-          });
-        }
-      });
-    }
-
-    const compressedValue = LZString.compressToUTF16(JSON.stringify(cacheData));
-    localStorage.setItem(key, compressedValue);
-  } catch (e) {
-    console.error("Error in safeSetLocalStorage:", e);
-    throw e;
-  }
-};
-
-const safeGetLocalStorage = (key, portfolioHelper) => {
-  try {
-    const compressed = localStorage.getItem(key);
-    if (!compressed) {
-      return null;
-    }
-
-    const decompressedData = JSON.parse(
-      LZString.decompressFromUTF16(compressed),
-    );
-
-    if (decompressedData.__className === "PortfolioCache") {
-      const { __className, ...cacheData } = decompressedData;
-
-      // Reconstruct dust objects using protocolId
-      if (cacheData.dust && portfolioHelper?.strategy) {
-        Object.keys(cacheData.dust).forEach((chain) => {
-          if (cacheData.dust[chain]) {
-            Object.keys(cacheData.dust[chain]).forEach((protocol) => {
-              if (cacheData.dust[chain][protocol]) {
-                const cachedData = cacheData.dust[chain][protocol];
-                const protocolId = cachedData.protocolId;
-
-                // Find the protocol instance in portfolioHelper.strategy
-                const protocolInstance = findProtocolByUniqueId(
-                  protocolId,
-                  portfolioHelper.strategy,
-                );
-
-                if (protocolInstance) {
-                  cacheData.dust[chain][protocol] = {
-                    assetBalance: ethers.BigNumber.from(
-                      cachedData.assetBalance.hex,
-                    ),
-                    assetUsdBalanceOf: cachedData.assetUsdBalanceOf,
-                    protocol: protocolInstance,
-                  };
-                }
-              }
-            });
-          }
-        });
-      }
-      // Reconstruct usdBalanceDict objects using protocolId
-      if (cacheData.usdBalanceDict && portfolioHelper?.strategy) {
-        Object.keys(cacheData.usdBalanceDict).forEach(
-          (protocolIdWithClassName) => {
-            const lastSlashIndex = protocolIdWithClassName.lastIndexOf("/");
-            const protocolId = protocolIdWithClassName.substring(
-              0,
-              lastSlashIndex,
-            );
-            const cachedData =
-              cacheData.usdBalanceDict[protocolIdWithClassName];
-
-            // Find the protocol instance in portfolioHelper.strategy
-            const protocolInstance = findProtocolByUniqueId(
-              protocolId,
-              portfolioHelper.strategy,
-            );
-            if (protocolInstance) {
-              cacheData.usdBalanceDict[protocolIdWithClassName] = {
-                ...cachedData,
-                protocol: {
-                  ...cachedData.protocol,
-                  interface: protocolInstance,
-                },
-              };
-            }
-          },
-        );
-      }
-
-      return cacheData;
-    }
-
-    return decompressedData;
-  } catch (e) {
-    console.error("Error retrieving from localStorage:", e);
-    throw e;
-  }
-};
-
-// Helper function to find protocol by uniqueId in strategy
-const findProtocolByUniqueId = (targetId, strategy) => {
-  for (const allocation of Object.values(strategy)) {
-    for (const chainData of Object.values(allocation)) {
-      for (const protocolData of chainData) {
-        if (protocolData.interface.uniqueId() === targetId) {
-          return protocolData.interface;
-        }
-      }
-    }
-  }
-  return null;
-};
-
-// Add this function to determine the appropriate slippage
-const determineSlippage = (params) => {
-  const { portfolioName, selectedTokenSymbol, tabLabel, actionName } = params;
-
-  // Rebalance tab always uses 5% slippage
-  if (tabLabel === "Rebalance") {
-    return 5;
-  }
-
-  // Claim tab uses 3% slippage
-  if (tabLabel === "Claim") {
-    return 3;
-  }
-
-  // ETH/WETH for Stable+ Vault uses 3% slippage
-  if (
-    (selectedTokenSymbol === "eth" || selectedTokenSymbol === "weth") &&
-    portfolioName === "Stable+ Vault"
-  ) {
-    return 3;
-  }
-
-  // ZapIn for ETH Vault or All Weather Vault uses 3% slippage
-  if (
-    (portfolioName === "ETH Vault" || portfolioName === "All Weather Vault") &&
-    actionName === "zapIn"
-  ) {
-    return 3;
-  }
-
-  // Default slippage based on portfolio type
-  return portfolioName?.includes("Stable") ? 2 : 3;
-};
-
+import { safeSetLocalStorage, safeGetLocalStorage } from "../../utils/localStorage";
+import { determineSlippage } from "../../utils/slippage";
+import { getAvailableAssetChains, calCrossChainInvestmentAmount, switchNextChain, normalizeChainName } from "../../utils/chainHelper";
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -448,10 +277,7 @@ export default function IndexOverviews() {
         rebalancableUsdBalanceDict,
         recipient,
         protocolAssetDustInWallet[
-          chainId?.name
-            ?.toLowerCase()
-            ?.replace(" one", "")
-            .replace(" mainnet", "")
+          normalizeChainName(chainId?.name)
         ],
         onlyThisChain,
         usdBalance,
@@ -478,20 +304,13 @@ export default function IndexOverviews() {
         (1 - portfolioHelper.swapFeeRate()) *
         (1 - slippage / 100);
       const chainWeight = calCrossChainInvestmentAmount(
-        chainId?.name
-          ?.toLowerCase()
-          .replace(" one", "")
-          .replace(" mainnet", ""),
+        normalizeChainName(chainId?.name)
       );
       const chainWeightPerYourPortfolio =
         Object.values(rebalancableUsdBalanceDict)
           .filter(
             ({ chain }) =>
-              chain ===
-              chainId?.name
-                ?.toLowerCase()
-                .replace(" one", "")
-                .replace(" mainnet", ""),
+              chain === normalizeChainName(chainId?.name),
           )
           .reduce((sum, value) => sum + value.usdBalance, 0) / usdBalance;
 
@@ -568,10 +387,7 @@ export default function IndexOverviews() {
                     : investmentAmountAfterFee * chainWeight,
                   stakeAmountOnThisChain: Object.values(
                     protocolAssetDustInWallet?.[
-                      chainId?.name
-                        ?.toLowerCase()
-                        ?.replace(" one", "")
-                        .replace(" mainnet", "")
+                      normalizeChainName(chainId?.name)
                     ] || {},
                   ).reduce(
                     (sum, protocolObj) =>
@@ -734,27 +550,10 @@ export default function IndexOverviews() {
   };
 
   const [nextStepChain, setNextStepChain] = useState("");
-  const switchNextChain = (chain) => {
-    const nextChain = chain.includes(" ")
-      ? chain.toLowerCase().replace(" one", "").replace(" mainnet", "")
-      : chain;
-    return nextChain === "arbitrum" ? "base" : "arbitrum";
-  };
 
-  const currentChain = chainId?.name
-    ?.toLowerCase()
-    .replace(" one", "")
-    .replace(" mainnet", "")
-    .trim();
+  const currentChain = normalizeChainName(chainId?.name);
   // get all available chains
-  const availableAssetChains = [
-    ...new Set(
-      Object.entries(portfolioHelper?.strategy || {}).flatMap(
-        ([category, protocols]) =>
-          Object.entries(protocols).map(([chain, protocolArray]) => chain),
-      ),
-    ),
-  ];
+  const availableAssetChains = getAvailableAssetChains(portfolioHelper);
   // get chain status
   const [chainStatus, setChainStatus] = useState({
     base: false,
@@ -777,32 +576,6 @@ export default function IndexOverviews() {
     }
   };
 
-  // calculate the investment amount for next chain
-  const calCrossChainInvestmentAmount = (nextChain) => {
-    if (portfolioHelper?.strategy === undefined) return 0;
-    return Object.entries(portfolioHelper.strategy).reduce(
-      (sum, [category, protocols]) => {
-        return (
-          sum +
-          Object.entries(protocols).reduce(
-            (innerSum, [chain, protocolArray]) => {
-              if (chain === nextChain) {
-                return (
-                  innerSum +
-                  protocolArray.reduce((weightSum, protocol) => {
-                    return weightSum + protocol.weight;
-                  }, 0)
-                );
-              }
-              return innerSum;
-            },
-            0,
-          )
-        );
-      },
-      0,
-    );
-  };
   const [nextChainInvestmentAmount, setNextChainInvestmentAmount] = useState(0);
 
   const onChange = (key) => {
@@ -830,10 +603,7 @@ export default function IndexOverviews() {
         ? {
             tokenAddress:
               TOKEN_ADDRESS_MAP["weth"][
-                chainId.name
-                  .toLowerCase()
-                  .replace(" one", "")
-                  .replace(" mainnet", "")
+                normalizeChainName(chainId?.name)
               ],
           }
         : { tokenAddress }),
@@ -856,10 +626,7 @@ export default function IndexOverviews() {
   );
 
   const getRebalanceReinvestUsdAmount = (chainFilter) => {
-    const chain = chainFilter
-      ?.replace(" one", "")
-      .replace(" mainnet", "")
-      .toLowerCase();
+    const chain = normalizeChainName(chainFilter);
     if (chain === undefined) return 0;
     const filteredBalances = chain
       ? Object.values(rebalancableUsdBalanceDict).filter(
@@ -1336,10 +1103,7 @@ export default function IndexOverviews() {
                       <Image
                         src={
                           chainId?.name
-                            ? `/chainPicturesWebp/${chainId.name
-                                .toLowerCase()
-                                .replace(" one", "")
-                                .replace(" mainnet", "")}.webp`
+                            ? `/chainPicturesWebp/${normalizeChainName(chainId?.name)}.webp`
                             : "/chainPicturesWebp/arbitrum.webp"
                         }
                         alt={chainId ? chainId.name : "arbitrum"}
