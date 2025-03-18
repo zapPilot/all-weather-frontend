@@ -32,30 +32,27 @@ export const normalizeChainName = (chainName) => {
  */
 export const calCrossChainInvestmentAmount = (chainName, portfolioHelper) => {
   if (portfolioHelper?.strategy === undefined) return 0;
-  
+
   const normalizedChain = normalizeChainName(chainName);
-  
+
   return Object.entries(portfolioHelper.strategy).reduce(
     (sum, [category, protocols]) => {
       return (
         sum +
-        Object.entries(protocols).reduce(
-          (innerSum, [chain, protocolArray]) => {
-            if (normalizeChainName(chain) === normalizedChain) {
-              return (
-                innerSum +
-                protocolArray.reduce((weightSum, protocol) => {
-                  return weightSum + protocol.weight;
-                }, 0)
-              );
-            }
-            return innerSum;
-          },
-          0
-        )
+        Object.entries(protocols).reduce((innerSum, [chain, protocolArray]) => {
+          if (normalizeChainName(chain) === normalizedChain) {
+            return (
+              innerSum +
+              protocolArray.reduce((weightSum, protocol) => {
+                return weightSum + protocol.weight;
+              }, 0)
+            );
+          }
+          return innerSum;
+        }, 0)
       );
     },
-    0
+    0,
   );
 };
 
@@ -66,13 +63,13 @@ export const calCrossChainInvestmentAmount = (chainName, portfolioHelper) => {
  */
 export const getAvailableAssetChains = (portfolioHelper) => {
   if (!portfolioHelper?.strategy) return [];
-  
+
   return [
     ...new Set(
       Object.entries(portfolioHelper.strategy).flatMap(
         ([category, protocols]) =>
-          Object.entries(protocols).map(([chain, protocolArray]) => chain)
-      )
-    )
+          Object.entries(protocols).map(([chain, protocolArray]) => chain),
+      ),
+    ),
   ];
 };

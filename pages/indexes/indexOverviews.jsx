@@ -34,7 +34,6 @@ import {
   useWalletBalance,
   useSwitchActiveWalletChain,
 } from "thirdweb/react";
-
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import axios from "axios";
 import openNotificationWithIcon from "../../utils/notification.js";
@@ -51,9 +50,22 @@ import PortfolioSummary from "../portfolio/PortfolioSummary";
 import PortfolioComposition from "../portfolio/PortfolioComposition";
 import HistoricalData from "../portfolio/HistoricalData";
 import TransactionHistoryPanel from "../portfolio/TransactionHistoryPanel";
-import { safeSetLocalStorage, safeGetLocalStorage } from "../../utils/localStorage";
+import {
+  safeSetLocalStorage,
+  safeGetLocalStorage,
+} from "../../utils/localStorage";
 import { determineSlippage } from "../../utils/slippage";
-import { getAvailableAssetChains, calCrossChainInvestmentAmount, switchNextChain, normalizeChainName } from "../../utils/chainHelper";
+import {
+  getAvailableAssetChains,
+  calCrossChainInvestmentAmount,
+  switchNextChain,
+  normalizeChainName,
+} from "../../utils/chainHelper";
+import {
+  getRebalanceReinvestUsdAmount,
+  getTokenMetadata,
+} from "../../utils/portfolioCalculation";
+import { handleTransactionError } from "../../utils/transactionErrorHandler";
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -107,26 +119,6 @@ export default function IndexOverviews() {
       ),
     },
   ];
-
-  const getTokenMetadata = (chainId, tokenSymbol) => {
-    if (!chainId) return null;
-
-    const chainTokens =
-      tokens.props.pageProps.tokenList[String(chainId?.id)] || [];
-    if (!Array.isArray(chainTokens)) {
-      return null;
-    }
-
-    const token = chainTokens.find(
-      (token) => token.symbol?.toLowerCase() === tokenSymbol.toLowerCase(),
-    );
-
-    if (!token) {
-      return null;
-    }
-
-    return `${token.symbol}-${token.value}-${token.decimals}`;
-  };
 
   const [selectedToken, setSelectedToken] = useState(null);
   const [previousTokenSymbol, setPreviousTokenSymbol] = useState(null);
@@ -276,9 +268,7 @@ export default function IndexOverviews() {
         slippage,
         rebalancableUsdBalanceDict,
         recipient,
-        protocolAssetDustInWallet[
-          normalizeChainName(chainId?.name)
-        ],
+        protocolAssetDustInWallet[normalizeChainName(chainId?.name)],
         onlyThisChain,
         usdBalance,
       );
@@ -304,14 +294,11 @@ export default function IndexOverviews() {
         (1 - portfolioHelper.swapFeeRate()) *
         (1 - slippage / 100);
       const chainWeight = calCrossChainInvestmentAmount(
-        normalizeChainName(chainId?.name)
+        normalizeChainName(chainId?.name),
       );
       const chainWeightPerYourPortfolio =
         Object.values(rebalancableUsdBalanceDict)
-          .filter(
-            ({ chain }) =>
-              chain === normalizeChainName(chainId?.name),
-          )
+          .filter(({ chain }) => chain === normalizeChainName(chainId?.name))
           .reduce((sum, value) => sum + value.usdBalance, 0) / usdBalance;
 
       // Call sendBatchTransaction and wait for the result
@@ -371,12 +358,20 @@ export default function IndexOverviews() {
                   zapOutAmount:
                     actionName === "crossChainRebalance" ||
                     actionName === "localRebalance"
-                      ? getRebalanceReinvestUsdAmount(currentChain?.name)
+                      ? getRebalanceReinvestUsdAmount(
+                          currentChain?.name,
+                          rebalancableUsdBalanceDict,
+                          pendingRewards,
+                          portfolioHelper,
+                        )
                       : usdBalance *
                         zapOutPercentage *
                         chainWeightPerYourPortfolio,
                   rebalanceAmount: getRebalanceReinvestUsdAmount(
                     currentChain?.name,
+                    rebalancableUsdBalanceDict,
+                    pendingRewards,
+                    portfolioHelper,
                   ),
                   timestamp: Math.floor(Date.now() / 1000),
                   swapFeeRate: portfolioHelper.swapFeeRate(),
@@ -428,124 +423,27 @@ export default function IndexOverviews() {
             }
           },
           onError: (error) => {
-            if (error.message.includes("User rejected the request")) {
-              return;
-            }
-
-            const isLocalhost =
-              window.location.hostname === "localhost" ||
-              window.location.hostname === "127.0.0.1";
-
-            if (!isLocalhost) {
-              axios.post(
-                `${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`,
-                {
-                  errorMsg: `<@&1172000757764075580> ${error.message}`,
-                },
-              );
-            }
-            reject(error); // Reject the promise with the error
+            handleTransactionError(error, notificationAPI, {
+              onComplete: () => reject(error), // Reject the promise with the error
+            });
           },
         });
+      }).catch((error) => {
+        // This catch will handle the rejected promise from onError
+        // No need to call handleTransactionError again as it was already called
+        console.log("Transaction failed:", error);
       });
     } catch (error) {
-      // Handle all errors in one place
-      if (error.message.includes("User rejected the request")) {
-        return; // User cancelled, no need for error notification
-      }
-
-      let errorReadableMsg;
-
-      // Error code mapping
-      if (error.message.includes("0x495d907f")) {
-        errorReadableMsg = "Bridgequote expired, please try again";
-      } else if (error.message.includes("0x203d82d8")) {
-        errorReadableMsg = "DeFi pool quote has expired. Please try again.";
-      } else if (error.message.includes("0x6f6dd725")) {
-        errorReadableMsg = "Swap quote has expired. Please try again.";
-      } else if (error.message.includes("0xf4059071")) {
-        errorReadableMsg = "Please increase slippage tolerance";
-      } else if (error.message.includes("0x8f66ec14")) {
-        errorReadableMsg =
-          "The zap in amount is too small, or slippage is too low";
-      } else if (
-        error.message.includes("0x08c379a0") &&
-        error.message.includes(
-          "4552433732313a206f70657261746f7220717565727920666f72206e6f6e6578697374656e7420746f6b656e",
-        )
-      ) {
-        errorReadableMsg = "ERC721: operator query for nonexistent token";
-      } else if (
-        error.message.includes(
-          "2845524332303a207472616e7366657220616d6f756e74206578636565647320616c6c6f77616e6365",
-        )
-      ) {
-        errorReadableMsg = "ERC20: transfer amount exceeds allowance";
-      } else if (
-        error.message.includes(
-          "45524332303a207472616e7366657220616d6f756e7420657863656564732062616c616e6365",
-        )
-      ) {
-        errorReadableMsg = "ERC20: transfer amount exceeds balance";
-      } else if (
-        error.message.includes(
-          "526563656976656420616d6f756e74206f6620746f6b656e7320617265206c657373207468656e206578706563746564",
-        ) ||
-        (error.message.includes("0x08c379a0") &&
-          error.message.includes(
-            "14c00000000000000000000000000000000000000000000000000000000000000",
-          ))
-      ) {
-        errorReadableMsg =
-          "Received amount of tokens are less than expected, please increase slippage tolerance and try again";
-      } else if (error.message.includes("0x09bde339")) {
-        errorReadableMsg = "Failed to claim rewards, please try again";
-      } else if (error.message.endsWith("0x")) {
-        errorReadableMsg = "You sent the transaction to the wrong address";
-      } else if (
-        error.message.includes("from should be same as current address")
-      ) {
-        errorReadableMsg =
-          "You're sending the transaction from the wrong address";
-      } else if (error.message === "No transactions to send") {
-        errorReadableMsg =
-          "No transactions to send. Please try again with different parameters.";
-      } else {
-        errorReadableMsg = `${error.message}: Please try increasing slippage tolerance or contact our support team for assistance.`;
-      }
-
-      // Show error notification
-      openNotificationWithIcon(
-        notificationAPI,
-        "Transaction Result",
-        "error",
-        errorReadableMsg,
-      );
-
-      // Log to Discord webhook if not on localhost
-      const isLocalhost =
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1";
-
-      if (!isLocalhost) {
-        axios.post(`${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`, {
-          errorMsg: `<@&1172000757764075580> ${error.message}`,
-        });
-      }
-    }
-    if (actionName === "zapIn") {
-      setZapInIsLoading(false);
-    } else if (actionName === "zapOut") {
-      setZapOutIsLoading(false);
-    } else if (
-      actionName === "crossChainRebalance" ||
-      actionName === "localRebalance"
-    ) {
-      setRebalanceIsLoading(false);
-    } else if (actionName === "stake") {
-      setZapInIsLoading(false);
-    } else if (actionName === "transfer") {
-      setTransferLoading(false);
+      // This handles errors that occur before the transaction is sent
+      handleTransactionError(error, notificationAPI, {
+        onComplete: () => {
+          // Any cleanup needed after error handling
+          setZapInIsLoading(false);
+          setZapOutIsLoading(false);
+          setRebalanceIsLoading(false);
+          setTransferLoading(false);
+        },
+      });
     }
   };
 
@@ -602,9 +500,7 @@ export default function IndexOverviews() {
           nextStepChain !== ""
         ? {
             tokenAddress:
-              TOKEN_ADDRESS_MAP["weth"][
-                normalizeChainName(chainId?.name)
-              ],
+              TOKEN_ADDRESS_MAP["weth"][normalizeChainName(chainId?.name)],
           }
         : { tokenAddress }),
     });
@@ -624,21 +520,6 @@ export default function IndexOverviews() {
       for more information
     </>
   );
-
-  const getRebalanceReinvestUsdAmount = (chainFilter) => {
-    const chain = normalizeChainName(chainFilter);
-    if (chain === undefined) return 0;
-    const filteredBalances = chain
-      ? Object.values(rebalancableUsdBalanceDict).filter(
-          (item) => item.chain === chain,
-        )
-      : Object.values(rebalancableUsdBalanceDict);
-    const result =
-      filteredBalances.reduce((sum, { usdBalance, zapOutPercentage }) => {
-        return zapOutPercentage > 0 ? sum + usdBalance * zapOutPercentage : sum;
-      }, 0) + portfolioHelper?.sumUsdDenominatedValues(pendingRewards);
-    return result;
-  };
 
   useEffect(() => {
     if (
@@ -837,11 +718,11 @@ export default function IndexOverviews() {
           previousTokenSymbol === "eth" && nextStepChain !== ""
             ? "weth"
             : previousTokenSymbol;
-        const metadata = getTokenMetadata(chainId, tokenSymbol);
+        const metadata = getTokenMetadata(chainId, tokenSymbol, tokens);
         if (metadata) return { metadata, tokenSymbol };
       }
       return {
-        metadata: getTokenMetadata(chainId, "usdc"),
+        metadata: getTokenMetadata(chainId, "usdc", tokens),
         tokenSymbol: "usdc",
       };
     };
@@ -977,7 +858,12 @@ export default function IndexOverviews() {
         platformFee={platformFee}
         rebalancableUsdBalanceDict={rebalancableUsdBalanceDict}
         chainMetadata={chainId}
-        rebalanceAmount={getRebalanceReinvestUsdAmount(chainId?.name)}
+        rebalanceAmount={getRebalanceReinvestUsdAmount(
+          chainId?.name,
+          rebalancableUsdBalanceDict,
+          pendingRewards,
+          portfolioHelper,
+        )}
         zapOutAmount={usdBalance * zapOutPercentage}
         availableAssetChains={availableAssetChains}
         currentChain={currentChain}
@@ -1103,7 +989,9 @@ export default function IndexOverviews() {
                       <Image
                         src={
                           chainId?.name
-                            ? `/chainPicturesWebp/${normalizeChainName(chainId?.name)}.webp`
+                            ? `/chainPicturesWebp/${normalizeChainName(
+                                chainId?.name,
+                              )}.webp`
                             : "/chainPicturesWebp/arbitrum.webp"
                         }
                         alt={chainId ? chainId.name : "arbitrum"}
