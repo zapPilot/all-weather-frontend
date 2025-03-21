@@ -1,13 +1,61 @@
 import { BasePortfolio } from "../../classes/BasePortfolio";
 import { ethers } from "ethers";
 import { describe, it, expect, beforeEach } from "vitest";
-
+const mockProtocolInterface = {
+  uniqueId: () => "mock-protocol-1",
+  getZapInFlowChartData: (tokenSymbol, tokenAddress, weight) => ({
+    nodes: [{ id: "mock-zap-in-node", name: "Zap In" }],
+    edges: [
+      {
+        id: "mock-zap-in-edge",
+        source: "mock-zap-in-node",
+        target: "target",
+      },
+    ],
+  }),
+  getZapOutFlowChartData: (tokenSymbol, tokenAddress, weight) => ({
+    nodes: [{ id: "mock-zap-out-node", name: "Zap Out" }],
+    edges: [
+      {
+        id: "mock-zap-out-edge",
+        source: "mock-zap-out-node",
+        target: "target",
+      },
+    ],
+  }),
+  getStakeFlowChartData: () => ({
+    nodes: [{ id: "mock-stake-node", name: "Stake" }],
+    edges: [
+      {
+        id: "mock-stake-edge",
+        source: "mock-stake-node",
+        target: "target",
+      },
+    ],
+  }),
+  getTransferFlowChartData: (weight) => ({
+    nodes: [{ id: "mock-transfer-node", name: "Transfer" }],
+    edges: [
+      {
+        id: "mock-transfer-edge",
+        source: "mock-transfer-node",
+        target: "target",
+      },
+    ],
+  }),
+  rewards: () => [],
+};
 describe("SwapFee rates", () => {
   it("mulSwapFeeRate and swapFeeRate should be equivalent", () => {
     const testInstance = new BasePortfolio(
       {
         long_term_bond: {
-          arbitrum: [],
+          arbitrum: [
+            {
+              interface: mockProtocolInterface,
+              weight: 1,
+            },
+          ],
         },
       },
       {
@@ -33,7 +81,12 @@ describe("SwapFee rates", () => {
     const testInstance = new BasePortfolio(
       {
         long_term_bond: {
-          arbitrum: [],
+          arbitrum: [
+            {
+              interface: mockProtocolInterface,
+              weight: 1,
+            },
+          ],
         },
       },
       {
@@ -60,54 +113,9 @@ describe("SwapFee rates", () => {
 describe("BasePortfolio - getFlowChartData", () => {
   let basePortfolio;
   let mockStrategy;
-  let mockProtocolInterface;
 
   beforeEach(() => {
     // Setup mock protocol interface
-    mockProtocolInterface = {
-      uniqueId: () => "mock-protocol-1",
-      getZapInFlowChartData: (tokenSymbol, tokenAddress, weight) => ({
-        nodes: [{ id: "mock-zap-in-node", name: "Zap In" }],
-        edges: [
-          {
-            id: "mock-zap-in-edge",
-            source: "mock-zap-in-node",
-            target: "target",
-          },
-        ],
-      }),
-      getZapOutFlowChartData: (tokenSymbol, tokenAddress, weight) => ({
-        nodes: [{ id: "mock-zap-out-node", name: "Zap Out" }],
-        edges: [
-          {
-            id: "mock-zap-out-edge",
-            source: "mock-zap-out-node",
-            target: "target",
-          },
-        ],
-      }),
-      getStakeFlowChartData: () => ({
-        nodes: [{ id: "mock-stake-node", name: "Stake" }],
-        edges: [
-          {
-            id: "mock-stake-edge",
-            source: "mock-stake-node",
-            target: "target",
-          },
-        ],
-      }),
-      getTransferFlowChartData: (weight) => ({
-        nodes: [{ id: "mock-transfer-node", name: "Transfer" }],
-        edges: [
-          {
-            id: "mock-transfer-edge",
-            source: "mock-transfer-node",
-            target: "target",
-          },
-        ],
-      }),
-      rewards: () => [],
-    };
 
     // Setup mock strategy
     mockStrategy = {
@@ -176,17 +184,9 @@ describe("BasePortfolio - getFlowChartData", () => {
   });
 
   it("should handle empty strategy", () => {
-    basePortfolio = new BasePortfolio({}, {});
-    const actionParams = {
-      tokenInSymbol: "USDC",
-      tokenInAddress: "0x123",
-      chainMetadata: { name: "arbitrum" },
-    };
-
-    const result = basePortfolio.getFlowChartData("zapIn", actionParams);
-
-    expect(result.nodes).toEqual([]);
-    expect(result.edges).toEqual([]);
+    expect(() => {
+      basePortfolio = new BasePortfolio({}, {});
+    }).toThrow("Total weight across all strategies should be 1, but is 0");
   });
 
   it("should throw error for invalid action name", () => {
@@ -203,7 +203,9 @@ describe("BasePortfolio - getFlowChartData", () => {
 
   it("should skip protocols with zero weight", () => {
     mockStrategy.category1.arbitrum[0].weight = 0;
-    basePortfolio = new BasePortfolio(mockStrategy, {});
+    expect(() => {
+      basePortfolio = new BasePortfolio(mockStrategy, {});
+    }).toThrow("Total weight across all strategies should be 1, but is 0");
 
     const actionParams = {
       tokenInSymbol: "USDC",

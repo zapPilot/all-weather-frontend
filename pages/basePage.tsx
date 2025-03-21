@@ -9,9 +9,10 @@ import "@flaticon/flaticon-uicons/css/brands/all.css";
 import "@flaticon/flaticon-uicons/css/regular/all.css";
 import ConfiguredConnectButton from "./ConnectButton";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import openNotificationWithIcon from "../utils/notification";
+import content from "../config/content";
 
 const { Header, Footer, Content } = Layout;
 interface BasePageProps {
@@ -85,10 +86,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
   return (
     <div>
       <Head>
-        <title>
-          All Weather Protocol: An Omnichain Yield Aggregator with the Highest
-          Yield
-        </title>
+        <title>All Weather Protocol: {content.siteInfo.tagline}</title>
         <meta content="All Weather Protocol" name="description" />
         <link href="/favicon.ico" rel="icon" />
       </Head>

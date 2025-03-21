@@ -3,7 +3,7 @@ import { useState } from "react";
 import ActionItem from "../common/ActionItem";
 import TokenDropdownInput from "../../pages/views/TokenDropdownInput.jsx";
 import { actionNameMap } from "../common/ActionItem";
-
+import { formatLockUpPeriod } from "../../utils/general";
 // Add sleep utility function
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -27,6 +27,7 @@ export default function RebalanceTab({
   handleSetInvestmentAmount,
   investmentAmount,
   tokenPricesMappingTable,
+  lockUpPeriod,
 }) {
   const [currentStep, setCurrentStep] = useState(0);
   const calCurrentAPR = (rebalancableUsdBalanceDict) =>
@@ -98,16 +99,20 @@ export default function RebalanceTab({
                           setCurrentStep(currentStep + 1);
                         }
                       }}
-                      // loading={
-                      //   rebalanceIsLoading || rebalancableUsdBalanceDictLoading
-                      // }
+                      loading={rebalancableUsdBalanceDictLoading}
                       disabled={
                         usdBalance <= 0 ||
                         (data.actionName === "localRebalance" &&
-                          Number(investmentAmount) === 0)
+                          Number(investmentAmount) === 0) ||
+                        lockUpPeriod > 0
                       }
                     >
-                      {actionNameMap[data.actionName]} on {data.chain}
+                      {lockUpPeriod > 0
+                        ? `Rebalance (unlocks in ${formatLockUpPeriod(
+                            lockUpPeriod,
+                          )})`
+                        : actionNameMap[data.actionName]}{" "}
+                      on {data.chain}
                     </Button>
                   ) : (
                     <Button
@@ -118,8 +123,15 @@ export default function RebalanceTab({
                           CHAIN_ID_TO_CHAIN[CHAIN_TO_CHAIN_ID[data.chain]],
                         )
                       }
+                      disabled={lockUpPeriod > 0}
                     >
-                      Switch to {data.chain} Chain
+                      {lockUpPeriod > 0
+                        ? `Switch to ${
+                            data.chain
+                          } Chain (unlocks in ${formatLockUpPeriod(
+                            lockUpPeriod,
+                          )})`
+                        : `Switch to ${data.chain} Chain`}
                     </Button>
                   )}
                 </div>

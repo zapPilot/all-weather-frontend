@@ -16,7 +16,7 @@ export function getPortfolioHelper(
   portfolioName: string,
 ): BasePortfolio | undefined {
   let portfolioHelper: BasePortfolio;
-  if (portfolioName === "Stablecoin Vault") {
+  if (portfolioName === "Stable+ Vault") {
     portfolioHelper = new StablecoinVault();
   } else if (portfolioName === "ETH Vault") {
     portfolioHelper = new EthVault();

@@ -14,6 +14,7 @@ import { toWei } from "thirdweb/utils";
 import { TokenPriceBatcher, PriceService } from "./TokenPriceService";
 import swap from "../utils/swapHelper";
 import { PortfolioFlowChartBuilder } from "./PortfolioFlowChartBuilder";
+
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 
@@ -37,6 +38,7 @@ export class BasePortfolio {
     this.bridgeUsdThreshold = 10;
     this.flowChartBuilder =
       flowChartBuilder || new PortfolioFlowChartBuilder(this);
+    this.validateStrategyWeights();
   }
 
   description() {
@@ -735,7 +737,10 @@ export class BasePortfolio {
       .toLowerCase()
       .replace(" one", "")
       .replace(" mainnet", "");
-    const middleTokenConfig = this._getRebalanceMiddleTokenConfig(currentChain);
+    const middleTokenConfig = this._getRebalanceMiddleTokenConfig(
+      currentChain,
+      false,
+    );
 
     // Run bridge initialization and protocol filtering in parallel
     const [bridge, rebalancableUsdBalanceDictOnThisChain] = await Promise.all([
@@ -755,27 +760,23 @@ export class BasePortfolio {
     );
     if (zapOutUsdcBalance === 0 && actionName !== "localRebalance") return [];
     // TODO(david): currently we don't support zap in different token than zap out
-    const zapOutAmount = ethers.utils
-      .parseUnits(
-        (
-          zapOutUsdcBalance / tokenPricesMappingTable[middleTokenConfig.symbol]
-        ).toFixed(middleTokenConfig.decimals),
-        middleTokenConfig.decimals,
-      )
-      .add(
-        middleTokenConfig.symbol === tokenInSymbol ||
-          zapInAmountFromUI === undefined
-          ? zapInAmountFromUI
-          : ethers.BigNumber.from(0),
-      );
-
-    // Calculate zap in amount including pending rewards
-    const zapInAmount = this._calculateZapInAmount(
-      zapOutAmount,
-      rebalancableUsdBalanceDictOnThisChain,
+    // Also, we don't reinvest rewards back to pools, due to the risk of slippage
+    const zapInAmount = this.mul_with_slippage_in_bignumber_format(
+      ethers.utils
+        .parseUnits(
+          (
+            zapOutUsdcBalance /
+            tokenPricesMappingTable[middleTokenConfig.symbol]
+          ).toFixed(middleTokenConfig.decimals),
+          middleTokenConfig.decimals,
+        )
+        .add(
+          middleTokenConfig.symbol === tokenInSymbol ||
+            zapInAmountFromUI === undefined
+            ? zapInAmountFromUI
+            : ethers.BigNumber.from(0),
+        ),
       slippage,
-      middleTokenConfig,
-      tokenPricesMappingTable,
     );
     // Run approval, fee, and zap in transactions generation in parallel
     const [
@@ -826,16 +827,15 @@ export class BasePortfolio {
       const bridgeUsd =
         Number(bridgeAmount.toString()) *
         tokenPricesMappingTable[
-          this._getRebalanceMiddleTokenConfig(currentChain).symbol
+          this._getRebalanceMiddleTokenConfig(currentChain, true).symbol
         ];
       if (bridgeUsd < this.bridgeUsdThreshold) return [];
-
       const bridgeToOtherChainTxns = await bridge.getBridgeTxns(
         owner,
         chainMetadata.id,
         CHAIN_TO_CHAIN_ID[chain],
-        this._getRebalanceMiddleTokenConfig(currentChain).address,
-        this._getRebalanceMiddleTokenConfig(chain).address,
+        this._getRebalanceMiddleTokenConfig(currentChain, true).address,
+        this._getRebalanceMiddleTokenConfig(chain, true).address,
         bridgeAmount,
         updateProgress,
       );
@@ -850,7 +850,14 @@ export class BasePortfolio {
     return [...initialTxns, ...bridgeTxnsArrays.flat()];
   }
 
-  _getRebalanceMiddleTokenConfig(chain) {
+  _getRebalanceMiddleTokenConfig(chain, forBridge) {
+    if (forBridge) {
+      return {
+        symbol: "usdc",
+        address: TOKEN_ADDRESS_MAP["usdc"][chain],
+        decimals: 6,
+      };
+    }
     if (this.constructor.name === "StablecoinVault") {
       return {
         symbol: "usdc",
@@ -864,11 +871,19 @@ export class BasePortfolio {
         decimals: 18,
       };
     } else if (this.constructor.name === "AllWeatherVault") {
-      return {
-        symbol: "weth",
-        address: TOKEN_ADDRESS_MAP["weth"][chain],
-        decimals: 18,
-      };
+      if (chain === "polygon") {
+        return {
+          symbol: "weth",
+          address: TOKEN_ADDRESS_MAP["weth"][chain],
+          decimals: 18,
+        };
+      } else {
+        return {
+          symbol: "usdc",
+          address: TOKEN_ADDRESS_MAP["usdc"][chain],
+          decimals: 6,
+        };
+      }
     }
     return {
       symbol: "usdc",
@@ -1474,7 +1489,6 @@ export class BasePortfolio {
     const slippageBasisPoints = ethers.BigNumber.from(
       BigInt(Math.floor(slippage * 100)),
     );
-
     // Calculate (amount * (10000 - slippageBasisPoints)) / 10000
     return amountBN
       .mul(ethers.BigNumber.from(String(10000)).sub(slippageBasisPoints))

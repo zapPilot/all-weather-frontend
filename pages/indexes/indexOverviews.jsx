@@ -34,7 +34,6 @@ import {
   useWalletBalance,
   useSwitchActiveWalletChain,
 } from "thirdweb/react";
-
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import axios from "axios";
 import openNotificationWithIcon from "../../utils/notification.js";
@@ -51,146 +50,22 @@ import PortfolioSummary from "../portfolio/PortfolioSummary";
 import PortfolioComposition from "../portfolio/PortfolioComposition";
 import HistoricalData from "../portfolio/HistoricalData";
 import TransactionHistoryPanel from "../portfolio/TransactionHistoryPanel";
-import LZString from "lz-string";
-import { ethers } from "ethers";
-
-const safeSetLocalStorage = (key, value) => {
-  try {
-    const cacheData = {
-      tokenPricesMappingTable: value.tokenPricesMappingTable,
-      usdBalance: value.usdBalance,
-      usdBalanceDict: value.usdBalanceDict,
-      lockUpPeriod: value.lockUpPeriod,
-      pendingRewards: value.pendingRewards,
-      dust: {},
-      timestamp: value.timestamp,
-      __className: "PortfolioCache",
-    };
-
-    // Only store the uniqueId for protocol lookup
-    if (value.dust) {
-      Object.keys(value.dust).forEach((chain) => {
-        if (value.dust[chain]) {
-          cacheData.dust[chain] = {};
-          Object.keys(value.dust[chain]).forEach((protocol) => {
-            if (value.dust[chain][protocol]) {
-              cacheData.dust[chain][protocol] = {
-                assetBalance: value.dust[chain][protocol].assetBalance,
-                assetUsdBalanceOf:
-                  value.dust[chain][protocol].assetUsdBalanceOf,
-                protocolId: value.dust[chain][protocol].protocol.uniqueId(),
-              };
-            }
-          });
-        }
-      });
-    }
-
-    const compressedValue = LZString.compressToUTF16(JSON.stringify(cacheData));
-    localStorage.setItem(key, compressedValue);
-  } catch (e) {
-    console.error("Error in safeSetLocalStorage:", e);
-    throw e;
-  }
-};
-
-const safeGetLocalStorage = (key, portfolioHelper) => {
-  try {
-    const compressed = localStorage.getItem(key);
-    if (!compressed) {
-      return null;
-    }
-
-    const decompressedData = JSON.parse(
-      LZString.decompressFromUTF16(compressed),
-    );
-
-    if (decompressedData.__className === "PortfolioCache") {
-      const { __className, ...cacheData } = decompressedData;
-
-      // Reconstruct dust objects using protocolId
-      if (cacheData.dust && portfolioHelper?.strategy) {
-        Object.keys(cacheData.dust).forEach((chain) => {
-          if (cacheData.dust[chain]) {
-            Object.keys(cacheData.dust[chain]).forEach((protocol) => {
-              if (cacheData.dust[chain][protocol]) {
-                const cachedData = cacheData.dust[chain][protocol];
-                const protocolId = cachedData.protocolId;
-
-                // Find the protocol instance in portfolioHelper.strategy
-                const protocolInstance = findProtocolByUniqueId(
-                  protocolId,
-                  portfolioHelper.strategy,
-                );
-
-                if (protocolInstance) {
-                  cacheData.dust[chain][protocol] = {
-                    assetBalance: ethers.BigNumber.from(
-                      cachedData.assetBalance.hex,
-                    ),
-                    assetUsdBalanceOf: cachedData.assetUsdBalanceOf,
-                    protocol: protocolInstance,
-                  };
-                }
-              }
-            });
-          }
-        });
-      }
-      // Reconstruct usdBalanceDict objects using protocolId
-      if (cacheData.usdBalanceDict && portfolioHelper?.strategy) {
-        Object.keys(cacheData.usdBalanceDict).forEach(
-          (protocolIdWithClassName) => {
-            const lastSlashIndex = protocolIdWithClassName.lastIndexOf("/");
-            const protocolId = protocolIdWithClassName.substring(
-              0,
-              lastSlashIndex,
-            );
-            const cachedData =
-              cacheData.usdBalanceDict[protocolIdWithClassName];
-
-            // Find the protocol instance in portfolioHelper.strategy
-            const protocolInstance = findProtocolByUniqueId(
-              protocolId,
-              portfolioHelper.strategy,
-            );
-            if (protocolInstance) {
-              cacheData.usdBalanceDict[protocolIdWithClassName] = {
-                ...cachedData,
-                protocol: {
-                  ...cachedData.protocol,
-                  interface: protocolInstance,
-                },
-              };
-            }
-          },
-        );
-      }
-
-      return cacheData;
-    }
-
-    return decompressedData;
-  } catch (e) {
-    console.error("Error retrieving from localStorage:", e);
-    throw e;
-  }
-};
-
-// Helper function to find protocol by uniqueId in strategy
-const findProtocolByUniqueId = (targetId, strategy) => {
-  for (const allocation of Object.values(strategy)) {
-    for (const chainData of Object.values(allocation)) {
-      for (const protocolData of chainData) {
-        if (protocolData.interface.uniqueId() === targetId) {
-          return protocolData.interface;
-        }
-      }
-    }
-  }
-  return null;
-};
-
+import {
+  safeSetLocalStorage,
+  safeGetLocalStorage,
+} from "../../utils/localStorage";
+import { determineSlippage } from "../../utils/slippage";
+import {
+  getAvailableAssetChains,
+  calCrossChainInvestmentAmount,
+  switchNextChain,
+  normalizeChainName,
+} from "../../utils/chainHelper";
+import {
+  getRebalanceReinvestUsdAmount,
+  getTokenMetadata,
+} from "../../utils/portfolioCalculation";
+import { handleTransactionError } from "../../utils/transactionErrorHandler";
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -245,26 +120,6 @@ export default function IndexOverviews() {
     },
   ];
 
-  const getTokenMetadata = (chainId, tokenSymbol) => {
-    if (!chainId) return null;
-
-    const chainTokens =
-      tokens.props.pageProps.tokenList[String(chainId?.id)] || [];
-    if (!Array.isArray(chainTokens)) {
-      return null;
-    }
-
-    const token = chainTokens.find(
-      (token) => token.symbol?.toLowerCase() === tokenSymbol.toLowerCase(),
-    );
-
-    if (!token) {
-      return null;
-    }
-
-    return `${token.symbol}-${token.value}-${token.decimals}`;
-  };
-
   const [selectedToken, setSelectedToken] = useState(null);
   const [previousTokenSymbol, setPreviousTokenSymbol] = useState(null);
   const [investmentAmount, setInvestmentAmount] = useState(0);
@@ -283,8 +138,8 @@ export default function IndexOverviews() {
   const [platformFee, setPlatformFee] = useState(0);
   const [costsCalculated, setCostsCalculated] = useState(false);
   const [stepName, setStepName] = useState("");
-  const [slippage, setSlippage] = useState(
-    portfolioName?.includes("Stablecoin") ? 2 : 3,
+  const [slippage, setSlippage] = useState(() =>
+    determineSlippage({ portfolioName }),
   );
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
@@ -413,12 +268,7 @@ export default function IndexOverviews() {
         slippage,
         rebalancableUsdBalanceDict,
         recipient,
-        protocolAssetDustInWallet[
-          chainId?.name
-            ?.toLowerCase()
-            ?.replace(" one", "")
-            .replace(" mainnet", "")
-        ],
+        protocolAssetDustInWallet[normalizeChainName(chainId?.name)],
         onlyThisChain,
         usdBalance,
       );
@@ -444,287 +294,164 @@ export default function IndexOverviews() {
         (1 - portfolioHelper.swapFeeRate()) *
         (1 - slippage / 100);
       const chainWeight = calCrossChainInvestmentAmount(
-        chainId?.name
-          ?.toLowerCase()
-          .replace(" one", "")
-          .replace(" mainnet", ""),
+        normalizeChainName(chainId?.name),
       );
       const chainWeightPerYourPortfolio =
         Object.values(rebalancableUsdBalanceDict)
-          .filter(
-            ({ chain }) =>
-              chain ===
-              chainId?.name
-                ?.toLowerCase()
-                .replace(" one", "")
-                .replace(" mainnet", ""),
-          )
+          .filter(({ chain }) => chain === normalizeChainName(chainId?.name))
           .reduce((sum, value) => sum + value.usdBalance, 0) / usdBalance;
+
       // Call sendBatchTransaction and wait for the result
-      try {
-        await new Promise((resolve, reject) => {
-          sendBatchTransaction(txns.flat(Infinity), {
-            onSuccess: async (data) => {
-              const explorerUrl =
-                data?.chain?.blockExplorers !== undefined
-                  ? data.chain.blockExplorers[0].url
-                  : `https://explorer.${CHAIN_ID_TO_CHAIN_STRING[
-                      chainId?.id
-                    ].toLowerCase()}.io`;
+      await new Promise((resolve, reject) => {
+        sendBatchTransaction(txns.flat(Infinity), {
+          onSuccess: async (data) => {
+            const explorerUrl =
+              data?.chain?.blockExplorers !== undefined
+                ? data.chain.blockExplorers[0].url
+                : `https://explorer.${CHAIN_ID_TO_CHAIN_STRING[
+                    chainId?.id
+                  ].toLowerCase()}.io`;
 
-              // First update chainStatus
-              setChainStatus((prevStatus) => {
-                const newStatus = { ...prevStatus, [currentChain]: true };
+            // First update chainStatus
+            setChainStatus((prevStatus) => {
+              const newStatus = { ...prevStatus, [currentChain]: true };
 
-                // Check if all chains are complete after the update
-                if (Object.values(newStatus).every(Boolean)) {
-                  localStorage.removeItem(
-                    `portfolio-${portfolioName}-${account.address}`,
-                  );
-                }
-
-                return newStatus;
-              });
-
-              // Continue with other state updates
-              setFinishedTxn(true);
-              const newNextChain = switchNextChain(data.chain.name);
-              setNextStepChain(newNextChain);
-              setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
-
-              openNotificationWithIcon(
-                notificationAPI,
-                "Transaction Result",
-                "success",
-                `${explorerUrl}/tx/${data.transactionHash}`,
-              );
-              resolve(data); // Resolve the promise successfully
-              try {
-                const isLocalhost =
-                  window.location.hostname === "localhost" ||
-                  window.location.hostname === "127.0.0.1";
-
-                if (!isLocalhost) {
-                  axios.post(
-                    `${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`,
-                    {
-                      errorMsg: `<@&1172000757764075580> ${error.message}`,
-                    },
-                  );
-                }
-                await axios({
-                  method: "post",
-                  url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  data: {
-                    user_api_key: "placeholder",
-                    tx_hash: data.transactionHash,
-                    address: account.address,
-                    metadata: JSON.stringify({
-                      portfolioName,
-                      actionName,
-                      tokenSymbol,
-                      investmentAmount: investmentAmountAfterFee,
-                      zapOutAmount:
-                        actionName === "crossChainRebalance" ||
-                        actionName === "localRebalance"
-                          ? getRebalanceReinvestUsdAmount(currentChain?.name)
-                          : usdBalance *
-                            zapOutPercentage *
-                            chainWeightPerYourPortfolio,
-                      rebalanceAmount: getRebalanceReinvestUsdAmount(
-                        currentChain?.name,
-                      ),
-                      timestamp: Math.floor(Date.now() / 1000),
-                      swapFeeRate: portfolioHelper.swapFeeRate(),
-                      referralFeeRate: portfolioHelper.referralFeeRate(),
-                      chain:
-                        CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
-                      zapInAmountOnThisChain: onlyThisChain
-                        ? investmentAmountAfterFee
-                        : investmentAmountAfterFee * chainWeight,
-                      stakeAmountOnThisChain: Object.values(
-                        protocolAssetDustInWallet?.[
-                          chainId?.name
-                            ?.toLowerCase()
-                            ?.replace(" one", "")
-                            .replace(" mainnet", "")
-                        ] || {},
-                      ).reduce(
-                        (sum, protocolObj) =>
-                          sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
-                        0,
-                      ),
-                      transferTo: recipient,
-                    }),
-                  },
-                });
-                if (actionName === "transfer") {
-                  await axios({
-                    method: "post",
-                    url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    data: {
-                      user_api_key: "placeholder",
-                      tx_hash: data.transactionHash,
-                      address: recipient,
-                      metadata: JSON.stringify({
-                        portfolioName,
-                        actionName: "receive",
-                        tokenSymbol,
-                        investmentAmount: investmentAmountAfterFee,
-                        timestamp: Math.floor(Date.now() / 1000),
-                        chain:
-                          CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
-                        zapInAmountOnThisChain:
-                          usdBalance *
-                          zapOutPercentage *
-                          chainWeightPerYourPortfolio,
-                        sender: account.address,
-                      }),
-                    },
-                  });
-                }
-              } catch (error) {
-                console.error("category API error", error);
-              }
-            },
-            onError: (error) => {
-              if (error.message.includes("User rejected the request")) {
-                return;
-              }
-              const isLocalhost =
-                window.location.hostname === "localhost" ||
-                window.location.hostname === "127.0.0.1";
-
-              if (!isLocalhost) {
-                axios.post(
-                  `${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`,
-                  {
-                    errorMsg: `<@&1172000757764075580> ${error.message}`,
-                  },
+              // Check if all chains are complete after the update
+              if (Object.values(newStatus).every(Boolean)) {
+                localStorage.removeItem(
+                  `portfolio-${portfolioName}-${account.address}`,
                 );
               }
-              reject(error); // Reject the promise with the error
-            },
-          });
+
+              return newStatus;
+            });
+
+            // Continue with other state updates
+            setFinishedTxn(true);
+            const newNextChain = switchNextChain(data.chain.name);
+            setNextStepChain(newNextChain);
+            setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
+
+            openNotificationWithIcon(
+              notificationAPI,
+              "Transaction Result",
+              "success",
+              `${explorerUrl}/tx/${data.transactionHash}`,
+            );
+            resolve(data); // Resolve the promise successfully
+
+            await axios({
+              method: "post",
+              url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
+              headers: {
+                "Content-Type": "application/json",
+              },
+              data: {
+                user_api_key: "placeholder",
+                tx_hash: data.transactionHash,
+                address: account.address,
+                metadata: JSON.stringify({
+                  portfolioName,
+                  actionName,
+                  tokenSymbol,
+                  investmentAmount: investmentAmountAfterFee,
+                  zapOutAmount:
+                    actionName === "crossChainRebalance" ||
+                    actionName === "localRebalance"
+                      ? getRebalanceReinvestUsdAmount(
+                          currentChain?.name,
+                          rebalancableUsdBalanceDict,
+                          pendingRewards,
+                          portfolioHelper,
+                        )
+                      : usdBalance *
+                        zapOutPercentage *
+                        chainWeightPerYourPortfolio,
+                  rebalanceAmount: getRebalanceReinvestUsdAmount(
+                    currentChain?.name,
+                    rebalancableUsdBalanceDict,
+                    pendingRewards,
+                    portfolioHelper,
+                  ),
+                  timestamp: Math.floor(Date.now() / 1000),
+                  swapFeeRate: portfolioHelper.swapFeeRate(),
+                  referralFeeRate: portfolioHelper.referralFeeRate(),
+                  chain: CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
+                  zapInAmountOnThisChain: onlyThisChain
+                    ? investmentAmountAfterFee
+                    : investmentAmountAfterFee * chainWeight,
+                  stakeAmountOnThisChain: Object.values(
+                    protocolAssetDustInWallet?.[
+                      normalizeChainName(chainId?.name)
+                    ] || {},
+                  ).reduce(
+                    (sum, protocolObj) =>
+                      sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
+                    0,
+                  ),
+                  transferTo: recipient,
+                }),
+              },
+            });
+
+            if (actionName === "transfer") {
+              await axios({
+                method: "post",
+                url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                data: {
+                  user_api_key: "placeholder",
+                  tx_hash: data.transactionHash,
+                  address: recipient,
+                  metadata: JSON.stringify({
+                    portfolioName,
+                    actionName: "receive",
+                    tokenSymbol,
+                    investmentAmount: investmentAmountAfterFee,
+                    timestamp: Math.floor(Date.now() / 1000),
+                    chain: CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
+                    zapInAmountOnThisChain:
+                      usdBalance *
+                      zapOutPercentage *
+                      chainWeightPerYourPortfolio,
+                    sender: account.address,
+                  }),
+                },
+              });
+            }
+          },
+          onError: (error) => {
+            handleTransactionError(error, notificationAPI, {
+              onComplete: () => reject(error), // Reject the promise with the error
+            });
+          },
         });
-      } catch (error) {
-        let errorReadableMsg;
-        if (error.message.includes("0x495d907f")) {
-          errorReadableMsg = "bridgequote expired, please try again";
-        } else if (error.message.includes("0x203d82d8")) {
-          errorReadableMsg = "DeFi pool quote has expired. Please try again.";
-        } else if (error.message.includes("0x6f6dd725")) {
-          errorReadableMsg = "Swap quote has expired. Please try again.";
-        } else if (error.message.includes("0xf4059071")) {
-          errorReadableMsg = "Please increase slippage tolerance";
-        } else if (error.message.includes("0x8f66ec14")) {
-          errorReadableMsg =
-            "The zap in amount is too small, or slippage is too low";
-        } else if (
-          error.message.includes(
-            "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002c4552433732313a206f70657261746f7220717565727920666f72206e6f6e6578697374656e7420746f6b656e0000000000000000000000000000000000000000",
-          )
-        ) {
-          errorReadableMsg = "ERC721: operator query for nonexistent token";
-        } else if (
-          error.message.includes(
-            "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002845524332303a207472616e7366657220616d6f756e74206578636565647320616c6c6f77616e6365000000000000000000000000000000000000000000000000",
-          )
-        ) {
-          errorReadableMsg = "ERC20: transfer amount exceeds allowance";
-        } else if (
-          error.message.includes(
-            "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002645524332303a207472616e7366657220616d6f756e7420657863656564732062616c616e63650000000000000000000000000000000000000000000000000000",
-          )
-        ) {
-          errorReadableMsg = "ERC20: transfer amount exceeds balance";
-        } else if (
-          error.message.includes(
-            "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000030526563656976656420616d6f756e74206f6620746f6b656e7320617265206c657373207468656e20657870656374656400000000000000000000000000000000",
-          ) ||
-          error.message.includes(
-            "0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000014c00000000000000000000000000000000000000000000000000000000000000",
-          )
-        ) {
-          errorReadableMsg =
-            "Received amount of tokens are less then expected, please increase slippage tolerance and try again";
-        } else if (error.message.includes("0x09bde339")) {
-          errorReadableMsg =
-            "Failed to claim rewards, please try again" + error.message;
-        } else if (error.message.endsWith("0x")) {
-          errorReadableMsg = "You send the transaction to the wrong address";
-        } else if (error.message.includes("User rejected the request")) {
-          return;
-        } else if (
-          error.message.includes("from should be same as current address")
-        ) {
-          errorReadableMsg =
-            "You're sending the transaction from the wrong address";
-        } else {
-          errorReadableMsg =
-            "Transaction failed. Please try increasing slippage tolerance or notify customer support to increase gas limit." +
-            error.message;
-        }
-        openNotificationWithIcon(
-          notificationAPI,
-          "Transaction Result",
-          "error",
-          errorReadableMsg,
-        );
-      }
+      }).catch((error) => {
+        // This catch will handle the rejected promise from onError
+        // No need to call handleTransactionError again as it was already called
+        console.log("Transaction failed:", error);
+      });
     } catch (error) {
-      const errorMsg =
-        error.name === "AxiosError"
-          ? error.response?.data?.message
-          : error.message;
-      openNotificationWithIcon(
-        notificationAPI,
-        "Generate Transaction Error",
-        "error",
-        errorMsg,
-      );
-    }
-    if (actionName === "zapIn") {
-      setZapInIsLoading(false);
-    } else if (actionName === "zapOut") {
-      setZapOutIsLoading(false);
-    } else if (
-      actionName === "crossChainRebalance" ||
-      actionName === "localRebalance"
-    ) {
-      setRebalanceIsLoading(false);
-    } else if (actionName === "stake") {
-      setZapInIsLoading(false);
-    } else if (actionName === "transfer") {
-      setTransferLoading(false);
+      // This handles errors that occur before the transaction is sent
+      handleTransactionError(error, notificationAPI, {
+        onComplete: () => {
+          // Any cleanup needed after error handling
+          setZapInIsLoading(false);
+          setZapOutIsLoading(false);
+          setRebalanceIsLoading(false);
+          setTransferLoading(false);
+        },
+      });
     }
   };
 
   const [nextStepChain, setNextStepChain] = useState("");
-  const switchNextChain = (chain) => {
-    const nextChain = chain.includes(" ")
-      ? chain.toLowerCase().replace(" one", "").replace(" mainnet", "")
-      : chain;
-    return nextChain === "arbitrum" ? "base" : "arbitrum";
-  };
 
-  const currentChain = chainId?.name
-    ?.toLowerCase()
-    .replace(" one", "")
-    .replace(" mainnet", "")
-    .trim();
+  const currentChain = normalizeChainName(chainId?.name);
   // get all available chains
-  const availableAssetChains = Object.entries(
-    portfolioHelper?.strategy || {},
-  ).flatMap(([category, protocols]) =>
-    Object.entries(protocols).map(([chain, protocolArray]) => chain),
-  );
+  const availableAssetChains = getAvailableAssetChains(portfolioHelper);
   // get chain status
   const [chainStatus, setChainStatus] = useState({
     base: false,
@@ -747,44 +474,17 @@ export default function IndexOverviews() {
     }
   };
 
-  // calculate the investment amount for next chain
-  const calCrossChainInvestmentAmount = (nextChain) => {
-    if (portfolioHelper?.strategy === undefined) return 0;
-    return Object.entries(portfolioHelper.strategy).reduce(
-      (sum, [category, protocols]) => {
-        return (
-          sum +
-          Object.entries(protocols).reduce(
-            (innerSum, [chain, protocolArray]) => {
-              if (chain === nextChain) {
-                return (
-                  innerSum +
-                  protocolArray.reduce((weightSum, protocol) => {
-                    return weightSum + protocol.weight;
-                  }, 0)
-                );
-              }
-              return innerSum;
-            },
-            0,
-          )
-        );
-      },
-      0,
-    );
-  };
   const [nextChainInvestmentAmount, setNextChainInvestmentAmount] = useState(0);
 
   const onChange = (key) => {
     setTabKey(key);
-    // Find the selected tab item and check its label
     const selectedTab = items.find((item) => item.key === key);
-    if (selectedTab?.label === "Rebalance") {
-      setSlippage(5);
-    } else if (selectedTab?.key === "5") {
-      // 5 stands for 'Claim'
-      setSlippage(3);
-    }
+    const newSlippage = determineSlippage({
+      portfolioName,
+      tabLabel: selectedTab?.label,
+      actionName,
+    });
+    setSlippage(newSlippage);
   };
 
   const tokenAddress = selectedToken?.split("-")[1];
@@ -800,12 +500,7 @@ export default function IndexOverviews() {
           nextStepChain !== ""
         ? {
             tokenAddress:
-              TOKEN_ADDRESS_MAP["weth"][
-                chainId.name
-                  .toLowerCase()
-                  .replace(" one", "")
-                  .replace(" mainnet", "")
-              ],
+              TOKEN_ADDRESS_MAP["weth"][normalizeChainName(chainId?.name)],
           }
         : { tokenAddress }),
     });
@@ -826,24 +521,6 @@ export default function IndexOverviews() {
     </>
   );
 
-  const getRebalanceReinvestUsdAmount = (chainFilter) => {
-    const chain = chainFilter
-      ?.replace(" one", "")
-      .replace(" mainnet", "")
-      .toLowerCase();
-    if (chain === undefined) return 0;
-    const filteredBalances = chain
-      ? Object.values(rebalancableUsdBalanceDict).filter(
-          (item) => item.chain === chain,
-        )
-      : Object.values(rebalancableUsdBalanceDict);
-    const result =
-      filteredBalances.reduce((sum, { usdBalance, zapOutPercentage }) => {
-        return zapOutPercentage > 0 ? sum + usdBalance * zapOutPercentage : sum;
-      }, 0) + portfolioHelper?.sumUsdDenominatedValues(pendingRewards);
-    return result;
-  };
-
   useEffect(() => {
     if (
       portfolioApr[portfolioName] === undefined ||
@@ -851,31 +528,18 @@ export default function IndexOverviews() {
     ) {
       dispatch(fetchStrategyMetadata());
     }
+
     if (portfolioName !== undefined) {
       const selectedTokenSymbol = selectedToken?.toLowerCase()?.split("-")[0];
-      if (
-        (selectedTokenSymbol === "eth" || selectedTokenSymbol === "weth") &&
-        portfolioName === "Stablecoin Vault"
-      ) {
-        setSlippage(3);
-      } else if (
-        portfolioName === "ETH Vault" ||
-        portfolioName === "All Weather Vault"
-      ) {
-        setSlippage(3);
-      } else {
-        // Check if we're on the rebalance tab before setting default slippage
-        if (
-          tabKey &&
-          items.find((item) => item.key === tabKey)?.label === "Rebalance"
-        ) {
-          setSlippage(5);
-        } else {
-          setSlippage(2);
-        }
-      }
+      const newSlippage = determineSlippage({
+        portfolioName,
+        selectedTokenSymbol,
+        tabLabel: items.find((item) => item.key === tabKey)?.label,
+        actionName,
+      });
+      setSlippage(newSlippage);
     }
-  }, [portfolioName, selectedToken, chainId, tabKey]);
+  }, [portfolioName, selectedToken, chainId, tabKey, actionName]);
   useEffect(() => {
     console.time("🚀 Portfolio data fetch");
     // Clear states on initial load/refresh
@@ -1054,11 +718,11 @@ export default function IndexOverviews() {
           previousTokenSymbol === "eth" && nextStepChain !== ""
             ? "weth"
             : previousTokenSymbol;
-        const metadata = getTokenMetadata(chainId, tokenSymbol);
+        const metadata = getTokenMetadata(chainId, tokenSymbol, tokens);
         if (metadata) return { metadata, tokenSymbol };
       }
       return {
-        metadata: getTokenMetadata(chainId, "usdc"),
+        metadata: getTokenMetadata(chainId, "usdc", tokens),
         tokenSymbol: "usdc",
       };
     };
@@ -1157,6 +821,7 @@ export default function IndexOverviews() {
     availableAssetChains,
     chainStatus,
     onRefresh: handleRefresh,
+    lockUpPeriod,
   };
 
   const items = useTabItems({
@@ -1170,6 +835,7 @@ export default function IndexOverviews() {
     <BasePage>
       {notificationContextHolder}
       <PopUpModal
+        account={account}
         portfolioHelper={portfolioHelper}
         stepName={stepName}
         tradingLoss={tradingLoss}
@@ -1192,7 +858,12 @@ export default function IndexOverviews() {
         platformFee={platformFee}
         rebalancableUsdBalanceDict={rebalancableUsdBalanceDict}
         chainMetadata={chainId}
-        rebalanceAmount={getRebalanceReinvestUsdAmount(chainId?.name)}
+        rebalanceAmount={getRebalanceReinvestUsdAmount(
+          chainId?.name,
+          rebalancableUsdBalanceDict,
+          pendingRewards,
+          portfolioHelper,
+        )}
         zapOutAmount={usdBalance * zapOutPercentage}
         availableAssetChains={availableAssetChains}
         currentChain={currentChain}
@@ -1206,7 +877,13 @@ export default function IndexOverviews() {
               <div className="flex items-center">
                 <img
                   alt=""
-                  src={`/indexFunds/${portfolioName?.toLowerCase()}.webp`}
+                  src={`/indexFunds/${encodeURIComponent(
+                    portfolioName?.toLowerCase(),
+                  )}.webp`}
+                  onError={(e) => {
+                    e.target.onerror = null; // Prevent infinite loop
+                    e.target.src = "/tokenPictures/usdc.webp";
+                  }}
                   className="h-8 w-8 rounded-full me-2"
                 />
                 <h1 className="text-2xl font-bold text-white" role="vault">
@@ -1312,10 +989,9 @@ export default function IndexOverviews() {
                       <Image
                         src={
                           chainId?.name
-                            ? `/chainPicturesWebp/${chainId.name
-                                .toLowerCase()
-                                .replace(" one", "")
-                                .replace(" mainnet", "")}.webp`
+                            ? `/chainPicturesWebp/${normalizeChainName(
+                                chainId?.name,
+                              )}.webp`
                             : "/chainPicturesWebp/arbitrum.webp"
                         }
                         alt={chainId ? chainId.name : "arbitrum"}

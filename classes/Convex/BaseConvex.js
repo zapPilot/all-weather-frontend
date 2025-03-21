@@ -283,61 +283,55 @@ export class BaseConvex extends BaseProtocol {
       tokenPricesMappingTable,
       updateProgress,
     );
-    const protocolContractInstance = new ethers.Contract(
+
+    const curvePoolInstance = new ethers.Contract(
       this.protocolContract.address,
       CurveStableSwapNG,
       PROVIDER(this.chain),
     );
-    const [token_a_balance, token_b_balance] = (
-      await protocolContractInstance.functions.get_balances()
-    )[0];
-    const tokenASymbol = this.customParams.lpTokens[0][0];
-    const tokenBSymbol = this.customParams.lpTokens[1][0];
-    const decimalsA = this.customParams.lpTokens[0][2];
-    const decimalsB = this.customParams.lpTokens[1][2];
-    const normalizedTokenAInThePool = Number(
-      ethers.utils.formatUnits(token_a_balance.toString(), decimalsA),
-    );
-    const normalizedTokenBInThePool = Number(
-      ethers.utils.formatUnits(token_b_balance.toString(), decimalsB),
-    );
-    const ratio =
-      normalizedTokenAInThePool /
-      (normalizedTokenAInThePool + normalizedTokenBInThePool);
-    const normalizedAmount = ethers.utils.formatUnits(
-      amount.toString(),
-      this.assetDecimals,
-    );
+
+    // Get current balances and total supply from Curve pool
+    const [token_a_balance, token_b_balance] =
+      await curvePoolInstance.get_balances();
+    const totalSupply = await curvePoolInstance.totalSupply();
+
+    // Scale up by WeiPerEther before division to maintain precision
+    const share = amount.mul(ethers.constants.WeiPerEther).div(totalSupply);
+    const expectedAmountA = token_a_balance
+      .mul(share)
+      .div(ethers.constants.WeiPerEther);
+    const expectedAmountB = token_b_balance
+      .mul(share)
+      .div(ethers.constants.WeiPerEther);
+    // Apply slippage to minimum amounts
     const minimumWithdrawAmount_a = this.mul_with_slippage_in_bignumber_format(
-      ethers.utils.parseUnits(
-        (normalizedAmount * ratio).toFixed(decimalsA),
-        decimalsA,
-      ),
+      expectedAmountA,
       slippage,
     );
     const minimumWithdrawAmount_b = this.mul_with_slippage_in_bignumber_format(
-      ethers.utils.parseUnits(
-        (normalizedAmount * (1 - ratio)).toFixed(decimalsB),
-        decimalsB,
-      ),
+      expectedAmountB,
       slippage,
     );
+
     const minPairAmounts = [minimumWithdrawAmount_a, minimumWithdrawAmount_b];
     const withdrawTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "remove_liquidity",
       params: [amount, minPairAmounts],
     });
+
     await this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-withdraw`,
       0,
     );
+
     const [claimTxns, _] = await this.customClaim(
       owner,
       tokenPricesMappingTable,
       updateProgress,
     );
+
     return [
       [withdrawTxn, ...claimTxns],
       this.customParams.lpTokens,
