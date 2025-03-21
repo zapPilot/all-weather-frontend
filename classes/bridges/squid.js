@@ -1,11 +1,8 @@
 import BaseBridge from "./BaseBridge";
 import { Squid } from "@0xsquid/sdk";
-import { CHAIN_ID_TO_CHAIN, PROVIDER } from "../../utils/general";
+import { CHAIN_ID_TO_CHAIN } from "../../utils/general";
 import { ethers } from "ethers";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
-import { getContract, prepareContractCall } from "thirdweb";
-import SpokePool from "../../lib/contracts/Squid/SpokePool.json";
-import ERC20 from "../../lib/contracts/ERC20.json";
 
 class SquidBridge extends BaseBridge {
   constructor() {
@@ -15,6 +12,21 @@ class SquidBridge extends BaseBridge {
       integratorId: process.env.NEXT_PUBLIC_INTEGRATOR_ID,
     });
     this.squidRouterContract = "0xce16F69375520ab01377ce7B88f5BA8C48F8D666";
+    this.lastRequestTime = 0;
+    this.minRequestInterval = 3000;
+  }
+
+  async delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async throttleRequest() {
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.minRequestInterval) {
+      await this.delay(this.minRequestInterval - timeSinceLastRequest);
+    }
+    this.lastRequestTime = Date.now();
   }
 
   async init() {
@@ -27,73 +39,57 @@ class SquidBridge extends BaseBridge {
   }
 
   async customBridgeTxn(owner, fromChainId, toChainId, fromToken, toToken, amount, updateProgress) {
-    try {
-      // amount must be string
-      const fromChainIdString = fromChainId.toString();
-      const toChainIdString = toChainId.toString();
-      const amountString = amount.toString();
-      const { route } = await this.sdk.getRoute({
-        fromAddress: owner,
-        fromChain: fromChainIdString,
-        fromToken: fromToken,
-        fromAmount: amountString,
-        toChain: toChainIdString,
-        toToken: toToken,
-        toAddress: owner,
-        slippage: 1,
-        enableForecall: true
-      });
+    const maxRetries = 3;
+    let retryCount = 0;
 
-      console.log("route", route);
+    while (retryCount < maxRetries) {
+      try {
+        await this.throttleRequest();
+        const { route } = await this.sdk.getRoute({
+          fromAddress: owner,
+          fromChain: fromChainId.toString(),
+          fromToken: fromToken,
+          fromAmount: amount.toString(),
+          toChain: toChainId.toString(),
+          toToken: toToken,
+          toAddress: owner,
+          slippage: 1,
+          enableForecall: false,
+          quoteOnly: false,
+        });
 
-      const tokenInstance = new ethers.Contract(
-        fromToken,
-        ERC20,
-        PROVIDER(
-          CHAIN_ID_TO_CHAIN[fromChainId].name
-            .replace(" one", "")
-            .replace(" mainnet", ""),
-        ),
-      );
-      const tokenDecimals = await tokenInstance.decimals();
-      console.log("tokenDecimals", tokenDecimals);
+        if (route.estimate?.feeCosts?.length > 0) {
+          const fee = route.estimate?.feeCosts?.[0]?.amountUsd;
+          updateProgress(
+            `bridge-${fromChainId}-${toChainId}`,
+            -Number(fee)
+          );
+        }
 
-      const spokePoolContract = getContract({
-        client: THIRDWEB_CLIENT,
-        address: this.squidRouterContract,
-        chain: CHAIN_ID_TO_CHAIN[fromChainId],
-        abi: SpokePool,
-      });
+        const bridgeTxn = {
+          client: THIRDWEB_CLIENT,
+          to: route.transactionRequest.target,
+          chain: CHAIN_ID_TO_CHAIN[fromChainId],
+          data: route.transactionRequest.data,
+          value: route.transactionRequest.value,
+          gasLimit: route.transactionRequest.gasLimit,
+          maxFeePerGas: route.transactionRequest.maxFeePerGas,
+          maxPriorityFeePerGas: route.transactionRequest.maxPriorityFeePerGas,
+        };
 
-      const fillDeadlineBuffer = 18000;
-      const fillDeadline = Math.round(Date.now() / 1000) + fillDeadlineBuffer;
-      const fee = route.estimate?.feeCosts?.[0]?.amountUsd;
-      updateProgress(
-        `bridge-${fromChainId}-${toChainId}`,
-        -Number(fee),
-      );
+        return [bridgeTxn, this.squidRouterContract];
+      } catch (error) {
+        console.error(`Attempt ${retryCount + 1} failed:`, error);
+        retryCount++;
 
-      const bridgeTxn = prepareContractCall({
-        contract: spokePoolContract,
-        method: "bridgeCall",
-        params: [
-          route.estimate.toToken.symbol,
-          route.estimate.fromAmount,
-          route.params.toChain,
-          owner,
-          route.transactionRequest.data,
-          owner,
-          false,          
-        ],
-        extraGas: 50000n,
-      });
-
-      console.log("bridgeTxn", bridgeTxn);
-
-      return [bridgeTxn, this.squidRouterContract];
-    } catch (error) {
-      console.error('Error in Squid bridge:', error);
-      throw error;
+        if (retryCount < maxRetries) {
+          const waitTime = 3000;
+          console.log(`Retrying in ${waitTime/1000} seconds...`);
+          await this.delay(waitTime);
+          continue;
+        }
+        throw error;
+      }
     }
   }
 }
