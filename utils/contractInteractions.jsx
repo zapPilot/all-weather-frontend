@@ -27,6 +27,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   weth: {
     coinmarketcapApiId: 2396,
     vaults: [
+      "Stable+ Vault",
       "All Weather Vault",
       "ETH Vault",
       "Camelot Vault",
@@ -37,11 +38,15 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   eth: {
     coinmarketcapApiId: 2396,
     vaults: [
+      "Stable+ Vault",
       "All Weather Vault",
       "ETH Vault",
       "Camelot Vault",
       "Yearn Vault",
       "Stable+ Vault",
+      "Camelot Vault",
+      "Aerodrome Vault",
+      "Convex Stablecoin Vault",
     ],
   },
   dai: {

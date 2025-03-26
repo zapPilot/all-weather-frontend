@@ -8,7 +8,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
 import { base, arbitrum, optimism } from "thirdweb/chains";
-import { getGasPrice } from "thirdweb";
 import PopUpModal from "../Modal";
 import {
   TOKEN_ADDRESS_MAP,
@@ -56,22 +55,24 @@ import {
 } from "../../utils/localStorage";
 import { determineSlippage } from "../../utils/slippage";
 import {
+  normalizeChainName,
+  switchNextChain,
   getAvailableAssetChains,
   calCrossChainInvestmentAmount,
-  switchNextChain,
-  normalizeChainName,
 } from "../../utils/chainHelper";
 import {
   getRebalanceReinvestUsdAmount,
   getTokenMetadata,
 } from "../../utils/portfolioCalculation";
 import { handleTransactionError } from "../../utils/transactionErrorHandler";
-export default function IndexOverviews() {
-  const router = useRouter();
-  const { portfolioName } = router.query;
-  const account = useActiveAccount();
-  const chainId = useActiveWalletChain();
-  const switchChain = useSwitchActiveWalletChain();
+import {
+  checkGasPrice,
+  prepareTransactionMetadata,
+  setActionLoadingState,
+} from "../../utils/transactionHelpers.js";
+
+// Extract chain switching logic
+const useChainSwitching = (chainId, switchChain) => {
   const isProcessingChainChangeRef = useRef(false);
   const hasProcessedChainChangeRef = useRef(false);
 
@@ -119,6 +120,46 @@ export default function IndexOverviews() {
       ),
     },
   ];
+
+  // Chain mapping for switching
+  const chainMap = {
+    arbitrum: arbitrum,
+    base: base,
+    op: optimism,
+  };
+
+  const switchNextStepChain = (chain) => {
+    const selectedChain = chainMap[chain];
+    if (selectedChain) {
+      switchChain(selectedChain);
+    } else {
+      console.error(`Invalid chain: ${chain}`);
+    }
+  };
+
+  return {
+    switchItems,
+    switchNextStepChain,
+    isProcessingChainChangeRef,
+    hasProcessedChainChangeRef,
+    chainMap,
+  };
+};
+
+export default function IndexOverviews() {
+  const router = useRouter();
+  const { portfolioName } = router.query;
+  const account = useActiveAccount();
+  const chainId = useActiveWalletChain();
+  const switchChain = useSwitchActiveWalletChain();
+
+  // Use the extracted chain switching logic
+  const {
+    switchItems,
+    switchNextStepChain,
+    isProcessingChainChangeRef,
+    hasProcessedChainChangeRef,
+  } = useChainSwitching(chainId, switchChain);
 
   const [selectedToken, setSelectedToken] = useState(null);
   const [previousTokenSymbol, setPreviousTokenSymbol] = useState(null);
@@ -193,20 +234,12 @@ export default function IndexOverviews() {
   const dispatch = useDispatch();
 
   const handleAAWalletAction = async (actionName, onlyThisChain = false) => {
-    const gasPrice = await getGasPrice({
-      client: THIRDWEB_CLIENT,
-      chain: chainId,
+    const isGasPriceAcceptable = await checkGasPrice({
+      chainId,
+      THIRDWEB_CLIENT,
+      notificationAPI,
     });
-    const gasPriceInGwei = Number(gasPrice) / 1e9;
-    if (gasPriceInGwei > 0.05) {
-      openNotificationWithIcon(
-        notificationAPI,
-        "Gas Price Too High",
-        "error",
-        `Current gas price is ${gasPriceInGwei.toFixed(
-          2,
-        )} gwei, please try again later.`,
-      );
+    if (!isGasPriceAcceptable) {
       return;
     }
 
@@ -226,25 +259,14 @@ export default function IndexOverviews() {
       alert("Please select a token");
       return;
     }
-    if (actionName === "zapIn") {
-      setZapInIsLoading(true);
-    } else if (actionName === "zapOut") {
-      setZapOutIsLoading(true);
-    } else if (
-      actionName === "rebalance" ||
-      actionName === "crossChainRebalance" ||
-      actionName === "localRebalance"
-    ) {
-      setRebalanceIsLoading(true);
-    } else if (actionName === "transfer") {
-      setTransferLoading(true);
-    } else if (actionName === "stake") {
-      setZapInIsLoading(true);
-    } else if (actionName === "claimAndSwap") {
-      // placeholder
-    } else {
-      throw new Error(`Invalid action name: ${actionName}`);
-    }
+    setActionLoadingState({
+      actionName,
+      setZapInIsLoading,
+      setZapOutIsLoading,
+      setRebalanceIsLoading,
+      setTransferLoading,
+      isLoading: true,
+    });
     if (!account) return;
     const [tokenSymbol, tokenAddress, tokenDecimals] =
       tokenSymbolAndAddress.split("-");
@@ -350,47 +372,26 @@ export default function IndexOverviews() {
                 user_api_key: "placeholder",
                 tx_hash: data.transactionHash,
                 address: account.address,
-                metadata: JSON.stringify({
-                  portfolioName,
-                  actionName,
-                  tokenSymbol,
-                  investmentAmount: investmentAmountAfterFee,
-                  zapOutAmount:
-                    actionName === "crossChainRebalance" ||
-                    actionName === "localRebalance"
-                      ? getRebalanceReinvestUsdAmount(
-                          currentChain?.name,
-                          rebalancableUsdBalanceDict,
-                          pendingRewards,
-                          portfolioHelper,
-                        )
-                      : usdBalance *
-                        zapOutPercentage *
-                        chainWeightPerYourPortfolio,
-                  rebalanceAmount: getRebalanceReinvestUsdAmount(
-                    currentChain?.name,
+                metadata: JSON.stringify(
+                  prepareTransactionMetadata({
+                    portfolioName,
+                    actionName,
+                    tokenSymbol,
+                    investmentAmountAfterFee,
+                    zapOutPercentage,
+                    chainId,
+                    chainWeightPerYourPortfolio,
+                    usdBalance,
+                    chainWeight,
                     rebalancableUsdBalanceDict,
                     pendingRewards,
                     portfolioHelper,
-                  ),
-                  timestamp: Math.floor(Date.now() / 1000),
-                  swapFeeRate: portfolioHelper.swapFeeRate(),
-                  referralFeeRate: portfolioHelper.referralFeeRate(),
-                  chain: CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
-                  zapInAmountOnThisChain: onlyThisChain
-                    ? investmentAmountAfterFee
-                    : investmentAmountAfterFee * chainWeight,
-                  stakeAmountOnThisChain: Object.values(
-                    protocolAssetDustInWallet?.[
-                      normalizeChainName(chainId?.name)
-                    ] || {},
-                  ).reduce(
-                    (sum, protocolObj) =>
-                      sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
-                    0,
-                  ),
-                  transferTo: recipient,
-                }),
+                    currentChain,
+                    recipient,
+                    protocolAssetDustInWallet,
+                    onlyThisChain,
+                  }),
+                ),
               },
             });
 
@@ -458,21 +459,6 @@ export default function IndexOverviews() {
     arbitrum: false,
     op: false,
   });
-  // prepare chain object for switch chain
-  const chainMap = {
-    arbitrum: arbitrum,
-    base: base,
-    op: optimism,
-  };
-
-  const switchNextStepChain = (chain) => {
-    const selectedChain = chainMap[chain];
-    if (selectedChain) {
-      switchChain(selectedChain);
-    } else {
-      console.error(`Invalid chain: ${chain}`);
-    }
-  };
 
   const [nextChainInvestmentAmount, setNextChainInvestmentAmount] = useState(0);
 
