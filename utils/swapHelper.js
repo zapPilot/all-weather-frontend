@@ -47,13 +47,12 @@ async function swap(
           to_token_price,
           to_token_decimals,
         );
-        if (
-          Object.values(swapCallData).length === 0 ||
-          "error" in swapCallData
-        ) {
-          if ("error" in swapCallData) {
-            console.warn(`${provider} swap failed:`, swapCallData.error);
-          }
+        if (Object.values(swapCallData).length === 0) {
+          return null;
+        }
+
+        if ("error" in swapCallData) {
+          console.warn(`${provider} swap failed:`, swapCallData.error);
           return null;
         }
         const normalizedInputAmount = ethers.utils.formatUnits(
@@ -101,6 +100,7 @@ async function swap(
           ],
         };
       } catch (error) {
+        throw error;
         console.warn(`Failed to fetch swap data from ${provider}:`, error);
         return null;
       }
@@ -110,7 +110,11 @@ async function swap(
   // Filter out failed attempts and sort by best return and gas fee
   const validSwaps = swapResults.filter((result) => result !== null);
   if (validSwaps.length === 0) {
-    throw new Error("No valid swap data found from any provider");
+    throw new Error(
+      `No valid swap data found from any provider to swap ${
+        amount / 10 ** fromTokenDecimals
+      } ${fromToken} to ${toTokenSymbol}`,
+    );
   }
 
   // New sorting logic

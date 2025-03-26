@@ -64,7 +64,7 @@ describe("Bridge with USDT -> USDC Swap", () => {
     const swapTxn = txns[bridgeIndex - 2];
 
     // 1) Check the 'to' address is the 1inch aggregator
-    const zeroxProxyAddress = "0xdef1c0ded9bec7f1a1670819833240f027b25eff";
+    const zeroxProxyAddress = "0x0000000000001ff3684f28c67538d4d072c22734";
     const paraswapProxyAddress = "0x59c7c832e96d2568bea6db468c1aadcbbda08a52";
     expect(swapTxn.to.toLowerCase()).to.be.oneOf([
       oneInchArbAddress.toLowerCase(),
