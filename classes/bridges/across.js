@@ -25,10 +25,41 @@ class AcrossBridge extends BaseBridge {
       integratorId: "0xaaff", // 2-byte hex string
       chains: [optimism, arbitrum, polygon, base],
     });
+    this.isInitialized = false;
+    this.feeCosts = null;
   }
+
   async init() {
     return;
   }
+
+  async fetchFeeCosts(
+    account,
+    fromChainId,
+    toChainId,
+    inputToken,
+    targetToken,
+    inputAmount,
+  ) {
+    const route = {
+      originChainId: fromChainId,
+      destinationChainId: toChainId,
+      inputToken: inputToken,
+      outputToken: targetToken,
+    };
+    const quote = await this.sdk.getQuote({
+      route,
+      inputAmount: inputAmount,
+    });
+    
+    this.feeCosts = ethers.utils.formatUnits(
+      quote.fees.totalRelayFee.total,
+      quote.deposit.inputToken.decimals
+    );
+    
+    return this.feeCosts;
+  }
+
   async customBridgeTxn(
     owner,
     fromChainId,
