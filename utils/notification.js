@@ -4,7 +4,7 @@ const openNotificationWithIcon = (api, title, type, msg) => {
     description: msg,
     showProgress: true,
     pauseOnHover: true,
-    duration: 150,
+    duration: 15000,
   });
 };
 export default openNotificationWithIcon;
