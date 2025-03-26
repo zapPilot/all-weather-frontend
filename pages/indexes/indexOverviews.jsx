@@ -71,12 +71,8 @@ import {
   setActionLoadingState,
 } from "../../utils/transactionHelpers.js";
 
-export default function IndexOverviews() {
-  const router = useRouter();
-  const { portfolioName } = router.query;
-  const account = useActiveAccount();
-  const chainId = useActiveWalletChain();
-  const switchChain = useSwitchActiveWalletChain();
+// Extract chain switching logic
+const useChainSwitching = (chainId, switchChain) => {
   const isProcessingChainChangeRef = useRef(false);
   const hasProcessedChainChangeRef = useRef(false);
 
@@ -124,6 +120,46 @@ export default function IndexOverviews() {
       ),
     },
   ];
+
+  // Chain mapping for switching
+  const chainMap = {
+    arbitrum: arbitrum,
+    base: base,
+    op: optimism,
+  };
+
+  const switchNextStepChain = (chain) => {
+    const selectedChain = chainMap[chain];
+    if (selectedChain) {
+      switchChain(selectedChain);
+    } else {
+      console.error(`Invalid chain: ${chain}`);
+    }
+  };
+
+  return {
+    switchItems,
+    switchNextStepChain,
+    isProcessingChainChangeRef,
+    hasProcessedChainChangeRef,
+    chainMap,
+  };
+};
+
+export default function IndexOverviews() {
+  const router = useRouter();
+  const { portfolioName } = router.query;
+  const account = useActiveAccount();
+  const chainId = useActiveWalletChain();
+  const switchChain = useSwitchActiveWalletChain();
+
+  // Use the extracted chain switching logic
+  const {
+    switchItems,
+    switchNextStepChain,
+    isProcessingChainChangeRef,
+    hasProcessedChainChangeRef,
+  } = useChainSwitching(chainId, switchChain);
 
   const [selectedToken, setSelectedToken] = useState(null);
   const [previousTokenSymbol, setPreviousTokenSymbol] = useState(null);
@@ -423,21 +459,6 @@ export default function IndexOverviews() {
     arbitrum: false,
     op: false,
   });
-  // prepare chain object for switch chain
-  const chainMap = {
-    arbitrum: arbitrum,
-    base: base,
-    op: optimism,
-  };
-
-  const switchNextStepChain = (chain) => {
-    const selectedChain = chainMap[chain];
-    if (selectedChain) {
-      switchChain(selectedChain);
-    } else {
-      console.error(`Invalid chain: ${chain}`);
-    }
-  };
 
   const [nextChainInvestmentAmount, setNextChainInvestmentAmount] = useState(0);
 
