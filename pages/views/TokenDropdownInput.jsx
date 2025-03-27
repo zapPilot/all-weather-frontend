@@ -30,6 +30,7 @@ const TokenDropdownInput = memo(
   }) => {
     const [localInvestmentAmount, setLocalInvestmentAmount] = useState("");
     const tokenAddress = selectedToken?.split("-")[1];
+    const tokenSymbol = selectedToken?.split("-")[0]?.toLowerCase();
     const account = useActiveAccount();
     const chainId = useActiveWalletChain();
     const { data, isLoading } = useWalletBalance({
@@ -40,6 +41,45 @@ const TokenDropdownInput = memo(
         tokenAddress,
       }),
     });
+
+    // Define minimum input value based on token
+    const getMinInputValue = () => {
+      // Default minimum value
+      let minValue = 0;
+      
+      // You can customize this based on token type
+      if (tokenSymbol?.includes("eth")) {
+        minValue = 0.01; // Example: 0.001 ETH minimum
+      } else if (tokenSymbol?.includes("usd") || tokenSymbol?.includes("dai")) {
+        minValue = 10; // Example: 1 USD minimum for stablecoins
+      }
+      // Add more token-specific minimums as needed
+      
+      return minValue;
+    };
+
+    const getTokenPrice = () => {
+      return tokenPricesMappingTable?.[tokenSymbol] || 0;
+    };
+
+    const getUsdValue = (amount) => {
+      return (amount * getTokenPrice()).toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    };
+
+    const isInsufficientBalance = () => {
+      return localInvestmentAmount > parseFloat(data?.displayValue || "0");
+    };
+
+    const isBelowMinimum = () => {
+      return (
+        localInvestmentAmount < getMinInputValue() && 
+        localInvestmentAmount !== 0 && 
+        localInvestmentAmount !== ""
+      );
+    };
 
     const handleInputChange = (eventValue) => {
       setLocalInvestmentAmount(parseFloat(eventValue) || 0);
@@ -65,11 +105,45 @@ const TokenDropdownInput = memo(
       setInvestmentAmount(0);
     }, [selectedToken, setInvestmentAmount]);
 
-    useEffect(() => {}, [localInvestmentAmount]);
+    // Render balance information
+    const renderBalanceInfo = () => {
+      return (
+        <div className="mt-2 text-sm">
+          Balance:{" "}
+          <span className={isInsufficientBalance() ? "text-red-400" : "text-gray-400"}>
+            {isLoading ? "Loading..." : data?.displayValue || "0"}
+            {tokenPricesMappingTable && tokenPricesMappingTable[tokenSymbol] && (
+              <span className="text-gray-400">
+                {" "}
+                (≈ ${getUsdValue(localInvestmentAmount)} USD)
+              </span>
+            )}
+          </span>
+          
+          {isInsufficientBalance() && (
+            <p className="text-red-400">
+              Please send more {tokenSymbol?.toUpperCase()} to your AA Wallet to continue.
+              <br />
+              Click on the top-right corner to get your AA Wallet address.
+            </p>
+          )}
+          
+          {isBelowMinimum() && (
+            <p className="text-amber-500">
+              Minimum input for {tokenSymbol?.toUpperCase()} is {getMinInputValue()} {tokenSymbol?.toUpperCase()}.
+              {tokenSymbol?.includes("eth") && " (≈ $" + (getMinInputValue() * getTokenPrice()).toFixed(2) + ")"}
+              {(tokenSymbol?.includes("usd") || tokenSymbol?.includes("dai")) && " (≈ $" + getMinInputValue() + ")"}
+            </p>
+          )}
+        </div>
+      );
+    };
 
-    return mode === "claim" ? (
-      <>{selectBefore(handleTokenChange, chainId?.id, selectedToken)} </>
-    ) : (
+    if (mode === "claim") {
+      return <>{selectBefore(handleTokenChange, chainId?.id, selectedToken)} </>;
+    }
+
+    return (
       <>
         <Space.Compact role="crypto_input">
           {selectBefore(handleTokenChange, chainId?.id, selectedToken)}
@@ -77,6 +151,7 @@ const TokenDropdownInput = memo(
             placeholder={isLoading ? "Loading..." : "Enter amount"}
             value={localInvestmentAmount}
             onChange={handleInputChange}
+            min={getMinInputValue()}
           />
           <Button
             type="primary"
@@ -86,46 +161,10 @@ const TokenDropdownInput = memo(
             Max
           </Button>
         </Space.Compact>
-        <div className="mt-2 text-sm">
-          Balance:{" "}
-          <span
-            className={
-              localInvestmentAmount > parseFloat(data?.displayValue)
-                ? "text-red-400"
-                : "text-gray-400"
-            }
-          >
-            {isLoading ? "Loading..." : data?.displayValue || "0"}
-            {tokenPricesMappingTable &&
-              tokenPricesMappingTable[
-                selectedToken?.split("-")[0].toLowerCase()
-              ] && (
-                <span className="text-gray-400">
-                  {" "}
-                  (≈ $
-                  {(
-                    tokenPricesMappingTable[
-                      selectedToken?.split("-")[0].toLowerCase()
-                    ] * localInvestmentAmount
-                  ).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}{" "}
-                  USD)
-                </span>
-              )}
-          </span>
-          {localInvestmentAmount > parseFloat(data?.displayValue) && (
-            <p className="text-red-400">
-              Please send more tokens to your AA Wallet to continue.
-              <br />
-              Click on the top-right corner to get your AA Wallet address.
-            </p>
-          )}
-        </div>
+        {renderBalanceInfo()}
       </>
     );
-  },
+  }
 );
 
 TokenDropdownInput.displayName = "TokenDropdownInput";

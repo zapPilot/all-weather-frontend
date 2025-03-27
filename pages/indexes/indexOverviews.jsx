@@ -360,7 +360,7 @@ export default function IndexOverviews() {
               "success",
               `${explorerUrl}/tx/${data.transactionHash}`,
             );
-            resolve(data); // Resolve the promise successfully
+            resolve(data);
 
             await axios({
               method: "post",
@@ -444,6 +444,16 @@ export default function IndexOverviews() {
           setRebalanceIsLoading(false);
           setTransferLoading(false);
         },
+      });
+    } finally {
+      // Reset all loading states regardless of success or failure
+      setActionLoadingState({
+        actionName,
+        setZapInIsLoading,
+        setZapOutIsLoading,
+        setRebalanceIsLoading,
+        setTransferLoading,
+        isLoading: false,
       });
     }
   };
