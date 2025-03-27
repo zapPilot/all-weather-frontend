@@ -46,7 +46,7 @@ const TokenDropdownInput = memo(
     const getMinInputValue = () => {
       // Default minimum value
       let minValue = 0;
-      
+
       // You can customize this based on token type
       if (tokenSymbol?.includes("eth")) {
         minValue = 0.01; // Example: 0.001 ETH minimum
@@ -54,7 +54,7 @@ const TokenDropdownInput = memo(
         minValue = 10; // Example: 1 USD minimum for stablecoins
       }
       // Add more token-specific minimums as needed
-      
+
       return minValue;
     };
 
@@ -75,8 +75,8 @@ const TokenDropdownInput = memo(
 
     const isBelowMinimum = () => {
       return (
-        localInvestmentAmount < getMinInputValue() && 
-        localInvestmentAmount !== 0 && 
+        localInvestmentAmount < getMinInputValue() &&
+        localInvestmentAmount !== 0 &&
         localInvestmentAmount !== ""
       );
     };
@@ -110,29 +110,38 @@ const TokenDropdownInput = memo(
       return (
         <div className="mt-2 text-sm">
           Balance:{" "}
-          <span className={isInsufficientBalance() ? "text-red-400" : "text-gray-400"}>
+          <span
+            className={
+              isInsufficientBalance() ? "text-red-400" : "text-gray-400"
+            }
+          >
             {isLoading ? "Loading..." : data?.displayValue || "0"}
-            {tokenPricesMappingTable && tokenPricesMappingTable[tokenSymbol] && (
-              <span className="text-gray-400">
-                {" "}
-                (≈ ${getUsdValue(localInvestmentAmount)} USD)
-              </span>
-            )}
+            {tokenPricesMappingTable &&
+              tokenPricesMappingTable[tokenSymbol] && (
+                <span className="text-gray-400">
+                  {" "}
+                  (≈ ${getUsdValue(localInvestmentAmount)} USD)
+                </span>
+              )}
           </span>
-          
           {isInsufficientBalance() && (
             <p className="text-red-400">
-              Please send more {tokenSymbol?.toUpperCase()} to your AA Wallet to continue.
+              Please send more {tokenSymbol?.toUpperCase()} to your AA Wallet to
+              continue.
               <br />
               Click on the top-right corner to get your AA Wallet address.
             </p>
           )}
-          
           {isBelowMinimum() && (
             <p className="text-amber-500">
-              Minimum input for {tokenSymbol?.toUpperCase()} is {getMinInputValue()} {tokenSymbol?.toUpperCase()}.
-              {tokenSymbol?.includes("eth") && " (≈ $" + (getMinInputValue() * getTokenPrice()).toFixed(2) + ")"}
-              {(tokenSymbol?.includes("usd") || tokenSymbol?.includes("dai")) && " (≈ $" + getMinInputValue() + ")"}
+              Minimum input for {tokenSymbol?.toUpperCase()} is{" "}
+              {getMinInputValue()} {tokenSymbol?.toUpperCase()}.
+              {tokenSymbol?.includes("eth") &&
+                " (≈ $" +
+                  (getMinInputValue() * getTokenPrice()).toFixed(2) +
+                  ")"}
+              {(tokenSymbol?.includes("usd") || tokenSymbol?.includes("dai")) &&
+                " (≈ $" + getMinInputValue() + ")"}
             </p>
           )}
         </div>
@@ -140,7 +149,9 @@ const TokenDropdownInput = memo(
     };
 
     if (mode === "claim") {
-      return <>{selectBefore(handleTokenChange, chainId?.id, selectedToken)} </>;
+      return (
+        <>{selectBefore(handleTokenChange, chainId?.id, selectedToken)} </>
+      );
     }
 
     return (
@@ -164,7 +175,7 @@ const TokenDropdownInput = memo(
         {renderBalanceInfo()}
       </>
     );
-  }
+  },
 );
 
 TokenDropdownInput.displayName = "TokenDropdownInput";

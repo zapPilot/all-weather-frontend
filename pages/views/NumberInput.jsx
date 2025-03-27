@@ -3,7 +3,7 @@ import { InputNumber } from "antd";
 
 const NumericInput = (props) => {
   const { value, onChange, placeholder, style, min, ...restProps } = props;
-  
+
   return (
     <InputNumber
       className="rounded-md py-0 border-[#d9d9d9]"
