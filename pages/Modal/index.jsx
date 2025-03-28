@@ -94,7 +94,9 @@ export default function PopUpModal({
     !finishedTxn ? "Bundling transactions..." : "";
 
   const getCurrentStep = () => {
-    const completedSteps = Object.values(chainStatus || {}).filter(Boolean).length;
+    const completedSteps = Object.values(chainStatus || {}).filter(
+      Boolean,
+    ).length;
     return completedSteps + 1;
   };
 

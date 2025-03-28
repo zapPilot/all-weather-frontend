@@ -1,11 +1,5 @@
 import { ethers } from "ethers";
-import {
-  arbitrum,
-  base,
-  optimism,
-  bsc,
-  polygon,
-} from "thirdweb/chains";
+import { arbitrum, base, optimism, bsc, polygon } from "thirdweb/chains";
 import { ERC20_ABI } from "../node_modules/@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
 import permanentPortfolioJson from "../lib/contracts/PermanentPortfolioLPToken.json" assert { type: "json" };
 import { prepareContractCall, getContract, defineChain } from "thirdweb";
