@@ -94,17 +94,17 @@ export default function PopUpModal({
     !finishedTxn ? "Bundling transactions..." : "";
 
   const getCurrentStep = () => {
-    const completedSteps = Object.values(chainStatus).filter(Boolean).length;
+    const completedSteps = Object.values(chainStatus || {}).filter(Boolean).length;
     return completedSteps + 1;
   };
 
   const getNextChain = () => {
-    const nextChain = Object.entries(chainStatus).find(
+    const nextChain = Object.entries(chainStatus || {}).find(
       ([chain, isComplete]) => !isComplete,
     )?.[0];
     return {
       name: nextChain,
-      imagePath: `/chainPicturesWebp/${nextChain.toLowerCase()}.webp`,
+      imagePath: `/chainPicturesWebp/${nextChain?.toLowerCase()}.webp`,
     };
   };
 

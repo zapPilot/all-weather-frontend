@@ -885,9 +885,9 @@ export default function IndexOverviews() {
         zapOutAmount={usdBalance * zapOutPercentage}
         availableAssetChains={availableAssetChains}
         currentChain={currentChain}
-        chainStatus={chainStatus}
+        chainStatus={chainStatus || {}}
         currentTab={tabKey}
-        allChainsComplete={Object.values(chainStatus).every(Boolean)}
+        allChainsComplete={Object.values(chainStatus || {}).every(Boolean)}
       />
       <main className={styles.bgStyle}>
         <header className="relative isolate pt-6">

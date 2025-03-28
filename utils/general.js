@@ -5,7 +5,6 @@ import {
   optimism,
   bsc,
   polygon,
-  mantle,
 } from "thirdweb/chains";
 import { ERC20_ABI } from "../node_modules/@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
 import permanentPortfolioJson from "../lib/contracts/PermanentPortfolioLPToken.json" assert { type: "json" };
@@ -17,7 +16,6 @@ export const CHAIN_ID_TO_CHAIN = {
   10: optimism,
   56: bsc,
   137: polygon,
-  5000: mantle,
   1088: defineChain(1088),
 };
 export const CHAIN_TO_CHAIN_ID = {

@@ -1,5 +1,5 @@
 import { getGasPrice } from "thirdweb";
-import { openNotificationWithIcon } from "./notification.js";
+import openNotificationWithIcon from "./notification.js";
 import { CHAIN_ID_TO_CHAIN_STRING } from "./general.js";
 import { normalizeChainName } from "./chainHelper.js";
 import { getRebalanceReinvestUsdAmount } from "./portfolioCalculation.js";
