@@ -691,7 +691,13 @@ export class BasePortfolio {
         // Process all bridge transactions in parallel
         const categoryBridgePromises = targetChains.map(
           async ({ chain, totalWeight }) => {
-            if (totalWeight === 0) return [];
+            if (
+              totalWeight === 0 ||
+              (actionParams.zapInAmount * totalWeight) /
+                actionParams.tokenDecimals <
+                1
+            )
+              return [];
             try {
               return await actionHandlers["bridge"](chain, totalWeight);
             } catch (error) {
