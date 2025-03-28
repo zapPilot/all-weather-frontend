@@ -27,6 +27,9 @@ async function swap(
 
   // Try all providers and collect their swap data
   const providers = ["1inch", "0x", "paraswap"];
+  const eth_price = tokenPricesMappingTable["eth"];
+  const to_token_price = tokenPricesMappingTable[toTokenSymbol];
+  const to_token_decimals = toTokenDecimals;
   const swapResults = await Promise.all(
     providers.map(async (provider) => {
       try {
@@ -40,14 +43,16 @@ async function swap(
           provider,
           fromTokenDecimals,
           toTokenDecimals,
+          eth_price,
+          to_token_price,
+          to_token_decimals,
         );
-        if (
-          Object.values(swapCallData).length === 0 ||
-          "error" in swapCallData
-        ) {
-          if ("error" in swapCallData) {
-            console.warn(`${provider} swap failed:`, swapCallData.error);
-          }
+        if (Object.values(swapCallData).length === 0) {
+          return null;
+        }
+
+        if ("error" in swapCallData) {
+          console.warn(`${provider} swap failed:`, swapCallData.error);
           return null;
         }
         const normalizedInputAmount = ethers.utils.formatUnits(
@@ -77,11 +82,12 @@ async function swap(
           provider,
           swapData: swapCallData,
           minToAmount: swapCallData["minToAmount"],
-          gasFee: swapCallData["gasFee"],
+          gasCostUSD: swapCallData["gasCostUSD"],
           tradingLoss,
           inputValue,
           normalizedInputAmount,
           normalizedOutputAmount,
+          toUsd: swapCallData["toUsd"],
           transactions: [
             approveTxn,
             prepareTransaction({
@@ -89,7 +95,7 @@ async function swap(
               chain: CHAIN_ID_TO_CHAIN[chainId],
               client: THIRDWEB_CLIENT,
               data: swapCallData["data"],
-              extraGas: BigInt(swapCallData["gasFee"]),
+              extraGas: BigInt(swapCallData["gas"]),
             }),
           ],
         };
@@ -103,16 +109,34 @@ async function swap(
   // Filter out failed attempts and sort by best return and gas fee
   const validSwaps = swapResults.filter((result) => result !== null);
   if (validSwaps.length === 0) {
-    throw new Error("No valid swap data found from any provider");
+    throw new Error(
+      `No valid swap data found from any provider to swap ${
+        amount / 10 ** fromTokenDecimals
+      } ${fromToken} to ${toTokenSymbol}`,
+    );
   }
 
-  // Sort first by toAmount (descending) then by gasFee (ascending)
-  const bestSwap = validSwaps.sort((a, b) => {
-    if (a.minToAmount === b.minToAmount) {
-      return Number(a.gasFee - b.gasFee); // Lower gas fee is better
-    }
-    return Number(b.minToAmount - a.minToAmount); // Higher return amount is better
-  })[0];
+  // New sorting logic
+  let bestSwap;
+
+  // Check if all swaps have valid toUsd values
+  const allHaveValidToUsd = validSwaps.every(
+    (swap) => swap.toUsd && Number(swap.toUsd) > 0,
+  );
+
+  if (allHaveValidToUsd) {
+    // Sort by toUsd (descending)
+    bestSwap = validSwaps.sort((a, b) => {
+      return Number(b.toUsd) - Number(a.toUsd); // Higher USD value is better
+    })[0];
+  } else {
+    // Fall back to minToAmount
+    bestSwap = validSwaps.sort((a, b) => {
+      const aNetValue = Number(a.minToAmount);
+      const bNetValue = Number(b.minToAmount);
+      return bNetValue - aNetValue; // Higher net value is better
+    })[0];
+  }
 
   // Check slippage for the best quote only
   const actualPrice =
@@ -133,7 +157,7 @@ async function swap(
     `${protocolUniqueId}-${fromToken}-${toTokenSymbol}-swap`,
     bestSwap.tradingLoss,
   );
-
+  console.log("bestSwap", bestSwap);
   return [bestSwap.transactions, bestSwap.minToAmount];
 }
 export default swap;

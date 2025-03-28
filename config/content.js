@@ -1,16 +1,9 @@
 const content = {
   siteInfo: {
-    tagline: "Your Web3 Zapier – A dApp Automation Pipeline",
-    subtitle: "Click Once, Yield Forever!",
+    tagline: "Your Web3 S&P500 – A Web3 Portfolio Management Solution",
+    // slogan: "Web3’s Market Benchmark",
     description:
-      "We help you diversify your investments across various high-yield protocols. With just one click, you can increase your returns and save time on research and transactions.",
-  },
-  sections: {
-    whatIs: {
-      title: "What is All Weather Protocol?",
-      description:
-        "We help you diversify your investments across various high-yield protocols. With just one click, you can increase your returns and save time on research and transactions.",
-    },
+      "For retail investors unsure what to invest in, we offer a simple, few-click solution to access the entire Web3 market with S&P 500-like stability and higher returns.",
   },
 };
 

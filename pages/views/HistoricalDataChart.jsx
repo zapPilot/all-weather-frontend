@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import axios from "axios";
 import { useActiveAccount } from "thirdweb/react";
 
 const Line = dynamic(
@@ -19,9 +18,7 @@ const HistoricalDataChart = ({ portfolioName }) => {
     if (address) {
       setUserAddress(address.toLowerCase());
       // if user is vip, fetch claimable reward
-      userAddress == "0x038919c63aff9c932c77a0c9c9d98eabc1a4dd08"
-        ? fetchClaimableReward()
-        : asyncFetch();
+      asyncFetch();
     }
   }, [address, userAddress]);
 
@@ -34,16 +31,6 @@ const HistoricalDataChart = ({ portfolioName }) => {
       .catch((error) => {
         console.error("fetch HistoricalDataChart data failed", error);
       });
-  };
-  const fetchClaimableReward = () => {
-    axios
-      .get(
-        `${process.env.NEXT_PUBLIC_SDK_API_URL}/rewards/historical-data?claimableUser=${userAddress}`,
-      )
-      .then((response) => {
-        setData(response.data);
-      })
-      .catch((error) => console.error("fetchClaimableReward", error));
   };
 
   const config = {
