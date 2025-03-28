@@ -100,7 +100,6 @@ async function swap(
           ],
         };
       } catch (error) {
-        throw error;
         console.warn(`Failed to fetch swap data from ${provider}:`, error);
         return null;
       }
@@ -158,6 +157,7 @@ async function swap(
     `${protocolUniqueId}-${fromToken}-${toTokenSymbol}-swap`,
     bestSwap.tradingLoss,
   );
+  console.log("bestSwap", bestSwap);
   return [bestSwap.transactions, bestSwap.minToAmount];
 }
 export default swap;

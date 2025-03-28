@@ -337,13 +337,43 @@ export default function IndexOverviews() {
             // First update chainStatus
             setChainStatus((prevStatus) => {
               const newStatus = { ...prevStatus, [currentChain]: true };
+              const allChainsComplete = Object.values(newStatus).every(Boolean);
 
-              // Check if all chains are complete after the update
-              if (Object.values(newStatus).every(Boolean)) {
+              if (allChainsComplete) {
                 localStorage.removeItem(
                   `portfolio-${portfolioName}-${account.address}`,
                 );
               }
+
+              // Find next chain for notification
+              const nextChain = Object.entries(newStatus).find(
+                ([chain, isComplete]) => !isComplete,
+              )?.[0];
+
+              // Create notification content with image
+              const notificationContent = allChainsComplete ? (
+                "All Chains Complete"
+              ) : (
+                <div className="flex items-center gap-2">
+                  Continue with
+                  <img
+                    src={`/chainPicturesWebp/${nextChain?.toLowerCase()}.webp`}
+                    alt={nextChain}
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                    }}
+                  />
+                </div>
+              );
+
+              openNotificationWithIcon(
+                notificationAPI,
+                notificationContent,
+                allChainsComplete ? "success" : "warning",
+                `${explorerUrl}/tx/${data.transactionHash}`,
+              );
 
               return newStatus;
             });
@@ -353,14 +383,6 @@ export default function IndexOverviews() {
             const newNextChain = switchNextChain(data.chain.name);
             setNextStepChain(newNextChain);
             setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
-
-            openNotificationWithIcon(
-              notificationAPI,
-              "Transaction Result",
-              "success",
-              `${explorerUrl}/tx/${data.transactionHash}`,
-            );
-            resolve(data);
 
             await axios({
               method: "post",
@@ -865,6 +887,7 @@ export default function IndexOverviews() {
         currentChain={currentChain}
         chainStatus={chainStatus}
         currentTab={tabKey}
+        allChainsComplete={Object.values(chainStatus).every(Boolean)}
       />
       <main className={styles.bgStyle}>
         <header className="relative isolate pt-6">

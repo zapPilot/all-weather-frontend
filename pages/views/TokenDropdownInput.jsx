@@ -10,6 +10,7 @@ import { arbitrum, base, optimism, bsc, polygon } from "thirdweb/chains";
 import { defineChain } from "thirdweb";
 import NumericInput from "./NumberInput";
 import { selectBefore } from "../../utils/contractInteractions";
+import { getMinimumTokenAmount } from "../../utils/environment";
 
 const chainIdToChain = {
   8453: base,
@@ -42,21 +43,8 @@ const TokenDropdownInput = memo(
       }),
     });
 
-    // Define minimum input value based on token
-    const getMinInputValue = () => {
-      // Default minimum value
-      let minValue = 0;
-
-      // You can customize this based on token type
-      if (tokenSymbol?.includes("eth")) {
-        minValue = 0.01; // Example: 0.001 ETH minimum
-      } else if (tokenSymbol?.includes("usd") || tokenSymbol?.includes("dai")) {
-        minValue = 10; // Example: 1 USD minimum for stablecoins
-      }
-      // Add more token-specific minimums as needed
-
-      return minValue;
-    };
+    // Define minimum values based on environment
+    const minValue = getMinimumTokenAmount(tokenSymbol);
 
     const getTokenPrice = () => {
       return tokenPricesMappingTable?.[tokenSymbol] || 0;
@@ -75,7 +63,7 @@ const TokenDropdownInput = memo(
 
     const isBelowMinimum = () => {
       return (
-        localInvestmentAmount < getMinInputValue() &&
+        localInvestmentAmount < minValue &&
         localInvestmentAmount !== 0 &&
         localInvestmentAmount !== ""
       );
@@ -134,14 +122,12 @@ const TokenDropdownInput = memo(
           )}
           {isBelowMinimum() && (
             <p className="text-amber-500">
-              Minimum input for {tokenSymbol?.toUpperCase()} is{" "}
-              {getMinInputValue()} {tokenSymbol?.toUpperCase()}.
+              Minimum input for {tokenSymbol?.toUpperCase()} is {minValue}{" "}
+              {tokenSymbol?.toUpperCase()}.
               {tokenSymbol?.includes("eth") &&
-                " (≈ $" +
-                  (getMinInputValue() * getTokenPrice()).toFixed(2) +
-                  ")"}
+                " (≈ $" + (minValue * getTokenPrice()).toFixed(2) + ")"}
               {(tokenSymbol?.includes("usd") || tokenSymbol?.includes("dai")) &&
-                " (≈ $" + getMinInputValue() + ")"}
+                " (≈ $" + minValue + ")"}
             </p>
           )}
         </div>
@@ -162,7 +148,7 @@ const TokenDropdownInput = memo(
             placeholder={isLoading ? "Loading..." : "Enter amount"}
             value={localInvestmentAmount}
             onChange={handleInputChange}
-            min={getMinInputValue()}
+            min={minValue}
           />
           <Button
             type="primary"
