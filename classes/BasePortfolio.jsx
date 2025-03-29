@@ -485,6 +485,25 @@ export class BasePortfolio {
     return totalTxns;
   }
 
+  _calculateDerivative(currentChain, onlyThisChain) {
+    if (!onlyThisChain) return 1;
+    // Calculate total weight for the current chain across all categories
+    const totalWeightOnThisChain = Object.values(this.strategy).reduce(
+      (categorySum, protocolsInThisCategory) => {
+        const chainProtocols = protocolsInThisCategory[currentChain] || [];
+        return (
+          categorySum +
+          chainProtocols.reduce(
+            (protocolSum, protocol) => protocolSum + (protocol.weight || 0),
+            0,
+          )
+        );
+      },
+      0,
+    );
+    return totalWeightOnThisChain === 0 ? 0 : 1 / totalWeightOnThisChain;
+  }
+
   async _processProtocolActions(actionName, actionParams) {
     const currentChain = actionParams.chainMetadata.name
       .toLowerCase()
@@ -497,25 +516,6 @@ export class BasePortfolio {
         const zapInPrecision = 1000000;
         const percentageBN = ethers.BigNumber.from(
           BigInt(Math.floor(protocol.weight * derivative * zapInPrecision)),
-        );
-        console.log(
-          protocol.interface.uniqueId(),
-          "original zapInAmount",
-          actionParams.zapInAmount.toString(),
-          actionParams.zapInAmount.toString(),
-          "zapInAmount",
-          actionParams.zapInAmount
-            .mul(percentageBN)
-            .div(zapInPrecision)
-            .toString(),
-          "percentageBN",
-          percentageBN.toString(),
-          "zapInPrecision",
-          zapInPrecision.toString(),
-          "protocol.weight",
-          protocol.weight.toString(),
-          "derivative",
-          derivative.toString(),
         );
         return protocol.interface.zapIn(
           actionParams.account,
@@ -654,6 +654,11 @@ export class BasePortfolio {
     const processProtocolTxns = async (currentChain) => {
       const protocolPromises = [];
 
+      const derivative = this._calculateDerivative(
+        currentChain,
+        actionParams.onlyThisChain,
+      );
+
       // Calculate total weight for the current chain across all categories
       const totalWeightOnThisChain = Object.values(this.strategy).reduce(
         (categorySum, protocolsInThisCategory) => {
@@ -674,11 +679,6 @@ export class BasePortfolio {
           protocolsInThisCategory,
         )) {
           if (chain.toLowerCase() !== currentChain) continue;
-
-          const derivative =
-            actionParams.onlyThisChain === true
-              ? 1 / totalWeightOnThisChain
-              : 1;
 
           // Process all protocols in parallel
           const chainProtocolPromises = protocols.map(async (protocol) => {
