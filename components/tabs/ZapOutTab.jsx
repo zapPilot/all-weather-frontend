@@ -85,7 +85,7 @@ export default function ZapOutTab({
                   : ""
               }`}
           onClick={() => handleAAWalletAction("zapOut", true)}
-          loading={zapOutIsLoading || usdBalanceLoading}
+          loading={usdBalanceLoading}
           disabled={
             usdBalance < 0.01 ||
             zapOutPercentage === 0 ||
