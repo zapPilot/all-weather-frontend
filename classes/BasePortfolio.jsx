@@ -707,22 +707,8 @@ export class BasePortfolio {
     };
 
     const processBridgeTxns = async (currentChain) => {
-      // First, calculate total weights for each chain across all categories
-      const chainWeights = Object.values(this.strategy).reduce(
-        (acc, protocolsInThisCategory) => {
-          Object.entries(protocolsInThisCategory)
-            .filter(([chain]) => chain.toLowerCase() !== currentChain)
-            .forEach(([chain, protocols]) => {
-              if (!acc[chain]) acc[chain] = 0;
-              acc[chain] += protocols.reduce(
-                (sum, protocol) => sum + (protocol.weight || 0),
-                0,
-              );
-            });
-          return acc;
-        },
-        {},
-      );
+      // Calculate total weights for each chain
+      const chainWeights = this._calculateChainWeights(currentChain);
 
       // Convert to array format and process bridges
       const bridgePromises = Object.entries(chainWeights).map(
@@ -1537,5 +1523,23 @@ export class BasePortfolio {
 
   getFlowChartData(actionName, actionParams) {
     return this.flowChartBuilder.buildFlowChart(actionName, actionParams);
+  }
+
+  _calculateChainWeights(currentChain) {
+    return Object.values(this.strategy).reduce(
+      (acc, protocolsInThisCategory) => {
+        Object.entries(protocolsInThisCategory)
+          .filter(([chain]) => chain.toLowerCase() !== currentChain)
+          .forEach(([chain, protocols]) => {
+            if (!acc[chain]) acc[chain] = 0;
+            acc[chain] += protocols.reduce(
+              (sum, protocol) => sum + (protocol.weight || 0),
+              0,
+            );
+          });
+        return acc;
+      },
+      {},
+    );
   }
 }
