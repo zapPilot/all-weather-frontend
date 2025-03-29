@@ -159,7 +159,7 @@ export default function PopUpModal({
                     currentChain={currentChain}
                     chainStatus={chainStatus}
                     theme="light"
-                    isStarted={Object.values(chainStatus).some(
+                    isStarted={Object.values(chainStatus || {}).some(
                       (status) => status,
                     )}
                   />
