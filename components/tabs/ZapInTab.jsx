@@ -5,6 +5,7 @@ import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
 import { useState } from "react";
 import { TOKEN_ADDRESS_MAP } from "../../utils/general";
 import ActionItem from "../common/ActionItem";
+import { getMinimumTokenAmount } from "../../utils/environment.js";
 
 const { Countdown } = Statistic;
 const STAKE_THRESHOLD = 10;
@@ -131,7 +132,8 @@ export default function ZapInTab({
         onClick={() => handleAAWalletAction("zapIn", true)}
         disabled={
           Number(investmentAmount) === 0 ||
-          Number(investmentAmount) > tokenBalance
+          Number(investmentAmount) > tokenBalance ||
+          Number(investmentAmount) < getMinimumTokenAmount(selectedToken)
         }
       >
         Zap In
