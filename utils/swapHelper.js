@@ -117,7 +117,7 @@ async function swap(
   }
 
   // New sorting logic
-  let secondBestSwap;
+  let bestSwap;
 
   // Check if all swaps have valid toUsd values
   const allHaveValidToUsd = validSwaps.every(
@@ -126,39 +126,48 @@ async function swap(
 
   if (allHaveValidToUsd) {
     // Sort by toUsd (descending)
-    secondBestSwap = validSwaps.sort((a, b) => {
+    bestSwap = validSwaps.sort((a, b) => {
       return Number(b.toUsd) - Number(a.toUsd); // Higher USD value is better
-    })[1];
+    })[0];
   } else {
     // Fall back to minToAmount
-    secondBestSwap = validSwaps.sort((a, b) => {
+    bestSwap = validSwaps.sort((a, b) => {
       const aNetValue = Number(a.minToAmount);
       const bNetValue = Number(b.minToAmount);
       return bNetValue - aNetValue; // Higher net value is better
-    })[1];
+    })[0];
   }
 
   // Check slippage for the best quote only
   const priceRatio =
-    (secondBestSwap.normalizedOutputAmount * tokenPricesMappingTable[toTokenSymbol]) /
-    (secondBestSwap.normalizedInputAmount * tokenPricesMappingTable[fromToken]);
+    (bestSwap.normalizedOutputAmount * tokenPricesMappingTable[toTokenSymbol]) /
+    (bestSwap.normalizedInputAmount * tokenPricesMappingTable[fromToken]);
   const priceImpactPercentage = (1 - priceRatio) * 100;
   // NOTE: because of our price timetable have a very high latency, we accept a higher price impact
   const hardcodedPriceImpactPercentage = 10;
+  console.log(
+    `Input amount: ${bestSwap.normalizedInputAmount} ${fromToken} (${
+      bestSwap.normalizedInputAmount * tokenPricesMappingTable[fromToken]
+    }) , Output amount: ${bestSwap.normalizedOutputAmount} ${toTokenSymbol} (${
+      bestSwap.normalizedOutputAmount * tokenPricesMappingTable[toTokenSymbol]
+    })`,
+    "bestSwap",
+    bestSwap,
+  );
   if (process.env.TEST !== "true") {
     assert(
       priceImpactPercentage <= hardcodedPriceImpactPercentage,
       `Price impact is too high to swap ${fromToken} to ${toTokenSymbol} . Price impact: ${priceImpactPercentage.toFixed(
         2,
-      )}%, Max allowed: ${hardcodedPriceImpactPercentage}%. Input amount: ${secondBestSwap.normalizedInputAmount} ${fromToken} (${secondBestSwap.normalizedInputAmount * tokenPricesMappingTable[fromToken]}) , Output amount: ${secondBestSwap.normalizedOutputAmount} ${toTokenSymbol} (${secondBestSwap.normalizedOutputAmount * tokenPricesMappingTable[toTokenSymbol]})`,
+      )}%, Max allowed: ${hardcodedPriceImpactPercentage}%`,
     );
   }
   // Update progress with final trading loss/gain
   await updateProgressAndWaitCallback(
     updateProgress,
     `${protocolUniqueId}-${fromToken}-${toTokenSymbol}-swap`,
-    secondBestSwap.tradingLoss,
+    bestSwap.tradingLoss,
   );
-  return [secondBestSwap.transactions, secondBestSwap.minToAmount];
+  return [bestSwap.transactions, bestSwap.minToAmount];
 }
 export default swap;
