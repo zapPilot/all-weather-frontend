@@ -170,6 +170,7 @@ export default function ZapInTab({
         currentChain={currentChain}
         chainStatus={chainStatus}
         theme="dark"
+        isStarted={Object.values(chainStatus || {}).some((status) => status)}
       />
 
       <div

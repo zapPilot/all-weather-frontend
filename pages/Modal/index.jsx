@@ -159,6 +159,9 @@ export default function PopUpModal({
                     currentChain={currentChain}
                     chainStatus={chainStatus}
                     theme="light"
+                    isStarted={Object.values(chainStatus || {}).some(
+                      (status) => status,
+                    )}
                   />
                 </div>
                 <div className="mx-auto flex items-center justify-center rounded-full">
