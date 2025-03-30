@@ -1,6 +1,6 @@
 import React from "react";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
-
+import CompletionActions from "../../components/CompletionActions";
 const actionNameMap = {
   zapIn: "Deposit",
   zapOut: "Withdraw",
@@ -16,15 +16,15 @@ const ActionItem = ({
   chainStatus,
   theme,
   isStarted,
+  account,
 }) => {
   const actionIsArray = Array.isArray(actionName);
-
   const sortedChains = React.useMemo(() => {
     if (!availableAssetChains) return [];
-    if (tab === "Rebalance" ){
-      return availableAssetChains
+    if (tab === "Rebalance") {
+      return availableAssetChains;
     }
-    
+
     if (!isStarted) {
       return [...availableAssetChains].sort((a, b) => {
         if (a === currentChain) return -1;
@@ -34,6 +34,12 @@ const ActionItem = ({
     }
     return availableAssetChains;
   }, [availableAssetChains, currentChain, isStarted, tab]);
+
+  const allActionsCompleted =
+    availableAssetChains?.length > 0
+      ? availableAssetChains.every((chain) => chainStatus[chain])
+      : false;
+
   const getChainStatusStyles = (chain) => {
     const isActive = chainStatus[chain];
     const isCurrentChain = currentChain === chain;
@@ -98,14 +104,14 @@ const ActionItem = ({
       );
     }
 
-    const allActionsCompleted = availableAssetChains.every(
-      (chain) => chainStatus[chain],
-    );
     if (allActionsCompleted) {
       return (
         <div className="text-green-500 text-center mb-2">
-          <CheckCircleIcon className="w-12 h-12 mx-auto" />
-          <p>You have completed all actions.</p>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <CheckCircleIcon className="w-6 h-6" />
+            <p>You have completed all actions.</p>
+          </div>
+          <CompletionActions account={account} />
         </div>
       );
     }
@@ -116,7 +122,7 @@ const ActionItem = ({
   return (
     <>
       <div className="flex justify-center text-base font-semibold">
-        {sortedChains?.map(renderChainIndicator)}
+        {!allActionsCompleted && sortedChains?.map(renderChainIndicator)}
       </div>
       <div className="mt-4">{renderCompletionStatus()}</div>
     </>

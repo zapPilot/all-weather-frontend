@@ -39,6 +39,7 @@ export default function ZapOutTab({
         chainStatus={chainStatus}
         theme="dark"
         isStarted={Object.values(chainStatus || {}).some((status) => status)}
+        account={account}
       />
       {Object.values(chainStatus).some((status) => status) ? null : (
         <DecimalStep

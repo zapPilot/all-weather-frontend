@@ -27,6 +27,7 @@ export default function RebalanceTab({
   investmentAmount,
   tokenPricesMappingTable,
   lockUpPeriod,
+  account,
 }) {
   const [currentStep, setCurrentStep] = useState(0);
   const currentChain = chainId?.name
@@ -36,7 +37,7 @@ export default function RebalanceTab({
     .trim();
   return (
     <div>
-      {Object.keys(rebalancableUsdBalanceDict||{}).length === 0 ? (
+      {Object.keys(rebalancableUsdBalanceDict || {}).length === 0 ? (
         <div className="flex justify-center items-center h-full">
           <Spin />
         </div>
@@ -53,6 +54,7 @@ export default function RebalanceTab({
           chainStatus={chainStatus}
           theme="dark"
           isStarted={Object.values(chainStatus || {}).some((status) => status)}
+          account={account}
         />
       )}
 
