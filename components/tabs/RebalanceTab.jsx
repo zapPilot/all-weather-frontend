@@ -8,7 +8,6 @@ import { formatLockUpPeriod } from "../../utils/general";
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function RebalanceTab({
-  rebalancableUsdBalanceDictLoading,
   rebalancableUsdBalanceDict,
   chainId,
   handleAAWalletAction,
@@ -30,7 +29,6 @@ export default function RebalanceTab({
   lockUpPeriod,
 }) {
   const [currentStep, setCurrentStep] = useState(0);
-
   const currentChain = chainId?.name
     ?.toLowerCase()
     .replace(" one", "")
@@ -38,12 +36,13 @@ export default function RebalanceTab({
     .trim();
   return (
     <div>
-      {rebalancableUsdBalanceDictLoading ? (
+      {Object.keys(rebalancableUsdBalanceDict||{}).length === 0 ? (
         <div className="flex justify-center items-center h-full">
           <Spin />
         </div>
       ) : (
         <ActionItem
+          tab="Rebalance"
           actionName={rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(
             (action) => action.actionName,
           )}
@@ -100,7 +99,6 @@ export default function RebalanceTab({
                           setCurrentStep(currentStep + 1);
                         }
                       }}
-                      loading={rebalancableUsdBalanceDictLoading}
                       disabled={
                         usdBalance <= 0 ||
                         (data.actionName === "localRebalance" &&

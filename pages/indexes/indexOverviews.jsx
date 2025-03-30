@@ -195,10 +195,6 @@ export default function IndexOverviews() {
 
   const [usdBalanceLoading, setUsdBalanceLoading] = useState(false);
   const [pendingRewardsLoading, setPendingRewardsLoading] = useState(false);
-  const [
-    rebalancableUsdBalanceDictLoading,
-    setrebalancableUsdBalanceDictLoading,
-  ] = useState(false);
 
   const [principalBalance, setPrincipalBalance] = useState(0);
   const [open, setOpen] = useState(false);
@@ -564,7 +560,6 @@ export default function IndexOverviews() {
     setUsdBalance(0);
     setUsdBalanceLoading(true);
     setPendingRewardsLoading(true);
-    setrebalancableUsdBalanceDictLoading(true);
     setProtocolAssetDustInWalletLoading(true);
 
     if (!portfolioName || account === undefined || !chainId) {
@@ -592,7 +587,6 @@ export default function IndexOverviews() {
           setUsdBalance(cachedData.usdBalance);
           setUsdBalanceLoading(false);
           setrebalancableUsdBalanceDict(cachedData.usdBalanceDict);
-          setrebalancableUsdBalanceDictLoading(false);
 
           setLockUpPeriod(cachedData.lockUpPeriod);
 
@@ -636,7 +630,6 @@ export default function IndexOverviews() {
           setUsdBalance(usdBalance);
           setUsdBalanceLoading(false);
           setrebalancableUsdBalanceDict(usdBalanceDict);
-          setrebalancableUsdBalanceDictLoading(false);
 
           // Update lockup period as soon as available
           setLockUpPeriod(lockUpPeriod);
@@ -785,7 +778,6 @@ export default function IndexOverviews() {
     setUsdBalance(0);
     setUsdBalanceLoading(true);
     setPendingRewardsLoading(true);
-    setrebalancableUsdBalanceDictLoading(true);
     setProtocolAssetDustInWalletLoading(true);
 
     // Trigger the useEffect by updating a dependency
@@ -810,7 +802,6 @@ export default function IndexOverviews() {
     protocolAssetDustInWallet,
     protocolAssetDustInWalletLoading,
     rebalancableUsdBalanceDict,
-    rebalancableUsdBalanceDictLoading,
     rebalanceIsLoading,
     recipient,
     recipientError,

@@ -9,6 +9,7 @@ const actionNameMap = {
 };
 
 const ActionItem = ({
+  tab,
   actionName,
   availableAssetChains,
   currentChain,
@@ -20,6 +21,10 @@ const ActionItem = ({
 
   const sortedChains = React.useMemo(() => {
     if (!availableAssetChains) return [];
+    if (tab === "Rebalance" ){
+      return availableAssetChains
+    }
+    
     if (!isStarted) {
       return [...availableAssetChains].sort((a, b) => {
         if (a === currentChain) return -1;
@@ -28,8 +33,7 @@ const ActionItem = ({
       });
     }
     return availableAssetChains;
-  }, [availableAssetChains, currentChain, isStarted]);
-
+  }, [availableAssetChains, currentChain, isStarted, tab]);
   const getChainStatusStyles = (chain) => {
     const isActive = chainStatus[chain];
     const isCurrentChain = currentChain === chain;

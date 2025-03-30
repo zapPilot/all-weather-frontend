@@ -165,6 +165,7 @@ export default function ZapInTab({
   return (
     <div>
       <ActionItem
+        tab="ZapIn"
         actionName="zapIn"
         availableAssetChains={availableAssetChains}
         currentChain={currentChain}

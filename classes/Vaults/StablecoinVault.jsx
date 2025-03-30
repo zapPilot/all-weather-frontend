@@ -83,7 +83,7 @@ export class StablecoinVault extends BaseVault {
                 pidOfEquilibria: 59,
               },
             ),
-            weight: 0.1,
+            weight: 0
           },
           {
             interface: new BaseEquilibria(

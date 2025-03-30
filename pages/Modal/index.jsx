@@ -142,6 +142,7 @@ export default function PopUpModal({
               <div>
                 <div className="text-center mt-5">
                   <ActionItem
+                    tab="popupModal"
                     actionName={
                       currentTab === "4"
                         ? rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(

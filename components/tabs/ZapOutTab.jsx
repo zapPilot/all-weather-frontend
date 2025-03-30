@@ -32,6 +32,7 @@ export default function ZapOutTab({
   return (
     <div>
       <ActionItem
+        tab="ZapOut"
         actionName="zapOut"
         availableAssetChains={availableAssetChains}
         currentChain={currentChain}
