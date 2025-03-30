@@ -238,10 +238,20 @@ export default function PopUpModal({
               <dl className="mt-6 space-y-4">
                 <div className="flex items-center justify-between border-t border-gray-200 pt-4">
                   <dt className="flex items-center text-sm text-gray-600">
+                    <span>⛽ Gas Fee</span>
+                  </dt>
+                  <dd className="text-sm font-medium text-gray-900">
+                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded-md font-semibold">
+                      Free
+                    </span>
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between border-t border-gray-200 pt-4">
+                  <dt className="flex items-center text-sm text-gray-600">
                     <span>
                       {totalTradingLoss > 0
-                        ? "Arbitrage profit estimate"
-                        : "Transaction cost estimate"}
+                        ? "🤑 Arbitrage profit estimate"
+                        : "💳 Transaction cost estimate"}
                     </span>
                     <a
                       href="#"
@@ -292,7 +302,7 @@ export default function PopUpModal({
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-200 pt-4">
                   <dt className="flex items-center text-sm text-gray-600">
-                    <span>Platform fee estimate</span>
+                    <span>💵 Platform fee estimate</span>
                     <a
                       href="#"
                       className="ml-2 shrink-0 text-gray-400 hover:text-gray-500"
