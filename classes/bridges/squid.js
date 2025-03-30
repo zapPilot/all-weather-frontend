@@ -1,7 +1,6 @@
 import BaseBridge from "./BaseBridge";
 import { Squid } from "@0xsquid/sdk";
 import { CHAIN_ID_TO_CHAIN } from "../../utils/general";
-import { ethers } from "ethers";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 
 class SquidBridge extends BaseBridge {
@@ -31,33 +30,10 @@ class SquidBridge extends BaseBridge {
     this.lastRequestTime = Date.now();
   }
 
-  async init(
-    account,
-    fromChainId,
-    toChainId,
-    inputToken,
-    targetToken,
-    inputAmount,
-  ) {
-    try {
-      if (!this.isInitialized) {
-        await this.sdk.init();
-        this.isInitialized = true;
-      }
-
-      await this.getFeeCosts(
-        account,
-        fromChainId,
-        toChainId,
-        inputToken,
-        targetToken,
-        inputAmount,
-        true
-      );
-
-    } catch (error) {
-      console.error("Failed in Squid init:", error);
-      throw error;
+  async init() {
+    if (!this.isInitialized) {
+      await this.sdk.init();
+      this.isInitialized = true;
     }
   }
 
@@ -67,7 +43,6 @@ class SquidBridge extends BaseBridge {
     while (retryCount < maxRetries) {
       try {
         await this.throttleRequest();
-        
         const { route } = await this.sdk.getRoute({
           fromAddress: account,
           fromChain: fromChainId.toString(),
@@ -79,7 +54,6 @@ class SquidBridge extends BaseBridge {
           enableBoost: isInit,
           quoteOnly: isInit,
         });
-
         this.feeCosts = route.estimate?.feeCosts?.[0]?.amountUsd;
         return this.feeCosts;
 
@@ -153,10 +127,6 @@ class SquidBridge extends BaseBridge {
         throw error;
       }
     }
-  }
-
-  getFeeCosts() {
-    return this.feeCosts;
   }
 }
 
