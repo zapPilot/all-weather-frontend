@@ -24,8 +24,11 @@ async function getTheBestBridge(
     inputAmount,
   );
 
-  const availableBridges = bridges.filter(b => b.isAvailable && b.fee !== null);
-  if (availableBridges.length === 0) throw new Error("No available bridges found");
+  const availableBridges = bridges.filter(
+    (b) => b.isAvailable && b.fee !== null,
+  );
+  if (availableBridges.length === 0)
+    throw new Error("No available bridges found");
 
   availableBridges.sort((a, b) => Number(a.fee) - Number(b.fee));
 
@@ -41,7 +44,7 @@ async function checkRatesBetweenBridges(
   inputAmount: string,
 ): Promise<BridgeInfo[]> {
   let bridges: BridgeInfo[] = [];
-  
+
   // Squid
   try {
     const squid = new SquidBridge();
@@ -57,14 +60,14 @@ async function checkRatesBetweenBridges(
     bridges.push({
       bridge: squid,
       fee: squidFeeCosts ?? null,
-      isAvailable: true
+      isAvailable: true,
     });
   } catch (error) {
     bridges.push({
       bridge: new SquidBridge(),
       fee: null,
       isAvailable: false,
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 
@@ -83,14 +86,14 @@ async function checkRatesBetweenBridges(
     bridges.push({
       bridge: across,
       fee: acrossFeeCosts,
-      isAvailable: true
+      isAvailable: true,
     });
   } catch (error) {
     bridges.push({
       bridge: new AcrossBridge(),
       fee: null,
       isAvailable: false,
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 

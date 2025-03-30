@@ -51,12 +51,12 @@ class AcrossBridge extends BaseBridge {
       route,
       inputAmount: inputAmount,
     });
-    
+
     this.feeCosts = ethers.utils.formatUnits(
       quote.fees.totalRelayFee.total,
-      quote.deposit.inputToken.decimals
+      quote.deposit.inputToken.decimals,
     );
-    
+
     return this.feeCosts;
   }
 

@@ -18,7 +18,7 @@ class SquidBridge extends BaseBridge {
   }
 
   async delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   async throttleRequest() {
@@ -37,7 +37,15 @@ class SquidBridge extends BaseBridge {
     }
   }
 
-  async getFeeCosts(account, fromChainId, toChainId, inputToken, targetToken, inputAmount, isInit = false) {
+  async getFeeCosts(
+    account,
+    fromChainId,
+    toChainId,
+    inputToken,
+    targetToken,
+    inputAmount,
+    isInit = false,
+  ) {
     const maxRetries = 3;
     let retryCount = 0;
     while (retryCount < maxRetries) {
@@ -56,14 +64,17 @@ class SquidBridge extends BaseBridge {
         });
         this.feeCosts = route.estimate?.feeCosts?.[0]?.amountUsd;
         return this.feeCosts;
-
       } catch (error) {
         console.error(`Attempt ${retryCount + 1} failed:`, error);
         retryCount++;
-        
+
         if (error.response?.status === 429 && retryCount < maxRetries) {
           const waitTime = Math.pow(2, retryCount) * 1000;
-          console.log(`Rate limited, waiting ${waitTime/1000}s before retry ${retryCount}/${maxRetries}`);
+          console.log(
+            `Rate limited, waiting ${
+              waitTime / 1000
+            }s before retry ${retryCount}/${maxRetries}`,
+          );
           await this.delay(waitTime);
           continue;
         }
@@ -72,7 +83,15 @@ class SquidBridge extends BaseBridge {
     }
   }
 
-  async customBridgeTxn(owner, fromChainId, toChainId, fromToken, toToken, amount, updateProgress) {
+  async customBridgeTxn(
+    owner,
+    fromChainId,
+    toChainId,
+    fromToken,
+    toToken,
+    amount,
+    updateProgress,
+  ) {
     const maxRetries = 3;
     let retryCount = 0;
 
@@ -92,26 +111,23 @@ class SquidBridge extends BaseBridge {
           quoteOnly: false,
         });
 
-      if (route.estimate?.feeCosts?.length > 0) {
-        const fee = route.estimate?.feeCosts?.[0]?.amountUsd;
-        updateProgress(
-          `bridge-${fromChainId}-${toChainId}`,
-          -Number(fee)
-        );
-      }
+        if (route.estimate?.feeCosts?.length > 0) {
+          const fee = route.estimate?.feeCosts?.[0]?.amountUsd;
+          updateProgress(`bridge-${fromChainId}-${toChainId}`, -Number(fee));
+        }
 
-      const bridgeTxn = {
-        client: THIRDWEB_CLIENT,
-        to: route.transactionRequest.target,
-        chain: CHAIN_ID_TO_CHAIN[fromChainId],
-        data: route.transactionRequest.data,
-        value: route.transactionRequest.value,
-        gasLimit: route.transactionRequest.gasLimit,
-        maxFeePerGas: route.transactionRequest.maxFeePerGas,
-        maxPriorityFeePerGas: route.transactionRequest.maxPriorityFeePerGas,
-      };
+        const bridgeTxn = {
+          client: THIRDWEB_CLIENT,
+          to: route.transactionRequest.target,
+          chain: CHAIN_ID_TO_CHAIN[fromChainId],
+          data: route.transactionRequest.data,
+          value: route.transactionRequest.value,
+          gasLimit: route.transactionRequest.gasLimit,
+          maxFeePerGas: route.transactionRequest.maxFeePerGas,
+          maxPriorityFeePerGas: route.transactionRequest.maxPriorityFeePerGas,
+        };
 
-      const routeTargetContract = route.transactionRequest.target;
+        const routeTargetContract = route.transactionRequest.target;
 
         return [bridgeTxn, routeTargetContract];
       } catch (error) {
@@ -120,7 +136,7 @@ class SquidBridge extends BaseBridge {
 
         if (retryCount < maxRetries) {
           const waitTime = 3000;
-          console.log(`Retrying in ${waitTime/1000} seconds...`);
+          console.log(`Retrying in ${waitTime / 1000} seconds...`);
           await this.delay(waitTime);
           continue;
         }
