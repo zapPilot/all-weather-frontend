@@ -81,13 +81,16 @@ export class BasePortfolio {
   }
   async usdBalanceOf(address, portfolioAprDict) {
     // Get token prices
+    console.time("getTokenPricesMappingTable");
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
-
+    console.timeEnd("getTokenPricesMappingTable");
     // Get balances and rewards
+    console.time("getBalances");
     const balanceResults = await this._getBalances(
       address,
       tokenPricesMappingTable,
     );
+    console.timeEnd("getBalances");
     // Initialize balance dictionary with rewards
     let usdBalance = 0;
     const usdBalanceDict = this._initializeBalanceDict();
