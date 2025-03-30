@@ -12,7 +12,7 @@ import DemoFlowDirectionGraph from "../FlowChart";
 import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { Popover, Spin } from "antd";
 import ActionItem from "../../components/common/ActionItem";
-import EmailSubscription from "../emailsubscription";
+import CompletionActions from "../../components/CompletionActions";
 
 const formatAmount = (amount) => {
   if (amount === undefined || amount === null) return <Spin />;
@@ -142,6 +142,7 @@ export default function PopUpModal({
               <div>
                 <div className="text-center mt-5">
                   <ActionItem
+                    tab="popupModal"
                     actionName={
                       currentTab === "4"
                         ? rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(
@@ -162,6 +163,7 @@ export default function PopUpModal({
                     isStarted={Object.values(chainStatus || {}).some(
                       (status) => status,
                     )}
+                    account={account}
                   />
                 </div>
                 <div className="mx-auto flex items-center justify-center rounded-full">
@@ -197,24 +199,7 @@ export default function PopUpModal({
                   <>
                     <div className="flex flex-col items-center gap-4 w-full mt-4">
                       {allChainsComplete === true ? (
-                        <>
-                          <EmailSubscription />
-                          <a
-                            href={`https://debank.com/profile/${account?.address}`}
-                            target="_blank"
-                            className="w-full max-w-md flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl bg-white/25 shadow-md hover:bg-white/25 transition-colors text-gray-200 border border-gray-100/50"
-                          >
-                            <Image
-                              src="/projectPictures/debank.webp"
-                              alt="debank"
-                              height={25}
-                              width={25}
-                            />
-                            <span className="text-gray-400 font-medium">
-                              Check your portfolio on Debank
-                            </span>
-                          </a>
-                        </>
+                        <CompletionActions account={account} />
                       ) : (
                         <button
                           type="button"

@@ -165,12 +165,14 @@ export default function ZapInTab({
   return (
     <div>
       <ActionItem
+        tab="ZapIn"
         actionName="zapIn"
         availableAssetChains={availableAssetChains}
         currentChain={currentChain}
         chainStatus={chainStatus}
         theme="dark"
         isStarted={Object.values(chainStatus || {}).some((status) => status)}
+        account={account}
       />
 
       <div
