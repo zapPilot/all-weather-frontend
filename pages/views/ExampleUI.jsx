@@ -73,13 +73,6 @@ export default function ExampleUI() {
       portfolioHelper: getPortfolioHelper("Metis Vault"),
     },
   ];
-  const maxAPREntry = Object.entries(strategyMetadata).reduce(
-    (max, [key, strategy]) => {
-      const apr = strategy.portfolioAPR * 100;
-      return apr > max.apr ? { key, apr } : max;
-    },
-    { key: "", apr: -Infinity },
-  );
 
   const router = useRouter();
 
@@ -183,32 +176,6 @@ export default function ExampleUI() {
             ></iframe>
           </div>
         </div>
-      </div>
-      <div className="w-full md:w-[75%] md:ml-[12.5%] text-center py-8">
-        <h3 className="text-2xl text-emerald-400 font-semibold mb-4">
-          Keep all assets in your AA wallet.
-        </h3>
-        <Image
-          src="/images/intro_sm.svg"
-          alt="intro"
-          width={375}
-          height={350}
-          className="mx-auto md:hidden"
-        />
-        <Image
-          src="/images/intro.svg"
-          alt="intro"
-          width={895}
-          height={96}
-          className="mx-auto hidden md:block"
-        />
-        <Link
-          href="https://all-weather-protocol.gitbook.io/"
-          className="text-lg underline underline-offset-1 hover:text-[#5DFDCB] hover:underline"
-          target="_blank"
-        >
-          Learn more
-        </Link>
       </div>
       <div className="w-full md:w-[75%] md:ml-[12.5%]">
         <h3 className="text-2xl text-emerald-400 font-semibold md:mb-4 px-4">
