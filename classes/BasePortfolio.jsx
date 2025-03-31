@@ -123,8 +123,11 @@ export class BasePortfolio {
       .map((protocol) => {
         return protocol.interface
           .usdBalanceOf(address, tokenPricesMappingTable)
-          .then((balance) => ({ protocol, balance }));
+          .then((balance) => {
+            return { protocol, balance };
+          });
       });
+
     return await Promise.all(balancePromises);
   }
 
@@ -460,6 +463,7 @@ export class BasePortfolio {
         actionParams.updateProgress,
       );
     }
+    console.time("processProtocolActions");
     // Process each protocol
     const protocolTxns = await this._processProtocolActions(
       actionName,
@@ -1348,7 +1352,6 @@ export class BasePortfolio {
 
     const priceService = new PriceService(process.env.NEXT_PUBLIC_API_URL);
     const batcher = new TokenPriceBatcher(priceService);
-
     const tokensToFetch = Object.entries(
       this.uniqueTokenIdsForCurrentPrice,
     ).filter(

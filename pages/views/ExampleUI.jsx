@@ -72,6 +72,16 @@ export default function ExampleUI() {
       tvl: strategyMetadata?.["Metis Vault"]?.portfolioTVL,
       portfolioHelper: getPortfolioHelper("Metis Vault"),
     },
+    {
+      id: 4,
+      portfolioName: "Deprecated Vault",
+      href: "/indexes/indexOverviews/?portfolioName=Deprecated+Vault",
+      imageSrc: "eth",
+      imageAlt: "Deprecated Vault",
+      apr: strategyMetadata?.["Deprecated Vault"]?.portfolioAPR * 100,
+      tvl: strategyMetadata?.["Deprecated Vault"]?.portfolioTVL,
+      portfolioHelper: getPortfolioHelper("Deprecated Vault"),
+    },
   ];
 
   const router = useRouter();

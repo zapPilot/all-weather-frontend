@@ -166,7 +166,6 @@ export default function IndexOverviews() {
   const [investmentAmount, setInvestmentAmount] = useState(0);
   const [zapInIsLoading, setZapInIsLoading] = useState(false);
   const [zapOutIsLoading, setZapOutIsLoading] = useState(false);
-  const [transferLoading, setTransferLoading] = useState(false);
   const [rebalanceIsLoading, setRebalanceIsLoading] = useState(false);
   const [
     protocolAssetDustInWalletLoading,
@@ -255,14 +254,6 @@ export default function IndexOverviews() {
       alert("Please select a token");
       return;
     }
-    setActionLoadingState({
-      actionName,
-      setZapInIsLoading,
-      setZapOutIsLoading,
-      setRebalanceIsLoading,
-      setTransferLoading,
-      isLoading: true,
-    });
     if (!account) return;
     const [tokenSymbol, tokenAddress, tokenDecimals] =
       tokenSymbolAndAddress.split("-");
@@ -367,7 +358,7 @@ export default function IndexOverviews() {
               openNotificationWithIcon(
                 notificationAPI,
                 notificationContent,
-                allChainsComplete ? "success" : "warning",
+                allChainsComplete ? "success" : "info",
                 `${explorerUrl}/tx/${data.transactionHash}`,
               );
 
@@ -460,18 +451,7 @@ export default function IndexOverviews() {
           setZapInIsLoading(false);
           setZapOutIsLoading(false);
           setRebalanceIsLoading(false);
-          setTransferLoading(false);
         },
-      });
-    } finally {
-      // Reset all loading states regardless of success or failure
-      setActionLoadingState({
-        actionName,
-        setZapInIsLoading,
-        setZapOutIsLoading,
-        setRebalanceIsLoading,
-        setTransferLoading,
-        isLoading: false,
       });
     }
   };
@@ -817,7 +797,6 @@ export default function IndexOverviews() {
     switchNextStepChain,
     tokenBalance,
     tokenPricesMappingTable,
-    transferLoading,
     usdBalance,
     usdBalanceLoading,
     validateRecipient,

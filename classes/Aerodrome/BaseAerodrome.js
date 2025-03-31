@@ -158,8 +158,10 @@ export class BaseAerodrome extends BaseProtocol {
     return [[claimTxn], pendingRewards];
   }
   async usdBalanceOf(owner, tokenPricesMappingTable) {
-    const lpBalance = await this.stakeBalanceOf(owner, () => {});
-    const lpPrice = await this._calculateLpPrice(tokenPricesMappingTable);
+    const [lpBalance, lpPrice] = await Promise.all([
+      this.stakeBalanceOf(owner, () => {}),
+      this._calculateLpPrice(tokenPricesMappingTable),
+    ]);
     return lpBalance * lpPrice;
   }
   async assetUsdPrice(tokenPricesMappingTable) {

@@ -170,8 +170,10 @@ export class BaseVelodrome extends BaseProtocol {
 
   // Price and value calculation methods
   async usdBalanceOf(owner, tokenPricesMappingTable) {
-    const lpBalance = await this.stakeBalanceOf(owner);
-    const lpPrice = await this._calculateLpPrice(tokenPricesMappingTable);
+    const [lpBalance, lpPrice] = await Promise.all([
+      this.stakeBalanceOf(owner),
+      this._calculateLpPrice(tokenPricesMappingTable),
+    ]);
     return lpBalance * lpPrice;
   }
 
