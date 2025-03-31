@@ -12,6 +12,7 @@ import { CamelotVault } from "../classes/Vaults/Tests/CamelotVault";
 import { AerodromeVault } from "../classes/Vaults/Tests/AerodromeVault";
 import { VenusStablecoinVault } from "../classes/Vaults/Tests/VenusVault";
 import { VelaVault } from "../classes/Vaults/VelaVault";
+import { DeprecatedVault } from "../classes/Vaults/DeprecatedVault";
 export function getPortfolioHelper(
   portfolioName: string,
 ): BasePortfolio | undefined {
@@ -46,6 +47,8 @@ export function getPortfolioHelper(
     portfolioHelper = new VenusStablecoinVault();
   } else if (portfolioName === "Vela Vault (Deprecated)") {
     portfolioHelper = new VelaVault();
+  } else if (portfolioName === "Deprecated Vault") {
+    portfolioHelper = new DeprecatedVault();
   } else {
     return;
   }

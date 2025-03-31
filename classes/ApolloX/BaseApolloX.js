@@ -182,8 +182,10 @@ export class BaseApolloX extends BaseProtocol {
   }
 
   async usdBalanceOf(owner, tokenPricesMappingTable) {
-    const balance = await this.assetBalanceOf(owner);
-    const latestAlpPrice = await this._fetchAlpPrice(() => {});
+    const [balance, latestAlpPrice] = await Promise.all([
+      this.assetBalanceOf(owner),
+      this._fetchAlpPrice(() => {}),
+    ]);
     return balance * latestAlpPrice;
   }
   async assetUsdPrice(tokenPricesMappingTable) {

@@ -311,8 +311,10 @@ export class BaseEquilibria extends BaseProtocol {
   }
 
   async usdBalanceOf(owner, tokenPricesMappingTable) {
-    const userBalance = await this.stakeBalanceOf(owner);
-    const latestPendleAssetPrice = await this._fetchPendleAssetPrice(() => {});
+    const [userBalance, latestPendleAssetPrice] = await Promise.all([
+      this.stakeBalanceOf(owner),
+      this._fetchPendleAssetPrice(() => {}),
+    ]);
     return userBalance * latestPendleAssetPrice;
   }
   async assetUsdPrice(tokenPricesMappingTable) {

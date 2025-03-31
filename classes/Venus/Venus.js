@@ -106,8 +106,10 @@ export class Venus extends BaseProtocol {
         Vault,
         PROVIDER(this.chain),
       );
-      const userBalance = await protocolContractInstance.balanceOf(owner);
-      const exchangeRate = await protocolContractInstance.exchangeRateStored();
+      const [userBalance, exchangeRate] = await Promise.all([
+        protocolContractInstance.balanceOf(owner),
+        protocolContractInstance.exchangeRateStored(),
+      ]);
       const actualBalance = userBalance
         .mul(exchangeRate)
         .div(ethers.BigNumber.from(10).pow(this.exchangeRatePrecision));
