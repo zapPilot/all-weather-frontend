@@ -453,7 +453,7 @@ export default function IndexOverviews() {
           setRebalanceIsLoading(false);
         },
       });
-    } 
+    }
   };
 
   const [nextStepChain, setNextStepChain] = useState("");

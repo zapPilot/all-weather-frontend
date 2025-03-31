@@ -198,9 +198,7 @@ export default function PopUpModal({
                 ) : (
                   <>
                     <div className="flex flex-col items-center gap-4 w-full mt-4">
-                      {allChainsComplete === true ? (
-                        null
-                      ) : (
+                      {allChainsComplete === true ? null : (
                         <button
                           type="button"
                           onClick={() => setOpen(false)}
