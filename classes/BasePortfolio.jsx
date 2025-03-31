@@ -460,6 +460,7 @@ export class BasePortfolio {
         actionParams.updateProgress,
       );
     }
+    console.time("processProtocolActions")
     // Process each protocol
     const protocolTxns = await this._processProtocolActions(
       actionName,
@@ -1348,7 +1349,6 @@ export class BasePortfolio {
 
     const priceService = new PriceService(process.env.NEXT_PUBLIC_API_URL);
     const batcher = new TokenPriceBatcher(priceService);
-
     const tokensToFetch = Object.entries(
       this.uniqueTokenIdsForCurrentPrice,
     ).filter(

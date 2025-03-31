@@ -11,6 +11,10 @@ export default function useTabItems(props) {
   const sumOfPendingRewards = calculateSumOfPendingRewards(
     props.pendingRewards,
   );
+  
+  // Check if URL starts with 'app'
+  const isAppDomain = typeof window !== 'undefined' && window.location.hostname.startsWith('app');
+  
   const tabItems = [
     {
       key: "1",
@@ -24,11 +28,6 @@ export default function useTabItems(props) {
     },
     {
       key: "3",
-      label: "Transfer",
-      children: <TransferTab {...props} />,
-    },
-    {
-      key: "4",
       label: (
         <div className="flex flex-col items-center">
           {calCurrentAPR(props.rebalancableUsdBalanceDict) <
@@ -54,9 +53,8 @@ export default function useTabItems(props) {
       ),
       children: <RebalanceTab {...props} />,
     },
-    // claim is just for testing
     {
-      key: "5",
+      key: "4",
       label: (
         <span>
           Claim (
@@ -92,6 +90,15 @@ export default function useTabItems(props) {
       ),
     },
   ];
+
+  // Only add the Transfer tab if not on app domain
+  if (!isAppDomain) {
+    tabItems.push({
+      key: "5",
+      label: "Transfer",
+      children: <TransferTab {...props} />,
+    });
+  }
 
   return tabItems;
 }

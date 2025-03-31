@@ -367,7 +367,7 @@ export default function IndexOverviews() {
               openNotificationWithIcon(
                 notificationAPI,
                 notificationContent,
-                allChainsComplete ? "success" : "warning",
+                allChainsComplete ? "success" : "info",
                 `${explorerUrl}/tx/${data.transactionHash}`,
               );
 

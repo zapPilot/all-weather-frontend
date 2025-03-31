@@ -144,14 +144,14 @@ export default function PopUpModal({
                   <ActionItem
                     tab="popupModal"
                     actionName={
-                      currentTab === "4"
+                      currentTab === "3"
                         ? rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(
                             (action) => action.actionName,
                           )
                         : actionName
                     }
                     availableAssetChains={
-                      currentTab === "4"
+                      currentTab === "3"
                         ? rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(
                             (action) => action.chain,
                           )
