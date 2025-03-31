@@ -32,12 +32,14 @@ export default function ZapOutTab({
   return (
     <div>
       <ActionItem
+        tab="ZapOut"
         actionName="zapOut"
         availableAssetChains={availableAssetChains}
         currentChain={currentChain}
         chainStatus={chainStatus}
         theme="dark"
         isStarted={Object.values(chainStatus || {}).some((status) => status)}
+        account={account}
       />
       {Object.values(chainStatus).some((status) => status) ? null : (
         <DecimalStep

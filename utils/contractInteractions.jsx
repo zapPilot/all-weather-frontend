@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Button, Modal, ConfigProvider } from "antd";
-import { fetchSwapData } from "./oneInch";
 import tokens from "../pages/views/components/tokens.json";
 import { portfolioVaults } from "./oneInch";
 import axios from "axios";

@@ -111,8 +111,10 @@ export class YearnV3Vault extends BaseProtocol {
       YearnV3,
       PROVIDER(this.chain),
     );
-    const userBalance = await assetContractInstance.functions.balanceOf(owner);
-    const pricePerShare = await assetContractInstance.functions.pricePerShare();
+    const [userBalance, pricePerShare] = await Promise.all([
+      assetContractInstance.functions.balanceOf(owner),
+      assetContractInstance.functions.pricePerShare(),
+    ]);
     return (
       (((userBalance * tokenPricesMappingTable["weth"]) / 1e18) *
         pricePerShare) /

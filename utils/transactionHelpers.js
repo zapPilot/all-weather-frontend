@@ -114,7 +114,6 @@ export const prepareTransactionMetadata = ({
  * @param {Function} params.setZapInIsLoading - Set zap in loading state
  * @param {Function} params.setZapOutIsLoading - Set zap out loading state
  * @param {Function} params.setRebalanceIsLoading - Set rebalance loading state
- * @param {Function} params.setTransferLoading - Set transfer loading state
  * @param {boolean} params.isLoading - Whether to set to loading or not
  */
 export const setActionLoadingState = ({
@@ -122,7 +121,6 @@ export const setActionLoadingState = ({
   setZapInIsLoading,
   setZapOutIsLoading,
   setRebalanceIsLoading,
-  setTransferLoading,
   isLoading = true,
 }) => {
   if (actionName === "zapIn" || actionName === "stake") {
@@ -135,8 +133,6 @@ export const setActionLoadingState = ({
     actionName === "localRebalance"
   ) {
     setRebalanceIsLoading(isLoading);
-  } else if (actionName === "transfer") {
-    setTransferLoading(isLoading);
   } else if (actionName === "claimAndSwap") {
     // placeholder for future implementation
   } else if (actionName) {

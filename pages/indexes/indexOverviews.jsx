@@ -166,7 +166,6 @@ export default function IndexOverviews() {
   const [investmentAmount, setInvestmentAmount] = useState(0);
   const [zapInIsLoading, setZapInIsLoading] = useState(false);
   const [zapOutIsLoading, setZapOutIsLoading] = useState(false);
-  const [transferLoading, setTransferLoading] = useState(false);
   const [rebalanceIsLoading, setRebalanceIsLoading] = useState(false);
   const [
     protocolAssetDustInWalletLoading,
@@ -195,10 +194,6 @@ export default function IndexOverviews() {
 
   const [usdBalanceLoading, setUsdBalanceLoading] = useState(false);
   const [pendingRewardsLoading, setPendingRewardsLoading] = useState(false);
-  const [
-    rebalancableUsdBalanceDictLoading,
-    setrebalancableUsdBalanceDictLoading,
-  ] = useState(false);
 
   const [principalBalance, setPrincipalBalance] = useState(0);
   const [open, setOpen] = useState(false);
@@ -259,14 +254,6 @@ export default function IndexOverviews() {
       alert("Please select a token");
       return;
     }
-    setActionLoadingState({
-      actionName,
-      setZapInIsLoading,
-      setZapOutIsLoading,
-      setRebalanceIsLoading,
-      setTransferLoading,
-      isLoading: true,
-    });
     if (!account) return;
     const [tokenSymbol, tokenAddress, tokenDecimals] =
       tokenSymbolAndAddress.split("-");
@@ -371,7 +358,7 @@ export default function IndexOverviews() {
               openNotificationWithIcon(
                 notificationAPI,
                 notificationContent,
-                allChainsComplete ? "success" : "warning",
+                allChainsComplete ? "success" : "info",
                 `${explorerUrl}/tx/${data.transactionHash}`,
               );
 
@@ -464,18 +451,7 @@ export default function IndexOverviews() {
           setZapInIsLoading(false);
           setZapOutIsLoading(false);
           setRebalanceIsLoading(false);
-          setTransferLoading(false);
         },
-      });
-    } finally {
-      // Reset all loading states regardless of success or failure
-      setActionLoadingState({
-        actionName,
-        setZapInIsLoading,
-        setZapOutIsLoading,
-        setRebalanceIsLoading,
-        setTransferLoading,
-        isLoading: false,
       });
     }
   };
@@ -564,7 +540,6 @@ export default function IndexOverviews() {
     setUsdBalance(0);
     setUsdBalanceLoading(true);
     setPendingRewardsLoading(true);
-    setrebalancableUsdBalanceDictLoading(true);
     setProtocolAssetDustInWalletLoading(true);
 
     if (!portfolioName || account === undefined || !chainId) {
@@ -592,7 +567,6 @@ export default function IndexOverviews() {
           setUsdBalance(cachedData.usdBalance);
           setUsdBalanceLoading(false);
           setrebalancableUsdBalanceDict(cachedData.usdBalanceDict);
-          setrebalancableUsdBalanceDictLoading(false);
 
           setLockUpPeriod(cachedData.lockUpPeriod);
 
@@ -636,7 +610,6 @@ export default function IndexOverviews() {
           setUsdBalance(usdBalance);
           setUsdBalanceLoading(false);
           setrebalancableUsdBalanceDict(usdBalanceDict);
-          setrebalancableUsdBalanceDictLoading(false);
 
           // Update lockup period as soon as available
           setLockUpPeriod(lockUpPeriod);
@@ -785,7 +758,6 @@ export default function IndexOverviews() {
     setUsdBalance(0);
     setUsdBalanceLoading(true);
     setPendingRewardsLoading(true);
-    setrebalancableUsdBalanceDictLoading(true);
     setProtocolAssetDustInWalletLoading(true);
 
     // Trigger the useEffect by updating a dependency
@@ -810,7 +782,6 @@ export default function IndexOverviews() {
     protocolAssetDustInWallet,
     protocolAssetDustInWalletLoading,
     rebalancableUsdBalanceDict,
-    rebalancableUsdBalanceDictLoading,
     rebalanceIsLoading,
     recipient,
     recipientError,
@@ -826,7 +797,6 @@ export default function IndexOverviews() {
     switchNextStepChain,
     tokenBalance,
     tokenPricesMappingTable,
-    transferLoading,
     usdBalance,
     usdBalanceLoading,
     validateRecipient,
