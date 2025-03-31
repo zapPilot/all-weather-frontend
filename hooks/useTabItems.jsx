@@ -11,10 +11,11 @@ export default function useTabItems(props) {
   const sumOfPendingRewards = calculateSumOfPendingRewards(
     props.pendingRewards,
   );
-  
+
   // Check if URL starts with 'app'
-  const isAppDomain = typeof window !== 'undefined' && window.location.hostname.startsWith('app');
-  
+  const isAppDomain =
+    typeof window !== "undefined" && window.location.hostname.startsWith("app");
+
   const tabItems = [
     {
       key: "1",

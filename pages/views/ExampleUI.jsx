@@ -72,14 +72,17 @@ export default function ExampleUI() {
       tvl: strategyMetadata?.["Metis Vault"]?.portfolioTVL,
       portfolioHelper: getPortfolioHelper("Metis Vault"),
     },
-  ];
-  const maxAPREntry = Object.entries(strategyMetadata).reduce(
-    (max, [key, strategy]) => {
-      const apr = strategy.portfolioAPR * 100;
-      return apr > max.apr ? { key, apr } : max;
+    {
+      id: 4,
+      portfolioName: "Deprecated Vault",
+      href: "/indexes/indexOverviews/?portfolioName=Deprecated+Vault",
+      imageSrc: "eth",
+      imageAlt: "Deprecated Vault",
+      apr: strategyMetadata?.["Deprecated Vault"]?.portfolioAPR * 100,
+      tvl: strategyMetadata?.["Deprecated Vault"]?.portfolioTVL,
+      portfolioHelper: getPortfolioHelper("Deprecated Vault"),
     },
-    { key: "", apr: -Infinity },
-  );
+  ];
 
   const router = useRouter();
 
