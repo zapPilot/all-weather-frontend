@@ -624,7 +624,6 @@ export class BasePortfolio {
           targetToken,
           inputAmountBN,
         );
-        console.log("BasePortfolio bridge", bridge);
         const bridgeTxns = await bridge.getBridgeTxns(
           actionParams.account,
           actionParams.chainMetadata.id,
