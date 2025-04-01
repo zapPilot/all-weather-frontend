@@ -168,7 +168,6 @@ const Dashboard: NextPage = () => {
       setUnexpandable: updateState,
       chain_blacklist: [
         "ethereum",
-        "solana",
         "aptos",
         "sui",
         "core",
