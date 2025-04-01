@@ -12,7 +12,7 @@ export const determineSlippage = (params) => {
 
   // Rebalance tab always uses 5% slippage
   if (tabLabel === "Rebalance") {
-    return 3;
+    return 2;
   }
 
   // Claim tab uses 3% slippage
@@ -37,5 +37,5 @@ export const determineSlippage = (params) => {
   }
 
   // Default slippage based on portfolio type
-  return portfolioName?.includes("Stable") ? 2 : 3;
+  return portfolioName?.includes("Stable") ? 1 : 3;
 };

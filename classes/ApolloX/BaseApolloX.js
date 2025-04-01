@@ -141,10 +141,7 @@ export class BaseApolloX extends BaseProtocol {
     );
     const latestPrice = await this._fetchAlpPrice(updateProgress);
     const estimatedZapOutUsdValue =
-      ((amount / Math.pow(10, this.assetDecimals)) *
-        latestPrice *
-        (100 - slippage)) /
-      100;
+      (amount * latestPrice * (100 - slippage)) / 100;
     // TODO: we might enable zap out to other token down the road
     const minOutAmount = Math.floor(estimatedZapOutUsdValue * 1e6);
     const [

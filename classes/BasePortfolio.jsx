@@ -839,7 +839,6 @@ export class BasePortfolio {
     ]);
     // Combine initial transactions
     const initialTxns = [...zapOutTxns, ...approvalAndFeeTxns, ...zapInTxns];
-
     // If no other chains to process, return current transactions
     if (Object.keys(rebalancableUsdBalanceDictOnOtherChains).length === 0) {
       return initialTxns;
@@ -861,6 +860,7 @@ export class BasePortfolio {
         tokenPricesMappingTable[
           this._getRebalanceMiddleTokenConfig(currentChain, true).symbol
         ];
+      console.log(`Bridge amount: ${bridgeUsd} to ${chain}`);
       if (bridgeUsd < this.bridgeUsdThreshold) return [];
       const bridgeToOtherChainTxns = await bridge.getBridgeTxns(
         owner,
@@ -877,7 +877,6 @@ export class BasePortfolio {
     });
 
     const bridgeTxnsArrays = await Promise.all(bridgePromises);
-
     // Combine all transactions and return
     return [...initialTxns, ...bridgeTxnsArrays.flat()];
   }
@@ -1073,7 +1072,6 @@ export class BasePortfolio {
 
     const protocolBalance =
       (usdBalance * zapOutPercentage * (100 - slippage)) / 100;
-
     return [zapOutTxns, protocolBalance];
   }
 
