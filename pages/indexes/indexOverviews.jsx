@@ -1,7 +1,7 @@
 // copy from this Tailwind template: https://tailwindui.com/components/application-ui/page-examples/detail-screens
 "use client";
 import BasePage from "../basePage.tsx";
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
@@ -433,7 +433,7 @@ export default function IndexOverviews() {
             }
           },
           onError: (error) => {
-            handleTransactionError(error, notificationAPI, {
+            handleTransactionError(error, notificationAPI, account?.address, {
               onComplete: () => reject(error), // Reject the promise with the error
             });
           },
@@ -445,7 +445,7 @@ export default function IndexOverviews() {
       });
     } catch (error) {
       // This handles errors that occur before the transaction is sent
-      handleTransactionError(error, notificationAPI, {
+      handleTransactionError(error, notificationAPI, account?.address, {
         onComplete: () => {
           // Any cleanup needed after error handling
           setZapInIsLoading(false);
@@ -610,7 +610,6 @@ export default function IndexOverviews() {
           setUsdBalance(usdBalance);
           setUsdBalanceLoading(false);
           setrebalancableUsdBalanceDict(usdBalanceDict);
-
           // Update lockup period as soon as available
           setLockUpPeriod(lockUpPeriod);
 
