@@ -12,7 +12,7 @@ export const determineSlippage = (params) => {
 
   // Rebalance tab always uses 5% slippage
   if (tabLabel === "Rebalance") {
-    return 5;
+    return 3;
   }
 
   // Claim tab uses 3% slippage
@@ -25,7 +25,7 @@ export const determineSlippage = (params) => {
     (selectedTokenSymbol === "eth" || selectedTokenSymbol === "weth") &&
     portfolioName === "Stable+ Vault"
   ) {
-    return 3;
+    return 1;
   }
 
   // ZapIn for ETH Vault or All Weather Vault uses 3% slippage
@@ -33,7 +33,7 @@ export const determineSlippage = (params) => {
     (portfolioName === "ETH Vault" || portfolioName === "All Weather Vault") &&
     actionName === "zapIn"
   ) {
-    return 3;
+    return 1;
   }
 
   // Default slippage based on portfolio type

@@ -947,7 +947,7 @@ export default function IndexOverviews() {
                         size="small"
                         onChange={(e) => setSlippage(e.target.value)}
                       >
-                        {[2, 3, 5, 7].map((slippageValue) => (
+                        {[0.5, 1, 2, 3].map((slippageValue) => (
                           <Radio.Button
                             value={slippageValue}
                             key={slippageValue}

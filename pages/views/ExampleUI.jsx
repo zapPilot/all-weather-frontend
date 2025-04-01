@@ -30,16 +30,6 @@ export default function ExampleUI() {
   const vaults = [
     {
       id: 1,
-      portfolioName: "ETH Vault",
-      href: "/indexes/indexOverviews/?portfolioName=ETH+Vault",
-      imageSrc: "eth",
-      imageAlt: "ETH Vault",
-      apr: strategyMetadata?.["ETH Vault"]?.portfolioAPR * 100,
-      tvl: strategyMetadata?.["ETH Vault"]?.portfolioTVL,
-      portfolioHelper: getPortfolioHelper("ETH Vault"),
-    },
-    {
-      id: 2,
       portfolioName: "Stable+ Vault",
       href: `/indexes/indexOverviews/?portfolioName=${encodeURIComponent(
         "Stable+ Vault",
@@ -51,7 +41,7 @@ export default function ExampleUI() {
       portfolioHelper: getPortfolioHelper("Stable+ Vault"),
     },
     {
-      id: 3,
+      id: 2,
       portfolioName: "All Weather Vault",
       href: "/indexes/indexOverviews/?portfolioName=All+Weather+Vault",
       imageSrc: "allweather",
@@ -62,6 +52,16 @@ export default function ExampleUI() {
     },
   ];
   const partnershipVaults = [
+    {
+      id: 1,
+      portfolioName: "ETH Vault",
+      href: "/indexes/indexOverviews/?portfolioName=ETH+Vault",
+      imageSrc: "eth",
+      imageAlt: "ETH Vault",
+      apr: strategyMetadata?.["ETH Vault"]?.portfolioAPR * 100,
+      tvl: strategyMetadata?.["ETH Vault"]?.portfolioTVL,
+      portfolioHelper: getPortfolioHelper("ETH Vault"),
+    },
     {
       id: 3,
       portfolioName: "Metis Vault",
@@ -195,7 +195,7 @@ export default function ExampleUI() {
       </div>
       <div className="w-full md:w-[75%] md:ml-[12.5%]">
         <h3 className="text-2xl text-emerald-400 font-semibold md:mb-4 px-4">
-          Partnership Vaults
+          V1 Vaults
         </h3>
         <Vaults vaults={partnershipVaults} />
       </div>

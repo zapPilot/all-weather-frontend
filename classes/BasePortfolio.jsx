@@ -653,7 +653,6 @@ export class BasePortfolio {
           inputAmountBN,
           actionParams.updateProgress,
         );
-
         return [...txns, ...bridgeTxns];
       },
     };

@@ -3,7 +3,6 @@ import { Vela } from "../Vela/Vela";
 import { BaseConvex } from "../Convex/BaseConvex";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import { BaseMoonwell } from "../Moonwell/BaseMoonwell";
-import { BaseAerodrome } from "../Aerodrome/BaseAerodrome";
 import { BaseAave } from "../Aave/BaseAave";
 import { BaseAura } from "../Aura/BaseAura";
 import { BaseVelodrome } from "../Velodrome/BaseVelodrome";

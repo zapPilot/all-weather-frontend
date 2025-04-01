@@ -211,7 +211,7 @@ export class BaseApolloX extends BaseProtocol {
   _getTheBestTokenAddressToZapIn(inputToken, tokenAddress, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of ALP to get the cheapest token to zap in
     const usdcBridgedAddress = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8";
-    return ["usdc", usdcBridgedAddress, 6];
+    return ["usdc.e", usdcBridgedAddress, 6];
   }
   _getTheBestTokenAddressToZapOut() {
     // TODO: minor, but we can read the composition of ALP to get the cheapest token to zap in

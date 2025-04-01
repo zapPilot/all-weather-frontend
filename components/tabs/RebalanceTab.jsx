@@ -11,7 +11,7 @@ export default function RebalanceTab({
   rebalancableUsdBalanceDict,
   chainId,
   handleAAWalletAction,
-  rebalanceIsLoading,
+  usdBalanceLoading,
   getRebalanceReinvestUsdAmount,
   usdBalance,
   portfolioHelper,
@@ -101,6 +101,7 @@ export default function RebalanceTab({
                           setCurrentStep(currentStep + 1);
                         }
                       }}
+                      loading={usdBalanceLoading}
                       disabled={
                         usdBalance <= 0 ||
                         (data.actionName === "localRebalance" &&
