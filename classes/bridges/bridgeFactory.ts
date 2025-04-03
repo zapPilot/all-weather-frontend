@@ -85,7 +85,7 @@ async function checkRatesBetweenBridges(
     );
     bridges.push({
       bridge: across,
-      fee: acrossFeeCosts,
+      fee: acrossFeeCosts.toString(),
       isAvailable: true,
     });
   } catch (error) {
