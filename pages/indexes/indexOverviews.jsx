@@ -68,7 +68,6 @@ import { handleTransactionError } from "../../utils/transactionErrorHandler";
 import {
   checkGasPrice,
   prepareTransactionMetadata,
-  setActionLoadingState,
 } from "../../utils/transactionHelpers.js";
 
 // Extract chain switching logic
@@ -164,9 +163,6 @@ export default function IndexOverviews() {
   const [selectedToken, setSelectedToken] = useState(null);
   const [previousTokenSymbol, setPreviousTokenSymbol] = useState(null);
   const [investmentAmount, setInvestmentAmount] = useState(0);
-  const [zapInIsLoading, setZapInIsLoading] = useState(false);
-  const [zapOutIsLoading, setZapOutIsLoading] = useState(false);
-  const [rebalanceIsLoading, setRebalanceIsLoading] = useState(false);
   const [
     protocolAssetDustInWalletLoading,
     setProtocolAssetDustInWalletLoading,
@@ -184,7 +180,7 @@ export default function IndexOverviews() {
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
-  const [rebalancableUsdBalanceDict, setrebalancableUsdBalanceDict] = useState(
+  const [rebalancableUsdBalanceDict, setRebalancableUsdBalanceDict] = useState(
     {},
   );
   const [recipient, setRecipient] = useState("");
@@ -194,6 +190,10 @@ export default function IndexOverviews() {
 
   const [usdBalanceLoading, setUsdBalanceLoading] = useState(false);
   const [pendingRewardsLoading, setPendingRewardsLoading] = useState(false);
+  const [
+    rebalancableUsdBalanceDictLoading,
+    setRebalancableUsdBalanceDictLoading,
+  ] = useState(false);
 
   const [principalBalance, setPrincipalBalance] = useState(0);
   const [open, setOpen] = useState(false);
@@ -433,9 +433,7 @@ export default function IndexOverviews() {
             }
           },
           onError: (error) => {
-            handleTransactionError(error, notificationAPI, account?.address, {
-              onComplete: () => reject(error), // Reject the promise with the error
-            });
+            handleTransactionError(error, notificationAPI, account?.address);
           },
         });
       }).catch((error) => {
@@ -445,14 +443,7 @@ export default function IndexOverviews() {
       });
     } catch (error) {
       // This handles errors that occur before the transaction is sent
-      handleTransactionError(error, notificationAPI, account?.address, {
-        onComplete: () => {
-          // Any cleanup needed after error handling
-          setZapInIsLoading(false);
-          setZapOutIsLoading(false);
-          setRebalanceIsLoading(false);
-        },
-      });
+      handleTransactionError(error, notificationAPI, account?.address);
     }
   };
 
@@ -540,6 +531,7 @@ export default function IndexOverviews() {
     setUsdBalance(0);
     setUsdBalanceLoading(true);
     setPendingRewardsLoading(true);
+    setRebalancableUsdBalanceDictLoading(true);
     setProtocolAssetDustInWalletLoading(true);
 
     if (!portfolioName || account === undefined || !chainId) {
@@ -566,8 +558,8 @@ export default function IndexOverviews() {
           setTokenPricesMappingTable(cachedData.tokenPricesMappingTable);
           setUsdBalance(cachedData.usdBalance);
           setUsdBalanceLoading(false);
-          setrebalancableUsdBalanceDict(cachedData.usdBalanceDict);
-
+          setRebalancableUsdBalanceDict(cachedData.usdBalanceDict);
+          setRebalancableUsdBalanceDictLoading(false);
           setLockUpPeriod(cachedData.lockUpPeriod);
 
           setPendingRewards(cachedData.pendingRewards);
@@ -609,7 +601,7 @@ export default function IndexOverviews() {
           // Update USD balance and dict as soon as available
           setUsdBalance(usdBalance);
           setUsdBalanceLoading(false);
-          setrebalancableUsdBalanceDict(usdBalanceDict);
+          setRebalancableUsdBalanceDict(usdBalanceDict);
           // Update lockup period as soon as available
           setLockUpPeriod(lockUpPeriod);
 
@@ -781,7 +773,6 @@ export default function IndexOverviews() {
     protocolAssetDustInWallet,
     protocolAssetDustInWalletLoading,
     rebalancableUsdBalanceDict,
-    rebalanceIsLoading,
     recipient,
     recipientError,
     selectedToken,
@@ -800,8 +791,6 @@ export default function IndexOverviews() {
     usdBalanceLoading,
     validateRecipient,
     walletBalanceData,
-    zapInIsLoading,
-    zapOutIsLoading,
     zapOutPercentage,
     pendingRewards,
     pendingRewardsLoading,
@@ -809,6 +798,7 @@ export default function IndexOverviews() {
     chainStatus,
     onRefresh: handleRefresh,
     lockUpPeriod,
+    rebalancableUsdBalanceDictLoading,
   };
 
   const items = useTabItems({
