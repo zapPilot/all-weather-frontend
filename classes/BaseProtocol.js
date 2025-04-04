@@ -431,6 +431,7 @@ export default class BaseProtocol extends BaseUniswap {
     if (this.mode === "single") {
       const [
         beforeZapInTxns,
+        bestTokenSymbol,
         bestTokenAddressToZapIn,
         amountToZapIn,
         bestTokenToZapInDecimal,
@@ -451,7 +452,7 @@ export default class BaseProtocol extends BaseUniswap {
       );
       const zapinTxns = await this.customDeposit(
         recipient,
-        inputToken,
+        bestTokenSymbol,
         bestTokenAddressToZapIn,
         amountToZapIn,
         bestTokenToZapInDecimal,
@@ -806,6 +807,7 @@ export default class BaseProtocol extends BaseUniswap {
     }
     return [
       totalSwapTxns,
+      bestTokenSymbol,
       bestTokenAddressToZapIn,
       amountToZapIn,
       bestTokenToZapInDecimal,
@@ -1088,6 +1090,10 @@ export default class BaseProtocol extends BaseUniswap {
         Math.pow(10, decimalOfBestTokenToZapOut),
       decimals: decimalOfBestTokenToZapOut,
     };
+    assert(
+      withdrawTokenAndBalance[bestTokenAddressToZapOut].usdDenominatedValue > 1,
+      `usdDenominatedValue is less than 1 for ${symbolOfBestTokenToZapOut}`,
+    );
     const pendingRewards = await this.pendingRewards(
       recipient,
       tokenPricesMappingTable,

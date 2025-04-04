@@ -35,7 +35,12 @@ export default function useTabItems(props) {
             props.portfolioApr[props.portfolioName]?.portfolioAPR * 100 && (
             <div className="flex items-center text-xs bg-opacity-20 bg-blue-500 rounded-full px-2 py-0.5 mb-1">
               <span className="text-red-500">
-                {calCurrentAPR(props.rebalancableUsdBalanceDict).toFixed(2)}%
+                {props.rebalancableUsdBalanceDictLoading ? (
+                  <Spin size="small" />
+                ) : (
+                  calCurrentAPR(props.rebalancableUsdBalanceDict).toFixed(2)
+                )}
+                %
               </span>
               {" → "}
               <span className="text-green-400">
