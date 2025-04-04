@@ -8,7 +8,7 @@ const setTradingLoss = () => {};
 const setStepName = () => {};
 const setTotalTradingLoss = () => {};
 const setPlatformFee = () => {};
-const slippage = 0.5;
+const slippage = 2;
 const rebalancableUsdBalanceDict = {};
 const protocolAssetDustInWallet = {};
 const onlyThisChain = false;
