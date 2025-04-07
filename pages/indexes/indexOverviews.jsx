@@ -303,7 +303,8 @@ export default function IndexOverviews() {
         (1 - portfolioHelper.swapFeeRate()) *
         (1 - slippage / 100);
       const chainWeight = calCrossChainInvestmentAmount(
-        normalizeChainName(chainId?.name), portfolioHelper
+        normalizeChainName(chainId?.name),
+        portfolioHelper,
       );
       const chainWeightPerYourPortfolio =
         Object.values(rebalancableUsdBalanceDict)
