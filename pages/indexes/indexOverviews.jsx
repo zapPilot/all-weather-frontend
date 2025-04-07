@@ -303,13 +303,12 @@ export default function IndexOverviews() {
         (1 - portfolioHelper.swapFeeRate()) *
         (1 - slippage / 100);
       const chainWeight = calCrossChainInvestmentAmount(
-        normalizeChainName(chainId?.name),
+        normalizeChainName(chainId?.name), portfolioHelper
       );
       const chainWeightPerYourPortfolio =
         Object.values(rebalancableUsdBalanceDict)
           .filter(({ chain }) => chain === normalizeChainName(chainId?.name))
           .reduce((sum, value) => sum + value.usdBalance, 0) / usdBalance;
-
       // Call sendBatchTransaction and wait for the result
       await new Promise((resolve, reject) => {
         sendBatchTransaction(txns.flat(Infinity), {
