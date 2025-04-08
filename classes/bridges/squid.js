@@ -37,7 +37,7 @@ class SquidBridge extends BaseBridge {
     }
   }
 
-  async getFeeCosts(
+  async fetchFeeCosts(
     account,
     fromChainId,
     toChainId,

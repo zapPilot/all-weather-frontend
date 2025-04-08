@@ -6,6 +6,12 @@ interface BridgeInfo {
   isAvailable: boolean;
   error?: string;
 }
+type BridgeConstructor = new () => AcrossBridge | SquidBridge;
+
+const BRIDGE_REGISTRY: BridgeConstructor[] = [
+  SquidBridge,
+  AcrossBridge,
+];
 
 async function getTheBestBridge(
   account: string,
@@ -25,7 +31,7 @@ async function getTheBestBridge(
     inputAmount,
     tokenPrices,
   );
-
+  console.log("bridges", bridges);
   const availableBridges = bridges.filter(
     (b) => b.isAvailable && b.fee !== null,
   );
@@ -37,6 +43,52 @@ async function getTheBestBridge(
   return availableBridges[0].bridge;
 }
 
+async function checkBridge(
+  BridgeClass: BridgeConstructor,
+  params: {
+    account: string,
+    fromChainId: number,
+    toChainId: number,
+    inputToken: string,
+    targetToken: string,
+    inputAmount: string,
+    tokenPrices: number,
+  }
+): Promise<BridgeInfo> {
+  const bridge = new BridgeClass();
+  
+  try {
+    await bridge.init();
+    
+    const commonParams = [
+      params.account,
+      params.fromChainId,
+      params.toChainId,
+      params.inputToken,
+      params.targetToken,
+      params.inputAmount,
+    ];
+
+    const feeCosts = await (bridge instanceof AcrossBridge 
+      ? bridge.fetchFeeCosts(...commonParams, params.tokenPrices)
+      : bridge.fetchFeeCosts(...commonParams, false)
+    );
+
+    return {
+      bridge,
+      fee: feeCosts?.toString() ?? null,
+      isAvailable: true,
+    };
+  } catch (error) {
+    return {
+      bridge,
+      fee: null,
+      isAvailable: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 async function checkRatesBetweenBridges(
   account: string,
   fromChainId: number,
@@ -46,62 +98,21 @@ async function checkRatesBetweenBridges(
   inputAmount: string,
   tokenPrices: number,
 ): Promise<BridgeInfo[]> {
-  let bridges: BridgeInfo[] = [];
+  const params = {
+    account,
+    fromChainId,
+    toChainId,
+    inputToken,
+    targetToken,
+    inputAmount,
+    tokenPrices,
+  };
 
-  // Squid
-  try {
-    const squid = new SquidBridge();
-    await squid.init();
-    const squidFeeCosts = await squid.getFeeCosts(
-      account,
-      fromChainId,
-      toChainId,
-      inputToken,
-      targetToken,
-      inputAmount,
-    );
-    bridges.push({
-      bridge: squid,
-      fee: squidFeeCosts ?? null,
-      isAvailable: true,
-    });
-  } catch (error) {
-    bridges.push({
-      bridge: new SquidBridge(),
-      fee: null,
-      isAvailable: false,
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
+  const bridgeChecks = BRIDGE_REGISTRY.map(
+    BridgeClass => checkBridge(BridgeClass, params)
+  );
 
-  // Across
-  try {
-    const across = new AcrossBridge();
-    await across.init();
-    const acrossFeeCosts = await across.fetchFeeCosts(
-      account,
-      fromChainId,
-      toChainId,
-      inputToken,
-      targetToken,
-      inputAmount,
-      tokenPrices,
-    );
-    bridges.push({
-      bridge: across,
-      fee: acrossFeeCosts.toString(),
-      isAvailable: true,
-    });
-  } catch (error) {
-    bridges.push({
-      bridge: new AcrossBridge(),
-      fee: null,
-      isAvailable: false,
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
-
-  return bridges;
+  return Promise.all(bridgeChecks);
 }
 
 export default getTheBestBridge;
