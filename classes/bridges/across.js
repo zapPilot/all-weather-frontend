@@ -26,17 +26,38 @@ class AcrossBridge extends BaseBridge {
   };
 
   constructor() {
-    super("across");
+    super("across", false);
     this.sdk = createAcrossClient({
       integratorId: "0xaaff", // 2-byte hex string
       chains: [optimism, arbitrum, polygon, base],
     });
     this.isInitialized = false;
     this.feeCosts = null;
+    this.lastQuote = null;
+    this.lastQuoteParams = null;
   }
 
-  async init() {
-    return;
+  async getQuoteWithCache(route, inputAmount) {
+    const paramsMatch = this.lastQuoteParams && 
+      this.lastQuoteParams.route.originChainId === route.originChainId &&
+      this.lastQuoteParams.route.destinationChainId === route.destinationChainId &&
+      this.lastQuoteParams.route.inputToken === route.inputToken &&
+      this.lastQuoteParams.route.outputToken === route.outputToken &&
+      this.lastQuoteParams.inputAmount === inputAmount;
+
+    if (paramsMatch && this.lastQuote) {
+      return this.lastQuote;
+    }
+
+    const quote = await this.sdk.getQuote({
+      route,
+      inputAmount,
+    });
+
+    this.lastQuote = quote;
+    this.lastQuoteParams = { route, inputAmount };
+
+    return quote;
   }
 
   async fetchFeeCosts(
@@ -54,10 +75,8 @@ class AcrossBridge extends BaseBridge {
       inputToken: inputToken,
       outputToken: targetToken,
     };
-    const quote = await this.sdk.getQuote({
-      route,
-      inputAmount: inputAmount,
-    });
+    
+    const quote = await this.getQuoteWithCache(route, inputAmount);
     const tokenDecimal = await getTokenDecimal(
       quote.deposit.inputToken,
       CHAIN_ID_TO_CHAIN[fromChainId].name,
@@ -86,6 +105,8 @@ class AcrossBridge extends BaseBridge {
       inputToken: fromToken,
       outputToken: toToken,
     };
+    
+    const quote = await this.getQuoteWithCache(route, amount);
     const tokenInstance = new ethers.Contract(
       fromToken,
       ERC20,
@@ -96,10 +117,11 @@ class AcrossBridge extends BaseBridge {
       ),
     );
     const tokenDecimals = await tokenInstance.decimals();
-    const quote = await this.sdk.getQuote({
-      route,
-      inputAmount: amount,
-    });
+    const fee = quote.fees.totalRelayFee.total;
+    updateProgress(
+      `bridge-${fromChainId}-${toChainId}`,
+      -Number(ethers.utils.formatUnits(fee, tokenDecimals)),
+    );
     const bridgeAddress =
       AcrossBridge.spokePoolMapping[
         CHAIN_ID_TO_CHAIN[fromChainId].name.toLowerCase()
@@ -112,11 +134,6 @@ class AcrossBridge extends BaseBridge {
     });
     const fillDeadlineBuffer = 18000;
     const fillDeadline = Math.round(Date.now() / 1000) + fillDeadlineBuffer;
-    const fee = quote.fees.totalRelayFee.total;
-    updateProgress(
-      `bridge-${fromChainId}-${toChainId}`,
-      -Number(ethers.utils.formatUnits(fee, tokenDecimals)),
-    );
     const bridgeTxn = prepareContractCall({
       contract: spokePoolContract,
       method: "depositV3",

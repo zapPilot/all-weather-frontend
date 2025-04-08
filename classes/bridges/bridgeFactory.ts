@@ -56,18 +56,15 @@ async function checkBridge(
   try {
     await bridge.init();
 
-    const commonParams = [
+    const feeCosts = await bridge.fetchFeeCosts(
       params.account,
       params.fromChainId,
       params.toChainId,
       params.inputToken,
       params.targetToken,
       params.inputAmount,
-    ];
-
-    const feeCosts = await (bridge instanceof AcrossBridge
-      ? bridge.fetchFeeCosts(...commonParams, params.tokenPrices)
-      : bridge.fetchFeeCosts(...commonParams, false));
+      params.tokenPrices,
+    );
 
     return {
       bridge,

@@ -5,7 +5,7 @@ import THIRDWEB_CLIENT from "../../utils/thirdweb";
 
 class SquidBridge extends BaseBridge {
   constructor() {
-    super("squid");
+    super("squid", true);
     this.sdk = new Squid({
       baseUrl: "https://v2.api.squidrouter.com/",
       integratorId: process.env.NEXT_PUBLIC_INTEGRATOR_ID,
@@ -15,6 +15,8 @@ class SquidBridge extends BaseBridge {
     this.minRequestInterval = 3000;
     this.isInitialized = false;
     this.feeCosts = null;
+    this.lastRoute = null;
+    this.lastRouteParams = null;
   }
 
   async delay(ms) {
@@ -30,11 +32,26 @@ class SquidBridge extends BaseBridge {
     this.lastRequestTime = Date.now();
   }
 
-  async init() {
-    if (!this.isInitialized) {
-      await this.sdk.init();
-      this.isInitialized = true;
+  async getRouteWithCache(params) {
+    const paramsMatch = this.lastRouteParams && 
+      this.lastRouteParams.fromChain === params.fromChain &&
+      this.lastRouteParams.toChain === params.toChain &&
+      this.lastRouteParams.fromToken === params.fromToken &&
+      this.lastRouteParams.toToken === params.toToken &&
+      this.lastRouteParams.fromAmount === params.fromAmount &&
+      this.lastRouteParams.fromAddress === params.fromAddress;
+
+    if (paramsMatch && this.lastRoute) {
+      return this.lastRoute;
     }
+
+    await this.throttleRequest();
+    const route = await this.sdk.getRoute(params);
+
+    this.lastRoute = route;
+    this.lastRouteParams = params;
+
+    return route;
   }
 
   async fetchFeeCosts(
@@ -44,14 +61,13 @@ class SquidBridge extends BaseBridge {
     inputToken,
     targetToken,
     inputAmount,
-    isInit = false,
+    tokenPrices,
   ) {
     const maxRetries = 3;
     let retryCount = 0;
     while (retryCount < maxRetries) {
       try {
-        await this.throttleRequest();
-        const { route } = await this.sdk.getRoute({
+        const routeParams = {
           fromAddress: account,
           fromChain: fromChainId.toString(),
           fromToken: inputToken,
@@ -59,9 +75,11 @@ class SquidBridge extends BaseBridge {
           toChain: toChainId.toString(),
           toToken: targetToken,
           toAddress: account,
-          enableBoost: isInit,
-          quoteOnly: isInit,
-        });
+          enableBoost: false,
+          quoteOnly: false,
+        };
+
+        const { route } = await this.getRouteWithCache(routeParams);
         this.feeCosts = route.estimate?.feeCosts?.[0]?.amountUsd;
         return this.feeCosts;
       } catch (error) {
@@ -70,11 +88,7 @@ class SquidBridge extends BaseBridge {
 
         if (error.response?.status === 429 && retryCount < maxRetries) {
           const waitTime = Math.pow(2, retryCount) * 1000;
-          console.log(
-            `Rate limited, waiting ${
-              waitTime / 1000
-            }s before retry ${retryCount}/${maxRetries}`,
-          );
+          console.log(`Rate limited, waiting ${waitTime / 1000}s before retry ${retryCount}/${maxRetries}`);
           await this.delay(waitTime);
           continue;
         }
@@ -97,8 +111,7 @@ class SquidBridge extends BaseBridge {
 
     while (retryCount < maxRetries) {
       try {
-        await this.throttleRequest();
-        const { route } = await this.sdk.getRoute({
+        const routeParams = {
           fromAddress: owner,
           fromChain: fromChainId.toString(),
           fromToken: fromToken,
@@ -109,7 +122,9 @@ class SquidBridge extends BaseBridge {
           slippage: 1,
           enableForecall: false,
           quoteOnly: false,
-        });
+        };
+
+        const { route } = await this.getRouteWithCache(routeParams);
 
         if (route.estimate?.feeCosts?.length > 0) {
           const fee = route.estimate?.feeCosts?.[0]?.amountUsd;
@@ -127,9 +142,8 @@ class SquidBridge extends BaseBridge {
           maxPriorityFeePerGas: route.transactionRequest.maxPriorityFeePerGas,
         };
 
-        const routeTargetContract = route.transactionRequest.target;
-
-        return [bridgeTxn, routeTargetContract];
+        const bridgeAddress = route.transactionRequest.target;
+        return [bridgeTxn, bridgeAddress];
       } catch (error) {
         console.error(`Attempt ${retryCount + 1} failed:`, error);
         retryCount++;

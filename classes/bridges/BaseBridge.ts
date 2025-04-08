@@ -2,7 +2,24 @@ import { approve } from "../../utils/general";
 
 class BaseBridge {
   sdk: any;
-  constructor(public name: string) {}
+  requiresInit: boolean;
+  isInitialized: boolean = false;
+
+  constructor(public name: string, requiresInit: boolean = true) {
+    this.requiresInit = requiresInit;
+  }
+
+  needsInit(): boolean {
+    return this.requiresInit;
+  }
+
+  async init(): Promise<void> {
+    if (!this.isInitialized && this.sdk && this.sdk.init) {
+      await this.sdk.init();
+      this.isInitialized = true;
+    }
+  }
+
   async getBridgeTxns(
     owner: string,
     fromChainId: string,
@@ -48,6 +65,18 @@ class BaseBridge {
   ): Promise<[any, any, string]> {
     // Implementation
     throw new Error("Method 'customBridgeTxn()' must be implemented.");
+  }
+
+  async fetchFeeCosts(
+    account: string,
+    fromChainId: number,
+    toChainId: number,
+    inputToken: string,
+    targetToken: string,
+    inputAmount: string,
+    tokenPrices: number,
+  ): Promise<string | null> {
+    throw new Error("Method 'fetchFeeCosts()' must be implemented.");
   }
 }
 
