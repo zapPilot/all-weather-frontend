@@ -28,7 +28,6 @@ async function getTheBestBridge(
     inputAmount,
     tokenPrices,
   );
-  console.log("bridges", bridges);
   const availableBridges = bridges.filter(
     (b) => b.isAvailable && b.fee !== null,
   );
