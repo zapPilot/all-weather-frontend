@@ -623,6 +623,7 @@ export class BasePortfolio {
           inputToken,
           targetToken,
           inputAmountBN,
+          actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol.toLowerCase()],
         );
         const bridgeTxns = await bridge.getBridgeTxns(
           actionParams.account,

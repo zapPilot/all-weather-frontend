@@ -14,6 +14,7 @@ async function getTheBestBridge(
   inputToken: string,
   targetToken: string,
   inputAmount: string,
+  tokenPrices: number,
 ) {
   const bridges = await checkRatesBetweenBridges(
     account,
@@ -22,6 +23,7 @@ async function getTheBestBridge(
     inputToken,
     targetToken,
     inputAmount,
+    tokenPrices,
   );
 
   const availableBridges = bridges.filter(
@@ -42,6 +44,7 @@ async function checkRatesBetweenBridges(
   inputToken: string,
   targetToken: string,
   inputAmount: string,
+  tokenPrices: number,
 ): Promise<BridgeInfo[]> {
   let bridges: BridgeInfo[] = [];
 
@@ -82,6 +85,7 @@ async function checkRatesBetweenBridges(
       inputToken,
       targetToken,
       inputAmount,
+      tokenPrices,
     );
     bridges.push({
       bridge: across,

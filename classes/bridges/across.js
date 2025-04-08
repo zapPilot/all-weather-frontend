@@ -21,10 +21,6 @@ class AcrossBridge extends BaseBridge {
     polygon: "0x9295ee1d8C5b022Be115A2AD3c30C72E34e7F096",
   };
 
-  static ethAddress = [
-    "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-    "0x4200000000000000000000000000000000000006",
-  ]
   constructor() {
     super("across");
     this.sdk = createAcrossClient({
@@ -46,6 +42,7 @@ class AcrossBridge extends BaseBridge {
     inputToken,
     targetToken,
     inputAmount,
+    tokenPrices,
   ) {
     const route = {
       originChainId: fromChainId,
@@ -62,23 +59,7 @@ class AcrossBridge extends BaseBridge {
       quote.fees.totalRelayFee.total,
       tokenDecimal,
     );
-    if (AcrossBridge.ethAddress.includes(quote.deposit.inputToken)) {
-      const priceService = new PriceService(process.env.NEXT_PUBLIC_API_URL);
-      const chainName = CHAIN_ID_TO_CHAIN[fromChainId].name.toLowerCase().includes("op") ?
-      "optimism" : CHAIN_ID_TO_CHAIN[fromChainId].name.toLowerCase().replace(" one", "").replace(" mainnet", "");
-      const tokenPrice = await priceService.fetchPrice(
-        quote.deposit.inputToken,
-        {
-          geckoterminal: {
-            chain: chainName,
-            address: quote.deposit.inputToken,
-          },
-        },
-      );
-      this.feeCosts = feeInToken * tokenPrice;
-    } else {
-      this.feeCosts = feeInToken;
-    }
+    this.feeCosts = feeInToken * tokenPrices;
     return this.feeCosts;
   }
 
