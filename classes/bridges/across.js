@@ -3,7 +3,11 @@ import { optimism, arbitrum, polygon, base } from "viem/chains";
 import BaseBridge from "./BaseBridge";
 import { prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
-import { CHAIN_ID_TO_CHAIN, PROVIDER, getTokenDecimal } from "../../utils/general";
+import {
+  CHAIN_ID_TO_CHAIN,
+  PROVIDER,
+  getTokenDecimal,
+} from "../../utils/general";
 import SpokePool from "../../lib/contracts/Across/SpokePool.json";
 import { getContract } from "thirdweb";
 import { ethers } from "ethers";
@@ -54,7 +58,10 @@ class AcrossBridge extends BaseBridge {
       route,
       inputAmount: inputAmount,
     });
-    const tokenDecimal = await getTokenDecimal(quote.deposit.inputToken, CHAIN_ID_TO_CHAIN[fromChainId].name);
+    const tokenDecimal = await getTokenDecimal(
+      quote.deposit.inputToken,
+      CHAIN_ID_TO_CHAIN[fromChainId].name,
+    );
     const feeInToken = ethers.utils.formatUnits(
       quote.fees.totalRelayFee.total,
       tokenDecimal,

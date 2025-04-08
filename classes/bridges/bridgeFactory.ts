@@ -8,10 +8,7 @@ interface BridgeInfo {
 }
 type BridgeConstructor = new () => AcrossBridge | SquidBridge;
 
-const BRIDGE_REGISTRY: BridgeConstructor[] = [
-  SquidBridge,
-  AcrossBridge,
-];
+const BRIDGE_REGISTRY: BridgeConstructor[] = [SquidBridge, AcrossBridge];
 
 async function getTheBestBridge(
   account: string,
@@ -46,20 +43,20 @@ async function getTheBestBridge(
 async function checkBridge(
   BridgeClass: BridgeConstructor,
   params: {
-    account: string,
-    fromChainId: number,
-    toChainId: number,
-    inputToken: string,
-    targetToken: string,
-    inputAmount: string,
-    tokenPrices: number,
-  }
+    account: string;
+    fromChainId: number;
+    toChainId: number;
+    inputToken: string;
+    targetToken: string;
+    inputAmount: string;
+    tokenPrices: number;
+  },
 ): Promise<BridgeInfo> {
   const bridge = new BridgeClass();
-  
+
   try {
     await bridge.init();
-    
+
     const commonParams = [
       params.account,
       params.fromChainId,
@@ -69,10 +66,9 @@ async function checkBridge(
       params.inputAmount,
     ];
 
-    const feeCosts = await (bridge instanceof AcrossBridge 
+    const feeCosts = await (bridge instanceof AcrossBridge
       ? bridge.fetchFeeCosts(...commonParams, params.tokenPrices)
-      : bridge.fetchFeeCosts(...commonParams, false)
-    );
+      : bridge.fetchFeeCosts(...commonParams, false));
 
     return {
       bridge,
@@ -108,8 +104,8 @@ async function checkRatesBetweenBridges(
     tokenPrices,
   };
 
-  const bridgeChecks = BRIDGE_REGISTRY.map(
-    BridgeClass => checkBridge(BridgeClass, params)
+  const bridgeChecks = BRIDGE_REGISTRY.map((BridgeClass) =>
+    checkBridge(BridgeClass, params),
   );
 
   return Promise.all(bridgeChecks);
