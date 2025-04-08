@@ -12,7 +12,6 @@ export default function TransferTab({
   recipient,
   account,
   handleAAWalletAction,
-  transferLoading,
   usdBalanceLoading,
   lockUpPeriod,
 }) {
@@ -44,8 +43,6 @@ export default function TransferTab({
           type="primary"
           className="w-full"
           onClick={() => handleAAWalletAction("transfer", true)}
-          loading={transferLoading || usdBalanceLoading}
-          disabled={usdBalance < 0.01 || recipientError || lockUpPeriod > 0}
         >
           {lockUpPeriod > 0
             ? `Transfer (unlocks in ${formatLockUpPeriod(lockUpPeriod)})`

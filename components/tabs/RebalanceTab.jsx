@@ -8,11 +8,10 @@ import { formatLockUpPeriod } from "../../utils/general";
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function RebalanceTab({
-  rebalancableUsdBalanceDictLoading,
   rebalancableUsdBalanceDict,
   chainId,
   handleAAWalletAction,
-  rebalanceIsLoading,
+  usdBalanceLoading,
   getRebalanceReinvestUsdAmount,
   usdBalance,
   portfolioHelper,
@@ -28,15 +27,9 @@ export default function RebalanceTab({
   investmentAmount,
   tokenPricesMappingTable,
   lockUpPeriod,
+  account,
 }) {
   const [currentStep, setCurrentStep] = useState(0);
-  const calCurrentAPR = (rebalancableUsdBalanceDict) =>
-    Object.entries(rebalancableUsdBalanceDict)
-      .filter(([key]) => !["pendingRewards", "metadata"].includes(key))
-      .reduce(
-        (sum, [_, { currentWeight, APR }]) => currentWeight * APR + sum,
-        0,
-      ) || 0;
   const currentChain = chainId?.name
     ?.toLowerCase()
     .replace(" one", "")
@@ -44,18 +37,27 @@ export default function RebalanceTab({
     .trim();
   return (
     <div>
-      {rebalancableUsdBalanceDictLoading ? <Spin /> : null}
-      <ActionItem
-        actionName={rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(
-          (action) => action.actionName,
-        )}
-        availableAssetChains={rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(
-          (action) => action.chain,
-        )}
-        currentChain={currentChain}
-        chainStatus={chainStatus}
-        theme="dark"
-      />
+      {Object.keys(rebalancableUsdBalanceDict || {}).length === 0 ? (
+        <div className="flex justify-center items-center h-full">
+          <Spin />
+        </div>
+      ) : (
+        <ActionItem
+          tab="Rebalance"
+          actionName={rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(
+            (action) => action.actionName,
+          )}
+          availableAssetChains={rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(
+            (action) => action.chain,
+          )}
+          currentChain={currentChain}
+          chainStatus={chainStatus}
+          theme="dark"
+          isStarted={Object.values(chainStatus || {}).some((status) => status)}
+          account={account}
+        />
+      )}
+
       {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.every(
         (action) => chainStatus[action.chain],
       )
@@ -99,7 +101,7 @@ export default function RebalanceTab({
                           setCurrentStep(currentStep + 1);
                         }
                       }}
-                      loading={rebalancableUsdBalanceDictLoading}
+                      loading={usdBalanceLoading}
                       disabled={
                         usdBalance <= 0 ||
                         (data.actionName === "localRebalance" &&
@@ -138,28 +140,6 @@ export default function RebalanceTab({
               );
             },
           )}
-
-      <div className="mt-4 text-gray-400">
-        <p>Expected APR after rebalance: </p>
-        <div className="flex items-center gap-2">
-          <span className="text-red-500">
-            {rebalancableUsdBalanceDictLoading ? (
-              <Spin />
-            ) : (
-              calCurrentAPR(rebalancableUsdBalanceDict).toFixed(2)
-            )}
-          </span>
-          <span>→</span>
-          <span className="text-green-400">
-            {portfolioApr[portfolioName]?.portfolioAPR ? (
-              (portfolioApr[portfolioName]?.portfolioAPR * 100).toFixed(2)
-            ) : (
-              <Spin />
-            )}
-            %
-          </span>
-        </div>
-      </div>
     </div>
   );
 }

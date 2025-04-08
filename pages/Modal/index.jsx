@@ -9,16 +9,24 @@ import {
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import DemoFlowDirectionGraph from "../FlowChart";
-import { CheckIcon, QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
-import { ArrowTopRightOnSquareIcon } from "@heroicons/react/20/solid";
+import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { Popover, Spin } from "antd";
 import ActionItem from "../../components/common/ActionItem";
-import EmailSubscription from "../emailsubscription";
+import CompletionActions from "../../components/CompletionActions";
+
 const formatAmount = (amount) => {
   if (amount === undefined || amount === null) return <Spin />;
-
   const absAmount = Math.abs(amount);
   return absAmount < 0.01 ? "< $0.01" : `$${absAmount.toFixed(2)}`;
+};
+
+const calculatePerformanceFee = (portfolioHelper, portfolioAPR) => {
+  const rebalanceMultiplier =
+    portfolioHelper?.constructor?.name === "EthVault" ? 0 : 4;
+  return (
+    ((rebalanceMultiplier * 0.00299 * 2 * 0.5 + 0.00299 * 2) / portfolioAPR) *
+    100
+  ).toFixed(2);
 };
 
 const AmountDisplay = ({
@@ -31,30 +39,24 @@ const AmountDisplay = ({
   portfolioHelper,
   portfolioAPR,
 }) => {
+  const className = isGreen ? "text-green-500" : "";
+
+  if (isLoading) {
+    return <Spin key={`spin-${amount}`} />;
+  }
+
   if (showOnlyPercentage) {
     return (
-      <span className={isGreen ? "text-green-500" : ""} key={propKey}>
-        {isLoading ? (
-          <Spin key={`spin-${amount}`} />
-        ) : (
-          `${(
-            (((portfolioHelper?.constructor?.name === "EthVault" ? 0 : 4) *
-              0.00299 *
-              2 *
-              0.5 +
-              0.00299 * 2) /
-              portfolioAPR) *
-            100
-          ).toFixed(2)}%`
-        )}
+      <span className={className} key={propKey}>
+        {`${calculatePerformanceFee(portfolioHelper, portfolioAPR)}%`}
       </span>
     );
   }
 
   return (
-    <span className={isGreen ? "text-green-500" : ""} key={propKey}>
+    <span className={className} key={propKey}>
       {showEmoji && "🎉 Earned "}
-      {isLoading ? <Spin key={`spin-${amount}`} /> : formatAmount(amount)}
+      {formatAmount(amount)}
     </span>
   );
 };
@@ -84,7 +86,30 @@ export default function PopUpModal({
   currentChain,
   chainStatus,
   currentTab,
+  allChainsComplete,
 }) {
+  const renderStatusIcon = () => (!finishedTxn ? <Spin /> : null);
+
+  const getStatusMessage = () =>
+    !finishedTxn ? "Bundling transactions..." : "";
+
+  const getCurrentStep = () => {
+    const completedSteps = Object.values(chainStatus || {}).filter(
+      Boolean,
+    ).length;
+    return completedSteps + 1;
+  };
+
+  const getNextChain = () => {
+    const nextChain = Object.entries(chainStatus || {}).find(
+      ([chain, isComplete]) => !isComplete,
+    )?.[0];
+    return {
+      name: nextChain,
+      imagePath: `/chainPicturesWebp/${nextChain?.toLowerCase()}.webp`,
+    };
+  };
+
   return (
     <Dialog
       open={Boolean(open)} // Ensure boolean conversion
@@ -117,15 +142,16 @@ export default function PopUpModal({
               <div>
                 <div className="text-center mt-5">
                   <ActionItem
+                    tab="popupModal"
                     actionName={
-                      currentTab === "4"
+                      currentTab === "3"
                         ? rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(
                             (action) => action.actionName,
                           )
                         : actionName
                     }
                     availableAssetChains={
-                      currentTab === "4"
+                      currentTab === "3"
                         ? rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.map(
                             (action) => action.chain,
                           )
@@ -134,21 +160,16 @@ export default function PopUpModal({
                     currentChain={currentChain}
                     chainStatus={chainStatus}
                     theme="light"
+                    isStarted={Object.values(chainStatus || {}).some(
+                      (status) => status,
+                    )}
+                    account={account}
                   />
                 </div>
                 <div className="mx-auto flex items-center justify-center rounded-full">
-                  {costsCalculated === false ? (
-                    <Spin />
-                  ) : (
-                    <CheckIcon
-                      aria-hidden="true"
-                      className="size-6 text-green-600"
-                    />
-                  )}
+                  {renderStatusIcon()}
                   <DialogTitle as="h3" className="ms-2 text-base text-gray-900">
-                    {finishedTxn === false
-                      ? "Bundling transactions..."
-                      : "Transaction Complete"}
+                    {getStatusMessage()}
                   </DialogTitle>
                 </div>
               </div>
@@ -177,27 +198,21 @@ export default function PopUpModal({
                 ) : (
                   <>
                     <div className="flex flex-col items-center gap-4 w-full mt-4">
-                      <a
-                        href={`https://debank.com/profile/${account?.address}`}
-                        target="_blank"
-                        className="w-full max-w-md flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl bg-white shadow-md hover:bg-gray-50 transition-colors text-gray-700 border border-gray-200"
-                      >
-                        <Image
-                          src="/projectPictures/debank.webp"
-                          alt="debank"
-                          height={25}
-                          width={25}
-                        />
-                        Check your portfolio on Debank
-                      </a>
-                      <a
-                        href={txnLink}
-                        target="_blank"
-                        className="flex items-center gap-1 text-gray-400 hover:text-gray-600 transition-colors text-sm"
-                      >
-                        View transaction
-                        <ArrowTopRightOnSquareIcon className="h-4 w-4" />
-                      </a>
+                      {allChainsComplete === true ? null : (
+                        <button
+                          type="button"
+                          onClick={() => setOpen(false)}
+                          className="w-full max-w-md flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors text-white shadow-md"
+                        >
+                          Step {getCurrentStep()}: {actionName} on
+                          <Image
+                            src={getNextChain().imagePath}
+                            alt={getNextChain().name}
+                            width={25}
+                            height={25}
+                          />
+                        </button>
+                      )}
                     </div>
                   </>
                 )}
@@ -206,10 +221,20 @@ export default function PopUpModal({
               <dl className="mt-6 space-y-4">
                 <div className="flex items-center justify-between border-t border-gray-200 pt-4">
                   <dt className="flex items-center text-sm text-gray-600">
+                    <span>⛽ Gas Fee</span>
+                  </dt>
+                  <dd className="text-sm font-medium text-gray-900">
+                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded-md font-semibold">
+                      Free
+                    </span>
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between border-t border-gray-200 pt-4">
+                  <dt className="flex items-center text-sm text-gray-600">
                     <span>
                       {totalTradingLoss > 0
-                        ? "Arbitrage profit estimate"
-                        : "Transaction cost estimate"}
+                        ? "🤑 Arbitrage profit estimate"
+                        : "💳 Transaction cost estimate"}
                     </span>
                     <a
                       href="#"
@@ -260,7 +285,7 @@ export default function PopUpModal({
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-200 pt-4">
                   <dt className="flex items-center text-sm text-gray-600">
-                    <span>Platform fee estimate</span>
+                    <span>💵 Platform fee estimate</span>
                     <a
                       href="#"
                       className="ml-2 shrink-0 text-gray-400 hover:text-gray-500"
@@ -328,9 +353,6 @@ export default function PopUpModal({
                   </dd>
                 </div>
               </dl>
-              <div className="mt-6 flex gap-4">
-                <EmailSubscription />
-              </div>
             </div>
           </DialogPanel>
         </div>

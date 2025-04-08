@@ -3,7 +3,6 @@ import { Vela } from "../Vela/Vela";
 import { BaseConvex } from "../Convex/BaseConvex";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import { BaseMoonwell } from "../Moonwell/BaseMoonwell";
-import { BaseAerodrome } from "../Aerodrome/BaseAerodrome";
 import { BaseAave } from "../Aave/BaseAave";
 import { BaseAura } from "../Aura/BaseAura";
 import { BaseVelodrome } from "../Velodrome/BaseVelodrome";
@@ -22,7 +21,7 @@ export class StablecoinVault extends BaseVault {
               "single",
               {},
             ),
-            weight: 0.7,
+            weight: 0.6,
           },
           {
             interface: new Vela(
@@ -83,7 +82,7 @@ export class StablecoinVault extends BaseVault {
                 pidOfEquilibria: 59,
               },
             ),
-            weight: 0.1,
+            weight: 0,
           },
           {
             interface: new BaseEquilibria(
@@ -412,7 +411,7 @@ export class StablecoinVault extends BaseVault {
                 ],
               },
             ),
-            weight: 0.1,
+            weight: 0.2,
           },
           {
             interface: new BaseEquilibria(
@@ -481,7 +480,7 @@ export class StablecoinVault extends BaseVault {
                 },
               ],
             }),
-            weight: 0.1,
+            weight: 0.2,
           },
         ],
         // bsc: [

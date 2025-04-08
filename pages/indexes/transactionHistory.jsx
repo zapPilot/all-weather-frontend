@@ -259,57 +259,63 @@ export default function TransactionHistory({
   // Render
   return (
     <>
-      {transactionHistoryData
-        .filter((item) => item.metadata.portfolioName === portfolioName)
-        .map((activityItem, activityItemIdx) => (
-          <li key={activityItemIdx} className="relative flex gap-x-4">
-            <div
-              className={classNames(
-                activityItemIdx === transactionHistoryData.length - 1
-                  ? "h-6"
-                  : "-bottom-6",
-                "absolute left-0 top-0 flex w-6 justify-center",
-              )}
-            >
-              <div className="w-px bg-gray-200" />
-            </div>
-            <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-black">
-              {activityItem.type === "paid" ? (
-                <CheckCircleIcon
-                  className="h-6 w-6 text-indigo-600"
-                  aria-hidden="true"
-                />
-              ) : (
-                <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
-              )}
-            </div>
-            <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500">
-              <span className="font-medium text-white">
-                {renderSingleTransaction(activityItem)}
-              </span>{" "}
-              <a
-                href={`https://${activityItem.metadata.chain
-                  ?.replace(" one", "")
-                  .replace(" mainnet", "timism")}.blockscout.com/tx/${
-                  activityItem.tx_hash
-                }`}
-                target="_blank"
+      {transactionHistoryData.length === 0 ? (
+        <div className="text-gray-500 text-sm py-4">
+          No transaction history available
+        </div>
+      ) : (
+        transactionHistoryData
+          .filter((item) => item.metadata.portfolioName === portfolioName)
+          .map((activityItem, activityItemIdx) => (
+            <li key={activityItemIdx} className="relative flex gap-x-4">
+              <div
+                className={classNames(
+                  activityItemIdx === transactionHistoryData.length - 1
+                    ? "h-6"
+                    : "-bottom-6",
+                  "absolute left-0 top-0 flex w-6 justify-center",
+                )}
               >
-                tx:{" "}
-                {`${activityItem.tx_hash.slice(
-                  0,
-                  4,
-                )}...${activityItem.tx_hash.slice(-4)}`}
-              </a>
-            </p>
-            <time
-              dateTime={activityItem.metadata.timestamp}
-              className="flex-none py-0.5 text-xs leading-5 text-gray-500"
-            >
-              {timeAgo(unixToCustomFormat(activityItem.metadata.timestamp))}
-            </time>
-          </li>
-        ))}
+                <div className="w-px bg-gray-200" />
+              </div>
+              <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-black">
+                {activityItem.type === "paid" ? (
+                  <CheckCircleIcon
+                    className="h-6 w-6 text-indigo-600"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
+                )}
+              </div>
+              <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500">
+                <span className="font-medium text-white">
+                  {renderSingleTransaction(activityItem)}
+                </span>{" "}
+                <a
+                  href={`https://${activityItem.metadata.chain
+                    ?.replace(" one", "")
+                    .replace(" mainnet", "timism")}.blockscout.com/tx/${
+                    activityItem.tx_hash
+                  }`}
+                  target="_blank"
+                >
+                  tx:{" "}
+                  {`${activityItem.tx_hash.slice(
+                    0,
+                    4,
+                  )}...${activityItem.tx_hash.slice(-4)}`}
+                </a>
+              </p>
+              <time
+                dateTime={activityItem.metadata.timestamp}
+                className="flex-none py-0.5 text-xs leading-5 text-gray-500"
+              >
+                {timeAgo(unixToCustomFormat(activityItem.metadata.timestamp))}
+              </time>
+            </li>
+          ))
+      )}
     </>
   );
 }

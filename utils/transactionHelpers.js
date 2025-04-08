@@ -1,5 +1,5 @@
 import { getGasPrice } from "thirdweb";
-import { openNotificationWithIcon } from "./notification.js";
+import openNotificationWithIcon from "./notification.js";
 import { CHAIN_ID_TO_CHAIN_STRING } from "./general.js";
 import { normalizeChainName } from "./chainHelper.js";
 import { getRebalanceReinvestUsdAmount } from "./portfolioCalculation.js";
@@ -105,41 +105,4 @@ export const prepareTransactionMetadata = ({
     ),
     transferTo: recipient,
   };
-};
-
-/**
- * Sets loading state based on action name
- * @param {Object} params - Parameters
- * @param {string} params.actionName - Name of the action
- * @param {Function} params.setZapInIsLoading - Set zap in loading state
- * @param {Function} params.setZapOutIsLoading - Set zap out loading state
- * @param {Function} params.setRebalanceIsLoading - Set rebalance loading state
- * @param {Function} params.setTransferLoading - Set transfer loading state
- * @param {boolean} params.isLoading - Whether to set to loading or not
- */
-export const setActionLoadingState = ({
-  actionName,
-  setZapInIsLoading,
-  setZapOutIsLoading,
-  setRebalanceIsLoading,
-  setTransferLoading,
-  isLoading = true,
-}) => {
-  if (actionName === "zapIn" || actionName === "stake") {
-    setZapInIsLoading(isLoading);
-  } else if (actionName === "zapOut") {
-    setZapOutIsLoading(isLoading);
-  } else if (
-    actionName === "rebalance" ||
-    actionName === "crossChainRebalance" ||
-    actionName === "localRebalance"
-  ) {
-    setRebalanceIsLoading(isLoading);
-  } else if (actionName === "transfer") {
-    setTransferLoading(isLoading);
-  } else if (actionName === "claimAndSwap") {
-    // placeholder for future implementation
-  } else if (actionName) {
-    throw new Error(`Invalid action name: ${actionName}`);
-  }
 };

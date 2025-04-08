@@ -141,10 +141,7 @@ export class BaseApolloX extends BaseProtocol {
     );
     const latestPrice = await this._fetchAlpPrice(updateProgress);
     const estimatedZapOutUsdValue =
-      ((amount / Math.pow(10, this.assetDecimals)) *
-        latestPrice *
-        (100 - slippage)) /
-      100;
+      (amount * latestPrice * (100 - slippage)) / 100;
     // TODO: we might enable zap out to other token down the road
     const minOutAmount = Math.floor(estimatedZapOutUsdValue * 1e6);
     const [
@@ -182,8 +179,10 @@ export class BaseApolloX extends BaseProtocol {
   }
 
   async usdBalanceOf(owner, tokenPricesMappingTable) {
-    const balance = await this.assetBalanceOf(owner);
-    const latestAlpPrice = await this._fetchAlpPrice(() => {});
+    const [balance, latestAlpPrice] = await Promise.all([
+      this.assetBalanceOf(owner),
+      this._fetchAlpPrice(() => {}),
+    ]);
     return balance * latestAlpPrice;
   }
   async assetUsdPrice(tokenPricesMappingTable) {
@@ -209,7 +208,7 @@ export class BaseApolloX extends BaseProtocol {
   _getTheBestTokenAddressToZapIn(inputToken, tokenAddress, InputTokenDecimals) {
     // TODO: minor, but we can read the composition of ALP to get the cheapest token to zap in
     const usdcBridgedAddress = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8";
-    return ["usdc", usdcBridgedAddress, 6];
+    return ["usdc.e", usdcBridgedAddress, 6];
   }
   _getTheBestTokenAddressToZapOut() {
     // TODO: minor, but we can read the composition of ALP to get the cheapest token to zap in

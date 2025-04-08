@@ -197,8 +197,10 @@ export class BaseAura extends BaseProtocol {
     return [[claimTxn], pendingRewards];
   }
   async usdBalanceOf(owner, tokenPricesMappingTable) {
-    const lpPrice = await this._calculateLpPrice(tokenPricesMappingTable);
-    const lpBalance = await this.stakeBalanceOf(owner, () => {});
+    const [lpPrice, lpBalance] = await Promise.all([
+      this._calculateLpPrice(tokenPricesMappingTable),
+      this.stakeBalanceOf(owner, () => {}),
+    ]);
     return lpBalance * lpPrice;
   }
   async assetUsdPrice(tokenPricesMappingTable) {

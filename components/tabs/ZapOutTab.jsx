@@ -32,11 +32,14 @@ export default function ZapOutTab({
   return (
     <div>
       <ActionItem
+        tab="ZapOut"
         actionName="zapOut"
         availableAssetChains={availableAssetChains}
         currentChain={currentChain}
         chainStatus={chainStatus}
         theme="dark"
+        isStarted={Object.values(chainStatus || {}).some((status) => status)}
+        account={account}
       />
       {Object.values(chainStatus).some((status) => status) ? null : (
         <DecimalStep
@@ -85,7 +88,7 @@ export default function ZapOutTab({
                   : ""
               }`}
           onClick={() => handleAAWalletAction("zapOut", true)}
-          loading={zapOutIsLoading || usdBalanceLoading}
+          loading={usdBalanceLoading}
           disabled={
             usdBalance < 0.01 ||
             zapOutPercentage === 0 ||

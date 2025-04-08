@@ -159,10 +159,10 @@ export class BaseMoonwell extends BaseProtocol {
   }
 
   async usdBalanceOf(owner, tokenPricesMappingTable) {
-    const userBalance = await this.assetBalanceOf(owner);
-    const latestPendleAssetPrice = await this.assetUsdPrice(
-      tokenPricesMappingTable,
-    );
+    const [userBalance, latestPendleAssetPrice] = await Promise.all([
+      this.assetBalanceOf(owner),
+      this.assetUsdPrice(tokenPricesMappingTable),
+    ]);
     return (
       (userBalance / Math.pow(10, this.assetDecimals)) * latestPendleAssetPrice
     );

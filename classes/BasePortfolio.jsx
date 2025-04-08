@@ -81,13 +81,16 @@ export class BasePortfolio {
   }
   async usdBalanceOf(address, portfolioAprDict) {
     // Get token prices
+    console.time("getTokenPricesMappingTable");
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
-
+    console.timeEnd("getTokenPricesMappingTable");
     // Get balances and rewards
+    console.time("getBalances");
     const balanceResults = await this._getBalances(
       address,
       tokenPricesMappingTable,
     );
+    console.timeEnd("getBalances");
     // Initialize balance dictionary with rewards
     let usdBalance = 0;
     const usdBalanceDict = this._initializeBalanceDict();
@@ -120,8 +123,11 @@ export class BasePortfolio {
       .map((protocol) => {
         return protocol.interface
           .usdBalanceOf(address, tokenPricesMappingTable)
-          .then((balance) => ({ protocol, balance }));
+          .then((balance) => {
+            return { protocol, balance };
+          });
       });
+
     return await Promise.all(balancePromises);
   }
 
@@ -457,6 +463,7 @@ export class BasePortfolio {
         actionParams.updateProgress,
       );
     }
+    console.time("processProtocolActions");
     // Process each protocol
     const protocolTxns = await this._processProtocolActions(
       actionName,
@@ -483,6 +490,25 @@ export class BasePortfolio {
       }
     }
     return totalTxns;
+  }
+
+  _calculateDerivative(currentChain, onlyThisChain) {
+    if (!onlyThisChain) return 1;
+    // Calculate total weight for the current chain across all categories
+    const totalWeightOnThisChain = Object.values(this.strategy).reduce(
+      (categorySum, protocolsInThisCategory) => {
+        const chainProtocols = protocolsInThisCategory[currentChain] || [];
+        return (
+          categorySum +
+          chainProtocols.reduce(
+            (protocolSum, protocol) => protocolSum + (protocol.weight || 0),
+            0,
+          )
+        );
+      },
+      0,
+    );
+    return totalWeightOnThisChain === 0 ? 0 : 1 / totalWeightOnThisChain;
   }
 
   async _processProtocolActions(actionName, actionParams) {
@@ -636,26 +662,38 @@ export class BasePortfolio {
           inputAmountBN,
           actionParams.updateProgress,
         );
-
         return [...txns, ...bridgeTxns];
       },
     };
 
     const processProtocolTxns = async (currentChain) => {
       const protocolPromises = [];
+
+      const derivative = this._calculateDerivative(
+        currentChain,
+        actionParams.onlyThisChain,
+      );
+
+      // Calculate total weight for the current chain across all categories
+      const totalWeightOnThisChain = Object.values(this.strategy).reduce(
+        (categorySum, protocolsInThisCategory) => {
+          const chainProtocols = protocolsInThisCategory[currentChain] || [];
+          return (
+            categorySum +
+            chainProtocols.reduce(
+              (protocolSum, protocol) => protocolSum + (protocol.weight || 0),
+              0,
+            )
+          );
+        },
+        0,
+      );
+
       for (const protocolsInThisCategory of Object.values(this.strategy)) {
         for (const [chain, protocols] of Object.entries(
           protocolsInThisCategory,
         )) {
           if (chain.toLowerCase() !== currentChain) continue;
-
-          const totalWeight = protocols.reduce(
-            (sum, protocol) => sum + (protocol.weight || 0),
-            0,
-          );
-
-          const derivative =
-            actionParams.onlyThisChain === true ? 1 / totalWeight : 1;
 
           // Process all protocols in parallel
           const chainProtocolPromises = protocols.map(async (protocol) => {
@@ -684,33 +722,27 @@ export class BasePortfolio {
     };
 
     const processBridgeTxns = async (currentChain) => {
-      const bridgePromises = [];
+      // Calculate total weights for each chain
+      const chainWeights = this._calculateChainWeights(currentChain);
 
-      for (const protocolsInThisCategory of Object.values(this.strategy)) {
-        const targetChains = Object.entries(protocolsInThisCategory)
-          .filter(([chain]) => chain.toLowerCase() !== currentChain)
-          .map(([chain, protocols]) => ({
-            chain,
-            totalWeight: protocols.reduce(
-              (sum, protocol) => sum + (protocol.weight || 0),
-              0,
-            ),
-          }));
-
-        // Process all bridge transactions in parallel
-        const categoryBridgePromises = targetChains.map(
-          async ({ chain, totalWeight }) => {
-            if (totalWeight === 0) return [];
-            try {
-              return await actionHandlers["bridge"](chain, totalWeight);
-            } catch (error) {
-              console.error(`Error processing bridge to ${chain}:`, error);
-              return [];
-            }
-          },
-        );
-        bridgePromises.push(...categoryBridgePromises);
-      }
+      // Convert to array format and process bridges
+      const bridgePromises = Object.entries(chainWeights).map(
+        async ([chain, totalWeight]) => {
+          if (
+            totalWeight === 0 ||
+            (actionParams.zapInAmount * totalWeight) /
+              actionParams.tokenDecimals <
+              1
+          )
+            return [];
+          try {
+            return await actionHandlers["bridge"](chain, totalWeight);
+          } catch (error) {
+            console.error(`Error processing bridge to ${chain}:`, error);
+            return [];
+          }
+        },
+      );
 
       // Wait for all bridge transactions to complete
       const results = await Promise.all(bridgePromises);
@@ -816,7 +848,6 @@ export class BasePortfolio {
     ]);
     // Combine initial transactions
     const initialTxns = [...zapOutTxns, ...approvalAndFeeTxns, ...zapInTxns];
-
     // If no other chains to process, return current transactions
     if (Object.keys(rebalancableUsdBalanceDictOnOtherChains).length === 0) {
       return initialTxns;
@@ -838,6 +869,7 @@ export class BasePortfolio {
         tokenPricesMappingTable[
           this._getRebalanceMiddleTokenConfig(currentChain, true).symbol
         ];
+      console.log(`Bridge amount: ${bridgeUsd} to ${chain}`);
       if (bridgeUsd < this.bridgeUsdThreshold) return [];
       const bridgeToOtherChainTxns = await bridge.getBridgeTxns(
         owner,
@@ -854,7 +886,6 @@ export class BasePortfolio {
     });
 
     const bridgeTxnsArrays = await Promise.all(bridgePromises);
-
     // Combine all transactions and return
     return [...initialTxns, ...bridgeTxnsArrays.flat()];
   }
@@ -1050,7 +1081,6 @@ export class BasePortfolio {
 
     const protocolBalance =
       (usdBalance * zapOutPercentage * (100 - slippage)) / 100;
-
     return [zapOutTxns, protocolBalance];
   }
 
@@ -1328,7 +1358,6 @@ export class BasePortfolio {
 
     const priceService = new PriceService(process.env.NEXT_PUBLIC_API_URL);
     const batcher = new TokenPriceBatcher(priceService);
-
     const tokensToFetch = Object.entries(
       this.uniqueTokenIdsForCurrentPrice,
     ).filter(
@@ -1506,5 +1535,23 @@ export class BasePortfolio {
 
   getFlowChartData(actionName, actionParams) {
     return this.flowChartBuilder.buildFlowChart(actionName, actionParams);
+  }
+
+  _calculateChainWeights(currentChain) {
+    return Object.values(this.strategy).reduce(
+      (acc, protocolsInThisCategory) => {
+        Object.entries(protocolsInThisCategory)
+          .filter(([chain]) => chain.toLowerCase() !== currentChain)
+          .forEach(([chain, protocols]) => {
+            if (!acc[chain]) acc[chain] = 0;
+            acc[chain] += protocols.reduce(
+              (sum, protocol) => sum + (protocol.weight || 0),
+              0,
+            );
+          });
+        return acc;
+      },
+      {},
+    );
   }
 }
