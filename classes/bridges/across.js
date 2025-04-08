@@ -38,9 +38,11 @@ class AcrossBridge extends BaseBridge {
   }
 
   async getQuoteWithCache(route, inputAmount) {
-    const paramsMatch = this.lastQuoteParams && 
+    const paramsMatch =
+      this.lastQuoteParams &&
       this.lastQuoteParams.route.originChainId === route.originChainId &&
-      this.lastQuoteParams.route.destinationChainId === route.destinationChainId &&
+      this.lastQuoteParams.route.destinationChainId ===
+        route.destinationChainId &&
       this.lastQuoteParams.route.inputToken === route.inputToken &&
       this.lastQuoteParams.route.outputToken === route.outputToken &&
       this.lastQuoteParams.inputAmount === inputAmount;
@@ -75,7 +77,7 @@ class AcrossBridge extends BaseBridge {
       inputToken: inputToken,
       outputToken: targetToken,
     };
-    
+
     const quote = await this.getQuoteWithCache(route, inputAmount);
     const tokenDecimal = await getTokenDecimal(
       quote.deposit.inputToken,
@@ -105,7 +107,7 @@ class AcrossBridge extends BaseBridge {
       inputToken: fromToken,
       outputToken: toToken,
     };
-    
+
     const quote = await this.getQuoteWithCache(route, amount);
     const tokenInstance = new ethers.Contract(
       fromToken,

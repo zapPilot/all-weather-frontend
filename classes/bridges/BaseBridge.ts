@@ -5,7 +5,10 @@ class BaseBridge {
   requiresInit: boolean;
   isInitialized: boolean = false;
 
-  constructor(public name: string, requiresInit: boolean = true) {
+  constructor(
+    public name: string,
+    requiresInit: boolean = true,
+  ) {
     this.requiresInit = requiresInit;
   }
 

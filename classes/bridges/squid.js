@@ -33,7 +33,8 @@ class SquidBridge extends BaseBridge {
   }
 
   async getRouteWithCache(params) {
-    const paramsMatch = this.lastRouteParams && 
+    const paramsMatch =
+      this.lastRouteParams &&
       this.lastRouteParams.fromChain === params.fromChain &&
       this.lastRouteParams.toChain === params.toChain &&
       this.lastRouteParams.fromToken === params.fromToken &&
@@ -88,7 +89,11 @@ class SquidBridge extends BaseBridge {
 
         if (error.response?.status === 429 && retryCount < maxRetries) {
           const waitTime = Math.pow(2, retryCount) * 1000;
-          console.log(`Rate limited, waiting ${waitTime / 1000}s before retry ${retryCount}/${maxRetries}`);
+          console.log(
+            `Rate limited, waiting ${
+              waitTime / 1000
+            }s before retry ${retryCount}/${maxRetries}`,
+          );
           await this.delay(waitTime);
           continue;
         }
