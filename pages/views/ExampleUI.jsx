@@ -44,7 +44,7 @@ export default function ExampleUI() {
       id: 2,
       portfolioName: "Index 500 Vault",
       href: "/indexes/indexOverviews/?portfolioName=Index+500+Vault",
-      imageSrc: "index500",
+      imageSrc: "index500vault",
       imageAlt: "Index 500 Vault",
       apr: strategyMetadata?.["Index 500 Vault"]?.portfolioAPR * 100,
       tvl: strategyMetadata?.["Index 500 Vault"]?.portfolioTVL,

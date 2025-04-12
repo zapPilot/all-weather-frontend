@@ -1175,8 +1175,8 @@ export class BasePortfolio {
         zapInAmountAfterFee = zapInAmountAfterFee.sub(zapInAmount);
       }
 
-      const MIN_USDC_AMOUNT = 10000; // $10 in USDC (6 decimals)
-      const MIN_WETH_AMOUNT = ethers.utils.parseEther("0.00001"); // 0.00001 ETH
+      const MIN_USDC_AMOUNT = 1000000; // $1 in USDC (6 decimals)
+      const MIN_WETH_AMOUNT = ethers.utils.parseEther("0.0001"); // 0.0001 ETH
 
       if (
         (middleTokenConfig.symbol === "usdc" &&
