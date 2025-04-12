@@ -910,7 +910,7 @@ export class BasePortfolio {
         address: TOKEN_ADDRESS_MAP["weth"][chain],
         decimals: 18,
       };
-    } else if (this.constructor.name === "AllWeatherVault") {
+    } else if (this.constructor.name === "Index500Vault") {
       if (chain === "polygon") {
         return {
           symbol: "weth",
@@ -1175,7 +1175,7 @@ export class BasePortfolio {
         zapInAmountAfterFee = zapInAmountAfterFee.sub(zapInAmount);
       }
 
-      const MIN_USDC_AMOUNT = 100000; // $0.1 in USDC (6 decimals)
+      const MIN_USDC_AMOUNT = 10000; // $10 in USDC (6 decimals)
       const MIN_WETH_AMOUNT = ethers.utils.parseEther("0.00001"); // 0.00001 ETH
 
       if (
