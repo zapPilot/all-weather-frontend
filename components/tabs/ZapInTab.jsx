@@ -1,4 +1,4 @@
-import { Button, Statistic } from "antd";
+import { Button, Statistic, Switch } from "antd";
 import TokenDropdownInput from "../../pages/views/TokenDropdownInput.jsx";
 import ConfiguredConnectButton from "../../pages/ConnectButton";
 import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
@@ -38,6 +38,7 @@ export default function ZapInTab({
   const [isLoading, setIsLoading] = useState(false);
   const [showCountdown, setShowCountdown] = useState(false);
   const [deadline, setDeadline] = useState(null);
+  const [enableBridging, setEnableBridging] = useState(true);
 
   const COUNTDOWN_TIME = 4;
   const currentChain = chainId?.name
@@ -49,6 +50,13 @@ export default function ZapInTab({
     (chain) => !chainStatus[chain],
   );
   const skipBridge = availableAssetChains.length > falseChains.length;
+
+  const shouldSkipBridge = () => {
+    // Skip bridging if either:
+    // 1. The switch is OFF (Single Chain mode)
+    // 2. The original skipBridge condition is true
+    return !enableBridging || skipBridge;
+  };
 
   const getAvailableAssetBalance = () => {
     const chainAssets =
@@ -125,18 +133,26 @@ export default function ZapInTab({
       );
     }
     return (
-      <Button
-        type="primary"
-        className="w-full my-2"
-        onClick={() => handleAAWalletAction("zapIn", skipBridge)}
-        disabled={
-          Number(investmentAmount) === 0 ||
-          Number(investmentAmount) > tokenBalance ||
-          Number(investmentAmount) < getMinimumTokenAmount(selectedToken)
-        }
-      >
-        Zap In
-      </Button>
+      <>
+        <Button
+          type="primary"
+          className="w-full my-2"
+          onClick={() => handleAAWalletAction("zapIn", shouldSkipBridge())}
+          disabled={
+            Number(investmentAmount) === 0 ||
+            Number(investmentAmount) > tokenBalance ||
+            Number(investmentAmount) < getMinimumTokenAmount(selectedToken)
+          }
+        >
+          Zap In
+        </Button>
+        <Switch
+          checkedChildren="Cross Chain"
+          unCheckedChildren="Single Chain"
+          defaultChecked={true}
+          onChange={(checked) => setEnableBridging(checked)}
+        />
+      </>
     );
   };
 
