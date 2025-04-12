@@ -50,12 +50,10 @@ class AcrossBridge extends BaseBridge {
     if (paramsMatch && this.lastQuote) {
       return this.lastQuote;
     }
-
     const quote = await this.sdk.getQuote({
       route,
       inputAmount,
     });
-
     this.lastQuote = quote;
     this.lastQuoteParams = { route, inputAmount };
 
