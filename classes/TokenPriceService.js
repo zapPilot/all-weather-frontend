@@ -5,6 +5,7 @@ class PriceService {
     usd: 1,
     usdc: 1,
     usdt: 1,
+    ousdt: 1,
     dai: 1,
     frax: 0.997,
     usde: 1,
