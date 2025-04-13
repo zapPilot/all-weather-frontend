@@ -147,7 +147,7 @@ export class BaseVault extends BasePortfolio {
       Object.entries(chains).forEach(([chain, protocols]) => {
         normalized[category][chain] = protocols.map((protocol) => ({
           ...protocol,
-          weight: protocol.weight / categoryTotal,
+          weight: categoryTotal === 0 ? 0 : protocol.weight / categoryTotal,
         }));
       });
 
@@ -171,7 +171,6 @@ export class BaseVault extends BasePortfolio {
           categoryTotal += protocol.weight;
         });
       });
-
       const expectedWeight = this.weightMapping[category];
 
       assert(

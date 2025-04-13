@@ -189,7 +189,7 @@ describe("BaseVault - Derivative Calculation", () => {
 
     expect(() => {
       new BaseVault(zeroWeightStrategy, { category1: 1 });
-    }).toThrow("Category category1 weights sum to NaN, expected 1");
+    }).toThrow("Category category1 weights sum to 0, expected 1");
   });
 });
 
