@@ -3,11 +3,16 @@ import { optimism, arbitrum, polygon, base } from "viem/chains";
 import BaseBridge from "./BaseBridge";
 import { prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
-import { CHAIN_ID_TO_CHAIN, PROVIDER } from "../../utils/general";
+import {
+  CHAIN_ID_TO_CHAIN,
+  PROVIDER,
+  getTokenDecimal,
+} from "../../utils/general";
 import SpokePool from "../../lib/contracts/Across/SpokePool.json";
 import { getContract } from "thirdweb";
 import { ethers } from "ethers";
 import ERC20 from "../../lib/contracts/ERC20.json";
+import { PriceService } from "../TokenPriceService";
 class AcrossBridge extends BaseBridge {
   static spokePoolMapping = {
     arbitrum: "0xe35e9842fceaCA96570B734083f4a58e8F7C5f2A",
@@ -19,16 +24,71 @@ class AcrossBridge extends BaseBridge {
     "op mainnet": "0x6f26Bf09B1C792e3228e5467807a900A503c0281",
     polygon: "0x9295ee1d8C5b022Be115A2AD3c30C72E34e7F096",
   };
+
   constructor() {
-    super("across");
+    super("across", false);
     this.sdk = createAcrossClient({
       integratorId: "0xaaff", // 2-byte hex string
       chains: [optimism, arbitrum, polygon, base],
     });
+    this.isInitialized = false;
+    this.feeCosts = null;
+    this.lastQuote = null;
+    this.lastQuoteParams = null;
   }
-  async init() {
-    return;
+
+  async getQuoteWithCache(route, inputAmount) {
+    const paramsMatch =
+      this.lastQuoteParams &&
+      this.lastQuoteParams.route.originChainId === route.originChainId &&
+      this.lastQuoteParams.route.destinationChainId ===
+        route.destinationChainId &&
+      this.lastQuoteParams.route.inputToken === route.inputToken &&
+      this.lastQuoteParams.route.outputToken === route.outputToken &&
+      this.lastQuoteParams.inputAmount === inputAmount;
+
+    if (paramsMatch && this.lastQuote) {
+      return this.lastQuote;
+    }
+    const quote = await this.sdk.getQuote({
+      route,
+      inputAmount,
+    });
+    this.lastQuote = quote;
+    this.lastQuoteParams = { route, inputAmount };
+
+    return quote;
   }
+
+  async fetchFeeCosts(
+    account,
+    fromChainId,
+    toChainId,
+    inputToken,
+    targetToken,
+    inputAmount,
+    tokenPrices,
+  ) {
+    const route = {
+      originChainId: fromChainId,
+      destinationChainId: toChainId,
+      inputToken: inputToken,
+      outputToken: targetToken,
+    };
+
+    const quote = await this.getQuoteWithCache(route, inputAmount);
+    const tokenDecimal = await getTokenDecimal(
+      quote.deposit.inputToken,
+      CHAIN_ID_TO_CHAIN[fromChainId].name,
+    );
+    const feeInToken = ethers.utils.formatUnits(
+      quote.fees.totalRelayFee.total,
+      tokenDecimal,
+    );
+    this.feeCosts = feeInToken * tokenPrices;
+    return this.feeCosts;
+  }
+
   async customBridgeTxn(
     owner,
     fromChainId,
@@ -45,6 +105,8 @@ class AcrossBridge extends BaseBridge {
       inputToken: fromToken,
       outputToken: toToken,
     };
+
+    const quote = await this.getQuoteWithCache(route, amount);
     const tokenInstance = new ethers.Contract(
       fromToken,
       ERC20,
@@ -55,10 +117,11 @@ class AcrossBridge extends BaseBridge {
       ),
     );
     const tokenDecimals = await tokenInstance.decimals();
-    const quote = await this.sdk.getQuote({
-      route,
-      inputAmount: amount,
-    });
+    const fee = quote.fees.totalRelayFee.total;
+    updateProgress(
+      `bridge-${fromChainId}-${toChainId}`,
+      -Number(ethers.utils.formatUnits(fee, tokenDecimals)),
+    );
     const bridgeAddress =
       AcrossBridge.spokePoolMapping[
         CHAIN_ID_TO_CHAIN[fromChainId].name.toLowerCase()
@@ -71,11 +134,6 @@ class AcrossBridge extends BaseBridge {
     });
     const fillDeadlineBuffer = 18000;
     const fillDeadline = Math.round(Date.now() / 1000) + fillDeadlineBuffer;
-    const fee = quote.fees.totalRelayFee.total;
-    updateProgress(
-      `bridge-${fromChainId}-${toChainId}`,
-      -Number(ethers.utils.formatUnits(fee, tokenDecimals)),
-    );
     const bridgeTxn = prepareContractCall({
       contract: spokePoolContract,
       method: "depositV3",

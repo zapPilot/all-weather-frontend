@@ -637,13 +637,22 @@ export class BasePortfolio {
           inputAmount = swapResult[1]; // Resulting amount after the swap
         }
         const inputAmountBN = ethers.BigNumber.from(inputAmount);
-        const bridge = await getTheBestBridge();
         const targetToken = allowedTokens.includes(
           actionParams.tokenInSymbol.toLowerCase(),
         )
           ? TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol.toLowerCase()][chain]
           : TOKEN_ADDRESS_MAP["usdc"][chain];
-
+        const bridge = await getTheBestBridge(
+          actionParams.account,
+          actionParams.chainMetadata.id,
+          CHAIN_TO_CHAIN_ID[chain],
+          inputToken,
+          targetToken,
+          inputAmountBN,
+          actionParams.tokenPricesMappingTable[
+            actionParams.tokenInSymbol.toLowerCase()
+          ],
+        );
         const bridgeTxns = await bridge.getBridgeTxns(
           actionParams.account,
           actionParams.chainMetadata.id,
@@ -901,7 +910,7 @@ export class BasePortfolio {
         address: TOKEN_ADDRESS_MAP["weth"][chain],
         decimals: 18,
       };
-    } else if (this.constructor.name === "AllWeatherVault") {
+    } else if (this.constructor.name === "Index500Vault") {
       if (chain === "polygon") {
         return {
           symbol: "weth",
@@ -1166,8 +1175,8 @@ export class BasePortfolio {
         zapInAmountAfterFee = zapInAmountAfterFee.sub(zapInAmount);
       }
 
-      const MIN_USDC_AMOUNT = 100000; // $0.1 in USDC (6 decimals)
-      const MIN_WETH_AMOUNT = ethers.utils.parseEther("0.00001"); // 0.00001 ETH
+      const MIN_USDC_AMOUNT = 1000000; // $1 in USDC (6 decimals)
+      const MIN_WETH_AMOUNT = ethers.utils.parseEther("0.0001"); // 0.0001 ETH
 
       if (
         (middleTokenConfig.symbol === "usdc" &&

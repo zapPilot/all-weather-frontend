@@ -42,13 +42,13 @@ export default function ExampleUI() {
     },
     {
       id: 2,
-      portfolioName: "All Weather Vault",
-      href: "/indexes/indexOverviews/?portfolioName=All+Weather+Vault",
-      imageSrc: "allweather",
-      imageAlt: "All Weather Vault",
-      apr: strategyMetadata?.["All Weather Vault"]?.portfolioAPR * 100,
-      tvl: strategyMetadata?.["All Weather Vault"]?.portfolioTVL,
-      portfolioHelper: getPortfolioHelper("All Weather Vault"),
+      portfolioName: "Index 500 Vault",
+      href: "/indexes/indexOverviews/?portfolioName=Index+500+Vault",
+      imageSrc: "index500vault",
+      imageAlt: "Index 500 Vault",
+      apr: strategyMetadata?.["Index 500 Vault"]?.portfolioAPR * 100,
+      tvl: strategyMetadata?.["Index 500 Vault"]?.portfolioTVL,
+      portfolioHelper: getPortfolioHelper("Index 500 Vault"),
     },
   ];
   const partnershipVaults = [

@@ -10,7 +10,7 @@ export const getMinimumTokenAmount = (tokenSymbol) => {
   const minimums = {
     production: {
       eth: 0.05,
-      stablecoin: 100,
+      stablecoin: 10,
     },
     development: {
       eth: 0.0001,

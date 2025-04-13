@@ -1,7 +1,7 @@
 import { BaseVault } from "./BaseVault";
 import { BaseCamelot } from "../camelot/BaseCamelot";
 import { StablecoinVault } from "./StablecoinVault";
-export class AllWeatherVault extends BaseVault {
+export class Index500Vault extends BaseVault {
   constructor() {
     // Get StablecoinVault's strategy
     const stablecoinVault = new StablecoinVault();
