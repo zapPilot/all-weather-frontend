@@ -8,7 +8,8 @@ interface BridgeInfo {
 }
 type BridgeConstructor = new () => AcrossBridge | SquidBridge;
 
-const BRIDGE_REGISTRY: BridgeConstructor[] = [SquidBridge, AcrossBridge];
+// const BRIDGE_REGISTRY: BridgeConstructor[] = [SquidBridge, AcrossBridge];
+const BRIDGE_REGISTRY: BridgeConstructor[] = [AcrossBridge];
 
 async function getTheBestBridge(
   account: string,

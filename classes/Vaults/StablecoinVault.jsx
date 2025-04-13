@@ -21,7 +21,7 @@ export class StablecoinVault extends BaseVault {
               "single",
               {},
             ),
-            weight: 0.6,
+            weight: 0.4,
           },
           {
             interface: new Vela(
@@ -411,7 +411,38 @@ export class StablecoinVault extends BaseVault {
                 ],
               },
             ),
-            weight: 0.2,
+            weight: 0,
+          },
+          {
+            interface: new BaseVelodrome(
+              "base",
+              8453,
+              ["ousdt", "usdc"],
+              "LP",
+              {
+                protocolName: "aerodrome",
+                protocolVersion: "0",
+                assetAddress: "0xc84f7c63742EA1894EE04e5F49fbaE8C3a4a734d",
+                assetDecimals: 18,
+                routerAddress: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
+                guageAddress: "0xe68921DD3923E90e7970c109B0d6f3c4a8B28Ca7",
+                lpTokens: [
+                  ["ousdt", "0x1217BfE6c773EEC6cc4A38b5Dc45B92292B6E189", 6],
+                  ["usdc", "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", 6],
+                ],
+                rewards: [
+                  {
+                    symbol: "aero",
+                    priceId: {
+                      coinmarketcapApiId: 29270,
+                    },
+                    address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+                    decimals: 18,
+                  },
+                ],
+              },
+            ),
+            weight: 0.37,
           },
           {
             interface: new BaseEquilibria(
@@ -458,7 +489,7 @@ export class StablecoinVault extends BaseVault {
             weight: 0,
           },
           {
-            interface: new BaseVelodrome("op", 10, ["usdc", "msusd"], "LP", {
+            interface: new BaseVelodrome("op", 10, ["usdc.e", "msusd"], "LP", {
               protocolName: "velodrome",
               protocolVersion: "v2",
               assetAddress: "0xe148D6Ae042De77c1f9fe0d6c495EbfD7b705B4c",
@@ -466,7 +497,7 @@ export class StablecoinVault extends BaseVault {
               routerAddress: "0xa062aE8A9c5e11aaA026fc2670B0D65cCc8B2858",
               guageAddress: "0xf9ddd38A4e0C3237563DBB651D1a155551e54ad6",
               lpTokens: [
-                ["usdc", "0x7F5c764cBc14f9669B88837ca1490cCa17c31607", 6],
+                ["usdc.e", "0x7F5c764cBc14f9669B88837ca1490cCa17c31607", 6],
                 ["msusd", "0x9dAbAE7274D28A45F0B65Bf8ED201A5731492ca0", 18],
               ],
               rewards: [
@@ -480,7 +511,7 @@ export class StablecoinVault extends BaseVault {
                 },
               ],
             }),
-            weight: 0.2,
+            weight: 0.23,
           },
         ],
         // bsc: [
