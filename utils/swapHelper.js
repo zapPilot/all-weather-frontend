@@ -30,7 +30,10 @@ async function swap(
   const eth_price = tokenPricesMappingTable["eth"];
   const to_token_price = tokenPricesMappingTable[toTokenSymbol];
   assert(eth_price !== undefined, `eth_price is undefined`);
-  assert(to_token_price !== undefined, `to_token_price is undefined for ${toTokenSymbol}`);
+  assert(
+    to_token_price !== undefined,
+    `to_token_price is undefined for ${toTokenSymbol}`,
+  );
   const to_token_decimals = toTokenDecimals;
   const swapResults = await Promise.all(
     providers.map(async (provider) => {
