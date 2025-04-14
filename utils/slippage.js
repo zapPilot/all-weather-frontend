@@ -28,9 +28,9 @@ export const determineSlippage = (params) => {
     return 1;
   }
 
-  // ZapIn for ETH Vault or All Weather Vault uses 3% slippage
+  // ZapIn for ETH Vault or Index 500 Vault uses 3% slippage
   if (
-    (portfolioName === "ETH Vault" || portfolioName === "All Weather Vault") &&
+    (portfolioName === "ETH Vault" || portfolioName === "Index 500 Vault") &&
     actionName === "zapIn"
   ) {
     return 1;

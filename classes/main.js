@@ -19,6 +19,7 @@ export const generateIntentTxns = async (
   rebalancableUsdBalanceDict,
   recipient,
   protocolAssetDustInWallet,
+  protocolAssetDustInWalletLoading,
   onlyThisChain,
   usdBalance,
 ) => {
@@ -40,6 +41,8 @@ export const generateIntentTxns = async (
       slippage,
       onlyThisChain,
       tokenDecimals,
+      protocolAssetDustInWallet,
+      protocolAssetDustInWalletLoading,
     });
   } else if (actionName === "zapOut") {
     txns = await portfolioHelper.portfolioAction("zapOut", {
@@ -55,6 +58,8 @@ export const generateIntentTxns = async (
       setPlatformFee,
       slippage,
       onlyThisChain,
+      protocolAssetDustInWallet,
+      protocolAssetDustInWalletLoading,
     });
   } else if (actionName === "claimAndSwap") {
     txns = await portfolioHelper.portfolioAction(actionName, {
@@ -69,6 +74,8 @@ export const generateIntentTxns = async (
       setPlatformFee,
       slippage,
       onlyThisChain,
+      protocolAssetDustInWallet,
+      protocolAssetDustInWalletLoading,
     });
   } else if (
     actionName === "crossChainRebalance" ||
@@ -91,6 +98,8 @@ export const generateIntentTxns = async (
         toFixedString(investmentAmount, tokenDecimals),
         tokenDecimals,
       ),
+      protocolAssetDustInWallet,
+      protocolAssetDustInWalletLoading,
     });
   } else if (actionName === "transfer") {
     txns = await portfolioHelper.portfolioAction(actionName, {
@@ -104,6 +113,8 @@ export const generateIntentTxns = async (
       slippage,
       recipient,
       onlyThisChain,
+      protocolAssetDustInWallet,
+      protocolAssetDustInWalletLoading,
     });
   } else if (actionName === "stake") {
     txns = await portfolioHelper.portfolioAction(actionName, {
@@ -114,6 +125,7 @@ export const generateIntentTxns = async (
       setTotalTradingLoss,
       setPlatformFee,
       protocolAssetDustInWallet,
+      protocolAssetDustInWalletLoading,
       onlyThisChain,
     });
   }

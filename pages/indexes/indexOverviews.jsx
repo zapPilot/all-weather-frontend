@@ -278,6 +278,7 @@ export default function IndexOverviews() {
         rebalancableUsdBalanceDict,
         recipient,
         protocolAssetDustInWallet[normalizeChainName(chainId?.name)],
+        protocolAssetDustInWalletLoading,
         onlyThisChain,
         usdBalance,
       );
@@ -596,7 +597,6 @@ export default function IndexOverviews() {
             [usdBalance, usdBalanceDict, tokenPricesMappingTable],
             lockUpPeriod,
           ] = results;
-
           setTokenPricesMappingTable(tokenPricesMappingTable);
           // Update USD balance and dict as soon as available
           setUsdBalance(usdBalance);

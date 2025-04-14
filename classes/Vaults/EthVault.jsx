@@ -112,7 +112,7 @@ export class EthVault extends BasePortfolio {
                   pidOfEquilibria: 57,
                 },
               ),
-              weight: 0.1,
+              weight: 0,
             },
             {
               interface: new BaseEquilibria(
@@ -129,7 +129,7 @@ export class EthVault extends BasePortfolio {
                   pidOfEquilibria: 56,
                 },
               ),
-              weight: 0.1,
+              weight: 0,
             },
             {
               interface: new BaseEquilibria(
@@ -146,7 +146,7 @@ export class EthVault extends BasePortfolio {
                   pidOfEquilibria: 55,
                 },
               ),
-              weight: 0.1,
+              weight: 0,
             },
             {
               interface: new BaseEquilibria(
@@ -163,7 +163,7 @@ export class EthVault extends BasePortfolio {
                   pidOfEquilibria: 8,
                 },
               ),
-              weight: 0.1,
+              weight: 0,
             },
             {
               interface: new BaseEquilibria(
@@ -180,7 +180,7 @@ export class EthVault extends BasePortfolio {
                   pidOfEquilibria: 7,
                 },
               ),
-              weight: 0.1,
+              weight: 0.5,
             },
           ],
           base: [
@@ -200,19 +200,7 @@ export class EthVault extends BasePortfolio {
                   ],
                 },
               ),
-              weight: 0.1,
-            },
-            {
-              interface: new BaseMoonwell("base", 8453, ["wsteth"], "single", {
-                symbolOfBestTokenToZapInOut: "wsteth",
-                zapInOutTokenAddress:
-                  "0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452",
-                decimalsOfZapInOutToken: 18,
-                assetAddress: "0x627Fe393Bc6EdDA28e99AE648fD6fF362514304b",
-                protocolAddress: "0x627Fe393Bc6EdDA28e99AE648fD6fF362514304b",
-                assetDecimals: 8,
-              }),
-              weight: 0.4,
+              weight: 0.5,
             },
           ],
         },
