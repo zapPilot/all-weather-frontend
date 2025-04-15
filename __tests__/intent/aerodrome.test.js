@@ -165,11 +165,11 @@ describe("Aerodrome Vault", () => {
     const setStepName = () => {};
     const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Aerodrome Vault");
-    const txns = await generateIntentTxns(
+    const txns = await generateIntentTxns({
       actionName,
-      base,
+      chainMetadata: base,
       portfolioHelper,
-      userAddress,
+      accountAddress: userAddress,
       tokenSymbol,
       tokenAddress,
       investmentAmount,
@@ -181,10 +181,10 @@ describe("Aerodrome Vault", () => {
       setPlatformFee,
       slippage,
       rebalancableUsdBalanceDict,
-      userAddress,
+      recipient: userAddress,
       protocolAssetDustInWallet,
       onlyThisChain,
-    );
+    });
     if (txns.length === 1) {
       expect(await encode(txns[0])).includes("c00007b0");
     } else {

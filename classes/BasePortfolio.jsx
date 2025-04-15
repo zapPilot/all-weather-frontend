@@ -424,6 +424,13 @@ export class BasePortfolio {
     let totalTxns = [];
     // Handle special pre-processing for specific actions
     if (actionName === "zapIn") {
+      console.log("actionParams", actionParams.onlyThisChain);
+      console.log("actionParams", actionParams.onlyThisChain);
+      console.log("actionParams", actionParams.onlyThisChain);
+      console.log("actionParams", actionParams.onlyThisChain);
+      console.log("actionParams", actionParams.onlyThisChain);
+      console.log("actionParams", actionParams.onlyThisChain);
+      console.log("actionParams", actionParams.onlyThisChain);
       if (actionParams.tokenInSymbol === "eth") {
         const [wethTxn, wethAddress, wethSymbol] =
           this._getWrappedEthTxnAddressSymbol(
@@ -451,6 +458,13 @@ export class BasePortfolio {
         actionParams.zapInAmount = actionParams.zapInAmount.sub(platformFee);
         actionParams.setPlatformFee(-normalizedPlatformFeeUSD);
         totalTxns = totalTxns.concat(platformFeeTxns);
+      }
+      if (actionParams.protocolAssetDustInWalletLoading === false) {
+        const stakeTxns = await this._generateStakeTxns(
+          actionParams.protocolAssetDustInWallet,
+          actionParams.updateProgress,
+        );
+        totalTxns = totalTxns.concat(stakeTxns);
       }
     } else if (
       actionName === "crossChainRebalance" ||
@@ -898,32 +912,18 @@ export class BasePortfolio {
         decimals: 6,
       };
     }
-    if (this.constructor.name === "StablecoinVault") {
+    if (this.constructor.name === "Stable+ Vault") {
       return {
         symbol: "usdc",
         address: TOKEN_ADDRESS_MAP["usdc"][chain],
         decimals: 6,
       };
-    } else if (this.constructor.name === "EthVault") {
+    } else if (this.constructor.name === "Eth Vault") {
       return {
         symbol: "weth",
         address: TOKEN_ADDRESS_MAP["weth"][chain],
         decimals: 18,
       };
-    } else if (this.constructor.name === "Index500Vault") {
-      if (chain === "polygon") {
-        return {
-          symbol: "weth",
-          address: TOKEN_ADDRESS_MAP["weth"][chain],
-          decimals: 18,
-        };
-      } else {
-        return {
-          symbol: "usdc",
-          address: TOKEN_ADDRESS_MAP["usdc"][chain],
-          decimals: 6,
-        };
-      }
     }
     return {
       symbol: "usdc",

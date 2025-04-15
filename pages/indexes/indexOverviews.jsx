@@ -258,13 +258,14 @@ export default function IndexOverviews() {
     const [tokenSymbol, tokenAddress, tokenDecimals] =
       tokenSymbolAndAddress.split("-");
     try {
-      const txns = await generateIntentTxns(
+      const txns = await generateIntentTxns({
         actionName,
-        chainId?.name === undefined
-          ? { name: CHAIN_ID_TO_CHAIN_STRING[chainId?.id], ...chainId }
-          : chainId,
+        chainMetadata:
+          chainId?.name === undefined
+            ? { name: CHAIN_ID_TO_CHAIN_STRING[chainId?.id], ...chainId }
+            : chainId,
         portfolioHelper,
-        account.address,
+        accountAddress: account.address,
         tokenSymbol,
         tokenAddress,
         investmentAmount,
@@ -277,10 +278,12 @@ export default function IndexOverviews() {
         slippage,
         rebalancableUsdBalanceDict,
         recipient,
-        protocolAssetDustInWallet[normalizeChainName(chainId?.name)],
+        protocolAssetDustInWallet:
+          protocolAssetDustInWallet[normalizeChainName(chainId?.name)],
+        protocolAssetDustInWalletLoading,
         onlyThisChain,
         usdBalance,
-      );
+      });
       setCostsCalculated(true);
       if (
         [
@@ -596,7 +599,6 @@ export default function IndexOverviews() {
             [usdBalance, usdBalanceDict, tokenPricesMappingTable],
             lockUpPeriod,
           ] = results;
-
           setTokenPricesMappingTable(tokenPricesMappingTable);
           // Update USD balance and dict as soon as available
           setUsdBalance(usdBalance);

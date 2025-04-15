@@ -8,7 +8,6 @@ import ActionItem from "../common/ActionItem";
 import { getMinimumTokenAmount } from "../../utils/environment.js";
 
 const { Countdown } = Statistic;
-const STAKE_THRESHOLD = 10;
 export default function ZapInTab({
   nextStepChain,
   selectedToken,
@@ -58,20 +57,6 @@ export default function ZapInTab({
     return !enableBridging || skipBridge;
   };
 
-  const getAvailableAssetBalance = () => {
-    const chainAssets =
-      protocolAssetDustInWallet?.[
-        chainId?.name
-          ?.toLowerCase()
-          ?.replace(" one", "")
-          .replace(" mainnet", "")
-      ] || {};
-    return Object.values(chainAssets).reduce(
-      (sum, protocolObj) => sum + (Number(protocolObj.assetUsdBalanceOf) || 0),
-      0,
-    );
-  };
-
   const handleSwitchChain = async (chain) => {
     setIsLoading(true);
     const deadlineTime = getCurrentTimeSeconds() + COUNTDOWN_TIME;
@@ -113,24 +98,8 @@ export default function ZapInTab({
   };
 
   const renderActionButton = () => {
-    const availableBalance = getAvailableAssetBalance();
-
     if (account === undefined) {
       return <ConfiguredConnectButton />;
-    }
-
-    if (availableBalance > STAKE_THRESHOLD) {
-      return (
-        <Button
-          type="primary"
-          className="w-full my-2"
-          onClick={() => handleAAWalletAction("stake", true)}
-          loading={protocolAssetDustInWalletLoading}
-          disabled={usdBalanceLoading}
-        >
-          {`Stake Available Assets ($${availableBalance.toFixed(2)})`}
-        </Button>
-      );
     }
     return (
       <>
@@ -195,14 +164,12 @@ export default function ZapInTab({
           chainStatus[currentChain] ? "hidden" : "block"
         }`}
       >
-        {getAvailableAssetBalance() <= STAKE_THRESHOLD && (
-          <TokenDropdownInput
-            selectedToken={selectedToken}
-            setSelectedToken={handleSetSelectedToken}
-            setInvestmentAmount={handleSetInvestmentAmount}
-            tokenPricesMappingTable={tokenPricesMappingTable}
-          />
-        )}
+        <TokenDropdownInput
+          selectedToken={selectedToken}
+          setSelectedToken={handleSetSelectedToken}
+          setInvestmentAmount={handleSetInvestmentAmount}
+          tokenPricesMappingTable={tokenPricesMappingTable}
+        />
         {renderActionButton()}
       </div>
 

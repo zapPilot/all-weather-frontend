@@ -21,11 +21,11 @@ describe("Native ETH", () => {
     const tokenDecimals = 18;
     const zapOutPercentage = NaN;
     const portfolioHelper = getPortfolioHelper("Equilibria ETH Vault");
-    const txns = await generateIntentTxns(
+    const txns = await generateIntentTxns({
       actionName,
-      arbitrum,
+      chainMetadata: arbitrum,
       portfolioHelper,
-      userAddress,
+      accountAddress: userAddress,
       tokenSymbol,
       tokenAddress,
       investmentAmount,
@@ -37,9 +37,9 @@ describe("Native ETH", () => {
       setPlatformFee,
       slippage,
       rebalancableUsdBalanceDict,
-      userAddress,
+      recipient: userAddress,
       protocolAssetDustInWallet,
       onlyThisChain,
-    );
+    });
   });
 });

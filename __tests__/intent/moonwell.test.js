@@ -69,11 +69,11 @@ describe("Moonwell", () => {
     const zapOutPercentage = 1;
     const portfolioHelper = getPortfolioHelper("Moonwell Stablecoin Vault");
     try {
-      const txns = await generateIntentTxns(
+      const txns = await generateIntentTxns({
         actionName,
-        base,
+        chainMetadata: base,
         portfolioHelper,
-        userAddress,
+        accountAddress: userAddress,
         tokenSymbol,
         tokenAddress,
         investmentAmount,
@@ -85,10 +85,10 @@ describe("Moonwell", () => {
         setPlatformFee,
         slippage,
         rebalancableUsdBalanceDict,
-        userAddress,
+        recipient: userAddress,
         protocolAssetDustInWallet,
         onlyThisChain,
-      );
+      });
       // due to the change of my wallet, the txns are not generated
       expect(txns[0].to).toBe("0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22");
       expect(txns[1].to).toBe("0xfBb21d0380beE3312B33c4353c8936a0F13EF26C");
