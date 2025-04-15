@@ -28,14 +28,14 @@ describe("Bridge with USDT -> USDC Swap", () => {
     const chainMetadata = base;
 
     // Generate transactions
-    const txns = await generateIntentTxns(
+    const txns = await generateIntentTxns({
       actionName,
       chainMetadata,
       portfolioHelper,
-      userAddress,
-      tokenInSymbol,
-      tokenInAddress,
-      zapInAmount,
+      accountAddress: userAddress,
+      tokenSymbol: tokenInSymbol,
+      tokenAddress: tokenInAddress,
+      investmentAmount: zapInAmount,
       tokenDecimals,
       zapOutPercentage,
       setTradingLoss,
@@ -44,10 +44,10 @@ describe("Bridge with USDT -> USDC Swap", () => {
       setPlatformFee,
       slippage,
       rebalancableUsdBalanceDict,
-      userAddress,
+      recipient: userAddress,
       protocolAssetDustInWallet,
       onlyThisChain,
-    );
+    });
 
     // Ensure we got some transactions
     expect(txns.length).toBeGreaterThanOrEqual(2);

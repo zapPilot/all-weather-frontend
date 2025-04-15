@@ -424,6 +424,13 @@ export class BasePortfolio {
     let totalTxns = [];
     // Handle special pre-processing for specific actions
     if (actionName === "zapIn") {
+      console.log("actionParams", actionParams.onlyThisChain);
+      console.log("actionParams", actionParams.onlyThisChain);
+      console.log("actionParams", actionParams.onlyThisChain);
+      console.log("actionParams", actionParams.onlyThisChain);
+      console.log("actionParams", actionParams.onlyThisChain);
+      console.log("actionParams", actionParams.onlyThisChain);
+      console.log("actionParams", actionParams.onlyThisChain);
       if (actionParams.tokenInSymbol === "eth") {
         const [wethTxn, wethAddress, wethSymbol] =
           this._getWrappedEthTxnAddressSymbol(

@@ -58,11 +58,11 @@ describe("Referral Fee Module", () => {
       const zapOutPercentage = 1;
       const portfolioHelper = getPortfolioHelper("Convex Stablecoin Vault");
       const txns = await expect(
-        generateIntentTxns(
+        generateIntentTxns({
           actionName,
-          arbitrum,
+          chainMetadata: arbitrum,
           portfolioHelper,
-          userAddress,
+          accountAddress: userAddress,
           tokenSymbol,
           tokenAddress,
           investmentAmount,
@@ -74,15 +74,16 @@ describe("Referral Fee Module", () => {
           setPlatformFee,
           slippage,
           rebalancableUsdBalanceDict,
-          userAddress,
-          protocolAssetDustInWallet[
-            arbitrum?.name
-              .toLowerCase()
-              .replace(" one", "")
-              .replace(" mainnet", "")
-          ],
+          recipient: userAddress,
+          protocolAssetDustInWallet:
+            protocolAssetDustInWallet[
+              arbitrum?.name
+                .toLowerCase()
+                .replace(" one", "")
+                .replace(" mainnet", "")
+            ],
           onlyThisChain,
-        ),
+        }),
       ).rejects.toThrow();
       // // withdraw
       // expect(await encode(txns[0])).includes("0x38d07436");

@@ -11,6 +11,7 @@ const setPlatformFee = () => {};
 const slippage = 0.5;
 const rebalancableUsdBalanceDict = {};
 const protocolAssetDustInWallet = {};
+const protocolAssetDustInWalletLoading = true;
 const onlyThisChain = false;
 describe("Camelot Vault", () => {
   it("should be able to zap-in Camelot Vault", async () => {
@@ -22,11 +23,11 @@ describe("Camelot Vault", () => {
     const tokenDecimals = 18;
     const zapOutPercentage = NaN;
     const portfolioHelper = getPortfolioHelper("Camelot Vault");
-    const txns = await generateIntentTxns(
+    const txns = await generateIntentTxns({
       actionName,
-      arbitrum,
+      chainMetadata: arbitrum,
       portfolioHelper,
-      userAddress,
+      accountAddress: userAddress,
       tokenSymbol,
       tokenAddress,
       investmentAmount,
@@ -38,10 +39,14 @@ describe("Camelot Vault", () => {
       setPlatformFee,
       slippage,
       rebalancableUsdBalanceDict,
-      userAddress,
+      recipient: userAddress,
       protocolAssetDustInWallet,
+      protocolAssetDustInWalletLoading,
       onlyThisChain,
-    );
+    });
+    for (const txn of txns) {
+      console.log("====", txn.to);
+    }
     expect(txns.length).toBe(7);
     // referral fee
     expect(await encode(txns[0])).includes(
@@ -74,11 +79,11 @@ describe("Camelot Vault", () => {
     const setStepName = () => {};
     const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Camelot Vault");
-    const txns = await generateIntentTxns(
+    const txns = await generateIntentTxns({
       actionName,
-      arbitrum,
+      chainMetadata: arbitrum,
       portfolioHelper,
-      userAddress,
+      accountAddress: userAddress,
       tokenSymbol,
       tokenAddress,
       investmentAmount,
@@ -90,10 +95,11 @@ describe("Camelot Vault", () => {
       setPlatformFee,
       slippage,
       rebalancableUsdBalanceDict,
-      userAddress,
+      recipient: userAddress,
       protocolAssetDustInWallet,
+      protocolAssetDustInWalletLoading,
       onlyThisChain,
-    );
+    });
     const camelotNFTAddress = "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15";
     const oneInchArbAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
     if (txns.length === 9) {
@@ -168,11 +174,11 @@ describe("Camelot Vault", () => {
     const setStepName = () => {};
     const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Camelot Vault");
-    const txns = await generateIntentTxns(
+    const txns = await generateIntentTxns({
       actionName,
-      arbitrum,
+      chainMetadata: arbitrum,
       portfolioHelper,
-      userAddress,
+      accountAddress: userAddress,
       tokenSymbol,
       tokenAddress,
       investmentAmount,
@@ -184,10 +190,11 @@ describe("Camelot Vault", () => {
       setPlatformFee,
       slippage,
       rebalancableUsdBalanceDict,
-      userAddress,
+      recipient: userAddress,
       protocolAssetDustInWallet,
+      protocolAssetDustInWalletLoading,
       onlyThisChain,
-    );
+    });
 
     if (txns.length === 6) {
       // harvest camelot reward

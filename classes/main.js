@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import { toFixedString } from "../utils/general";
 
-export const generateIntentTxns = async (
+export const generateIntentTxns = async ({
   actionName,
   chainMetadata,
   portfolioHelper,
@@ -22,7 +22,7 @@ export const generateIntentTxns = async (
   protocolAssetDustInWalletLoading,
   onlyThisChain,
   usdBalance,
-) => {
+}) => {
   let txns;
   if (actionName === "zapIn") {
     txns = await portfolioHelper.portfolioAction("zapIn", {

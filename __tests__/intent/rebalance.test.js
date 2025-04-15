@@ -79,11 +79,11 @@ describe("Stable+ Vault", () => {
       },
     };
     const portfolioHelper = getPortfolioHelper("Stable+ Vault");
-    const txns = await generateIntentTxns(
+    const txns = await generateIntentTxns({
       actionName,
-      arbitrum,
+      chainMetadata: arbitrum,
       portfolioHelper,
-      userAddress,
+      accountAddress: userAddress,
       tokenSymbol,
       tokenAddress,
       investmentAmount,
@@ -95,9 +95,9 @@ describe("Stable+ Vault", () => {
       setPlatformFee,
       slippage,
       rebalancableUsdBalanceDictDict,
-      userAddress,
+      recipient: userAddress,
       protocolAssetDustInWallet,
       onlyThisChain,
-    );
+    });
   });
 });

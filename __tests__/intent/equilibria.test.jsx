@@ -84,11 +84,11 @@ describe("Equilibria ETH Vault", () => {
     const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Equilibria ETH Vault");
     try {
-      const txns = await generateIntentTxns(
+      const txns = await generateIntentTxns({
         actionName,
-        arbitrum,
+        chainMetadata: arbitrum,
         portfolioHelper,
-        userAddress,
+        accountAddress: userAddress,
         tokenSymbol,
         tokenAddress,
         investmentAmount,
@@ -100,10 +100,10 @@ describe("Equilibria ETH Vault", () => {
         setPlatformFee,
         slippage,
         rebalancableUsdBalanceDict,
-        userAddress,
+        recipient: userAddress,
         protocolAssetDustInWallet,
         onlyThisChain,
-      );
+      });
       expect(await encode(txns[0])).includes(
         "c7517f481cc0a645e63f870830a4b2e580421e32",
       );
@@ -145,11 +145,11 @@ describe("Equilibria ETH Vault", () => {
     const setStepName = () => {};
     const slippage = 0.5;
     const portfolioHelper = getPortfolioHelper("Equilibria ETH Vault");
-    const txns = await generateIntentTxns(
+    const txns = await generateIntentTxns({
       actionName,
-      arbitrum,
+      chainMetadata: arbitrum,
       portfolioHelper,
-      userAddress,
+      accountAddress: userAddress,
       tokenSymbol,
       tokenAddress,
       investmentAmount,
@@ -161,10 +161,10 @@ describe("Equilibria ETH Vault", () => {
       setPlatformFee,
       slippage,
       rebalancableUsdBalanceDict,
-      userAddress,
+      recipient: userAddress,
       protocolAssetDustInWallet,
       onlyThisChain,
-    );
+    });
     // claim
     expect(txns[0].to).toBe("0xc7517f481Cc0a645e63f870830A4B2e580421e32");
     // redeem xEqbContract

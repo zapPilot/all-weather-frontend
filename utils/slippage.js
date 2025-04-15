@@ -25,7 +25,7 @@ export const determineSlippage = (params) => {
     (selectedTokenSymbol === "eth" || selectedTokenSymbol === "weth") &&
     portfolioName === "Stable+ Vault"
   ) {
-    return 1;
+    return 2;
   }
 
   // ZapIn for ETH Vault or Index 500 Vault uses 3% slippage
@@ -33,9 +33,9 @@ export const determineSlippage = (params) => {
     (portfolioName === "ETH Vault" || portfolioName === "Index 500 Vault") &&
     actionName === "zapIn"
   ) {
-    return 1;
+    return 2;
   }
 
   // Default slippage based on portfolio type
-  return portfolioName?.includes("Stable") ? 1 : 3;
+  return portfolioName?.includes("Stable") ? 2 : 3;
 };
