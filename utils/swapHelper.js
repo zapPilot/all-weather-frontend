@@ -150,15 +150,15 @@ async function swap(
   const priceImpactPercentage = (1 - priceRatio) * 100;
   // NOTE: because of our price timetable have a very high latency, we accept a higher price impact
   const hardcodedPriceImpactPercentage = 10;
-  // console.log(
-  //   `Input amount: ${bestSwap.normalizedInputAmount} ${fromToken} (${
-  //     bestSwap.normalizedInputAmount * tokenPricesMappingTable[fromToken]
-  //   }) , Output amount: ${bestSwap.normalizedOutputAmount} ${toTokenSymbol} (${
-  //     bestSwap.normalizedOutputAmount * tokenPricesMappingTable[toTokenSymbol]
-  //   })`,
-  //   "bestSwap",
-  //   bestSwap,
-  // );
+  console.log(
+    `Input amount: ${bestSwap.normalizedInputAmount} ${fromToken} (${
+      bestSwap.normalizedInputAmount * tokenPricesMappingTable[fromToken]
+    }) , Output amount: ${bestSwap.normalizedOutputAmount} ${toTokenSymbol} (${
+      bestSwap.normalizedOutputAmount * tokenPricesMappingTable[toTokenSymbol]
+    })`,
+    "bestSwap",
+    bestSwap,
+  );
   if (process.env.TEST !== "true") {
     assert(
       priceImpactPercentage <= hardcodedPriceImpactPercentage,
