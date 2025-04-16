@@ -44,9 +44,6 @@ describe("Camelot Vault", () => {
       protocolAssetDustInWalletLoading,
       onlyThisChain,
     });
-    for (const txn of txns) {
-      console.log("====", txn.to);
-    }
     expect(txns.length).toBe(7);
     // referral fee
     expect(await encode(txns[0])).includes(

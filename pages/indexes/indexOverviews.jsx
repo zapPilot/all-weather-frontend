@@ -545,17 +545,19 @@ export default function IndexOverviews() {
     if (isProcessingChainChangeRef.current) {
       return;
     }
+
     const timeoutId = setTimeout(async () => {
       try {
         isProcessingChainChangeRef.current = true;
         // Check cache first
-        const cachedData = safeGetLocalStorage(
+        const cachedData = await safeGetLocalStorage(
           `portfolio-${portfolioName}-${account.address}`,
           portfolioHelper,
+          notificationAPI,
         );
         if (
           cachedData?.timestamp &&
-          Date.now() - cachedData.timestamp < 86400 * 1000
+          Date.now() - cachedData.timestamp < 3600 * 1000
         ) {
           // Use cached data - update states immediately for each piece of data
           setTokenPricesMappingTable(cachedData.tokenPricesMappingTable);
@@ -639,29 +641,21 @@ export default function IndexOverviews() {
             0,
           );
           setUsdBalance(usdBalance + dustTotalUsdBalance);
-
           // Cache the fresh data
-          try {
-            safeSetLocalStorage(
-              `portfolio-${portfolioName}-${account.address}`,
-              {
-                tokenPricesMappingTable,
-                usdBalance: usdBalance + dustTotalUsdBalance,
-                usdBalanceDict,
-                lockUpPeriod: lockUpPeriod,
-                pendingRewards: pendingRewards.pendingRewardsDict,
-                dust,
-                timestamp: Date.now(),
-              },
-            );
-          } catch (error) {
-            console.warn("Failed to cache portfolio data:", error);
-          }
+          await safeSetLocalStorage(
+            `portfolio-${portfolioName}-${account.address}`,
+            {
+              tokenPricesMappingTable,
+              usdBalance: usdBalance + dustTotalUsdBalance,
+              usdBalanceDict,
+              lockUpPeriod: lockUpPeriod,
+              pendingRewards: pendingRewards.pendingRewardsDict,
+              dust,
+              timestamp: Date.now(),
+            },
+            notificationAPI,
+          );
         } catch (error) {
-          console.error("❌ Error fetching portfolio data:", {
-            message: error.message,
-            stack: error.stack,
-          });
           throw error;
         }
       } finally {

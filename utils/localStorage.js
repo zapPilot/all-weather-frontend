@@ -1,12 +1,48 @@
 import LZString from "lz-string";
 import { ethers } from "ethers";
+import openNotificationWithIcon from "./notification.js";
 
 /**
- * Safely stores portfolio data in localStorage with compression
- * @param {string} key - The localStorage key
- * @param {Object} value - The data to store
+ * Stores compressed portfolio data via REST API
+ * @param {string} key - The storage key
+ * @param {string} compressedValue - The compressed data to store
+ * @returns {Promise<boolean>} Returns true if storage was successful, false otherwise
  */
-export const safeSetLocalStorage = (key, value) => {
+const storeViaAPI = async (key, compressedValue) => {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_SDK_API_URL}/portfolio-cache`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          key,
+          data: compressedValue,
+          timestamp: Date.now(),
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return true;
+  } catch (e) {
+    console.error("Error storing data via API:", e);
+    return false;
+  }
+};
+
+/**
+ * Safely stores portfolio data with compression
+ * @param {string} key - The storage key
+ * @param {Object} value - The data to store
+ * @returns {Promise<boolean>} Returns true if storage was successful, false otherwise
+ */
+export const safeSetLocalStorage = async (key, value, notificationAPI) => {
   try {
     const cacheData = {
       tokenPricesMappingTable: value.tokenPricesMappingTable,
@@ -39,22 +75,45 @@ export const safeSetLocalStorage = (key, value) => {
     }
 
     const compressedValue = LZString.compressToUTF16(JSON.stringify(cacheData));
-    localStorage.setItem(key, compressedValue);
+
+    // Store via API instead of localStorage
+    return await storeViaAPI(key, compressedValue);
   } catch (e) {
+    openNotificationWithIcon(
+      notificationAPI,
+      "Error caching portfolio data",
+      "error",
+      "Failed to cache portfolio data",
+    );
     console.error("Error in safeSetLocalStorage:", e);
-    throw e;
+    return false;
   }
 };
 
 /**
- * Safely retrieves and decompresses portfolio data from localStorage
- * @param {string} key - The localStorage key
+ * Safely retrieves and decompresses portfolio data from API
+ * @param {string} key - The storage key
  * @param {Object} portfolioHelper - The portfolio helper instance
  * @returns {Object|null} The retrieved data or null
  */
-export const safeGetLocalStorage = (key, portfolioHelper) => {
+export const safeGetLocalStorage = async (
+  key,
+  portfolioHelper,
+  notificationAPI,
+) => {
   try {
-    const compressed = localStorage.getItem(key);
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_SDK_API_URL}/portfolio-cache/${key}`,
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const { data: compressed } = await response.json();
     if (!compressed) {
       return null;
     }
@@ -130,8 +189,14 @@ export const safeGetLocalStorage = (key, portfolioHelper) => {
 
     return decompressedData;
   } catch (e) {
-    console.error("Error retrieving from localStorage:", e);
-    throw e;
+    console.error("Error retrieving from API:", e);
+    openNotificationWithIcon(
+      notificationAPI,
+      "Error getting portfolio data",
+      "error",
+      "Failed to get portfolio data",
+    );
+    return null;
   }
 };
 
