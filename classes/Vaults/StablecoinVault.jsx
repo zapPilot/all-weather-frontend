@@ -21,7 +21,7 @@ export class StablecoinVault extends BaseVault {
               "single",
               {},
             ),
-            weight: 0.4,
+            weight: 0.39,
           },
           {
             interface: new Vela(
@@ -82,7 +82,7 @@ export class StablecoinVault extends BaseVault {
                 pidOfEquilibria: 59,
               },
             ),
-            weight: 0,
+            weight: 0.05,
           },
           {
             interface: new BaseEquilibria(
@@ -442,7 +442,7 @@ export class StablecoinVault extends BaseVault {
                 ],
               },
             ),
-            weight: 0.37,
+            weight: 0.36,
           },
           {
             interface: new BaseEquilibria(
@@ -511,7 +511,7 @@ export class StablecoinVault extends BaseVault {
                 },
               ],
             }),
-            weight: 0.23,
+            weight: 0.2,
           },
         ],
         // bsc: [
