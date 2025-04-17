@@ -4,13 +4,14 @@ export const isLocalEnvironment =
   (window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1");
 
-export const getMinimumTokenAmount = (tokenSymbol) => {
-  if (!tokenSymbol) return 0;
+export const getMinimumTokenAmount = (tokenSymbol, shouldSkipBridge) => {
+  if (!tokenSymbol) return Infinity;
+  if (shouldSkipBridge) return 1;
 
   const minimums = {
     production: {
-      eth: 0.05,
-      stablecoin: 10,
+      eth: 0.03,
+      stablecoin: 100,
     },
     development: {
       eth: 0.0001,

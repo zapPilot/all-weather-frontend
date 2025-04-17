@@ -110,7 +110,8 @@ export default function ZapInTab({
           disabled={
             Number(investmentAmount) === 0 ||
             Number(investmentAmount) > tokenBalance ||
-            Number(investmentAmount) < getMinimumTokenAmount(selectedToken)
+            Number(investmentAmount) <
+              getMinimumTokenAmount(selectedToken, shouldSkipBridge())
           }
         >
           Zap In

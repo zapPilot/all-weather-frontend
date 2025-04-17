@@ -2,8 +2,10 @@
 "use client";
 import BasePage from "../basePage.tsx";
 import { useState, useCallback, useEffect, useRef } from "react";
+import { ethers5Adapter } from "thirdweb/adapters/ethers5";
 import Image from "next/image";
 import Link from "next/link";
+import { Signer } from "ethers";
 import { useDispatch, useSelector } from "react-redux";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
@@ -547,6 +549,13 @@ export default function IndexOverviews() {
     }
 
     const fetchData = async () => {
+      // TODO: use this signer to migrate to ZeroDev
+      const signer = await ethers5Adapter.signer.toEthers({
+        client: THIRDWEB_CLIENT,
+        chain: chainId,
+        account,
+      });
+      console.log(`Signer is signer: ${Signer.isSigner(signer)}`);
       try {
         isProcessingChainChangeRef.current = true;
         // Check cache first
