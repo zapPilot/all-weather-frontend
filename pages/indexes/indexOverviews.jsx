@@ -2,8 +2,10 @@
 "use client";
 import BasePage from "../basePage.tsx";
 import { useState, useCallback, useEffect, useRef } from "react";
+import { ethers5Adapter } from "thirdweb/adapters/ethers5";
 import Image from "next/image";
 import Link from "next/link";
+import { Signer } from "ethers";
 import { useDispatch, useSelector } from "react-redux";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
@@ -258,13 +260,14 @@ export default function IndexOverviews() {
     const [tokenSymbol, tokenAddress, tokenDecimals] =
       tokenSymbolAndAddress.split("-");
     try {
-      const txns = await generateIntentTxns(
+      const txns = await generateIntentTxns({
         actionName,
-        chainId?.name === undefined
-          ? { name: CHAIN_ID_TO_CHAIN_STRING[chainId?.id], ...chainId }
-          : chainId,
+        chainMetadata:
+          chainId?.name === undefined
+            ? { name: CHAIN_ID_TO_CHAIN_STRING[chainId?.id], ...chainId }
+            : chainId,
         portfolioHelper,
-        account.address,
+        accountAddress: account.address,
         tokenSymbol,
         tokenAddress,
         investmentAmount,
@@ -277,10 +280,12 @@ export default function IndexOverviews() {
         slippage,
         rebalancableUsdBalanceDict,
         recipient,
-        protocolAssetDustInWallet[normalizeChainName(chainId?.name)],
+        protocolAssetDustInWallet:
+          protocolAssetDustInWallet[normalizeChainName(chainId?.name)],
+        protocolAssetDustInWalletLoading,
         onlyThisChain,
         usdBalance,
-      );
+      });
       setCostsCalculated(true);
       if (
         [
@@ -542,17 +547,27 @@ export default function IndexOverviews() {
     if (isProcessingChainChangeRef.current) {
       return;
     }
-    const timeoutId = setTimeout(async () => {
+
+    const fetchData = async () => {
+      // TODO: use this signer to migrate to ZeroDev
+      const signer = await ethers5Adapter.signer.toEthers({
+        client: THIRDWEB_CLIENT,
+        chain: chainId,
+        account,
+      });
+      console.log(`Signer is signer: ${Signer.isSigner(signer)}`);
       try {
         isProcessingChainChangeRef.current = true;
         // Check cache first
-        const cachedData = safeGetLocalStorage(
+        const cachedData = await safeGetLocalStorage(
           `portfolio-${portfolioName}-${account.address}`,
           portfolioHelper,
+          notificationAPI,
         );
+
         if (
           cachedData?.timestamp &&
-          Date.now() - cachedData.timestamp < 86400 * 1000
+          Date.now() - cachedData.timestamp < 3600 * 1000
         ) {
           // Use cached data - update states immediately for each piece of data
           setTokenPricesMappingTable(cachedData.tokenPricesMappingTable);
@@ -561,18 +576,14 @@ export default function IndexOverviews() {
           setRebalancableUsdBalanceDict(cachedData.usdBalanceDict);
           setRebalancableUsdBalanceDictLoading(false);
           setLockUpPeriod(cachedData.lockUpPeriod);
-
           setPendingRewards(cachedData.pendingRewards);
           setPendingRewardsLoading(false);
-
           setProtocolAssetDustInWallet(cachedData.dust);
           setProtocolAssetDustInWalletLoading(false);
           return;
         }
 
         // Fetch fresh data using Promise.all to load data in parallel
-
-        // Start all async operations simultaneously
         const usdBalancePromise = portfolioHelper.usdBalanceOf(
           account.address,
           portfolioApr[portfolioName],
@@ -581,91 +592,86 @@ export default function IndexOverviews() {
           account.address,
         );
 
-        try {
-          const results = await Promise.all([
-            usdBalancePromise.then((result) => {
-              return result;
-            }),
-            lockUpPeriodPromise.then((result) => {
-              return result;
-            }),
-          ]);
-          console.timeEnd("🚀 Portfolio data fetch");
+        const results = await Promise.all([
+          usdBalancePromise.then((result) => result),
+          lockUpPeriodPromise.then((result) => result),
+        ]);
 
-          const [
-            [usdBalance, usdBalanceDict, tokenPricesMappingTable],
-            lockUpPeriod,
-          ] = results;
+        console.timeEnd("🚀 Portfolio data fetch");
 
-          setTokenPricesMappingTable(tokenPricesMappingTable);
-          // Update USD balance and dict as soon as available
-          setUsdBalance(usdBalance);
-          setUsdBalanceLoading(false);
-          setRebalancableUsdBalanceDict(usdBalanceDict);
-          // Update lockup period as soon as available
-          setLockUpPeriod(lockUpPeriod);
+        const [
+          [usdBalance, usdBalanceDict, tokenPricesMappingTable],
+          lockUpPeriod,
+        ] = results;
 
-          // Update pending rewards as soon as available
-          console.time("🚀 Pending rewards fetch");
-          const pendingRewards = await portfolioHelper.pendingRewards(
+        setTokenPricesMappingTable(tokenPricesMappingTable);
+        setUsdBalance(usdBalance);
+        setUsdBalanceLoading(false);
+        setRebalancableUsdBalanceDict(usdBalanceDict);
+        setLockUpPeriod(lockUpPeriod);
+
+        // Update pending rewards
+        console.time("🚀 Pending rewards fetch");
+        const pendingRewards = await portfolioHelper.pendingRewards(
+          account.address,
+          () => {},
+          tokenPricesMappingTable,
+        );
+        console.timeEnd("🚀 Pending rewards fetch");
+        setPendingRewards(pendingRewards.pendingRewardsDict);
+        setPendingRewardsLoading(false);
+
+        // Calculate dust
+        const dust =
+          await portfolioHelper.calProtocolAssetDustInWalletDictionary(
             account.address,
-            () => {},
             tokenPricesMappingTable,
           );
-          console.timeEnd("🚀 Pending rewards fetch");
-          setPendingRewards(pendingRewards.pendingRewardsDict);
-          setPendingRewardsLoading(false);
+        setProtocolAssetDustInWallet(dust);
+        setProtocolAssetDustInWalletLoading(false);
 
-          // Calculate dust after token prices are available
-          const dust =
-            await portfolioHelper.calProtocolAssetDustInWalletDictionary(
-              account.address,
+        // Update final USD balance with dust
+        const dustTotalUsdBalance = Object.values(dust).reduce(
+          (sum, protocolObj) =>
+            sum +
+            Object.values(protocolObj).reduce(
+              (protocolSum, asset) =>
+                protocolSum + (Number(asset.assetUsdBalanceOf) || 0),
+              0,
+            ),
+          0,
+        );
+        setUsdBalance(usdBalance + dustTotalUsdBalance);
+
+        // Cache the fresh data
+        try {
+          await safeSetLocalStorage(
+            `portfolio-${portfolioName}-${account.address}`,
+            {
               tokenPricesMappingTable,
-            );
-          setProtocolAssetDustInWallet(dust);
-          setProtocolAssetDustInWalletLoading(false);
-
-          // Update final USD balance with dust
-          const dustTotalUsdBalance = Object.values(dust).reduce(
-            (sum, protocolObj) =>
-              sum +
-              Object.values(protocolObj).reduce(
-                (protocolSum, asset) =>
-                  protocolSum + (Number(asset.assetUsdBalanceOf) || 0),
-                0,
-              ),
-            0,
+              usdBalance: usdBalance + dustTotalUsdBalance,
+              usdBalanceDict,
+              lockUpPeriod: lockUpPeriod,
+              pendingRewards: pendingRewards.pendingRewardsDict,
+              dust,
+              timestamp: Date.now(),
+            },
+            notificationAPI,
           );
-          setUsdBalance(usdBalance + dustTotalUsdBalance);
-
-          // Cache the fresh data
-          try {
-            safeSetLocalStorage(
-              `portfolio-${portfolioName}-${account.address}`,
-              {
-                tokenPricesMappingTable,
-                usdBalance: usdBalance + dustTotalUsdBalance,
-                usdBalanceDict,
-                lockUpPeriod: lockUpPeriod,
-                pendingRewards: pendingRewards.pendingRewardsDict,
-                dust,
-                timestamp: Date.now(),
-              },
-            );
-          } catch (error) {
-            console.warn("Failed to cache portfolio data:", error);
-          }
         } catch (error) {
-          console.error("❌ Error fetching portfolio data:", {
-            message: error.message,
-            stack: error.stack,
-          });
-          throw error;
+          console.warn("Failed to cache portfolio data:", error);
         }
+      } catch (error) {
+        console.error("❌ Error fetching portfolio data:", {
+          message: error.message,
+          stack: error.stack,
+        });
       } finally {
         isProcessingChainChangeRef.current = false;
       }
-    }, 500);
+    };
+
+    const timeoutId = setTimeout(fetchData, 500);
 
     return () => {
       clearTimeout(timeoutId);

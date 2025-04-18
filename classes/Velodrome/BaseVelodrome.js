@@ -120,11 +120,11 @@ export class BaseVelodrome extends BaseProtocol {
       throw new Error("Pool has no liquidity");
     }
 
+    const amount0 = tokenAmetadata.minAmount.mul(_totalSupply).div(reserve0);
+    const amount1 = tokenBmetadata.minAmount.mul(_totalSupply).div(reserve1);
+
     return ethers.BigNumber.from(
-      Math.min(
-        tokenAmetadata.minAmount.mul(_totalSupply).div(reserve0),
-        tokenBmetadata.minAmount.mul(_totalSupply).div(reserve1),
-      ),
+      BigInt(Math.min(Number(amount0), Number(amount1))),
     );
   }
 

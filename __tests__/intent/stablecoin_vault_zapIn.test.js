@@ -23,11 +23,11 @@ describe("Stable+ Vault", () => {
     const tokenDecimals = 6;
     const zapOutPercentage = NaN;
     const portfolioHelper = getPortfolioHelper("Stable+ Vault");
-    await generateIntentTxns(
+    await generateIntentTxns({
       actionName,
-      arbitrum,
+      chainMetadata: arbitrum,
       portfolioHelper,
-      userAddress,
+      accountAddress: userAddress,
       tokenSymbol,
       tokenAddress,
       investmentAmount,
@@ -39,12 +39,16 @@ describe("Stable+ Vault", () => {
       setPlatformFee,
       slippage,
       rebalancableUsdBalanceDict,
-      userAddress,
-      protocolAssetDustInWallet[
-        arbitrum?.name.toLowerCase().replace(" one", "").replace(" mainnet", "")
-      ],
+      recipient: userAddress,
+      protocolAssetDustInWallet:
+        protocolAssetDustInWallet[
+          arbitrum?.name
+            .toLowerCase()
+            .replace(" one", "")
+            .replace(" mainnet", "")
+        ],
       onlyThisChain,
-    );
+    });
   });
   it("should fail with very big number", async () => {
     const actionName = "zapIn";
@@ -56,11 +60,11 @@ describe("Stable+ Vault", () => {
     const zapOutPercentage = NaN;
     const portfolioHelper = getPortfolioHelper("Stable+ Vault");
     expect(async () => {
-      await generateIntentTxns(
+      await generateIntentTxns({
         actionName,
-        arbitrum,
+        chainMetadata: arbitrum,
         portfolioHelper,
-        userAddress,
+        accountAddress: userAddress,
         tokenSymbol,
         tokenAddress,
         investmentAmount,
@@ -72,15 +76,16 @@ describe("Stable+ Vault", () => {
         setPlatformFee,
         slippage,
         rebalancableUsdBalanceDict,
-        userAddress,
-        protocolAssetDustInWallet[
-          arbitrum?.name
-            .toLowerCase()
-            .replace(" one", "")
-            .replace(" mainnet", "")
-        ],
+        recipient: userAddress,
+        protocolAssetDustInWallet:
+          protocolAssetDustInWallet[
+            arbitrum?.name
+              .toLowerCase()
+              .replace(" one", "")
+              .replace(" mainnet", "")
+          ],
         onlyThisChain,
-      ).toThrow("number overflow");
+      }).toThrow("number overflow");
     });
   });
   it("should be able to zap-in with Big ETH", async () => {
@@ -92,11 +97,11 @@ describe("Stable+ Vault", () => {
     const tokenDecimals = 18;
     const zapOutPercentage = NaN;
     const portfolioHelper = getPortfolioHelper("Stable+ Vault");
-    await generateIntentTxns(
+    await generateIntentTxns({
       actionName,
-      arbitrum,
+      chainMetadata: arbitrum,
       portfolioHelper,
-      userAddress,
+      accountAddress: userAddress,
       tokenSymbol,
       tokenAddress,
       investmentAmount,
@@ -108,11 +113,15 @@ describe("Stable+ Vault", () => {
       setPlatformFee,
       slippage,
       rebalancableUsdBalanceDict,
-      userAddress,
-      protocolAssetDustInWallet[
-        arbitrum?.name.toLowerCase().replace(" one", "").replace(" mainnet", "")
-      ],
+      recipient: userAddress,
+      protocolAssetDustInWallet:
+        protocolAssetDustInWallet[
+          arbitrum?.name
+            .toLowerCase()
+            .replace(" one", "")
+            .replace(" mainnet", "")
+        ],
       onlyThisChain,
-    );
+    });
   });
 });

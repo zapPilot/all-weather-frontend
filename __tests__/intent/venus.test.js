@@ -26,11 +26,11 @@ describe("Venus", () => {
     const protocolAssetDustInWallet = {};
     const onlyThisChain = true;
 
-    const txns = await generateIntentTxns(
+    const txns = await generateIntentTxns({
       actionName,
-      arbitrum,
+      chainMetadata: arbitrum,
       portfolioHelper,
-      userAddress,
+      accountAddress: userAddress,
       tokenSymbol,
       tokenAddress,
       investmentAmount,
@@ -42,9 +42,10 @@ describe("Venus", () => {
       setPlatformFee,
       slippage,
       rebalancableUsdBalanceDict,
+      recipient: userAddress,
       protocolAssetDustInWallet,
       onlyThisChain,
-    );
+    });
 
     expect(txns).toBeDefined();
     expect(Array.isArray(txns)).toBe(true);
@@ -100,11 +101,11 @@ describe("Venus", () => {
     const protocolContract = "0x7d8609f8da70ff9027e9bc5229af4f6727662707";
     const assetContract = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
 
-    const txns = await generateIntentTxns(
+    const txns = await generateIntentTxns({
       actionName,
-      arbitrum,
+      chainMetadata: arbitrum,
       portfolioHelper,
-      userAddress,
+      accountAddress: userAddress,
       tokenSymbol,
       tokenAddress,
       investmentAmount,
@@ -116,10 +117,10 @@ describe("Venus", () => {
       setPlatformFee,
       slippage,
       rebalancableUsdBalanceDict,
-      userAddress,
+      recipient: userAddress,
       protocolAssetDustInWallet,
       onlyThisChain,
-    );
+    });
 
     expect(txns).toBeDefined();
     expect(Array.isArray(txns)).toBe(true);
