@@ -286,6 +286,7 @@ export default function IndexOverviews() {
         onlyThisChain,
         usdBalance,
       });
+      console.log("DEBUGGING: txns", txns);
       setCostsCalculated(true);
       if (
         [
