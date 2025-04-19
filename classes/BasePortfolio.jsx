@@ -421,6 +421,7 @@ export class BasePortfolio {
   }
 
   async _generateTxnsByAction(actionName, actionParams) {
+    console.log("DEBUGGING: actionParams", actionParams);
     let totalTxns = [];
     // Handle special pre-processing for specific actions
     if (actionName === "zapIn") {
@@ -451,13 +452,6 @@ export class BasePortfolio {
         actionParams.zapInAmount = actionParams.zapInAmount.sub(platformFee);
         actionParams.setPlatformFee(-normalizedPlatformFeeUSD);
         totalTxns = totalTxns.concat(platformFeeTxns);
-      }
-      if (actionParams.protocolAssetDustInWalletLoading === false) {
-        const stakeTxns = await this._generateStakeTxns(
-          actionParams.protocolAssetDustInWallet,
-          actionParams.updateProgress,
-        );
-        totalTxns = totalTxns.concat(stakeTxns);
       }
     } else if (
       actionName === "crossChainRebalance" ||
@@ -495,6 +489,16 @@ export class BasePortfolio {
         );
         totalTxns = totalTxns.concat(swapFeeTxns);
       }
+    }
+    if (
+      actionName === "zapIn" &&
+      actionParams.protocolAssetDustInWalletLoading === false
+    ) {
+      const stakeTxns = await this._generateStakeTxns(
+        actionParams.protocolAssetDustInWallet,
+        actionParams.updateProgress,
+      );
+      totalTxns = totalTxns.concat(stakeTxns);
     }
     return totalTxns;
   }

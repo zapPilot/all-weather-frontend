@@ -438,7 +438,12 @@ export default function IndexOverviews() {
             }
           },
           onError: (error) => {
-            handleTransactionError(error, notificationAPI, account?.address);
+            handleTransactionError(
+              error,
+              notificationAPI,
+              account?.address,
+              chainId?.name,
+            );
           },
         });
       }).catch((error) => {
@@ -448,7 +453,12 @@ export default function IndexOverviews() {
       });
     } catch (error) {
       // This handles errors that occur before the transaction is sent
-      handleTransactionError(error, notificationAPI, account?.address);
+      handleTransactionError(
+        error,
+        notificationAPI,
+        account?.address,
+        chainId?.name,
+      );
     }
   };
 

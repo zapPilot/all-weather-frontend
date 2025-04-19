@@ -33,7 +33,7 @@ export const determineSlippage = (params) => {
     (portfolioName === "ETH Vault" || portfolioName === "Index 500 Vault") &&
     actionName === "zapIn"
   ) {
-    return 2;
+    return 3;
   }
 
   // Default slippage based on portfolio type
