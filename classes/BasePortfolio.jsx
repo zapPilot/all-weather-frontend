@@ -415,6 +415,7 @@ export class BasePortfolio {
       }
     };
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
+    console.log("DEBUGGING: tokenPricesMappingTable", tokenPricesMappingTable);
     actionParams.tokenPricesMappingTable = tokenPricesMappingTable;
     actionParams.updateProgress = updateProgress;
     return await this._generateTxnsByAction(actionName, actionParams);
@@ -1320,7 +1321,9 @@ export class BasePortfolio {
       ...coinMarketCapIdSet,
       ...Object.fromEntries(
         Object.entries(tokensAndCoinmarketcapIdsFromDropdownOptions).filter(
-          ([_, tokenData]) => tokenData.vaults?.includes(this.portfolioName),
+          ([_, tokenData]) =>
+            tokenData.vaults?.includes(this.portfolioName) ||
+            tokenData.vaults?.includes("all"),
         ),
       ),
     };

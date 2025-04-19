@@ -76,7 +76,7 @@ describe("Equilibria ETH Vault", () => {
     const recipientInEncodeData = "c774806f9ff5f3d8aabb6b70d0ed509e42afe6f0";
     const tokenSymbol = "weth";
     const tokenAddress = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1";
-    const investmentAmount = 1;
+    const investmentAmount = 100;
     const tokenDecimals = 18;
     const zapOutPercentage = 0.00022992956568238272;
     const setTradingLoss = () => {};
