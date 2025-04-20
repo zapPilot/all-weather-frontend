@@ -31,17 +31,20 @@ class BaseBridge {
     toToken: string,
     amount: string,
     updateProgress: any,
+    tokenPrices: number,
   ): Promise<[any, any] | []> {
     try {
-      const [customBridgeTxn, bridgeAddress] = await this.customBridgeTxn(
-        owner,
-        fromChainId,
-        toChainId,
-        fromToken,
-        toToken,
-        amount,
-        updateProgress,
-      );
+      const [customBridgeTxn, bridgeAddress, feeInUSD] =
+        await this.customBridgeTxn(
+          owner,
+          fromChainId,
+          toChainId,
+          fromToken,
+          toToken,
+          amount,
+          updateProgress,
+          tokenPrices,
+        );
       const approveTxn = approve(
         fromToken,
         bridgeAddress,
@@ -50,10 +53,10 @@ class BaseBridge {
         fromChainId,
       );
 
-      return [approveTxn, customBridgeTxn];
+      return [[approveTxn, customBridgeTxn], feeInUSD];
     } catch (error) {
       console.error("Error in getBridgeTxns:", error);
-      return [];
+      return [[], Infinity];
     }
   }
 
@@ -65,21 +68,18 @@ class BaseBridge {
     toToken: string,
     amount: string,
     updateProgress: CallableFunction,
+    tokenPrices: number,
   ): Promise<[any, any, string]> {
     // Implementation
     throw new Error("Method 'customBridgeTxn()' must be implemented.");
   }
-
-  async fetchFeeCosts(
-    account: string,
-    fromChainId: number,
-    toChainId: number,
-    inputToken: string,
-    targetToken: string,
-    inputAmount: string,
+  async getFeeCosts(
+    quote: any,
     tokenPrices: number,
-  ): Promise<string | null> {
-    throw new Error("Method 'fetchFeeCosts()' must be implemented.");
+    fromToken: string,
+    fromChainId: string,
+  ) {
+    throw new Error("Method 'getFeeCosts()' must be implemented.");
   }
 }
 

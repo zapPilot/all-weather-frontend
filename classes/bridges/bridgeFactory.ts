@@ -1,17 +1,11 @@
 import AcrossBridge from "./across";
+import BaseBridge from "./BaseBridge";
 import SquidBridge from "./squid";
-interface BridgeInfo {
-  bridge: AcrossBridge | SquidBridge;
-  fee: string | null;
-  isAvailable: boolean;
-  error?: string;
-}
-type BridgeConstructor = new () => AcrossBridge | SquidBridge;
 
-// const BRIDGE_REGISTRY: BridgeConstructor[] = [SquidBridge, AcrossBridge];
+type BridgeConstructor = new () => AcrossBridge | SquidBridge | BaseBridge;
 const BRIDGE_REGISTRY: BridgeConstructor[] = [AcrossBridge];
 
-async function getTheBestBridge(
+async function getTheBestBridgeTxns(
   account: string,
   fromChainId: number,
   toChainId: number,
@@ -19,93 +13,35 @@ async function getTheBestBridge(
   targetToken: string,
   inputAmount: string,
   tokenPrices: number,
+  updateProgress: (progress: number) => void,
 ) {
-  const bridges = await checkRatesBetweenBridges(
-    account,
-    fromChainId,
-    toChainId,
-    inputToken,
-    targetToken,
-    inputAmount,
-    tokenPrices,
+  const bridgeResults = await Promise.all(
+    BRIDGE_REGISTRY.map(async (BridgeClass) => {
+      const bridge = new BridgeClass();
+      await bridge.init();
+      const [txns, feeCostsInUSD] = await bridge.getBridgeTxns(
+        account,
+        fromChainId.toString(),
+        toChainId.toString(),
+        inputToken,
+        targetToken,
+        inputAmount,
+        updateProgress,
+        tokenPrices,
+      );
+      return { bridge, feeCostsInUSD, txns };
+    }),
   );
-  const availableBridges = bridges.filter(
-    (b) => b.isAvailable && b.fee !== null,
+
+  const validBridges = bridgeResults.filter(
+    (result) => result.feeCostsInUSD !== Infinity,
   );
-  if (availableBridges.length === 0)
+  if (validBridges.length === 0) {
     throw new Error("No available bridges found");
-
-  availableBridges.sort((a, b) => Number(a.fee) - Number(b.fee));
-
-  return availableBridges[0].bridge;
-}
-
-async function checkBridge(
-  BridgeClass: BridgeConstructor,
-  params: {
-    account: string;
-    fromChainId: number;
-    toChainId: number;
-    inputToken: string;
-    targetToken: string;
-    inputAmount: string;
-    tokenPrices: number;
-  },
-): Promise<BridgeInfo> {
-  const bridge = new BridgeClass();
-
-  try {
-    await bridge.init();
-
-    const feeCosts = await bridge.fetchFeeCosts(
-      params.account,
-      params.fromChainId,
-      params.toChainId,
-      params.inputToken,
-      params.targetToken,
-      params.inputAmount,
-      params.tokenPrices,
-    );
-
-    return {
-      bridge,
-      fee: feeCosts?.toString() ?? null,
-      isAvailable: true,
-    };
-  } catch (error) {
-    return {
-      bridge,
-      fee: null,
-      isAvailable: false,
-      error: error instanceof Error ? error.message : String(error),
-    };
   }
+
+  validBridges.sort((a, b) => a.feeCostsInUSD - b.feeCostsInUSD);
+  return validBridges[0].txns;
 }
 
-async function checkRatesBetweenBridges(
-  account: string,
-  fromChainId: number,
-  toChainId: number,
-  inputToken: string,
-  targetToken: string,
-  inputAmount: string,
-  tokenPrices: number,
-): Promise<BridgeInfo[]> {
-  const params = {
-    account,
-    fromChainId,
-    toChainId,
-    inputToken,
-    targetToken,
-    inputAmount,
-    tokenPrices,
-  };
-
-  const bridgeChecks = BRIDGE_REGISTRY.map((BridgeClass) =>
-    checkBridge(BridgeClass, params),
-  );
-
-  return Promise.all(bridgeChecks);
-}
-
-export default getTheBestBridge;
+export default getTheBestBridgeTxns;

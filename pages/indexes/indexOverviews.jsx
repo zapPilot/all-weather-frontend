@@ -281,12 +281,11 @@ export default function IndexOverviews() {
         rebalancableUsdBalanceDict,
         recipient,
         protocolAssetDustInWallet:
-          protocolAssetDustInWallet[normalizeChainName(chainId?.name)],
+          protocolAssetDustInWallet?.[normalizeChainName(chainId?.name)] || {},
         protocolAssetDustInWalletLoading,
         onlyThisChain,
         usdBalance,
       });
-      console.log("DEBUGGING: txns", txns);
       setCostsCalculated(true);
       if (
         [
@@ -326,22 +325,24 @@ export default function IndexOverviews() {
                 : `https://explorer.${CHAIN_ID_TO_CHAIN_STRING[
                     chainId?.id
                   ].toLowerCase()}.io`;
-
             // First update chainStatus
-            setChainStatus(async (prevStatus) => {
+            setChainStatus((prevStatus) => {
               const newStatus = { ...prevStatus, [currentChain]: true };
               const allChainsComplete = Object.values(newStatus).every(Boolean);
 
               if (allChainsComplete) {
-                try {
-                  await axios({
-                    method: "delete",
-                    url: `${process.env.NEXT_PUBLIC_SDK_API_URL}/portfolio-cache/portfolio-${portfolioName}-${account.address}`,
-                  });
-                } catch (error) {
-                  console.error("Failed to clear portfolio cache:", error);
-                }
-                setRefreshTrigger(Date.now());
+                // Handle async operations separately
+                (async () => {
+                  try {
+                    await axios({
+                      method: "delete",
+                      url: `${process.env.NEXT_PUBLIC_SDK_API_URL}/portfolio-cache/portfolio-${portfolioName}-${account.address}`,
+                    });
+                  } catch (error) {
+                    console.error("Failed to clear portfolio cache:", error);
+                  }
+                  setRefreshTrigger(Date.now());
+                })();
               }
 
               // Find next chain for notification
@@ -376,7 +377,6 @@ export default function IndexOverviews() {
 
               return newStatus;
             });
-
             // Continue with other state updates
             setFinishedTxn(true);
             const newNextChain = switchNextChain(data.chain.name);
@@ -485,10 +485,10 @@ export default function IndexOverviews() {
 
   const onChange = (key) => {
     setTabKey(key);
-    const selectedTab = items.find((item) => item.key === key);
     const newSlippage = determineSlippage({
       portfolioName,
-      tabLabel: selectedTab?.label,
+      selectedTokenSymbol: selectedToken?.toLowerCase()?.split("-")[0],
+      key,
       actionName,
     });
     setSlippage(newSlippage);
@@ -541,7 +541,7 @@ export default function IndexOverviews() {
       const newSlippage = determineSlippage({
         portfolioName,
         selectedTokenSymbol,
-        tabLabel: items.find((item) => item.key === tabKey)?.label,
+        key: tabKey,
         actionName,
       });
       setSlippage(newSlippage);
@@ -960,7 +960,10 @@ export default function IndexOverviews() {
                         value={slippage}
                         buttonStyle="solid"
                         size="small"
-                        onChange={(e) => setSlippage(e.target.value)}
+                        onChange={(e) => {
+                          setSlippage(e.target.value);
+                          onChange(e.target.value);
+                        }}
                       >
                         {[0.5, 1, 2, 3].map((slippageValue) => (
                           <Radio.Button
