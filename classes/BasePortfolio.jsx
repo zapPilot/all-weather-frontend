@@ -875,17 +875,6 @@ export class BasePortfolio {
         ];
       console.log(`Bridge amount: ${bridgeUsd} to ${chain}`);
       if (bridgeUsd < this.bridgeUsdThreshold) return [];
-      // Run bridge initialization and protocol filtering in parallel
-      // const bridge = await getTheBestBridgeTxns(
-      //     owner,
-      //     chainMetadata.id,
-      //     CHAIN_TO_CHAIN_ID[chain],
-      //     this._getRebalanceMiddleTokenConfig(currentChain, true).address,
-      //     this._getRebalanceMiddleTokenConfig(chain, true).address,
-      //     bridgeAmount,
-      //     tokenPricesMappingTable[this._getRebalanceMiddleTokenConfig(currentChain, true).symbol],
-      //  updateProgress,
-      //   )
       const bridgeToOtherChainTxns = await getTheBestBridgeTxns(
         owner,
         chainMetadata.id,

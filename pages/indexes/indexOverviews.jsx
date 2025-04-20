@@ -485,10 +485,10 @@ export default function IndexOverviews() {
 
   const onChange = (key) => {
     setTabKey(key);
-    const selectedTab = items.find((item) => item.key === key);
     const newSlippage = determineSlippage({
       portfolioName,
-      tabLabel: selectedTab?.label,
+      selectedTokenSymbol: selectedToken?.toLowerCase()?.split("-")[0],
+      key,
       actionName,
     });
     setSlippage(newSlippage);
@@ -541,7 +541,7 @@ export default function IndexOverviews() {
       const newSlippage = determineSlippage({
         portfolioName,
         selectedTokenSymbol,
-        tabLabel: items.find((item) => item.key === tabKey)?.label,
+        key: tabKey,
         actionName,
       });
       setSlippage(newSlippage);
@@ -960,7 +960,10 @@ export default function IndexOverviews() {
                         value={slippage}
                         buttonStyle="solid"
                         size="small"
-                        onChange={(e) => setSlippage(e.target.value)}
+                        onChange={(e) => {
+                          setSlippage(e.target.value);
+                          onChange(e.target.value);
+                        }}
                       >
                         {[0.5, 1, 2, 3].map((slippageValue) => (
                           <Radio.Button

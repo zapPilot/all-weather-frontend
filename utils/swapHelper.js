@@ -161,7 +161,7 @@ async function swap(
   );
   if (process.env.TEST !== "true") {
     assert(
-      priceImpactPercentage <= hardcodedPriceImpactPercentage,
+      priceImpactPercentage <= hardcodedPriceImpactPercentage || priceRatio > 1,
       `Price impact is too high to swap ${fromToken} to ${toTokenSymbol} . Price impact: ${priceImpactPercentage.toFixed(
         2,
       )}%, Max allowed: ${hardcodedPriceImpactPercentage}%`,
