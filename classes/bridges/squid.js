@@ -14,7 +14,6 @@ class SquidBridge extends BaseBridge {
     this.lastRequestTime = 0;
     this.minRequestInterval = 3000;
     this.isInitialized = false;
-    this.feeCosts = null;
     this.lastRoute = null;
     this.lastRouteParams = null;
   }

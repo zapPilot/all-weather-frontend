@@ -12,7 +12,6 @@ import SpokePool from "../../lib/contracts/Across/SpokePool.json";
 import { getContract } from "thirdweb";
 import { ethers } from "ethers";
 import ERC20 from "../../lib/contracts/ERC20.json";
-import { PriceService } from "../TokenPriceService";
 class AcrossBridge extends BaseBridge {
   static spokePoolMapping = {
     arbitrum: "0xe35e9842fceaCA96570B734083f4a58e8F7C5f2A",
@@ -32,7 +31,6 @@ class AcrossBridge extends BaseBridge {
       chains: [optimism, arbitrum, polygon, base],
     });
     this.isInitialized = false;
-    this.feeCosts = null;
     this.lastQuote = null;
     this.lastQuoteParams = null;
   }
@@ -60,81 +58,31 @@ class AcrossBridge extends BaseBridge {
     return quote;
   }
 
-  async fetchFeeCosts(
-    account,
-    fromChainId,
-    toChainId,
-    inputToken,
-    targetToken,
-    inputAmount,
-    tokenPrices,
-  ) {
-    const route = {
-      originChainId: fromChainId,
-      destinationChainId: toChainId,
-      inputToken: inputToken,
-      outputToken: targetToken,
-    };
-
-    const quote = await this.getQuoteWithCache(route, inputAmount);
-    const tokenDecimal = await getTokenDecimal(
-      quote.deposit.inputToken,
-      CHAIN_ID_TO_CHAIN[fromChainId].name,
-    );
-    const feeInToken = ethers.utils.formatUnits(
-      quote.fees.totalRelayFee.total,
-      tokenDecimal,
-    );
-    this.feeCosts = feeInToken * tokenPrices;
-    return this.feeCosts;
-  }
-
-  async customBridgeTxn(
-    owner,
-    fromChainId,
-    toChainId,
-    fromToken,
-    toToken,
-    amount,
-    updateProgress,
-  ) {
-    // WETH from Arbitrum -> Optimism
-    const route = {
-      originChainId: fromChainId,
-      destinationChainId: toChainId,
-      inputToken: fromToken,
-      outputToken: toToken,
-    };
-
-    const quote = await this.getQuoteWithCache(route, amount);
+  async getTokenDecimals(tokenAddress, chainId) {
     const tokenInstance = new ethers.Contract(
-      fromToken,
+      tokenAddress,
       ERC20,
       PROVIDER(
-        CHAIN_ID_TO_CHAIN[fromChainId].name
+        CHAIN_ID_TO_CHAIN[chainId].name
           .replace(" one", "")
           .replace(" mainnet", ""),
       ),
     );
-    const tokenDecimals = await tokenInstance.decimals();
-    const fee = quote.fees.totalRelayFee.total;
-    updateProgress(
-      `bridge-${fromChainId}-${toChainId}`,
-      -Number(ethers.utils.formatUnits(fee, tokenDecimals)),
-    );
-    const bridgeAddress =
-      AcrossBridge.spokePoolMapping[
-        CHAIN_ID_TO_CHAIN[fromChainId].name.toLowerCase()
-      ];
-    const spokePoolContract = getContract({
-      client: THIRDWEB_CLIENT,
-      address: bridgeAddress,
-      chain: CHAIN_ID_TO_CHAIN[fromChainId],
-      abi: SpokePool,
-    });
-    const fillDeadlineBuffer = 18000;
-    const fillDeadline = Math.round(Date.now() / 1000) + fillDeadlineBuffer;
-    const bridgeTxn = prepareContractCall({
+    return await tokenInstance.decimals();
+  }
+
+  calculateFeeInToken(fee, decimals) {
+    return ethers.utils.formatUnits(fee, decimals);
+  }
+
+  getBridgeAddress(chainId) {
+    return AcrossBridge.spokePoolMapping[
+      CHAIN_ID_TO_CHAIN[chainId].name.toLowerCase()
+    ];
+  }
+
+  prepareBridgeTransaction(spokePoolContract, quote, owner, fee, fillDeadline) {
+    return prepareContractCall({
       contract: spokePoolContract,
       method: "depositV3",
       params: [
@@ -153,7 +101,60 @@ class AcrossBridge extends BaseBridge {
       ],
       extraGas: 150000n,
     });
-    return [bridgeTxn, bridgeAddress];
+  }
+
+  async customBridgeTxn(
+    owner,
+    fromChainId,
+    toChainId,
+    fromToken,
+    toToken,
+    amount,
+    updateProgress,
+    tokenPrices,
+  ) {
+    const route = {
+      originChainId: fromChainId,
+      destinationChainId: toChainId,
+      inputToken: fromToken,
+      outputToken: toToken,
+    };
+    const quote = await this.getQuoteWithCache(route, amount);
+    const { feeInUSD, fee } = await this.getFeeCosts(
+      quote,
+      tokenPrices,
+      fromToken,
+      fromChainId,
+    );
+    updateProgress(`bridge-${fromChainId}-${toChainId}`, -Number(feeInUSD));
+
+    const bridgeAddress = this.getBridgeAddress(fromChainId);
+    const spokePoolContract = getContract({
+      client: THIRDWEB_CLIENT,
+      address: bridgeAddress,
+      chain: CHAIN_ID_TO_CHAIN[fromChainId],
+      abi: SpokePool,
+    });
+
+    const fillDeadlineBuffer = 18000;
+    const fillDeadline = Math.round(Date.now() / 1000) + fillDeadlineBuffer;
+
+    const bridgeTxn = this.prepareBridgeTransaction(
+      spokePoolContract,
+      quote,
+      owner,
+      fee,
+      fillDeadline,
+    );
+
+    return [bridgeTxn, bridgeAddress, feeInUSD];
+  }
+  async getFeeCosts(quote, tokenPrices, fromToken, fromChainId) {
+    const tokenDecimals = await this.getTokenDecimals(fromToken, fromChainId);
+    const fee = quote.fees.totalRelayFee.total;
+    const feeInToken = this.calculateFeeInToken(fee, tokenDecimals);
+    const feeInUSD = feeInToken * tokenPrices;
+    return { fee, feeInUSD };
   }
 }
 
