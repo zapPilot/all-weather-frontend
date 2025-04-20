@@ -328,14 +328,20 @@ export default function IndexOverviews() {
                   ].toLowerCase()}.io`;
 
             // First update chainStatus
-            setChainStatus((prevStatus) => {
+            setChainStatus(async (prevStatus) => {
               const newStatus = { ...prevStatus, [currentChain]: true };
               const allChainsComplete = Object.values(newStatus).every(Boolean);
 
               if (allChainsComplete) {
-                localStorage.removeItem(
-                  `portfolio-${portfolioName}-${account.address}`,
-                );
+                try {
+                  await axios({
+                    method: "delete",
+                    url: `${process.env.NEXT_PUBLIC_SDK_API_URL}/portfolio-cache/portfolio-${portfolioName}-${account.address}`,
+                  });
+                } catch (error) {
+                  console.error("Failed to clear portfolio cache:", error);
+                }
+                setRefreshTrigger(Date.now());
               }
 
               // Find next chain for notification
@@ -760,7 +766,10 @@ export default function IndexOverviews() {
     if (!portfolioName || !account?.address) return;
 
     // Clear cached data
-    localStorage.removeItem(`portfolio-${portfolioName}-${account.address}`);
+    await axios({
+      method: "delete",
+      url: `${process.env.NEXT_PUBLIC_SDK_API_URL}/portfolio-cache/portfolio-${portfolioName}-${account.address}`,
+    });
 
     // Reset states
     setUsdBalance(0);
