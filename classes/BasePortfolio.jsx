@@ -8,7 +8,7 @@ import THIRDWEB_CLIENT from "../utils/thirdweb";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import WETH from "../lib/contracts/Weth.json" assert { type: "json" };
 import ReactMarkdown from "react-markdown";
-import getTheBestBridge from "./bridges/bridgeFactory";
+import getTheBestBridgeTxns from "./bridges/bridgeFactory";
 import { CHAIN_TO_CHAIN_ID, TOKEN_ADDRESS_MAP } from "../utils/general";
 import { toWei } from "thirdweb/utils";
 import { TokenPriceBatcher, PriceService } from "./TokenPriceService";
@@ -415,12 +415,14 @@ export class BasePortfolio {
       }
     };
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
+    console.log("DEBUGGING: tokenPricesMappingTable", tokenPricesMappingTable);
     actionParams.tokenPricesMappingTable = tokenPricesMappingTable;
     actionParams.updateProgress = updateProgress;
     return await this._generateTxnsByAction(actionName, actionParams);
   }
 
   async _generateTxnsByAction(actionName, actionParams) {
+    console.log("DEBUGGING: actionParams", actionParams);
     let totalTxns = [];
     // Handle special pre-processing for specific actions
     if (actionName === "zapIn") {
@@ -451,13 +453,6 @@ export class BasePortfolio {
         actionParams.zapInAmount = actionParams.zapInAmount.sub(platformFee);
         actionParams.setPlatformFee(-normalizedPlatformFeeUSD);
         totalTxns = totalTxns.concat(platformFeeTxns);
-      }
-      if (actionParams.protocolAssetDustInWalletLoading === false) {
-        const stakeTxns = await this._generateStakeTxns(
-          actionParams.protocolAssetDustInWallet,
-          actionParams.updateProgress,
-        );
-        totalTxns = totalTxns.concat(stakeTxns);
       }
     } else if (
       actionName === "crossChainRebalance" ||
@@ -495,6 +490,16 @@ export class BasePortfolio {
         );
         totalTxns = totalTxns.concat(swapFeeTxns);
       }
+    }
+    if (
+      actionName === "zapIn" &&
+      actionParams.protocolAssetDustInWalletLoading === false
+    ) {
+      const stakeTxns = await this._generateStakeTxns(
+        actionParams.protocolAssetDustInWallet,
+        actionParams.updateProgress,
+      );
+      totalTxns = totalTxns.concat(stakeTxns);
     }
     return totalTxns;
   }
@@ -649,7 +654,7 @@ export class BasePortfolio {
         )
           ? TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol.toLowerCase()][chain]
           : TOKEN_ADDRESS_MAP["usdc"][chain];
-        const bridge = await getTheBestBridge(
+        const bridgeTxns = await getTheBestBridgeTxns(
           actionParams.account,
           actionParams.chainMetadata.id,
           CHAIN_TO_CHAIN_ID[chain],
@@ -659,14 +664,6 @@ export class BasePortfolio {
           actionParams.tokenPricesMappingTable[
             actionParams.tokenInSymbol.toLowerCase()
           ],
-        );
-        const bridgeTxns = await bridge.getBridgeTxns(
-          actionParams.account,
-          actionParams.chainMetadata.id,
-          CHAIN_TO_CHAIN_ID[chain],
-          inputToken,
-          targetToken,
-          inputAmountBN,
           actionParams.updateProgress,
         );
         return [...txns, ...bridgeTxns];
@@ -790,11 +787,11 @@ export class BasePortfolio {
       false,
     );
 
-    // Run bridge initialization and protocol filtering in parallel
-    const [bridge, rebalancableUsdBalanceDictOnThisChain] = await Promise.all([
-      getTheBestBridge(),
-      this._filterProtocolsForChain(rebalancableUsdBalanceDict, currentChain),
-    ]);
+    const rebalancableUsdBalanceDictOnThisChain =
+      await this._filterProtocolsForChain(
+        rebalancableUsdBalanceDict,
+        currentChain,
+      );
     // Generate zap out transactions and calculate total USDC balance
     const [zapOutTxns, zapOutUsdcBalance] = await this._generateZapOutTxns(
       owner,
@@ -878,13 +875,16 @@ export class BasePortfolio {
         ];
       console.log(`Bridge amount: ${bridgeUsd} to ${chain}`);
       if (bridgeUsd < this.bridgeUsdThreshold) return [];
-      const bridgeToOtherChainTxns = await bridge.getBridgeTxns(
+      const bridgeToOtherChainTxns = await getTheBestBridgeTxns(
         owner,
         chainMetadata.id,
         CHAIN_TO_CHAIN_ID[chain],
         this._getRebalanceMiddleTokenConfig(currentChain, true).address,
         this._getRebalanceMiddleTokenConfig(chain, true).address,
         bridgeAmount,
+        tokenPricesMappingTable[
+          this._getRebalanceMiddleTokenConfig(currentChain, true).symbol
+        ],
         updateProgress,
       );
 
@@ -1316,7 +1316,9 @@ export class BasePortfolio {
       ...coinMarketCapIdSet,
       ...Object.fromEntries(
         Object.entries(tokensAndCoinmarketcapIdsFromDropdownOptions).filter(
-          ([_, tokenData]) => tokenData.vaults?.includes(this.portfolioName),
+          ([_, tokenData]) =>
+            tokenData.vaults?.includes(this.portfolioName) ||
+            tokenData.vaults?.includes("all"),
         ),
       ),
     };

@@ -55,25 +55,6 @@ export const safeSetLocalStorage = async (key, value, notificationAPI) => {
       __className: "PortfolioCache",
     };
 
-    // Only store the uniqueId for protocol lookup
-    if (value.dust) {
-      Object.keys(value.dust).forEach((chain) => {
-        if (value.dust[chain]) {
-          cacheData.dust[chain] = {};
-          Object.keys(value.dust[chain]).forEach((protocol) => {
-            if (value.dust[chain][protocol]) {
-              cacheData.dust[chain][protocol] = {
-                assetBalance: value.dust[chain][protocol].assetBalance,
-                assetUsdBalanceOf:
-                  value.dust[chain][protocol].assetUsdBalanceOf,
-                protocolId: value.dust[chain][protocol].protocol.uniqueId(),
-              };
-            }
-          });
-        }
-      });
-    }
-
     const compressedValue = LZString.compressToUTF16(JSON.stringify(cacheData));
 
     // Store via API instead of localStorage
@@ -112,7 +93,6 @@ export const safeGetLocalStorage = async (
       }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-
     const { data: compressed } = await response.json();
     if (!compressed) {
       return null;
@@ -124,7 +104,6 @@ export const safeGetLocalStorage = async (
 
     if (decompressedData.__className === "PortfolioCache") {
       const { __className, ...cacheData } = decompressedData;
-
       // Reconstruct dust objects using protocolId
       if (cacheData.dust && portfolioHelper?.strategy) {
         Object.keys(cacheData.dust).forEach((chain) => {

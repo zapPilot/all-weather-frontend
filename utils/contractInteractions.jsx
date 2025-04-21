@@ -8,45 +8,23 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   usdc: {
     coinmarketcapApiId: 3408,
-    vaults: [
-      "Stable+ Vault",
-      "Aerodrome Vault",
-      "Index 500 Vault",
-      "Vela Vault (Deprecated)",
-    ],
+    vaults: ["all"],
   },
   usdt: {
     coinmarketcapApiId: 825,
-    vaults: ["Stable+ Vault", "Index 500 Vault"],
+    vaults: ["all"],
   },
   "usdc.e": {
     coinmarketcapApiId: 3408,
-    vaults: ["Stable+ Vault", "Index 500 Vault", "Vela Vault (Deprecated)"],
+    vaults: ["all"],
   },
   weth: {
     coinmarketcapApiId: 2396,
-    vaults: [
-      "Stable+ Vault",
-      "Index 500 Vault",
-      "ETH Vault",
-      "Camelot Vault",
-      "Yearn Vault",
-      "Stable+ Vault",
-    ],
+    vaults: ["all"],
   },
   eth: {
     coinmarketcapApiId: 2396,
-    vaults: [
-      "Stable+ Vault",
-      "Index 500 Vault",
-      "ETH Vault",
-      "Camelot Vault",
-      "Yearn Vault",
-      "Stable+ Vault",
-      "Camelot Vault",
-      "Aerodrome Vault",
-      "Convex Stablecoin Vault",
-    ],
+    vaults: ["all"],
   },
   dai: {
     coinmarketcapApiId: 4943,
@@ -54,7 +32,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   usde: {
     coinmarketcapApiId: 29470,
-    vaults: ["Stable+ Vault", "Convex Stablecoin Vault", "Index 500 Vault"],
+    vaults: ["all"],
   },
   wbtc: {
     coinmarketcapApiId: 3717,
@@ -95,7 +73,12 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
       chain: "base",
       address: "0x526728DBc96689597F85ae4cd716d4f7fCcBAE9d",
     },
-    vaults: ["Stable+ Vault", "Aerodrome Vault", "Index 500 Vault"],
+    vaults: [
+      "Stable+ Vault",
+      "Aerodrome Vault",
+      "Index 500 Vault",
+      "Velodrome Vault",
+    ],
   },
   eusd: {
     geckoterminal: {

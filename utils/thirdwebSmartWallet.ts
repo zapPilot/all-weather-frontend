@@ -10,9 +10,11 @@ import { Index500Vault } from "../classes/Vaults/Index500Vault";
 import { MetisVault } from "../classes/Vaults/MetisVault";
 import { CamelotVault } from "../classes/Vaults/Tests/CamelotVault";
 import { AerodromeVault } from "../classes/Vaults/Tests/AerodromeVault";
+import { VelodromeVault } from "../classes/Vaults/Tests/VelodromeVault";
 import { VenusStablecoinVault } from "../classes/Vaults/Tests/VenusVault";
 import { VelaVault } from "../classes/Vaults/VelaVault";
 import { DeprecatedVault } from "../classes/Vaults/DeprecatedVault";
+
 export function getPortfolioHelper(
   portfolioName: string,
 ): BasePortfolio | undefined {
@@ -43,6 +45,8 @@ export function getPortfolioHelper(
     portfolioHelper = new CamelotVault();
   } else if (portfolioName === "Aerodrome Vault") {
     portfolioHelper = new AerodromeVault();
+  } else if (portfolioName === "Velodrome Vault") {
+    portfolioHelper = new VelodromeVault();
   } else if (portfolioName === "Venus Stablecoin Vault") {
     portfolioHelper = new VenusStablecoinVault();
   } else if (portfolioName === "Vela Vault (Deprecated)") {

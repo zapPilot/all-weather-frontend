@@ -8,15 +8,11 @@
  * @returns {number} The appropriate slippage percentage
  */
 export const determineSlippage = (params) => {
-  const { portfolioName, selectedTokenSymbol, tabLabel, actionName } = params;
+  const { portfolioName, selectedTokenSymbol, key, actionName } = params;
 
   // Rebalance tab always uses 5% slippage
-  if (tabLabel === "Rebalance") {
-    return 2;
-  }
-
   // Claim tab uses 3% slippage
-  if (tabLabel === "Claim") {
+  if (!["1", "2"].includes(key)) {
     return 3;
   }
 
@@ -33,7 +29,7 @@ export const determineSlippage = (params) => {
     (portfolioName === "ETH Vault" || portfolioName === "Index 500 Vault") &&
     actionName === "zapIn"
   ) {
-    return 2;
+    return 3;
   }
 
   // Default slippage based on portfolio type
