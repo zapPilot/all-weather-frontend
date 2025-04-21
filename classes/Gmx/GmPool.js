@@ -5,7 +5,6 @@ import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { CHAIN_ID_TO_CHAIN, PROVIDER, approve } from "../../utils/general";
 import { ethers } from "ethers";
-import { GmxSdk } from "@gmx-io/sdk";
 
 export class GmPool extends BaseProtocol {
   constructor(chain, chainId, symbolList, mode, customParams) {
@@ -114,6 +113,7 @@ export class GmPool extends BaseProtocol {
   }
 
   async getGmTokenPrice() {
+    const { GmxSdk } = await import("@gmx-io/sdk");
     const sdk = new GmxSdk({
       chainId: 42161,
       oracleUrl: "https://arbitrum-api.gmxinfra.io",
