@@ -87,11 +87,19 @@ export default function PopUpModal({
   chainStatus,
   currentTab,
   allChainsComplete,
+  errorMsg,
 }) {
-  const renderStatusIcon = () => (!finishedTxn ? <Spin /> : null);
+  const renderStatusIcon = () => {
+    if (errorMsg) return <XMarkIcon className="h-5 w-5 text-red-500" />;
+    if (!finishedTxn) return <Spin />;
+    return null;
+  };
 
-  const getStatusMessage = () =>
-    !finishedTxn ? "Bundling transactions..." : "";
+  const getStatusMessage = () => {
+    if (errorMsg) return errorMsg;
+    if (!finishedTxn) return "Bundling transactions...";
+    return "";
+  };
 
   const getCurrentStep = () => {
     const completedSteps = Object.values(chainStatus || {}).filter(
