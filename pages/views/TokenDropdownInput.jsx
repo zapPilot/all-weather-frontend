@@ -10,7 +10,6 @@ import { arbitrum, base, optimism, bsc, polygon } from "thirdweb/chains";
 import { defineChain } from "thirdweb";
 import NumericInput from "./NumberInput";
 import { selectBefore } from "../../utils/contractInteractions";
-import { getMinimumTokenAmount } from "../../utils/environment";
 
 const chainIdToChain = {
   8453: base,
@@ -43,9 +42,6 @@ const TokenDropdownInput = memo(
       }),
     });
 
-    // Define minimum values based on environment
-    const minValue = getMinimumTokenAmount(tokenSymbol);
-
     const getTokenPrice = () => {
       return tokenPricesMappingTable?.[tokenSymbol] || 0;
     };
@@ -59,14 +55,6 @@ const TokenDropdownInput = memo(
 
     const isInsufficientBalance = () => {
       return localInvestmentAmount > parseFloat(data?.displayValue || "0");
-    };
-
-    const isBelowMinimum = () => {
-      return (
-        localInvestmentAmount < minValue &&
-        localInvestmentAmount !== 0 &&
-        localInvestmentAmount !== ""
-      );
     };
 
     const handleInputChange = (eventValue) => {
@@ -120,16 +108,6 @@ const TokenDropdownInput = memo(
               Click on the top-right corner to get your AA Wallet address.
             </p>
           )}
-          {isBelowMinimum() && (
-            <p className="text-amber-500">
-              Minimum input for {tokenSymbol?.toUpperCase()} is {minValue}{" "}
-              {tokenSymbol?.toUpperCase()}.
-              {tokenSymbol?.includes("eth") &&
-                " (≈ $" + (minValue * getTokenPrice()).toFixed(2) + ")"}
-              {(tokenSymbol?.includes("usd") || tokenSymbol?.includes("dai")) &&
-                " (≈ $" + minValue + ")"}
-            </p>
-          )}
         </div>
       );
     };
@@ -148,7 +126,6 @@ const TokenDropdownInput = memo(
             placeholder={isLoading ? "Loading..." : "Enter amount"}
             value={localInvestmentAmount}
             onChange={handleInputChange}
-            min={minValue}
           />
           <Button
             type="primary"

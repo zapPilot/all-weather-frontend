@@ -100,6 +100,7 @@ export class BaseMoonwell extends BaseProtocol {
         (tokenPricesMappingTable["well"] * moolWellReward.totalAmount) /
         Math.pow(10, 18),
       decimals: 18,
+      chain: this.chain,
     };
     return rewardBalance;
   }

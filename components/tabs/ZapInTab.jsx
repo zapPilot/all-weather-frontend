@@ -2,12 +2,30 @@ import { Button, Statistic, Switch } from "antd";
 import TokenDropdownInput from "../../pages/views/TokenDropdownInput.jsx";
 import ConfiguredConnectButton from "../../pages/ConnectButton";
 import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { TOKEN_ADDRESS_MAP } from "../../utils/general";
 import ActionItem from "../common/ActionItem";
 import { getMinimumTokenAmount } from "../../utils/environment.js";
 
 const { Countdown } = Statistic;
+const COUNTDOWN_TIME = 4;
+
+const formatMinimumAmount = (amount) => {
+  return amount
+    ? `(min ${Number(amount)
+        .toFixed(3)
+        .replace(/\.?0+$/, "")})`
+    : "";
+};
+
+const getCurrentChain = (chainId) => {
+  return chainId?.name
+    ?.toLowerCase()
+    .replace(" one", "")
+    .replace(" mainnet", "")
+    .trim();
+};
+
 export default function ZapInTab({
   nextStepChain,
   selectedToken,
@@ -38,23 +56,19 @@ export default function ZapInTab({
   const [showCountdown, setShowCountdown] = useState(false);
   const [deadline, setDeadline] = useState(null);
   const [enableBridging, setEnableBridging] = useState(true);
+  const enableBridgingRef = useRef(enableBridging);
 
-  const COUNTDOWN_TIME = 4;
-  const currentChain = chainId?.name
-    ?.toLowerCase()
-    .replace(" one", "")
-    .replace(" mainnet", "")
-    .trim();
+  const currentChain = getCurrentChain(chainId);
   const falseChains = availableAssetChains.filter(
     (chain) => !chainStatus[chain],
   );
   const skipBridge = availableAssetChains.length > falseChains.length;
 
   const shouldSkipBridge = () => {
-    // Skip bridging if either:
-    // 1. The switch is OFF (Single Chain mode)
-    // 2. The original skipBridge condition is true
-    return !enableBridging || skipBridge;
+    if (enableBridgingRef.current === false) {
+      return true;
+    }
+    return skipBridge;
   };
 
   const handleSwitchChain = async (chain) => {
@@ -101,26 +115,38 @@ export default function ZapInTab({
     if (account === undefined) {
       return <ConfiguredConnectButton />;
     }
+
+    const minimumTokenAmount = getMinimumTokenAmount(
+      selectedToken,
+      shouldSkipBridge(),
+      portfolioHelper,
+      tokenPricesMappingTable,
+      currentChain,
+    );
+
+    const isButtonDisabled =
+      Number(investmentAmount) === 0 ||
+      Number(investmentAmount) > tokenBalance ||
+      Number(investmentAmount) < minimumTokenAmount;
+
     return (
       <>
         <Button
           type="primary"
           className="w-full my-2"
           onClick={() => handleAAWalletAction("zapIn", shouldSkipBridge())}
-          disabled={
-            Number(investmentAmount) === 0 ||
-            Number(investmentAmount) > tokenBalance ||
-            Number(investmentAmount) <
-              getMinimumTokenAmount(selectedToken, shouldSkipBridge())
-          }
+          disabled={isButtonDisabled}
         >
-          Zap In
+          Zap In {formatMinimumAmount(minimumTokenAmount)}
         </Button>
         <Switch
           checkedChildren="Cross Chain"
           unCheckedChildren="Single Chain"
           defaultChecked={true}
-          onChange={(checked) => setEnableBridging(checked)}
+          onChange={(checked) => {
+            setEnableBridging(checked);
+            enableBridgingRef.current = checked;
+          }}
         />
       </>
     );

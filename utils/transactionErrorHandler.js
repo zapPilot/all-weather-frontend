@@ -1,5 +1,5 @@
 import axios from "axios";
-import { isLocalEnvironment } from "./environment";
+import { isLocalEnvironment } from "./general";
 
 const ERROR_MESSAGES = {
   REJECTED_TRANSACTION: "Transaction was rejected by the user",

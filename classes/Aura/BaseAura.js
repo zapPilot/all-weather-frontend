@@ -90,6 +90,7 @@ export class BaseAura extends BaseProtocol {
             rewardTokenBalance) /
           Math.pow(10, this.customParams.originalRewards[0].decimals),
         decimals: this.customParams.originalRewards[0].decimals,
+        chain: this.chain,
       };
     }
     const rewards = this.rewards();

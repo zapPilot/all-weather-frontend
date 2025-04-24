@@ -225,3 +225,8 @@ export function formatLockUpPeriod(lockUpPeriod) {
     (lockUpPeriod % 86400) / 3600,
   )} h`;
 }
+// Create a new utility file for environment-related functions
+export const isLocalEnvironment =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1");
