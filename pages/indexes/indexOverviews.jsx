@@ -204,7 +204,7 @@ export default function IndexOverviews() {
   const [tokenPricesMappingTable, setTokenPricesMappingTable] = useState({});
   const [tabKey, setTabKey] = useState("");
   const [lockUpPeriod, setLockUpPeriod] = useState(0);
-
+  const [errorMsg, setErrorMsg] = useState("");
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
   const [recipientError, setRecipientError] = useState(false);
@@ -444,13 +444,17 @@ export default function IndexOverviews() {
               });
             }
           },
-          onError: (error) => {
-            handleTransactionError(
+          onError: async (error) => {
+            const errorMessage = await handleTransactionError(
               error,
               notificationAPI,
               account?.address,
               chainId?.name,
+              setErrorMsg,
             );
+            if (errorMessage) {
+              setErrorMsg(errorMessage);
+            }
           },
         });
       }).catch((error) => {
@@ -460,12 +464,16 @@ export default function IndexOverviews() {
       });
     } catch (error) {
       // This handles errors that occur before the transaction is sent
-      handleTransactionError(
+      const errorMessage = await handleTransactionError(
         error,
         notificationAPI,
         account?.address,
         chainId?.name,
+        setErrorMsg,
       );
+      if (errorMessage) {
+        setErrorMsg(errorMessage);
+      }
     }
   };
 
@@ -873,6 +881,7 @@ export default function IndexOverviews() {
         chainStatus={chainStatus || {}}
         currentTab={tabKey}
         allChainsComplete={Object.values(chainStatus || {}).every(Boolean)}
+        errorMsg={errorMsg}
       />
       <main className={styles.bgStyle}>
         <header className="relative isolate pt-6">
