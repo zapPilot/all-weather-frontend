@@ -72,8 +72,20 @@ export const getMinimumTokenAmount = (
   // If we're in cross chain mode, we need to consider the bridge threshold for each destination chain
   let minimumZapInAmountUSD = protocolMinZapInUSD;
   if (!shouldSkipBridge) {
+    // Normalize destination chain weights
+    const totalChainWeight = Object.values(destinationChainWeights).reduce(
+      (sum, weight) => sum + weight,
+      0,
+    );
+    const normalizedDestinationChainWeights = Object.fromEntries(
+      Object.entries(destinationChainWeights).map(([chain, weight]) => [
+        chain,
+        weight / totalChainWeight,
+      ]),
+    );
+
     // Calculate the minimum amount needed for each destination chain to meet the bridge threshold
-    const bridgeMinimums = Object.entries(destinationChainWeights)
+    const bridgeMinimums = Object.entries(normalizedDestinationChainWeights)
       .map(([chain, weight]) => {
         // If weight is 0, skip this chain
         if (weight === 0) return 0;
@@ -82,6 +94,12 @@ export const getMinimumTokenAmount = (
       })
       .filter((amount) => amount > 0);
     // Take the maximum of all minimums
+    console.log(
+      "bridgeMinimums",
+      bridgeMinimums,
+      "protocolMinZapInUSD",
+      protocolMinZapInUSD,
+    );
     if (bridgeMinimums.length > 0) {
       minimumZapInAmountUSD = Math.max(protocolMinZapInUSD, ...bridgeMinimums);
     }
