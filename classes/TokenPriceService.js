@@ -9,9 +9,7 @@ class PriceService {
     dai: 1,
     frax: 0.997,
     usde: 1,
-    usdx: 0.9971,
     gho: 0.9986,
-    susd: 0.9837,
   };
 
   constructor(apiUrl) {
