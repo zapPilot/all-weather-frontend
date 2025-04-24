@@ -172,6 +172,7 @@ export class BaseEquilibria extends BaseProtocol {
           Math.pow(10, metadata.decimals),
         decimals: metadata.decimals,
         vesting: this._checkIfVesting(reward),
+        chain: this.chain,
       };
       if (
         reward.toLowerCase() ==

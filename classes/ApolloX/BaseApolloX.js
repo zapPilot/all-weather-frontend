@@ -72,6 +72,7 @@ export class BaseApolloX extends BaseProtocol {
           (tokenPricesMappingTable[token.symbol] * pendingReward) /
           Math.pow(10, token.decimals),
         decimals: token.decimals,
+        chain: this.chain,
       };
     }
     return rewardBalance;

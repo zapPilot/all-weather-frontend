@@ -91,9 +91,7 @@ export default function useTabItems(props) {
           />
         </span>
       ),
-      children: (
-        <ClaimTab {...props} sumOfPendingRewards={sumOfPendingRewards} />
-      ),
+      children: <ClaimTab {...props} pendingRewards={props.pendingRewards} />,
     },
   ];
 
