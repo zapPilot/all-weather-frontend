@@ -355,16 +355,26 @@ export default function IndexOverviews() {
                 "All Chains Complete"
               ) : (
                 <div className="flex items-center gap-2">
-                  Continue with
-                  <img
-                    src={`/chainPicturesWebp/${nextChain?.toLowerCase()}.webp`}
-                    alt={nextChain}
-                    style={{
-                      width: "20px",
-                      height: "20px",
-                      borderRadius: "50%",
-                    }}
-                  />
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-500">Completed on</span>
+                    <div className="flex items-center gap-1">
+                      <img
+                        src={`/chainPicturesWebp/${currentChain?.toLowerCase()}.webp`}
+                        alt={currentChain}
+                        className="w-5 h-5 rounded-full"
+                      />
+                      <span className="font-medium">{currentChain}</span>
+                    </div>
+                    <span className="text-gray-500">→</span>
+                    <div className="flex items-center gap-1">
+                      <img
+                        src={`/chainPicturesWebp/${nextChain?.toLowerCase()}.webp`}
+                        alt={nextChain}
+                        className="w-5 h-5 rounded-full"
+                      />
+                      <span className="font-medium">{nextChain}</span>
+                    </div>
+                  </div>
                 </div>
               );
 
