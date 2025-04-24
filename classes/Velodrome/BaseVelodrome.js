@@ -93,6 +93,7 @@ export class BaseVelodrome extends BaseProtocol {
           (tokenPricesMappingTable[reward.symbol] * rewardAmount) /
           Math.pow(10, reward.decimals),
         decimals: reward.decimals,
+        chain: this.chain,
       };
     }
     return rewardBalance;

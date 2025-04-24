@@ -203,6 +203,7 @@ export class BaseCamelot extends BaseProtocol {
     ];
 
     return allRewards.reduce((acc, [address, reward]) => {
+      reward.chain = this.chain;
       if (acc[address]) {
         // Preserve all existing fields and only update balance and usdDenominatedValue
         acc[address] = {

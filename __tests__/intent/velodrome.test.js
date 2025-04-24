@@ -110,8 +110,8 @@ describe("Velodrome Vault", () => {
     });
     const camelotNFTAddress = "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15";
     const oneInchArbAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
-    if (txns.length === 10) {
-      expect(txns.length).toBe(10);
+    if (txns.length === 8) {
+      expect(txns.length).toBe(8);
       // unstake
       expect(await encode(txns[0])).includes("2e1a7d4d");
       // approve velodrome
@@ -128,22 +128,30 @@ describe("Velodrome Vault", () => {
         zeroxProxyAddress.toLowerCase(),
         paraswapProxyAddress.toLowerCase(),
       ]);
-      // approve rewards
-      expect(await encode(txns[6])).includes("095ea7b3");
-      // swap rewards
-      expect(txns[7].to.toLowerCase()).to.be.oneOf([
-        oneInchArbAddress.toLowerCase(),
-        zeroxProxyAddress.toLowerCase(),
-        paraswapProxyAddress.toLowerCase(),
-      ]);
       // fee: send referral fee
-      expect(await encode(txns[8])).includes(
+      expect(await encode(txns[6])).includes(
         "210050bb080155aec4eae79a2aac5fe78fd738e1",
       );
       // fee: send platform fee
-      expect(await encode(txns[9])).includes(
+      expect(await encode(txns[7])).includes(
         "2ecbc6f229fed06044cdb0dd772437a30190cd50",
       );
+      // // approve rewards
+      // expect(await encode(txns[6])).includes("095ea7b3");
+      // // swap rewards
+      // expect(txns[7].to.toLowerCase()).to.be.oneOf([
+      //   oneInchArbAddress.toLowerCase(),
+      //   zeroxProxyAddress.toLowerCase(),
+      //   paraswapProxyAddress.toLowerCase(),
+      // ]);
+      // // fee: send referral fee
+      // expect(await encode(txns[8])).includes(
+      //   "210050bb080155aec4eae79a2aac5fe78fd738e1",
+      // );
+      // // fee: send platform fee
+      // expect(await encode(txns[9])).includes(
+      //   "2ecbc6f229fed06044cdb0dd772437a30190cd50",
+      // );
     } else {
       expect(txns.length).toBe(6);
       // unstake

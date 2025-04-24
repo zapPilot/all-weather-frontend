@@ -80,6 +80,7 @@ export class BaseConvex extends BaseProtocol {
           (tokenPricesMappingTable[reward.symbol] * reward_balance) /
           Math.pow(10, reward.decimals),
         decimals: reward.decimals,
+        chain: this.chain,
       };
     }
     return rewardBalance;
