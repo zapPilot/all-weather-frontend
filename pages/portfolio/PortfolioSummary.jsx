@@ -25,7 +25,7 @@ export default function PortfolioSummary({
   const chartData = getCategoryWeights(organizeByCategory, portfolioHelper);
 
   return (
-    <div className="lg:col-span-1 lg:row-span-1">
+    <div className="lg:col-start-3 lg:row-span-1 lg:row-end-1 h-full shadow-sm border border-white/50">
       <div className="shadow-sm border border-white/50 p-6 rounded-lg bg-white/5 backdrop-blur-sm">
         <h2 className="text-xl font-semibold leading-6 text-white mb-6">
           Portfolio Summary
