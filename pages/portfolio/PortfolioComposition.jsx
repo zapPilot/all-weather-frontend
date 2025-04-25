@@ -18,9 +18,16 @@ const ProtocolRow = ({ protocol, portfolioName, portfolioApr }) => (
   <tr className="">
     <td className="max-w-0 px-0 py-4">
       <div className="text-white flex items-center gap-3">
-        <TokenDisplay protocol={protocol} />
         <ProtocolInfo protocol={protocol} />
       </div>
+    </td>
+    <td className="max-w-0 px-0 py-4">
+      <div className="text-white flex items-center gap-3">
+        <TokenDisplay protocol={protocol} />
+      </div>
+    </td>
+    <td className="py-4 pl-8 pr-0 text-right tabular-nums text-white">
+      {(protocol.weight * 100).toFixed(0)}%
     </td>
     <td className="py-4 pl-8 pr-0 text-right tabular-nums text-white">
       <APRDisplay
@@ -33,46 +40,64 @@ const ProtocolRow = ({ protocol, portfolioName, portfolioApr }) => (
 );
 
 // Token display component
-const TokenDisplay = ({ protocol }) => (
-  <div className="relative flex items-center gap-1">
-    <div className="relative flex items-center">
-      {protocol.interface.symbolList.map((symbol, idx) => {
-        const uniqueTokenKey = `${protocol.interface.uniqueId()}-${protocol.interface.symbolList.join(
-          "",
-        )}-${symbol}-${idx}`;
-        return (
-          <ImageWithFallback
-            key={uniqueTokenKey}
-            className="me-1 rounded-full"
-            domKey={uniqueTokenKey}
-            token={symbol.replace("(bridged)", "")}
-            height={25}
-            width={25}
-          />
-        );
-      })}
+const TokenDisplay = ({ protocol }) => {
+  return (
+    <div className="flex flex-col gap-1 max-w-[200px]">
+      <div className="relative flex items-center">
+        {protocol.interface.symbolList.map((symbol, idx) => {
+          const uniqueTokenKey = `${protocol.interface.uniqueId()}-${protocol.interface.symbolList.join(
+            "",
+          )}-${symbol}-${idx}`;
+          return (
+            <ImageWithFallback
+              key={uniqueTokenKey}
+              className="me-1 rounded-full"
+              domKey={uniqueTokenKey}
+              token={symbol.replace("(bridged)", "")}
+              height={20}
+              width={20}
+            />
+          );
+        })}
+      </div>
+      <p className="font-medium truncate text-xs text-gray-400 text-left">
+        {protocol.interface.symbolList.join("-")}
+      </p>
     </div>
-    <div className="absolute -bottom-3 -right-3 sm:-bottom-1 sm:-right-1">
-      <Image
-        src={`/projectPictures/${protocol.interface.protocolName}.webp`}
-        alt={protocol.interface.protocolName}
-        height={20}
-        width={20}
-        className="rounded-full"
-      />
-    </div>
-  </div>
-);
+  );
+};
 
 // Protocol info component
 const ProtocolInfo = ({ protocol }) => (
-  <div className="ms-2 truncate">
-    <p className="font-semibold truncate ...">
-      {protocol.interface.symbolList.join("-")}
-    </p>
-    <p className="text-gray-500 truncate ...">
-      {protocol.interface.protocolName}-{(protocol.weight * 100).toFixed(0)}%
-    </p>
+  <div className="ms-2 truncate relative">
+    <div className="flex items-center gap-4">
+      <div className="relative inline-flex items-center">
+        <Image
+          src={`/projectPictures/${protocol.interface.protocolName}.webp`}
+          alt={protocol.interface.protocolName}
+          height={35}
+          width={35}
+          className="rounded-full"
+        />
+        <div className="absolute -bottom-1 -right-1">
+          <Image
+            src={`/chainPicturesWebp/${protocol.interface.chain}.webp`}
+            alt={protocol.interface.chain}
+            height={20}
+            width={20}
+            className="rounded-full"
+          />
+        </div>
+      </div>
+      <div className="flex flex-col">
+        <span className="text-base font-medium text-white">
+          {protocol.interface.protocolName}
+        </span>
+        <span className="text-sm text-gray-500">
+          {protocol.interface.chain}
+        </span>
+      </div>
+    </div>
   </div>
 );
 
@@ -83,7 +108,6 @@ const APRDisplay = ({ apr }) => (
 
 // Category table component
 const CategoryTable = ({
-  category,
   protocolArray,
   portfolioName,
   portfolioApr,
@@ -93,7 +117,17 @@ const CategoryTable = ({
     <thead className="border-b border-gray-200">
       <tr>
         <th scope="col" className="py-3 font-medium text-gray-400">
-          <span>{categoryMapping[category]}</span>
+          <span>Protocol</span>
+        </th>
+        <th scope="col" className="py-3 font-medium text-gray-400">
+          <span>Tokens</span>
+        </th>
+        <th
+          scope="col"
+          width={50}
+          className="py-3 text-right font-medium text-gray-400"
+        >
+          <span>Weight</span>
         </th>
         <th
           scope="col"
@@ -133,13 +167,15 @@ const sortProtocols = (a, b, portfolioName, portfolioApr) => {
   if (a.weight === 0 && b.weight !== 0) return 1;
   if (a.weight !== 0 && b.weight === 0) return -1;
 
+  // First sort by weight
+  if (a.weight !== b.weight) return b.weight - a.weight;
+
+  // If weights are equal, then sort by APR
   const aprA =
     portfolioApr?.[portfolioName]?.[a.interface.uniqueId()]?.apr || 0;
   const aprB =
     portfolioApr?.[portfolioName]?.[b.interface.uniqueId()]?.apr || 0;
-  if (aprA !== aprB) return aprB - aprA;
-
-  return b.weight - a.weight;
+  return aprB - aprA;
 };
 
 export default function PortfolioComposition({
@@ -151,106 +187,94 @@ export default function PortfolioComposition({
   lockUpPeriod,
   yieldContent,
 }) {
-  // Add this helper function to organize protocols by chain and category
-  const organizeByChain = () => {
-    const chainMap = new Map();
+  // Add this helper function to organize protocols by category
+  const organizeByCategory = () => {
+    const categoryMap = new Map();
 
     Object.entries(portfolioHelper.strategy).forEach(
       ([category, protocols]) => {
         Object.entries(protocols).forEach(([chain, protocolArray]) => {
-          if (!chainMap.has(chain)) {
-            chainMap.set(chain, new Map());
+          if (!categoryMap.has(category)) {
+            categoryMap.set(category, new Map());
           }
-          chainMap.get(chain).set(category, protocolArray);
+          categoryMap.get(category).set(chain, protocolArray);
         });
       },
     );
 
-    return chainMap;
+    return categoryMap;
   };
   return (
     <div className="lg:col-span-2 lg:row-span-1">
-      <div className="shadow-sm border border-white/50 p-6">
-        <h2 className="text-base font-semibold leading-6 text-white">
+      <div className="shadow-sm border border-white/50 p-6 rounded-lg bg-white/5 backdrop-blur-sm">
+        <h2 className="text-xl font-semibold leading-6 text-white mb-6">
           {portfolioName} Constituents
         </h2>
         {portfolioHelper &&
-          Array.from(organizeByChain()).map(([chain, categoryMap]) => {
-            const hasActiveProtocolsInChain = Array.from(categoryMap).some(
-              ([_, protocolArray]) =>
-                protocolArray.some((protocol) => protocol.weight > 0),
-            );
+          Array.from(organizeByCategory()).map(
+            ([category, chainProtocolMap]) => {
+              const allProtocols = Array.from(chainProtocolMap.values()).flat();
 
-            if (!hasActiveProtocolsInChain) return null;
+              const hasActiveProtocols = allProtocols.some(
+                (protocol) => protocol.weight > 0,
+              );
 
-            return (
-              <div key={chain} className="mt-6 first:mt-0">
-                <div className="flex items-center space-x-2">
-                  <span className="text-white font-semibold">Protocols on</span>
-                  <Image
-                    src={`/chainPicturesWebp/${chain}.webp`}
-                    alt={chain}
-                    height={25}
-                    width={25}
-                    className="rounded-full"
-                  />
-                </div>
-                {Array.from(categoryMap).map(([category, protocolArray]) => {
-                  const hasActiveProtocols = protocolArray.some(
-                    (protocol) => protocol.weight > 0,
-                  );
-                  if (!hasActiveProtocols) return null;
+              if (!hasActiveProtocols) return null;
 
-                  return (
-                    <div key={`${chain}-${category}`} className="mt-4">
-                      <CategoryTable
-                        category={category}
-                        protocolArray={protocolArray}
-                        portfolioName={portfolioName}
-                        portfolioApr={portfolioApr}
-                        yieldContent={yieldContent}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
+              return (
+                <>
+                  <div className="mt-8 first:mt-0 mb-4">
+                    <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">
+                      {categoryMapping[category]}
+                    </h3>
+                  </div>
+                  <div className="mt-2">
+                    <CategoryTable
+                      protocolArray={allProtocols}
+                      portfolioName={portfolioName}
+                      portfolioApr={portfolioApr}
+                      yieldContent={yieldContent}
+                    />
+                  </div>
+                </>
+              );
+            },
+          )}
 
-        <tfoot>
-          <tr className="border-t border-gray-200">
-            <th scope="row" className="pt-6 font-semibold text-white">
-              Avg. APR
-            </th>
-            <td className="pt-6 font-semibold text-right text-green-500">
-              {loading ? (
+        <div className="mt-8 pt-4 border-t border-white/10">
+          <div className="flex justify-between items-center">
+            <div>
+              <span className="text-gray-400" role="lockUpPeriod">
+                Lock-up Period
+              </span>{" "}
+              {usdBalanceLoading === true ? (
                 <Spin />
-              ) : (
-                `${(
-                  (portfolioApr?.[portfolioName]?.portfolioAPR || 0) * 100
-                ).toFixed(2)}%`
-              )}
-            </td>
-          </tr>
-        </tfoot>
-        <div>
-          <span className="text-gray-500" role="lockUpPeriod">
-            Lock-up Period
-          </span>{" "}
-          {usdBalanceLoading === true ? (
-            <Spin />
-          ) : typeof lockUpPeriod === "number" ? (
-            lockUpPeriod === 0 ? (
-              <span className="text-green-500">Unlocked</span>
-            ) : (
-              <span className="text-red-500">
-                {Math.floor(lockUpPeriod / 86400)} d{" "}
-                {Math.ceil((lockUpPeriod % 86400) / 3600)
-                  ? Math.ceil((lockUpPeriod % 86400) / 3600) + "h"
-                  : null}
+              ) : typeof lockUpPeriod === "number" ? (
+                lockUpPeriod === 0 ? (
+                  <span className="text-green-500 ml-2">Unlocked</span>
+                ) : (
+                  <span className="text-red-500 ml-2">
+                    {Math.floor(lockUpPeriod / 86400)} d{" "}
+                    {Math.ceil((lockUpPeriod % 86400) / 3600)
+                      ? Math.ceil((lockUpPeriod % 86400) / 3600) + "h"
+                      : null}
+                  </span>
+                )
+              ) : null}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-gray-400">Avg. APR</span>
+              <span className="text-lg font-semibold text-green-500">
+                {loading ? (
+                  <Spin />
+                ) : (
+                  `${(
+                    (portfolioApr?.[portfolioName]?.portfolioAPR || 0) * 100
+                  ).toFixed(2)}%`
+                )}
               </span>
-            )
-          ) : null}
+            </div>
+          </div>
         </div>
       </div>
     </div>
