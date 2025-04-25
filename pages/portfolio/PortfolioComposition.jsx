@@ -3,6 +3,8 @@ import { Spin, Popover } from "antd";
 import Image from "next/image";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 export const categoryMapping = {
+  eth: "ETH",
+  btc: "BTC",
   long_term_bond: "ETH",
   intermediate_term_bond: "Zero Coupon Bonds",
   commodities: "Non-Financial Applications",
@@ -211,8 +213,17 @@ export default function PortfolioComposition({
           {portfolioName} Constituents
         </h2>
         {portfolioHelper &&
-          Array.from(organizeByCategory(portfolioHelper)).map(
-            ([category, chainProtocolMap]) => {
+          Array.from(organizeByCategory(portfolioHelper))
+            .map(([category, chainProtocolMap]) => {
+              const allProtocols = Array.from(chainProtocolMap.values()).flat();
+              const totalWeight = allProtocols.reduce(
+                (sum, protocol) => sum + protocol.weight,
+                0,
+              );
+              return { category, chainProtocolMap, totalWeight };
+            })
+            .sort((a, b) => b.totalWeight - a.totalWeight)
+            .map(({ category, chainProtocolMap }) => {
               const allProtocols = Array.from(chainProtocolMap.values()).flat();
 
               const hasActiveProtocols = allProtocols.some(
@@ -220,12 +231,20 @@ export default function PortfolioComposition({
               );
 
               if (!hasActiveProtocols) return null;
-
               return (
                 <>
                   <div className="mt-8 first:mt-0 mb-4">
-                    <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">
-                      {categoryMapping[category]}
+                    <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2 flex items-center">
+                      <Image
+                        src={`/tokenPictures/${categoryMapping[category]}.webp`}
+                        alt={categoryMapping[category]}
+                        height={24}
+                        width={24}
+                        className="mr-2"
+                      />
+                      <span className="text-gray-400">
+                        {categoryMapping[category]}
+                      </span>
                     </h3>
                   </div>
                   <div className="mt-2">
@@ -238,8 +257,7 @@ export default function PortfolioComposition({
                   </div>
                 </>
               );
-            },
-          )}
+            })}
 
         <div className="mt-8 pt-4 border-t border-white/10">
           <div className="flex justify-between items-center">

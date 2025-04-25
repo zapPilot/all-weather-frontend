@@ -1055,7 +1055,17 @@ export default function IndexOverviews() {
               ⛽<span className="text-emerald-400">Free</span>
             </div>
           </div>
-          <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
+          <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-2 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
+            <PortfolioComposition
+              portfolioName={portfolioName}
+              portfolioHelper={portfolioHelper}
+              portfolioApr={portfolioApr}
+              loading={loading}
+              usdBalanceLoading={usdBalanceLoading}
+              lockUpPeriod={lockUpPeriod}
+              yieldContent={yieldContent}
+            />
+
             <PortfolioSummary
               usdBalanceLoading={usdBalanceLoading}
               tokenPricesMappingTable={tokenPricesMappingTable}
@@ -1065,16 +1075,6 @@ export default function IndexOverviews() {
               onRefresh={handleRefresh}
               rebalancableUsdBalanceDict={rebalancableUsdBalanceDict}
               portfolioHelper={portfolioHelper}
-            />
-
-            <PortfolioComposition
-              portfolioName={portfolioName}
-              portfolioHelper={portfolioHelper}
-              portfolioApr={portfolioApr}
-              loading={loading}
-              usdBalanceLoading={usdBalanceLoading}
-              lockUpPeriod={lockUpPeriod}
-              yieldContent={yieldContent}
             />
 
             <HistoricalData portfolioName={portfolioName} />
