@@ -13,6 +13,7 @@ export class GmPool extends BaseProtocol {
     this.protocolVersion = "0";
     this.assetDecimals = customParams.assetDecimals;
     this.assetAddress = customParams.assetAddress;
+    this.SYNTHETICS_ROUTER = "0x7452c558d45f8afc8c83dae62c3f8a5be19c71f6"
 
     if (!customParams.assetAddress) {
       throw new Error("Asset address is required");
@@ -39,10 +40,25 @@ export class GmPool extends BaseProtocol {
       GmPoolAbi,
       PROVIDER(this.chain),
     );
-
-    this.symbolOfBestTokenToZapInOut = customParams.symbolOfBestTokenToZapInOut;
+    this.symbolOfBestTokenToZapOut = customParams.symbolOfBestTokenToZapOut;
     this.zapInOutTokenAddress = customParams.zapInOutTokenAddress;
+    this.zapInOutTokenDecimals = customParams.zapInOutTokenDecimals;
     this._checkIfParamsAreSet();
+    this._initGmxSdk();
+  }
+
+  async _initGmxSdk() {
+    const { GmxSdk } = await import("@gmx-io/sdk");
+    const sdk = new GmxSdk({
+      chainId: 42161,
+      oracleUrl: "https://arbitrum-api.gmxinfra.io",
+      rpcUrl: "https://arb1.arbitrum.io/rpc",
+      subgraph: {
+        subsquid:
+          "https://gmx.squids.live/gmx-synthetics-arbitrum:live/api/graphql",
+      },
+    });
+    return sdk;
   }
 
   rewards() {
@@ -56,34 +72,73 @@ export class GmPool extends BaseProtocol {
   async customDeposit(
     owner,
     inputToken,
-    bestTokenAddressToZapIn,
+    zapInOutTokenAddress,
     amountToZapIn,
-    bestTokenToZapInDecimal,
+    zapInOutTokenDecimals,
     tokenPricesMappingTable,
     slippage,
     updateProgress,
   ) {
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-deposit`,
-      0,
-    );
+    try {
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-deposit`,
+        0,
+      );
+      console.log("amountToZapIn", amountToZapIn);
+      const approveTxn = approve(
+        zapInOutTokenAddress,
+        this.SYNTHETICS_ROUTER,
+        amountToZapIn,
+        updateProgress,
+        this.chainId,
+      );
 
-    const approveTxn = approve(
-      bestTokenAddressToZapIn,
-      this.protocolContract.address,
-      amountToZapIn,
-      updateProgress,
-      this.chainId,
-    );
+      const executionFee = await this.getExecutionFee();
+      const gmTokenPrice = await this.getGmTokenPrice();
+      const usdAmount = amountToZapIn / 1000;
+      const expectedGmTokens = usdAmount / gmTokenPrice;
+      const minMarketTokensInWei = ethers.utils.parseUnits(
+        expectedGmTokens.toString(),
+        18
+      );
 
-    const depositTxn = prepareContractCall({
-      contract: this.protocolContract,
-      method: "multicall",
-      params: [amountToZapIn],
-    });
+      console.log("minMarketTokensInWei", minMarketTokensInWei);
+      const depositParams = {
+        receiver: owner,
+        callbackContract: "0x0000000000000000000000000000000000000000",
+        uiFeeReceiver: "0xff00000000000000000000000000000000000001",
+        market: this.assetAddress,
+        initialLongToken: zapInOutTokenAddress,
+        initialShortToken: zapInOutTokenAddress,
+        longTokenSwapPath: [],
+        shortTokenSwapPath: [],
+        minMarketTokens: minMarketTokensInWei.toString(),
+        shouldUnwrapNativeToken: false,
+        executionFee: executionFee.toString(),
+        callbackGasLimit: "0"
+      };
 
-    return [approveTxn, depositTxn];
+      const depositTxn = prepareContractCall({
+        contract: this.protocolContract,
+        method: "createDeposit",
+        params: [depositParams],
+        value: executionFee
+      });
+
+      return [approveTxn, depositTxn];
+    } catch (error) {
+      console.error("Error in customDeposit:", error);
+      if (error.message.includes("Paymaster error")) {
+        console.error("Paymaster error details:", {
+          contract: this.protocolContract.address,
+          method: "createDeposit",
+          params: depositParams,
+          value: executionFee
+        });
+      }
+      throw error;
+    }
   }
 
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
@@ -99,7 +154,7 @@ export class GmPool extends BaseProtocol {
       );
       const userBalance = await gmTokenContractInstance.balanceOf(owner);
       const balanceFormatted = ethers.utils.formatUnits(userBalance, this.assetDecimals);
-      const tokenPrice = await this.getGmTokenPrice();
+      const tokenPrice = this.assetUsdPrice();
       const totalValue = Number(balanceFormatted) * tokenPrice;
       return totalValue;
     } catch (error) {
@@ -113,16 +168,7 @@ export class GmPool extends BaseProtocol {
   }
 
   async getGmTokenPrice() {
-    const { GmxSdk } = await import("@gmx-io/sdk");
-    const sdk = new GmxSdk({
-      chainId: 42161,
-      oracleUrl: "https://arbitrum-api.gmxinfra.io",
-      rpcUrl: "https://arb1.arbitrum.io/rpc",
-      subgraph: {
-        subsquid:
-          "https://gmx.squids.live/gmx-synthetics-arbitrum:live/api/graphql",
-      },
-    });
+    const sdk = await this._initGmxSdk();
     const gmTokenContractInstance = new ethers.Contract(
       this.assetContract.address,
       GmTokenAbi,
@@ -133,8 +179,17 @@ export class GmPool extends BaseProtocol {
     if (!marketInfo) return 0;
     const totalSupply = await gmTokenContractInstance.totalSupply();
     const price = Number(ethers.utils.formatUnits(marketInfo.poolValueMax, 30)) / Number(ethers.utils.formatUnits(totalSupply, this.assetDecimals));
-    console.log(price);
     return price;
+  }
+
+  async getExecutionFee() {
+    const sdk = await this._initGmxSdk();
+    const gasPrice = await sdk.utils.getGasPrice();
+    const gasLimits = await sdk.utils.getGasLimits();
+    const baseGasFee = gasLimits.depositToken;
+    const baseExecutionFee = baseGasFee * gasPrice;
+    const executionFeeWithBuffer = baseExecutionFee * 130n / 100n;
+    return executionFeeWithBuffer;
   }
 
   async stakeBalanceOf(owner) {
@@ -142,14 +197,14 @@ export class GmPool extends BaseProtocol {
   }
 
   _getTheBestTokenAddressToZapIn(inputToken, tokenAddress, InputTokenDecimals) {
-    return [inputToken, this.zapInOutTokenAddress, this.zapInOutTokenDecimals];
+    return [this.symbolOfBestTokenToZapOut, this.zapInOutTokenAddress, this.zapInOutTokenDecimals];
   }
 
   _getTheBestTokenAddressToZapOut() {
     return [
-      this.symbolOfBestTokenToZapInOut,
+      this.symbolOfBestTokenToZapOut,
       this.zapInOutTokenAddress,
-      this.assetDecimals,
+      this.zapInOutTokenDecimals,
     ];
   }
 
