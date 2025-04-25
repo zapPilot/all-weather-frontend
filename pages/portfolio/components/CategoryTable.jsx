@@ -1,6 +1,10 @@
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { Popover, Table } from "antd";
-import { TokenDisplay, ProtocolInfo, APRDisplay } from "./PortfolioComponents";
+import {
+  TokenDisplay,
+  ProtocolInfo,
+  APRDisplay,
+} from "../../../components/portfolio/PortfolioComponents";
 
 const CategoryTable = ({
   protocolArray,
@@ -65,7 +69,7 @@ const CategoryTable = ({
         return aprA - aprB;
       },
       render: (protocol) => (
-        <span className="tabular-nums text-white">
+        <span className="tabular-nums text-white" data-testid="apr">
           <APRDisplay
             apr={
               portfolioApr?.[portfolioName]?.[protocol.interface.uniqueId()]
@@ -78,8 +82,8 @@ const CategoryTable = ({
   ];
 
   const dataSource = protocolArray
-    .filter((protocol) => protocol.weight > 0)
-    .map((protocol, index) => ({
+    ?.filter((protocol) => protocol.weight > 0)
+    ?.map((protocol, index) => ({
       key: index,
       protocol,
     }))

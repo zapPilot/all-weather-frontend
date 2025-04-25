@@ -1,6 +1,6 @@
 import { Spin } from "antd";
 import Image from "next/image";
-import ImageWithFallback from "../../basicComponents/ImageWithFallback";
+import ImageWithFallback from "../../pages/basicComponents/ImageWithFallback";
 
 export const TokenDisplay = ({ protocol }) => {
   return (
