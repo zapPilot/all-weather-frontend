@@ -1055,17 +1055,7 @@ export default function IndexOverviews() {
               ⛽<span className="text-emerald-400">Free</span>
             </div>
           </div>
-          <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
-            <PortfolioSummary
-              usdBalanceLoading={usdBalanceLoading}
-              tokenPricesMappingTable={tokenPricesMappingTable}
-              usdBalance={usdBalance}
-              account={account}
-              principalBalance={principalBalance}
-              onRefresh={handleRefresh}
-              rebalancableUsdBalanceDict={rebalancableUsdBalanceDict}
-            />
-
+          <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-2 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
             <PortfolioComposition
               portfolioName={portfolioName}
               portfolioHelper={portfolioHelper}
@@ -1074,6 +1064,17 @@ export default function IndexOverviews() {
               usdBalanceLoading={usdBalanceLoading}
               lockUpPeriod={lockUpPeriod}
               yieldContent={yieldContent}
+            />
+
+            <PortfolioSummary
+              usdBalanceLoading={usdBalanceLoading}
+              tokenPricesMappingTable={tokenPricesMappingTable}
+              usdBalance={usdBalance}
+              account={account}
+              principalBalance={principalBalance}
+              onRefresh={handleRefresh}
+              rebalancableUsdBalanceDict={rebalancableUsdBalanceDict}
+              portfolioHelper={portfolioHelper}
             />
 
             <HistoricalData portfolioName={portfolioName} />

@@ -33,7 +33,7 @@ describe("ExampleUI Component", () => {
     waitFor(() => {
       // Wait for the portfolio_apr element to be displayed
       const aprElement = screen.findByTestId("apr");
-      expect(aprElement).toBeInTheDocument;
+      expect(aprElement).toBeInTheDocument();
     });
 
     waitFor(
