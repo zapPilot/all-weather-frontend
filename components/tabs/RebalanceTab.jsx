@@ -91,15 +91,15 @@ export default function RebalanceTab({
                       onClick={async () => {
                         handleAAWalletAction(data.actionName, true);
                         // Only increment step if there are more actions
-                        await sleep(3000);
-                        if (
-                          currentStep <
-                          rebalancableUsdBalanceDict.metadata
-                            .rebalanceActionsByChain.length -
-                            1
-                        ) {
-                          setCurrentStep(currentStep + 1);
-                        }
+                        // await sleep(3000);
+                        // if (
+                        //   currentStep <
+                        //   rebalancableUsdBalanceDict.metadata
+                        //     .rebalanceActionsByChain.length -
+                        //     1
+                        // ) {
+                        //   setCurrentStep(currentStep + 1);
+                        // }
                       }}
                       loading={usdBalanceLoading}
                       disabled={

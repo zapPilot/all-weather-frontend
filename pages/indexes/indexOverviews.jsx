@@ -1064,6 +1064,7 @@ export default function IndexOverviews() {
               principalBalance={principalBalance}
               onRefresh={handleRefresh}
               rebalancableUsdBalanceDict={rebalancableUsdBalanceDict}
+              portfolioHelper={portfolioHelper}
             />
 
             <PortfolioComposition

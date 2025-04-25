@@ -1,5 +1,4 @@
 import {
-  CurrencyDollarIcon,
   ChartBarIcon,
   ArrowPathIcon,
   InformationCircleIcon,
@@ -8,6 +7,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { Popover, Spin } from "antd";
 import EmailSubscription from "../emailsubscription";
+import CategoryPieChart, {
+  getCategoryWeights,
+} from "../../components/charts/CategoryPieChart";
+import { organizeByCategory } from "./PortfolioComposition";
+
 export default function PortfolioSummary({
   usdBalanceLoading,
   tokenPricesMappingTable,
@@ -16,10 +20,17 @@ export default function PortfolioSummary({
   principalBalance,
   onRefresh,
   rebalancableUsdBalanceDict,
+  portfolioHelper,
 }) {
+  const chartData = getCategoryWeights(organizeByCategory, portfolioHelper);
+
   return (
-    <div className="lg:col-start-3 lg:row-span-1 lg:row-end-1 h-full shadow-sm border border-white/50">
-      <div className="p-6">
+    <div className="lg:col-span-1 lg:row-span-1">
+      <div className="shadow-sm border border-white/50 p-6 rounded-lg bg-white/5 backdrop-blur-sm">
+        <h2 className="text-xl font-semibold leading-6 text-white mb-6">
+          Portfolio Summary
+        </h2>
+
         <dl className="flex flex-wrap">
           <div className="flex-auto">
             <dt className="text-sm font-semibold leading-6 text-white">
@@ -120,6 +131,18 @@ export default function PortfolioSummary({
             </dd>
           </div>
         </dl>
+
+        <div className="mt-8 pt-4 border-t border-white/10">
+          <div className="min-h-[200px]">
+            {chartData && chartData.length > 0 ? (
+              <CategoryPieChart data={chartData} />
+            ) : (
+              <div className="flex items-center justify-center h-[200px] text-gray-400">
+                No data available
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

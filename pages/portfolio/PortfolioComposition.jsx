@@ -2,7 +2,7 @@ import { InfoCircleOutlined } from "@ant-design/icons";
 import { Spin, Popover } from "antd";
 import Image from "next/image";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
-const categoryMapping = {
+export const categoryMapping = {
   long_term_bond: "ETH",
   intermediate_term_bond: "Zero Coupon Bonds",
   commodities: "Non-Financial Applications",
@@ -12,32 +12,6 @@ const categoryMapping = {
   non_us_developed_market_stocks: "Non-EVM Large-Cap Tokens",
   non_us_emerging_market_stocks: "Non-EVM Small-Cap Tokens",
 };
-
-// Separate protocol row component
-const ProtocolRow = ({ protocol, portfolioName, portfolioApr }) => (
-  <tr className="">
-    <td className="max-w-0 px-0 py-4">
-      <div className="text-white flex items-center gap-3">
-        <ProtocolInfo protocol={protocol} />
-      </div>
-    </td>
-    <td className="max-w-0 px-0 py-4">
-      <div className="text-white flex items-center gap-3">
-        <TokenDisplay protocol={protocol} />
-      </div>
-    </td>
-    <td className="py-4 pl-8 pr-0 text-right tabular-nums text-white">
-      {(protocol.weight * 100).toFixed(0)}%
-    </td>
-    <td className="py-4 pl-8 pr-0 text-right tabular-nums text-white">
-      <APRDisplay
-        apr={
-          portfolioApr?.[portfolioName]?.[protocol.interface.uniqueId()]?.apr
-        }
-      />
-    </td>
-  </tr>
-);
 
 // Token display component
 const TokenDisplay = ({ protocol }) => {
@@ -178,6 +152,49 @@ const sortProtocols = (a, b, portfolioName, portfolioApr) => {
   return aprB - aprA;
 };
 
+// Separate protocol row component
+const ProtocolRow = ({ protocol, portfolioName, portfolioApr }) => (
+  <tr className="">
+    <td className="max-w-0 px-0 py-4">
+      <div className="text-white flex items-center gap-3">
+        <ProtocolInfo protocol={protocol} />
+      </div>
+    </td>
+    <td className="max-w-0 px-0 py-4">
+      <div className="text-white flex items-center gap-3">
+        <TokenDisplay protocol={protocol} />
+      </div>
+    </td>
+    <td className="py-4 pl-8 pr-0 text-right tabular-nums text-white">
+      {(protocol.weight * 100).toFixed(0)}%
+    </td>
+    <td className="py-4 pl-8 pr-0 text-right tabular-nums text-white">
+      <APRDisplay
+        apr={
+          portfolioApr?.[portfolioName]?.[protocol.interface.uniqueId()]?.apr
+        }
+      />
+    </td>
+  </tr>
+);
+export // Add this helper function to organize protocols by category
+const organizeByCategory = (portfolioHelper) => {
+  const categoryMap = new Map();
+
+  Object.entries(portfolioHelper?.strategy || {}).forEach(
+    ([category, protocols]) => {
+      Object.entries(protocols).forEach(([chain, protocolArray]) => {
+        if (!categoryMap.has(category)) {
+          categoryMap.set(category, new Map());
+        }
+        categoryMap.get(category).set(chain, protocolArray);
+      });
+    },
+  );
+
+  return categoryMap;
+};
+
 export default function PortfolioComposition({
   portfolioName,
   portfolioHelper,
@@ -187,23 +204,6 @@ export default function PortfolioComposition({
   lockUpPeriod,
   yieldContent,
 }) {
-  // Add this helper function to organize protocols by category
-  const organizeByCategory = () => {
-    const categoryMap = new Map();
-
-    Object.entries(portfolioHelper.strategy).forEach(
-      ([category, protocols]) => {
-        Object.entries(protocols).forEach(([chain, protocolArray]) => {
-          if (!categoryMap.has(category)) {
-            categoryMap.set(category, new Map());
-          }
-          categoryMap.get(category).set(chain, protocolArray);
-        });
-      },
-    );
-
-    return categoryMap;
-  };
   return (
     <div className="lg:col-span-2 lg:row-span-1">
       <div className="shadow-sm border border-white/50 p-6 rounded-lg bg-white/5 backdrop-blur-sm">
@@ -211,7 +211,7 @@ export default function PortfolioComposition({
           {portfolioName} Constituents
         </h2>
         {portfolioHelper &&
-          Array.from(organizeByCategory()).map(
+          Array.from(organizeByCategory(portfolioHelper)).map(
             ([category, chainProtocolMap]) => {
               const allProtocols = Array.from(chainProtocolMap.values()).flat();
 
