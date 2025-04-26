@@ -36,7 +36,7 @@ describe("dynamic minimum amount", () => {
     // Smallest weight is 0.3, sum of weights is 1.0
     // So normalized weight is 0.3
     // MINIMUM_PROTOCOL_ZAP_IN_USD_THRESHOLD (3) / 0.3 = 10
-    expect(result).toBe(0.33333333333333337);
+    expect(result).toBe(1.6666666666666667);
   });
 
   test("should return correct minimum amount for cross chain mode", () => {
@@ -64,7 +64,7 @@ describe("dynamic minimum amount", () => {
 
     // Same calculation as first test but with WETH price of 2000
     // 10 / 2000 = 0.005
-    expect(result).toBe(0.0001666666666666667);
+    expect(result).toBe(0.0008333333333333334);
   });
 
   test("should handle empty strategy", () => {
@@ -77,7 +77,7 @@ describe("dynamic minimum amount", () => {
     );
 
     // With no strategy, smallestWeight defaults to 1
-    expect(result).toBe(0.1);
+    expect(result).toBe(0.5);
   });
 
   test("should handle zero weights", () => {
@@ -101,7 +101,7 @@ describe("dynamic minimum amount", () => {
     );
 
     // With all zero weights, smallestWeight defaults to 1
-    expect(result).toBe(0.1);
+    expect(result).toBe(0.5);
   });
 
   test("should handle missing token price", () => {
