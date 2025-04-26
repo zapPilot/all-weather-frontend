@@ -31,7 +31,7 @@ class SquidBridge extends BaseBridge {
 
   async getRoute(params) {
     await this.throttleRequest();
-    const { route } = await this.sdk.getRoute(params);  
+    const { route } = await this.sdk.getRoute(params);
     return route;
   }
 
@@ -110,12 +110,15 @@ class SquidBridge extends BaseBridge {
           quoteOnly: false,
         };
 
-        const  route  = await this.getRoute(routeParams);
+        const route = await this.getRoute(routeParams);
 
         let feeInUSD = 0;
         if (route.estimate?.feeCosts?.length > 0) {
           feeInUSD = route.estimate?.feeCosts?.[0]?.amountUsd;
-          updateProgress(`bridge-${fromChainId}-${toChainId}`, -Number(feeInUSD));
+          updateProgress(
+            `bridge-${fromChainId}-${toChainId}`,
+            -Number(feeInUSD),
+          );
         }
 
         const bridgeTxn = {
