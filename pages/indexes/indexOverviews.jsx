@@ -3,7 +3,6 @@
 import BasePage from "../basePage.tsx";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { ethers5Adapter } from "thirdweb/adapters/ethers5";
-import Image from "next/image";
 import Link from "next/link";
 import { Signer } from "ethers";
 import { useDispatch, useSelector } from "react-redux";
@@ -71,56 +70,12 @@ import {
   checkGasPrice,
   prepareTransactionMetadata,
 } from "../../utils/transactionHelpers.js";
+import ChainDropdown from "../../components/ChainDropdown";
 
 // Extract chain switching logic
-const useChainSwitching = (chainId, switchChain) => {
+const useChainSwitching = (switchChain) => {
   const isProcessingChainChangeRef = useRef(false);
   const hasProcessedChainChangeRef = useRef(false);
-
-  const switchItems = [
-    {
-      key: "1",
-      label: (
-        <Button type="link" onClick={() => switchChain(arbitrum)}>
-          <Image
-            src={`/chainPicturesWebp/arbitrum.webp`}
-            alt="arbitrum"
-            height={22}
-            width={22}
-            className="rounded-full"
-          />
-        </Button>
-      ),
-    },
-    {
-      key: "2",
-      label: (
-        <Button type="link" onClick={() => switchChain(base)}>
-          <Image
-            src={`/chainPicturesWebp/base.webp`}
-            alt="base"
-            height={22}
-            width={22}
-            className="rounded-full"
-          />
-        </Button>
-      ),
-    },
-    {
-      key: "3",
-      label: (
-        <Button type="link" onClick={() => switchChain(optimism)}>
-          <Image
-            src={`/chainPicturesWebp/optimism.webp`}
-            alt="optimism"
-            height={22}
-            width={22}
-            className="rounded-full"
-          />
-        </Button>
-      ),
-    },
-  ];
 
   // Chain mapping for switching
   const chainMap = {
@@ -139,7 +94,6 @@ const useChainSwitching = (chainId, switchChain) => {
   };
 
   return {
-    switchItems,
     switchNextStepChain,
     isProcessingChainChangeRef,
     hasProcessedChainChangeRef,
@@ -156,11 +110,10 @@ export default function IndexOverviews() {
 
   // Use the extracted chain switching logic
   const {
-    switchItems,
     switchNextStepChain,
     isProcessingChainChangeRef,
     hasProcessedChainChangeRef,
-  } = useChainSwitching(chainId, switchChain);
+  } = useChainSwitching(switchChain);
 
   const [selectedToken, setSelectedToken] = useState(null);
   const [previousTokenSymbol, setPreviousTokenSymbol] = useState(null);
@@ -853,7 +806,7 @@ export default function IndexOverviews() {
     portfolioName,
   });
   return (
-    <BasePage>
+    <BasePage chainId={chainId} switchChain={switchChain}>
       {notificationContextHolder}
       <PopUpModal
         account={account}
@@ -1001,33 +954,6 @@ export default function IndexOverviews() {
                   <a className="text-black" onClick={(e) => e.preventDefault()}>
                     <SettingOutlined />
                   </a>
-                </Dropdown>
-              </div>
-              <div>
-                <Dropdown
-                  menu={{
-                    items: switchItems,
-                  }}
-                  trigger="click"
-                >
-                  <Button onClick={(e) => e.preventDefault()}>
-                    <Space>
-                      <Image
-                        src={
-                          chainId?.name
-                            ? `/chainPicturesWebp/${normalizeChainName(
-                                chainId?.name,
-                              )}.webp`
-                            : "/chainPicturesWebp/arbitrum.webp"
-                        }
-                        alt={chainId ? chainId.name : "arbitrum"}
-                        height={22}
-                        width={22}
-                        className="rounded-full ms-1"
-                      />
-                      <DownOutlined />
-                    </Space>
-                  </Button>
                 </Dropdown>
               </div>
             </div>
