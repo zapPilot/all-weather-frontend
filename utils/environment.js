@@ -67,12 +67,6 @@ export const getMinimumTokenAmount = (
     : smallestWeight;
 
   // Calculate minimum zap-in amount based on protocol weight
-  console.log(
-    "normalizedSmallestWeight",
-    normalizedSmallestWeight,
-    "MINIMUM_PROTOCOL_ZAP_IN_USD_THRESHOLD",
-    MINIMUM_PROTOCOL_ZAP_IN_USD_THRESHOLD,
-  );
   const protocolMinZapInUSD =
     MINIMUM_PROTOCOL_ZAP_IN_USD_THRESHOLD / normalizedSmallestWeight;
   // If we're in cross chain mode, we need to consider the bridge threshold for each destination chain
@@ -100,17 +94,10 @@ export const getMinimumTokenAmount = (
       })
       .filter((amount) => amount > 0);
     // Take the maximum of all minimums
-    console.log(
-      "bridgeMinimums",
-      bridgeMinimums,
-      "protocolMinZapInUSD",
-      protocolMinZapInUSD,
-    );
     if (bridgeMinimums.length > 0) {
       minimumZapInAmountUSD = Math.max(protocolMinZapInUSD, ...bridgeMinimums);
     }
   }
-  console.log("minimumZapInAmountUSD", minimumZapInAmountUSD);
   // Convert to token amount
   const minimumTokenAmount = minimumZapInAmountUSD / tokenPrice;
 
