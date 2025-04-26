@@ -14,8 +14,6 @@ class SquidBridge extends BaseBridge {
     this.lastRequestTime = 0;
     this.minRequestInterval = 3000;
     this.isInitialized = false;
-    this.lastRoute = null;
-    this.lastRouteParams = null;
   }
 
   async delay(ms) {
@@ -31,26 +29,9 @@ class SquidBridge extends BaseBridge {
     this.lastRequestTime = Date.now();
   }
 
-  async getRouteWithCache(params) {
-    const paramsMatch =
-      this.lastRouteParams &&
-      this.lastRouteParams.fromChain === params.fromChain &&
-      this.lastRouteParams.toChain === params.toChain &&
-      this.lastRouteParams.fromToken === params.fromToken &&
-      this.lastRouteParams.toToken === params.toToken &&
-      this.lastRouteParams.fromAmount === params.fromAmount &&
-      this.lastRouteParams.fromAddress === params.fromAddress;
-
-    if (paramsMatch && this.lastRoute) {
-      return this.lastRoute;
-    }
-
+  async getRoute(params) {
     await this.throttleRequest();
-    const route = await this.sdk.getRoute(params);
-
-    this.lastRoute = route;
-    this.lastRouteParams = params;
-
+    const { route } = await this.sdk.getRoute(params);  
     return route;
   }
 
@@ -79,7 +60,7 @@ class SquidBridge extends BaseBridge {
           quoteOnly: false,
         };
 
-        const { route } = await this.getRouteWithCache(routeParams);
+        const route = await this.getRoute(routeParams);
         this.feeCosts = route.estimate?.feeCosts?.[0]?.amountUsd;
         return this.feeCosts;
       } catch (error) {
@@ -109,6 +90,7 @@ class SquidBridge extends BaseBridge {
     toToken,
     amount,
     updateProgress,
+    tokenPrices,
   ) {
     const maxRetries = 3;
     let retryCount = 0;
@@ -128,11 +110,12 @@ class SquidBridge extends BaseBridge {
           quoteOnly: false,
         };
 
-        const { route } = await this.getRouteWithCache(routeParams);
+        const  route  = await this.getRoute(routeParams);
 
+        let feeInUSD = 0;
         if (route.estimate?.feeCosts?.length > 0) {
-          const fee = route.estimate?.feeCosts?.[0]?.amountUsd;
-          updateProgress(`bridge-${fromChainId}-${toChainId}`, -Number(fee));
+          feeInUSD = route.estimate?.feeCosts?.[0]?.amountUsd;
+          updateProgress(`bridge-${fromChainId}-${toChainId}`, -Number(feeInUSD));
         }
 
         const bridgeTxn = {
@@ -147,7 +130,7 @@ class SquidBridge extends BaseBridge {
         };
 
         const bridgeAddress = route.transactionRequest.target;
-        return [bridgeTxn, bridgeAddress];
+        return [bridgeTxn, bridgeAddress, feeInUSD];
       } catch (error) {
         console.error(`Attempt ${retryCount + 1} failed:`, error);
         retryCount++;
