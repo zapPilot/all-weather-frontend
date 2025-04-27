@@ -5,7 +5,7 @@ const CategoryHeader = ({ category }) => (
   <div className="mt-8 first:mt-0 mb-4">
     <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2 flex items-center">
       <Image
-        src={`/tokenPictures/${categoryMapping[category]}.webp`}
+        src={`/tokenPictures/${categoryMapping[category]?.toLowerCase()}.webp`}
         alt={categoryMapping[category]}
         height={24}
         width={24}

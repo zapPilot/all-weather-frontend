@@ -6,7 +6,6 @@ import {
 import { createWallet, walletConnect, inAppWallet } from "thirdweb/wallets";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { arbitrum, optimism, base } from "thirdweb/chains";
-import Image from "next/image";
 import { defineChain } from "thirdweb";
 import { CHAIN_ID_TO_CHAIN_STRING } from "../../utils/general";
 export default function ConfiguredConnectButton() {
@@ -54,13 +53,6 @@ export default function ConfiguredConnectButton() {
           return (
             <div className="flex items-center gap-3 p-2 rounded-md bg-white/90 text-xs cursor-pointer">
               <div className="flex items-center gap-2 p-1">
-                <Image
-                  src={`/chainPicturesWebp/${chainName}.webp`}
-                  alt={chainName}
-                  height={16}
-                  width={16}
-                  className="rounded-full"
-                />
                 <span className="font-mono inline">
                   {activeAccount?.address
                     ? `${activeAccount.address.slice(
