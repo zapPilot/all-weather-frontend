@@ -17,7 +17,6 @@ const COLORS = [
 ];
 
 export default function CategoryPieChart({ data }) {
-  console.log("data", data);
   return (
     <div className="h-[200px] mb-8">
       <ResponsiveContainer width="100%" height="100%">
@@ -65,9 +64,7 @@ export default function CategoryPieChart({ data }) {
 }
 // Calculate category weights for pie chart
 export const getCategoryWeights = (organizeByCategory, portfolioHelper) => {
-  console.log("portfolioHelper", portfolioHelper);
   const categoryMap = organizeByCategory(portfolioHelper);
-  console.log("categoryMap", categoryMap);
   const weights = [];
 
   Array.from(categoryMap).forEach(([category, chainProtocolMap]) => {
@@ -76,7 +73,6 @@ export const getCategoryWeights = (organizeByCategory, portfolioHelper) => {
       (sum, protocol) => sum + protocol.weight,
       0,
     );
-    console.log("category", category);
     if (totalWeight > 0) {
       weights.push({
         name: categoryMapping[category],
@@ -84,6 +80,5 @@ export const getCategoryWeights = (organizeByCategory, portfolioHelper) => {
       });
     }
   });
-  console.log("weights", weights);
   return weights;
 };
