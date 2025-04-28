@@ -1,4 +1,3 @@
-import type { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,13 +12,20 @@ import { useEffect } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import openNotificationWithIcon from "../utils/notification";
 import content from "../config/content";
+import ChainDropdown from "../components/ChainDropdown";
 
 const { Header, Footer, Content } = Layout;
 interface BasePageProps {
   children: React.ReactNode;
+  chainId?: { name: string };
+  switchChain?: (chain: any) => void;
 }
 
-const BasePage: NextPage<BasePageProps> = ({ children }) => {
+const BasePage: React.FC<BasePageProps> = ({
+  children,
+  chainId,
+  switchChain,
+}) => {
   const router = useRouter();
 
   const account = useActiveAccount();
@@ -101,6 +107,7 @@ const BasePage: NextPage<BasePageProps> = ({ children }) => {
             </div>
             <HeaderInner />
             <div className="flex items-center gap-2">
+              <ChainDropdown chainId={chainId} switchChain={switchChain} />
               <ConfiguredConnectButton />
             </div>
           </Header>

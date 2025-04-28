@@ -94,17 +94,10 @@ export const getMinimumTokenAmount = (
       })
       .filter((amount) => amount > 0);
     // Take the maximum of all minimums
-    console.log(
-      "bridgeMinimums",
-      bridgeMinimums,
-      "protocolMinZapInUSD",
-      protocolMinZapInUSD,
-    );
     if (bridgeMinimums.length > 0) {
       minimumZapInAmountUSD = Math.max(protocolMinZapInUSD, ...bridgeMinimums);
     }
   }
-
   // Convert to token amount
   const minimumTokenAmount = minimumZapInAmountUSD / tokenPrice;
 
