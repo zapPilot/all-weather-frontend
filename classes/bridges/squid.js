@@ -91,8 +91,10 @@ class SquidBridge extends BaseBridge {
   async getTokenDecimals(tokenAddress, chainId) {
     // Check if it's native ETH (either 0xeeee... or zero address)
     if (
-      tokenAddress?.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" ||
-      tokenAddress?.toLowerCase() === "0x0000000000000000000000000000000000000000"
+      tokenAddress?.toLowerCase() ===
+        "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" ||
+      tokenAddress?.toLowerCase() ===
+        "0x0000000000000000000000000000000000000000"
     ) {
       return 18;
     }
