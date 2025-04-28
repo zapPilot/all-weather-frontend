@@ -1,7 +1,9 @@
 import BaseBridge from "./BaseBridge";
 import { Squid } from "@0xsquid/sdk";
-import { CHAIN_ID_TO_CHAIN } from "../../utils/general";
+import { CHAIN_ID_TO_CHAIN, PROVIDER } from "../../utils/general";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
+import { ethers } from "ethers";
+import ERC20 from "../../lib/contracts/ERC20.json";
 
 class SquidBridge extends BaseBridge {
   constructor() {
@@ -11,8 +13,6 @@ class SquidBridge extends BaseBridge {
       integratorId: process.env.NEXT_PUBLIC_INTEGRATOR_ID,
     });
     this.squidRouterContract = "0xce16F69375520ab01377ce7B88f5BA8C48F8D666";
-    this.lastRequestTime = 0;
-    this.minRequestInterval = 3000;
     this.isInitialized = false;
   }
 
@@ -20,66 +20,9 @@ class SquidBridge extends BaseBridge {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  async throttleRequest() {
-    const now = Date.now();
-    const timeSinceLastRequest = now - this.lastRequestTime;
-    if (timeSinceLastRequest < this.minRequestInterval) {
-      await this.delay(this.minRequestInterval - timeSinceLastRequest);
-    }
-    this.lastRequestTime = Date.now();
-  }
-
   async getRoute(params) {
-    await this.throttleRequest();
     const { route } = await this.sdk.getRoute(params);
     return route;
-  }
-
-  async fetchFeeCosts(
-    account,
-    fromChainId,
-    toChainId,
-    inputToken,
-    targetToken,
-    inputAmount,
-    tokenPrices,
-  ) {
-    const maxRetries = 3;
-    let retryCount = 0;
-    while (retryCount < maxRetries) {
-      try {
-        const routeParams = {
-          fromAddress: account,
-          fromChain: fromChainId.toString(),
-          fromToken: inputToken,
-          fromAmount: inputAmount.toString(),
-          toChain: toChainId.toString(),
-          toToken: targetToken,
-          toAddress: account,
-          enableBoost: false,
-          quoteOnly: false,
-        };
-
-        const route = await this.getRoute(routeParams);
-        this.feeCosts = route.estimate?.feeCosts?.[0]?.amountUsd;
-        return this.feeCosts;
-      } catch (error) {
-        console.error(`Attempt ${retryCount + 1} failed:`, error);
-        retryCount++;
-
-        if (error.response?.status === 429 && retryCount < maxRetries) {
-          const waitTime = Math.pow(2, retryCount) * 1000;
-          console.log(
-            `Rate limited, waiting ${
-              waitTime / 1000
-            }s before retry ${retryCount}/${maxRetries}`,
-          );
-          await this.delay(waitTime);
-          continue;
-        }
-        throw error;
-      }
-    }
   }
 
   async customBridgeTxn(
@@ -90,7 +33,6 @@ class SquidBridge extends BaseBridge {
     toToken,
     amount,
     updateProgress,
-    tokenPrices,
   ) {
     const maxRetries = 3;
     let retryCount = 0;
@@ -111,15 +53,12 @@ class SquidBridge extends BaseBridge {
         };
 
         const route = await this.getRoute(routeParams);
-
-        let feeInUSD = 0;
-        if (route.estimate?.feeCosts?.length > 0) {
-          feeInUSD = route.estimate?.feeCosts?.[0]?.amountUsd;
-          updateProgress(
-            `bridge-${fromChainId}-${toChainId}`,
-            -Number(feeInUSD),
-          );
-        }
+        const { feeInUSD, fee } = await this.getFeeCosts(
+          route,
+          fromToken,
+          fromChainId,
+        );
+        updateProgress(`bridge-${fromChainId}-${toChainId}`, -Number(feeInUSD));
 
         const bridgeTxn = {
           client: THIRDWEB_CLIENT,
@@ -147,6 +86,43 @@ class SquidBridge extends BaseBridge {
         throw error;
       }
     }
+  }
+
+  async getTokenDecimals(tokenAddress, chainId) {
+    // Check if it's native ETH (either 0xeeee... or zero address)
+    if (
+      tokenAddress?.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" ||
+      tokenAddress?.toLowerCase() === "0x0000000000000000000000000000000000000000"
+    ) {
+      return 18;
+    }
+
+    const tokenInstance = new ethers.Contract(
+      tokenAddress,
+      ERC20,
+      PROVIDER(
+        CHAIN_ID_TO_CHAIN[chainId].name
+          .replace(" one", "")
+          .replace(" mainnet", ""),
+      ),
+    );
+    return await tokenInstance.decimals();
+  }
+
+  calculateFeeInToken(fee, decimals) {
+    return ethers.utils.formatUnits(fee, decimals);
+  }
+
+  async getFeeCosts(route, fromToken, fromChainId) {
+    const tokenDecimals = await this.getTokenDecimals(
+      route.estimate?.feeCosts[0]?.token.address,
+      fromChainId,
+    );
+    const fee = route.estimate?.feeCosts[0]?.amount;
+    const feeInToken = this.calculateFeeInToken(fee, tokenDecimals);
+    const tokenPrice = route.estimate?.feeCosts[0]?.token.usdPrice;
+    const feeInUSD = feeInToken * tokenPrice;
+    return { fee, feeInUSD };
   }
 }
 
