@@ -104,6 +104,7 @@ const useChainSwitching = (switchChain) => {
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
+  console.log("portfolioName", portfolioName, "router.query", router.query);
   const account = useActiveAccount();
   const chainId = useActiveWalletChain();
   const switchChain = useSwitchActiveWalletChain();
@@ -1003,7 +1004,10 @@ export default function IndexOverviews() {
               portfolioHelper={portfolioHelper}
             />
 
-            <HistoricalData portfolioName={portfolioName} />
+            <HistoricalData 
+              key={portfolioName} 
+              portfolioName={portfolioName} 
+            />
 
             <TransactionHistoryPanel
               setPrincipalBalance={setPrincipalBalance}
