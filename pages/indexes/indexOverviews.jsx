@@ -409,6 +409,7 @@ export default function IndexOverviews() {
           },
           onError: async (error) => {
             const errorMessage = await handleTransactionError(
+              "Transaction Failed",
               error,
               notificationAPI,
               account?.address,
@@ -428,6 +429,7 @@ export default function IndexOverviews() {
     } catch (error) {
       // This handles errors that occur before the transaction is sent
       const errorMessage = await handleTransactionError(
+        "Transaction Failed",
         error,
         notificationAPI,
         account?.address,
@@ -650,10 +652,15 @@ export default function IndexOverviews() {
           console.warn("Failed to cache portfolio data:", error);
         }
       } catch (error) {
-        console.error("❌ Error fetching portfolio data:", {
-          message: error.message,
-          stack: error.stack,
-        });
+        handleTransactionError(
+          "Fetching Data Failed",
+          error,
+          notificationAPI,
+          account?.address,
+          chainId?.name,
+          setErrorMsg,
+        );
+        setErrorMsg(error.message);
       } finally {
         isProcessingChainChangeRef.current = false;
       }
@@ -773,6 +780,7 @@ export default function IndexOverviews() {
     recipient,
     recipientError,
     selectedToken,
+    finishedTxn,
     setFinishedTxn,
     setInvestmentAmount,
     setNextChainInvestmentAmount,
@@ -796,6 +804,7 @@ export default function IndexOverviews() {
     onRefresh: handleRefresh,
     lockUpPeriod,
     rebalancableUsdBalanceDictLoading,
+    errorMsg,
   };
 
   const items = useTabItems({

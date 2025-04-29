@@ -104,6 +104,7 @@ const logErrorToDiscord = async (error, address, chain) => {
  * @returns {string} User-friendly error message
  */
 export const handleTransactionError = async (
+  title,
   error,
   notificationAPI,
   address,
@@ -117,7 +118,7 @@ export const handleTransactionError = async (
   // Show error notification if notification API is provided
   if (notificationAPI) {
     notificationAPI.error({
-      message: "Transaction Failed",
+      message: title,
       description: userMessage,
     });
   }
