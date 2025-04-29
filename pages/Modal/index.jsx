@@ -218,6 +218,9 @@ export default function PopUpModal({
                             alt={getNextChain().name}
                             width={25}
                             height={25}
+                            loading="lazy"
+                            quality={50}
+                            unoptimized={true}
                           />
                         </button>
                       )}

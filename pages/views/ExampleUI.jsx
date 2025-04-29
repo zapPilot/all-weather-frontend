@@ -124,7 +124,15 @@ export default function ExampleUI() {
       <div className={"w-full md:w-5/6 md:ml-[8.333333%] " + styles.bgStyle}>
         <div className="flex items-center justify-center min-h-[calc(100vh-100px)]">
           <center>
-            <Image src="/logo.png" alt="logo" width={100} height={100} />
+            <Image
+              src="/logo.png"
+              alt="logo"
+              width={100}
+              height={100}
+              loading="lazy"
+              quality={50}
+              unoptimized={true}
+            />
             <h1 className="text-5xl tracking-tight mb-8 text-[#5DFDCB]">
               All Weather Protocol
             </h1>

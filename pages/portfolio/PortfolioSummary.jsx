@@ -58,6 +58,9 @@ export default function PortfolioSummary({
                       height={25}
                       width={25}
                       className="hover:opacity-80"
+                      loading="lazy"
+                      quality={50}
+                      unoptimized={true}
                     />
                   </a>
                   <button

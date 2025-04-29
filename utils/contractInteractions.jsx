@@ -217,6 +217,9 @@ export const selectBefore = (handleChange, chainID, selectedToken) => {
                     width="20"
                     height="20"
                     alt={option.symbol}
+                    loading="lazy"
+                    quality={50}
+                    unoptimized={true}
                   />
                 );
               }
@@ -278,6 +281,9 @@ export const selectBefore = (handleChange, chainID, selectedToken) => {
                       width="24"
                       height="24"
                       alt={option.symbol}
+                      loading="lazy"
+                      quality={50}
+                      unoptimized={true}
                     />
                     <span className="ms-2">{option.symbol}</span>
                   </div>

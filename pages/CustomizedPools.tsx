@@ -425,6 +425,9 @@ const AllWeatherPools: NextPage = () => {
                 className="inline-block"
                 height={20}
                 width={20}
+                loading="lazy"
+                quality={50}
+                unoptimized={true}
               />
             ))}
           </div>

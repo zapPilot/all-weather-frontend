@@ -34,7 +34,15 @@ export default function Header({ ...props }) {
         <Drawer
           title={
             <Link href="/">
-              <Image src="/logo.png" alt="logo" width={40} height={40} />
+              <Image
+                src="/logo.png"
+                alt="logo"
+                width={40}
+                height={40}
+                loading="lazy"
+                quality={50}
+                unoptimized={true}
+              />
             </Link>
           }
           placement="right"

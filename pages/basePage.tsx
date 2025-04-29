@@ -102,7 +102,15 @@ const BasePage: React.FC<BasePageProps> = ({
           <Header className={`${styles.header} justify-between sm:h-24 h-auto`}>
             <div className="div-logo">
               <Link href="/">
-                <Image src="/logo.png" alt="logo" width={40} height={40} />
+                <Image
+                  src="/logo.png"
+                  alt="logo"
+                  width={40}
+                  height={40}
+                  loading="lazy"
+                  quality={50}
+                  unoptimized={true}
+                />
               </Link>
             </div>
             <HeaderInner />

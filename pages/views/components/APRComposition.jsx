@@ -38,6 +38,9 @@ const APRComposition = ({
                 width={20}
                 height={20}
                 alt={value.symbol}
+                loading="lazy"
+                quality={50}
+                unoptimized={true}
               />
               {value.symbol} ${value.usdDenominatedValue.toFixed(2)}{" "}
             </div>

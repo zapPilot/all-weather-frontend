@@ -15,6 +15,9 @@ export default function CompletionActions({ account }) {
           alt="debank"
           height={25}
           width={25}
+          loading="lazy"
+          quality={50}
+          unoptimized={true}
         />
         <span className="text-gray-400 font-medium">
           Check your portfolio on Debank

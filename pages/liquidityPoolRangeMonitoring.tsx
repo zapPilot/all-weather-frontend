@@ -50,6 +50,9 @@ const LiquidityPoolRangeMonitoring: NextPage = () => {
           }.webp`}
           height={20}
           width={20}
+          loading="lazy"
+          quality={50}
+          unoptimized={true}
         />{" "}
         -
         <Image
@@ -59,6 +62,9 @@ const LiquidityPoolRangeMonitoring: NextPage = () => {
           }.webp`}
           height={20}
           width={20}
+          loading="lazy"
+          quality={50}
+          unoptimized={true}
         />{" "}
         -
         {pool.data.asset_token_list.map((symbolObj) => (
@@ -68,6 +74,9 @@ const LiquidityPoolRangeMonitoring: NextPage = () => {
             alt={symbolObj.symbol}
             height={20}
             width={20}
+            loading="lazy"
+            quality={50}
+            unoptimized={true}
           />
         ))}
       </>
