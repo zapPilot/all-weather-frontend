@@ -16,6 +16,7 @@ const HistoricalDataChart = ({ portfolioName }) => {
   }, []);
 
   const asyncFetch = async () => {
+    console.log("portfolioName", portfolioName);
     if (portfolioName === "Index 500 Vault") {
       try {
         // Extract BTC Benchmark data
