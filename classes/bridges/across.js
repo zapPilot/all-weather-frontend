@@ -31,31 +31,13 @@ class AcrossBridge extends BaseBridge {
       chains: [optimism, arbitrum, polygon, base],
     });
     this.isInitialized = false;
-    this.lastQuote = null;
-    this.lastQuoteParams = null;
   }
 
-  async getQuoteWithCache(route, inputAmount) {
-    const paramsMatch =
-      this.lastQuoteParams &&
-      this.lastQuoteParams.route.originChainId === route.originChainId &&
-      this.lastQuoteParams.route.destinationChainId ===
-        route.destinationChainId &&
-      this.lastQuoteParams.route.inputToken === route.inputToken &&
-      this.lastQuoteParams.route.outputToken === route.outputToken &&
-      this.lastQuoteParams.inputAmount === inputAmount;
-
-    if (paramsMatch && this.lastQuote) {
-      return this.lastQuote;
-    }
-    const quote = await this.sdk.getQuote({
+  async getQuote(route, inputAmount) {
+    return await this.sdk.getQuote({
       route,
       inputAmount,
     });
-    this.lastQuote = quote;
-    this.lastQuoteParams = { route, inputAmount };
-
-    return quote;
   }
 
   async getTokenDecimals(tokenAddress, chainId) {
@@ -119,7 +101,7 @@ class AcrossBridge extends BaseBridge {
       inputToken: fromToken,
       outputToken: toToken,
     };
-    const quote = await this.getQuoteWithCache(route, amount);
+    const quote = await this.getQuote(route, amount);
     const { feeInUSD, fee } = await this.getFeeCosts(
       quote,
       tokenPrices,
