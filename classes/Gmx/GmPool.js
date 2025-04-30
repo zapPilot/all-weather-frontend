@@ -85,7 +85,6 @@ export class GmPool extends BaseProtocol {
         `${this.uniqueId()}-deposit`,
         0,
       );
-      console.log("amountToZapIn", amountToZapIn);
       const approveTxn = approve(
         zapInOutTokenAddress,
         this.SYNTHETICS_ROUTER,
@@ -100,10 +99,25 @@ export class GmPool extends BaseProtocol {
       const expectedGmTokens = usdAmount / gmTokenPrice;
       const minMarketTokensInWei = ethers.utils.parseUnits(
         expectedGmTokens.toString(),
-        18
+        this.assetDecimals
       );
 
-      console.log("minMarketTokensInWei", minMarketTokensInWei);
+      const depositVault = "0xf89e77e8dc11691c9e8757e84aafbcd8a67d7a55";
+      const sendWntTxn = prepareContractCall({
+        contract: this.protocolContract,
+        method: "sendWnt",
+        params: [depositVault, executionFee.toString()],
+      });
+
+      const sendTokensTxn = prepareContractCall({
+        contract: this.protocolContract,
+        method: "sendTokens",
+        params: [
+          this.zapInOutTokenAddress,
+          depositVault,
+          amountToZapIn,],
+      });
+
       const depositParams = {
         receiver: owner,
         callbackContract: "0x0000000000000000000000000000000000000000",
@@ -126,7 +140,7 @@ export class GmPool extends BaseProtocol {
         value: executionFee
       });
 
-      return [approveTxn, depositTxn];
+      return [approveTxn,sendWntTxn, sendTokensTxn, depositTxn];
     } catch (error) {
       console.error("Error in customDeposit:", error);
       if (error.message.includes("Paymaster error")) {
