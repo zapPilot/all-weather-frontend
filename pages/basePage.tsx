@@ -8,7 +8,7 @@ import "@flaticon/flaticon-uicons/css/brands/all.css";
 import "@flaticon/flaticon-uicons/css/regular/all.css";
 import ConfiguredConnectButton from "./ConnectButton";
 import { useRouter } from "next/router";
-import { useEffect, memo, useCallback } from "react";
+import { useEffect, memo, useCallback, useMemo } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import openNotificationWithIcon from "../utils/notification";
 import content from "../config/content";
@@ -18,6 +18,8 @@ const { Header, Footer, Content } = Layout;
 
 interface ChainId {
   name: string;
+  id?: number;
+  blockExplorers?: Array<{ url: string }>;
 }
 
 interface BasePageProps {
@@ -26,6 +28,71 @@ interface BasePageProps {
   switchChain?: (chain: any) => void;
 }
 
+// Extract header component
+const PageHeader = memo(function PageHeader({ chainId, switchChain }: Pick<BasePageProps, 'chainId' | 'switchChain'>) {
+  return (
+    <Affix offsetTop={0}>
+      <Header className={`${styles.header} justify-between sm:h-24 h-auto`}>
+        <div className="div-logo">
+          <Link href="/">
+            <Image
+              src="/logo.png"
+              alt="logo"
+              width={40}
+              height={40}
+              loading="lazy"
+              quality={50}
+              unoptimized={true}
+            />
+          </Link>
+        </div>
+        <HeaderInner />
+        <div className="flex items-center gap-2">
+          <ChainDropdown chainId={chainId} switchChain={switchChain} />
+          <ConfiguredConnectButton />
+        </div>
+      </Header>
+    </Affix>
+  );
+});
+
+// Extract footer component
+const PageFooter = memo(function PageFooter() {
+  const socialLinks = useMemo(() => [
+    {
+      href: "https://all-weather-protocol.gitbook.io/",
+      icon: "fi fi-rr-document",
+      label: "Documentation"
+    },
+    {
+      href: "https://twitter.com/all_weather_p",
+      icon: "fi fi-brands-twitter-alt",
+      label: "Twitter"
+    },
+    {
+      href: "https://discord.gg/sNsMmtsCCV",
+      icon: "fi fi-brands-discord",
+      label: "Discord"
+    }
+  ], []);
+
+  return (
+    <Footer className={styles.footer}>
+      {socialLinks.map(({ href, icon, label }) => (
+        <a
+          key={href}
+          href={href}
+          rel="noopener noreferrer"
+          target="_blank"
+          aria-label={label}
+        >
+          <span className={icon}></span>
+        </a>
+      ))}
+    </Footer>
+  );
+});
+
 const BasePage: React.FC<BasePageProps> = memo(function BasePage({
   children,
   chainId,
@@ -33,8 +100,7 @@ const BasePage: React.FC<BasePageProps> = memo(function BasePage({
 }) {
   const router = useRouter();
   const account = useActiveAccount();
-  const [notificationAPI, notificationContextHolder] =
-    notification.useNotification();
+  const [notificationAPI, notificationContextHolder] = notification.useNotification();
 
   const addReferrer = useCallback(
     async (currentInputValue: string) => {
@@ -42,9 +108,7 @@ const BasePage: React.FC<BasePageProps> = memo(function BasePage({
 
       try {
         const response = await fetch(
-          `${
-            process.env.NEXT_PUBLIC_SDK_API_URL
-          }/referral/${account.address.toLowerCase()}/referrer`,
+          `${process.env.NEXT_PUBLIC_SDK_API_URL}/referral/${account.address.toLowerCase()}/referrer`,
           {
             method: "POST",
             headers: {
@@ -65,8 +129,7 @@ const BasePage: React.FC<BasePageProps> = memo(function BasePage({
             `Successfully add referrer ${currentInputValue.toLowerCase()}, happy earning`,
           );
         } else if (
-          resp.status ===
-          "Referrer Already Exists! Or Your referrer cannot be referred by you"
+          resp.status === "Referrer Already Exists! Or Your referrer cannot be referred by you"
         ) {
           return;
         } else {
@@ -78,8 +141,7 @@ const BasePage: React.FC<BasePageProps> = memo(function BasePage({
           );
         }
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error occurred";
+        const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
         openNotificationWithIcon(
           notificationAPI,
           "Referral Program",
@@ -98,78 +160,30 @@ const BasePage: React.FC<BasePageProps> = memo(function BasePage({
     }
   }, [router.isReady, router.query.referrer, account, addReferrer]);
 
+  // Memoize head content
+  const headContent = useMemo(() => (
+    <Head>
+      <title>All Weather Protocol: {content.siteInfo.tagline}</title>
+      <meta content="All Weather Protocol" name="description" />
+      <link href="/favicon.ico" rel="icon" />
+    </Head>
+  ), []);
+
   return (
     <div>
-      <Head>
-        <title>All Weather Protocol: {content.siteInfo.tagline}</title>
-        <meta content="All Weather Protocol" name="description" />
-        <link href="/favicon.ico" rel="icon" />
-      </Head>
+      {headContent}
       {notificationContextHolder}
       <Layout style={{ background: "#000000" }}>
-        <Affix offsetTop={0}>
-          <Header className={`${styles.header} justify-between sm:h-24 h-auto`}>
-            <div className="div-logo">
-              <Link href="/">
-                <Image
-                  src="/logo.png"
-                  alt="logo"
-                  width={40}
-                  height={40}
-                  loading="lazy"
-                  quality={50}
-                  unoptimized={true}
-                />
-              </Link>
-            </div>
-            <HeaderInner />
-            <div className="flex items-center gap-2">
-              <ChainDropdown chainId={chainId} switchChain={switchChain} />
-              <ConfiguredConnectButton />
-            </div>
-          </Header>
-        </Affix>
-
+        <PageHeader chainId={chainId} switchChain={switchChain} />
         <Content>
           <div>{children}</div>
         </Content>
-        <Footer className={styles.footer}>
-          {/* comment it for now */}
-          {/* <a
-            href="https://all-weather-protocol.webflow.io/"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <span className="fi fi-rr-home"></span>
-          </a> */}
-          <a
-            href="https://all-weather-protocol.gitbook.io/"
-            rel="noopener noreferrer"
-            target="_blank"
-            aria-label="Documentation"
-          >
-            <span className="fi fi-rr-document"></span>
-          </a>
-          <a
-            href="https://twitter.com/all_weather_p"
-            rel="noopener noreferrer"
-            target="_blank"
-            aria-label="Twitter"
-          >
-            <span className="fi fi-brands-twitter-alt"></span>
-          </a>
-          <a
-            href="https://discord.gg/sNsMmtsCCV"
-            rel="noopener noreferrer"
-            target="_blank"
-            aria-label="Discord"
-          >
-            <span className="fi fi-brands-discord"></span>
-          </a>
-        </Footer>
+        <PageFooter />
       </Layout>
     </div>
   );
 });
+
+BasePage.displayName = "BasePage";
 
 export default BasePage;
