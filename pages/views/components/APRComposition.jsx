@@ -1,67 +1,98 @@
+import React, { memo, useMemo } from "react";
 import { Popover, Image, Spin } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
 
-const APRComposition = ({
+// Extracted token display component for better performance
+const TokenDisplay = memo(function TokenDisplay({ symbol, usdValue }) {
+  return (
+    <div className="flex items-center gap-2 py-1">
+      <Image
+        src={`/tokenPictures/${symbol}.webp`}
+        width={20}
+        height={20}
+        alt={symbol}
+        loading="lazy"
+        quality={50}
+        unoptimized={true}
+        placeholder={<div className="w-5 h-5 bg-gray-200 animate-pulse rounded-full" />}
+      />
+      <span className="text-sm">
+        {symbol} ${usdValue.toFixed(2)}
+      </span>
+    </div>
+  );
+});
+
+TokenDisplay.displayName = "TokenDisplay";
+
+const APRComposition = memo(function APRComposition({
   APRData,
   mode,
   currency,
   exchangeRateWithUSD,
   pendingRewardsLoading,
-}) => {
-  const renderContent = () => {
-    if (pendingRewardsLoading === true) {
-      return <Spin size="small" />;
-    }
-    if (mode === "pendingRewards") {
-      const aggregatedTokens = Object.entries(APRData ?? {}).reduce(
-        (acc, [_, value]) => {
-          const symbol = value.symbol;
-          if (!acc[symbol]) {
-            acc[symbol] = {
-              symbol,
-              usdDenominatedValue: 0,
-            };
-          }
-          acc[symbol].usdDenominatedValue += value.usdDenominatedValue || 0;
-          return acc;
-        },
-        {},
-      );
+}) {
+  // Memoize aggregated tokens calculation
+  const aggregatedTokens = useMemo(() => {
+    if (!APRData || pendingRewardsLoading) return [];
+    
+    return Object.values(
+      Object.entries(APRData).reduce((acc, [_, value]) => {
+        const symbol = value.symbol;
+        if (!acc[symbol]) {
+          acc[symbol] = {
+            symbol,
+            usdDenominatedValue: 0,
+          };
+        }
+        acc[symbol].usdDenominatedValue += value.usdDenominatedValue || 0;
+        return acc;
+      }, {})
+    ).sort((a, b) => b.usdDenominatedValue - a.usdDenominatedValue);
+  }, [APRData, pendingRewardsLoading]);
 
-      return Object.values(aggregatedTokens)
-        .sort((a, b) => b.usdDenominatedValue - a.usdDenominatedValue)
-        .map((value) => {
-          return (
-            <div key={value.symbol}>
-              <Image
-                src={`/tokenPictures/${value.symbol}.webp`}
-                width={20}
-                height={20}
-                alt={value.symbol}
-                loading="lazy"
-                quality={50}
-                unoptimized={true}
-              />
-              {value.symbol} ${value.usdDenominatedValue.toFixed(2)}{" "}
-            </div>
-          );
-        });
-    } else {
-      `not implemented ${mode}`;
+  const renderContent = () => {
+    if (pendingRewardsLoading) {
+      return (
+        <div className="flex justify-center p-4">
+          <Spin size="small" />
+        </div>
+      );
     }
+
+    if (mode === "pendingRewards") {
+      return (
+        <div className="max-h-[300px] overflow-y-auto">
+          {aggregatedTokens.map((value) => (
+            <TokenDisplay
+              key={value.symbol}
+              symbol={value.symbol}
+              usdValue={value.usdDenominatedValue}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    return <div>Not implemented: {mode}</div>;
   };
+
   return (
     <Popover
       style={{ width: "500px" }}
       content={renderContent()}
       title="Data Breakdown"
       trigger="hover"
+      overlayClassName="apr-composition-popover"
     >
       <InfoCircleOutlined
         aria-hidden="true"
-        className="h-6 w-5 text-gray-500 ms-1"
+        className="h-6 w-5 text-gray-500 ms-1 cursor-help"
       />
     </Popover>
   );
-};
+});
+
+APRComposition.displayName = "APRComposition";
+
 export default APRComposition;
