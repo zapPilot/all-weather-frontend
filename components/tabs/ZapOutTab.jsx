@@ -23,6 +23,7 @@ export default function ZapOutTab({
   CHAIN_ID_TO_CHAIN,
   CHAIN_TO_CHAIN_ID,
   lockUpPeriod,
+  errorMsg,
 }) {
   const currentChain = chainId?.name
     ?.toLowerCase()
@@ -40,6 +41,7 @@ export default function ZapOutTab({
         theme="dark"
         isStarted={Object.values(chainStatus || {}).some((status) => status)}
         account={account}
+        errorMsg={errorMsg}
       />
       {Object.values(chainStatus).some((status) => status) ? null : (
         <DecimalStep

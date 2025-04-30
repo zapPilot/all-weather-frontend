@@ -28,6 +28,7 @@ export default function RebalanceTab({
   tokenPricesMappingTable,
   lockUpPeriod,
   account,
+  errorMsg,
 }) {
   const [currentStep, setCurrentStep] = useState(0);
   const currentChain = chainId?.name
@@ -55,6 +56,7 @@ export default function RebalanceTab({
           theme="dark"
           isStarted={Object.values(chainStatus || {}).some((status) => status)}
           account={account}
+          errorMsg={errorMsg}
         />
       )}
 

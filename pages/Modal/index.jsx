@@ -12,7 +12,6 @@ import DemoFlowDirectionGraph from "../FlowChart";
 import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { Popover, Spin } from "antd";
 import ActionItem from "../../components/common/ActionItem";
-import CompletionActions from "../../components/CompletionActions";
 
 const formatAmount = (amount) => {
   if (amount === undefined || amount === null) return <Spin />;
@@ -172,6 +171,7 @@ export default function PopUpModal({
                       (status) => status,
                     )}
                     account={account}
+                    errorMsg={errorMsg}
                   />
                 </div>
                 <div className="mx-auto flex items-center justify-center rounded-full">
