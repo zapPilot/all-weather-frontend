@@ -57,6 +57,9 @@ const APRPopOver = () => {
                     width={20}
                     height={20}
                     alt={poolJson.mapping_chain}
+                    loading="lazy"
+                    quality={50}
+                    unoptimized={true}
                   />
                   <span className="mx-1">
                     {poolJson.mapping_chain.toUpperCase()}
@@ -68,6 +71,9 @@ const APRPopOver = () => {
                     height={20}
                     alt={poolJson.project_id}
                     className="mx-1"
+                    loading="lazy"
+                    quality={50}
+                    unoptimized={true}
                   />
                   <span>{poolJson.project_id}</span>
                 </div>

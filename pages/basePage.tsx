@@ -8,34 +8,112 @@ import "@flaticon/flaticon-uicons/css/brands/all.css";
 import "@flaticon/flaticon-uicons/css/regular/all.css";
 import ConfiguredConnectButton from "./ConnectButton";
 import { useRouter } from "next/router";
-import { useEffect } from "react";
+import { useEffect, memo, useCallback, useMemo } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import openNotificationWithIcon from "../utils/notification";
 import content from "../config/content";
 import ChainDropdown from "../components/ChainDropdown";
 
 const { Header, Footer, Content } = Layout;
+
+interface ChainId {
+  name: string;
+  id?: number;
+  blockExplorers?: Array<{ url: string }>;
+}
+
 interface BasePageProps {
   children: React.ReactNode;
-  chainId?: { name: string };
+  chainId?: ChainId;
   switchChain?: (chain: any) => void;
 }
 
-const BasePage: React.FC<BasePageProps> = ({
+// Extract header component
+const PageHeader = memo(function PageHeader({
+  chainId,
+  switchChain,
+}: Pick<BasePageProps, "chainId" | "switchChain">) {
+  return (
+    <Affix offsetTop={0}>
+      <Header className={`${styles.header} justify-between sm:h-24 h-auto`}>
+        <div className="div-logo">
+          <Link href="/">
+            <Image
+              src="/logo.png"
+              alt="logo"
+              width={40}
+              height={40}
+              loading="lazy"
+              quality={50}
+              unoptimized={true}
+            />
+          </Link>
+        </div>
+        <HeaderInner />
+        <div className="flex items-center gap-2">
+          <ChainDropdown chainId={chainId} switchChain={switchChain} />
+          <ConfiguredConnectButton />
+        </div>
+      </Header>
+    </Affix>
+  );
+});
+
+// Extract footer component
+const PageFooter = memo(function PageFooter() {
+  const socialLinks = useMemo(
+    () => [
+      {
+        href: "https://all-weather-protocol.gitbook.io/",
+        icon: "fi fi-rr-document",
+        label: "Documentation",
+      },
+      {
+        href: "https://twitter.com/all_weather_p",
+        icon: "fi fi-brands-twitter-alt",
+        label: "Twitter",
+      },
+      {
+        href: "https://discord.gg/sNsMmtsCCV",
+        icon: "fi fi-brands-discord",
+        label: "Discord",
+      },
+    ],
+    [],
+  );
+
+  return (
+    <Footer className={styles.footer}>
+      {socialLinks.map(({ href, icon, label }) => (
+        <a
+          key={href}
+          href={href}
+          rel="noopener noreferrer"
+          target="_blank"
+          aria-label={label}
+        >
+          <span className={icon}></span>
+        </a>
+      ))}
+    </Footer>
+  );
+});
+
+const BasePage: React.FC<BasePageProps> = memo(function BasePage({
   children,
   chainId,
   switchChain,
-}) => {
+}) {
   const router = useRouter();
-
   const account = useActiveAccount();
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
 
-  useEffect(() => {
-    const addReferrer = async (currentInputValue: string) => {
+  const addReferrer = useCallback(
+    async (currentInputValue: string) => {
+      if (!account) return;
+
       try {
-        if (!account) return;
         const response = await fetch(
           `${
             process.env.NEXT_PUBLIC_SDK_API_URL
@@ -82,74 +160,44 @@ const BasePage: React.FC<BasePageProps> = ({
           `Failed: ${errorMessage}`,
         );
       }
-    };
+    },
+    [account, notificationAPI],
+  );
 
+  useEffect(() => {
     const referrerParam = router.query.referrer as string;
     if (router.isReady && referrerParam && account) {
       addReferrer(referrerParam);
     }
-  }, [router.isReady, router.query.referrer, account]);
-  return (
-    <div>
+  }, [router.isReady, router.query.referrer, account, addReferrer]);
+
+  // Memoize head content
+  const headContent = useMemo(
+    () => (
       <Head>
         <title>All Weather Protocol: {content.siteInfo.tagline}</title>
         <meta content="All Weather Protocol" name="description" />
         <link href="/favicon.ico" rel="icon" />
       </Head>
+    ),
+    [],
+  );
+
+  return (
+    <div>
+      {headContent}
       {notificationContextHolder}
       <Layout style={{ background: "#000000" }}>
-        <Affix offsetTop={0}>
-          <Header className={`${styles.header} justify-between sm:h-24 h-auto`}>
-            <div className="div-logo">
-              <Link href="/">
-                <Image src="/logo.png" alt="logo" width={40} height={40} />
-              </Link>
-            </div>
-            <HeaderInner />
-            <div className="flex items-center gap-2">
-              <ChainDropdown chainId={chainId} switchChain={switchChain} />
-              <ConfiguredConnectButton />
-            </div>
-          </Header>
-        </Affix>
-
+        <PageHeader chainId={chainId} switchChain={switchChain} />
         <Content>
           <div>{children}</div>
         </Content>
-        <Footer className={styles.footer}>
-          {/* comment it for now */}
-          {/* <a
-            href="https://all-weather-protocol.webflow.io/"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <span className="fi fi-rr-home"></span>
-          </a> */}
-          <a
-            href="https://all-weather-protocol.gitbook.io/"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <span className="fi fi-rr-document"></span>
-          </a>
-          <a
-            href="https://twitter.com/all_weather_p"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <span className="fi fi-brands-twitter-alt"></span>
-          </a>
-          <a
-            href="https://discord.gg/sNsMmtsCCV"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <span className="fi fi-brands-discord"></span>
-          </a>
-        </Footer>
+        <PageFooter />
       </Layout>
     </div>
   );
-};
+});
+
+BasePage.displayName = "BasePage";
 
 export default BasePage;

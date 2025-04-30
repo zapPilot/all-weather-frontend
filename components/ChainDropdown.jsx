@@ -1,5 +1,4 @@
-import { Button, Dropdown, Space } from "antd";
-import { DownOutlined } from "@ant-design/icons";
+import { Button, Dropdown } from "antd";
 import Image from "next/image";
 import { normalizeChainName } from "../utils/chainHelper";
 import { base, arbitrum, optimism } from "thirdweb/chains";

@@ -1,3 +1,4 @@
+import React, { memo, useMemo } from "react";
 import {
   ConnectButton,
   useActiveWalletChain,
@@ -8,38 +9,80 @@ import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { arbitrum, optimism, base } from "thirdweb/chains";
 import { defineChain } from "thirdweb";
 import { CHAIN_ID_TO_CHAIN_STRING } from "../../utils/general";
-export default function ConfiguredConnectButton() {
-  const wallets = [
-    createWallet("io.rabby"),
-    createWallet("me.rainbow"),
-    createWallet("io.metamask"),
-    createWallet("app.phantom"),
-    walletConnect(),
-    inAppWallet({
-      auth: {
-        options: ["google", "telegram", "x", "passkey", "facebook", "apple"],
-      },
-    }),
-  ];
+
+// Extracted wallet configuration
+const WALLETS = [
+  createWallet("io.rabby"),
+  createWallet("me.rainbow"),
+  createWallet("io.metamask"),
+  createWallet("app.phantom"),
+  walletConnect(),
+  inAppWallet({
+    auth: {
+      options: ["google", "telegram", "x", "passkey", "facebook", "apple"],
+    },
+  }),
+];
+
+// Extracted chains configuration
+const SUPPORTED_CHAINS = [arbitrum, base, defineChain(1088), optimism];
+
+// Extracted address display component
+const AddressDisplay = memo(function AddressDisplay({ address }) {
+  if (!address) return <span className="font-mono inline">No Address</span>;
+
+  return (
+    <span className="font-mono inline">
+      {`${address.slice(0, 5)}...${address.slice(-4)}`}
+    </span>
+  );
+});
+
+// Extracted details button component
+const DetailsButton = memo(function DetailsButton({ address }) {
+  return (
+    <div className="flex items-center gap-3 p-2 rounded-md bg-white/90 text-xs cursor-pointer">
+      <div className="flex items-center gap-2 p-1">
+        <AddressDisplay address={address} />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          className="size-5"
+          aria-hidden="true"
+        >
+          <path
+            fillRule="evenodd"
+            d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </div>
+    </div>
+  );
+});
+
+function ConfiguredConnectButton() {
   const activeChain = useActiveWalletChain();
-  const extendedActiveChain = {
-    name: CHAIN_ID_TO_CHAIN_STRING[activeChain?.id],
-    ...activeChain,
-  };
-  const chainName =
-    extendedActiveChain && extendedActiveChain.name
-      ? extendedActiveChain.name.toLowerCase().split(" ")[0]
-      : "";
   const activeAccount = useActiveAccount();
+
+  // Memoize chain name calculation
+  const chainName = useMemo(() => {
+    if (!activeChain) return "";
+    const extendedActiveChain = {
+      name: CHAIN_ID_TO_CHAIN_STRING[activeChain.id],
+      ...activeChain,
+    };
+    return extendedActiveChain.name?.toLowerCase().split(" ")[0] || "";
+  }, [activeChain]);
+
   return (
     <ConnectButton
       client={THIRDWEB_CLIENT}
       autoConnect={true}
-      wallets={wallets}
-      theme={"light"}
-      // here are all the supported chains
-      // https://portal.thirdweb.com/connect/account-abstraction/infrastructure
-      chains={[arbitrum, base, defineChain(1088), optimism]}
+      wallets={WALLETS}
+      theme="light"
+      chains={SUPPORTED_CHAINS}
       accountAbstraction={{
         chain: base,
         sponsorGas: true,
@@ -50,32 +93,7 @@ export default function ConfiguredConnectButton() {
       }}
       detailsButton={{
         render() {
-          return (
-            <div className="flex items-center gap-3 p-2 rounded-md bg-white/90 text-xs cursor-pointer">
-              <div className="flex items-center gap-2 p-1">
-                <span className="font-mono inline">
-                  {activeAccount?.address
-                    ? `${activeAccount.address.slice(
-                        0,
-                        5,
-                      )}...${activeAccount.address.slice(-4)}`
-                    : "No Address"}
-                </span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  className="size-5"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-            </div>
-          );
+          return <DetailsButton address={activeAccount?.address} />;
         },
         style: {
           borderRadius: "9999px",
@@ -84,3 +102,5 @@ export default function ConfiguredConnectButton() {
     />
   );
 }
+
+export default memo(ConfiguredConnectButton);

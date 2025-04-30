@@ -62,6 +62,9 @@ export default function ClaimTab({
           height="20"
           alt={selectedTokenSymbol}
           className="inline-block"
+          loading="lazy"
+          quality={50}
+          unoptimized={true}
         />
         {selectedTokenSymbol}
       </>

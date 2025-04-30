@@ -12,7 +12,7 @@ export const determineSlippage = (params) => {
 
   // Rebalance tab always uses 5% slippage
   // Claim tab uses 3% slippage
-  if (!["1", "2"].includes(key)) {
+  if (!["1", "2"].includes(key) && portfolioName !== "Stable+ Vault") {
     return 3;
   }
 

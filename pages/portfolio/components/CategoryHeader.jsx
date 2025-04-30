@@ -1,19 +1,33 @@
+import { memo, useMemo } from "react";
 import Image from "next/image";
 import { categoryMapping } from "../PortfolioComposition";
 
-const CategoryHeader = ({ category }) => (
-  <div className="mt-8 first:mt-0 mb-4">
-    <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2 flex items-center">
-      <Image
-        src={`/tokenPictures/${categoryMapping[category]?.toLowerCase()}.webp`}
-        alt={categoryMapping[category]}
-        height={24}
-        width={24}
-        className="mr-2"
-      />
-      <span className="text-gray-400">{categoryMapping[category]}</span>
-    </h3>
-  </div>
-);
+const CategoryHeader = memo(({ category }) => {
+  const categoryName = useMemo(() => categoryMapping[category], [category]);
+  const imageSrc = useMemo(
+    () => `/tokenPictures/${categoryName?.toLowerCase()}.webp`,
+    [categoryName],
+  );
+
+  return (
+    <div className="mt-8 first:mt-0 mb-4">
+      <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2 flex items-center">
+        <Image
+          src={imageSrc}
+          alt={categoryName}
+          height={24}
+          width={24}
+          className="mr-2"
+          loading="lazy"
+          quality={50}
+          unoptimized={true}
+        />
+        <span className="text-gray-400">{categoryName}</span>
+      </h3>
+    </div>
+  );
+});
+
+CategoryHeader.displayName = "CategoryHeader";
 
 export default CategoryHeader;
