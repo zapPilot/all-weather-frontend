@@ -40,7 +40,7 @@ import openNotificationWithIcon from "../../utils/notification.js";
 import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
-import { SettingOutlined, DownOutlined } from "@ant-design/icons";
+import { SettingOutlined } from "@ant-design/icons";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
@@ -1004,10 +1004,7 @@ export default function IndexOverviews() {
               portfolioHelper={portfolioHelper}
             />
 
-            <HistoricalData 
-              key={portfolioName} 
-              portfolioName={portfolioName} 
-            />
+            <HistoricalData key={portfolioName} portfolioName={portfolioName} />
 
             <TransactionHistoryPanel
               setPrincipalBalance={setPrincipalBalance}

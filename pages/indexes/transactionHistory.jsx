@@ -306,7 +306,7 @@ export default function TransactionHistory({
         return;
 
       const resp = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/transaction/category/${account.address}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/transaction/category/${account.address}?top_n=10`,
       );
 
       setTransactionHistoryData(resp.data.transactions);
@@ -336,7 +336,7 @@ export default function TransactionHistory({
   if (filteredTransactions.length === 0) {
     return (
       <div className="text-gray-500 text-sm py-4">
-        No transaction history available
+        Loading transaction history. This may take a few moments...
       </div>
     );
   }

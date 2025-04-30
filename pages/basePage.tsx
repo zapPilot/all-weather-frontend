@@ -8,34 +8,39 @@ import "@flaticon/flaticon-uicons/css/brands/all.css";
 import "@flaticon/flaticon-uicons/css/regular/all.css";
 import ConfiguredConnectButton from "./ConnectButton";
 import { useRouter } from "next/router";
-import { useEffect } from "react";
+import { useEffect, memo, useCallback } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import openNotificationWithIcon from "../utils/notification";
 import content from "../config/content";
 import ChainDropdown from "../components/ChainDropdown";
 
 const { Header, Footer, Content } = Layout;
+
+interface ChainId {
+  name: string;
+}
+
 interface BasePageProps {
   children: React.ReactNode;
-  chainId?: { name: string };
+  chainId?: ChainId;
   switchChain?: (chain: any) => void;
 }
 
-const BasePage: React.FC<BasePageProps> = ({
+const BasePage: React.FC<BasePageProps> = memo(function BasePage({
   children,
   chainId,
   switchChain,
-}) => {
+}) {
   const router = useRouter();
-
   const account = useActiveAccount();
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
 
-  useEffect(() => {
-    const addReferrer = async (currentInputValue: string) => {
+  const addReferrer = useCallback(
+    async (currentInputValue: string) => {
+      if (!account) return;
+
       try {
-        if (!account) return;
         const response = await fetch(
           `${
             process.env.NEXT_PUBLIC_SDK_API_URL
@@ -82,13 +87,17 @@ const BasePage: React.FC<BasePageProps> = ({
           `Failed: ${errorMessage}`,
         );
       }
-    };
+    },
+    [account, notificationAPI],
+  );
 
+  useEffect(() => {
     const referrerParam = router.query.referrer as string;
     if (router.isReady && referrerParam && account) {
       addReferrer(referrerParam);
     }
-  }, [router.isReady, router.query.referrer, account]);
+  }, [router.isReady, router.query.referrer, account, addReferrer]);
+
   return (
     <div>
       <Head>
@@ -137,6 +146,7 @@ const BasePage: React.FC<BasePageProps> = ({
             href="https://all-weather-protocol.gitbook.io/"
             rel="noopener noreferrer"
             target="_blank"
+            aria-label="Documentation"
           >
             <span className="fi fi-rr-document"></span>
           </a>
@@ -144,6 +154,7 @@ const BasePage: React.FC<BasePageProps> = ({
             href="https://twitter.com/all_weather_p"
             rel="noopener noreferrer"
             target="_blank"
+            aria-label="Twitter"
           >
             <span className="fi fi-brands-twitter-alt"></span>
           </a>
@@ -151,6 +162,7 @@ const BasePage: React.FC<BasePageProps> = ({
             href="https://discord.gg/sNsMmtsCCV"
             rel="noopener noreferrer"
             target="_blank"
+            aria-label="Discord"
           >
             <span className="fi fi-brands-discord"></span>
           </a>
@@ -158,6 +170,6 @@ const BasePage: React.FC<BasePageProps> = ({
       </Layout>
     </div>
   );
-};
+});
 
 export default BasePage;
