@@ -17,6 +17,7 @@ import {
   CHAIN_ID_TO_CHAIN_STRING,
 } from "../../utils/general.js";
 import {
+  Button,
   ConfigProvider,
   Radio,
   notification,
@@ -24,6 +25,7 @@ import {
   Tabs,
   Dropdown,
   Popover,
+  Space,
 } from "antd";
 import {
   useActiveAccount,
@@ -38,7 +40,7 @@ import openNotificationWithIcon from "../../utils/notification.js";
 import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
-import { SettingOutlined } from "@ant-design/icons";
+import { SettingOutlined, DownOutlined } from "@ant-design/icons";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
@@ -68,6 +70,7 @@ import {
   checkGasPrice,
   prepareTransactionMetadata,
 } from "../../utils/transactionHelpers.js";
+import ChainDropdown from "../../components/ChainDropdown";
 
 // Extract chain switching logic
 const useChainSwitching = (switchChain) => {
@@ -98,333 +101,9 @@ const useChainSwitching = (switchChain) => {
   };
 };
 
-// Extract transaction handling logic into a custom hook
-const useTransactionHandler = (
-  account,
-  chainId,
-  portfolioHelper,
-  portfolioName,
-  selectedToken,
-  investmentAmount,
-  zapOutPercentage,
-  slippage,
-  rebalancableUsdBalanceDict,
-  recipient,
-  protocolAssetDustInWallet,
-  protocolAssetDustInWalletLoading,
-  usdBalance,
-  notificationAPI,
-  setErrorMsg,
-  sendBatchTransaction,
-  setNextStepChain,
-  currentChain,
-) => {
-  const [open, setOpen] = useState(false);
-  const [finishedTxn, setFinishedTxn] = useState(false);
-  const [txnLink, setTxnLink] = useState("");
-  const [actionName, setActionName] = useState("");
-  const [onlyThisChain, setOnlyThisChain] = useState(false);
-  const [stepName, setStepName] = useState("");
-  const [tradingLoss, setTradingLoss] = useState(0);
-  const [totalTradingLoss, setTotalTradingLoss] = useState(0);
-  const [platformFee, setPlatformFee] = useState(0);
-  const [costsCalculated, setCostsCalculated] = useState(false);
-  const [chainStatus, setChainStatus] = useState({
-    base: false,
-    arbitrum: false,
-    op: false,
-  });
-
-  const handleAAWalletAction = useCallback(
-    async (actionName, onlyThisChain = false) => {
-      const isGasPriceAcceptable = await checkGasPrice({
-        chainId,
-        THIRDWEB_CLIENT,
-        notificationAPI,
-      });
-      if (!isGasPriceAcceptable) {
-        return;
-      }
-
-      setOpen(true);
-      setActionName(actionName);
-      setOnlyThisChain(onlyThisChain);
-      setCostsCalculated(false);
-      setFinishedTxn(false);
-      setPlatformFee(0);
-      setTotalTradingLoss(0);
-      setTradingLoss(0);
-      setStepName("");
-
-      const tokenSymbolAndAddress = selectedToken.toLowerCase();
-
-      if (!tokenSymbolAndAddress) {
-        alert("Please select a token");
-        return;
-      }
-      if (!account) return;
-
-      const [tokenSymbol, tokenAddress, tokenDecimals] =
-        tokenSymbolAndAddress.split("-");
-
-      try {
-        const txns = await generateIntentTxns({
-          actionName,
-          chainMetadata:
-            chainId?.name === undefined
-              ? { name: CHAIN_ID_TO_CHAIN_STRING[chainId?.id], ...chainId }
-              : chainId,
-          portfolioHelper,
-          accountAddress: account.address,
-          tokenSymbol,
-          tokenAddress,
-          investmentAmount,
-          tokenDecimals,
-          zapOutPercentage,
-          setTradingLoss,
-          setStepName,
-          setTotalTradingLoss,
-          setPlatformFee,
-          slippage,
-          rebalancableUsdBalanceDict,
-          recipient,
-          protocolAssetDustInWallet:
-            protocolAssetDustInWallet?.[normalizeChainName(chainId?.name)] ||
-            {},
-          protocolAssetDustInWalletLoading,
-          onlyThisChain,
-          usdBalance,
-        });
-
-        setCostsCalculated(true);
-
-        if (
-          [
-            "zapIn",
-            "zapOut",
-            "crossChainRebalance",
-            "localRebalance",
-            "transfer",
-          ].includes(actionName) &&
-          txns.length < 2
-        ) {
-          throw new Error("No transactions to send");
-        }
-
-        const investmentAmountAfterFee =
-          investmentAmount *
-          (1 - portfolioHelper.swapFeeRate()) *
-          (1 - slippage / 100);
-        const chainWeight = calCrossChainInvestmentAmount(
-          normalizeChainName(chainId?.name),
-          portfolioHelper,
-        );
-        const chainWeightPerYourPortfolio =
-          Object.values(rebalancableUsdBalanceDict)
-            .filter(({ chain }) => chain === normalizeChainName(chainId?.name))
-            .reduce((sum, value) => sum + value.usdBalance, 0) / usdBalance;
-
-        await new Promise((resolve, reject) => {
-          sendBatchTransaction(txns.flat(Infinity), {
-            onSuccess: async (data) => {
-              const explorerUrl =
-                data?.chain?.blockExplorers !== undefined
-                  ? data.chain.blockExplorers[0].url
-                  : `https://explorer.${CHAIN_ID_TO_CHAIN_STRING[
-                      chainId?.id
-                    ].toLowerCase()}.io`;
-
-              setChainStatus((prevStatus) => {
-                const newStatus = { ...prevStatus, [currentChain]: true };
-                const allChainsComplete =
-                  Object.values(newStatus).every(Boolean);
-
-                if (allChainsComplete) {
-                  (async () => {
-                    try {
-                      await axios({
-                        method: "delete",
-                        url: `${process.env.NEXT_PUBLIC_SDK_API_URL}/portfolio-cache/portfolio-${portfolioName}-${account.address}`,
-                      });
-                    } catch (error) {
-                      console.error("Failed to clear portfolio cache:", error);
-                    }
-                  })();
-                }
-
-                const nextChain = Object.entries(newStatus).find(
-                  ([_, isComplete]) => !isComplete,
-                )?.[0];
-                const notificationContent = allChainsComplete ? (
-                  "All Chains Complete"
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-gray-500">Completed on</span>
-                      <div className="flex items-center gap-1">
-                        <img
-                          src={`/chainPicturesWebp/${currentChain?.toLowerCase()}.webp`}
-                          alt={currentChain}
-                          className="w-5 h-5 rounded-full"
-                        />
-                        <span className="font-medium">{currentChain}</span>
-                      </div>
-                      <span className="text-gray-500">→</span>
-                      <div className="flex items-center gap-1">
-                        <img
-                          src={`/chainPicturesWebp/${nextChain?.toLowerCase()}.webp`}
-                          alt={nextChain}
-                          className="w-5 h-5 rounded-full"
-                        />
-                        <span className="font-medium">{nextChain}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-
-                openNotificationWithIcon(
-                  notificationAPI,
-                  notificationContent,
-                  allChainsComplete ? "success" : "info",
-                  `${explorerUrl}/tx/${data.transactionHash}`,
-                );
-
-                return newStatus;
-              });
-
-              setFinishedTxn(true);
-              const newNextChain = switchNextChain(data.chain.name);
-              setNextStepChain(newNextChain);
-              setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
-
-              await axios({
-                method: "post",
-                url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
-                headers: { "Content-Type": "application/json" },
-                data: {
-                  user_api_key: "placeholder",
-                  tx_hash: data.transactionHash,
-                  address: account.address,
-                  metadata: JSON.stringify(
-                    prepareTransactionMetadata({
-                      portfolioName,
-                      actionName,
-                      tokenSymbol,
-                      investmentAmountAfterFee,
-                      zapOutPercentage,
-                      chainId,
-                      chainWeightPerYourPortfolio,
-                      usdBalance,
-                      chainWeight,
-                      rebalancableUsdBalanceDict,
-                      pendingRewards,
-                      portfolioHelper,
-                      currentChain,
-                      recipient,
-                      protocolAssetDustInWallet,
-                      onlyThisChain,
-                    }),
-                  ),
-                },
-              });
-
-              if (actionName === "transfer") {
-                await axios({
-                  method: "post",
-                  url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
-                  headers: { "Content-Type": "application/json" },
-                  data: {
-                    user_api_key: "placeholder",
-                    tx_hash: data.transactionHash,
-                    address: recipient,
-                    metadata: JSON.stringify({
-                      portfolioName,
-                      actionName: "receive",
-                      tokenSymbol,
-                      investmentAmount: investmentAmountAfterFee,
-                      timestamp: Math.floor(Date.now() / 1000),
-                      chain:
-                        CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
-                      zapInAmountOnThisChain:
-                        usdBalance *
-                        zapOutPercentage *
-                        chainWeightPerYourPortfolio,
-                      sender: account.address,
-                    }),
-                  },
-                });
-              }
-            },
-            onError: async (error) => {
-              const errorMessage = await handleTransactionError(
-                error,
-                notificationAPI,
-                account?.address,
-                chainId?.name,
-                setErrorMsg,
-              );
-              if (errorMessage) {
-                setErrorMsg(errorMessage);
-              }
-            },
-          });
-        });
-      } catch (error) {
-        const errorMessage = await handleTransactionError(
-          error,
-          notificationAPI,
-          account?.address,
-          chainId?.name,
-          setErrorMsg,
-        );
-        if (errorMessage) {
-          setErrorMsg(errorMessage);
-        }
-      }
-    },
-    [
-      account,
-      chainId,
-      portfolioHelper,
-      portfolioName,
-      selectedToken,
-      investmentAmount,
-      zapOutPercentage,
-      slippage,
-      rebalancableUsdBalanceDict,
-      recipient,
-      protocolAssetDustInWallet,
-      protocolAssetDustInWalletLoading,
-      usdBalance,
-      notificationAPI,
-      setErrorMsg,
-      sendBatchTransaction,
-      setNextStepChain,
-      currentChain,
-    ],
-  );
-
-  return {
-    open,
-    setOpen,
-    finishedTxn,
-    txnLink,
-    actionName,
-    onlyThisChain,
-    stepName,
-    tradingLoss,
-    totalTradingLoss,
-    platformFee,
-    costsCalculated,
-    chainStatus,
-    handleAAWalletAction,
-  };
-};
-
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
-  console.log("portfolioName", portfolioName, "router.query", router.query);
   const account = useActiveAccount();
   const chainId = useActiveWalletChain();
   const switchChain = useSwitchActiveWalletChain();
@@ -443,6 +122,13 @@ export default function IndexOverviews() {
     protocolAssetDustInWalletLoading,
     setProtocolAssetDustInWalletLoading,
   ] = useState(false);
+  const [actionName, setActionName] = useState("");
+  const [onlyThisChain, setOnlyThisChain] = useState(false);
+  const [totalTradingLoss, setTotalTradingLoss] = useState(0);
+  const [tradingLoss, setTradingLoss] = useState(0);
+  const [platformFee, setPlatformFee] = useState(0);
+  const [costsCalculated, setCostsCalculated] = useState(false);
+  const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(() =>
     determineSlippage({ portfolioName }),
   );
@@ -465,6 +151,9 @@ export default function IndexOverviews() {
   ] = useState(false);
 
   const [principalBalance, setPrincipalBalance] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [finishedTxn, setFinishedTxn] = useState(false);
+  const [txnLink, setTxnLink] = useState("");
   const [tokenPricesMappingTable, setTokenPricesMappingTable] = useState({});
   const [tabKey, setTabKey] = useState("");
   const [lockUpPeriod, setLockUpPeriod] = useState(0);
@@ -475,19 +164,16 @@ export default function IndexOverviews() {
   const [showZapIn, setShowZapIn] = useState(false);
 
   const preservedAmountRef = useRef(null);
+
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [nextStepChain, setNextStepChain] = useState("");
-  const [nextChainInvestmentAmount, setNextChainInvestmentAmount] = useState(0);
 
   const handleSetSelectedToken = useCallback((token) => {
     setSelectedToken(token);
     setPreviousTokenSymbol(token.split("-")[0].toLowerCase());
   }, []);
-
   const handleSetInvestmentAmount = useCallback((amount) => {
     setInvestmentAmount(amount);
   }, []);
-
   const portfolioHelper = getPortfolioHelper(portfolioName);
   const { mutate: sendBatchTransaction } = useSendBatchTransaction();
   const {
@@ -497,9 +183,276 @@ export default function IndexOverviews() {
   } = useSelector((state) => state.strategyMetadata);
   const dispatch = useDispatch();
 
+  const handleAAWalletAction = async (actionName, onlyThisChain = false) => {
+    const isGasPriceAcceptable = await checkGasPrice({
+      chainId,
+      THIRDWEB_CLIENT,
+      notificationAPI,
+    });
+    if (!isGasPriceAcceptable) {
+      return;
+    }
+
+    setOpen(true);
+    setActionName(actionName);
+    setOnlyThisChain(onlyThisChain);
+    setCostsCalculated(false);
+    setFinishedTxn(false);
+    setPlatformFee(0);
+    setTotalTradingLoss(0);
+    setTradingLoss(0);
+    setStepName("");
+
+    const tokenSymbolAndAddress = selectedToken.toLowerCase();
+
+    if (!tokenSymbolAndAddress) {
+      alert("Please select a token");
+      return;
+    }
+    if (!account) return;
+    const [tokenSymbol, tokenAddress, tokenDecimals] =
+      tokenSymbolAndAddress.split("-");
+    try {
+      const txns = await generateIntentTxns({
+        actionName,
+        chainMetadata:
+          chainId?.name === undefined
+            ? { name: CHAIN_ID_TO_CHAIN_STRING[chainId?.id], ...chainId }
+            : chainId,
+        portfolioHelper,
+        accountAddress: account.address,
+        tokenSymbol,
+        tokenAddress,
+        investmentAmount,
+        tokenDecimals,
+        zapOutPercentage,
+        setTradingLoss,
+        setStepName,
+        setTotalTradingLoss,
+        setPlatformFee,
+        slippage,
+        rebalancableUsdBalanceDict,
+        recipient,
+        protocolAssetDustInWallet:
+          protocolAssetDustInWallet?.[normalizeChainName(chainId?.name)] || {},
+        protocolAssetDustInWalletLoading,
+        onlyThisChain,
+        usdBalance,
+      });
+      setCostsCalculated(true);
+      if (
+        [
+          "zapIn",
+          "zapOut",
+          "crossChainRebalance",
+          "localRebalance",
+          "transfer",
+        ].includes(actionName) &&
+        txns.length < 2
+      ) {
+        throw new Error("No transactions to send");
+      }
+
+      // Reset the processing flag before changing chain
+      hasProcessedChainChangeRef.current = false;
+      preservedAmountRef.current = investmentAmount;
+      const investmentAmountAfterFee =
+        investmentAmount *
+        (1 - portfolioHelper.swapFeeRate()) *
+        (1 - slippage / 100);
+      const chainWeight = calCrossChainInvestmentAmount(
+        normalizeChainName(chainId?.name),
+        portfolioHelper,
+      );
+      const chainWeightPerYourPortfolio =
+        Object.values(rebalancableUsdBalanceDict)
+          .filter(({ chain }) => chain === normalizeChainName(chainId?.name))
+          .reduce((sum, value) => sum + value.usdBalance, 0) / usdBalance;
+      // Call sendBatchTransaction and wait for the result
+      await new Promise((resolve, reject) => {
+        sendBatchTransaction(txns.flat(Infinity), {
+          onSuccess: async (data) => {
+            const explorerUrl =
+              data?.chain?.blockExplorers !== undefined
+                ? data.chain.blockExplorers[0].url
+                : `https://explorer.${CHAIN_ID_TO_CHAIN_STRING[
+                    chainId?.id
+                  ].toLowerCase()}.io`;
+            // First update chainStatus
+            setChainStatus((prevStatus) => {
+              const newStatus = { ...prevStatus, [currentChain]: true };
+              const allChainsComplete = Object.values(newStatus).every(Boolean);
+
+              if (allChainsComplete) {
+                // Handle async operations separately
+                (async () => {
+                  try {
+                    await axios({
+                      method: "delete",
+                      url: `${process.env.NEXT_PUBLIC_SDK_API_URL}/portfolio-cache/portfolio-${portfolioName}-${account.address}`,
+                    });
+                  } catch (error) {
+                    console.error("Failed to clear portfolio cache:", error);
+                  }
+                  setRefreshTrigger(Date.now());
+                })();
+              }
+
+              // Find next chain for notification
+              const nextChain = Object.entries(newStatus).find(
+                ([chain, isComplete]) => !isComplete,
+              )?.[0];
+
+              // Create notification content with image
+              const notificationContent = allChainsComplete ? (
+                "All Chains Complete"
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-500">Completed on</span>
+                    <div className="flex items-center gap-1">
+                      <img
+                        src={`/chainPicturesWebp/${currentChain?.toLowerCase()}.webp`}
+                        alt={currentChain}
+                        className="w-5 h-5 rounded-full"
+                      />
+                      <span className="font-medium">{currentChain}</span>
+                    </div>
+                    <span className="text-gray-500">→</span>
+                    <div className="flex items-center gap-1">
+                      <img
+                        src={`/chainPicturesWebp/${nextChain?.toLowerCase()}.webp`}
+                        alt={nextChain}
+                        className="w-5 h-5 rounded-full"
+                      />
+                      <span className="font-medium">{nextChain}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+
+              openNotificationWithIcon(
+                notificationAPI,
+                notificationContent,
+                allChainsComplete ? "success" : "info",
+                `${explorerUrl}/tx/${data.transactionHash}`,
+              );
+
+              return newStatus;
+            });
+            // Continue with other state updates
+            setFinishedTxn(true);
+            const newNextChain = switchNextChain(data.chain.name);
+            setNextStepChain(newNextChain);
+            setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
+
+            await axios({
+              method: "post",
+              url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
+              headers: {
+                "Content-Type": "application/json",
+              },
+              data: {
+                user_api_key: "placeholder",
+                tx_hash: data.transactionHash,
+                address: account.address,
+                metadata: JSON.stringify(
+                  prepareTransactionMetadata({
+                    portfolioName,
+                    actionName,
+                    tokenSymbol,
+                    investmentAmountAfterFee,
+                    zapOutPercentage,
+                    chainId,
+                    chainWeightPerYourPortfolio,
+                    usdBalance,
+                    chainWeight,
+                    rebalancableUsdBalanceDict,
+                    pendingRewards,
+                    portfolioHelper,
+                    currentChain,
+                    recipient,
+                    protocolAssetDustInWallet,
+                    onlyThisChain,
+                  }),
+                ),
+              },
+            });
+
+            if (actionName === "transfer") {
+              await axios({
+                method: "post",
+                url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                data: {
+                  user_api_key: "placeholder",
+                  tx_hash: data.transactionHash,
+                  address: recipient,
+                  metadata: JSON.stringify({
+                    portfolioName,
+                    actionName: "receive",
+                    tokenSymbol,
+                    investmentAmount: investmentAmountAfterFee,
+                    timestamp: Math.floor(Date.now() / 1000),
+                    chain: CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
+                    zapInAmountOnThisChain:
+                      usdBalance *
+                      zapOutPercentage *
+                      chainWeightPerYourPortfolio,
+                    sender: account.address,
+                  }),
+                },
+              });
+            }
+          },
+          onError: async (error) => {
+            const errorMessage = await handleTransactionError(
+              error,
+              notificationAPI,
+              account?.address,
+              chainId?.name,
+              setErrorMsg,
+            );
+            if (errorMessage) {
+              setErrorMsg(errorMessage);
+            }
+          },
+        });
+      }).catch((error) => {
+        // This catch will handle the rejected promise from onError
+        // No need to call handleTransactionError again as it was already called
+        console.error("Transaction failed:", error);
+      });
+    } catch (error) {
+      // This handles errors that occur before the transaction is sent
+      const errorMessage = await handleTransactionError(
+        error,
+        notificationAPI,
+        account?.address,
+        chainId?.name,
+        setErrorMsg,
+      );
+      if (errorMessage) {
+        setErrorMsg(errorMessage);
+      }
+    }
+  };
+
+  const [nextStepChain, setNextStepChain] = useState("");
+
   const currentChain = normalizeChainName(chainId?.name);
   // get all available chains
   const availableAssetChains = getAvailableAssetChains(portfolioHelper);
+  // get chain status
+  const [chainStatus, setChainStatus] = useState({
+    base: false,
+    arbitrum: false,
+    op: false,
+  });
+
+  const [nextChainInvestmentAmount, setNextChainInvestmentAmount] = useState(0);
 
   const onChange = (key) => {
     setTabKey(key);
@@ -546,42 +499,6 @@ export default function IndexOverviews() {
     </>
   );
 
-  // Use the extracted transaction handler
-  const {
-    open,
-    setOpen,
-    finishedTxn,
-    txnLink,
-    actionName,
-    onlyThisChain,
-    stepName,
-    tradingLoss,
-    totalTradingLoss,
-    platformFee,
-    costsCalculated,
-    chainStatus,
-    handleAAWalletAction,
-  } = useTransactionHandler(
-    account,
-    chainId,
-    portfolioHelper,
-    portfolioName,
-    selectedToken,
-    investmentAmount,
-    zapOutPercentage,
-    slippage,
-    rebalancableUsdBalanceDict,
-    recipient,
-    protocolAssetDustInWallet,
-    protocolAssetDustInWalletLoading,
-    usdBalance,
-    notificationAPI,
-    setErrorMsg,
-    sendBatchTransaction,
-    setNextStepChain,
-    currentChain,
-  );
-
   useEffect(() => {
     if (
       portfolioApr[portfolioName] === undefined ||
@@ -601,7 +518,6 @@ export default function IndexOverviews() {
       setSlippage(newSlippage);
     }
   }, [portfolioName, selectedToken, chainId, tabKey, actionName]);
-
   useEffect(() => {
     console.time("🚀 Portfolio data fetch");
     // Clear states on initial load/refresh
@@ -857,6 +773,7 @@ export default function IndexOverviews() {
     recipient,
     recipientError,
     selectedToken,
+    setFinishedTxn,
     setInvestmentAmount,
     setNextChainInvestmentAmount,
     setPreviousTokenSymbol,
@@ -888,7 +805,6 @@ export default function IndexOverviews() {
     // Add portfolioName to tabProps if not already included
     portfolioName,
   });
-
   return (
     <BasePage chainId={chainId} switchChain={switchChain}>
       {notificationContextHolder}
@@ -1087,7 +1003,7 @@ export default function IndexOverviews() {
               portfolioHelper={portfolioHelper}
             />
 
-            <HistoricalData key={portfolioName} portfolioName={portfolioName} />
+            <HistoricalData portfolioName={portfolioName} />
 
             <TransactionHistoryPanel
               setPrincipalBalance={setPrincipalBalance}
