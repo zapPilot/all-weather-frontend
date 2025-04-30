@@ -86,7 +86,7 @@ const ChainDropdown = memo(({ chainId, switchChain }) => {
   );
 
   return (
-    <Dropdown menu={menuConfig} trigger="click">
+    <Dropdown menu={menuConfig} >
       <DropdownTrigger chainName={chainName} />
     </Dropdown>
   );
