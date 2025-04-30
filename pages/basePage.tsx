@@ -29,7 +29,10 @@ interface BasePageProps {
 }
 
 // Extract header component
-const PageHeader = memo(function PageHeader({ chainId, switchChain }: Pick<BasePageProps, 'chainId' | 'switchChain'>) {
+const PageHeader = memo(function PageHeader({
+  chainId,
+  switchChain,
+}: Pick<BasePageProps, "chainId" | "switchChain">) {
   return (
     <Affix offsetTop={0}>
       <Header className={`${styles.header} justify-between sm:h-24 h-auto`}>
@@ -58,23 +61,26 @@ const PageHeader = memo(function PageHeader({ chainId, switchChain }: Pick<BaseP
 
 // Extract footer component
 const PageFooter = memo(function PageFooter() {
-  const socialLinks = useMemo(() => [
-    {
-      href: "https://all-weather-protocol.gitbook.io/",
-      icon: "fi fi-rr-document",
-      label: "Documentation"
-    },
-    {
-      href: "https://twitter.com/all_weather_p",
-      icon: "fi fi-brands-twitter-alt",
-      label: "Twitter"
-    },
-    {
-      href: "https://discord.gg/sNsMmtsCCV",
-      icon: "fi fi-brands-discord",
-      label: "Discord"
-    }
-  ], []);
+  const socialLinks = useMemo(
+    () => [
+      {
+        href: "https://all-weather-protocol.gitbook.io/",
+        icon: "fi fi-rr-document",
+        label: "Documentation",
+      },
+      {
+        href: "https://twitter.com/all_weather_p",
+        icon: "fi fi-brands-twitter-alt",
+        label: "Twitter",
+      },
+      {
+        href: "https://discord.gg/sNsMmtsCCV",
+        icon: "fi fi-brands-discord",
+        label: "Discord",
+      },
+    ],
+    [],
+  );
 
   return (
     <Footer className={styles.footer}>
@@ -100,7 +106,8 @@ const BasePage: React.FC<BasePageProps> = memo(function BasePage({
 }) {
   const router = useRouter();
   const account = useActiveAccount();
-  const [notificationAPI, notificationContextHolder] = notification.useNotification();
+  const [notificationAPI, notificationContextHolder] =
+    notification.useNotification();
 
   const addReferrer = useCallback(
     async (currentInputValue: string) => {
@@ -108,7 +115,9 @@ const BasePage: React.FC<BasePageProps> = memo(function BasePage({
 
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_SDK_API_URL}/referral/${account.address.toLowerCase()}/referrer`,
+          `${
+            process.env.NEXT_PUBLIC_SDK_API_URL
+          }/referral/${account.address.toLowerCase()}/referrer`,
           {
             method: "POST",
             headers: {
@@ -129,7 +138,8 @@ const BasePage: React.FC<BasePageProps> = memo(function BasePage({
             `Successfully add referrer ${currentInputValue.toLowerCase()}, happy earning`,
           );
         } else if (
-          resp.status === "Referrer Already Exists! Or Your referrer cannot be referred by you"
+          resp.status ===
+          "Referrer Already Exists! Or Your referrer cannot be referred by you"
         ) {
           return;
         } else {
@@ -141,7 +151,8 @@ const BasePage: React.FC<BasePageProps> = memo(function BasePage({
           );
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error occurred";
         openNotificationWithIcon(
           notificationAPI,
           "Referral Program",
@@ -161,13 +172,16 @@ const BasePage: React.FC<BasePageProps> = memo(function BasePage({
   }, [router.isReady, router.query.referrer, account, addReferrer]);
 
   // Memoize head content
-  const headContent = useMemo(() => (
-    <Head>
-      <title>All Weather Protocol: {content.siteInfo.tagline}</title>
-      <meta content="All Weather Protocol" name="description" />
-      <link href="/favicon.ico" rel="icon" />
-    </Head>
-  ), []);
+  const headContent = useMemo(
+    () => (
+      <Head>
+        <title>All Weather Protocol: {content.siteInfo.tagline}</title>
+        <meta content="All Weather Protocol" name="description" />
+        <link href="/favicon.ico" rel="icon" />
+      </Head>
+    ),
+    [],
+  );
 
   return (
     <div>

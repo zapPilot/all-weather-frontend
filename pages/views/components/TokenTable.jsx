@@ -11,10 +11,10 @@ const TABLE_THEME = {
   },
 };
 
-const TokenTable = memo(function TokenTable({ 
-  columns, 
-  dataSource, 
-  pagination = { 
+const TokenTable = memo(function TokenTable({
+  columns,
+  dataSource,
+  pagination = {
     pageSize: 10,
     showSizeChanger: true,
     showQuickJumper: true,
@@ -27,23 +27,26 @@ const TokenTable = memo(function TokenTable({
   const theme = useMemo(() => TABLE_THEME, []);
 
   // Memoize the table props to prevent unnecessary re-renders
-  const tableProps = useMemo(() => ({
-    columns,
-    dataSource,
-    pagination,
-    loading,
-    rowKey,
-    scroll,
-    size: "middle",
-    bordered: true,
-    className: "token-table",
-    // Performance optimizations
-    virtual: true,
-    scrollToFirstRowOnChange: true,
-    // Memory optimizations
-    destroyOnClose: true,
-    preserveSelectedRowKeys: false,
-  }), [columns, dataSource, pagination, loading, rowKey, scroll]);
+  const tableProps = useMemo(
+    () => ({
+      columns,
+      dataSource,
+      pagination,
+      loading,
+      rowKey,
+      scroll,
+      size: "middle",
+      bordered: true,
+      className: "token-table",
+      // Performance optimizations
+      virtual: true,
+      scrollToFirstRowOnChange: true,
+      // Memory optimizations
+      destroyOnClose: true,
+      preserveSelectedRowKeys: false,
+    }),
+    [columns, dataSource, pagination, loading, rowKey, scroll],
+  );
 
   return (
     <ConfigProvider theme={theme}>

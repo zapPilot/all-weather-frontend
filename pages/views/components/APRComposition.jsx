@@ -14,7 +14,9 @@ const TokenDisplay = memo(function TokenDisplay({ symbol, usdValue }) {
         loading="lazy"
         quality={50}
         unoptimized={true}
-        placeholder={<div className="w-5 h-5 bg-gray-200 animate-pulse rounded-full" />}
+        placeholder={
+          <div className="w-5 h-5 bg-gray-200 animate-pulse rounded-full" />
+        }
       />
       <span className="text-sm">
         {symbol} ${usdValue.toFixed(2)}
@@ -35,7 +37,7 @@ const APRComposition = memo(function APRComposition({
   // Memoize aggregated tokens calculation
   const aggregatedTokens = useMemo(() => {
     if (!APRData || pendingRewardsLoading) return [];
-    
+
     return Object.values(
       Object.entries(APRData).reduce((acc, [_, value]) => {
         const symbol = value.symbol;
@@ -47,7 +49,7 @@ const APRComposition = memo(function APRComposition({
         }
         acc[symbol].usdDenominatedValue += value.usdDenominatedValue || 0;
         return acc;
-      }, {})
+      }, {}),
     ).sort((a, b) => b.usdDenominatedValue - a.usdDenominatedValue);
   }, [APRData, pendingRewardsLoading]);
 

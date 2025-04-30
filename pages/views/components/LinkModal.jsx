@@ -1,7 +1,11 @@
 import React, { memo, useCallback } from "react";
 import { Modal } from "antd";
 
-const LinkModal = memo(function LinkModal({ protocolLink, linkModalOpen, setLinkModalOpen }) {
+const LinkModal = memo(function LinkModal({
+  protocolLink,
+  linkModalOpen,
+  setLinkModalOpen,
+}) {
   const handleOk = useCallback(() => {
     if (protocolLink) {
       window.open(protocolLink, "_blank", "noopener,noreferrer");
@@ -23,9 +27,9 @@ const LinkModal = memo(function LinkModal({ protocolLink, linkModalOpen, setLink
     >
       <p className="break-all">
         Do you want to open &apos;
-        <a 
-          href={protocolLink} 
-          target="_blank" 
+        <a
+          href={protocolLink}
+          target="_blank"
           rel="noopener noreferrer"
           className="text-blue-500 hover:text-blue-600"
         >

@@ -71,39 +71,52 @@ const ExampleUI = memo(function ExampleUI() {
   );
 
   // Memoize vaults data
-  const vaults = useMemo(() => 
-    VAULTS_CONFIG.map(vault => ({
-      ...vault,
-      href: `/indexes/indexOverviews/?portfolioName=${encodeURIComponent(vault.portfolioName)}`,
-      apr: strategyMetadata?.[vault.portfolioName]?.portfolioAPR * 100,
-      tvl: strategyMetadata?.[vault.portfolioName]?.portfolioTVL,
-      portfolioHelper: getPortfolioHelper(vault.portfolioName),
-    })), [strategyMetadata]);
+  const vaults = useMemo(
+    () =>
+      VAULTS_CONFIG.map((vault) => ({
+        ...vault,
+        href: `/indexes/indexOverviews/?portfolioName=${encodeURIComponent(
+          vault.portfolioName,
+        )}`,
+        apr: strategyMetadata?.[vault.portfolioName]?.portfolioAPR * 100,
+        tvl: strategyMetadata?.[vault.portfolioName]?.portfolioTVL,
+        portfolioHelper: getPortfolioHelper(vault.portfolioName),
+      })),
+    [strategyMetadata],
+  );
 
-  const partnershipVaults = useMemo(() => 
-    PARTNERSHIP_VAULTS_CONFIG.map(vault => ({
-      ...vault,
-      href: `/indexes/indexOverviews/?portfolioName=${encodeURIComponent(vault.portfolioName)}`,
-      apr: strategyMetadata?.[vault.portfolioName]?.portfolioAPR * 100,
-      tvl: strategyMetadata?.[vault.portfolioName]?.portfolioTVL,
-      portfolioHelper: getPortfolioHelper(vault.portfolioName),
-    })), [strategyMetadata]);
+  const partnershipVaults = useMemo(
+    () =>
+      PARTNERSHIP_VAULTS_CONFIG.map((vault) => ({
+        ...vault,
+        href: `/indexes/indexOverviews/?portfolioName=${encodeURIComponent(
+          vault.portfolioName,
+        )}`,
+        apr: strategyMetadata?.[vault.portfolioName]?.portfolioAPR * 100,
+        tvl: strategyMetadata?.[vault.portfolioName]?.portfolioTVL,
+        portfolioHelper: getPortfolioHelper(vault.portfolioName),
+      })),
+    [strategyMetadata],
+  );
 
   // Memoize fetch function
-  const fetchBundlePortfolio = useCallback((refresh) => {
-    if (!walletAddress && !searchWalletAddress) return;
+  const fetchBundlePortfolio = useCallback(
+    (refresh) => {
+      if (!walletAddress && !searchWalletAddress) return;
 
-    dispatch(fetchDataStart());
-    const address = searchWalletAddress 
-      ? searchWalletAddress.toLowerCase().trim().replace("/", "")
-      : walletAddress;
+      dispatch(fetchDataStart());
+      const address = searchWalletAddress
+        ? searchWalletAddress.toLowerCase().trim().replace("/", "")
+        : walletAddress;
 
-    axios
-      .get(`${API_URL}/bundle_portfolio/${address}?refresh=${refresh}`)
-      .then((response) => response.data)
-      .then((data) => dispatch(fetchDataSuccess(data)))
-      .catch((error) => dispatch(fetchDataFailure(error.toString())));
-  }, [dispatch, walletAddress, searchWalletAddress]);
+      axios
+        .get(`${API_URL}/bundle_portfolio/${address}?refresh=${refresh}`)
+        .then((response) => response.data)
+        .then((data) => dispatch(fetchDataSuccess(data)))
+        .catch((error) => dispatch(fetchDataFailure(error.toString())));
+    },
+    [dispatch, walletAddress, searchWalletAddress],
+  );
 
   // Effects
   useEffect(() => {
@@ -124,7 +137,10 @@ const ExampleUI = memo(function ExampleUI() {
 
   // Memoize APR display
   const aprDisplay = useMemo(() => {
-    if (strategyLoading || isNaN(strategyMetadata["Stable+ Vault"]?.portfolioAPR)) {
+    if (
+      strategyLoading ||
+      isNaN(strategyMetadata["Stable+ Vault"]?.portfolioAPR)
+    ) {
       return <Spin />;
     }
     return (strategyMetadata["Stable+ Vault"]?.portfolioAPR * 100).toFixed(2);
@@ -152,13 +168,19 @@ const ExampleUI = memo(function ExampleUI() {
             <p className="heading-subtitle">{content.siteInfo.subtitle}</p>
             <p className="heading-subtitle">
               Enjoy Up to
-              <span className="text-5xl tracking-tight text-[#5DFDCB]" data-testid="apr">
-                {" "}{aprDisplay}%{" "}
+              <span
+                className="text-5xl tracking-tight text-[#5DFDCB]"
+                data-testid="apr"
+              >
+                {" "}
+                {aprDisplay}%{" "}
               </span>
               APR
             </p>
             <Link
-              href={`/indexes/indexOverviews?portfolioName=${encodeURIComponent("Stable+ Vault")}`}
+              href={`/indexes/indexOverviews?portfolioName=${encodeURIComponent(
+                "Stable+ Vault",
+              )}`}
             >
               <button
                 type="button"

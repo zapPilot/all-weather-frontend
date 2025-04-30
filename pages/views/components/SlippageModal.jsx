@@ -17,16 +17,22 @@ const SlippageModal = memo(function SlippageModal({
     setSlippageModalOpen(false);
   }, [setSlippageModalOpen]);
 
-  const handleSlippageChange = useCallback((e) => {
-    setSlippage(e.target.value);
-  }, [setSlippage]);
-
-  const theme = useMemo(() => ({
-    token: {
-      colorPrimary: "#5DFDCB",
-      colorTextLightSolid: "#000000",
+  const handleSlippageChange = useCallback(
+    (e) => {
+      setSlippage(e.target.value);
     },
-  }), []);
+    [setSlippage],
+  );
+
+  const theme = useMemo(
+    () => ({
+      token: {
+        colorPrimary: "#5DFDCB",
+        colorTextLightSolid: "#000000",
+      },
+    }),
+    [],
+  );
 
   return (
     <Modal
@@ -50,8 +56,8 @@ const SlippageModal = memo(function SlippageModal({
           className="flex gap-2"
         >
           {SLIPPAGE_OPTIONS.map(({ value, label }) => (
-            <Radio.Button 
-              key={value} 
+            <Radio.Button
+              key={value}
               value={value}
               className="flex-1 text-center"
             >

@@ -8,10 +8,10 @@ import APRComposition from "../pages/views/components/APRComposition";
 import React, { useMemo, memo } from "react";
 
 // Extract RebalanceLabel component
-const RebalanceLabel = memo(function RebalanceLabel({ 
-  currentAPR, 
-  targetAPR, 
-  isLoading 
+const RebalanceLabel = memo(function RebalanceLabel({
+  currentAPR,
+  targetAPR,
+  isLoading,
 }) {
   if (currentAPR >= targetAPR) {
     return (
@@ -25,17 +25,10 @@ const RebalanceLabel = memo(function RebalanceLabel({
     <div className="flex flex-col items-center">
       <div className="flex items-center text-xs bg-opacity-20 bg-blue-500 rounded-full px-2 py-0.5 mb-1">
         <span className="text-red-500">
-          {isLoading ? (
-            <Spin size="small" />
-          ) : (
-            currentAPR.toFixed(2)
-          )}
-          %
+          {isLoading ? <Spin size="small" /> : currentAPR.toFixed(2)}%
         </span>
         {" → "}
-        <span className="text-green-400">
-          {targetAPR.toFixed(2)}%
-        </span>
+        <span className="text-green-400">{targetAPR.toFixed(2)}%</span>
         <span className="text-yellow-400 animate-spin ml-2">✨</span>
       </div>
       <button className="flex items-center gap-2 text-white bg-gradient-to-r from-purple-500 to-indigo-500 font-bold py-2 px-6 rounded-full shadow-lg hover:shadow-xl transition duration-300 transform hover:scale-110">
@@ -46,10 +39,10 @@ const RebalanceLabel = memo(function RebalanceLabel({
 });
 
 // Extract ClaimLabel component
-const ClaimLabel = memo(function ClaimLabel({ 
-  pendingRewards, 
-  pendingRewardsLoading, 
-  sumOfPendingRewards 
+const ClaimLabel = memo(function ClaimLabel({
+  pendingRewards,
+  pendingRewardsLoading,
+  sumOfPendingRewards,
 }) {
   return (
     <span>
@@ -94,25 +87,27 @@ export default function useTabItems(props) {
   } = props;
 
   // Memoize calculations
-  const sumOfPendingRewards = useMemo(() => 
-    calculateSumOfPendingRewards(pendingRewards),
-    [pendingRewards]
+  const sumOfPendingRewards = useMemo(
+    () => calculateSumOfPendingRewards(pendingRewards),
+    [pendingRewards],
   );
 
-  const currentAPR = useMemo(() => 
-    calCurrentAPR(rebalancableUsdBalanceDict),
-    [rebalancableUsdBalanceDict]
+  const currentAPR = useMemo(
+    () => calCurrentAPR(rebalancableUsdBalanceDict),
+    [rebalancableUsdBalanceDict],
   );
 
-  const targetAPR = useMemo(() => 
-    portfolioApr[portfolioName]?.portfolioAPR * 100,
-    [portfolioApr, portfolioName]
+  const targetAPR = useMemo(
+    () => portfolioApr[portfolioName]?.portfolioAPR * 100,
+    [portfolioApr, portfolioName],
   );
 
   // Check if URL starts with 'app'
-  const isAppDomain = useMemo(() => 
-    typeof window !== "undefined" && window.location.hostname.startsWith("app"),
-    []
+  const isAppDomain = useMemo(
+    () =>
+      typeof window !== "undefined" &&
+      window.location.hostname.startsWith("app"),
+    [],
   );
 
   // Memoize tab items

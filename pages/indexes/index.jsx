@@ -50,11 +50,7 @@ const VaultCard = memo(function VaultCard({ product }) {
           <div className="text-center">
             <p className="text-gray-400">APR</p>
             <p className="text-3xl text-emerald-400" role="apr">
-              {isNaN(product.apr) ? (
-                <Spin />
-              ) : (
-                `${product.apr.toFixed(2)}%`
-              )}
+              {isNaN(product.apr) ? <Spin /> : `${product.apr.toFixed(2)}%`}
             </p>
           </div>
         </div>
@@ -77,7 +73,7 @@ const Vaults = memo(function Vaults({ vaults }) {
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/all_weather_pools`,
-        API_CONFIG
+        API_CONFIG,
       );
       const json = await response.json();
       setProtocolName(json.data[1].data[0].pool.name);

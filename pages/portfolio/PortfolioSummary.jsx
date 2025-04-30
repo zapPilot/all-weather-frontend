@@ -86,11 +86,7 @@ const BalanceDisplay = memo(function BalanceDisplay({
                 </div>
               )}
 
-              {rebalancableUsdBalanceDict ? (
-                balanceBreakdown
-              ) : (
-                <Spin />
-              )}
+              {rebalancableUsdBalanceDict ? balanceBreakdown : <Spin />}
             </div>
           }
         >
@@ -132,9 +128,9 @@ const PortfolioSummary = memo(function PortfolioSummary({
   portfolioHelper,
 }) {
   // Memoize chart data calculation
-  const chartData = useMemo(() => 
-    getCategoryWeights(organizeByCategory, portfolioHelper),
-    [portfolioHelper]
+  const chartData = useMemo(
+    () => getCategoryWeights(organizeByCategory, portfolioHelper),
+    [portfolioHelper],
   );
 
   return (

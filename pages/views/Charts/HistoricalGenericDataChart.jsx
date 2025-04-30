@@ -57,9 +57,10 @@ const HistoricalGenericDataChart = memo(function HistoricalGenericDataChart({
       setData(transformedData);
 
       // Get the title from the config
-      const configType = option === "line" 
-        ? "historicalBalances" 
-        : option === "column" && title.includes("ROI")
+      const configType =
+        option === "line"
+          ? "historicalBalances"
+          : option === "column" && title.includes("ROI")
           ? "dailyROI"
           : "dailyPnL";
 
