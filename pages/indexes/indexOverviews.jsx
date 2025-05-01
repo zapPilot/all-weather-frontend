@@ -190,7 +190,7 @@ export default function IndexOverviews() {
       notificationAPI,
     });
     if (!isGasPriceAcceptable) {
-      return;
+      return false;
     }
 
     setOpen(true);
@@ -207,11 +207,13 @@ export default function IndexOverviews() {
 
     if (!tokenSymbolAndAddress) {
       alert("Please select a token");
-      return;
+      return false;
     }
-    if (!account) return;
+    if (!account) return false;
+
     const [tokenSymbol, tokenAddress, tokenDecimals] =
       tokenSymbolAndAddress.split("-");
+
     try {
       const txns = await generateIntentTxns({
         actionName,
@@ -239,7 +241,9 @@ export default function IndexOverviews() {
         onlyThisChain,
         usdBalance,
       });
+
       setCostsCalculated(true);
+
       if (
         [
           "zapIn",
@@ -268,23 +272,24 @@ export default function IndexOverviews() {
         Object.values(rebalancableUsdBalanceDict)
           .filter(({ chain }) => chain === normalizeChainName(chainId?.name))
           .reduce((sum, value) => sum + value.usdBalance, 0) / usdBalance;
-      // Call sendBatchTransaction and wait for the result
-      await new Promise((resolve, reject) => {
+
+      // Return a promise that resolves when the transaction is successful
+      return new Promise((resolve, reject) => {
         sendBatchTransaction(txns.flat(Infinity), {
           onSuccess: async (data) => {
+            setErrorMsg("");
             const explorerUrl =
               data?.chain?.blockExplorers !== undefined
                 ? data.chain.blockExplorers[0].url
                 : `https://explorer.${CHAIN_ID_TO_CHAIN_STRING[
                     chainId?.id
                   ].toLowerCase()}.io`;
-            // First update chainStatus
+
             setChainStatus((prevStatus) => {
               const newStatus = { ...prevStatus, [currentChain]: true };
               const allChainsComplete = Object.values(newStatus).every(Boolean);
 
               if (allChainsComplete) {
-                // Handle async operations separately
                 (async () => {
                   try {
                     await axios({
@@ -298,12 +303,9 @@ export default function IndexOverviews() {
                 })();
               }
 
-              // Find next chain for notification
               const nextChain = Object.entries(newStatus).find(
                 ([chain, isComplete]) => !isComplete,
               )?.[0];
-
-              // Create notification content with image
               const notificationContent = allChainsComplete ? (
                 "All Chains Complete"
               ) : (
@@ -340,7 +342,7 @@ export default function IndexOverviews() {
 
               return newStatus;
             });
-            // Continue with other state updates
+
             setFinishedTxn(true);
             const newNextChain = switchNextChain(data.chain.name);
             setNextStepChain(newNextChain);
@@ -349,9 +351,7 @@ export default function IndexOverviews() {
             await axios({
               method: "post",
               url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
-              headers: {
-                "Content-Type": "application/json",
-              },
+              headers: { "Content-Type": "application/json" },
               data: {
                 user_api_key: "placeholder",
                 tx_hash: data.transactionHash,
@@ -383,9 +383,7 @@ export default function IndexOverviews() {
               await axios({
                 method: "post",
                 url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
-                headers: {
-                  "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 data: {
                   user_api_key: "placeholder",
                   tx_hash: data.transactionHash,
@@ -406,6 +404,9 @@ export default function IndexOverviews() {
                 },
               });
             }
+
+            // Resolve the promise with true to indicate success
+            resolve(true);
           },
           onError: async (error) => {
             const errorMessage = await handleTransactionError(
@@ -419,15 +420,12 @@ export default function IndexOverviews() {
             if (errorMessage) {
               setErrorMsg(errorMessage);
             }
+            // Reject the promise with false to indicate failure
+            reject(false);
           },
         });
-      }).catch((error) => {
-        // This catch will handle the rejected promise from onError
-        // No need to call handleTransactionError again as it was already called
-        console.error("Transaction failed:", error);
       });
     } catch (error) {
-      // This handles errors that occur before the transaction is sent
       const errorMessage = await handleTransactionError(
         "Transaction Failed",
         error,
@@ -439,6 +437,7 @@ export default function IndexOverviews() {
       if (errorMessage) {
         setErrorMsg(errorMessage);
       }
+      return false;
     }
   };
 
@@ -651,6 +650,7 @@ export default function IndexOverviews() {
         } catch (error) {
           console.warn("Failed to cache portfolio data:", error);
         }
+        setErrorMsg("");
       } catch (error) {
         handleTransactionError(
           "Fetching Data Failed",
