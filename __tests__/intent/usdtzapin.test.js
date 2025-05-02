@@ -23,6 +23,10 @@ const BRIDGE_CONFIG = {
     address: "0xce16F69375520ab01377ce7B88f5BA8C48F8D666",
     name: "Squid Router",
   },
+  squidRouter2: {
+    address: "0xdf4ffda22270c12d0b5b3788f1669d709476111e",
+    name: "squid Router",
+  },
   // Add more bridges here as needed
 };
 
