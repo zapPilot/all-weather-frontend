@@ -86,7 +86,9 @@ describe("Bridge with USDT -> USDC Swap", () => {
 
     // Ensure we got some transactions
     expect(txns.length).toBeGreaterThanOrEqual(2);
-
+    for (const txn of txns) {
+      console.log("txn", txn.to.toLowerCase(), "=============================");
+    }
     // Check if any transaction's destination matches a configured bridge
     const bridgeIndex = txns.findIndex((txn) =>
       Object.values(BRIDGE_CONFIG).some(

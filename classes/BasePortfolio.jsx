@@ -1000,22 +1000,61 @@ export class BasePortfolio {
             // Process all protocols in this chain in parallel
             const chainResults = await Promise.all(
               protocols.map(async (protocol) => {
-                const [protocolTxns, protocolBalance] =
-                  await this._processProtocolZapOut(
-                    owner,
-                    protocol,
-                    middleTokenConfig,
-                    slippage,
-                    tokenPricesMappingTable,
-                    updateProgress,
-                    rebalancableDict,
+                try {
+                  const [protocolTxns, protocolBalance] =
+                    await this._processProtocolZapOut(
+                      owner,
+                      protocol,
+                      middleTokenConfig,
+                      slippage,
+                      tokenPricesMappingTable,
+                      updateProgress,
+                      rebalancableDict,
+                      chain,
+                    );
+                  return {
+                    txns: protocolTxns,
+                    balance: protocolBalance,
+                    success: true,
+                    protocol: protocol.name || "Unknown Protocol",
                     chain,
+                  };
+                } catch (error) {
+                  console.error(
+                    `Failed to process protocol ${
+                      protocol.interface.uniqueId() || "Unknown"
+                    } on chain ${chain}:`,
+                    error,
                   );
-                return { txns: protocolTxns, balance: protocolBalance };
+                  return {
+                    txns: [],
+                    balance: 0,
+                    success: false,
+                    protocol: protocol.name || "Unknown Protocol",
+                    chain,
+                    error: error.message,
+                  };
+                }
               }),
             );
 
-            return chainResults;
+            // Filter out failed protocols and log them
+            const failedProtocols = chainResults.filter(
+              (result) => !result.success,
+            );
+            if (failedProtocols.length > 0) {
+              console.warn(
+                "Failed protocols:",
+                failedProtocols.map((fp) => ({
+                  protocol: fp.protocol,
+                  chain: fp.chain,
+                  error: fp.error,
+                })),
+              );
+            }
+
+            // Return only successful results
+            return chainResults.filter((result) => result.success);
           },
         ),
     );
