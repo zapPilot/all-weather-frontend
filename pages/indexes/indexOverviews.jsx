@@ -241,7 +241,7 @@ export default function IndexOverviews() {
         onlyThisChain,
         usdBalance,
       });
-
+      setErrorMsg("");
       setCostsCalculated(true);
 
       if (
@@ -277,7 +277,6 @@ export default function IndexOverviews() {
       return new Promise((resolve, reject) => {
         sendBatchTransaction(txns.flat(Infinity), {
           onSuccess: async (data) => {
-            setErrorMsg("");
             const explorerUrl =
               data?.chain?.blockExplorers !== undefined
                 ? data.chain.blockExplorers[0].url
