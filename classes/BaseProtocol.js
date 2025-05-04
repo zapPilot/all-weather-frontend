@@ -428,6 +428,7 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
   ) {
+    let finalTxns = [];
     if (this.mode === "single") {
       const [
         beforeZapInTxns,
@@ -460,7 +461,7 @@ export default class BaseProtocol extends BaseUniswap {
         slippage,
         updateProgress,
       );
-      return beforeZapInTxns.concat(zapinTxns);
+      finalTxns = beforeZapInTxns.concat(zapinTxns);
     } else if (this.mode === "LP") {
       const [beforeZapInTxns, tokenAmetadata, tokenBmetadata] =
         await this._beforeDepositLP(
@@ -486,8 +487,10 @@ export default class BaseProtocol extends BaseUniswap {
         slippage,
         updateProgress,
       );
-      return beforeZapInTxns.concat(zapinTxns);
+      finalTxns = beforeZapInTxns.concat(zapinTxns);
     }
+    this.checkTxnsToDataNotUndefined(finalTxns, "zapIn");
+    return finalTxns;
   }
   async zapOut(
     recipient,
@@ -570,11 +573,14 @@ export default class BaseProtocol extends BaseUniswap {
       tokenPricesMappingTable,
       updateProgress,
     );
+    let txns = [];
     if (redeemTxns.length === 0) {
-      return [...withdrawTxns, ...batchSwapTxns];
+      txns = [...withdrawTxns, ...batchSwapTxns];
     } else {
-      return [...withdrawTxns, ...redeemTxns, ...batchSwapTxns];
+      txns = [...withdrawTxns, ...redeemTxns, ...batchSwapTxns];
     }
+    this.checkTxnsToDataNotUndefined(txns, "zapOut");
+    return txns;
   }
   async claimAndSwap(
     recipient,
@@ -605,7 +611,9 @@ export default class BaseProtocol extends BaseUniswap {
       tokenPricesMappingTable,
       updateProgress,
     );
-    return [...claimTxns, ...txns];
+    const finalTxns = [...claimTxns, ...txns];
+    this.checkTxnsToDataNotUndefined(finalTxns, "claimAndSwap");
+    return finalTxns;
   }
 
   async transfer(owner, percentage, updateProgress, recipient) {
@@ -642,7 +650,9 @@ export default class BaseProtocol extends BaseUniswap {
       `${this.uniqueId()}-transfer`,
       0,
     );
-    return [...unstakeTxnsOfThisProtocol, transferTxn];
+    const finalTxns = [...unstakeTxnsOfThisProtocol, transferTxn];
+    this.checkTxnsToDataNotUndefined(finalTxns, "transfer");
+    return finalTxns;
   }
   async stake(protocolAssetDustInWallet, updateProgress) {
     let stakeTxns = [];
@@ -658,6 +668,7 @@ export default class BaseProtocol extends BaseUniswap {
     } else {
       throw new Error("Invalid mode for stake");
     }
+    this.checkTxnsToDataNotUndefined(stakeTxns, "stake");
     return stakeTxns;
   }
   async customDeposit(
@@ -1327,5 +1338,15 @@ export default class BaseProtocol extends BaseUniswap {
   }
   getDeadline() {
     return Math.floor(Date.now() / 1000) + 600; // 10 minute deadline
+  }
+  checkTxnsToDataNotUndefined(txns, methodName) {
+    for (const txn of txns) {
+      if (txn.data === undefined || txn.to === undefined) {
+        console.error(txn);
+        throw new Error(
+          `${methodName} of ${this.uniqueId()} has undefined data or undefined to. Cannot proceed with executing.`,
+        );
+      }
+    }
   }
 }

@@ -678,21 +678,6 @@ export class BasePortfolio {
         actionParams.onlyThisChain,
       );
 
-      // Calculate total weight for the current chain across all categories
-      const totalWeightOnThisChain = Object.values(this.strategy).reduce(
-        (categorySum, protocolsInThisCategory) => {
-          const chainProtocols = protocolsInThisCategory[currentChain] || [];
-          return (
-            categorySum +
-            chainProtocols.reduce(
-              (protocolSum, protocol) => protocolSum + (protocol.weight || 0),
-              0,
-            )
-          );
-        },
-        0,
-      );
-
       for (const protocolsInThisCategory of Object.values(this.strategy)) {
         for (const [chain, protocols] of Object.entries(
           protocolsInThisCategory,

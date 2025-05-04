@@ -8,6 +8,7 @@ import { BaseAura } from "../Aura/BaseAura";
 import { BaseVelodrome } from "../Velodrome/BaseVelodrome";
 import { BaseVault } from "./BaseVault";
 import { Venus } from "../Venus/Venus";
+import { BasePendlePT } from "../Pendle/BasePendlePT";
 export class StablecoinVault extends BaseVault {
   constructor() {
     const strategies = {
@@ -82,7 +83,7 @@ export class StablecoinVault extends BaseVault {
                 pidOfEquilibria: 59,
               },
             ),
-            weight: 0.05,
+            weight: 0,
           },
           {
             interface: new BaseEquilibria(
@@ -331,6 +332,24 @@ export class StablecoinVault extends BaseVault {
               assetDecimals: 6,
             }),
             weight: 0,
+          },
+          {
+            interface: new BasePendlePT(
+              "arbitrum",
+              42161,
+              ["pt gusdc 26jun2025"],
+              "single",
+              {
+                marketAddress: "0x22e0f26320ace985e3cb2434095f18bfe114e28e",
+                assetAddress: "0x0b6121b4c00ca4FbBb6516C11eB4BF61722E0f8d",
+                assetDecimals: 6,
+                symbolOfBestTokenToZapOut: "usdc",
+                bestTokenAddressToZapOut:
+                  "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+                decimalOfBestTokenToZapOut: 6,
+              },
+            ),
+            weight: 0.05,
           },
         ],
 

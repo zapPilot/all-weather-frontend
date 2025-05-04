@@ -3,6 +3,7 @@ import { BaseCamelot } from "../camelot/BaseCamelot";
 import { StablecoinVault } from "./StablecoinVault";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import { BaseVelodrome } from "../Velodrome/BaseVelodrome";
+import { BasePendlePT } from "../Pendle/BasePendlePT";
 export class Index500Vault extends BaseVault {
   constructor() {
     // Get StablecoinVault's strategy
@@ -31,6 +32,24 @@ export class Index500Vault extends BaseVault {
                   "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
                 decimalOfBestTokenToZapOut: 18,
                 pidOfEquilibria: 7,
+              },
+            ),
+            weight: 0,
+          },
+          {
+            interface: new BasePendlePT(
+              "arbitrum",
+              42161,
+              ["pt wsteth 26jun2025"],
+              "single",
+              {
+                marketAddress: "0x08a152834de126d2ef83D612ff36e4523FD0017F",
+                assetAddress: "0x1255638EFeca62e12E344E0b6B22ea853eC6e2c7",
+                assetDecimals: 18,
+                symbolOfBestTokenToZapOut: "weth",
+                bestTokenAddressToZapOut:
+                  "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                decimalOfBestTokenToZapOut: 18,
               },
             ),
             weight: 0.7,
@@ -208,6 +227,24 @@ export class Index500Vault extends BaseVault {
                   "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
                 decimalOfBestTokenToZapOut: 8,
                 pidOfEquilibria: 1,
+              },
+            ),
+            weight: 0,
+          },
+          {
+            interface: new BasePendlePT(
+              "base",
+              8453,
+              ["pt mcbbtc 26jun2025"],
+              "single",
+              {
+                marketAddress: "0xd94Fd7bcEb29159405Ae1E06Ce80e51EF1A484B0",
+                assetAddress: "0x5C6593F57EE95519fF6a8Cd16A5e41Ff50af239a",
+                assetDecimals: 8,
+                symbolOfBestTokenToZapOut: "cbbtc",
+                bestTokenAddressToZapOut:
+                  "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+                decimalOfBestTokenToZapOut: 8,
               },
             ),
             weight: 0.6,
