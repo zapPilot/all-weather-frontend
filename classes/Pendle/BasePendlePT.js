@@ -4,7 +4,7 @@ import axios from "axios";
 import { ethers } from "ethers";
 import { PROVIDER } from "../../utils/general.js";
 import axiosRetry from "axios-retry";
-import { getContract, prepareContractCall, prepareTransaction } from "thirdweb";
+import { getContract, prepareTransaction } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb.js";
 import { approve, CHAIN_ID_TO_CHAIN } from "../../utils/general.js";
 import BaseProtocol from "../BaseProtocol.js";
