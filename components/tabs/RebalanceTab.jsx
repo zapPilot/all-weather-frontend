@@ -28,6 +28,7 @@ export default function RebalanceTab({
   tokenPricesMappingTable,
   lockUpPeriod,
   account,
+  errorMsg,
 }) {
   const [currentStep, setCurrentStep] = useState(0);
   const currentChain = chainId?.name
@@ -55,6 +56,7 @@ export default function RebalanceTab({
           theme="dark"
           isStarted={Object.values(chainStatus || {}).some((status) => status)}
           account={account}
+          errorMsg={errorMsg}
         />
       )}
 
@@ -89,17 +91,24 @@ export default function RebalanceTab({
                       type="primary"
                       className="w-full"
                       onClick={async () => {
-                        handleAAWalletAction(data.actionName, true);
-                        // Only increment step if there are more actions
-                        // await sleep(3000);
-                        // if (
-                        //   currentStep <
-                        //   rebalancableUsdBalanceDict.metadata
-                        //     .rebalanceActionsByChain.length -
-                        //     1
-                        // ) {
-                        //   setCurrentStep(currentStep + 1);
-                        // }
+                        try {
+                          const success = await handleAAWalletAction(
+                            data.actionName,
+                            true,
+                          );
+                          // Only increment step if transaction was successful and there are more actions
+                          if (
+                            success &&
+                            currentStep <
+                              rebalancableUsdBalanceDict.metadata
+                                .rebalanceActionsByChain.length -
+                                1
+                          ) {
+                            setCurrentStep(currentStep + 1);
+                          }
+                        } catch (error) {
+                          console.error("Transaction failed:", error);
+                        }
                       }}
                       loading={usdBalanceLoading}
                       disabled={

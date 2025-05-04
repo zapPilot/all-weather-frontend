@@ -40,6 +40,9 @@ const ImageWithFallback = ({ token, height, width, domKey, className }) => {
         }
         setImgSrc("/tokenPictures/placeholder.webp");
       }}
+      loading="lazy"
+      quality={50}
+      unoptimized={true}
     />
   );
 };

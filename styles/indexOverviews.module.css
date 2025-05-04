@@ -3,4 +3,11 @@
   background-repeat: no-repeat;
   background-size: cover;
   background-attachment: fixed;
+  /* Optimize image rendering */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  /* Add memory optimization without changing visual design */
+  contain: layout paint;
+  /* Ensure proper stacking context */
+  z-index: 0;
 }

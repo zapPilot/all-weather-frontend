@@ -1,16 +1,27 @@
 import axios from "axios";
 
 class PriceService {
-  static STATIC_PRICES = {
-    usd: 1,
-    usdc: 1,
-    usdt: 1,
-    ousdt: 1,
-    dai: 1,
-    frax: 0.997,
-    usde: 1,
-    gho: 0.9986,
-  };
+  static WUSDCN_TIMESTAMP = 1745843805; // Reference timestamp for wausdcn
+  static WUSDCN_BASE_PRICE = 1.1281610094;
+
+  static get STATIC_PRICES() {
+    return {
+      usd: 1,
+      usdc: 1,
+      usdt: 1,
+      ousdt: 1,
+      dai: 1,
+      frax: 0.997,
+      usde: 1,
+      gho: 0.9986,
+      get wausdcn() {
+        return calculateDynamicPrice(
+          PriceService.WUSDCN_BASE_PRICE,
+          PriceService.WUSDCN_TIMESTAMP,
+        );
+      },
+    };
+  }
 
   constructor(apiUrl) {
     this.apiUrl = apiUrl;
@@ -85,8 +96,34 @@ class TokenPriceBatcher {
     });
 
     await Promise.all(promises);
+
+    // Check for zero prices
+    const zeroPriceTokens = Object.entries(prices)
+      .filter(([_, price]) => price === 0)
+      .map(([token]) => token);
+
+    if (zeroPriceTokens.length > 0) {
+      throw new Error(
+        `Prices not found for tokens: ${zeroPriceTokens.join(", ")}`,
+      );
+    }
+
     return prices;
   }
 }
+
+const calculateDynamicPrice = (basePrice, timestamp, apr = 0.02) => {
+  // Convert APR to daily rate
+  const dailyRate = Math.pow(1 + apr, 1 / 365) - 1;
+
+  // Calculate number of days from timestamp to now
+  const now = Math.floor(Date.now() / 1000); // current timestamp in seconds
+  const days = (now - timestamp) / (24 * 60 * 60); // convert seconds to days
+
+  // Calculate new price with compound interest
+  const newPrice = basePrice * Math.pow(1 + dailyRate, days);
+
+  return newPrice;
+};
 
 export { TokenPriceBatcher, PriceService };

@@ -51,6 +51,7 @@ export default function ZapInTab({
   portfolioHelper,
   availableAssetChains,
   chainStatus,
+  errorMsg,
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showCountdown, setShowCountdown] = useState(false);
@@ -172,7 +173,6 @@ export default function ZapInTab({
       </Button>
     );
   };
-
   return (
     <div>
       <ActionItem
@@ -184,6 +184,7 @@ export default function ZapInTab({
         theme="dark"
         isStarted={Object.values(chainStatus || {}).some((status) => status)}
         account={account}
+        errorMsg={errorMsg}
       />
 
       <div

@@ -1,3 +1,4 @@
+import { useMemo, memo } from "react";
 import CategoryTable from "./components/CategoryTable";
 import CategoryHeader from "./components/CategoryHeader";
 import PortfolioSummary from "./components/PortfolioSummary";
@@ -34,63 +35,100 @@ export const organizeByCategory = (portfolioHelper) => {
   return categoryMap;
 };
 
-// Main Component
-export default function PortfolioComposition({
-  portfolioName,
-  portfolioHelper,
-  portfolioApr,
-  loading,
-  usdBalanceLoading,
-  lockUpPeriod,
-  yieldContent,
-}) {
-  return (
-    <div className="lg:col-span-2 lg:row-span-1">
-      <div className="shadow-sm border border-white/50 p-6 rounded-lg bg-white/5 backdrop-blur-sm">
-        <h2 className="text-xl font-semibold leading-6 text-white mb-6">
-          {portfolioName} Constituents
-        </h2>
-        {portfolioHelper &&
-          Array.from(organizeByCategory(portfolioHelper))
-            .map(([category, chainProtocolMap]) => {
-              const allProtocols = Array.from(chainProtocolMap.values()).flat();
-              const totalWeight = allProtocols.reduce(
-                (sum, protocol) => sum + protocol.weight,
-                0,
-              );
-              return { category, chainProtocolMap, totalWeight };
-            })
-            .sort((a, b) => b.totalWeight - a.totalWeight)
-            .map(({ category, chainProtocolMap }) => {
-              const allProtocols = Array.from(chainProtocolMap.values()).flat();
-              const hasActiveProtocols = allProtocols.some(
-                (protocol) => protocol.weight > 0,
-              );
+// Memoized category section component
+const CategorySection = memo(
+  ({
+    category,
+    chainProtocolMap,
+    portfolioName,
+    portfolioApr,
+    yieldContent,
+  }) => {
+    const allProtocols = useMemo(
+      () => Array.from(chainProtocolMap.values()).flat(),
+      [chainProtocolMap],
+    );
 
-              if (!hasActiveProtocols) return null;
-              return (
-                <div key={category}>
-                  <CategoryHeader category={category} />
-                  <div className="mt-2">
-                    <CategoryTable
-                      protocolArray={allProtocols}
-                      portfolioName={portfolioName}
-                      portfolioApr={portfolioApr}
-                      yieldContent={yieldContent}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+    const hasActiveProtocols = useMemo(
+      () => allProtocols.some((protocol) => protocol.weight > 0),
+      [allProtocols],
+    );
 
-        <PortfolioSummary
-          loading={loading}
-          usdBalanceLoading={usdBalanceLoading}
-          lockUpPeriod={lockUpPeriod}
-          portfolioName={portfolioName}
-          portfolioApr={portfolioApr}
-        />
+    if (!hasActiveProtocols) return null;
+
+    return (
+      <div>
+        <CategoryHeader category={category} />
+        <div className="mt-2">
+          <CategoryTable
+            protocolArray={allProtocols}
+            portfolioName={portfolioName}
+            portfolioApr={portfolioApr}
+            yieldContent={yieldContent}
+          />
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  },
+);
+
+CategorySection.displayName = "CategorySection";
+
+// Main Component
+const PortfolioComposition = memo(
+  ({
+    portfolioName,
+    portfolioHelper,
+    portfolioApr,
+    loading,
+    usdBalanceLoading,
+    lockUpPeriod,
+    yieldContent,
+  }) => {
+    const organizedCategories = useMemo(() => {
+      if (!portfolioHelper) return [];
+
+      return Array.from(organizeByCategory(portfolioHelper))
+        .map(([category, chainProtocolMap]) => {
+          const allProtocols = Array.from(chainProtocolMap.values()).flat();
+          const totalWeight = allProtocols.reduce(
+            (sum, protocol) => sum + protocol.weight,
+            0,
+          );
+          return { category, chainProtocolMap, totalWeight };
+        })
+        .sort((a, b) => b.totalWeight - a.totalWeight);
+    }, [portfolioHelper]);
+
+    return (
+      <div className="lg:col-span-2 lg:row-span-1">
+        <div className="shadow-sm border border-white/50 p-6 rounded-lg bg-white/5 backdrop-blur-sm">
+          <h2 className="text-xl font-semibold leading-6 text-white mb-6">
+            {portfolioName} Constituents
+          </h2>
+          {organizedCategories.map(({ category, chainProtocolMap }) => (
+            <CategorySection
+              key={category}
+              category={category}
+              chainProtocolMap={chainProtocolMap}
+              portfolioName={portfolioName}
+              portfolioApr={portfolioApr}
+              yieldContent={yieldContent}
+            />
+          ))}
+          <PortfolioSummary
+            loading={loading}
+            usdBalanceLoading={usdBalanceLoading}
+            lockUpPeriod={lockUpPeriod}
+            portfolioName={portfolioName}
+            portfolioApr={portfolioApr}
+          />
+        </div>
+      </div>
+    );
+  },
+);
+
+PortfolioComposition.displayName = "PortfolioComposition";
+
+export default PortfolioComposition;

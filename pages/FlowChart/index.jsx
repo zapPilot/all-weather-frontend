@@ -85,6 +85,9 @@ const UserFlowNode = ({
           className="inline-block"
           height={20}
           width={20}
+          loading="lazy"
+          quality={50}
+          unoptimized={true}
         />
         <span className="mx-1">Swap</span>
         <ImageWithFallback
@@ -114,6 +117,9 @@ const UserFlowNode = ({
           className="inline-block"
           height={20}
           width={20}
+          loading="lazy"
+          quality={50}
+          unoptimized={true}
         />
         <span className="mx-1">{actionName}</span>
         {nodeData.name
@@ -143,6 +149,9 @@ const UserFlowNode = ({
         className="inline-block me-1"
         height={20}
         width={20}
+        loading="lazy"
+        quality={50}
+        unoptimized={true}
       />
       {nodeData.name}
     </>

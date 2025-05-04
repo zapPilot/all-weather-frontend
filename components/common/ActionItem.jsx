@@ -17,6 +17,7 @@ const ActionItem = ({
   theme,
   isStarted,
   account,
+  errorMsg,
 }) => {
   const actionIsArray = Array.isArray(actionName);
   const sortedChains = React.useMemo(() => {
@@ -125,6 +126,7 @@ const ActionItem = ({
         {!allActionsCompleted && sortedChains?.map(renderChainIndicator)}
       </div>
       <div className="mt-4">{renderCompletionStatus()}</div>
+      {errorMsg && <div className="mt-4 text-red-500">{errorMsg}</div>}
     </>
   );
 };

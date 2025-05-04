@@ -117,7 +117,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   wausdcn: {
     geckoterminal: {
       chain: "arbitrum",
-      address: "0xca8ecd05a289b1fbc2e0eaec07360c4bfec07b61",
+      address: "0x11092be90af6553434e0962cddfd7d84a4444154",
     },
     vaults: ["Stable+ Vault", "Index 500 Vault"],
   },
@@ -217,6 +217,9 @@ export const selectBefore = (handleChange, chainID, selectedToken) => {
                     width="20"
                     height="20"
                     alt={option.symbol}
+                    loading="lazy"
+                    quality={50}
+                    unoptimized={true}
                   />
                 );
               }
@@ -278,6 +281,9 @@ export const selectBefore = (handleChange, chainID, selectedToken) => {
                       width="24"
                       height="24"
                       alt={option.symbol}
+                      loading="lazy"
+                      quality={50}
+                      unoptimized={true}
                     />
                     <span className="ms-2">{option.symbol}</span>
                   </div>

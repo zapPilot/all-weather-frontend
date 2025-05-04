@@ -271,6 +271,7 @@ export class BaseEquilibria extends BaseProtocol {
       contract: this.protocolContract,
       method: "addLiquiditySingleToken",
       params: resp.data.contractCallParams,
+      extraGas: 1307000n,
     });
     const latestPendleAssetPrice = await this._fetchPendleAssetPrice(() => {});
     const tradingLoss =
@@ -479,17 +480,18 @@ export class BaseEquilibria extends BaseProtocol {
       params: zapOutResp.data.contractCallParams,
     });
     const latestPendleAssetPrice = await this._fetchPendleAssetPrice(() => {});
-    const tradingLoss =
+    const outputValue =
       Number(
         ethers.utils.formatUnits(
           zapOutResp.data.data.amountOut,
           decimalOfBestTokenToZapOut,
         ),
-      ) *
-        tokenPricesMappingTable[symbolOfBestTokenToZapOut] -
+      ) * tokenPricesMappingTable[symbolOfBestTokenToZapOut];
+    const currentValue =
       Number(ethers.utils.formatUnits(amount, this.assetDecimals)) *
-        latestPendleAssetPrice *
-        Math.pow(10, this.assetDecimals);
+      latestPendleAssetPrice *
+      Math.pow(10, this.assetDecimals);
+    const tradingLoss = currentValue - outputValue;
     this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-withdraw`,

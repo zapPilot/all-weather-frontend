@@ -383,6 +383,9 @@ const Dashboard: NextPage = () => {
                       width={50}
                       height={50}
                       alt={categoryMetaData.wording}
+                      loading="lazy"
+                      quality={50}
+                      unoptimized={true}
                     />
                     {categoryMetaData.wording}
                   </Link>
