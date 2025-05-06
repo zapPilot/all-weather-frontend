@@ -10,6 +10,7 @@ export const getNextChain = (
   chainStatus,
   currentChain,
 ) => {
+  if (!availableAssetChains || !chainStatus || !currentChain) return null;
   // Get the current order before any chain switching
   const currentOrder = [...availableAssetChains].sort((a, b) => {
     // First priority: finished chains

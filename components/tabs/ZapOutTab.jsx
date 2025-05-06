@@ -71,10 +71,14 @@ export default function ZapOutTab({
           type="primary"
           className="w-full my-2"
           onClick={() => {
-            handleSwitchChain(
-              getNextChain(availableAssetChains, chainStatus, currentChain),
-            );
-            setFinishedTxn(false);
+            switchChain(
+              CHAIN_ID_TO_CHAIN[
+                CHAIN_TO_CHAIN_ID[
+                  getNextChain(availableAssetChains, chainStatus, currentChain)
+                ]
+              ],
+            ),
+              setFinishedTxn(false);
           }}
           loading={isLoading}
         >
