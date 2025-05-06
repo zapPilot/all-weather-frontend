@@ -2,10 +2,11 @@ import { Button, Statistic, Switch } from "antd";
 import TokenDropdownInput from "../../pages/views/TokenDropdownInput.jsx";
 import ConfiguredConnectButton from "../../pages/ConnectButton";
 import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { TOKEN_ADDRESS_MAP } from "../../utils/general";
 import ActionItem from "../common/ActionItem";
 import { getMinimumTokenAmount } from "../../utils/environment.js";
+import { getNextChain } from "../../utils/chainOrder";
 
 const { Countdown } = Statistic;
 const COUNTDOWN_TIME = 4;
@@ -154,7 +155,11 @@ export default function ZapInTab({
   };
 
   const renderSwitchChainButton = () => {
-    const nextChain = availableAssetChains.find((chain) => !chainStatus[chain]);
+    const nextChain = getNextChain(
+      availableAssetChains,
+      chainStatus,
+      currentChain,
+    );
     const shouldShow = currentChain !== nextChain;
 
     if (!shouldShow) return null;
@@ -169,7 +174,7 @@ export default function ZapInTab({
         }}
         loading={isLoading}
       >
-        switch to {nextChain} Chain
+        Switch to {nextChain} Chain
       </Button>
     );
   };

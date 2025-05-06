@@ -284,39 +284,41 @@ export class BasePendlePT extends BaseProtocol {
       tradingLoss = 0;
     } else {
       const zapOutResp = await axios.get(
-      `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/markets/${this.customParams.marketAddress}/swap`,
-      {
-        params: {
-          receiver: owner,
-          // slippage from the website is 0.5 (means 0.5%), so we need to divide it by 100 and pass it to Pendle (0.005 = 0.5%)
-          slippage: slippage / 100,
-          enableAggregator: true,
-          tokenIn: this.customParams.assetAddress,
-          tokenOut: bestTokenAddressToZapOut,
-          amountIn: amount,
+        `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/markets/${this.customParams.marketAddress}/swap`,
+        {
+          params: {
+            receiver: owner,
+            // slippage from the website is 0.5 (means 0.5%), so we need to divide it by 100 and pass it to Pendle (0.005 = 0.5%)
+            slippage: slippage / 100,
+            enableAggregator: true,
+            tokenIn: this.customParams.assetAddress,
+            tokenOut: bestTokenAddressToZapOut,
+            amountIn: amount,
+          },
         },
-      },
-    );
-    burnTxn = prepareTransaction({
-      to: zapOutResp.data.tx.to,
-      chain: CHAIN_ID_TO_CHAIN[this.chainId],
-      client: THIRDWEB_CLIENT,
-      data: zapOutResp.data.tx.data,
-      extraGas: 750000n,
-    });
-    const latestPendleAssetPrice = await this._fetchPendleAssetPrice(() => {});
-    const outputValue =
-      Number(
-        ethers.utils.formatUnits(
-          zapOutResp.data.data.amountOut,
-          decimalOfBestTokenToZapOut,
-        ),
-      ) * tokenPricesMappingTable[symbolOfBestTokenToZapOut];
-    const currentValue =
-      Number(ethers.utils.formatUnits(amount, this.assetDecimals)) *
-      latestPendleAssetPrice *
-      Math.pow(10, this.assetDecimals);
-    tradingLoss = outputValue - currentValue;
+      );
+      burnTxn = prepareTransaction({
+        to: zapOutResp.data.tx.to,
+        chain: CHAIN_ID_TO_CHAIN[this.chainId],
+        client: THIRDWEB_CLIENT,
+        data: zapOutResp.data.tx.data,
+        extraGas: 750000n,
+      });
+      const latestPendleAssetPrice = await this._fetchPendleAssetPrice(
+        () => {},
+      );
+      const outputValue =
+        Number(
+          ethers.utils.formatUnits(
+            zapOutResp.data.data.amountOut,
+            decimalOfBestTokenToZapOut,
+          ),
+        ) * tokenPricesMappingTable[symbolOfBestTokenToZapOut];
+      const currentValue =
+        Number(ethers.utils.formatUnits(amount, this.assetDecimals)) *
+        latestPendleAssetPrice *
+        Math.pow(10, this.assetDecimals);
+      tradingLoss = outputValue - currentValue;
     }
     this._updateProgressAndWait(
       updateProgress,

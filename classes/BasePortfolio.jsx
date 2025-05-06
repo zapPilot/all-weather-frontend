@@ -415,14 +415,12 @@ export class BasePortfolio {
       }
     };
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
-    console.log("DEBUGGING: tokenPricesMappingTable", tokenPricesMappingTable);
     actionParams.tokenPricesMappingTable = tokenPricesMappingTable;
     actionParams.updateProgress = updateProgress;
     return await this._generateTxnsByAction(actionName, actionParams);
   }
 
   async _generateTxnsByAction(actionName, actionParams) {
-    console.log("DEBUGGING: actionParams", actionParams);
     let totalTxns = [];
     // Handle special pre-processing for specific actions
     if (actionName === "zapIn") {
