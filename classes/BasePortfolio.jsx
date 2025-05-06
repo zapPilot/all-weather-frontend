@@ -146,9 +146,7 @@ export class BasePortfolio {
 
   _processProtocolBalances(balanceResults, portfolioAprDict, usdBalanceDict) {
     for (const { protocol, balance } of balanceResults) {
-      const protocolUniqueId = `${protocol.interface.uniqueId()}/${
-        protocol.interface.constructor.name
-      }`;
+      const protocolUniqueId = protocol.interface.uniqueId();
       usdBalanceDict[protocolUniqueId] = {
         chain: protocol.interface.chain,
         usdBalance: balance,
@@ -349,7 +347,11 @@ export class BasePortfolio {
       );
 
     const fetchPoolData = async ({ protocol }) => {
-      const poolUniqueKey = protocol.interface.uniqueId();
+      const poolUniqueKey = protocol.interface
+        .uniqueId()
+        .split("/")
+        .slice(0, 4)
+        .join("/");
       const url = `${process.env.NEXT_PUBLIC_API_URL}/pool/${poolUniqueKey}/apr`;
       try {
         const response = await fetch(url);
@@ -1069,9 +1071,7 @@ export class BasePortfolio {
       tokenPricesMappingTable,
     );
 
-    const protocolClassName = `${protocol.interface.uniqueId()}/${
-      protocol.interface.constructor.name
-    }`;
+    const protocolClassName = protocol.interface.uniqueId();
     const zapOutPercentage =
       rebalancableDict[protocolClassName]?.zapOutPercentage;
     if (
@@ -1550,8 +1550,12 @@ export class BasePortfolio {
       .div(10000);
   }
 
-  getFlowChartData(actionName, actionParams) {
-    return this.flowChartBuilder.buildFlowChart(actionName, actionParams);
+  getFlowChartData(actionName, actionParams, usdBalanceDict) {
+    return this.flowChartBuilder.buildFlowChart(
+      actionName,
+      actionParams,
+      usdBalanceDict,
+    );
   }
 
   _calculateChainWeights(currentChain) {

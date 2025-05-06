@@ -187,21 +187,27 @@ export default function PopUpModal({
               <div className="flex-grow">
                 {finishedTxn === false && actionName !== "" ? (
                   <DemoFlowDirectionGraph
-                    data={portfolioHelper?.getFlowChartData(actionName, {
-                      tokenInSymbol:
-                        selectedToken?.toLowerCase()?.split("-")[0] === "eth"
-                          ? "weth"
-                          : selectedToken?.toLowerCase()?.split("-")[0],
-                      tokenInAddress: selectedToken
-                        ?.toLowerCase()
-                        ?.split("-")[1],
-                      outputToken: selectedToken?.toLowerCase()?.split("-")[0],
-                      outputTokenAddress: selectedToken
-                        ?.toLowerCase()
-                        ?.split("-")[1],
+                    data={portfolioHelper?.getFlowChartData(
+                      actionName,
+                      {
+                        tokenInSymbol:
+                          selectedToken?.toLowerCase()?.split("-")[0] === "eth"
+                            ? "weth"
+                            : selectedToken?.toLowerCase()?.split("-")[0],
+                        tokenInAddress: selectedToken
+                          ?.toLowerCase()
+                          ?.split("-")[1],
+                        outputToken: selectedToken
+                          ?.toLowerCase()
+                          ?.split("-")[0],
+                        outputTokenAddress: selectedToken
+                          ?.toLowerCase()
+                          ?.split("-")[1],
+                        rebalancableUsdBalanceDict,
+                        chainMetadata,
+                      },
                       rebalancableUsdBalanceDict,
-                      chainMetadata,
-                    })}
+                    )}
                     stepName={stepName}
                     tradingLoss={tradingLoss}
                     currentChain={chainId?.name}

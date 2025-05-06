@@ -79,7 +79,10 @@ const ExampleUI = memo(function ExampleUI() {
           vault.portfolioName,
         )}`,
         apr: strategyMetadata?.[vault.portfolioName]?.portfolioAPR * 100,
-        tvl: strategyMetadata?.[vault.portfolioName]?.portfolioTVL,
+        tvl:
+          strategyMetadata?.[vault.portfolioName]?.portfolioTVL === undefined
+            ? 0
+            : strategyMetadata?.[vault.portfolioName]?.portfolioTVL,
         portfolioHelper: getPortfolioHelper(vault.portfolioName),
       })),
     [strategyMetadata],

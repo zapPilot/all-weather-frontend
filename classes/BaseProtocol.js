@@ -10,8 +10,10 @@ export default class BaseProtocol extends BaseUniswap {
   // arbitrum's Apollox is staked on PancakeSwap
   constructor(chain, chaindId, symbolList, mode, customParams) {
     super();
+    this.protocolType = this.constructor.name; // Will be overridden by child classes
     this.protocolName = "placeholder";
     this.protocolVersion = "placeholder";
+
     this.assetDecimals = "placeholder";
     this.assetContract = "placeholder";
     this.protocolContract = "placeholder";
@@ -31,7 +33,7 @@ export default class BaseProtocol extends BaseUniswap {
   uniqueId() {
     return `${this.chain}/${this.protocolName}/${
       this.protocolVersion
-    }/${this.symbolList.join("-")}`;
+    }/${this.symbolList.join("-")}/${this.protocolType}`;
   }
   toString() {
     // If the symbolList is too long, it will be truncated

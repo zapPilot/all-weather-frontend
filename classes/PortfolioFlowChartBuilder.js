@@ -9,7 +9,13 @@ export class PortfolioFlowChartBuilder {
     );
   }
 
-  _buildStandardFlowChart(actionName, actionParams, flowChartData, chainNodes) {
+  _buildStandardFlowChart(
+    actionName,
+    actionParams,
+    flowChartData,
+    chainNodes,
+    usdBalanceDict,
+  ) {
     const chainSet = new Set();
     for (const [category, protocolsInThisCategory] of Object.entries(
       this.portfolio.strategy,
@@ -34,7 +40,12 @@ export class PortfolioFlowChartBuilder {
 
         for (const protocol of protocolsOnThisChain) {
           let stepsData = [];
-          if (protocol.weight === 0) continue;
+          if (
+            (actionName === "zapIn" && protocol.weight === 0) ||
+            (actionName !== "zapIn" &&
+              usdBalanceDict?.[protocol.interface.uniqueId()]?.usdBalance === 0)
+          )
+            continue;
           if (actionName === "zapIn") {
             stepsData = protocol.interface.getZapInFlowChartData(
               actionParams.tokenInSymbol,
@@ -78,7 +89,7 @@ export class PortfolioFlowChartBuilder {
     }
   }
 
-  buildFlowChart(actionName, actionParams) {
+  buildFlowChart(actionName, actionParams, usdBalanceDict) {
     let flowChartData = {
       nodes: [],
       edges: [],
@@ -221,6 +232,7 @@ export class PortfolioFlowChartBuilder {
         actionParams,
         flowChartData,
         chainNodes,
+        usdBalanceDict,
       );
     }
     return {

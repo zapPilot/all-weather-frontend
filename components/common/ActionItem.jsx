@@ -1,7 +1,7 @@
 import React from "react";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import CompletionActions from "../../components/CompletionActions";
-import { getNextChain } from "../../utils/chainOrder";
+import { sortChains } from "../../utils/chainOrder";
 
 const actionNameMap = {
   zapIn: "Deposit",
@@ -93,26 +93,11 @@ const ActionItem = (props) => {
   React.useEffect(() => {
     if (isStarted && !lockedOrderRef.current) {
       // Get the current order before any chain switching
-      const currentOrder = [...availableAssetChains].sort((a, b) => {
-        // First priority: finished chains
-        const aFinished = chainStatus[a];
-        const bFinished = chainStatus[b];
-
-        if (aFinished && !bFinished) return -1;
-        if (!aFinished && bFinished) return 1;
-
-        // Second priority: current chain
-        if (a === currentChain) return -1;
-        if (b === currentChain) return 1;
-
-        // Third priority: shorter chain name first
-        const lengthDiff = a.length - b.length;
-        if (lengthDiff !== 0) return lengthDiff;
-
-        // Fourth priority: alphabetic order
-        return a.localeCompare(b);
-      });
-
+      const currentOrder = sortChains(
+        availableAssetChains,
+        chainStatus,
+        currentChain,
+      );
       lockedOrderRef.current = currentOrder;
     }
   }, [isStarted, availableAssetChains, currentChain, chainStatus]);
@@ -128,26 +113,8 @@ const ActionItem = (props) => {
       return filteredChains;
     }
 
-    // Otherwise, sort based on current chain and status
-    return [...availableAssetChains].sort((a, b) => {
-      // First priority: finished chains
-      const aFinished = chainStatus[a];
-      const bFinished = chainStatus[b];
-
-      if (aFinished && !bFinished) return -1;
-      if (!aFinished && bFinished) return 1;
-
-      // Second priority: current chain
-      if (a === currentChain) return -1;
-      if (b === currentChain) return 1;
-
-      // Third priority: shorter chain name first
-      const lengthDiff = a.length - b.length;
-      if (lengthDiff !== 0) return lengthDiff;
-
-      // Fourth priority: alphabetic order
-      return a.localeCompare(b);
-    });
+    // Otherwise, use the sorting utility
+    return sortChains(availableAssetChains, chainStatus, currentChain);
   }, [availableAssetChains, currentChain, chainStatus, isStarted]);
 
   const allActionsCompleted =
