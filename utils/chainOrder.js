@@ -36,6 +36,5 @@ export const getNextChain = (
   const unfinishedChains = currentOrder.filter(
     (chain) => availableAssetChains.includes(chain) && !chainStatus[chain],
   );
-
   return unfinishedChains[0] || null;
 };

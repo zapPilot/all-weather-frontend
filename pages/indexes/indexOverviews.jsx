@@ -17,7 +17,6 @@ import {
   CHAIN_ID_TO_CHAIN_STRING,
 } from "../../utils/general.js";
 import {
-  Button,
   ConfigProvider,
   Radio,
   notification,
@@ -25,7 +24,6 @@ import {
   Tabs,
   Dropdown,
   Popover,
-  Space,
 } from "antd";
 import {
   useActiveAccount,
@@ -57,7 +55,6 @@ import {
 import { determineSlippage } from "../../utils/slippage";
 import {
   normalizeChainName,
-  switchNextChain,
   getAvailableAssetChains,
   calCrossChainInvestmentAmount,
 } from "../../utils/chainHelper";
@@ -70,7 +67,7 @@ import {
   checkGasPrice,
   prepareTransactionMetadata,
 } from "../../utils/transactionHelpers.js";
-import ChainDropdown from "../../components/ChainDropdown";
+import { getNextChain } from "../../utils/chainOrder";
 
 // Extract chain switching logic
 const useChainSwitching = (switchChain) => {
@@ -213,7 +210,6 @@ export default function IndexOverviews() {
 
     const [tokenSymbol, tokenAddress, tokenDecimals] =
       tokenSymbolAndAddress.split("-");
-
     try {
       const txns = await generateIntentTxns({
         actionName,
@@ -339,12 +335,19 @@ export default function IndexOverviews() {
                 `${explorerUrl}/tx/${data.transactionHash}`,
               );
 
+              // Get the next chain using the updated status
+              const newNextChain = getNextChain(
+                availableAssetChains,
+                newStatus,
+                normalizeChainName(data.chain.name),
+              );
+
+              // Update the next chain state
+              setNextStepChain(newNextChain);
               return newStatus;
             });
 
             setFinishedTxn(true);
-            const newNextChain = switchNextChain(data.chain.name);
-            setNextStepChain(newNextChain);
             setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
 
             await axios({
@@ -466,22 +469,21 @@ export default function IndexOverviews() {
   };
 
   const tokenAddress = selectedToken?.split("-")[1];
-  const { data: walletBalanceData, isLoading: walletBalanceLoading } =
-    useWalletBalance({
-      chain: chainId,
-      address: account?.address,
-      client: THIRDWEB_CLIENT,
-      ...(tokenAddress === "0x0000000000000000000000000000000000000000" &&
-      nextStepChain === ""
-        ? {}
-        : tokenAddress === "0x0000000000000000000000000000000000000000" &&
-          nextStepChain !== ""
-        ? {
-            tokenAddress:
-              TOKEN_ADDRESS_MAP["weth"][normalizeChainName(chainId?.name)],
-          }
-        : { tokenAddress }),
-    });
+  const { data: walletBalanceData } = useWalletBalance({
+    chain: chainId,
+    address: account?.address,
+    client: THIRDWEB_CLIENT,
+    ...(tokenAddress === "0x0000000000000000000000000000000000000000" &&
+    nextStepChain === ""
+      ? {}
+      : tokenAddress === "0x0000000000000000000000000000000000000000" &&
+        nextStepChain !== ""
+      ? {
+          tokenAddress:
+            TOKEN_ADDRESS_MAP["weth"][normalizeChainName(chainId?.name)],
+        }
+      : { tokenAddress }),
+  });
   const [tokenBalance, setTokenBalance] = useState(0);
   const yieldContent = (
     <>
