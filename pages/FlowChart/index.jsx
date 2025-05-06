@@ -212,10 +212,11 @@ export default function DemoFlowDirectionGraph({
       style: {
         stroke: (d) =>
           d.data.type === "split"
-            ? "l(0) 0:#5dfdcb 0.5:#ffffff 1:#5dfdcb"
-            : "l(0) 0:#5dfdcb 0.5:#ffffff 1:#5dfdcb",
+            ? "l(0) 0:#F04864 0.5:#7EC2F3 1:#1890FF"
+            : "l(0) 0:#1890FF 0.5:#7EC2F3 1:#F04864",
         labelText: (d) => {
-          return "";
+          const edgeUsdAmount = d.data.usdAmount * d.data.ratio;
+          return isNaN(edgeUsdAmount) ? "" : "$" + edgeUsdAmount.toFixed(2);
         },
         labelBackground: true,
       },

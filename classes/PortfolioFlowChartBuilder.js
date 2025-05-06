@@ -9,13 +9,7 @@ export class PortfolioFlowChartBuilder {
     );
   }
 
-  _buildStandardFlowChart(
-    actionName,
-    actionParams,
-    flowChartData,
-    chainNodes,
-    usdBalanceDict,
-  ) {
+  _buildStandardFlowChart(actionName, actionParams, flowChartData, chainNodes) {
     const chainSet = new Set();
     for (const [category, protocolsInThisCategory] of Object.entries(
       this.portfolio.strategy,
@@ -43,7 +37,8 @@ export class PortfolioFlowChartBuilder {
           if (
             (actionName === "zapIn" && protocol.weight === 0) ||
             (actionName !== "zapIn" &&
-              usdBalanceDict?.[protocol.interface.uniqueId()]?.usdBalance === 0)
+              actionParams.usdBalanceDict?.[protocol.interface.uniqueId()]
+                ?.usdBalance === 0)
           )
             continue;
           if (actionName === "zapIn") {
@@ -78,6 +73,12 @@ export class PortfolioFlowChartBuilder {
             target: stepsData.nodes[0].id,
             data: {
               ratio: protocol.weight,
+              usdAmount:
+                actionName === "zapIn"
+                  ? actionParams.investmentAmount
+                  : actionName === "zapOut"
+                  ? actionParams.zapOutAmount
+                  : 0,
             },
           };
           flowChartData.nodes = flowChartData.nodes.concat(stepsData.nodes);
@@ -89,7 +90,7 @@ export class PortfolioFlowChartBuilder {
     }
   }
 
-  buildFlowChart(actionName, actionParams, usdBalanceDict) {
+  buildFlowChart(actionName, actionParams) {
     let flowChartData = {
       nodes: [],
       edges: [],
@@ -150,6 +151,7 @@ export class PortfolioFlowChartBuilder {
             target: stepsData.nodes[0].id,
             data: {
               ratio: rebalanceRatio,
+              usdAmount: actionParams.rebalanceAmount,
             },
           };
           const endOfZapOutOfThisProtocolToEndOfZapOutNodeEdge = {
@@ -232,7 +234,6 @@ export class PortfolioFlowChartBuilder {
         actionParams,
         flowChartData,
         chainNodes,
-        usdBalanceDict,
       );
     }
     return {

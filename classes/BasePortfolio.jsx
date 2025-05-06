@@ -1550,12 +1550,8 @@ export class BasePortfolio {
       .div(10000);
   }
 
-  getFlowChartData(actionName, actionParams, usdBalanceDict) {
-    return this.flowChartBuilder.buildFlowChart(
-      actionName,
-      actionParams,
-      usdBalanceDict,
-    );
+  getFlowChartData(actionName, actionParams) {
+    return this.flowChartBuilder.buildFlowChart(actionName, actionParams);
   }
 
   _calculateChainWeights(currentChain) {
