@@ -12,6 +12,7 @@ import DemoFlowDirectionGraph from "../FlowChart";
 import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { Popover, Spin } from "antd";
 import ActionItem from "../../components/common/ActionItem";
+import { getNextChain } from "../../utils/chainOrder";
 
 const formatAmount = (amount) => {
   if (amount === undefined || amount === null) return <Spin />;
@@ -107,10 +108,12 @@ export default function PopUpModal({
     return completedSteps + 1;
   };
 
-  const getNextChain = () => {
-    const nextChain = Object.entries(chainStatus || {}).find(
-      ([chain, isComplete]) => !isComplete,
-    )?.[0];
+  const getNextChainInfo = () => {
+    const nextChain = getNextChain(
+      availableAssetChains,
+      chainStatus,
+      currentChain,
+    );
     return {
       name: nextChain,
       imagePath: `/chainPicturesWebp/${nextChain?.toLowerCase()}.webp`,
@@ -214,8 +217,8 @@ export default function PopUpModal({
                         >
                           Step {getCurrentStep()}: {actionName} on
                           <Image
-                            src={getNextChain().imagePath}
-                            alt={getNextChain().name}
+                            src={getNextChainInfo().imagePath}
+                            alt={getNextChainInfo().name}
                             width={25}
                             height={25}
                             loading="lazy"

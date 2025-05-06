@@ -3,8 +3,7 @@ import BaseBridge from "./BaseBridge";
 import SquidBridge from "./squid";
 
 type BridgeConstructor = new () => AcrossBridge | SquidBridge | BaseBridge;
-// const BRIDGE_REGISTRY: BridgeConstructor[] = [AcrossBridge, SquidBridge];
-const BRIDGE_REGISTRY: BridgeConstructor[] = [SquidBridge];
+const BRIDGE_REGISTRY: BridgeConstructor[] = [AcrossBridge, SquidBridge];
 
 async function getTheBestBridgeTxns(
   account: string,
@@ -35,7 +34,7 @@ async function getTheBestBridgeTxns(
   );
 
   const validBridges = bridgeResults.filter(
-    (result) => result.feeCostsInUSD !== Infinity,
+    (result) => result.feeCostsInUSD !== Infinity && result.txns !== undefined,
   );
   if (validBridges.length === 0) {
     throw new Error("No available bridges found");

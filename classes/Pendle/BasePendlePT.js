@@ -1,10 +1,11 @@
 import PendleMarketV3 from "../../lib/contracts/Pendle/PendleMarketV3.json" assert { type: "json" };
+import PendlePrincipalToken from "../../lib/contracts/Pendle/PendlePrincipalToken.json" assert { type: "json" };
 import ActionAddRemoveLiqV3 from "../../lib/contracts/Pendle/ActionAddRemoveLiqV3.json" assert { type: "json" };
 import axios from "axios";
 import { ethers } from "ethers";
 import { PROVIDER } from "../../utils/general.js";
 import axiosRetry from "axios-retry";
-import { getContract, prepareContractCall, prepareTransaction } from "thirdweb";
+import { getContract, prepareTransaction } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb.js";
 import { approve, CHAIN_ID_TO_CHAIN } from "../../utils/general.js";
 import BaseProtocol from "../BaseProtocol.js";
@@ -28,7 +29,7 @@ export class BasePendlePT extends BaseProtocol {
       client: THIRDWEB_CLIENT,
       address: customParams.assetAddress,
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
-      abi: PendleMarketV3,
+      abi: PendlePrincipalToken,
     });
     this.protocolContract = getContract({
       client: THIRDWEB_CLIENT,
@@ -37,12 +38,6 @@ export class BasePendlePT extends BaseProtocol {
       abi: ActionAddRemoveLiqV3,
     });
     this.stakeFarmContract = this.protocolContract;
-
-    this.assetContractInstance = new ethers.Contract(
-      this.assetContract.address,
-      PendleMarketV3,
-      PROVIDER(this.chain),
-    );
 
     this.symbolOfBestTokenToZapOut = customParams.symbolOfBestTokenToZapOut;
     this.bestTokenAddressToZapOut = customParams.bestTokenAddressToZapOut;
@@ -93,6 +88,14 @@ export class BasePendlePT extends BaseProtocol {
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     return {};
   }
+  async isExpired() {
+    this.marketContractInstance = new ethers.Contract(
+      this.customParams.marketAddress,
+      PendleMarketV3,
+      PROVIDER(this.chain),
+    );
+    return await this.marketContractInstance.isExpired();
+  }
   async customDeposit(
     owner,
     inputToken,
@@ -103,6 +106,9 @@ export class BasePendlePT extends BaseProtocol {
     slippage,
     updateProgress,
   ) {
+    if (await this.isExpired()) {
+      throw new Error(`${this.uniqueId()} is expired`);
+    }
     const approveForZapInTxn = approve(
       bestTokenAddressToZapIn,
       this.protocolContract.address,
@@ -252,40 +258,68 @@ export class BasePendlePT extends BaseProtocol {
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
     ] = this._getTheBestTokenAddressToZapOut();
-    const zapOutResp = await axios.get(
-      `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/markets/${this.customParams.marketAddress}/swap`,
-      {
-        params: {
-          receiver: owner,
-          // slippage from the website is 0.5 (means 0.5%), so we need to divide it by 100 and pass it to Pendle (0.005 = 0.5%)
-          slippage: slippage / 100,
-          enableAggregator: true,
-          tokenIn: this.customParams.assetAddress,
-          tokenOut: bestTokenAddressToZapOut,
-          amountIn: amount,
+    let burnTxn;
+    let tradingLoss = 0;
+    if (await this.isExpired()) {
+      const zapOutResp = await axios.get(
+        `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/redeem`,
+        {
+          params: {
+            receiver: owner,
+            slippage: slippage / 100,
+            enableAggregator: true,
+            yt: this.customParams.ytAddress,
+            tokenOut: bestTokenAddressToZapOut,
+            amountIn: amount,
+          },
         },
-      },
-    );
-    const burnTxn = prepareTransaction({
-      to: zapOutResp.data.tx.to,
-      chain: CHAIN_ID_TO_CHAIN[this.chainId],
-      client: THIRDWEB_CLIENT,
-      data: zapOutResp.data.tx.data,
-      extraGas: 750000n,
-    });
-    const latestPendleAssetPrice = await this._fetchPendleAssetPrice(() => {});
-    const outputValue =
-      Number(
-        ethers.utils.formatUnits(
-          zapOutResp.data.data.amountOut,
-          decimalOfBestTokenToZapOut,
-        ),
-      ) * tokenPricesMappingTable[symbolOfBestTokenToZapOut];
-    const currentValue =
-      Number(ethers.utils.formatUnits(amount, this.assetDecimals)) *
-      latestPendleAssetPrice *
-      Math.pow(10, this.assetDecimals);
-    const tradingLoss = outputValue - currentValue;
+      );
+      burnTxn = prepareTransaction({
+        to: zapOutResp.data.tx.to,
+        chain: CHAIN_ID_TO_CHAIN[this.chainId],
+        client: THIRDWEB_CLIENT,
+        data: zapOutResp.data.tx.data,
+        extraGas: 750000n,
+      });
+      tradingLoss = 0;
+    } else {
+      const zapOutResp = await axios.get(
+        `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/markets/${this.customParams.marketAddress}/swap`,
+        {
+          params: {
+            receiver: owner,
+            // slippage from the website is 0.5 (means 0.5%), so we need to divide it by 100 and pass it to Pendle (0.005 = 0.5%)
+            slippage: slippage / 100,
+            enableAggregator: true,
+            tokenIn: this.customParams.assetAddress,
+            tokenOut: bestTokenAddressToZapOut,
+            amountIn: amount,
+          },
+        },
+      );
+      burnTxn = prepareTransaction({
+        to: zapOutResp.data.tx.to,
+        chain: CHAIN_ID_TO_CHAIN[this.chainId],
+        client: THIRDWEB_CLIENT,
+        data: zapOutResp.data.tx.data,
+        extraGas: 750000n,
+      });
+      const latestPendleAssetPrice = await this._fetchPendleAssetPrice(
+        () => {},
+      );
+      const outputValue =
+        Number(
+          ethers.utils.formatUnits(
+            zapOutResp.data.data.amountOut,
+            decimalOfBestTokenToZapOut,
+          ),
+        ) * tokenPricesMappingTable[symbolOfBestTokenToZapOut];
+      const currentValue =
+        Number(ethers.utils.formatUnits(amount, this.assetDecimals)) *
+        latestPendleAssetPrice *
+        Math.pow(10, this.assetDecimals);
+      tradingLoss = outputValue - currentValue;
+    }
     this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-withdraw`,
