@@ -342,6 +342,7 @@ export class StablecoinVault extends BaseVault {
               {
                 marketAddress: "0x22e0f26320ace985e3cb2434095f18bfe114e28e",
                 assetAddress: "0x0b6121b4c00ca4FbBb6516C11eB4BF61722E0f8d",
+                ytAddress: "0xeb044f64aE0dFD5433726fC5418d6643897cbb6B",
                 assetDecimals: 6,
                 symbolOfBestTokenToZapOut: "usdc",
                 bestTokenAddressToZapOut:

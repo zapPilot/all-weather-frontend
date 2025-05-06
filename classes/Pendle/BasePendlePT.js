@@ -1,4 +1,5 @@
 import PendleMarketV3 from "../../lib/contracts/Pendle/PendleMarketV3.json" assert { type: "json" };
+import PendlePrincipalToken from "../../lib/contracts/Pendle/PendlePrincipalToken.json" assert { type: "json" };
 import ActionAddRemoveLiqV3 from "../../lib/contracts/Pendle/ActionAddRemoveLiqV3.json" assert { type: "json" };
 import axios from "axios";
 import { ethers } from "ethers";
@@ -28,7 +29,7 @@ export class BasePendlePT extends BaseProtocol {
       client: THIRDWEB_CLIENT,
       address: customParams.assetAddress,
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
-      abi: PendleMarketV3,
+      abi: PendlePrincipalToken,
     });
     this.protocolContract = getContract({
       client: THIRDWEB_CLIENT,
@@ -37,12 +38,6 @@ export class BasePendlePT extends BaseProtocol {
       abi: ActionAddRemoveLiqV3,
     });
     this.stakeFarmContract = this.protocolContract;
-
-    this.assetContractInstance = new ethers.Contract(
-      this.assetContract.address,
-      PendleMarketV3,
-      PROVIDER(this.chain),
-    );
 
     this.symbolOfBestTokenToZapOut = customParams.symbolOfBestTokenToZapOut;
     this.bestTokenAddressToZapOut = customParams.bestTokenAddressToZapOut;
@@ -93,6 +88,14 @@ export class BasePendlePT extends BaseProtocol {
   async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
     return {};
   }
+  async isExpired() {
+    this.marketContractInstance = new ethers.Contract(
+      this.customParams.marketAddress,
+      PendleMarketV3,
+      PROVIDER(this.chain),
+    );
+    return await this.marketContractInstance.isExpired();
+  }
   async customDeposit(
     owner,
     inputToken,
@@ -103,6 +106,9 @@ export class BasePendlePT extends BaseProtocol {
     slippage,
     updateProgress,
   ) {
+    if (await this.isExpired()) {
+      throw new Error(`${this.uniqueId()} is expired`);
+    }
     const approveForZapInTxn = approve(
       bestTokenAddressToZapIn,
       this.protocolContract.address,
@@ -252,7 +258,32 @@ export class BasePendlePT extends BaseProtocol {
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
     ] = this._getTheBestTokenAddressToZapOut();
-    const zapOutResp = await axios.get(
+    let burnTxn;
+    let tradingLoss = 0;
+    if (await this.isExpired()) {
+      const zapOutResp = await axios.get(
+        `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/redeem`,
+        {
+          params: {
+            receiver: owner,
+            slippage: slippage / 100,
+            enableAggregator: true,
+            yt: this.customParams.ytAddress,
+            tokenOut: bestTokenAddressToZapOut,
+            amountIn: amount,
+          },
+        },
+      );
+      burnTxn = prepareTransaction({
+        to: zapOutResp.data.tx.to,
+        chain: CHAIN_ID_TO_CHAIN[this.chainId],
+        client: THIRDWEB_CLIENT,
+        data: zapOutResp.data.tx.data,
+        extraGas: 750000n,
+      });
+      tradingLoss = 0;
+    } else {
+      const zapOutResp = await axios.get(
       `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/markets/${this.customParams.marketAddress}/swap`,
       {
         params: {
@@ -266,7 +297,7 @@ export class BasePendlePT extends BaseProtocol {
         },
       },
     );
-    const burnTxn = prepareTransaction({
+    burnTxn = prepareTransaction({
       to: zapOutResp.data.tx.to,
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
       client: THIRDWEB_CLIENT,
@@ -285,7 +316,8 @@ export class BasePendlePT extends BaseProtocol {
       Number(ethers.utils.formatUnits(amount, this.assetDecimals)) *
       latestPendleAssetPrice *
       Math.pow(10, this.assetDecimals);
-    const tradingLoss = outputValue - currentValue;
+    tradingLoss = outputValue - currentValue;
+    }
     this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-withdraw`,
