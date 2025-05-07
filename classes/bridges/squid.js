@@ -53,7 +53,14 @@ class SquidBridge extends BaseBridge {
         };
 
         const route = await this.getRoute(routeParams);
-        const { feeInUSD, fee } = await this.getFeeCosts(
+        if (route.estimate.estimatedRouteDuration > this.maxBridgeDuration) {
+          console.log(
+            "Route duration is greater than maxBridgeDuration. Returning Infinity.",
+          );
+          // the unit is seconds
+          return [undefined, undefined, Infinity];
+        }
+        const { feeInUSD } = await this.getFeeCosts(
           route,
           fromToken,
           fromChainId,

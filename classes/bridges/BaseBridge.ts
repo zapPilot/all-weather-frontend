@@ -4,7 +4,7 @@ class BaseBridge {
   sdk: any;
   requiresInit: boolean;
   isInitialized: boolean = false;
-
+  maxBridgeDuration: number = 60;
   constructor(
     public name: string,
     requiresInit: boolean = true,

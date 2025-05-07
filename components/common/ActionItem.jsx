@@ -1,6 +1,8 @@
 import React from "react";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import CompletionActions from "../../components/CompletionActions";
+import { getNextChain } from "../../utils/chainOrder";
+
 const actionNameMap = {
   zapIn: "Deposit",
   zapOut: "Withdraw",
@@ -8,124 +10,187 @@ const actionNameMap = {
   localRebalance: "Rebalance",
 };
 
-const ActionItem = ({
-  tab,
-  actionName,
-  availableAssetChains,
-  currentChain,
-  chainStatus,
+const ChainIndicator = ({
+  chain,
+  index,
+  isActive,
+  isCurrentChain,
   theme,
-  isStarted,
-  account,
-  errorMsg,
+  actionText,
 }) => {
-  const actionIsArray = Array.isArray(actionName);
-  const sortedChains = React.useMemo(() => {
-    if (!availableAssetChains) return [];
-    if (tab === "Rebalance") {
-      return availableAssetChains;
-    }
+  const styles = {
+    text: isActive
+      ? "text-green-500"
+      : isCurrentChain
+      ? theme === "dark"
+        ? "text-white"
+        : "text-gray-900"
+      : "text-gray-500",
+    border: isActive
+      ? "border-green-500"
+      : isCurrentChain
+      ? theme === "dark"
+        ? "border-white"
+        : "border-gray-900"
+      : "border-gray-500",
+  };
 
-    if (!isStarted) {
-      return [...availableAssetChains].sort((a, b) => {
+  const showPulsingDot = isCurrentChain && !isActive;
+  return (
+    <div className={`flex flex-col items-center mx-2 ${styles.text}`}>
+      <div
+        className={`w-10 h-10 border-2 rounded-full flex items-center justify-center relative ${styles.border}`}
+      >
+        {showPulsingDot && (
+          <div className="absolute -top-2">
+            <span className="relative flex size-3">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex size-3 rounded-full bg-red-500"></span>
+            </span>
+          </div>
+        )}
+        {index + 1}
+      </div>
+      <p>
+        {actionText} on {chain}
+      </p>
+    </div>
+  );
+};
+
+const CompletionStatus = ({ allActionsCompleted, account }) => {
+  if (!allActionsCompleted) return null;
+
+  return (
+    <div className="text-green-500 text-center mb-2">
+      <div className="flex items-center justify-center gap-2 mb-2">
+        <CheckCircleIcon className="w-6 h-6" />
+        <p>You have completed all actions.</p>
+      </div>
+      <CompletionActions account={account} />
+    </div>
+  );
+};
+
+const ActionItem = (props) => {
+  const {
+    actionName,
+    availableAssetChains,
+    currentChain,
+    chainStatus,
+    theme,
+    isStarted,
+    account,
+    errorMsg,
+  } = props;
+
+  const actionIsArray = Array.isArray(actionName);
+
+  // Store the locked order once started
+  const lockedOrderRef = React.useRef(null);
+
+  // Lock the order when isStarted becomes true, using the current order
+  React.useEffect(() => {
+    if (isStarted && !lockedOrderRef.current) {
+      // Get the current order before any chain switching
+      const currentOrder = [...availableAssetChains].sort((a, b) => {
+        // First priority: finished chains
+        const aFinished = chainStatus[a];
+        const bFinished = chainStatus[b];
+
+        if (aFinished && !bFinished) return -1;
+        if (!aFinished && bFinished) return 1;
+
+        // Second priority: current chain
         if (a === currentChain) return -1;
         if (b === currentChain) return 1;
-        return 0;
+
+        // Third priority: shorter chain name first
+        const lengthDiff = a.length - b.length;
+        if (lengthDiff !== 0) return lengthDiff;
+
+        // Fourth priority: alphabetic order
+        return a.localeCompare(b);
       });
+
+      lockedOrderRef.current = currentOrder;
     }
-    return availableAssetChains;
-  }, [availableAssetChains, currentChain, isStarted, tab]);
+  }, [isStarted, availableAssetChains, currentChain, chainStatus]);
+
+  const displayChains = React.useMemo(() => {
+    if (!availableAssetChains) return [];
+
+    // If we have a locked order, use it
+    if (lockedOrderRef.current) {
+      const filteredChains = lockedOrderRef.current.filter((chain) =>
+        availableAssetChains.includes(chain),
+      );
+      return filteredChains;
+    }
+
+    // Otherwise, sort based on current chain and status
+    return [...availableAssetChains].sort((a, b) => {
+      // First priority: finished chains
+      const aFinished = chainStatus[a];
+      const bFinished = chainStatus[b];
+
+      if (aFinished && !bFinished) return -1;
+      if (!aFinished && bFinished) return 1;
+
+      // Second priority: current chain
+      if (a === currentChain) return -1;
+      if (b === currentChain) return 1;
+
+      // Third priority: shorter chain name first
+      const lengthDiff = a.length - b.length;
+      if (lengthDiff !== 0) return lengthDiff;
+
+      // Fourth priority: alphabetic order
+      return a.localeCompare(b);
+    });
+  }, [availableAssetChains, currentChain, chainStatus, isStarted]);
 
   const allActionsCompleted =
     availableAssetChains?.length > 0
       ? availableAssetChains.every((chain) => chainStatus[chain])
       : false;
 
-  const getChainStatusStyles = (chain) => {
-    const isActive = chainStatus[chain];
-    const isCurrentChain = currentChain === chain;
-    const isDarkTheme = theme === "dark";
-
-    return {
-      text: isActive
-        ? "text-green-500"
-        : isCurrentChain
-        ? isDarkTheme
-          ? "text-white"
-          : "text-gray-900"
-        : "text-gray-500",
-      border: isActive
-        ? "border-green-500"
-        : isCurrentChain
-        ? isDarkTheme
-          ? "border-white"
-          : "border-gray-900"
-        : "border-gray-500",
-    };
-  };
-
   const renderChainIndicator = (chain, index) => {
-    const styles = getChainStatusStyles(chain);
-    const showPulsingDot = chain === currentChain && !chainStatus[chain];
     const actionText = actionIsArray
       ? actionNameMap[actionName[index]]
       : actionNameMap[actionName];
-
     return (
-      <div
-        className={`flex flex-col items-center mx-2 ${styles.text}`}
-        key={index}
-      >
-        <div
-          className={`w-10 h-10 border-2 rounded-full flex items-center justify-center relative ${styles.border}`}
-        >
-          {showPulsingDot && (
-            <div className="absolute -top-2">
-              <span className="relative flex size-3">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex size-3 rounded-full bg-red-500"></span>
-              </span>
-            </div>
-          )}
-          {index + 1}
-        </div>
-        <p>
-          {actionText} on {chain}
-        </p>
-      </div>
+      <ChainIndicator
+        key={chain}
+        chain={chain}
+        index={index}
+        isActive={chainStatus[chain]}
+        isCurrentChain={currentChain === chain}
+        theme={theme}
+        actionText={actionText}
+      />
     );
   };
 
-  const renderCompletionStatus = () => {
-    if (!availableAssetChains?.length) {
-      return (
-        <div className="text-gray-500 text-center mb-2">
-          <p>No actions available at this time.</p>
-        </div>
-      );
-    }
-
-    if (allActionsCompleted) {
-      return (
-        <div className="text-green-500 text-center mb-2">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <CheckCircleIcon className="w-6 h-6" />
-            <p>You have completed all actions.</p>
-          </div>
-          <CompletionActions account={account} />
-        </div>
-      );
-    }
-
-    return null;
-  };
+  if (!availableAssetChains?.length) {
+    return (
+      <div className="text-gray-500 text-center mb-2">
+        <p>No actions available at this time.</p>
+      </div>
+    );
+  }
 
   return (
     <>
       <div className="flex justify-center text-base font-semibold">
-        {!allActionsCompleted && sortedChains?.map(renderChainIndicator)}
+        {!allActionsCompleted && displayChains?.map(renderChainIndicator)}
       </div>
-      <div className="mt-4">{renderCompletionStatus()}</div>
+      <div className="mt-4">
+        <CompletionStatus
+          allActionsCompleted={allActionsCompleted}
+          account={account}
+        />
+      </div>
       {errorMsg && <div className="mt-4 text-red-500">{errorMsg}</div>}
     </>
   );

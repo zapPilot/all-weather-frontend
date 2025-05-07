@@ -1,16 +1,4 @@
 /**
- * Switches to the next chain in the rotation
- * @param {string} chain - The current chain name
- * @returns {string} The next chain name
- */
-export const switchNextChain = (chain) => {
-  const nextChain = chain.includes(" ")
-    ? chain.toLowerCase().replace(" one", "").replace(" mainnet", "")
-    : chain;
-  return nextChain === "arbitrum" ? "base" : "arbitrum";
-};
-
-/**
  * Normalizes a chain name by removing common suffixes
  * @param {string} chainName - The chain name to normalize
  * @returns {string} The normalized chain name

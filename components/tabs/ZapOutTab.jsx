@@ -3,6 +3,7 @@ import DecimalStep from "../../pages/indexes/DecimalStep";
 import ConfiguredConnectButton from "../../pages/ConnectButton";
 import { formatLockUpPeriod } from "../../utils/general";
 import ActionItem from "../common/ActionItem";
+import { getNextChain } from "../../utils/chainOrder";
 
 export default function ZapOutTab({
   selectedToken,
@@ -24,6 +25,8 @@ export default function ZapOutTab({
   CHAIN_TO_CHAIN_ID,
   lockUpPeriod,
   errorMsg,
+  isLoading,
+  setFinishedTxn,
 }) {
   const currentChain = chainId?.name
     ?.toLowerCase()
@@ -31,7 +34,7 @@ export default function ZapOutTab({
     .replace(" mainnet", "")
     .trim();
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       <ActionItem
         tab="ZapOut"
         actionName="zapOut"
@@ -63,21 +66,24 @@ export default function ZapOutTab({
         Object.values(chainStatus).filter((status) => status).length <
           availableAssetChains.length &&
         currentChain !==
-          availableAssetChains.find((chain) => !chainStatus[chain]) ? (
+          getNextChain(availableAssetChains, chainStatus, currentChain) ? (
         <Button
           type="primary"
-          className="w-full"
-          onClick={() =>
+          className="w-full my-2"
+          onClick={() => {
             switchChain(
               CHAIN_ID_TO_CHAIN[
                 CHAIN_TO_CHAIN_ID[
-                  availableAssetChains.find((chain) => !chainStatus[chain])
+                  getNextChain(availableAssetChains, chainStatus, currentChain)
                 ]
               ],
-            )
-          }
+            ),
+              setFinishedTxn(false);
+          }}
+          loading={isLoading}
         >
-          Switch to {availableAssetChains.find((chain) => !chainStatus[chain])}
+          Switch to{" "}
+          {getNextChain(availableAssetChains, chainStatus, currentChain)}
         </Button>
       ) : Object.values(chainStatus).every((status) => status) ? null : (
         <Button

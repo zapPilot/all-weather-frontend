@@ -34,7 +34,7 @@ async function getTheBestBridgeTxns(
   );
 
   const validBridges = bridgeResults.filter(
-    (result) => result.feeCostsInUSD !== Infinity,
+    (result) => result.feeCostsInUSD !== Infinity && result.txns !== undefined,
   );
   if (validBridges.length === 0) {
     throw new Error("No available bridges found");
