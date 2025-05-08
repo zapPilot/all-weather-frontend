@@ -38,7 +38,7 @@ import openNotificationWithIcon from "../../utils/notification.js";
 import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
-import { SettingOutlined, DownOutlined } from "@ant-design/icons";
+import { SettingOutlined } from "@ant-design/icons";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
@@ -210,33 +210,78 @@ export default function IndexOverviews() {
 
     const [tokenSymbol, tokenAddress, tokenDecimals] =
       tokenSymbolAndAddress.split("-");
-    try {
-      const txns = await generateIntentTxns({
-        actionName,
-        chainMetadata:
-          chainId?.name === undefined
-            ? { name: CHAIN_ID_TO_CHAIN_STRING[chainId?.id], ...chainId }
-            : chainId,
-        portfolioHelper,
-        accountAddress: account.address,
-        tokenSymbol,
-        tokenAddress,
-        investmentAmount,
-        tokenDecimals,
-        zapOutPercentage,
-        setTradingLoss,
-        setStepName,
-        setTotalTradingLoss,
-        setPlatformFee,
-        slippage,
-        rebalancableUsdBalanceDict,
-        recipient,
-        protocolAssetDustInWallet:
-          protocolAssetDustInWallet?.[normalizeChainName(chainId?.name)] || {},
-        protocolAssetDustInWalletLoading,
-        onlyThisChain,
-        usdBalance,
+    const actionParams = {
+      actionName,
+      chainMetadata:
+        chainId?.name === undefined
+          ? { name: CHAIN_ID_TO_CHAIN_STRING[chainId?.id], ...chainId }
+          : chainId,
+      portfolioHelper,
+      accountAddress: account.address,
+      tokenSymbol,
+      tokenAddress,
+      investmentAmount,
+      tokenDecimals,
+      zapOutPercentage,
+      setTradingLoss,
+      setStepName,
+      setTotalTradingLoss,
+      setPlatformFee,
+      slippage,
+      rebalancableUsdBalanceDict,
+      recipient,
+      protocolAssetDustInWallet:
+        protocolAssetDustInWallet?.[normalizeChainName(chainId?.name)] || {},
+      protocolAssetDustInWalletLoading,
+      onlyThisChain,
+      usdBalance,
+    };
+
+    const cleanupActionParams = (params) => {
+      const cleanedParams = { ...params };
+
+      // Clean up rebalancableUsdBalanceDict
+      for (const key in cleanedParams.rebalancableUsdBalanceDict) {
+        if (cleanedParams.rebalancableUsdBalanceDict[key].protocol) {
+          delete cleanedParams.rebalancableUsdBalanceDict[key].protocol;
+        }
+      }
+
+      // Remove non-serializable properties
+      const propertiesToRemove = [
+        "portfolioHelper",
+        "chainMetadata",
+        "setPlatformFee",
+        "setStepName",
+        "setTotalTradingLoss",
+        "setTradingLoss",
+      ];
+
+      propertiesToRemove.forEach((prop) => {
+        delete cleanedParams[prop];
       });
+
+      return cleanedParams;
+    };
+
+    const handleError = async (error, context) => {
+      const errorMessage = await handleTransactionError(
+        context,
+        error,
+        notificationAPI,
+        account?.address,
+        chainId?.name,
+        actionName,
+        cleanupActionParams(actionParams),
+      );
+      if (errorMessage) {
+        setErrorMsg(errorMessage);
+      }
+      return false;
+    };
+
+    try {
+      const txns = await generateIntentTxns(actionParams);
       setErrorMsg("");
       setCostsCalculated(true);
 
@@ -378,6 +423,7 @@ export default function IndexOverviews() {
                     onlyThisChain,
                   }),
                 ),
+                actionParams: cleanupActionParams(actionParams),
               },
             });
 
@@ -411,35 +457,12 @@ export default function IndexOverviews() {
             resolve(true);
           },
           onError: async (error) => {
-            const errorMessage = await handleTransactionError(
-              "Transaction Failed",
-              error,
-              notificationAPI,
-              account?.address,
-              chainId?.name,
-              setErrorMsg,
-            );
-            if (errorMessage) {
-              setErrorMsg(errorMessage);
-            }
-            // Reject the promise with false to indicate failure
-            reject(false);
+            reject(await handleError(error, "Transaction Failed"));
           },
         });
       });
     } catch (error) {
-      const errorMessage = await handleTransactionError(
-        "Transaction Failed",
-        error,
-        notificationAPI,
-        account?.address,
-        chainId?.name,
-        setErrorMsg,
-      );
-      if (errorMessage) {
-        setErrorMsg(errorMessage);
-      }
-      return false;
+      return handleError(error, "Transaction Failed");
     }
   };
 
@@ -659,7 +682,8 @@ export default function IndexOverviews() {
           notificationAPI,
           account?.address,
           chainId?.name,
-          setErrorMsg,
+          actionName,
+          actionParamsForStringify,
         );
         setErrorMsg(error.message);
       } finally {

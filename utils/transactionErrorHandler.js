@@ -83,14 +83,14 @@ const mapErrorToUserFriendlyMessage = (error) => {
  * Logs transaction errors to Discord webhook if not in local environment
  * @param {Error} error - The error object
  */
-const logErrorToDiscord = async (error, address, chain) => {
+const logErrorToDiscord = async (error, address, chain, actionName) => {
   if (isLocalEnvironment) return;
 
   try {
     await axios.post(`${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`, {
       errorMsg: `<@&1172000757764075580> ${address}: ${
         error.message || error.toString()
-      } on ${chain}`,
+      } on ${chain} ${actionName}`,
     });
   } catch (webhookError) {
     console.error("Failed to log error to Discord:", webhookError);
@@ -109,17 +109,19 @@ export const handleTransactionError = async (
   notificationAPI,
   address,
   chain,
+  actionName,
+  actionParams,
 ) => {
   const userMessage = mapErrorToUserFriendlyMessage(error);
   if (userMessage === ERROR_MESSAGES.REJECTED_TRANSACTION) return;
   // Log error to Discord in production
-  await logErrorToDiscord(error, address, chain);
+  await logErrorToDiscord(error, address, chain, actionName);
 
   // Show error notification if notification API is provided
   if (notificationAPI) {
     notificationAPI.error({
       message: title,
-      description: userMessage,
+      description: `${userMessage} ${JSON.stringify(actionParams)}`,
     });
   }
 
