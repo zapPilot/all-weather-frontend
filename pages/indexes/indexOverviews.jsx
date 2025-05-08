@@ -97,7 +97,32 @@ const useChainSwitching = (switchChain) => {
     chainMap,
   };
 };
+const cleanupActionParams = (params) => {
+  const cleanedParams = { ...params };
 
+  // Clean up rebalancableUsdBalanceDict
+  for (const key in cleanedParams.rebalancableUsdBalanceDict) {
+    if (cleanedParams.rebalancableUsdBalanceDict[key].protocol) {
+      delete cleanedParams.rebalancableUsdBalanceDict[key].protocol;
+    }
+  }
+
+  // Remove non-serializable properties
+  const propertiesToRemove = [
+    "portfolioHelper",
+    "chainMetadata",
+    "setPlatformFee",
+    "setStepName",
+    "setTotalTradingLoss",
+    "setTradingLoss",
+  ];
+
+  propertiesToRemove.forEach((prop) => {
+    delete cleanedParams[prop];
+  });
+
+  return cleanedParams;
+};
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -235,33 +260,6 @@ export default function IndexOverviews() {
       protocolAssetDustInWalletLoading,
       onlyThisChain,
       usdBalance,
-    };
-
-    const cleanupActionParams = (params) => {
-      const cleanedParams = { ...params };
-
-      // Clean up rebalancableUsdBalanceDict
-      for (const key in cleanedParams.rebalancableUsdBalanceDict) {
-        if (cleanedParams.rebalancableUsdBalanceDict[key].protocol) {
-          delete cleanedParams.rebalancableUsdBalanceDict[key].protocol;
-        }
-      }
-
-      // Remove non-serializable properties
-      const propertiesToRemove = [
-        "portfolioHelper",
-        "chainMetadata",
-        "setPlatformFee",
-        "setStepName",
-        "setTotalTradingLoss",
-        "setTradingLoss",
-      ];
-
-      propertiesToRemove.forEach((prop) => {
-        delete cleanedParams[prop];
-      });
-
-      return cleanedParams;
     };
 
     const handleError = async (error, context) => {
@@ -682,8 +680,8 @@ export default function IndexOverviews() {
           notificationAPI,
           account?.address,
           chainId?.name,
-          actionName,
-          actionParamsForStringify,
+          "fetchData",
+          {},
         );
         setErrorMsg(error.message);
       } finally {
