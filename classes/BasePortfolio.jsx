@@ -1550,8 +1550,12 @@ export class BasePortfolio {
       .div(10000);
   }
 
-  getFlowChartData(actionName, actionParams) {
-    return this.flowChartBuilder.buildFlowChart(actionName, actionParams);
+  getFlowChartData(actionName, actionParams, tokenPricesMappingTable) {
+    return this.flowChartBuilder.buildFlowChart(
+      actionName,
+      actionParams,
+      tokenPricesMappingTable,
+    );
   }
 
   _calculateChainWeights(currentChain) {

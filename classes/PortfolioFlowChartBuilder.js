@@ -9,8 +9,38 @@ export class PortfolioFlowChartBuilder {
     );
   }
 
-  _buildStandardFlowChart(actionName, actionParams, flowChartData, chainNodes) {
+  _buildStandardFlowChart(
+    actionName,
+    actionParams,
+    flowChartData,
+    chainNodes,
+    tokenPricesMappingTable,
+  ) {
+    console.log(
+      "actionParams",
+      actionParams,
+      "tokenPricesMappingTable",
+      tokenPricesMappingTable,
+    );
     const chainSet = new Set();
+    const chainWeights = new Map(); // Store chain weights
+
+    // First pass: calculate chain weights
+    for (const [category, protocolsInThisCategory] of Object.entries(
+      this.portfolio.strategy,
+    )) {
+      for (const [chain, protocolsOnThisChain] of Object.entries(
+        protocolsInThisCategory,
+      )) {
+        const chainWeight = protocolsOnThisChain.reduce(
+          (sum, protocol) => sum + protocol.weight,
+          0,
+        );
+        chainWeights.set(chain, chainWeight);
+      }
+    }
+
+    // Second pass: build flow chart
     for (const [category, protocolsInThisCategory] of Object.entries(
       this.portfolio.strategy,
     )) {
@@ -22,7 +52,19 @@ export class PortfolioFlowChartBuilder {
           chainSet.add(chain);
           chainNode = {
             id: chain,
-            name: actionName,
+            name: `${actionName} $${
+              actionName === "zapIn"
+                ? (
+                    actionParams.investmentAmount *
+                    tokenPricesMappingTable[actionParams.tokenInSymbol] *
+                    chainWeights.get(chain)
+                  ).toFixed(2) || 0
+                : actionName === "zapOut"
+                ? (actionParams.zapOutAmount * chainWeights.get(chain)).toFixed(
+                    2,
+                  ) || 0
+                : 0
+            }`,
             chain: chain,
             category: category,
             imgSrc: `/chainPicturesWebp/${chain}.webp`,
@@ -73,12 +115,6 @@ export class PortfolioFlowChartBuilder {
             target: stepsData.nodes[0].id,
             data: {
               ratio: protocol.weight,
-              usdAmount:
-                actionName === "zapIn"
-                  ? actionParams.investmentAmount
-                  : actionName === "zapOut"
-                  ? actionParams.zapOutAmount
-                  : 0,
             },
           };
           flowChartData.nodes = flowChartData.nodes.concat(stepsData.nodes);
@@ -90,7 +126,7 @@ export class PortfolioFlowChartBuilder {
     }
   }
 
-  buildFlowChart(actionName, actionParams) {
+  buildFlowChart(actionName, actionParams, tokenPricesMappingTable) {
     let flowChartData = {
       nodes: [],
       edges: [],
@@ -234,6 +270,7 @@ export class PortfolioFlowChartBuilder {
         actionParams,
         flowChartData,
         chainNodes,
+        tokenPricesMappingTable,
       );
     }
     return {

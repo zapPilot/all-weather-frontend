@@ -88,6 +88,7 @@ export default function PopUpModal({
   currentTab,
   allChainsComplete,
   errorMsg,
+  tokenPricesMappingTable,
 }) {
   const renderStatusIcon = () => {
     if (errorMsg) return <XMarkIcon className="h-5 w-5 text-red-500" />;
@@ -187,25 +188,31 @@ export default function PopUpModal({
               <div className="flex-grow">
                 {finishedTxn === false && actionName !== "" ? (
                   <DemoFlowDirectionGraph
-                    data={portfolioHelper?.getFlowChartData(actionName, {
-                      tokenInSymbol:
-                        selectedToken?.toLowerCase()?.split("-")[0] === "eth"
-                          ? "weth"
-                          : selectedToken?.toLowerCase()?.split("-")[0],
-                      tokenInAddress: selectedToken
-                        ?.toLowerCase()
-                        ?.split("-")[1],
-                      outputToken: selectedToken?.toLowerCase()?.split("-")[0],
-                      outputTokenAddress: selectedToken
-                        ?.toLowerCase()
-                        ?.split("-")[1],
-                      rebalancableUsdBalanceDict,
-                      usdBalanceDict: rebalancableUsdBalanceDict,
-                      chainMetadata,
-                      investmentAmount,
-                      zapOutAmount,
-                      rebalanceAmount,
-                    })}
+                    data={portfolioHelper?.getFlowChartData(
+                      actionName,
+                      {
+                        tokenInSymbol:
+                          selectedToken?.toLowerCase()?.split("-")[0] === "eth"
+                            ? "weth"
+                            : selectedToken?.toLowerCase()?.split("-")[0],
+                        tokenInAddress: selectedToken
+                          ?.toLowerCase()
+                          ?.split("-")[1],
+                        outputToken: selectedToken
+                          ?.toLowerCase()
+                          ?.split("-")[0],
+                        outputTokenAddress: selectedToken
+                          ?.toLowerCase()
+                          ?.split("-")[1],
+                        rebalancableUsdBalanceDict,
+                        usdBalanceDict: rebalancableUsdBalanceDict,
+                        chainMetadata,
+                        investmentAmount,
+                        zapOutAmount,
+                        rebalanceAmount,
+                      },
+                      tokenPricesMappingTable,
+                    )}
                     stepName={stepName}
                     tradingLoss={tradingLoss}
                     currentChain={chainId?.name}

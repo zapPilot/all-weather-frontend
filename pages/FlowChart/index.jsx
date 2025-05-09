@@ -215,8 +215,7 @@ export default function DemoFlowDirectionGraph({
             ? "l(0) 0:#F04864 0.5:#7EC2F3 1:#1890FF"
             : "l(0) 0:#1890FF 0.5:#7EC2F3 1:#F04864",
         labelText: (d) => {
-          const edgeUsdAmount = d.data.usdAmount * d.data.ratio;
-          return isNaN(edgeUsdAmount) ? "" : "$" + edgeUsdAmount.toFixed(2);
+          return "";
         },
         labelBackground: true,
       },
