@@ -152,7 +152,6 @@ export class BasePortfolio {
         usdBalance: balance,
         weight: protocol.weight,
         symbol: protocol.interface.symbolList,
-        protocol: protocol,
         APR: portfolioAprDict?.[protocol.interface.uniqueId()]?.apr * 100,
       };
     }
