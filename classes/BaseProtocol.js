@@ -431,12 +431,12 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
   ) {
     let finalTxns = [];
-    let globalTradingLoss = 0;
     await this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-approve`,
       0,
     );
+
     if (this.mode === "single") {
       const [
         beforeZapInTxns,
@@ -454,7 +454,6 @@ export default class BaseProtocol extends BaseUniswap {
         tokenDecimals,
         tokenPricesMappingTable,
       );
-
       const [zapinTxns, tradingLoss] = await this.customDeposit(
         recipient,
         bestTokenSymbol,
@@ -466,7 +465,11 @@ export default class BaseProtocol extends BaseUniswap {
         updateProgress,
       );
       finalTxns = beforeZapInTxns.concat(zapinTxns);
-      globalTradingLoss = tradingLoss;
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-deposit`,
+        tradingLoss,
+      );
     } else if (this.mode === "LP") {
       const [beforeZapInTxns, tokenAmetadata, tokenBmetadata] =
         await this._beforeDepositLP(
@@ -488,19 +491,13 @@ export default class BaseProtocol extends BaseUniswap {
         updateProgress,
       );
       finalTxns = beforeZapInTxns.concat(zapinTxns);
-      globalTradingLoss = tradingLoss;
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-deposit`,
+        tradingLoss,
+      );
     }
     this.checkTxnsToDataNotUndefined(finalTxns, "zapIn");
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-approve`,
-      0,
-    );
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-deposit`,
-      globalTradingLoss,
-    );
     await this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-stake`,

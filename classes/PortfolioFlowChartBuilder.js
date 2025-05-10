@@ -53,7 +53,10 @@ export class PortfolioFlowChartBuilder {
     if (actionName === "zapIn") {
       let ratio;
       if (actionParams.onlyThisChain === true) {
-        ratio = normalizeChainName(actionParams.chainMetadata?.name) === chain ? 1 : 0;
+        ratio =
+          normalizeChainName(actionParams.chainMetadata?.name) === chain
+            ? 1
+            : 0;
       } else {
         ratio = chainWeight;
       }
