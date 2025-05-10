@@ -432,6 +432,11 @@ export default class BaseProtocol extends BaseUniswap {
   ) {
     let finalTxns = [];
     let globalTradingLoss = 0;
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-approve`,
+      0,
+    );
     if (this.mode === "single") {
       const [
         beforeZapInTxns,
@@ -1332,14 +1337,23 @@ export default class BaseProtocol extends BaseUniswap {
     return contractCall;
   }
   async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
-    // First, update the progress
-    updateProgress(nodeId, tradingLoss);
+    // First, update the progress and wait for it to complete
+    await new Promise((resolve) => {
+      updateProgress(nodeId, tradingLoss);
+      // Use requestAnimationFrame to ensure the state update is processed
+      requestAnimationFrame(() => {
+        // Add a small delay to ensure React has time to process the update
+        setTimeout(() => {
+          resolve();
+        }, 100);
+      });
+    });
 
-    // Wait longer to ensure state updates are processed
+    // Additional delay to ensure UI updates are visible
     await new Promise((resolve) => {
       setTimeout(() => {
         resolve();
-      }, 500); // Increased to 500ms to ensure state updates have time to propagate
+      }, 400);
     });
   }
   getDeadline() {

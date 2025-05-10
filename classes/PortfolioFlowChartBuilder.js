@@ -12,7 +12,7 @@ export class PortfolioFlowChartBuilder {
 
   _calculateChainWeights() {
     const chainWeights = new Map();
-    for (const [category, protocolsInThisCategory] of Object.entries(
+    for (const protocolsInThisCategory of Object.values(
       this.portfolio.strategy,
     )) {
       for (const [chain, protocolsOnThisChain] of Object.entries(
@@ -22,7 +22,8 @@ export class PortfolioFlowChartBuilder {
           (sum, protocol) => sum + protocol.weight,
           0,
         );
-        chainWeights.set(chain, chainWeight);
+        const currentWeight = chainWeights.get(chain) || 0;
+        chainWeights.set(chain, currentWeight + chainWeight);
       }
     }
     return chainWeights;
@@ -50,11 +51,12 @@ export class PortfolioFlowChartBuilder {
     chain,
   ) {
     if (actionName === "zapIn") {
-      const ratio = actionParams.onlyThisChain
-        ? normalizeChainName(actionParams.chainMetadata?.name) === chain
-          ? 1
-          : 0
-        : chainWeight;
+      let ratio;
+      if (actionParams.onlyThisChain === true) {
+        ratio = normalizeChainName(actionParams.chainMetadata?.name) === chain ? 1 : 0;
+      } else {
+        ratio = chainWeight;
+      }
       return (
         (
           actionParams.investmentAmount *
@@ -78,7 +80,6 @@ export class PortfolioFlowChartBuilder {
   ) {
     const chainSet = new Set();
     const chainWeights = this._calculateChainWeights();
-
     for (const [category, protocolsInThisCategory] of Object.entries(
       this.portfolio.strategy,
     )) {

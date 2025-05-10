@@ -276,7 +276,7 @@ export class BaseCamelot extends BaseProtocol {
         slippage,
       );
     }
-    return [...approveTxns, depositTxn];
+    return [[...approveTxns, depositTxn], 0];
   }
   async _calculateTokenAmountsForLP(
     usdAmount,

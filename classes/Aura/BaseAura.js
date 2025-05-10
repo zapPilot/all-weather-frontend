@@ -172,7 +172,7 @@ export class BaseAura extends BaseProtocol {
     });
     // Get staking transactions and combine all transactions
     const stakeTxns = await this._stakeLP(min_mint_amount, updateProgress);
-    return [...approveTxns, depositTxn, ...stakeTxns];
+    return [[...approveTxns, depositTxn, ...stakeTxns], 0];
   }
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     const poolInfo = await this.stakeFarmContractInstance.functions.poolInfo(

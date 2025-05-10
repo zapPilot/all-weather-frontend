@@ -264,7 +264,7 @@ export class BaseVelodrome extends BaseProtocol {
     });
 
     const stakeTxns = await this._stakeLP(min_mint_amount, updateProgress);
-    return [...approveTxns, depositTxn, ...stakeTxns];
+    return [[...approveTxns, depositTxn, ...stakeTxns], 0];
   }
 
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {

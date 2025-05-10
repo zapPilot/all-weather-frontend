@@ -1468,11 +1468,23 @@ export class BasePortfolio {
     return data.referrer;
   }
   async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
+    // First, update the progress and wait for it to complete
     await new Promise((resolve) => {
       updateProgress(nodeId, tradingLoss);
+      // Use requestAnimationFrame to ensure the state update is processed
+      requestAnimationFrame(() => {
+        // Add a small delay to ensure React has time to process the update
+        setTimeout(() => {
+          resolve();
+        }, 100);
+      });
+    });
+
+    // Additional delay to ensure UI updates are visible
+    await new Promise((resolve) => {
       setTimeout(() => {
         resolve();
-      }, 500); // Increased to 500ms to ensure state updates have time to propagate
+      }, 100);
     });
   }
   _getPlatformFeeTxns(tokenAddress, chainMetadata, platformFee, referrer) {
