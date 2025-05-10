@@ -10,7 +10,7 @@ const FlowDirectionGraph = dynamic(
   { ssr: false },
 );
 
-const NodeContent = ({ nodeData, displayTradingLoss }) => {
+const NodeContent = ({ nodeData, displayTradingLoss, stepName }) => {
   const formatTradingLoss = (value) => {
     if (value === null && nodeData.id === stepName) return <Spin />;
     if (value === null) return null;
@@ -200,6 +200,7 @@ const UserFlowNode = ({
         <NodeContent
           nodeData={nodeData}
           displayTradingLoss={displayTradingLoss}
+          stepName={stepName}
         />
       </div>
     </div>
