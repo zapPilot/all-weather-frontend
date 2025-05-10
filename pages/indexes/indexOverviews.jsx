@@ -877,6 +877,7 @@ export default function IndexOverviews() {
         currentTab={tabKey}
         allChainsComplete={Object.values(chainStatus || {}).every(Boolean)}
         errorMsg={errorMsg}
+        tokenPricesMappingTable={tokenPricesMappingTable}
       />
       <main className={styles.bgStyle}>
         <header className="relative isolate pt-6">

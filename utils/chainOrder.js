@@ -1,18 +1,14 @@
 /**
- * Get the next chain based on the current chain status and available chains
- * @param {string[]} availableAssetChains - List of available chains
+ * Sorts chains based on their completion status, current chain, name length, and alphabetic order
+ * @param {string[]} availableAssetChains - Array of available chain names
  * @param {Object} chainStatus - Object mapping chain names to their completion status
- * @param {string} currentChain - The current chain name
- * @returns {string|null} The next chain to process, or null if all chains are complete
+ * @param {string} currentChain - The current active chain
+ * @returns {string[]} Sorted array of chain names
  */
-export const getNextChain = (
-  availableAssetChains,
-  chainStatus,
-  currentChain,
-) => {
-  if (!availableAssetChains || !chainStatus || !currentChain) return null;
-  // Get the current order before any chain switching
-  const currentOrder = [...availableAssetChains].sort((a, b) => {
+export const sortChains = (availableAssetChains, chainStatus, currentChain) => {
+  if (!availableAssetChains) return [];
+
+  return [...availableAssetChains].sort((a, b) => {
     // First priority: finished chains
     const aFinished = chainStatus[a];
     const bFinished = chainStatus[b];
@@ -31,10 +27,24 @@ export const getNextChain = (
     // Fourth priority: alphabetic order
     return a.localeCompare(b);
   });
+};
 
-  // Filter out finished chains and get the first unfinished one
-  const unfinishedChains = currentOrder.filter(
-    (chain) => availableAssetChains.includes(chain) && !chainStatus[chain],
+/**
+ * Gets the next chain to process based on the current state
+ * @param {string[]} availableAssetChains - Array of available chain names
+ * @param {Object} chainStatus - Object mapping chain names to their completion status
+ * @param {string} currentChain - The current active chain
+ * @returns {string|null} The next chain to process, or null if all chains are complete
+ */
+export const getNextChain = (
+  availableAssetChains,
+  chainStatus,
+  currentChain,
+) => {
+  const sortedChains = sortChains(
+    availableAssetChains,
+    chainStatus,
+    currentChain,
   );
-  return unfinishedChains[0] || null;
+  return sortedChains.find((chain) => !chainStatus[chain]) || null;
 };

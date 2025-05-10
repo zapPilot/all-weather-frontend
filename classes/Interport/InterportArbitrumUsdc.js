@@ -69,13 +69,7 @@ export class InterportArbitrumUsdc extends BaseProtocol {
       method: "deposit",
       params: [amountToZapIn],
     });
-    // const stakeTxn = prepareContractCall({
-    //   contract: this.stakeFarmContract,
-    //   method: "stake",
-    //   params: [this.pid, amountToZapIn],
-    // });
-    // return [approveForZapInTxn, depositTxn, stakeTxn];
-    return [approveForZapInTxn, depositTxn];
+    return [[approveForZapInTxn, depositTxn], 0];
   }
   async customWithdrawAndClaim(
     owner,

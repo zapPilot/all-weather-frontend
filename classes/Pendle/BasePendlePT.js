@@ -146,12 +146,7 @@ export class BasePendlePT extends BaseProtocol {
         Math.pow(10, this.assetDecimals) -
       Number(ethers.utils.formatUnits(amountToZapIn, bestTokenToZapInDecimal)) *
         tokenPricesMappingTable[inputToken];
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-deposit`,
-      tradingLoss,
-    );
-    return [approveForZapInTxn, swapTxn];
+    return [[approveForZapInTxn, swapTxn], tradingLoss];
   }
 
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
@@ -215,7 +210,6 @@ export class BasePendlePT extends BaseProtocol {
     return 0;
   }
   async _stake(amount, updateProgress) {
-    await super._stake(amount, updateProgress);
     return [];
   }
   async _unstake(owner, percentage, updateProgress) {

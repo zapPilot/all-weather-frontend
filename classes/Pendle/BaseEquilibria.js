@@ -285,13 +285,8 @@ export class BaseEquilibria extends BaseProtocol {
         Math.pow(10, this.assetDecimals) -
       Number(ethers.utils.formatUnits(amountToZapIn, bestTokenToZapInDecimal)) *
         tokenPricesMappingTable[inputToken];
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-deposit`,
-      tradingLoss,
-    );
     const stakeTxns = await this._stake(minLPOutAmount, updateProgress);
-    return [approveForZapInTxn, mintTxn, ...stakeTxns];
+    return [[approveForZapInTxn, mintTxn, ...stakeTxns], tradingLoss];
   }
 
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
@@ -391,7 +386,6 @@ export class BaseEquilibria extends BaseProtocol {
     return 0;
   }
   async _stake(amount, updateProgress) {
-    await super._stake(amount, updateProgress);
     const approveTxn = approve(
       this.assetContract.address,
       this.stakeFarmContract.address,

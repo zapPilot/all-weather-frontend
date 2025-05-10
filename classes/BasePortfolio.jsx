@@ -146,15 +146,12 @@ export class BasePortfolio {
 
   _processProtocolBalances(balanceResults, portfolioAprDict, usdBalanceDict) {
     for (const { protocol, balance } of balanceResults) {
-      const protocolUniqueId = `${protocol.interface.uniqueId()}/${
-        protocol.interface.constructor.name
-      }`;
+      const protocolUniqueId = protocol.interface.uniqueId();
       usdBalanceDict[protocolUniqueId] = {
         chain: protocol.interface.chain,
         usdBalance: balance,
         weight: protocol.weight,
         symbol: protocol.interface.symbolList,
-        protocol: protocol,
         APR: portfolioAprDict?.[protocol.interface.uniqueId()]?.apr * 100,
       };
     }
@@ -349,7 +346,11 @@ export class BasePortfolio {
       );
 
     const fetchPoolData = async ({ protocol }) => {
-      const poolUniqueKey = protocol.interface.uniqueId();
+      const poolUniqueKey = protocol.interface
+        .uniqueId()
+        .split("/")
+        .slice(0, 4)
+        .join("/");
       const url = `${process.env.NEXT_PUBLIC_API_URL}/pool/${poolUniqueKey}/apr`;
       try {
         const response = await fetch(url);
@@ -1067,9 +1068,7 @@ export class BasePortfolio {
       tokenPricesMappingTable,
     );
 
-    const protocolClassName = `${protocol.interface.uniqueId()}/${
-      protocol.interface.constructor.name
-    }`;
+    const protocolClassName = protocol.interface.uniqueId();
     const zapOutPercentage =
       rebalancableDict[protocolClassName]?.zapOutPercentage;
     if (
@@ -1467,10 +1466,23 @@ export class BasePortfolio {
     return data.referrer;
   }
   async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
+    // First, update the progress and wait for it to complete
     await new Promise((resolve) => {
       updateProgress(nodeId, tradingLoss);
-      // Use setTimeout to ensure the state update is queued
-      setTimeout(resolve, 30);
+      // Use requestAnimationFrame to ensure the state update is processed
+      requestAnimationFrame(() => {
+        // Add a small delay to ensure React has time to process the update
+        setTimeout(() => {
+          resolve();
+        }, 100);
+      });
+    });
+
+    // Additional delay to ensure UI updates are visible
+    await new Promise((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, 100);
     });
   }
   _getPlatformFeeTxns(tokenAddress, chainMetadata, platformFee, referrer) {
@@ -1548,8 +1560,12 @@ export class BasePortfolio {
       .div(10000);
   }
 
-  getFlowChartData(actionName, actionParams) {
-    return this.flowChartBuilder.buildFlowChart(actionName, actionParams);
+  getFlowChartData(actionName, actionParams, tokenPricesMappingTable) {
+    return this.flowChartBuilder.buildFlowChart(
+      actionName,
+      actionParams,
+      tokenPricesMappingTable,
+    );
   }
 
   _calculateChainWeights(currentChain) {

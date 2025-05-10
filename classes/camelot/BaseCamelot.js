@@ -276,7 +276,7 @@ export class BaseCamelot extends BaseProtocol {
         slippage,
       );
     }
-    return [...approveTxns, depositTxn];
+    return [[...approveTxns, depositTxn], 0];
   }
   async _calculateTokenAmountsForLP(
     usdAmount,
@@ -346,7 +346,6 @@ export class BaseCamelot extends BaseProtocol {
     return 0;
   }
   async _stakeLP(amount, updateProgress) {
-    await super._stakeLP(amount, updateProgress);
     return [];
   }
   async _unstakeLP(owner, percentage, updateProgress) {
