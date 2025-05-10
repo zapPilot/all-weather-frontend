@@ -17,7 +17,8 @@ const NodeContent = ({ nodeData, displayTradingLoss }) => {
 
     const absValue = Math.abs(value);
     const isNegative = value < 0;
-    const formattedValue = absValue < 0.01 ? "< $0.01" : `$${absValue.toFixed(2)}`;
+    const formattedValue =
+      absValue < 0.01 ? "< $0.01" : `$${absValue.toFixed(2)}`;
 
     return (
       <span className={`text-sm ${isNegative ? "" : "text-green-500"}`}>
@@ -110,9 +111,12 @@ const NodeContent = ({ nodeData, displayTradingLoss }) => {
   if (nodeData.name.startsWith("Swap")) {
     return renderSwapNode();
   }
-  if (nodeData.name.startsWith("Deposit") || nodeData.name.startsWith("Withdraw")) {
+  if (
+    nodeData.name.startsWith("Deposit") ||
+    nodeData.name.startsWith("Withdraw")
+  ) {
     return renderDepositWithdrawNode(
-      nodeData.name.startsWith("Deposit") ? "Deposit" : "Withdraw"
+      nodeData.name.startsWith("Deposit") ? "Deposit" : "Withdraw",
     );
   }
   return renderDefaultNode();
@@ -136,7 +140,6 @@ const UserFlowNode = ({
     if (stepName !== prevStepNameRef.current) {
       setCompletedSteps((prev) => {
         const newSet = new Set([...prev, stepName, prevStepNameRef.current]);
-        console.log(`[Node ${nodeData.id}] Updated completed steps:`, Array.from(newSet));
         return newSet;
       });
       prevStepNameRef.current = stepName;
@@ -164,13 +167,21 @@ const UserFlowNode = ({
     ) {
       tradingLossRef.current = tradingLoss;
     }
-  }, [stepName, nodeData.id, tradingLoss, setCompletedSteps, completedSteps, currentChain]);
+  }, [
+    stepName,
+    nodeData.id,
+    tradingLoss,
+    setCompletedSteps,
+    completedSteps,
+    currentChain,
+  ]);
 
   const isActiveOrCompleted =
     nodeState.isActive ||
     nodeData.id === stepName ||
     completedSteps?.has(nodeData.id) ||
-    currentChain.toLowerCase().replace(" one", "").replace(" mainnet", "") === nodeData.id;
+    currentChain.toLowerCase().replace(" one", "").replace(" mainnet", "") ===
+      nodeData.id;
 
   const displayTradingLoss = completedSteps?.has(nodeData.id)
     ? tradingLossRef.current
@@ -186,13 +197,23 @@ const UserFlowNode = ({
       }`}
     >
       <div className="user-flow-node-name flex items-center">
-        <NodeContent nodeData={nodeData} displayTradingLoss={displayTradingLoss} />
+        <NodeContent
+          nodeData={nodeData}
+          displayTradingLoss={displayTradingLoss}
+        />
       </div>
     </div>
   );
 };
 
-const getGraphOptions = (data, stepName, tradingLoss, completedSteps, setCompletedSteps, currentChain) => ({
+const getGraphOptions = (
+  data,
+  stepName,
+  tradingLoss,
+  completedSteps,
+  setCompletedSteps,
+  currentChain,
+) => ({
   autoFit: "view",
   data,
   node: {
@@ -245,7 +266,6 @@ export default function DemoFlowDirectionGraph({
   tradingLoss,
   currentChain,
 }) {
-  console.log("DemoFlowDirectionGraph data", data);
   const [completedSteps, setCompletedSteps] = useState(new Set());
   const options = getGraphOptions(
     data,
@@ -253,7 +273,7 @@ export default function DemoFlowDirectionGraph({
     tradingLoss,
     completedSteps,
     setCompletedSteps,
-    currentChain
+    currentChain,
   );
 
   return <FlowDirectionGraph {...options} />;

@@ -282,7 +282,6 @@ export class BaseVelodrome extends BaseProtocol {
   }
 
   async _stakeLP(amount, updateProgress) {
-    await super._stakeLP(amount, updateProgress);
     const approveForStakingTxn = approve(
       this.assetContract.address,
       this.stakeFarmContract.address,

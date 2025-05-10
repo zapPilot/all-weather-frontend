@@ -89,6 +89,7 @@ export default function PopUpModal({
   allChainsComplete,
   errorMsg,
   tokenPricesMappingTable,
+  onlyThisChain,
 }) {
   const renderStatusIcon = () => {
     if (errorMsg) return <XMarkIcon className="h-5 w-5 text-red-500" />;
@@ -210,6 +211,7 @@ export default function PopUpModal({
                         investmentAmount,
                         zapOutAmount,
                         rebalanceAmount,
+                        onlyThisChain,
                       },
                       tokenPricesMappingTable,
                     )}

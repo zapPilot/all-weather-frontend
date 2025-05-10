@@ -65,7 +65,7 @@ export class YearnV3Vault extends BaseProtocol {
       method: "deposit",
       params: [amountToZapIn, owner],
     });
-    return [approveForZapInTxn, depositTxn];
+    return [[approveForZapInTxn, depositTxn], 0];
   }
   async customWithdrawAndClaim(
     owner,

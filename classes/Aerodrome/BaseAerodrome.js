@@ -242,7 +242,6 @@ export class BaseAerodrome extends BaseProtocol {
     return totalPoolValue / totalSupply[0];
   }
   async _stakeLP(amount, updateProgress) {
-    await super._stakeLP(amount, updateProgress);
     const approveForStakingTxn = approve(
       this.assetContract.address,
       this.stakeFarmContract.address,

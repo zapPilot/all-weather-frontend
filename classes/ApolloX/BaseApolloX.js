@@ -39,6 +39,8 @@ export class BaseApolloX extends BaseProtocol {
       abi: SmartChefInitializable,
     });
     this._checkIfParamsAreSet();
+
+    this.hardcodedProtocolFee = 0.003; // 0.3%
   }
   rewards() {
     return [
@@ -97,10 +99,10 @@ export class BaseApolloX extends BaseProtocol {
 
     const latestPrice = await this._fetchAlpPrice(updateProgress);
     // on Arbitrum, we don't stake and then put ALP to pancakeswap for higher APY
-    const estimatedAlpAmount =
+    const inputTokenUsdValue =
       (tokenPricesMappingTable[inputToken] * amountToZapIn) /
-      Math.pow(10, bestTokenToZapInDecimal) /
-      latestPrice;
+      Math.pow(10, bestTokenToZapInDecimal);
+    const estimatedAlpAmount = inputTokenUsdValue / latestPrice;
     const minAlpAmount = Math.floor(
       (estimatedAlpAmount * (100 - slippage)) / 100,
     );
@@ -108,12 +110,9 @@ export class BaseApolloX extends BaseProtocol {
       contract: this.protocolContract,
       method: "mintAlp", // <- this gets inferred from the contract
       params: [bestTokenAddressToZapIn, amountToZapIn, minAlpAmount, false],
-      // params: [bestTokenAddressToZapIn, amountToZapIn, 0, false],
     });
-    return [approveForZapInTxn, mintTxn];
-    // NOTE: we don't have stake farm reward for now
-    // const stakeTxns = await this._stake(minAlpAmount, updateProgress);
-    // return [approveForZapInTxn, mintTxn, ...stakeTxns];
+    const tradingLoss = -inputTokenUsdValue * this.hardcodedProtocolFee;
+    return [[approveForZapInTxn, mintTxn], tradingLoss];
   }
   async customWithdrawAndClaim(
     owner,

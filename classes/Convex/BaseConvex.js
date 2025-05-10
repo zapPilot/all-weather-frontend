@@ -238,7 +238,6 @@ export class BaseConvex extends BaseProtocol {
     throw new Error("Not implemented");
   }
   async _stakeLP(amount, updateProgress) {
-    await super._stakeLP(amount, updateProgress);
     const approveForStakingTxn = approve(
       this.assetContract.address,
       this.stakeFarmContract.address,

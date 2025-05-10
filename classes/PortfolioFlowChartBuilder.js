@@ -1,3 +1,4 @@
+import { normalizeChainName } from "../utils/chainHelper";
 export class PortfolioFlowChartBuilder {
   constructor(portfolio) {
     this.portfolio = portfolio;
@@ -41,13 +42,26 @@ export class PortfolioFlowChartBuilder {
     }
   }
 
-  _formatChainNodeAmount(actionName, actionParams, chainWeight, tokenPricesMappingTable) {
+  _formatChainNodeAmount(
+    actionName,
+    actionParams,
+    chainWeight,
+    tokenPricesMappingTable,
+    chain,
+  ) {
     if (actionName === "zapIn") {
+      const ratio = actionParams.onlyThisChain
+        ? normalizeChainName(actionParams.chainMetadata?.name) === chain
+          ? 1
+          : 0
+        : chainWeight;
       return (
-        actionParams.investmentAmount *
-        tokenPricesMappingTable[actionParams.tokenInSymbol] *
-        chainWeight
-      ).toFixed(2) || 0;
+        (
+          actionParams.investmentAmount *
+          tokenPricesMappingTable[actionParams.tokenInSymbol] *
+          ratio
+        ).toFixed(2) || 0
+      );
     }
     if (actionName === "zapOut") {
       return (actionParams.zapOutAmount * chainWeight).toFixed(2) || 0;
@@ -81,6 +95,7 @@ export class PortfolioFlowChartBuilder {
               actionParams,
               chainWeights.get(chain),
               tokenPricesMappingTable,
+              chain,
             )}`,
             chain: chain,
             category: category,

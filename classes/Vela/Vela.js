@@ -78,7 +78,7 @@ export class Vela extends BaseProtocol {
       (estimatedVlpAmount * (100 - slippage)) / 100,
     );
     const stakeTxns = await this._stake(minVlpAmount, updateProgress);
-    return [approveForZapInTxn, mintTxn, ...stakeTxns];
+    return [[approveForZapInTxn, mintTxn, ...stakeTxns], 0];
   }
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     return [[], {}];
@@ -122,7 +122,6 @@ export class Vela extends BaseProtocol {
     return ["usdc", usdcAddress, 6];
   }
   async _stake(amount, updateProgress) {
-    await super._stake(amount, updateProgress);
     const approveAlpTxn = approve(
       this.assetContract.address,
       this.stakeFarmContract.address,

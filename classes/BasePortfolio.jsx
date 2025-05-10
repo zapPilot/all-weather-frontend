@@ -1470,8 +1470,9 @@ export class BasePortfolio {
   async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
     await new Promise((resolve) => {
       updateProgress(nodeId, tradingLoss);
-      // Use setTimeout to ensure the state update is queued
-      setTimeout(resolve, 30);
+      setTimeout(() => {
+        resolve();
+      }, 500); // Increased to 500ms to ensure state updates have time to propagate
     });
   }
   _getPlatformFeeTxns(tokenAddress, chainMetadata, platformFee, referrer) {
