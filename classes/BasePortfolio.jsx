@@ -527,7 +527,6 @@ export class BasePortfolio {
       .toLowerCase()
       .replace(" one", "")
       .replace(" mainnet", "");
-
     const actionHandlers = {
       zapIn: async (protocol, chain, derivative) => {
         if (protocol.weight === 0) return null;
@@ -719,7 +718,7 @@ export class BasePortfolio {
           if (
             totalWeight === 0 ||
             (actionParams.zapInAmount * totalWeight) /
-              actionParams.tokenDecimals <
+              Math.pow(10, actionParams.tokenDecimals) <
               1
           )
             return [];
@@ -743,7 +742,6 @@ export class BasePortfolio {
       actionParams.onlyThisChain ? [] : processBridgeTxns(currentChain),
     ]);
     if (protocolTxns.length === 0) throw new Error("No protocol txns");
-
     // Combine all transactions, with bridge transactions at the end
     return [...protocolTxns, ...bridgeTxns];
   }
