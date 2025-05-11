@@ -33,5 +33,6 @@ export const determineSlippage = (params) => {
   }
 
   // Default slippage based on portfolio type
-  return portfolioName?.includes("Stable") ? 2 : 3;
+  // return portfolioName?.includes("Stable") ? 2 : 3;
+  return 3;
 };
