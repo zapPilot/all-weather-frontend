@@ -1,4 +1,6 @@
 import { normalizeChainName } from "../utils/chainHelper";
+import { getProtocolObjByUniqueId } from "../utils/portfolioCalculation";
+
 export class PortfolioFlowChartBuilder {
   constructor(portfolio) {
     this.portfolio = portfolio;
@@ -27,20 +29,6 @@ export class PortfolioFlowChartBuilder {
       }
     }
     return chainWeights;
-  }
-
-  _getProtocolObjByUniqueId(uniqueId) {
-    for (const protocolsInThisCategory of Object.values(
-      this.portfolio.strategy,
-    )) {
-      for (const protocolsOnThisChain of Object.values(
-        protocolsInThisCategory,
-      )) {
-        for (const protocol of protocolsOnThisChain) {
-          if (protocol.interface.uniqueId() === uniqueId) return protocol;
-        }
-      }
-    }
   }
 
   _formatChainNodeAmount(
@@ -190,7 +178,10 @@ export class PortfolioFlowChartBuilder {
       for (const [key, protocolObj] of Object.entries(
         actionParams.rebalancableUsdBalanceDict,
       )) {
-        const protocolObjInterface = this._getProtocolObjByUniqueId(key);
+        const protocolObjInterface = getProtocolObjByUniqueId(
+          this.portfolio.strategy,
+          key,
+        );
         if (
           key === "pendingRewards" ||
           key === "metadata" ||
@@ -260,7 +251,10 @@ export class PortfolioFlowChartBuilder {
       for (const [key, protocolObj] of Object.entries(
         actionParams.rebalancableUsdBalanceDict,
       )) {
-        const protocolObjInterface = this._getProtocolObjByUniqueId(key);
+        const protocolObjInterface = getProtocolObjByUniqueId(
+          this.portfolio.strategy,
+          key,
+        );
         if (key === "pendingRewards" || key === "metadata") continue;
         if (protocolObj.weightDiff < 0) {
           const zapInRatio =

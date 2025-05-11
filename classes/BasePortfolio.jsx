@@ -14,7 +14,7 @@ import { toWei } from "thirdweb/utils";
 import { TokenPriceBatcher, PriceService } from "./TokenPriceService";
 import swap from "../utils/swapHelper";
 import { PortfolioFlowChartBuilder } from "./PortfolioFlowChartBuilder";
-
+import { getProtocolObjByUniqueId } from "../utils/portfolioCalculation";
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 
@@ -146,13 +146,20 @@ export class BasePortfolio {
 
   _processProtocolBalances(balanceResults, portfolioAprDict, usdBalanceDict) {
     for (const { protocol, balance } of balanceResults) {
+      const protocolAPR =
+        portfolioAprDict?.[protocol.interface.uniqueId()]?.apr * 100;
+      if (protocolAPR === undefined) {
+        throw new Error(
+          `Protocol ${protocol.interface.uniqueId()} not found in portfolioAprDict`,
+        );
+      }
       const protocolUniqueId = protocol.interface.uniqueId();
       usdBalanceDict[protocolUniqueId] = {
         chain: protocol.interface.chain,
         usdBalance: balance,
         weight: protocol.weight,
         symbol: protocol.interface.symbolList,
-        APR: portfolioAprDict?.[protocol.interface.uniqueId()]?.apr * 100,
+        APR: protocolAPR,
       };
     }
   }
@@ -998,7 +1005,7 @@ export class BasePortfolio {
                     txns: protocolTxns,
                     balance: protocolBalance,
                     success: true,
-                    protocol: protocol.name || "Unknown Protocol",
+                    protocol: protocol.interface.uniqueId(),
                     chain,
                   };
                 } catch (error) {
@@ -1012,7 +1019,7 @@ export class BasePortfolio {
                     txns: [],
                     balance: 0,
                     success: false,
-                    protocol: protocol.name || "Unknown Protocol",
+                    protocol: protocol.interface.uniqueId(),
                     chain,
                     error: error.message,
                   };
@@ -1163,8 +1170,8 @@ export class BasePortfolio {
           key !== "pendingRewards" && metadata.weightDiff < 0,
       )
       .sort((a, b) => Math.abs(a[1].weightDiff) - Math.abs(b[1].weightDiff));
-
     for (const [key, metadata] of sortedEntries) {
+      const protocol = getProtocolObjByUniqueId(this.strategy, key);
       let zapInUsdValue = usdBalance * Math.abs(metadata.weightDiff);
       let zapInAmount = ethers.BigNumber.from(
         BigInt(
@@ -1197,8 +1204,6 @@ export class BasePortfolio {
       ) {
         continue;
       }
-
-      const protocol = metadata.protocol;
       if (activateStartZapInNode === false) {
         await protocol.interface._updateProgressAndWait(
           updateProgress,

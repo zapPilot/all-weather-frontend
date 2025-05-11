@@ -59,3 +59,22 @@ export const getTokenMetadata = (chainId, tokenSymbol, tokens) => {
 
   return `${token.symbol}-${token.value}-${token.decimals}`;
 };
+
+/**
+ * Gets a protocol object by its unique ID from the portfolio strategy
+ * @param {Object} strategy - The strategy object containing the protocols
+ * @param {string} uniqueId - The unique ID of the protocol to find
+ * @returns {Object|null} The protocol object if found, null otherwise
+ */
+export const getProtocolObjByUniqueId = (strategy, uniqueId) => {
+  if (!strategy) return null;
+
+  for (const protocolsInThisCategory of Object.values(strategy)) {
+    for (const protocolsOnThisChain of Object.values(protocolsInThisCategory)) {
+      for (const protocol of protocolsOnThisChain) {
+        if (protocol.interface.uniqueId() === uniqueId) return protocol;
+      }
+    }
+  }
+  return null;
+};
