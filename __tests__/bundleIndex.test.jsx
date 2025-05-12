@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { vi, expect, describe, it } from "vitest";
-import { render, screen, fireEvent } from "./test-utils.tsx";
-import BundleIndex from "../pages/bundle/index.jsx";
+import { render, screen } from "./test-utils.tsx";
 
 const { useRouter } = vi.hoisted(() => {
   const mockedRouterPush = vi.fn();

@@ -1,14 +1,9 @@
-import React, { memo, useMemo } from "react";
-import {
-  ConnectButton,
-  useActiveWalletChain,
-  useActiveAccount,
-} from "thirdweb/react";
+import React, { memo } from "react";
+import { ConnectButton, useActiveAccount } from "thirdweb/react";
 import { createWallet, walletConnect, inAppWallet } from "thirdweb/wallets";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { arbitrum, optimism, base } from "thirdweb/chains";
 import { defineChain } from "thirdweb";
-import { CHAIN_ID_TO_CHAIN_STRING } from "../../utils/general";
 
 // Extracted wallet configuration
 const WALLETS = [
@@ -63,18 +58,7 @@ const DetailsButton = memo(function DetailsButton({ address }) {
 });
 
 function ConfiguredConnectButton() {
-  const activeChain = useActiveWalletChain();
   const activeAccount = useActiveAccount();
-
-  // Memoize chain name calculation
-  const chainName = useMemo(() => {
-    if (!activeChain) return "";
-    const extendedActiveChain = {
-      name: CHAIN_ID_TO_CHAIN_STRING[activeChain.id],
-      ...activeChain,
-    };
-    return extendedActiveChain.name?.toLowerCase().split(" ")[0] || "";
-  }, [activeChain]);
 
   return (
     <ConnectButton

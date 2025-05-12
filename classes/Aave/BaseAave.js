@@ -66,11 +66,6 @@ export class BaseAave extends BaseProtocol {
     slippage,
     updateProgress,
   ) {
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-deposit`,
-      0,
-    );
     const approveTxn = approve(
       bestTokenAddressToZapIn,
       this.protocolContract.address,
@@ -83,7 +78,7 @@ export class BaseAave extends BaseProtocol {
       method: "supply",
       params: [bestTokenAddressToZapIn, amountToZapIn, owner, 0],
     });
-    return [approveTxn, depositTxn];
+    return [[approveTxn, depositTxn], 0];
   }
 
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
@@ -122,7 +117,6 @@ export class BaseAave extends BaseProtocol {
     return 0;
   }
   async _stake(amount, updateProgress) {
-    await super._stake(amount, updateProgress);
     return [];
   }
   async _unstake(owner, percentage, updateProgress) {

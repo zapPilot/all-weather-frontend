@@ -1,3 +1,6 @@
+import { normalizeChainName } from "../utils/chainHelper";
+import { getProtocolObjByUniqueId } from "../utils/portfolioCalculation";
+
 export class PortfolioFlowChartBuilder {
   constructor(portfolio) {
     this.portfolio = portfolio;
@@ -9,8 +12,65 @@ export class PortfolioFlowChartBuilder {
     );
   }
 
-  _buildStandardFlowChart(actionName, actionParams, flowChartData, chainNodes) {
+  _calculateChainWeights() {
+    const chainWeights = new Map();
+    for (const protocolsInThisCategory of Object.values(
+      this.portfolio.strategy,
+    )) {
+      for (const [chain, protocolsOnThisChain] of Object.entries(
+        protocolsInThisCategory,
+      )) {
+        const chainWeight = protocolsOnThisChain.reduce(
+          (sum, protocol) => sum + protocol.weight,
+          0,
+        );
+        const currentWeight = chainWeights.get(chain) || 0;
+        chainWeights.set(chain, currentWeight + chainWeight);
+      }
+    }
+    return chainWeights;
+  }
+
+  _formatChainNodeAmount(
+    actionName,
+    actionParams,
+    chainWeight,
+    tokenPricesMappingTable,
+    chain,
+  ) {
+    if (actionName === "zapIn") {
+      let ratio;
+      if (actionParams.onlyThisChain === true) {
+        ratio =
+          normalizeChainName(actionParams.chainMetadata?.name) === chain
+            ? 1
+            : 0;
+      } else {
+        ratio = chainWeight;
+      }
+      return (
+        (
+          actionParams.investmentAmount *
+          tokenPricesMappingTable[actionParams.tokenInSymbol] *
+          ratio
+        ).toFixed(2) || 0
+      );
+    }
+    if (actionName === "zapOut") {
+      return (actionParams.zapOutAmount * chainWeight).toFixed(2) || 0;
+    }
+    return 0;
+  }
+
+  _buildStandardFlowChart(
+    actionName,
+    actionParams,
+    flowChartData,
+    chainNodes,
+    tokenPricesMappingTable,
+  ) {
     const chainSet = new Set();
+    const chainWeights = this._calculateChainWeights();
     for (const [category, protocolsInThisCategory] of Object.entries(
       this.portfolio.strategy,
     )) {
@@ -22,7 +82,13 @@ export class PortfolioFlowChartBuilder {
           chainSet.add(chain);
           chainNode = {
             id: chain,
-            name: actionName,
+            name: `${actionName} $${this._formatChainNodeAmount(
+              actionName,
+              actionParams,
+              chainWeights.get(chain),
+              tokenPricesMappingTable,
+              chain,
+            )}`,
             chain: chain,
             category: category,
             imgSrc: `/chainPicturesWebp/${chain}.webp`,
@@ -34,33 +100,21 @@ export class PortfolioFlowChartBuilder {
 
         for (const protocol of protocolsOnThisChain) {
           let stepsData = [];
-          if (protocol.weight === 0) continue;
-          if (actionName === "zapIn") {
-            stepsData = protocol.interface.getZapInFlowChartData(
-              actionParams.tokenInSymbol,
-              actionParams.tokenInAddress,
-              protocol.weight,
-            );
-          } else if (actionName === "stake") {
-            stepsData = protocol.interface.getStakeFlowChartData();
-          } else if (actionName === "transfer") {
-            stepsData = protocol.interface.getTransferFlowChartData(
-              protocol.weight,
-            );
-          } else if (actionName === "zapOut") {
-            stepsData = protocol.interface.getZapOutFlowChartData(
-              actionParams.outputToken,
-              actionParams.outputTokenAddress,
-              protocol.weight,
-            );
-          } else if (actionName === "claimAndSwap") {
-            stepsData = protocol.interface.getClaimFlowChartData(
-              actionParams.outputToken,
-              actionParams.outputTokenAddress,
-            );
-          } else {
-            throw new Error(`Invalid action name ${actionName}`);
-          }
+          if (
+            (actionName === "zapIn" && protocol.weight === 0) ||
+            (actionName !== "zapIn" &&
+              actionParams.usdBalanceDict?.[protocol.interface.uniqueId()]
+                ?.usdBalance === 0)
+          )
+            continue;
+
+          stepsData = this._getStepsData(
+            actionName,
+            protocol,
+            actionParams,
+            protocol.weight,
+          );
+
           const currentChainToProtocolNodeEdge = {
             id: `edge-${chainNode.id}-${protocol.interface.uniqueId()}`,
             source: chainNode.id,
@@ -78,7 +132,35 @@ export class PortfolioFlowChartBuilder {
     }
   }
 
-  buildFlowChart(actionName, actionParams) {
+  _getStepsData(actionName, protocol, actionParams, weight) {
+    switch (actionName) {
+      case "zapIn":
+        return protocol.interface.getZapInFlowChartData(
+          actionParams.tokenInSymbol,
+          actionParams.tokenInAddress,
+          weight,
+        );
+      case "stake":
+        return protocol.interface.getStakeFlowChartData();
+      case "transfer":
+        return protocol.interface.getTransferFlowChartData(weight);
+      case "zapOut":
+        return protocol.interface.getZapOutFlowChartData(
+          actionParams.outputToken,
+          actionParams.outputTokenAddress,
+          weight,
+        );
+      case "claimAndSwap":
+        return protocol.interface.getClaimFlowChartData(
+          actionParams.outputToken,
+          actionParams.outputTokenAddress,
+        );
+      default:
+        throw new Error(`Invalid action name ${actionName}`);
+    }
+  }
+
+  buildFlowChart(actionName, actionParams, tokenPricesMappingTable) {
     let flowChartData = {
       nodes: [],
       edges: [],
@@ -96,6 +178,10 @@ export class PortfolioFlowChartBuilder {
       for (const [key, protocolObj] of Object.entries(
         actionParams.rebalancableUsdBalanceDict,
       )) {
+        const protocolObjInterface = getProtocolObjByUniqueId(
+          this.portfolio.strategy,
+          key,
+        );
         if (
           key === "pendingRewards" ||
           key === "metadata" ||
@@ -126,7 +212,7 @@ export class PortfolioFlowChartBuilder {
           const rebalanceRatio =
             protocolObj.weightDiff / protocolObj.positiveWeigtDiffSum;
           const stepsData =
-            protocolObj.protocol.interface.getZapOutFlowChartData(
+            protocolObjInterface.interface.getZapOutFlowChartData(
               middleTokenConfig.symbol,
               middleTokenConfig.address,
               rebalanceRatio,
@@ -134,11 +220,12 @@ export class PortfolioFlowChartBuilder {
           const currentChainToProtocolNodeEdge = {
             id: `edge-${
               chainNode.id
-            }-${protocolObj.protocol.interface.uniqueId()}`,
+            }-${protocolObjInterface.interface.uniqueId()}`,
             source: chainNode.id,
             target: stepsData.nodes[0].id,
             data: {
               ratio: rebalanceRatio,
+              usdAmount: actionParams.rebalanceAmount,
             },
           };
           const endOfZapOutOfThisProtocolToEndOfZapOutNodeEdge = {
@@ -164,12 +251,16 @@ export class PortfolioFlowChartBuilder {
       for (const [key, protocolObj] of Object.entries(
         actionParams.rebalancableUsdBalanceDict,
       )) {
+        const protocolObjInterface = getProtocolObjByUniqueId(
+          this.portfolio.strategy,
+          key,
+        );
         if (key === "pendingRewards" || key === "metadata") continue;
         if (protocolObj.weightDiff < 0) {
           const zapInRatio =
             -protocolObj.weightDiff / protocolObj.negativeWeigtDiffSum;
           const stepsData =
-            protocolObj.protocol.interface.getZapInFlowChartData(
+            protocolObjInterface.interface.getZapInFlowChartData(
               actionParams.tokenInSymbol,
               actionParams.tokenInAddress,
               zapInRatio,
@@ -196,7 +287,7 @@ export class PortfolioFlowChartBuilder {
           const endOfZapOutNodeToZapInNodeEdge = {
             id: `edge-${
               endOfZapOutNodeOnThisChain.id
-            }-${protocolObj.protocol.interface.uniqueId()}`,
+            }-${protocolObjInterface.interface.uniqueId()}`,
             source:
               actionParams.chainMetadata.name
                 .toLowerCase()
@@ -221,6 +312,7 @@ export class PortfolioFlowChartBuilder {
         actionParams,
         flowChartData,
         chainNodes,
+        tokenPricesMappingTable,
       );
     }
     return {

@@ -45,6 +45,9 @@ const mockProtocolInterface = {
   }),
   rewards: () => [],
 };
+const tokenPricesMappingTable = {
+  usdc: 1,
+};
 describe("SwapFee rates", () => {
   it("mulSwapFeeRate and swapFeeRate should be equivalent", () => {
     const testInstance = new BasePortfolio(
@@ -140,12 +143,16 @@ describe("BasePortfolio - getFlowChartData", () => {
 
   it("should generate flow chart data for zapIn action", () => {
     const actionParams = {
-      tokenInSymbol: "USDC",
+      tokenInSymbol: "usdc",
       tokenInAddress: "0x123",
       chainMetadata: { name: "arbitrum" },
     };
 
-    const result = basePortfolio.getFlowChartData("zapIn", actionParams);
+    const result = basePortfolio.getFlowChartData(
+      "zapIn",
+      actionParams,
+      tokenPricesMappingTable,
+    );
 
     expect(result).toHaveProperty("nodes");
     expect(result).toHaveProperty("edges");
@@ -173,9 +180,14 @@ describe("BasePortfolio - getFlowChartData", () => {
           protocol: { interface: mockProtocolInterface },
         },
       },
+      tokenInSymbol: "usdc",
     };
 
-    const result = basePortfolio.getFlowChartData("rebalance", actionParams);
+    const result = basePortfolio.getFlowChartData(
+      "rebalance",
+      actionParams,
+      tokenPricesMappingTable,
+    );
 
     expect(result).toHaveProperty("nodes");
     expect(result).toHaveProperty("edges");
@@ -191,13 +203,17 @@ describe("BasePortfolio - getFlowChartData", () => {
 
   it("should throw error for invalid action name", () => {
     const actionParams = {
-      tokenInSymbol: "USDC",
+      tokenInSymbol: "usdc",
       tokenInAddress: "0x123",
       chainMetadata: { name: "arbitrum" },
     };
 
     expect(() => {
-      basePortfolio.getFlowChartData("invalidAction", actionParams);
+      basePortfolio.getFlowChartData(
+        "invalidAction",
+        actionParams,
+        tokenPricesMappingTable,
+      );
     }).toThrow("Invalid action name invalidAction");
   });
 
@@ -208,12 +224,16 @@ describe("BasePortfolio - getFlowChartData", () => {
     }).toThrow("Total weight across all strategies should be 1, but is 0");
 
     const actionParams = {
-      tokenInSymbol: "USDC",
+      tokenInSymbol: "usdc",
       tokenInAddress: "0x123",
       chainMetadata: { name: "arbitrum" },
     };
 
-    const result = basePortfolio.getFlowChartData("zapIn", actionParams);
+    const result = basePortfolio.getFlowChartData(
+      "zapIn",
+      actionParams,
+      tokenPricesMappingTable,
+    );
 
     // Should only have chain nodes, no protocol nodes
     expect(
@@ -223,12 +243,16 @@ describe("BasePortfolio - getFlowChartData", () => {
 
   it("should generate correct edge ratios", () => {
     const actionParams = {
-      tokenInSymbol: "USDC",
+      tokenInSymbol: "usdc",
       tokenInAddress: "0x123",
       chainMetadata: { name: "arbitrum" },
     };
 
-    const result = basePortfolio.getFlowChartData("zapIn", actionParams);
+    const result = basePortfolio.getFlowChartData(
+      "zapIn",
+      actionParams,
+      tokenPricesMappingTable,
+    );
 
     // Check that edge ratios match protocol weights
     const protocolEdges = result.edges.filter((edge) => edge.data?.ratio);

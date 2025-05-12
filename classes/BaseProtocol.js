@@ -10,8 +10,10 @@ export default class BaseProtocol extends BaseUniswap {
   // arbitrum's Apollox is staked on PancakeSwap
   constructor(chain, chaindId, symbolList, mode, customParams) {
     super();
+    this.protocolType = this.constructor.name; // Will be overridden by child classes
     this.protocolName = "placeholder";
     this.protocolVersion = "placeholder";
+
     this.assetDecimals = "placeholder";
     this.assetContract = "placeholder";
     this.protocolContract = "placeholder";
@@ -31,7 +33,7 @@ export default class BaseProtocol extends BaseUniswap {
   uniqueId() {
     return `${this.chain}/${this.protocolName}/${
       this.protocolVersion
-    }/${this.symbolList.join("-")}`;
+    }/${this.symbolList.join("-")}/${this.protocolType}`;
   }
   toString() {
     // If the symbolList is too long, it will be truncated
@@ -429,6 +431,12 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
   ) {
     let finalTxns = [];
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-approve`,
+      0,
+    );
+
     if (this.mode === "single") {
       const [
         beforeZapInTxns,
@@ -446,12 +454,7 @@ export default class BaseProtocol extends BaseUniswap {
         tokenDecimals,
         tokenPricesMappingTable,
       );
-      await this._updateProgressAndWait(
-        updateProgress,
-        `${this.uniqueId()}-approve`,
-        0,
-      );
-      const zapinTxns = await this.customDeposit(
+      const [zapinTxns, tradingLoss] = await this.customDeposit(
         recipient,
         bestTokenSymbol,
         bestTokenAddressToZapIn,
@@ -462,6 +465,11 @@ export default class BaseProtocol extends BaseUniswap {
         updateProgress,
       );
       finalTxns = beforeZapInTxns.concat(zapinTxns);
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-deposit`,
+        tradingLoss,
+      );
     } else if (this.mode === "LP") {
       const [beforeZapInTxns, tokenAmetadata, tokenBmetadata] =
         await this._beforeDepositLP(
@@ -474,12 +482,7 @@ export default class BaseProtocol extends BaseUniswap {
           tokenDecimals,
           tokenPricesMappingTable,
         );
-      await this._updateProgressAndWait(
-        updateProgress,
-        `${this.uniqueId()}-approve`,
-        0,
-      );
-      const zapinTxns = await this.customDepositLP(
+      const [zapinTxns, tradingLoss] = await this.customDepositLP(
         recipient,
         tokenAmetadata,
         tokenBmetadata,
@@ -488,8 +491,18 @@ export default class BaseProtocol extends BaseUniswap {
         updateProgress,
       );
       finalTxns = beforeZapInTxns.concat(zapinTxns);
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-deposit`,
+        tradingLoss,
+      );
     }
     this.checkTxnsToDataNotUndefined(finalTxns, "zapIn");
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-stake`,
+      0,
+    );
     return finalTxns;
   }
   async zapOut(
@@ -655,6 +668,11 @@ export default class BaseProtocol extends BaseUniswap {
     return finalTxns;
   }
   async stake(protocolAssetDustInWallet, updateProgress) {
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-stake`,
+      0,
+    );
     let stakeTxns = [];
     const amount =
       protocolAssetDustInWallet[this.assetContract.address].assetBalance;
@@ -1207,20 +1225,10 @@ export default class BaseProtocol extends BaseUniswap {
     return [redeemTxns, withdrawTokenAndBalance];
   }
   async _stake(amount, updateProgress) {
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-stake`,
-      0,
-    );
-    // child class should implement this
+    throw new Error("Method '_stake()' must be implemented.");
   }
   async _stakeLP(amount, updateProgress) {
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-stake`,
-      0,
-    );
-    // child class should implement this
+    throw new Error("Method '_stakeLP()' must be implemented.");
   }
   async _unstake(owner, percentage, updateProgress) {
     await this._updateProgressAndWait(
@@ -1326,14 +1334,23 @@ export default class BaseProtocol extends BaseUniswap {
     return contractCall;
   }
   async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
-    // First, update the progress
-    updateProgress(nodeId, tradingLoss);
+    // First, update the progress and wait for it to complete
+    await new Promise((resolve) => {
+      updateProgress(nodeId, tradingLoss);
+      // Use requestAnimationFrame to ensure the state update is processed
+      requestAnimationFrame(() => {
+        // Add a small delay to ensure React has time to process the update
+        setTimeout(() => {
+          resolve();
+        }, 100);
+      });
+    });
 
-    // Wait longer to ensure state updates are processed
+    // Additional delay to ensure UI updates are visible
     await new Promise((resolve) => {
       setTimeout(() => {
         resolve();
-      }, 500); // Increased to 500ms to ensure state updates have time to propagate
+      }, 400);
     });
   }
   getDeadline() {

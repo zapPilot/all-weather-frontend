@@ -14,7 +14,7 @@ import { toWei } from "thirdweb/utils";
 import { TokenPriceBatcher, PriceService } from "./TokenPriceService";
 import swap from "../utils/swapHelper";
 import { PortfolioFlowChartBuilder } from "./PortfolioFlowChartBuilder";
-
+import { getProtocolObjByUniqueId } from "../utils/portfolioCalculation";
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 
@@ -146,16 +146,20 @@ export class BasePortfolio {
 
   _processProtocolBalances(balanceResults, portfolioAprDict, usdBalanceDict) {
     for (const { protocol, balance } of balanceResults) {
-      const protocolUniqueId = `${protocol.interface.uniqueId()}/${
-        protocol.interface.constructor.name
-      }`;
+      const protocolAPR =
+        portfolioAprDict?.[protocol.interface.uniqueId()]?.apr * 100;
+      if (protocolAPR === undefined) {
+        throw new Error(
+          `Protocol ${protocol.interface.uniqueId()} not found in portfolioAprDict`,
+        );
+      }
+      const protocolUniqueId = protocol.interface.uniqueId();
       usdBalanceDict[protocolUniqueId] = {
         chain: protocol.interface.chain,
         usdBalance: balance,
         weight: protocol.weight,
         symbol: protocol.interface.symbolList,
-        protocol: protocol,
-        APR: portfolioAprDict?.[protocol.interface.uniqueId()]?.apr * 100,
+        APR: protocolAPR,
       };
     }
   }
@@ -349,7 +353,11 @@ export class BasePortfolio {
       );
 
     const fetchPoolData = async ({ protocol }) => {
-      const poolUniqueKey = protocol.interface.uniqueId();
+      const poolUniqueKey = protocol.interface
+        .uniqueId()
+        .split("/")
+        .slice(0, 4)
+        .join("/");
       const url = `${process.env.NEXT_PUBLIC_API_URL}/pool/${poolUniqueKey}/apr`;
       try {
         const response = await fetch(url);
@@ -526,7 +534,6 @@ export class BasePortfolio {
       .toLowerCase()
       .replace(" one", "")
       .replace(" mainnet", "");
-
     const actionHandlers = {
       zapIn: async (protocol, chain, derivative) => {
         if (protocol.weight === 0) return null;
@@ -718,7 +725,7 @@ export class BasePortfolio {
           if (
             totalWeight === 0 ||
             (actionParams.zapInAmount * totalWeight) /
-              actionParams.tokenDecimals <
+              Math.pow(10, actionParams.tokenDecimals) <
               1
           )
             return [];
@@ -742,7 +749,6 @@ export class BasePortfolio {
       actionParams.onlyThisChain ? [] : processBridgeTxns(currentChain),
     ]);
     if (protocolTxns.length === 0) throw new Error("No protocol txns");
-
     // Combine all transactions, with bridge transactions at the end
     return [...protocolTxns, ...bridgeTxns];
   }
@@ -999,7 +1005,7 @@ export class BasePortfolio {
                     txns: protocolTxns,
                     balance: protocolBalance,
                     success: true,
-                    protocol: protocol.name || "Unknown Protocol",
+                    protocol: protocol.interface.uniqueId(),
                     chain,
                   };
                 } catch (error) {
@@ -1013,7 +1019,7 @@ export class BasePortfolio {
                     txns: [],
                     balance: 0,
                     success: false,
-                    protocol: protocol.name || "Unknown Protocol",
+                    protocol: protocol.interface.uniqueId(),
                     chain,
                     error: error.message,
                   };
@@ -1069,9 +1075,7 @@ export class BasePortfolio {
       tokenPricesMappingTable,
     );
 
-    const protocolClassName = `${protocol.interface.uniqueId()}/${
-      protocol.interface.constructor.name
-    }`;
+    const protocolClassName = protocol.interface.uniqueId();
     const zapOutPercentage =
       rebalancableDict[protocolClassName]?.zapOutPercentage;
     if (
@@ -1166,8 +1170,8 @@ export class BasePortfolio {
           key !== "pendingRewards" && metadata.weightDiff < 0,
       )
       .sort((a, b) => Math.abs(a[1].weightDiff) - Math.abs(b[1].weightDiff));
-
     for (const [key, metadata] of sortedEntries) {
+      const protocol = getProtocolObjByUniqueId(this.strategy, key);
       let zapInUsdValue = usdBalance * Math.abs(metadata.weightDiff);
       let zapInAmount = ethers.BigNumber.from(
         BigInt(
@@ -1200,8 +1204,6 @@ export class BasePortfolio {
       ) {
         continue;
       }
-
-      const protocol = metadata.protocol;
       if (activateStartZapInNode === false) {
         await protocol.interface._updateProgressAndWait(
           updateProgress,
@@ -1469,10 +1471,23 @@ export class BasePortfolio {
     return data.referrer;
   }
   async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
+    // First, update the progress and wait for it to complete
     await new Promise((resolve) => {
       updateProgress(nodeId, tradingLoss);
-      // Use setTimeout to ensure the state update is queued
-      setTimeout(resolve, 30);
+      // Use requestAnimationFrame to ensure the state update is processed
+      requestAnimationFrame(() => {
+        // Add a small delay to ensure React has time to process the update
+        setTimeout(() => {
+          resolve();
+        }, 100);
+      });
+    });
+
+    // Additional delay to ensure UI updates are visible
+    await new Promise((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, 100);
     });
   }
   _getPlatformFeeTxns(tokenAddress, chainMetadata, platformFee, referrer) {
@@ -1550,8 +1565,12 @@ export class BasePortfolio {
       .div(10000);
   }
 
-  getFlowChartData(actionName, actionParams) {
-    return this.flowChartBuilder.buildFlowChart(actionName, actionParams);
+  getFlowChartData(actionName, actionParams, tokenPricesMappingTable) {
+    return this.flowChartBuilder.buildFlowChart(
+      actionName,
+      actionParams,
+      tokenPricesMappingTable,
+    );
   }
 
   _calculateChainWeights(currentChain) {
