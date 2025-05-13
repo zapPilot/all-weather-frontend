@@ -80,4 +80,47 @@ export const getProtocolObjByUniqueId = (strategy, uniqueId) => {
     }
   }
   return null;
+  };
+
+/**
+ * Creates a token balance entry
+ * @param {Object} params - Parameters for token balance
+ * @param {string} params.address - Token address
+ * @param {string} params.symbol - Token symbol
+ * @param {BigNumber} params.balance - Token balance
+ * @param {number} params.decimals - Token decimals
+ * @param {Object} params.tokenPricesMappingTable - Token prices mapping
+ * @returns {Object} Token balance entry
+ */
+export const createTokenBalanceEntry = ({
+  address,
+  symbol,
+  balance,
+  decimals,
+  tokenPricesMappingTable,
+}) => {
+  const usdDenominatedValue = calculateUsdDenominatedValue({
+    symbol,
+    balance,
+    decimals,
+    tokenPricesMappingTable,
+  });
+  console.log("balance", balance);
+  console.log("balance", balance);
+  console.log("balance", balance);
+  console.log("balance", balance);
+  // Validate USD value for non-zero balances
+  if (!balance.isZero()) {
+    assert(
+      !isNaN(usdDenominatedValue) && usdDenominatedValue > 0,
+      `Invalid USD value for ${symbol}: ${usdDenominatedValue}`
+    );
+  }
+
+  return {
+    symbol,
+    balance,
+    usdDenominatedValue,
+    decimals,
+  };
 };
