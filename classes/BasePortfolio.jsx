@@ -1489,7 +1489,7 @@ export class BasePortfolio {
     await new Promise((resolve) => {
       setTimeout(() => {
         resolve();
-      }, 100);
+      }, 1000);
     });
   }
   _getPlatformFeeTxns(tokenAddress, chainMetadata, platformFee, referrer) {

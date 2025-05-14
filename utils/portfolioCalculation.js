@@ -80,7 +80,7 @@ export const getProtocolObjByUniqueId = (strategy, uniqueId) => {
     }
   }
   return null;
-  };
+};
 export const calculateUsdDenominatedValue = ({
   symbol,
   balance,

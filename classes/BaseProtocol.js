@@ -6,18 +6,17 @@ import assert from "assert";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 import { prepareContractCall, getContract } from "thirdweb";
 import swap from "../utils/swapHelper";
+import { FlowChartMixin } from "./mixins/FlowChartMixin.js";
 import flowChartEventEmitter from "../utils/FlowChartEventEmitter";
 import {
-  calculateUsdDenominatedValue,
   addPendingRewardsToBalance,
   createTokenBalanceEntry,
 } from "../utils/portfolioCalculation";
 
 export default class BaseProtocol extends BaseUniswap {
-  // arbitrum's Apollox is staked on PancakeSwap
   constructor(chain, chaindId, symbolList, mode, customParams) {
     super();
-    this.protocolType = this.constructor.name; // Will be overridden by child classes
+    this.protocolType = this.constructor.name;
     this.protocolName = "placeholder";
     this.protocolVersion = "placeholder";
 
@@ -31,29 +30,37 @@ export default class BaseProtocol extends BaseUniswap {
     this.symbolList = symbolList;
     this.mode = mode;
     this.customParams = customParams;
-    assert(chain !== undefined, "chain is not set");
-    assert(chaindId !== undefined, "chainId is not set");
-    assert(symbolList !== undefined, "symbolList is not set");
-    assert(mode !== undefined, "mode is not set");
-    assert(customParams !== undefined, "customParams is not set");
+
+    this._validateConstructorParams();
   }
+
+  _validateConstructorParams() {
+    assert(this.chain !== undefined, "chain is not set");
+    assert(this.chainId !== undefined, "chainId is not set");
+    assert(this.symbolList !== undefined, "symbolList is not set");
+    assert(this.mode !== undefined, "mode is not set");
+    assert(this.customParams !== undefined, "customParams is not set");
+  }
+
   uniqueId() {
     return `${this.chain}/${this.protocolName}/${
       this.protocolVersion
     }/${this.symbolList.join("-")}/${this.protocolType}`;
   }
+
   toString() {
-    // If the symbolList is too long, it will be truncated
-    const maxSymbols = 2; // Define the maximum number of symbols to show
+    const maxSymbols = 2;
     const symbolList =
       this.symbolList.length > maxSymbols
         ? `${this.symbolList.slice(0, maxSymbols).join("-")}-...`
         : this.symbolList.join("-");
     return `${this.chain}/${this.protocolName}/${symbolList}`;
   }
+
   rewards() {
     throw new Error("Method 'rewards()' must be implemented.");
   }
+
   _checkIfParamsAreSet() {
     assert(this.protocolName !== "placeholder", "protocolName is not set");
     assert(
@@ -64,338 +71,14 @@ export default class BaseProtocol extends BaseUniswap {
     assert(typeof this.assetContract === "object", "assetContract is not set");
     assert(
       typeof this.protocolContract === "object",
-      "assetContract is not set",
+      "protocolContract is not set",
     );
     assert(
       typeof this.stakeFarmContract === "object",
-      "assetContract is not set",
+      "stakeFarmContract is not set",
     );
   }
 
-  getZapInFlowChartData(inputToken, tokenInAddress, weight) {
-    const nodes = this._generateZapInNodes(inputToken, tokenInAddress);
-    const edges = this._generateEdges(nodes, weight);
-    this._enrichNodesWithMetadata(nodes);
-
-    return { nodes, edges };
-  }
-
-  _generateZapInNodes(inputToken, tokenInAddress) {
-    const nodes = [];
-
-    if (this.mode === "single") {
-      this._addSingleModeNodes(nodes, inputToken, tokenInAddress);
-    } else if (this.mode === "LP") {
-      this._addLPModeNodes(nodes, inputToken, tokenInAddress);
-    }
-
-    return nodes;
-  }
-
-  _addSingleModeNodes(nodes, inputToken, tokenInAddress) {
-    const [bestTokenSymbol, bestTokenAddressToZapIn, decimals] =
-      this._getTheBestTokenAddressToZapIn(
-        inputToken,
-        tokenInAddress,
-        18, // inputTokenDecimalsPlaceholder
-      );
-    if (
-      bestTokenAddressToZapIn.toLowerCase() !== tokenInAddress.toLowerCase()
-    ) {
-      nodes.push({
-        id: `${this.uniqueId()}-${inputToken}-${bestTokenSymbol}-swap`,
-        name: `Swap ${inputToken} to ${bestTokenSymbol}`,
-      });
-    }
-
-    this._addCommonNodes(nodes);
-  }
-
-  _addLPModeNodes(nodes, inputToken, tokenInAddress) {
-    const { lpTokens: tokenMetadatas } = this._getLPTokenPairesToZapIn();
-
-    for (const [bestTokenSymbol, bestTokenAddressToZapIn] of tokenMetadatas) {
-      if (
-        bestTokenAddressToZapIn.toLowerCase() !== tokenInAddress.toLowerCase()
-      ) {
-        nodes.push({
-          id: `${this.uniqueId()}-${inputToken}-${bestTokenSymbol}-swap`,
-          name: `Swap ${inputToken} to ${bestTokenSymbol}`,
-        });
-      }
-    }
-
-    this._addCommonNodes(nodes);
-  }
-
-  _addCommonNodes(nodes) {
-    const commonNodes = [
-      {
-        id: `${this.uniqueId()}-approve`,
-        name: "Approve",
-      },
-      {
-        id: `${this.uniqueId()}-deposit`,
-        name: `Deposit ${this.symbolList.join("-")}`,
-      },
-      {
-        id: `${this.uniqueId()}-stake`,
-        name: "stake",
-      },
-    ];
-
-    nodes.push(...commonNodes);
-  }
-
-  _generateEdges(nodes, weight) {
-    const edges = [];
-
-    for (let i = 0; i < nodes.length - 1; i++) {
-      edges.push({
-        id: `edge-${this.uniqueId()}-${i}`,
-        source: nodes[i].id,
-        target: nodes[i + 1].id,
-        data: { ratio: weight },
-      });
-    }
-
-    return edges;
-  }
-
-  _enrichNodesWithMetadata(nodes) {
-    for (const node of nodes) {
-      node.chain = this.chain;
-      node.symbolList = this.symbolList.map((symbol) =>
-        symbol.replace("(bridged)", ""),
-      );
-      node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
-    }
-  }
-  getClaimFlowChartData(outputToken, outputTokenAddress) {
-    function _autoGenerateEdges(uniqueId, nodes) {
-      const edges = [];
-      for (let i = 0; i < nodes.length - 1; i++) {
-        edges.push({
-          id: `edge-${uniqueId}-${i}`,
-          source: nodes[i].id,
-          target: nodes[i + 1].id,
-          data: {
-            ratio: 1,
-          },
-        });
-      }
-      return edges;
-    }
-    const nodes = [];
-
-    if (this.mode === "single") {
-      // decimals here doesn't matter
-      for (const node of [
-        {
-          id: `${this.uniqueId()}-claim`,
-          name: "Claim Rewards",
-        },
-      ]) {
-        nodes.push(node);
-      }
-      const [bestTokenSymbol, bestTokenAddressToZapIn, _] =
-        this._getTheBestTokenAddressToZapOut();
-      if (
-        outputTokenAddress.toLowerCase() !==
-        bestTokenAddressToZapIn.toLowerCase()
-      ) {
-        nodes.push({
-          id: `${this.uniqueId()}-${bestTokenSymbol}-${outputToken}-swap`,
-          name: `Swap ${bestTokenSymbol} to ${outputToken}`,
-        });
-      }
-    } else if (this.mode === "LP") {
-      for (const node of [
-        {
-          id: `${this.uniqueId()}-claim`,
-          name: "Claim Rewards",
-        },
-      ]) {
-        nodes.push(node);
-      }
-      const { lpTokens: tokenMetadatas } = this._getLPTokenAddressesToZapOut();
-      for (const [
-        bestTokenSymbol,
-        bestTokenAddressToZapOut,
-        decimals,
-      ] of tokenMetadatas) {
-        if (
-          bestTokenAddressToZapOut.toLowerCase() !==
-          outputTokenAddress.toLowerCase()
-        ) {
-          nodes.push({
-            id: `${this.uniqueId()}-${bestTokenSymbol}-${outputToken}-swap`,
-            name: `Swap ${bestTokenSymbol} to ${outputToken}`,
-          });
-        }
-      }
-    }
-    const edges = _autoGenerateEdges(this.uniqueId(), nodes);
-    // add chain, category, protocol, symbol to the nodes
-    for (const node of nodes) {
-      node.chain = this.chain;
-      node.symbolList = this.symbolList.map((symbol) =>
-        symbol.replace("(bridged)", ""),
-      );
-      node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
-    }
-    return {
-      nodes,
-      edges,
-    };
-  }
-  getZapOutFlowChartData(outputToken, outputTokenAddress, weight) {
-    function _autoGenerateEdges(uniqueId, nodes) {
-      const edges = [];
-      for (let i = 0; i < nodes.length - 1; i++) {
-        edges.push({
-          id: `edge-${uniqueId}-${i}`,
-          source: nodes[i].id,
-          target: nodes[i + 1].id,
-          data: {
-            ratio: weight,
-          },
-        });
-      }
-      return edges;
-    }
-    const nodes = [];
-
-    if (this.mode === "single") {
-      // decimals here doesn't matter
-      for (const node of [
-        {
-          id: `${this.uniqueId()}-unstake`,
-          name: "Unstake",
-        },
-        {
-          id: `${this.uniqueId()}-claim`,
-          name: "Claim Rewards",
-        },
-        {
-          id: `${this.uniqueId()}-withdraw`,
-          name: `Withdraw ${this.symbolList.join("-")}`,
-        },
-      ]) {
-        nodes.push(node);
-      }
-      const [bestTokenSymbol, bestTokenAddressToZapIn, _] =
-        this._getTheBestTokenAddressToZapOut();
-      if (
-        outputTokenAddress.toLowerCase() !==
-        bestTokenAddressToZapIn.toLowerCase()
-      ) {
-        nodes.push({
-          id: `${this.uniqueId()}-${bestTokenSymbol}-${outputToken}-swap`,
-          name: `Swap ${bestTokenSymbol} to ${outputToken}`,
-        });
-      }
-    } else if (this.mode === "LP") {
-      for (const node of [
-        {
-          id: `${this.uniqueId()}-unstake`,
-          name: "Unstake",
-        },
-        {
-          id: `${this.uniqueId()}-claim`,
-          name: "Claim Rewards",
-        },
-        {
-          id: `${this.uniqueId()}-withdraw`,
-          name: `Withdraw ${this.symbolList.join("-")}`,
-        },
-      ]) {
-        nodes.push(node);
-      }
-      const { lpTokens: tokenMetadatas } = this._getLPTokenAddressesToZapOut();
-      for (const [
-        bestTokenSymbol,
-        bestTokenAddressToZapOut,
-        decimals,
-      ] of tokenMetadatas) {
-        if (
-          bestTokenAddressToZapOut.toLowerCase() !==
-          outputTokenAddress.toLowerCase()
-        ) {
-          nodes.push({
-            id: `${this.uniqueId()}-${bestTokenSymbol}-${outputToken}-swap`,
-            name: `Swap ${bestTokenSymbol} to ${outputToken}`,
-          });
-        }
-      }
-    }
-    const edges = _autoGenerateEdges(this.uniqueId(), nodes);
-    // add chain, category, protocol, symbol to the nodes
-    for (const node of nodes) {
-      node.chain = this.chain;
-      node.symbolList = this.symbolList.map((symbol) =>
-        symbol.replace("(bridged)", ""),
-      );
-      node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
-    }
-    return {
-      nodes,
-      edges,
-    };
-  }
-  getTransferFlowChartData(weight) {
-    const nodes = [
-      {
-        id: `${this.uniqueId()}-unstake`,
-        name: "Unstake",
-      },
-      {
-        id: `${this.uniqueId()}-transfer`,
-        name: "Transfer",
-      },
-    ];
-    // add chain, category, protocol, symbol to the nodes
-    for (const node of nodes) {
-      node.chain = this.chain;
-      node.symbolList = this.symbolList.map((symbol) =>
-        symbol.replace("(bridged)", ""),
-      );
-      node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
-    }
-    return {
-      nodes,
-      edges: [
-        {
-          id: `edge-${this.uniqueId()}-0`,
-          source: `${this.uniqueId()}-unstake`,
-          target: `${this.uniqueId()}-transfer`,
-          data: {
-            ratio: weight,
-          },
-        },
-      ],
-    };
-  }
-  getStakeFlowChartData() {
-    const nodes = [
-      {
-        id: `${this.uniqueId()}-stake`,
-        name: "stake",
-      },
-    ];
-    // add chain, category, protocol, symbol to the nodes
-    for (const node of nodes) {
-      node.chain = this.chain;
-      node.symbolList = this.symbolList.map((symbol) =>
-        symbol.replace("(bridged)", ""),
-      );
-      node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
-    }
-    return {
-      nodes,
-      edges: [],
-    };
-  }
   async usdBalanceOf(address, tokenPricesMappingTable) {
     throw new Error("Method 'usdBalanceOf()' must be implemented.");
   }
@@ -680,12 +363,7 @@ export default class BaseProtocol extends BaseUniswap {
         tokenPricesMappingTable,
         updateProgress,
       );
-      let txns = [];
-      if (redeemTxns.length === 0) {
-        txns = [...withdrawTxns, ...batchSwapTxns];
-      } else {
-        txns = [...withdrawTxns, ...redeemTxns, ...batchSwapTxns];
-      }
+      const txns = [...withdrawTxns, ...redeemTxns, ...batchSwapTxns];
       this.checkTxnsToDataNotUndefined(txns, "zapOut");
       return txns;
     } catch (error) {
@@ -1210,14 +888,52 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
   ) {
     let txns = [];
+
+    // Validate input parameters
+    if (
+      !withdrawTokenAndBalance ||
+      typeof withdrawTokenAndBalance !== "object"
+    ) {
+      console.warn(
+        `${this.uniqueId()}: Invalid withdrawTokenAndBalance format:`,
+        withdrawTokenAndBalance,
+      );
+      return txns;
+    }
+
     for (const [address, tokenMetadata] of Object.entries(
       withdrawTokenAndBalance,
     )) {
+      // Validate token metadata
+      if (!tokenMetadata || typeof tokenMetadata !== "object") {
+        console.warn(
+          `${this.uniqueId()}: Invalid tokenMetadata for address ${address}:`,
+          tokenMetadata,
+        );
+        continue;
+      }
+
       const amount = tokenMetadata.balance;
       const fromTokenSymbol = tokenMetadata.symbol;
       const fromTokenDecimals = tokenMetadata.decimals;
+
+      // Validate required fields
+      if (!amount || !fromTokenSymbol || !fromTokenDecimals) {
+        console.warn(
+          `${this.uniqueId()}: Missing required fields for token at address ${address}:`,
+          {
+            amount,
+            fromTokenSymbol,
+            fromTokenDecimals,
+          },
+        );
+        continue;
+      }
+
+      // Safely convert amount to string for comparison
+      const amountStr = amount.toString();
       if (
-        amount.toString() === "0" ||
+        amountStr === "0" ||
         amount === 0 ||
         tokenMetadata.vesting === true ||
         // if usd value of this token is less than 1, then it's easy to suffer from high slippage
@@ -1231,26 +947,35 @@ export default class BaseProtocol extends BaseUniswap {
         );
         continue;
       }
-      const swapTxnResult = await swap(
-        recipient,
-        this.chainId,
-        this.uniqueId(),
-        this._updateProgressAndWait,
-        address,
-        outputToken,
-        amount,
-        slippage,
-        updateProgress,
-        fromTokenSymbol,
-        fromTokenDecimals,
-        outputTokenSymbol,
-        outputTokenDecimals,
-        tokenPricesMappingTable,
-      );
-      if (swapTxnResult === undefined) {
+
+      try {
+        const swapTxnResult = await swap(
+          recipient,
+          this.chainId,
+          this.uniqueId(),
+          this._updateProgressAndWait,
+          address,
+          outputToken,
+          amount,
+          slippage,
+          updateProgress,
+          fromTokenSymbol,
+          fromTokenDecimals,
+          outputTokenSymbol,
+          outputTokenDecimals,
+          tokenPricesMappingTable,
+        );
+        if (swapTxnResult === undefined) {
+          continue;
+        }
+        txns = txns.concat(swapTxnResult[0]);
+      } catch (error) {
+        console.error(
+          `${this.uniqueId()}: Error processing swap for token ${fromTokenSymbol}:`,
+          error,
+        );
         continue;
       }
-      txns = txns.concat(swapTxnResult[0]);
     }
     return txns;
   }
@@ -1336,10 +1061,10 @@ export default class BaseProtocol extends BaseUniswap {
       tokenPricesMappingTable,
       updateProgress,
     );
-    const redeemTxns = await this.customRedeemVestingRewards(
-      pendingRewards,
-      recipient,
-    );
+    // const redeemTxns = await this.customRedeemVestingRewards(
+    //   pendingRewards,
+    //   recipient,
+    // );
 
     // Add pending rewards to balance
     withdrawTokenAndBalance = addPendingRewardsToBalance(
@@ -1348,7 +1073,8 @@ export default class BaseProtocol extends BaseUniswap {
       tokenPricesMappingTable,
     );
 
-    return [redeemTxns, withdrawTokenAndBalance];
+    return [[], withdrawTokenAndBalance];
+    // return [redeemTxns, withdrawTokenAndBalance];
   }
 
   async _stake(amount, updateProgress) {
@@ -1440,32 +1166,7 @@ export default class BaseProtocol extends BaseUniswap {
     );
     return contractCall;
   }
-  async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
-    try {
-      // Queue the update in our event system
-      flowChartEventEmitter.queueUpdate({
-        type: "NODE_UPDATE",
-        nodeId,
-        status: "active",
-        tradingLoss,
-      });
 
-      // Keep the existing updateProgress call for backward compatibility
-      if (typeof updateProgress === "function") {
-        updateProgress(nodeId, tradingLoss);
-      }
-
-      // No need for artificial delay since the event system handles timing
-      return true;
-    } catch (error) {
-      console.error("Error updating progress:", error);
-      // Fallback to direct update if event system fails
-      if (typeof updateProgress === "function") {
-        updateProgress(nodeId, tradingLoss);
-      }
-      return false;
-    }
-  }
   getDeadline() {
     return Math.floor(Date.now() / 1000) + 600; // 10 minute deadline
   }
@@ -1477,48 +1178,6 @@ export default class BaseProtocol extends BaseUniswap {
           `${methodName} of ${this.uniqueId()} has undefined data or undefined to. Cannot proceed with executing.`,
         );
       }
-    }
-  }
-
-  // New method to verify node activation
-  async _verifyNodeActivation(nodeId, maxAttempts = 3) {
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const state = flowChartEventEmitter.getNodeState(nodeId);
-      if (state && state.status === "active") {
-        return true;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-    return false;
-  }
-
-  // New method to handle transaction progress
-  async _handleTransactionProgress(
-    updateProgress,
-    nodeId,
-    tradingLoss,
-    operation,
-  ) {
-    try {
-      // Update the node state
-      const updateSuccess = await this._updateProgressAndWait(
-        updateProgress,
-        nodeId,
-        tradingLoss,
-      );
-
-      // Verify the update was successful
-      if (updateSuccess) {
-        const isActivated = await this._verifyNodeActivation(nodeId);
-        if (!isActivated) {
-          console.warn(`Node ${nodeId} not activated after ${operation}`);
-        }
-      }
-
-      return updateSuccess;
-    } catch (error) {
-      console.error(`Error in transaction progress for ${operation}:`, error);
-      return false;
     }
   }
 
@@ -1534,3 +1193,6 @@ export default class BaseProtocol extends BaseUniswap {
     }
   }
 }
+
+// Apply mixins
+Object.assign(BaseProtocol.prototype, FlowChartMixin);

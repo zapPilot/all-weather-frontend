@@ -28,6 +28,7 @@ const ERROR_CODES = {
     "Received amount of tokens are less then expected, please increase slippage tolerance and try again",
   "0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000014c00000000000000000000000000000000000000000000000000000000000000":
     "Received amount of tokens are less then expected, please increase slippage tolerance and try again",
+  "7472616e73666572207a65726f20616d6f756e74": "Transfer zero amount",
 };
 
 /**
