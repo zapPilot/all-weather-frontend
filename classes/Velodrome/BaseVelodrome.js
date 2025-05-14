@@ -327,12 +327,6 @@ export class BaseVelodrome extends BaseProtocol {
       this.customParams.lpTokens,
     );
 
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-withdraw`,
-      0,
-    );
-
     const withdrawTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "removeLiquidity",
