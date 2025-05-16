@@ -2,7 +2,7 @@ import { BasePortfolio } from "../BasePortfolio";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import { BaseConvex } from "../Convex/BaseConvex";
 import { BaseAerodrome } from "../Aerodrome/BaseAerodrome";
-import { BaseMoonwell } from "../Moonwell/BaseMoonwell";
+import { BasePendlePT } from "../Pendle/BasePendlePT";
 export class EthVault extends BasePortfolio {
   constructor() {
     super(
@@ -178,6 +178,24 @@ export class EthVault extends BasePortfolio {
                     "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
                   decimalOfBestTokenToZapOut: 18,
                   pidOfEquilibria: 7,
+                },
+              ),
+              weight: 0,
+            },
+            {
+              interface: new BasePendlePT(
+                "arbitrum",
+                42161,
+                ["pt wsteth 26jun2025"],
+                "single",
+                {
+                  marketAddress: "0x08a152834de126d2ef83D612ff36e4523FD0017F",
+                  assetAddress: "0x1255638EFeca62e12E344E0b6B22ea853eC6e2c7",
+                  assetDecimals: 18,
+                  symbolOfBestTokenToZapOut: "weth",
+                  bestTokenAddressToZapOut:
+                    "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                  decimalOfBestTokenToZapOut: 18,
                 },
               ),
               weight: 0.5,
