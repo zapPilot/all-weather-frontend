@@ -47,7 +47,11 @@ export default class BaseProtocol extends BaseUniswap {
       this.protocolVersion
     }/${this.symbolList.join("-")}/${this.protocolType}`;
   }
-
+  oldUniqueId() {
+    return `${this.chain}/${this.protocolName}/${
+      this.protocolVersion
+    }/${this.symbolList.join("-")}`;
+  }
   toString() {
     const maxSymbols = 2;
     const symbolList =
