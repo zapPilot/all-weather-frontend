@@ -83,6 +83,7 @@ const mockPortfolioHelper = {
             protocolName: "Aave",
             symbolList: ["USDC", "USDT"],
             uniqueId: () => "aave-eth",
+            oldUniqueId: () => "aave-eth",
           },
         },
         {
@@ -91,6 +92,7 @@ const mockPortfolioHelper = {
             protocolName: "Compound",
             symbolList: ["USDC"],
             uniqueId: () => "compound-eth",
+            oldUniqueId: () => "compound-eth",
           },
         },
       ],

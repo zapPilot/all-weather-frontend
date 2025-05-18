@@ -6,11 +6,17 @@ import assert from "assert";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 import { prepareContractCall, getContract } from "thirdweb";
 import swap from "../utils/swapHelper";
+import { FlowChartMixin } from "./mixins/FlowChartMixin.js";
+import flowChartEventEmitter from "../utils/FlowChartEventEmitter";
+import {
+  addPendingRewardsToBalance,
+  createTokenBalanceEntry,
+} from "../utils/portfolioCalculation";
+
 export default class BaseProtocol extends BaseUniswap {
-  // arbitrum's Apollox is staked on PancakeSwap
   constructor(chain, chaindId, symbolList, mode, customParams) {
     super();
-    this.protocolType = this.constructor.name; // Will be overridden by child classes
+    this.protocolType = this.constructor.name;
     this.protocolName = "placeholder";
     this.protocolVersion = "placeholder";
 
@@ -24,29 +30,41 @@ export default class BaseProtocol extends BaseUniswap {
     this.symbolList = symbolList;
     this.mode = mode;
     this.customParams = customParams;
-    assert(chain !== undefined, "chain is not set");
-    assert(chaindId !== undefined, "chainId is not set");
-    assert(symbolList !== undefined, "symbolList is not set");
-    assert(mode !== undefined, "mode is not set");
-    assert(customParams !== undefined, "customParams is not set");
+
+    this._validateConstructorParams();
   }
+
+  _validateConstructorParams() {
+    assert(this.chain !== undefined, "chain is not set");
+    assert(this.chainId !== undefined, "chainId is not set");
+    assert(this.symbolList !== undefined, "symbolList is not set");
+    assert(this.mode !== undefined, "mode is not set");
+    assert(this.customParams !== undefined, "customParams is not set");
+  }
+
   uniqueId() {
     return `${this.chain}/${this.protocolName}/${
       this.protocolVersion
     }/${this.symbolList.join("-")}/${this.protocolType}`;
   }
+  oldUniqueId() {
+    return `${this.chain}/${this.protocolName}/${
+      this.protocolVersion
+    }/${this.symbolList.join("-")}`;
+  }
   toString() {
-    // If the symbolList is too long, it will be truncated
-    const maxSymbols = 2; // Define the maximum number of symbols to show
+    const maxSymbols = 2;
     const symbolList =
       this.symbolList.length > maxSymbols
         ? `${this.symbolList.slice(0, maxSymbols).join("-")}-...`
         : this.symbolList.join("-");
     return `${this.chain}/${this.protocolName}/${symbolList}`;
   }
+
   rewards() {
     throw new Error("Method 'rewards()' must be implemented.");
   }
+
   _checkIfParamsAreSet() {
     assert(this.protocolName !== "placeholder", "protocolName is not set");
     assert(
@@ -57,338 +75,14 @@ export default class BaseProtocol extends BaseUniswap {
     assert(typeof this.assetContract === "object", "assetContract is not set");
     assert(
       typeof this.protocolContract === "object",
-      "assetContract is not set",
+      "protocolContract is not set",
     );
     assert(
       typeof this.stakeFarmContract === "object",
-      "assetContract is not set",
+      "stakeFarmContract is not set",
     );
   }
 
-  getZapInFlowChartData(inputToken, tokenInAddress, weight) {
-    const nodes = this._generateZapInNodes(inputToken, tokenInAddress);
-    const edges = this._generateEdges(nodes, weight);
-    this._enrichNodesWithMetadata(nodes);
-
-    return { nodes, edges };
-  }
-
-  _generateZapInNodes(inputToken, tokenInAddress) {
-    const nodes = [];
-
-    if (this.mode === "single") {
-      this._addSingleModeNodes(nodes, inputToken, tokenInAddress);
-    } else if (this.mode === "LP") {
-      this._addLPModeNodes(nodes, inputToken, tokenInAddress);
-    }
-
-    return nodes;
-  }
-
-  _addSingleModeNodes(nodes, inputToken, tokenInAddress) {
-    const [bestTokenSymbol, bestTokenAddressToZapIn, decimals] =
-      this._getTheBestTokenAddressToZapIn(
-        inputToken,
-        tokenInAddress,
-        18, // inputTokenDecimalsPlaceholder
-      );
-    if (
-      bestTokenAddressToZapIn.toLowerCase() !== tokenInAddress.toLowerCase()
-    ) {
-      nodes.push({
-        id: `${this.uniqueId()}-${inputToken}-${bestTokenSymbol}-swap`,
-        name: `Swap ${inputToken} to ${bestTokenSymbol}`,
-      });
-    }
-
-    this._addCommonNodes(nodes);
-  }
-
-  _addLPModeNodes(nodes, inputToken, tokenInAddress) {
-    const { lpTokens: tokenMetadatas } = this._getLPTokenPairesToZapIn();
-
-    for (const [bestTokenSymbol, bestTokenAddressToZapIn] of tokenMetadatas) {
-      if (
-        bestTokenAddressToZapIn.toLowerCase() !== tokenInAddress.toLowerCase()
-      ) {
-        nodes.push({
-          id: `${this.uniqueId()}-${inputToken}-${bestTokenSymbol}-swap`,
-          name: `Swap ${inputToken} to ${bestTokenSymbol}`,
-        });
-      }
-    }
-
-    this._addCommonNodes(nodes);
-  }
-
-  _addCommonNodes(nodes) {
-    const commonNodes = [
-      {
-        id: `${this.uniqueId()}-approve`,
-        name: "Approve",
-      },
-      {
-        id: `${this.uniqueId()}-deposit`,
-        name: `Deposit ${this.symbolList.join("-")}`,
-      },
-      {
-        id: `${this.uniqueId()}-stake`,
-        name: "stake",
-      },
-    ];
-
-    nodes.push(...commonNodes);
-  }
-
-  _generateEdges(nodes, weight) {
-    const edges = [];
-
-    for (let i = 0; i < nodes.length - 1; i++) {
-      edges.push({
-        id: `edge-${this.uniqueId()}-${i}`,
-        source: nodes[i].id,
-        target: nodes[i + 1].id,
-        data: { ratio: weight },
-      });
-    }
-
-    return edges;
-  }
-
-  _enrichNodesWithMetadata(nodes) {
-    for (const node of nodes) {
-      node.chain = this.chain;
-      node.symbolList = this.symbolList.map((symbol) =>
-        symbol.replace("(bridged)", ""),
-      );
-      node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
-    }
-  }
-  getClaimFlowChartData(outputToken, outputTokenAddress) {
-    function _autoGenerateEdges(uniqueId, nodes) {
-      const edges = [];
-      for (let i = 0; i < nodes.length - 1; i++) {
-        edges.push({
-          id: `edge-${uniqueId}-${i}`,
-          source: nodes[i].id,
-          target: nodes[i + 1].id,
-          data: {
-            ratio: 1,
-          },
-        });
-      }
-      return edges;
-    }
-    const nodes = [];
-
-    if (this.mode === "single") {
-      // decimals here doesn't matter
-      for (const node of [
-        {
-          id: `${this.uniqueId()}-claim`,
-          name: "Claim Rewards",
-        },
-      ]) {
-        nodes.push(node);
-      }
-      const [bestTokenSymbol, bestTokenAddressToZapIn, _] =
-        this._getTheBestTokenAddressToZapOut();
-      if (
-        outputTokenAddress.toLowerCase() !==
-        bestTokenAddressToZapIn.toLowerCase()
-      ) {
-        nodes.push({
-          id: `${this.uniqueId()}-${bestTokenSymbol}-${outputToken}-swap`,
-          name: `Swap ${bestTokenSymbol} to ${outputToken}`,
-        });
-      }
-    } else if (this.mode === "LP") {
-      for (const node of [
-        {
-          id: `${this.uniqueId()}-claim`,
-          name: "Claim Rewards",
-        },
-      ]) {
-        nodes.push(node);
-      }
-      const { lpTokens: tokenMetadatas } = this._getLPTokenAddressesToZapOut();
-      for (const [
-        bestTokenSymbol,
-        bestTokenAddressToZapOut,
-        decimals,
-      ] of tokenMetadatas) {
-        if (
-          bestTokenAddressToZapOut.toLowerCase() !==
-          outputTokenAddress.toLowerCase()
-        ) {
-          nodes.push({
-            id: `${this.uniqueId()}-${bestTokenSymbol}-${outputToken}-swap`,
-            name: `Swap ${bestTokenSymbol} to ${outputToken}`,
-          });
-        }
-      }
-    }
-    const edges = _autoGenerateEdges(this.uniqueId(), nodes);
-    // add chain, category, protocol, symbol to the nodes
-    for (const node of nodes) {
-      node.chain = this.chain;
-      node.symbolList = this.symbolList.map((symbol) =>
-        symbol.replace("(bridged)", ""),
-      );
-      node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
-    }
-    return {
-      nodes,
-      edges,
-    };
-  }
-  getZapOutFlowChartData(outputToken, outputTokenAddress, weight) {
-    function _autoGenerateEdges(uniqueId, nodes) {
-      const edges = [];
-      for (let i = 0; i < nodes.length - 1; i++) {
-        edges.push({
-          id: `edge-${uniqueId}-${i}`,
-          source: nodes[i].id,
-          target: nodes[i + 1].id,
-          data: {
-            ratio: weight,
-          },
-        });
-      }
-      return edges;
-    }
-    const nodes = [];
-
-    if (this.mode === "single") {
-      // decimals here doesn't matter
-      for (const node of [
-        {
-          id: `${this.uniqueId()}-unstake`,
-          name: "Unstake",
-        },
-        {
-          id: `${this.uniqueId()}-claim`,
-          name: "Claim Rewards",
-        },
-        {
-          id: `${this.uniqueId()}-withdraw`,
-          name: `Withdraw ${this.symbolList.join("-")}`,
-        },
-      ]) {
-        nodes.push(node);
-      }
-      const [bestTokenSymbol, bestTokenAddressToZapIn, _] =
-        this._getTheBestTokenAddressToZapOut();
-      if (
-        outputTokenAddress.toLowerCase() !==
-        bestTokenAddressToZapIn.toLowerCase()
-      ) {
-        nodes.push({
-          id: `${this.uniqueId()}-${bestTokenSymbol}-${outputToken}-swap`,
-          name: `Swap ${bestTokenSymbol} to ${outputToken}`,
-        });
-      }
-    } else if (this.mode === "LP") {
-      for (const node of [
-        {
-          id: `${this.uniqueId()}-unstake`,
-          name: "Unstake",
-        },
-        {
-          id: `${this.uniqueId()}-claim`,
-          name: "Claim Rewards",
-        },
-        {
-          id: `${this.uniqueId()}-withdraw`,
-          name: `Withdraw ${this.symbolList.join("-")}`,
-        },
-      ]) {
-        nodes.push(node);
-      }
-      const { lpTokens: tokenMetadatas } = this._getLPTokenAddressesToZapOut();
-      for (const [
-        bestTokenSymbol,
-        bestTokenAddressToZapOut,
-        decimals,
-      ] of tokenMetadatas) {
-        if (
-          bestTokenAddressToZapOut.toLowerCase() !==
-          outputTokenAddress.toLowerCase()
-        ) {
-          nodes.push({
-            id: `${this.uniqueId()}-${bestTokenSymbol}-${outputToken}-swap`,
-            name: `Swap ${bestTokenSymbol} to ${outputToken}`,
-          });
-        }
-      }
-    }
-    const edges = _autoGenerateEdges(this.uniqueId(), nodes);
-    // add chain, category, protocol, symbol to the nodes
-    for (const node of nodes) {
-      node.chain = this.chain;
-      node.symbolList = this.symbolList.map((symbol) =>
-        symbol.replace("(bridged)", ""),
-      );
-      node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
-    }
-    return {
-      nodes,
-      edges,
-    };
-  }
-  getTransferFlowChartData(weight) {
-    const nodes = [
-      {
-        id: `${this.uniqueId()}-unstake`,
-        name: "Unstake",
-      },
-      {
-        id: `${this.uniqueId()}-transfer`,
-        name: "Transfer",
-      },
-    ];
-    // add chain, category, protocol, symbol to the nodes
-    for (const node of nodes) {
-      node.chain = this.chain;
-      node.symbolList = this.symbolList.map((symbol) =>
-        symbol.replace("(bridged)", ""),
-      );
-      node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
-    }
-    return {
-      nodes,
-      edges: [
-        {
-          id: `edge-${this.uniqueId()}-0`,
-          source: `${this.uniqueId()}-unstake`,
-          target: `${this.uniqueId()}-transfer`,
-          data: {
-            ratio: weight,
-          },
-        },
-      ],
-    };
-  }
-  getStakeFlowChartData() {
-    const nodes = [
-      {
-        id: `${this.uniqueId()}-stake`,
-        name: "stake",
-      },
-    ];
-    // add chain, category, protocol, symbol to the nodes
-    for (const node of nodes) {
-      node.chain = this.chain;
-      node.symbolList = this.symbolList.map((symbol) =>
-        symbol.replace("(bridged)", ""),
-      );
-      node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
-    }
-    return {
-      nodes,
-      edges: [],
-    };
-  }
   async usdBalanceOf(address, tokenPricesMappingTable) {
     throw new Error("Method 'usdBalanceOf()' must be implemented.");
   }
@@ -430,13 +124,71 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    let finalTxns = [];
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-approve`,
-      0,
-    );
+    try {
+      // Wait for event emitter to be ready
+      while (!flowChartEventEmitter.isReady()) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
 
+      let finalTxns = [];
+      await this._handleTransactionProgress(
+        updateProgress,
+        `${this.uniqueId()}-approve`,
+        0,
+        "initial approve",
+      );
+
+      const [beforeZapInTxns, depositParams] = await this._prepareDeposit(
+        recipient,
+        tokenInAddress,
+        investmentAmountInThisPosition,
+        slippage,
+        updateProgress,
+        inputToken,
+        tokenDecimals,
+        tokenPricesMappingTable,
+      );
+
+      const [zapinTxns, tradingLoss] = await this._executeDeposit(
+        recipient,
+        depositParams,
+        tokenPricesMappingTable,
+        slippage,
+        updateProgress,
+      );
+
+      finalTxns = beforeZapInTxns.concat(zapinTxns);
+      await this._handleTransactionProgress(
+        updateProgress,
+        `${this.uniqueId()}-deposit`,
+        tradingLoss,
+        "deposit",
+      );
+
+      this.checkTxnsToDataNotUndefined(finalTxns, "zapIn");
+      await this._handleTransactionProgress(
+        updateProgress,
+        `${this.uniqueId()}-stake`,
+        0,
+        "stake",
+      );
+      return finalTxns;
+    } catch (error) {
+      console.error("Error in zapIn:", error);
+      throw error;
+    }
+  }
+
+  async _prepareDeposit(
+    recipient,
+    tokenInAddress,
+    investmentAmountInThisPosition,
+    slippage,
+    updateProgress,
+    inputToken,
+    tokenDecimals,
+    tokenPricesMappingTable,
+  ) {
     if (this.mode === "single") {
       const [
         beforeZapInTxns,
@@ -454,7 +206,61 @@ export default class BaseProtocol extends BaseUniswap {
         tokenDecimals,
         tokenPricesMappingTable,
       );
-      const [zapinTxns, tradingLoss] = await this.customDeposit(
+      return [
+        beforeZapInTxns,
+        {
+          bestTokenSymbol,
+          bestTokenAddressToZapIn,
+          amountToZapIn,
+          bestTokenToZapInDecimal,
+        },
+      ];
+    } else if (this.mode === "LP") {
+      const [
+        beforeZapInTxns,
+        bestTokenSymbol,
+        bestTokenAddressToZapIn,
+        amountToZapIn,
+        bestTokenToZapInDecimal,
+      ] = await this._beforeDepositLP(
+        recipient,
+        tokenInAddress,
+        investmentAmountInThisPosition,
+        slippage,
+        updateProgress,
+        inputToken,
+        tokenDecimals,
+        tokenPricesMappingTable,
+      );
+      return [
+        beforeZapInTxns,
+        {
+          bestTokenSymbol,
+          bestTokenAddressToZapIn,
+          amountToZapIn,
+          bestTokenToZapInDecimal,
+        },
+      ];
+    }
+    throw new Error(`Invalid mode: ${this.mode}`);
+  }
+
+  async _executeDeposit(
+    recipient,
+    depositParams,
+    tokenPricesMappingTable,
+    slippage,
+    updateProgress,
+  ) {
+    const {
+      bestTokenSymbol,
+      bestTokenAddressToZapIn,
+      amountToZapIn,
+      bestTokenToZapInDecimal,
+    } = depositParams;
+
+    if (this.mode === "single") {
+      return await this.customDeposit(
         recipient,
         bestTokenSymbol,
         bestTokenAddressToZapIn,
@@ -464,47 +270,21 @@ export default class BaseProtocol extends BaseUniswap {
         slippage,
         updateProgress,
       );
-      finalTxns = beforeZapInTxns.concat(zapinTxns);
-      await this._updateProgressAndWait(
-        updateProgress,
-        `${this.uniqueId()}-deposit`,
-        tradingLoss,
-      );
     } else if (this.mode === "LP") {
-      const [beforeZapInTxns, tokenAmetadata, tokenBmetadata] =
-        await this._beforeDepositLP(
-          recipient,
-          tokenInAddress,
-          investmentAmountInThisPosition,
-          slippage,
-          updateProgress,
-          inputToken,
-          tokenDecimals,
-          tokenPricesMappingTable,
-        );
-      const [zapinTxns, tradingLoss] = await this.customDepositLP(
+      return await this.customDepositLP(
         recipient,
-        tokenAmetadata,
-        tokenBmetadata,
+        bestTokenSymbol,
+        bestTokenAddressToZapIn,
+        amountToZapIn,
+        bestTokenToZapInDecimal,
         tokenPricesMappingTable,
         slippage,
         updateProgress,
       );
-      finalTxns = beforeZapInTxns.concat(zapinTxns);
-      await this._updateProgressAndWait(
-        updateProgress,
-        `${this.uniqueId()}-deposit`,
-        tradingLoss,
-      );
     }
-    this.checkTxnsToDataNotUndefined(finalTxns, "zapIn");
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-stake`,
-      0,
-    );
-    return finalTxns;
+    throw new Error(`Invalid mode: ${this.mode}`);
   }
+
   async zapOut(
     recipient,
     percentage,
@@ -517,83 +297,83 @@ export default class BaseProtocol extends BaseUniswap {
     customParams,
     existingInvestmentPositionsInThisChain,
   ) {
-    let withdrawTxns = [];
-    let redeemTxns = [];
-    let withdrawTokenAndBalance = {};
-    if (this.mode === "single") {
-      const [
-        withdrawTxnsForSingle,
-        symbolOfBestTokenToZapOut,
-        bestTokenAddressToZapOut,
-        decimalOfBestTokenToZapOut,
-        minOutAmount,
-      ] = await this.customWithdrawAndClaim(
-        recipient,
-        percentage,
-        slippage,
-        tokenPricesMappingTable,
-        updateProgress,
-      );
-      const [redeemTxnsForSingle, withdrawTokenAndBalanceForSingle] =
-        await this._calculateWithdrawTokenAndBalance(
-          recipient,
+    try {
+      let withdrawTxns = [];
+      let redeemTxns = [];
+      let withdrawTokenAndBalance = {};
+      if (this.mode === "single") {
+        const [
+          withdrawTxnsForSingle,
           symbolOfBestTokenToZapOut,
           bestTokenAddressToZapOut,
           decimalOfBestTokenToZapOut,
           minOutAmount,
-          tokenPricesMappingTable,
-          updateProgress,
-        );
-      withdrawTxns = withdrawTxnsForSingle;
-      redeemTxns = redeemTxnsForSingle;
-      withdrawTokenAndBalance = withdrawTokenAndBalanceForSingle;
-    } else if (this.mode === "LP") {
-      const [withdrawLPTxns, tokenMetadatas, minPairAmounts] =
-        await this.customWithdrawLPAndClaim(
+        ] = await this.baseWithdrawAndClaim(
           recipient,
           percentage,
           slippage,
           tokenPricesMappingTable,
           updateProgress,
         );
-      if (
-        withdrawLPTxns === undefined &&
-        tokenMetadatas === undefined &&
-        minPairAmounts === undefined
-      ) {
-        // it means the NFT has been burned, so we don't need to do anything
-        return [];
+        const [redeemTxnsForSingle, withdrawTokenAndBalanceForSingle] =
+          await this._calculateWithdrawTokenAndBalance(
+            recipient,
+            symbolOfBestTokenToZapOut,
+            bestTokenAddressToZapOut,
+            decimalOfBestTokenToZapOut,
+            minOutAmount,
+            tokenPricesMappingTable,
+            updateProgress,
+          );
+        withdrawTxns = withdrawTxnsForSingle;
+        redeemTxns = redeemTxnsForSingle;
+        withdrawTokenAndBalance = withdrawTokenAndBalanceForSingle;
+      } else if (this.mode === "LP") {
+        const [withdrawLPTxns, tokenMetadatas, minPairAmounts] =
+          await this.baseWithdrawLPAndClaim(
+            recipient,
+            percentage,
+            slippage,
+            tokenPricesMappingTable,
+            updateProgress,
+          );
+        if (
+          withdrawLPTxns === undefined &&
+          tokenMetadatas === undefined &&
+          minPairAmounts === undefined
+        ) {
+          // it means the NFT has been burned, so we don't need to do anything
+          return [];
+        }
+        const [redeemTxnsFromLP, withdrawTokenAndBalanceFromLP] =
+          await this._calculateWithdrawLPTokenAndBalance(
+            recipient,
+            tokenMetadatas,
+            minPairAmounts,
+            tokenPricesMappingTable,
+            updateProgress,
+          );
+        withdrawTxns = withdrawLPTxns;
+        redeemTxns = redeemTxnsFromLP;
+        withdrawTokenAndBalance = withdrawTokenAndBalanceFromLP;
       }
-      const [redeemTxnsFromLP, withdrawTokenAndBalanceFromLP] =
-        await this._calculateWithdrawLPTokenAndBalance(
-          recipient,
-          tokenMetadatas,
-          minPairAmounts,
-          tokenPricesMappingTable,
-          updateProgress,
-        );
-      withdrawTxns = withdrawLPTxns;
-      redeemTxns = redeemTxnsFromLP;
-      withdrawTokenAndBalance = withdrawTokenAndBalanceFromLP;
+      const batchSwapTxns = await this._batchSwap(
+        recipient,
+        withdrawTokenAndBalance,
+        outputToken,
+        outputTokenSymbol,
+        outputTokenDecimals,
+        slippage,
+        tokenPricesMappingTable,
+        updateProgress,
+      );
+      const txns = [...withdrawTxns, ...redeemTxns, ...batchSwapTxns];
+      this.checkTxnsToDataNotUndefined(txns, "zapOut");
+      return txns;
+    } catch (error) {
+      console.error("Error in zapOut:", error);
+      throw error;
     }
-    const batchSwapTxns = await this._batchSwap(
-      recipient,
-      withdrawTokenAndBalance,
-      outputToken,
-      outputTokenSymbol,
-      outputTokenDecimals,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    let txns = [];
-    if (redeemTxns.length === 0) {
-      txns = [...withdrawTxns, ...batchSwapTxns];
-    } else {
-      txns = [...withdrawTxns, ...redeemTxns, ...batchSwapTxns];
-    }
-    this.checkTxnsToDataNotUndefined(txns, "zapOut");
-    return txns;
   }
   async claimAndSwap(
     recipient,
@@ -604,29 +384,34 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-claim`,
-      0,
-    );
-    const [claimTxns, claimedTokenAndBalance] = await this.customClaim(
-      recipient,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    const txns = await this._batchSwap(
-      recipient,
-      claimedTokenAndBalance,
-      outputToken,
-      outputTokenSymbol,
-      outputTokenDecimals,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    const finalTxns = [...claimTxns, ...txns];
-    this.checkTxnsToDataNotUndefined(finalTxns, "claimAndSwap");
-    return finalTxns;
+    try {
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-claim`,
+        0,
+      );
+      const [claimTxns, claimedTokenAndBalance] = await this.customClaim(
+        recipient,
+        tokenPricesMappingTable,
+        updateProgress,
+      );
+      const txns = await this._batchSwap(
+        recipient,
+        claimedTokenAndBalance,
+        outputToken,
+        outputTokenSymbol,
+        outputTokenDecimals,
+        slippage,
+        tokenPricesMappingTable,
+        updateProgress,
+      );
+      const finalTxns = [...claimTxns, ...txns];
+      this.checkTxnsToDataNotUndefined(finalTxns, "claimAndSwap");
+      return finalTxns;
+    } catch (error) {
+      console.error("Error in claimAndSwap:", error);
+      throw error;
+    }
   }
 
   async transfer(owner, percentage, updateProgress, recipient) {
@@ -701,17 +486,29 @@ export default class BaseProtocol extends BaseUniswap {
   ) {
     throw new Error("Method 'customDeposit()' must be implemented.", amount);
   }
-  async customWithdrawAndClaim(
+  async baseWithdrawAndClaim(
     owner,
     percentage,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
   ) {
+    await this._handleTransactionProgress(
+      updateProgress,
+      `${this.uniqueId()}-unstake`,
+      0,
+      "unstake",
+    );
     const [unstakeTxns, unstakedAmount] = await this._unstake(
       owner,
       percentage,
       updateProgress,
+    );
+    await this._handleTransactionProgress(
+      updateProgress,
+      `${this.uniqueId()}-claim`,
+      0,
+      "claim",
     );
     const [
       withdrawAndClaimTxns,
@@ -719,28 +516,46 @@ export default class BaseProtocol extends BaseUniswap {
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
       minTokenOut,
-    ] = await this._withdrawAndClaim(
+      tradingLoss,
+    ] = await this.customWithdrawAndClaim(
       owner,
       unstakedAmount,
       slippage,
       tokenPricesMappingTable,
       updateProgress,
     );
+    assert(
+      typeof tradingLoss === "number",
+      `${this.uniqueId()} tradingLoss is undefined or not a number ${tradingLoss}, typeof tradingLoss: ${typeof tradingLoss}`,
+    );
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-withdraw`,
+      tradingLoss,
+    );
     return [
       [...unstakeTxns, ...withdrawAndClaimTxns],
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
-      minTokenOut,
+      ethers.BigNumber.isBigNumber(minTokenOut)
+        ? minTokenOut
+        : ethers.BigNumber.from(BigInt(minTokenOut)),
     ];
   }
-  async customWithdrawLPAndClaim(
+  async baseWithdrawLPAndClaim(
     owner,
     percentage,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
   ) {
+    await this._handleTransactionProgress(
+      updateProgress,
+      `${this.uniqueId()}-unstake`,
+      0,
+      "unstake",
+    );
     const [unstakeTxns, unstakedAmount] = await this._unstakeLP(
       owner,
       percentage,
@@ -750,14 +565,35 @@ export default class BaseProtocol extends BaseUniswap {
       // it means the NFT has been burned
       return [undefined, undefined, undefined];
     }
-    const [withdrawAndClaimTxns, tokenMetadatas, minPairAmounts] =
-      await this._withdrawLPAndClaim(
+    await this._handleTransactionProgress(
+      updateProgress,
+      `${this.uniqueId()}-claim`,
+      0,
+      "claim",
+    );
+    const [withdrawAndClaimTxns, tokenMetadatas, minPairAmounts, tradingLoss] =
+      await this.customWithdrawLPAndClaim(
         owner,
         unstakedAmount,
         slippage,
         tokenPricesMappingTable,
         updateProgress,
       );
+    assert(
+      typeof tradingLoss === "number",
+      `${this.uniqueId()} tradingLoss is undefined or not a number ${tradingLoss}, typeof tradingLoss: ${typeof tradingLoss}`,
+    );
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-withdraw`,
+      tradingLoss,
+    );
+    for (const minPairAmount of minPairAmounts) {
+      if (!ethers.BigNumber.isBigNumber(minPairAmount)) {
+        minPairAmounts[minPairAmounts.indexOf(minPairAmount)] =
+          ethers.BigNumber.from(BigInt(minPairAmount));
+      }
+    }
     return [
       [...unstakeTxns, ...withdrawAndClaimTxns],
       tokenMetadatas,
@@ -1056,14 +892,52 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
   ) {
     let txns = [];
+
+    // Validate input parameters
+    if (
+      !withdrawTokenAndBalance ||
+      typeof withdrawTokenAndBalance !== "object"
+    ) {
+      console.warn(
+        `${this.uniqueId()}: Invalid withdrawTokenAndBalance format:`,
+        withdrawTokenAndBalance,
+      );
+      return txns;
+    }
+
     for (const [address, tokenMetadata] of Object.entries(
       withdrawTokenAndBalance,
     )) {
+      // Validate token metadata
+      if (!tokenMetadata || typeof tokenMetadata !== "object") {
+        console.warn(
+          `${this.uniqueId()}: Invalid tokenMetadata for address ${address}:`,
+          tokenMetadata,
+        );
+        continue;
+      }
+
       const amount = tokenMetadata.balance;
       const fromTokenSymbol = tokenMetadata.symbol;
       const fromTokenDecimals = tokenMetadata.decimals;
+
+      // Validate required fields
+      if (!amount || !fromTokenSymbol || !fromTokenDecimals) {
+        console.warn(
+          `${this.uniqueId()}: Missing required fields for token at address ${address}:`,
+          {
+            amount,
+            fromTokenSymbol,
+            fromTokenDecimals,
+          },
+        );
+        continue;
+      }
+
+      // Safely convert amount to string for comparison
+      const amountStr = amount.toString();
       if (
-        amount.toString() === "0" ||
+        amountStr === "0" ||
         amount === 0 ||
         tokenMetadata.vesting === true ||
         // if usd value of this token is less than 1, then it's easy to suffer from high slippage
@@ -1077,26 +951,35 @@ export default class BaseProtocol extends BaseUniswap {
         );
         continue;
       }
-      const swapTxnResult = await swap(
-        recipient,
-        this.chainId,
-        this.uniqueId(),
-        this._updateProgressAndWait,
-        address,
-        outputToken,
-        amount,
-        slippage,
-        updateProgress,
-        fromTokenSymbol,
-        fromTokenDecimals,
-        outputTokenSymbol,
-        outputTokenDecimals,
-        tokenPricesMappingTable,
-      );
-      if (swapTxnResult === undefined) {
+
+      try {
+        const swapTxnResult = await swap(
+          recipient,
+          this.chainId,
+          this.uniqueId(),
+          this._updateProgressAndWait,
+          address,
+          outputToken,
+          amount,
+          slippage,
+          updateProgress,
+          fromTokenSymbol,
+          fromTokenDecimals,
+          outputTokenSymbol,
+          outputTokenDecimals,
+          tokenPricesMappingTable,
+        );
+        if (swapTxnResult === undefined) {
+          continue;
+        }
+        txns = txns.concat(swapTxnResult[0]);
+      } catch (error) {
+        console.error(
+          `${this.uniqueId()}: Error processing swap for token ${fromTokenSymbol}:`,
+          error,
+        );
         continue;
       }
-      txns = txns.concat(swapTxnResult[0]);
     }
     return txns;
   }
@@ -1111,18 +994,19 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
   ) {
     let withdrawTokenAndBalance = {};
-    withdrawTokenAndBalance[bestTokenAddressToZapOut] = {
-      symbol: symbolOfBestTokenToZapOut,
-      balance: minOutAmount,
-      usdDenominatedValue:
-        (tokenPricesMappingTable[symbolOfBestTokenToZapOut] * minOutAmount) /
-        Math.pow(10, decimalOfBestTokenToZapOut),
-      decimals: decimalOfBestTokenToZapOut,
-    };
-    assert(
-      withdrawTokenAndBalance[bestTokenAddressToZapOut].usdDenominatedValue > 1,
-      `usdDenominatedValue is less than 1 for ${symbolOfBestTokenToZapOut}`,
+
+    // Create initial token balance entry
+    withdrawTokenAndBalance[bestTokenAddressToZapOut] = createTokenBalanceEntry(
+      {
+        address: bestTokenAddressToZapOut,
+        symbol: symbolOfBestTokenToZapOut,
+        balance: minOutAmount,
+        decimals: decimalOfBestTokenToZapOut,
+        tokenPricesMappingTable,
+      },
     );
+
+    // Get and add pending rewards
     const pendingRewards = await this.pendingRewards(
       recipient,
       tokenPricesMappingTable,
@@ -1132,30 +1016,17 @@ export default class BaseProtocol extends BaseUniswap {
       pendingRewards,
       recipient,
     );
-    for (const [address, metadata] of Object.entries(pendingRewards)) {
-      if (withdrawTokenAndBalance[address]) {
-        withdrawTokenAndBalance[address].balance = withdrawTokenAndBalance[
-          address
-        ].balance.add(metadata.balance);
-        const tokenPrice = tokenPricesMappingTable[metadata.symbol];
-        if (tokenPrice === undefined) {
-          throw new Error(`No price found for token ${metadata.symbol}`);
-        } else {
-          withdrawTokenAndBalance[address].usdDenominatedValue =
-            tokenPrice *
-            Number(
-              ethers.utils.formatUnits(
-                withdrawTokenAndBalance[address].balance,
-                withdrawTokenAndBalance[address].decimals,
-              ),
-            );
-        }
-      } else {
-        withdrawTokenAndBalance[address] = metadata;
-      }
-    }
+
+    // Add pending rewards to balance
+    withdrawTokenAndBalance = addPendingRewardsToBalance(
+      withdrawTokenAndBalance,
+      pendingRewards,
+      tokenPricesMappingTable,
+    );
+
     return [redeemTxns, withdrawTokenAndBalance];
   }
+
   async _calculateWithdrawLPTokenAndBalance(
     recipient,
     tokenMetadatas,
@@ -1164,6 +1035,8 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
   ) {
     let withdrawTokenAndBalance = {};
+
+    // Create initial token balance entries for LP tokens
     for (const [index, tokenMetadata] of tokenMetadatas.entries()) {
       const [
         symbolOfBestTokenToZapOut,
@@ -1171,59 +1044,43 @@ export default class BaseProtocol extends BaseUniswap {
         decimalOfBestTokenToZapOut,
       ] = tokenMetadata;
       const minOutAmount = minPairAmounts[index];
+
       if (minOutAmount.toString() === "0" || minOutAmount === 0) {
         continue;
       }
-      withdrawTokenAndBalance[bestTokenAddressToZapOut] = {
-        symbol: symbolOfBestTokenToZapOut,
-        balance: minOutAmount,
-        usdDenominatedValue:
-          tokenPricesMappingTable[symbolOfBestTokenToZapOut] *
-          Number(
-            ethers.utils.formatUnits(minOutAmount, decimalOfBestTokenToZapOut),
-          ),
-        decimals: decimalOfBestTokenToZapOut,
-      };
-      assert(
-        !isNaN(
-          withdrawTokenAndBalance[bestTokenAddressToZapOut].usdDenominatedValue,
-        ),
-        `usdDenominatedValue is NaN for ${symbolOfBestTokenToZapOut}`,
-      );
+
+      withdrawTokenAndBalance[bestTokenAddressToZapOut] =
+        createTokenBalanceEntry({
+          address: bestTokenAddressToZapOut,
+          symbol: symbolOfBestTokenToZapOut,
+          balance: minOutAmount,
+          decimals: decimalOfBestTokenToZapOut,
+          tokenPricesMappingTable,
+        });
     }
+
+    // Get and add pending rewards
     const pendingRewards = await this.pendingRewards(
       recipient,
       tokenPricesMappingTable,
       updateProgress,
     );
-    const redeemTxns = await this.customRedeemVestingRewards(
+    // const redeemTxns = await this.customRedeemVestingRewards(
+    //   pendingRewards,
+    //   recipient,
+    // );
+
+    // Add pending rewards to balance
+    withdrawTokenAndBalance = addPendingRewardsToBalance(
+      withdrawTokenAndBalance,
       pendingRewards,
-      recipient,
+      tokenPricesMappingTable,
     );
-    for (const [address, metadata] of Object.entries(pendingRewards)) {
-      if (withdrawTokenAndBalance[address]) {
-        withdrawTokenAndBalance[address].balance = withdrawTokenAndBalance[
-          address
-        ].balance.add(metadata.balance);
-        const tokenPrice = tokenPricesMappingTable[metadata.symbol];
-        if (tokenPrice === undefined) {
-          withdrawTokenAndBalance[address].usdDenominatedValue = 0;
-        } else {
-          withdrawTokenAndBalance[address].usdDenominatedValue =
-            tokenPrice *
-            Number(
-              ethers.utils.formatUnits(
-                withdrawTokenAndBalance[address].balance,
-                withdrawTokenAndBalance[address].decimals,
-              ),
-            );
-        }
-      } else {
-        withdrawTokenAndBalance[address] = metadata;
-      }
-    }
-    return [redeemTxns, withdrawTokenAndBalance];
+
+    return [[], withdrawTokenAndBalance];
+    // return [redeemTxns, withdrawTokenAndBalance];
   }
+
   async _stake(amount, updateProgress) {
     throw new Error("Method '_stake()' must be implemented.");
   }
@@ -1231,48 +1088,28 @@ export default class BaseProtocol extends BaseUniswap {
     throw new Error("Method '_stakeLP()' must be implemented.");
   }
   async _unstake(owner, percentage, updateProgress) {
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-unstake`,
-      0,
-    );
-    // child class should implement this
+    throw new Error("Method '_unstake()' must be implemented.");
   }
   async _unstakeLP(owner, percentage, updateProgress) {
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-unstake`,
-      0,
-    );
-    // child class should implement this
+    throw new Error("Method '_unstakeLP()' must be implemented.");
   }
-  async _withdrawAndClaim(
+  async customWithdrawAndClaim(
     owner,
     withdrawAmount,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-claim`,
-      0,
-    );
-    // child class should implement this
+    throw new Error("Method 'customWithdrawAndClaim()' must be implemented.");
   }
-  async _withdrawLPAndClaim(
+  async customWithdrawLPAndClaim(
     owner,
     amount,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-claim`,
-      0,
-    );
-    // child class should implement this
+    throw new Error("Method 'customWithdrawLPAndClaim()' must be implemented.");
   }
   async _calculateTokenAmountsForLP(
     usdAmount,
@@ -1333,26 +1170,7 @@ export default class BaseProtocol extends BaseUniswap {
     );
     return contractCall;
   }
-  async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
-    // First, update the progress and wait for it to complete
-    await new Promise((resolve) => {
-      updateProgress(nodeId, tradingLoss);
-      // Use requestAnimationFrame to ensure the state update is processed
-      requestAnimationFrame(() => {
-        // Add a small delay to ensure React has time to process the update
-        setTimeout(() => {
-          resolve();
-        }, 100);
-      });
-    });
 
-    // Additional delay to ensure UI updates are visible
-    await new Promise((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, 400);
-    });
-  }
   getDeadline() {
     return Math.floor(Date.now() / 1000) + 600; // 10 minute deadline
   }
@@ -1366,4 +1184,19 @@ export default class BaseProtocol extends BaseUniswap {
       }
     }
   }
+
+  async rebalance(account, actionParams) {
+    try {
+      const { updateProgress } = actionParams;
+      await this._updateProgressAndWait(updateProgress, "rebalance", 0);
+
+      // ... rest of rebalance code ...
+    } catch (error) {
+      console.error("Error in rebalance:", error);
+      throw error;
+    }
+  }
 }
+
+// Apply mixins
+Object.assign(BaseProtocol.prototype, FlowChartMixin);

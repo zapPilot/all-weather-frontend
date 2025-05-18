@@ -70,8 +70,9 @@ const CategoryTable = memo(
             <span className="tabular-nums text-white" data-testid="apr">
               <APRDisplay
                 apr={
-                  portfolioApr?.[portfolioName]?.[protocol.interface.uniqueId()]
-                    ?.apr
+                  portfolioApr?.[portfolioName]?.[
+                    protocol.interface.oldUniqueId()
+                  ]?.apr
                 }
               />
             </span>

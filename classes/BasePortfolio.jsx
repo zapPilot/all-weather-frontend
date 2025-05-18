@@ -15,6 +15,7 @@ import { TokenPriceBatcher, PriceService } from "./TokenPriceService";
 import swap from "../utils/swapHelper";
 import { PortfolioFlowChartBuilder } from "./PortfolioFlowChartBuilder";
 import { getProtocolObjByUniqueId } from "../utils/portfolioCalculation";
+import flowChartEventEmitter from "../utils/FlowChartEventEmitter";
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 
@@ -404,22 +405,21 @@ export class BasePortfolio {
 
   async portfolioAction(actionName, actionParams) {
     const updateProgress = async (nodeID, tradingLoss) => {
-      // Update stepName first and wait for it to complete
-      await new Promise((resolve) => {
-        actionParams.setStepName((prevStepName) => {
-          resolve();
-          return nodeID;
-        });
+      // Use the event system to update the node state
+      flowChartEventEmitter.queueUpdate({
+        type: "NODE_UPDATE",
+        nodeId: nodeID,
+        status: "active",
+        tradingLoss: tradingLoss || 0,
       });
 
-      // Then update the other states
-      actionParams.setTradingLoss(tradingLoss);
-      if (isNaN(tradingLoss)) {
-        console.error(`${nodeID}: tradingLoss is not a number: ${tradingLoss}`);
-      } else {
+      // Update trading loss totals if needed
+      if (!isNaN(tradingLoss)) {
         actionParams.setTotalTradingLoss(
           (prevTotalTradingLoss) => prevTotalTradingLoss + tradingLoss,
         );
+      } else {
+        console.error(`${nodeID}: tradingLoss is not a number: ${tradingLoss}`);
       }
     };
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
@@ -722,13 +722,16 @@ export class BasePortfolio {
       // Convert to array format and process bridges
       const bridgePromises = Object.entries(chainWeights).map(
         async ([chain, totalWeight]) => {
-          if (
-            totalWeight === 0 ||
-            (actionParams.zapInAmount * totalWeight) /
-              Math.pow(10, actionParams.tokenDecimals) <
-              1
-          )
+          const bridgeUsd =
+            ((actionParams.zapInAmount * totalWeight) /
+              Math.pow(10, actionParams.tokenDecimals)) *
+            actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol];
+          if (totalWeight === 0 || bridgeUsd < 1) {
+            console.warn(
+              `Skipping bridge to ${chain} because of low amount: ${bridgeUsd} USD`,
+            );
             return [];
+          }
           try {
             return await actionHandlers["bridge"](chain, totalWeight);
           } catch (error) {
@@ -742,7 +745,6 @@ export class BasePortfolio {
       const results = await Promise.all(bridgePromises);
       return results.flat().filter(Boolean);
     };
-
     // Execute protocol and bridge transactions in parallel
     const [protocolTxns, bridgeTxns] = await Promise.all([
       processProtocolTxns(currentChain),
@@ -1487,7 +1489,7 @@ export class BasePortfolio {
     await new Promise((resolve) => {
       setTimeout(() => {
         resolve();
-      }, 100);
+      }, 1000);
     });
   }
   _getPlatformFeeTxns(tokenAddress, chainMetadata, platformFee, referrer) {
