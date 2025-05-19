@@ -577,7 +577,6 @@ export default function IndexOverviews() {
           portfolioHelper,
           notificationAPI,
         );
-
         if (
           cachedData?.timestamp &&
           Date.now() - cachedData.timestamp < 3600 * 1000
@@ -616,11 +615,11 @@ export default function IndexOverviews() {
           [usdBalance, usdBalanceDict, tokenPricesMappingTable],
           lockUpPeriod,
         ] = results;
-
         setTokenPricesMappingTable(tokenPricesMappingTable);
         setUsdBalance(usdBalance);
         setUsdBalanceLoading(false);
         setRebalancableUsdBalanceDict(usdBalanceDict);
+        setRebalancableUsdBalanceDictLoading(false);
         setLockUpPeriod(lockUpPeriod);
 
         // Update pending rewards

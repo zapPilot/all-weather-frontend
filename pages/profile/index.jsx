@@ -19,7 +19,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ExampleUI() {
   const dispatch = useDispatch();
-  const { data } = useSelector((state) => state.api);
   const account = useActiveAccount();
   const walletAddress = account?.address.toLocaleLowerCase();
   const router = useRouter();
