@@ -148,14 +148,14 @@ export class BasePortfolio {
   _processProtocolBalances(balanceResults, portfolioAprDict, usdBalanceDict) {
     for (const { protocol, balance } of balanceResults) {
       const protocolAPR =
-        portfolioAprDict?.[protocol.interface.uniqueId()]?.apr * 100;
+        portfolioAprDict?.[protocol.interface.oldUniqueId()]?.apr * 100;
       if (protocolAPR === undefined) {
         throw new Error(
           `Protocol ${protocol.interface.uniqueId()} not found in portfolioAprDict`,
         );
       }
-      const protocolUniqueId = protocol.interface.uniqueId();
-      usdBalanceDict[protocolUniqueId] = {
+      const protocolOldUniqueId = protocol.interface.oldUniqueId();
+      usdBalanceDict[protocolOldUniqueId] = {
         chain: protocol.interface.chain,
         usdBalance: balance,
         weight: protocol.weight,

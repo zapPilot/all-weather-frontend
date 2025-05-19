@@ -28,7 +28,9 @@ const RebalanceLabel = memo(function RebalanceLabel({
           {isLoading ? <Spin size="small" /> : currentAPR.toFixed(2)}%
         </span>
         {" → "}
-        <span className="text-green-400">{targetAPR.toFixed(2)}%</span>
+        <span className="text-green-400">
+          {isNaN(targetAPR) ? <Spin size="small" /> : targetAPR.toFixed(2)}%
+        </span>
         <span className="text-yellow-400 animate-spin ml-2">✨</span>
       </div>
       <button className="flex items-center gap-2 text-white bg-gradient-to-r from-purple-500 to-indigo-500 font-bold py-2 px-6 rounded-full shadow-lg hover:shadow-xl transition duration-300 transform hover:scale-110">
