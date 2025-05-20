@@ -333,12 +333,12 @@ export class BasePortfolio {
     }, 0);
   }
 
-  mulSwapFeeRate(inputBigBumber) {
-    return inputBigBumber.mul(299).div(100000);
+  mulEntryFeeRate(inputBigBumber) {
+    return inputBigBumber.div(100);
   }
 
-  swapFeeRate() {
-    return 0.00299;
+  entryFeeRate() {
+    return 0.01;
   }
   mulReferralFeeRate(inputBigBumber) {
     return inputBigBumber.mul(7).div(10);
@@ -445,7 +445,7 @@ export class BasePortfolio {
         totalTxns.push(wethTxn);
       }
       if (actionParams.onlyThisChain === false) {
-        const platformFee = this.mulSwapFeeRate(actionParams.zapInAmount);
+        const platformFee = this.mulEntryFeeRate(actionParams.zapInAmount);
         const normalizedPlatformFeeUSD =
           ethers.utils.formatUnits(platformFee, actionParams.tokenDecimals) *
           actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol];
@@ -478,25 +478,6 @@ export class BasePortfolio {
       actionParams,
     );
     totalTxns = totalTxns.concat(protocolTxns);
-    // Handle special post-processing for specific actions
-    if (actionName === "zapOut") {
-      const portfolioUsdBalance = (
-        await this.usdBalanceOf(actionParams.account)
-      )[0];
-      if (portfolioUsdBalance > 0) {
-        const swapFeeTxns = await this._swapFeeTxnsForZapOut(
-          actionParams.account,
-          actionParams.tokenOutAddress,
-          actionParams.tokenOutSymbol,
-          actionParams.tokenPricesMappingTable,
-          actionParams.zapOutPercentage,
-          portfolioUsdBalance,
-          actionParams.chainMetadata,
-          actionParams.setPlatformFee,
-        );
-        totalTxns = totalTxns.concat(swapFeeTxns);
-      }
-    }
     if (
       actionName === "zapIn" &&
       actionParams.protocolAssetDustInWalletLoading === false
@@ -1140,7 +1121,7 @@ export class BasePortfolio {
     );
 
     // need to multiply by 2 because we charge for zap in and zap out
-    const platformFee = this.mulSwapFeeRate(zapInAmount).mul(2);
+    const platformFee = this.mulEntryFeeRate(zapInAmount);
     const zapInAmountAfterFee = zapInAmount.sub(platformFee);
 
     const rebalanceFeeTxns = await this._getSwapFeeTxnsForZapIn(
@@ -1434,7 +1415,7 @@ export class BasePortfolio {
   ) {
     const referrer = await this._getReferrer(owner);
     const tokenOutUsdBalance = portfolioUsdBalance * zapOutPercentage;
-    const swapFeeUsd = tokenOutUsdBalance * this.swapFeeRate();
+    const swapFeeUsd = tokenOutUsdBalance * this.entryFeeRate();
     setPlatformFee(-swapFeeUsd);
     const tokenOutDecimals = await getTokenDecimal(
       tokenOutAddress,

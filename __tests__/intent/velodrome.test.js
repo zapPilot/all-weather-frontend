@@ -128,16 +128,6 @@ describe("Velodrome Vault", () => {
         paraswapProxyAddress.toLowerCase(),
       ]);
       if (txns.length === 8) {
-        // fee: send referral fee
-        expect(await encode(txns[6])).includes(
-          "210050bb080155aec4eae79a2aac5fe78fd738e1",
-        );
-        // fee: send platform fee
-        expect(await encode(txns[7])).includes(
-          "2ecbc6f229fed06044cdb0dd772437a30190cd50",
-        );
-      }
-      if (txns.length === 10) {
         // approve rewards
         expect(await encode(txns[6])).includes("095ea7b3");
         // swap rewards
@@ -146,14 +136,6 @@ describe("Velodrome Vault", () => {
           zeroxProxyAddress.toLowerCase(),
           paraswapProxyAddress.toLowerCase(),
         ]);
-        // fee: send referral fee
-        expect(await encode(txns[8])).includes(
-          "210050bb080155aec4eae79a2aac5fe78fd738e1",
-        );
-        // fee: send platform fee
-        expect(await encode(txns[9])).includes(
-          "2ecbc6f229fed06044cdb0dd772437a30190cd50",
-        );
       }
     } else {
       expect(txns.length).toBe(6);

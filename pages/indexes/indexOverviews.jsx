@@ -296,7 +296,7 @@ export default function IndexOverviews() {
       preservedAmountRef.current = investmentAmount;
       const investmentAmountAfterFee =
         investmentAmount *
-        (1 - portfolioHelper.swapFeeRate()) *
+        (1 - portfolioHelper.entryFeeRate()) *
         (1 - slippage / 100);
       const chainWeight = calCrossChainInvestmentAmount(
         normalizeChainName(chainId?.name),
