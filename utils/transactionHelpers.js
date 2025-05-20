@@ -91,7 +91,7 @@ export const prepareTransactionMetadata = ({
       portfolioHelper,
     ),
     timestamp: Math.floor(Date.now() / 1000),
-    swapFeeRate: portfolioHelper.swapFeeRate(),
+    entryFeeRate: portfolioHelper.entryFeeRate(),
     referralFeeRate: portfolioHelper.referralFeeRate(),
     chain: CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
     zapInAmountOnThisChain: onlyThisChain

@@ -68,7 +68,7 @@ export default function Referrals() {
           txn.metadata.tokenSymbol.includes("dai")
             ? "usd"
             : txn.metadata.tokenSymbol;
-        const swapFeeRate = txn.metadata.swapFeeRate || 0;
+        const entryFeeRate = txn.metadata.entryFeeRate || 0;
         const referralFeeRate = txn.metadata.referralFeeRate || 0;
         let amount = 0;
         if (txn.metadata.actionName === "zapIn") {
@@ -76,7 +76,7 @@ export default function Referrals() {
         } else if (txn.metadata.actionName === "zapOut") {
           amount = parseFloat(txn.metadata.zapOutAmount) || 0;
         }
-        const referralFee = amount * swapFeeRate * referralFeeRate;
+        const referralFee = amount * entryFeeRate * referralFeeRate;
         if (referralFee === 0) continue;
         localReferralFeeDict = {
           ...localReferralFeeDict,

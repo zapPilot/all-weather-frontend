@@ -64,7 +64,7 @@ const mockPortfolioHelper = {
   description: vi.fn().mockReturnValue("description"),
   sumUsdDenominatedValues: vi.fn().mockReturnValue("$"),
   rebalanceThreshold: vi.fn().mockReturnValue(0.05),
-  swapFeeRate: vi.fn().mockReturnValue(0.00299),
+  entryFeeRate: vi.fn().mockReturnValue(0.01),
   denomination: vi.fn().mockReturnValue("$"),
   getTokenPricesMappingTable: vi.fn().mockResolvedValue({}),
   usdBalanceOf: vi.fn().mockResolvedValue(
