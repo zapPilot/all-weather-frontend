@@ -5,6 +5,15 @@ import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { CHAIN_ID_TO_CHAIN, PROVIDER, approve } from "../../utils/general";
 import { ethers } from "ethers";
+import axios from "axios";
+
+// GMX V2 Contract Addresses
+// Source: https://github.com/gmx-io/gmx-synthetics/blob/main/deployments/arbitrum
+const GMX_V2_CONTRACTS = {
+  DATASTORE: "0xFD70de6b91282D8017aA4E741e9Ae325CAb992d8",
+  SYNTHETICS_ROUTER: "0x7452c558d45f8afc8c83dae62c3f8a5be19c71f6",
+  DEPOSIT_VAULT: "0xF89e77e8Dc11691C9e8757e84aaFbCD8A67d7A55"
+};
 
 export class GmPool extends BaseProtocol {
   constructor(chain, chainId, symbolList, mode, customParams) {
@@ -13,7 +22,7 @@ export class GmPool extends BaseProtocol {
     this.protocolVersion = "0";
     this.assetDecimals = customParams.assetDecimals;
     this.assetAddress = customParams.assetAddress;
-    this.SYNTHETICS_ROUTER = "0x7452c558d45f8afc8c83dae62c3f8a5be19c71f6"
+    this.SYNTHETICS_ROUTER = GMX_V2_CONTRACTS.SYNTHETICS_ROUTER;
 
     if (!customParams.assetAddress) {
       throw new Error("Asset address is required");
@@ -85,72 +94,70 @@ export class GmPool extends BaseProtocol {
         `${this.uniqueId()}-deposit`,
         0,
       );
-      const approveTxn = approve(
-        zapInOutTokenAddress,
-        this.SYNTHETICS_ROUTER,
-        amountToZapIn,
-        updateProgress,
-        this.chainId,
+      console.log("amountToZapIn", amountToZapIn);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/gmx/deposit/gm`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_api_key: "placeholder",
+            chain: "arbitrum",
+            amount: amountToZapIn.toString(),
+            token_address: this.zapInOutTokenAddress.toLowerCase(),
+            user_address: owner,
+            market_key: this.assetAddress.toLowerCase(),
+            initial_long_token: this.zapInOutTokenAddress.toLowerCase(),
+            initial_short_token: this.zapInOutTokenAddress.toLowerCase(),
+            long_token_amount: amountToZapIn.toString(),
+            short_token_amount: amountToZapIn.toString(),
+            debug_mode: true
+          }),
+        },
       );
 
-      const executionFee = await this.getExecutionFee();
-      const gmTokenPrice = await this.getGmTokenPrice();
-      const usdAmount = amountToZapIn / 1000;
-      const expectedGmTokens = usdAmount / gmTokenPrice;
-      const minMarketTokensInWei = ethers.utils.parseUnits(
-        expectedGmTokens.toString(),
-        this.assetDecimals
-      );
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error('API Error Details:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+          errorData,
+        });
+        throw new Error(`API call failed: ${response.statusText}`);
+      }
 
-      const depositVault = "0xf89e77e8dc11691c9e8757e84aafbcd8a67d7a55";
-      const sendWntTxn = prepareContractCall({
-        contract: this.protocolContract,
-        method: "sendWnt",
-        params: [depositVault, executionFee.toString()],
-      });
+      console.log('API Response:', response);
 
-      const sendTokensTxn = prepareContractCall({
-        contract: this.protocolContract,
-        method: "sendTokens",
+      const result = await response.json();
+      console.log('API Result:', result);
+      console.log("result.data", result.data)
+
+      // 準備 approve 交易
+      const approveTxn = prepareContractCall({
+        contract: this.assetContract,
+        method: "approve",
         params: [
-          this.zapInOutTokenAddress,
-          depositVault,
-          amountToZapIn,],
+          this.SYNTHETICS_ROUTER,
+          amountToZapIn
+        ]
       });
 
-      const depositParams = {
-        receiver: owner,
-        callbackContract: "0x0000000000000000000000000000000000000000",
-        uiFeeReceiver: "0xff00000000000000000000000000000000000001",
-        market: this.assetAddress,
-        initialLongToken: zapInOutTokenAddress,
-        initialShortToken: zapInOutTokenAddress,
-        longTokenSwapPath: [],
-        shortTokenSwapPath: [],
-        minMarketTokens: minMarketTokensInWei.toString(),
-        shouldUnwrapNativeToken: false,
-        executionFee: executionFee.toString(),
-        callbackGasLimit: "0"
-      };
-
+      // 將 API 返回的資料轉換成 thirdweb 的 prepareContractCall 格式
       const depositTxn = prepareContractCall({
         contract: this.protocolContract,
-        method: "createDeposit",
-        params: [depositParams],
-        value: executionFee
+        method: "multicall",
+        params: [result.data.multicall_args],
+        value: result.data.execution_fee
       });
 
-      return [approveTxn,sendWntTxn, sendTokensTxn, depositTxn];
+      return [approveTxn, depositTxn];
+
     } catch (error) {
       console.error("Error in customDeposit:", error);
-      if (error.message.includes("Paymaster error")) {
-        console.error("Paymaster error details:", {
-          contract: this.protocolContract.address,
-          method: "createDeposit",
-          params: depositParams,
-          value: executionFee
-        });
-      }
       throw error;
     }
   }
@@ -194,16 +201,6 @@ export class GmPool extends BaseProtocol {
     const totalSupply = await gmTokenContractInstance.totalSupply();
     const price = Number(ethers.utils.formatUnits(marketInfo.poolValueMax, 30)) / Number(ethers.utils.formatUnits(totalSupply, this.assetDecimals));
     return price;
-  }
-
-  async getExecutionFee() {
-    const sdk = await this._initGmxSdk();
-    const gasPrice = await sdk.utils.getGasPrice();
-    const gasLimits = await sdk.utils.getGasLimits();
-    const baseGasFee = gasLimits.depositToken;
-    const baseExecutionFee = baseGasFee * gasPrice;
-    const executionFeeWithBuffer = baseExecutionFee * 130n / 100n;
-    return executionFeeWithBuffer;
   }
 
   async stakeBalanceOf(owner) {
