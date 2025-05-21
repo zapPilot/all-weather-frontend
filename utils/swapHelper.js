@@ -149,7 +149,7 @@ async function swap(
     (bestSwap.normalizedInputAmount * tokenPricesMappingTable[fromToken]);
   const priceImpactPercentage = (1 - priceRatio) * 100;
   // NOTE: because of our price timetable have a very high latency, we accept a higher price impact
-  const hardcodedPriceImpactPercentage = 10;
+  const hardcodedPriceImpactPercentage = 50;
   console.log(
     `Input amount: ${bestSwap.normalizedInputAmount} ${fromToken} (${
       bestSwap.normalizedInputAmount * tokenPricesMappingTable[fromToken]

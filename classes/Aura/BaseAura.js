@@ -147,11 +147,6 @@ export class BaseAura extends BaseProtocol {
         recipient: owner,
       });
     const tradingLoss = 0;
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-deposit`,
-      tradingLoss,
-    );
     // Generate approve transactions
     const approveTxns = tokens.map((token) => {
       return approve(
@@ -172,7 +167,7 @@ export class BaseAura extends BaseProtocol {
     });
     // Get staking transactions and combine all transactions
     const stakeTxns = await this._stakeLP(min_mint_amount, updateProgress);
-    return [[...approveTxns, depositTxn, ...stakeTxns], 0];
+    return [[...approveTxns, depositTxn, ...stakeTxns], tradingLoss];
   }
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     const poolInfo = await this.stakeFarmContractInstance.functions.poolInfo(
@@ -228,7 +223,7 @@ export class BaseAura extends BaseProtocol {
     tokenPricesMappingTable,
   ) {
     const { maxAmountsIn } = await this._calculateMintLP({
-      rpcUrl: PROVIDER(this.chain).rpcUrl,
+      rpcUrl: PROVIDER(this.chain).connection.url,
       chainId: this.chainId,
       poolId: this.customParams.poolId,
       referenceAmount: {
@@ -281,7 +276,6 @@ export class BaseAura extends BaseProtocol {
     return [approveForStakingTxn, stakeTxn];
   }
   async _unstakeLP(owner, percentage, updateProgress) {
-    await super._unstakeLP(owner, percentage, updateProgress);
     const percentageBN = ethers.BigNumber.from(
       BigInt(Math.floor(percentage * 10000)),
     );
@@ -304,27 +298,15 @@ export class BaseAura extends BaseProtocol {
     });
     return [[unstakeTxn], amount];
   }
-  async _withdrawLPAndClaim(
+  async customWithdrawLPAndClaim(
     owner,
     amount,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await super._withdrawLPAndClaim(
-      owner,
-      amount,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-withdraw`,
-      0,
-    );
     const call = await this.removeLiquidity({
-      rpcUrl: PROVIDER(this.chain).rpcUrl,
+      rpcUrl: PROVIDER(this.chain).connection.url,
       chainId: this.chainId,
       owner,
       poolId: this.customParams.poolId,
@@ -338,6 +320,7 @@ export class BaseAura extends BaseProtocol {
       data: call.callData,
       extraGas: 500000n,
     });
+    const tradingLoss = 0;
     return [
       [withdrawTxn],
       this.customParams.lpTokens,
@@ -345,6 +328,7 @@ export class BaseAura extends BaseProtocol {
         ethers.BigNumber.from(call.minAmountsOut[0].amount),
         ethers.BigNumber.from(call.minAmountsOut[1].amount),
       ],
+      tradingLoss,
     ];
   }
   s;
@@ -416,7 +400,6 @@ export class BaseAura extends BaseProtocol {
     // API can be used to fetch relevant pool data
     const balancerApi = new BalancerApi("https://api-v3.balancer.fi/", chainId);
     const poolState = await balancerApi.pools.fetchPoolState(poolId);
-
     // Construct the RemoveLiquidityInput, in this case a RemoveLiquiditySingleTokenExactIn
     const bptIn = {
       rawAmount: BigInt(amount),

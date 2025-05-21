@@ -49,7 +49,7 @@ const tokenPricesMappingTable = {
   usdc: 1,
 };
 describe("SwapFee rates", () => {
-  it("mulSwapFeeRate and swapFeeRate should be equivalent", () => {
+  it("mulEntryFeeRate and entryFeeRate should be equivalent", () => {
     const testInstance = new BasePortfolio(
       {
         long_term_bond: {
@@ -67,8 +67,8 @@ describe("SwapFee rates", () => {
     ); // Replace with your actual class name
     const testValue = ethers.utils.parseUnits("1", 18); // 1 unit with 18 decimals
 
-    const bigNumberResult = testInstance.mulSwapFeeRate(testValue);
-    const regularResult = testInstance.swapFeeRate();
+    const bigNumberResult = testInstance.mulEntryFeeRate(testValue);
+    const regularResult = testInstance.entryFeeRate();
 
     // Convert BigNumber result to a comparable number
     const bigNumberAsFloat = parseFloat(

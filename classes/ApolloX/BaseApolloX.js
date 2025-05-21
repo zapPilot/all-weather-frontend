@@ -116,22 +116,11 @@ export class BaseApolloX extends BaseProtocol {
   }
   async customWithdrawAndClaim(
     owner,
-    percentage,
+    amount,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    const assetContractInstance = new ethers.Contract(
-      this.assetContract.address,
-      ERC20_ABI,
-      PROVIDER(this.chain),
-    );
-    const percentagePrecision = 10000;
-    const percentageBN = ethers.BigNumber.from(
-      BigInt(Math.floor(percentage * percentagePrecision)),
-    );
-    const balance = await assetContractInstance.balanceOf(owner);
-    const amount = balance.mul(percentageBN).div(percentagePrecision);
     const approveAlpTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
@@ -154,12 +143,14 @@ export class BaseApolloX extends BaseProtocol {
       method: "burnAlp", // <- this gets inferred from the contract
       params: [bestTokenAddressToZapOut, amount, minOutAmount, owner],
     });
+    const tradingLoss = -estimatedZapOutUsdValue * this.hardcodedProtocolFee;
     return [
       [approveAlpTxn, burnTxn],
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
       minOutAmount,
+      tradingLoss,
     ];
   }
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
@@ -267,24 +258,17 @@ export class BaseApolloX extends BaseProtocol {
     // return [approveAlpTxn, depositTxn];
   }
   async _unstake(owner, percentage, updateProgress) {
-    await super._unstake(owner, percentage, updateProgress);
-    const stakeFarmContractInstance = new ethers.Contract(
-      this.stakeFarmContract.address,
-      SmartChefInitializable,
+    const assetContractInstance = new ethers.Contract(
+      this.assetContract.address,
+      ERC20_ABI,
       PROVIDER(this.chain),
     );
-    // Assuming 'percentage' is a float between 0 and 1
+    const percentagePrecision = 10000;
     const percentageBN = ethers.BigNumber.from(
-      BigInt(Math.floor(percentage * 10000)),
+      BigInt(Math.floor(percentage * percentagePrecision)),
     );
-
-    const userInfo = await stakeFarmContractInstance.functions.userInfo(owner);
-    const amount = userInfo.amount.mul(percentageBN).div(10000);
-    const withdrawTxn = prepareContractCall({
-      contract: this.stakeFarmContract,
-      method: "withdraw",
-      params: [amount],
-    });
-    return [[withdrawTxn], amount];
+    const balance = await assetContractInstance.balanceOf(owner);
+    const amount = balance.mul(percentageBN).div(percentagePrecision);
+    return [[], amount];
   }
 }

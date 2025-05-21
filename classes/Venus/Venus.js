@@ -177,7 +177,6 @@ export class Venus extends BaseProtocol {
   }
 
   async _unstake(owner, percentage, updateProgress) {
-    await super._unstake(owner, percentage, updateProgress);
     const percentageStr = percentage
       .toFixed(this.percentagePrecision)
       .replace(".", "");
@@ -196,112 +195,31 @@ export class Venus extends BaseProtocol {
   }
 
   async customWithdrawAndClaim(
-    recipient,
-    percentage,
-    slippage,
-    tokenPricesMappingTable,
-    updateProgress,
-  ) {
-    try {
-      await this._updateProgressAndWait(
-        updateProgress,
-        `${this.uniqueId()}-withdraw`,
-        0,
-      );
-
-      const protocolContractInstance = new ethers.Contract(
-        this.protocolContract.address,
-        Vault,
-        PROVIDER(this.chain),
-      );
-
-      const balance = await protocolContractInstance.balanceOf(recipient);
-      const percentageBN = ethers.utils.parseUnits(
-        percentage.toString(),
-        this.percentagePrecision,
-      );
-      const amountToWithdraw = balance
-        .mul(percentageBN)
-        .div(ethers.BigNumber.from(10).pow(this.percentagePrecision));
-
-      const redeemTxn = prepareContractCall({
-        contract: this.protocolContract,
-        method: "redeem",
-        params: [amountToWithdraw],
-      });
-
-      const [
-        symbolOfBestTokenToZapOut,
-        bestTokenAddressToZapOut,
-        decimalsOfZapInOutToken,
-      ] = this._getTheBestTokenAddressToZapOut();
-
-      return [
-        [redeemTxn],
-        symbolOfBestTokenToZapOut,
-        bestTokenAddressToZapOut,
-        decimalsOfZapInOutToken,
-        amountToWithdraw,
-      ];
-    } catch (error) {
-      console.error("Error in customWithdrawAndClaim:", error);
-      throw error;
-    }
-  }
-
-  async _withdrawAndClaim(
     owner,
     amount,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await super._withdrawAndClaim(
-      owner,
-      amount,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-withdraw`,
-      0,
-    );
-
     const [
       symbolOfBestTokenToZapInOut,
       bestTokenAddressToZapOut,
       assetDecimals,
     ] = this._getTheBestTokenAddressToZapOut();
 
-    const protocolContractInstance = new ethers.Contract(
-      this.protocolContract.address,
-      Vault,
-      PROVIDER(this.chain),
-    );
-
-    const balance = await protocolContractInstance.balanceOf(owner);
-    const percentageBN = ethers.utils.parseUnits(
-      percentage.toString(),
-      this.percentagePrecision,
-    );
-    const amountToWithdraw = balance
-      .mul(percentageBN)
-      .div(ethers.BigNumber.from(10).pow(this.percentagePrecision));
     const burnTxn = prepareContractCall({
       contract: this.protocolContract,
       method: "redeem",
-      params: [amountToWithdraw],
+      params: [amount],
     });
-
+    const tradingLoss = 0;
     return [
       [burnTxn],
       symbolOfBestTokenToZapInOut,
       bestTokenAddressToZapOut,
       assetDecimals,
-      amountToWithdraw,
+      amount,
+      tradingLoss,
     ];
   }
 }

@@ -12,10 +12,6 @@ import BaseProtocol from "../BaseProtocol.js";
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 export class BasePendlePT extends BaseProtocol {
-  static equilibriaFarmAddressMap = {
-    8453: "0x2583A2538272f31e9A15dD12A432B8C96Ab4821d",
-    42161: "0x4D32C8Ff2fACC771eC7Efc70d6A8468bC30C26bF",
-  };
   constructor(chain, chaindId, symbolList, mode, customParams) {
     super(chain, chaindId, symbolList, mode, customParams);
     this.protocolName = "pendle";
@@ -213,7 +209,6 @@ export class BasePendlePT extends BaseProtocol {
     return [];
   }
   async _unstake(owner, percentage, updateProgress) {
-    await super._unstake(owner, percentage, updateProgress);
     // Convert percentage (0-1) to precise BigNumber with 18 decimals
     const percentagePrecision = 18;
     const percentageStr = percentage
@@ -226,20 +221,13 @@ export class BasePendlePT extends BaseProtocol {
       .div(ethers.BigNumber.from("10").pow(percentagePrecision));
     return [[], withdrawAmount];
   }
-  async _withdrawAndClaim(
+  async customWithdrawAndClaim(
     owner,
     amount,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await super._withdrawAndClaim(
-      owner,
-      amount,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
     const approvePendleTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
@@ -254,8 +242,9 @@ export class BasePendlePT extends BaseProtocol {
     ] = this._getTheBestTokenAddressToZapOut();
     let burnTxn;
     let tradingLoss = 0;
+    let zapOutResp;
     if (await this.isExpired()) {
-      const zapOutResp = await axios.get(
+      zapOutResp = await axios.get(
         `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/redeem`,
         {
           params: {
@@ -277,7 +266,7 @@ export class BasePendlePT extends BaseProtocol {
       });
       tradingLoss = 0;
     } else {
-      const zapOutResp = await axios.get(
+      zapOutResp = await axios.get(
         `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/markets/${this.customParams.marketAddress}/swap`,
         {
           params: {
@@ -314,17 +303,14 @@ export class BasePendlePT extends BaseProtocol {
         Math.pow(10, this.assetDecimals);
       tradingLoss = outputValue - currentValue;
     }
-    this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-withdraw`,
-      tradingLoss,
-    );
+
     return [
       [approvePendleTxn, burnTxn],
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
       zapOutResp.data.data.amountOut,
+      tradingLoss,
     ];
   }
 }

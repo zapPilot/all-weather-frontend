@@ -15,6 +15,7 @@ import { TokenPriceBatcher, PriceService } from "./TokenPriceService";
 import swap from "../utils/swapHelper";
 import { PortfolioFlowChartBuilder } from "./PortfolioFlowChartBuilder";
 import { getProtocolObjByUniqueId } from "../utils/portfolioCalculation";
+import flowChartEventEmitter from "../utils/FlowChartEventEmitter";
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 
@@ -147,14 +148,14 @@ export class BasePortfolio {
   _processProtocolBalances(balanceResults, portfolioAprDict, usdBalanceDict) {
     for (const { protocol, balance } of balanceResults) {
       const protocolAPR =
-        portfolioAprDict?.[protocol.interface.uniqueId()]?.apr * 100;
+        portfolioAprDict?.[protocol.interface.oldUniqueId()]?.apr * 100;
       if (protocolAPR === undefined) {
         throw new Error(
           `Protocol ${protocol.interface.uniqueId()} not found in portfolioAprDict`,
         );
       }
-      const protocolUniqueId = protocol.interface.uniqueId();
-      usdBalanceDict[protocolUniqueId] = {
+      const protocolOldUniqueId = protocol.interface.oldUniqueId();
+      usdBalanceDict[protocolOldUniqueId] = {
         chain: protocol.interface.chain,
         usdBalance: balance,
         weight: protocol.weight,
@@ -332,12 +333,12 @@ export class BasePortfolio {
     }, 0);
   }
 
-  mulSwapFeeRate(inputBigBumber) {
-    return inputBigBumber.mul(299).div(100000);
+  mulEntryFeeRate(inputBigBumber) {
+    return inputBigBumber.div(100);
   }
 
-  swapFeeRate() {
-    return 0.00299;
+  entryFeeRate() {
+    return 0.01;
   }
   mulReferralFeeRate(inputBigBumber) {
     return inputBigBumber.mul(7).div(10);
@@ -404,22 +405,21 @@ export class BasePortfolio {
 
   async portfolioAction(actionName, actionParams) {
     const updateProgress = async (nodeID, tradingLoss) => {
-      // Update stepName first and wait for it to complete
-      await new Promise((resolve) => {
-        actionParams.setStepName((prevStepName) => {
-          resolve();
-          return nodeID;
-        });
+      // Use the event system to update the node state
+      flowChartEventEmitter.queueUpdate({
+        type: "NODE_UPDATE",
+        nodeId: nodeID,
+        status: "active",
+        tradingLoss: tradingLoss || 0,
       });
 
-      // Then update the other states
-      actionParams.setTradingLoss(tradingLoss);
-      if (isNaN(tradingLoss)) {
-        console.error(`${nodeID}: tradingLoss is not a number: ${tradingLoss}`);
-      } else {
+      // Update trading loss totals if needed
+      if (!isNaN(tradingLoss)) {
         actionParams.setTotalTradingLoss(
           (prevTotalTradingLoss) => prevTotalTradingLoss + tradingLoss,
         );
+      } else {
+        console.error(`${nodeID}: tradingLoss is not a number: ${tradingLoss}`);
       }
     };
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
@@ -445,7 +445,7 @@ export class BasePortfolio {
         totalTxns.push(wethTxn);
       }
       if (actionParams.onlyThisChain === false) {
-        const platformFee = this.mulSwapFeeRate(actionParams.zapInAmount);
+        const platformFee = this.mulEntryFeeRate(actionParams.zapInAmount);
         const normalizedPlatformFeeUSD =
           ethers.utils.formatUnits(platformFee, actionParams.tokenDecimals) *
           actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol];
@@ -478,25 +478,6 @@ export class BasePortfolio {
       actionParams,
     );
     totalTxns = totalTxns.concat(protocolTxns);
-    // Handle special post-processing for specific actions
-    if (actionName === "zapOut") {
-      const portfolioUsdBalance = (
-        await this.usdBalanceOf(actionParams.account)
-      )[0];
-      if (portfolioUsdBalance > 0) {
-        const swapFeeTxns = await this._swapFeeTxnsForZapOut(
-          actionParams.account,
-          actionParams.tokenOutAddress,
-          actionParams.tokenOutSymbol,
-          actionParams.tokenPricesMappingTable,
-          actionParams.zapOutPercentage,
-          portfolioUsdBalance,
-          actionParams.chainMetadata,
-          actionParams.setPlatformFee,
-        );
-        totalTxns = totalTxns.concat(swapFeeTxns);
-      }
-    }
     if (
       actionName === "zapIn" &&
       actionParams.protocolAssetDustInWalletLoading === false
@@ -722,13 +703,16 @@ export class BasePortfolio {
       // Convert to array format and process bridges
       const bridgePromises = Object.entries(chainWeights).map(
         async ([chain, totalWeight]) => {
-          if (
-            totalWeight === 0 ||
-            (actionParams.zapInAmount * totalWeight) /
-              Math.pow(10, actionParams.tokenDecimals) <
-              1
-          )
+          const bridgeUsd =
+            ((actionParams.zapInAmount * totalWeight) /
+              Math.pow(10, actionParams.tokenDecimals)) *
+            actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol];
+          if (totalWeight === 0 || bridgeUsd < 1) {
+            console.warn(
+              `Skipping bridge to ${chain} because of low amount: ${bridgeUsd} USD`,
+            );
             return [];
+          }
           try {
             return await actionHandlers["bridge"](chain, totalWeight);
           } catch (error) {
@@ -742,7 +726,6 @@ export class BasePortfolio {
       const results = await Promise.all(bridgePromises);
       return results.flat().filter(Boolean);
     };
-
     // Execute protocol and bridge transactions in parallel
     const [protocolTxns, bridgeTxns] = await Promise.all([
       processProtocolTxns(currentChain),
@@ -1138,7 +1121,7 @@ export class BasePortfolio {
     );
 
     // need to multiply by 2 because we charge for zap in and zap out
-    const platformFee = this.mulSwapFeeRate(zapInAmount).mul(2);
+    const platformFee = this.mulEntryFeeRate(zapInAmount);
     const zapInAmountAfterFee = zapInAmount.sub(platformFee);
 
     const rebalanceFeeTxns = await this._getSwapFeeTxnsForZapIn(
@@ -1432,7 +1415,7 @@ export class BasePortfolio {
   ) {
     const referrer = await this._getReferrer(owner);
     const tokenOutUsdBalance = portfolioUsdBalance * zapOutPercentage;
-    const swapFeeUsd = tokenOutUsdBalance * this.swapFeeRate();
+    const swapFeeUsd = tokenOutUsdBalance * this.entryFeeRate();
     setPlatformFee(-swapFeeUsd);
     const tokenOutDecimals = await getTokenDecimal(
       tokenOutAddress,
@@ -1487,7 +1470,7 @@ export class BasePortfolio {
     await new Promise((resolve) => {
       setTimeout(() => {
         resolve();
-      }, 100);
+      }, 1000);
     });
   }
   _getPlatformFeeTxns(tokenAddress, chainMetadata, platformFee, referrer) {

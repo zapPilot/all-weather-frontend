@@ -125,13 +125,10 @@ describe("Venus", () => {
     expect(txns).toBeDefined();
     expect(Array.isArray(txns)).toBe(true);
     expect(txns.length).toBeGreaterThan(0);
-
+    expect(txns.length).toBe(1);
     const redeemTx = txns[0];
-    const transferTx = txns[1];
     const redeemTxData = await redeemTx.data();
-    const transferTxData = await transferTx.data();
 
     expect(redeemTxData.startsWith("0xdb006a75")).toBe(true);
-    expect(transferTxData.startsWith("0xa9059cbb")).toBe(true);
   });
 });
