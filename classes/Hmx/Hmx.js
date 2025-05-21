@@ -1,4 +1,5 @@
-import Vault from "../../lib/contracts/Venus/Vault.json" assert { type: "json" };
+import Hlp from "../../lib/contracts/Hmx/Hlp.json" assert { type: "json" };
+import Vault from "../../lib/contracts/Hmx/Vault.json" assert { type: "json" };
 import BaseProtocol from "../BaseProtocol";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
@@ -23,7 +24,7 @@ export class Hmx extends BaseProtocol {
             client: THIRDWEB_CLIENT,
             address: customParams.assetAddress,
             chain: CHAIN_ID_TO_CHAIN[this.chainId],
-            abi: Vault,
+            abi: Hlp,
         });
         this.protocolContract = getContract({
             client: THIRDWEB_CLIENT,
@@ -39,7 +40,7 @@ export class Hmx extends BaseProtocol {
         });
         this.assetContractInstance = new ethers.Contract(
             customParams.assetAddress,
-            Vault,
+            Hlp,
             PROVIDER(this.chain),
         );
         this.stakeFarmContractInstance = new ethers.Contract(
@@ -78,6 +79,7 @@ export class Hmx extends BaseProtocol {
             updateProgress,
             this.chainId,
         );
+        console.log("amountToZapIn", amountToZapIn);
         const depositParams = {
             "_tokenIn": bestTokenAddressToZapIn,
             "_amountIn": amountToZapIn, // uint256
@@ -117,7 +119,18 @@ export class Hmx extends BaseProtocol {
     }
 
     async assetUsdPrice(tokenPricesMappingTable) {  
-        return 1;
+        return await this._fetchHmxPrice();
+    }
+
+    async _fetchHmxPrice() {
+        const response = await fetch("https://api.dune.com/api/v1/query/3702461/results?limit=1000", {
+            headers: {
+                "X-Dune-API-Key": "NRSnP5c4r3Rb9j5Ldow4zJXZnqrnbfes",
+            },
+        });
+        const priceData = await response.json();
+        const currentPrice = priceData.result.rows[0].price;
+        return currentPrice;
     }
 
     async stakeBalanceOf(owner) {
