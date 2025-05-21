@@ -45,3 +45,7 @@ yarn-error.log*
 
 # crawler in public for defillama pictures
 token_dictionary.json
+
+# pwd
+sw.js*
+workbox*
