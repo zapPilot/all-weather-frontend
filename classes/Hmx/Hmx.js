@@ -49,9 +49,10 @@ export class Hmx extends BaseProtocol {
             PROVIDER(this.chain),
         );
 
-        this.symbolOfBestTokenToZapInOut = customParams.symbolOfBestTokenToZapInOut;
-        this.zapInOutTokenAddress = customParams.zapInOutTokenAddress;
-        this._checkIfParamsAreSet();
+        this.symbolOfBestTokenToZapOut = customParams.symbolOfBestTokenToZapOut;
+        this.bestTokenAddressToZapOut = customParams.bestTokenAddressToZapOut;
+        this.decimalOfBestTokenToZapOut = customParams.decimalOfBestTokenToZapOut;
+        this.bestTokenToZapInDecimal = customParams.bestTokenToZapInDecimal;
     }
 
     rewards() {
@@ -60,6 +61,32 @@ export class Hmx extends BaseProtocol {
 
     async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
         return {};
+    }
+
+    async _calculateExecutionFee() {
+        try {
+            // Base execution fee of 0.0001 ETH
+            const baseFee = ethers.BigNumber.from("100000000000000");
+            // Get current gas price
+            const gasPrice = await PROVIDER(this.chain).getGasPrice();
+            // Calculate a small buffer (5% of base fee)
+            const buffer = baseFee.mul(5).div(100);
+            // Add buffer to base fee
+            const executionFee = baseFee.add(buffer);
+            
+            // Validate the execution fee is within uint256 range
+            const maxUint256 = ethers.BigNumber.from("2").pow(256).sub(1);
+            if (executionFee.gt(maxUint256)) {
+                console.error("Execution fee exceeds uint256 range");
+                return baseFee.toString();
+            }
+            console.log("executionFee:", executionFee.toString());
+            return executionFee.toString();
+        } catch (error) {
+            console.error("Error calculating execution fee:", error);
+            // Fallback to base fee if calculation fails
+            return "100000000000000";
+        }
     }
 
     async customDeposit(
@@ -79,24 +106,44 @@ export class Hmx extends BaseProtocol {
             updateProgress,
             this.chainId,
         );
-        console.log("amountToZapIn", amountToZapIn);
-        const depositParams = {
-            "_tokenIn": bestTokenAddressToZapIn,
-            "_amountIn": amountToZapIn, // uint256
-            "_minOut": 0, // uint256
-            "_executionFee": 0, // uint256
-            "_shouldWrap": false,
-            "_isNotAutoStake": false
-        }
-
+        const hlpPrice = await this._fetchHmxPrice();
+        console.log("hlpPrice:", hlpPrice);
+        const inputTokenUsdValue =
+            (tokenPricesMappingTable[inputToken] * amountToZapIn) /
+            Math.pow(10, bestTokenToZapInDecimal);
+        console.log("inputTokenUsdValue:", inputTokenUsdValue);
+        const estimatedHlpAmount = inputTokenUsdValue / hlpPrice;
+        const estimatedHlpAmountBN = ethers.utils.parseUnits(estimatedHlpAmount.toString(), 18);
+        const minHlpAmountBN = estimatedHlpAmountBN.mul(100 - slippage).div(100);
+        console.log("minHlpAmountBN:", minHlpAmountBN);
+        const executionFeeStr = await this._calculateExecutionFee();
         const depositTxn = prepareContractCall({
             contract: this.protocolContract,
-            method: "createAddLiquidityOrder",
-            params: [depositParams],
+            method: "function createAddLiquidityOrder(address _tokenIn, uint256 _amountIn, uint256 _minOut, uint256 _executionFee, bool _shouldWrap, bool _isNotAutoStake)",
+            params: [
+                bestTokenAddressToZapIn,
+                amountToZapIn,
+                minHlpAmountBN.toString(),
+                executionFeeStr,
+                false,
+                false
+            ],
+            value: executionFeeStr,
         });
 
-        return [[approveTxn, depositTxn], 0];
+        // For debugging
+        console.log("Contract address:", this.protocolContract.address);
+        console.log("Method:", "function createAddLiquidityOrder(address _tokenIn, uint256 _amountIn, uint256 _minOut, uint256 _executionFee, bool _shouldWrap, bool _isNotAutoStake)");
+        console.log("Params:", [
+            bestTokenAddressToZapIn,
+            amountToZapIn,
+            minHlpAmountBN.toString(),
+            executionFeeStr,
+            false,
+            false
+        ]);
 
+        return [[approveTxn, depositTxn], 0];
     }
 
     async customClaim(owner, tokenPricesMappingTable, updateProgress) {
@@ -111,7 +158,7 @@ export class Hmx extends BaseProtocol {
                 PROVIDER(this.chain),
             );
             const balance = await protocolContractInstance.balanceOf(owner);
-            return balance.mul(tokenPricesMappingTable[this.symbolOfBestTokenToZapInOut].price);
+            return balance.mul(tokenPricesMappingTable[this.symbolOfBestTokenToZapOut].price);
         } catch (error) {
             console.error("Error in usdBalanceOf:", error);
             return 0;
@@ -138,11 +185,11 @@ export class Hmx extends BaseProtocol {
     }
 
     _getTheBestTokenAddressToZapIn(inputToken, tokenAddress, InputTokenDecimals) {
-        return [inputToken, this.zapInOutTokenAddress, this.assetDecimals];
+        return [this.symbolOfBestTokenToZapOut, this.bestTokenAddressToZapOut, this.decimalOfBestTokenToZapOut];
     }
 
     _getTheBestTokenAddressToZapOut() {
-        return [this.symbolOfBestTokenToZapInOut, this.zapInOutTokenAddress, this.assetDecimals];
+        return [this.symbolOfBestTokenToZapOut, this.bestTokenAddressToZapOut, this.decimalOfBestTokenToZapOut];
     }
 
     async lockUpPeriod() {
