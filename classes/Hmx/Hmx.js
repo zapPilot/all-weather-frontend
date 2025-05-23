@@ -1,5 +1,6 @@
 import Hlp from "../../lib/contracts/Hmx/Hlp.json" assert { type: "json" };
 import Vault from "../../lib/contracts/Hmx/Vault.json" assert { type: "json" };
+import StakeHlp from "../../lib/contracts/Hmx/StakeHlp.json" assert { type: "json" };
 import BaseProtocol from "../BaseProtocol";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
@@ -34,20 +35,10 @@ export class Hmx extends BaseProtocol {
         });
         this.stakeFarmContract = getContract({
             client: THIRDWEB_CLIENT,
-            address: customParams.protocolAddress,
+            address: customParams.stakeFarmAddress,
             chain: CHAIN_ID_TO_CHAIN[this.chainId],
-            abi: Vault,
+            abi: StakeHlp,
         });
-        this.assetContractInstance = new ethers.Contract(
-            customParams.assetAddress,
-            Hlp,
-            PROVIDER(this.chain),
-        );
-        this.stakeFarmContractInstance = new ethers.Contract(
-            this.stakeFarmContract.address,
-            Vault,
-            PROVIDER(this.chain),
-        );
 
         this.symbolOfBestTokenToZapOut = customParams.symbolOfBestTokenToZapOut;
         this.bestTokenAddressToZapOut = customParams.bestTokenAddressToZapOut;
@@ -56,7 +47,7 @@ export class Hmx extends BaseProtocol {
     }
 
     rewards() {
-        return [];
+        return this.customParams.rewards;
     }
 
     async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
@@ -65,26 +56,26 @@ export class Hmx extends BaseProtocol {
 
     async _calculateExecutionFee() {
         try {
-            // Base execution fee of 0.0001 ETH
-            const baseFee = ethers.BigNumber.from("100000000000000");
-            // Get current gas price
-            const gasPrice = await PROVIDER(this.chain).getGasPrice();
-            // Calculate a small buffer (5% of base fee)
-            const buffer = baseFee.mul(5).div(100);
-            // Add buffer to base fee
-            const executionFee = baseFee.add(buffer);
+            // Get min execution fee from contract
+            const protocolContractInstance = new ethers.Contract(
+                this.protocolContract.address,
+                Vault,
+                PROVIDER(this.chain),
+            );
+            const minExecutionOrderFee = await protocolContractInstance.minExecutionOrderFee();
+            console.log("minExecutionOrderFee from contract:", minExecutionOrderFee.toString());
             
             // Validate the execution fee is within uint256 range
             const maxUint256 = ethers.BigNumber.from("2").pow(256).sub(1);
-            if (executionFee.gt(maxUint256)) {
+            if (minExecutionOrderFee.gt(maxUint256)) {
                 console.error("Execution fee exceeds uint256 range");
-                return baseFee.toString();
+                return "100000000000000";
             }
-            console.log("executionFee:", executionFee.toString());
-            return executionFee.toString();
+            
+            return minExecutionOrderFee.toString();
         } catch (error) {
             console.error("Error calculating execution fee:", error);
-            // Fallback to base fee if calculation fails
+            // Fallback to a safe default if contract call fails
             return "100000000000000";
         }
     }
@@ -107,15 +98,12 @@ export class Hmx extends BaseProtocol {
             this.chainId,
         );
         const hlpPrice = await this._fetchHmxPrice();
-        console.log("hlpPrice:", hlpPrice);
         const inputTokenUsdValue =
             (tokenPricesMappingTable[inputToken] * amountToZapIn) /
             Math.pow(10, bestTokenToZapInDecimal);
-        console.log("inputTokenUsdValue:", inputTokenUsdValue);
         const estimatedHlpAmount = inputTokenUsdValue / hlpPrice;
         const estimatedHlpAmountBN = ethers.utils.parseUnits(estimatedHlpAmount.toString(), 18);
         const minHlpAmountBN = estimatedHlpAmountBN.mul(100 - slippage).div(100);
-        console.log("minHlpAmountBN:", minHlpAmountBN);
         const executionFeeStr = await this._calculateExecutionFee();
         const depositTxn = prepareContractCall({
             contract: this.protocolContract,
@@ -132,8 +120,6 @@ export class Hmx extends BaseProtocol {
         });
 
         // For debugging
-        console.log("Contract address:", this.protocolContract.address);
-        console.log("Method:", "function createAddLiquidityOrder(address _tokenIn, uint256 _amountIn, uint256 _minOut, uint256 _executionFee, bool _shouldWrap, bool _isNotAutoStake)");
         console.log("Params:", [
             bestTokenAddressToZapIn,
             amountToZapIn,
@@ -151,18 +137,16 @@ export class Hmx extends BaseProtocol {
     }
 
     async usdBalanceOf(owner, tokenPricesMappingTable) {
-        try {
-            const protocolContractInstance = new ethers.Contract(
-                this.protocolContract.address,
-                Vault,
-                PROVIDER(this.chain),
-            );
-            const balance = await protocolContractInstance.balanceOf(owner);
-            return balance.mul(tokenPricesMappingTable[this.symbolOfBestTokenToZapOut].price);
-        } catch (error) {
-            console.error("Error in usdBalanceOf:", error);
-            return 0;
-        }
+        const [hlpBalance, hlpPrice] = await Promise.all([
+            this.stakeBalanceOf(owner, () => {}),
+            this.assetUsdPrice(tokenPricesMappingTable),
+        ]);
+        console.log("hlpBalance (wei):", hlpBalance.toString());
+        console.log("hlpPrice:", hlpPrice);
+        console.log("usdBalance:", (hlpBalance / Math.pow(10, this.assetDecimals)) * hlpPrice);
+        return (
+            (hlpBalance / Math.pow(10, this.assetDecimals)) * hlpPrice
+        )
     }
 
     async assetUsdPrice(tokenPricesMappingTable) {  
@@ -181,7 +165,19 @@ export class Hmx extends BaseProtocol {
     }
 
     async stakeBalanceOf(owner) {
-        return 0;
+        try {
+            const stakeContractInstance = new ethers.Contract(
+                this.stakeFarmContract.address,
+                StakeHlp,
+                PROVIDER(this.chain),
+            );
+            const balance = await stakeContractInstance.userTokenAmount(owner);
+            console.log("stakeBalanceOf:", balance);
+            return balance;
+        } catch (error) {
+            console.error("Error in stakeBalanceOf:", error);
+            return 0;
+        }
     }
 
     _getTheBestTokenAddressToZapIn(inputToken, tokenAddress, InputTokenDecimals) {
