@@ -11,6 +11,7 @@ on:
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 7  # Job will timeout after 7 minutes
     env:
       NEXT_PUBLIC_CHAIN_ID: ${{ secrets.NEXT_PUBLIC_CHAIN_ID }}
       NEXT_PUBLIC_BUNDLER_URL: ${{ secrets.NEXT_PUBLIC_BUNDLER_URL }}
@@ -33,4 +34,4 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: yarn install --immutable --immutable-cache --check-cache
-      - run: yarn test
+      - run: yarn test --timeout 420000  # 7 minutes timeout for the test command
