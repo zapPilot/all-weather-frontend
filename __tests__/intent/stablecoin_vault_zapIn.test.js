@@ -73,7 +73,7 @@ describe("Stable+ Vault", () => {
     const zapOutPercentage = NaN;
     const portfolioHelper = getPortfolioHelper("Stable+ Vault");
 
-    await expect(async () => {
+    expect(async () => {
       await generateIntentTxns({
         actionName,
         chainMetadata: arbitrum,
@@ -99,8 +99,8 @@ describe("Stable+ Vault", () => {
               .replace(" mainnet", "")
           ],
         onlyThisChain,
-      });
-    }).rejects.toThrow("number overflow");
+      }).toThrow("number overflow");
+    });
   });
 
   it("should be able to zap-in with Big ETH", async () => {
