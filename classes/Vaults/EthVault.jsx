@@ -1,8 +1,9 @@
 import { BasePortfolio } from "../BasePortfolio";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import { BaseConvex } from "../Convex/BaseConvex";
-import { BaseAerodrome } from "../Aerodrome/BaseAerodrome";
+import { BaseVelodrome } from "../Velodrome/BaseVelodrome";
 import { BasePendlePT } from "../Pendle/BasePendlePT";
+import { BaseAave } from "../Aave/BaseAave";
 export class EthVault extends BasePortfolio {
   constructor() {
     super(
@@ -198,27 +199,69 @@ export class EthVault extends BasePortfolio {
                   decimalOfBestTokenToZapOut: 18,
                 },
               ),
-              weight: 0.5,
+              weight: 0.26,
+            },
+            {
+              interface: new BasePendlePT(
+                "arbitrum",
+                42161,
+                ["pt eeth 26jun2025"],
+                "single",
+                {
+                  marketAddress: "0xbf5e60ddf654085f80dae9dd33ec0e345773e1f8",
+                  assetAddress: "0xb33808ea0e883138680BA29311a220A7377cdb92",
+                  assetDecimals: 18,
+                  symbolOfBestTokenToZapOut: "weth",
+                  bestTokenAddressToZapOut:
+                    "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                  decimalOfBestTokenToZapOut: 18,
+                },
+              ),
+              weight: 0.28,
             },
           ],
           base: [
             {
-              interface: new BaseAerodrome(
+              interface: new BaseAave("base", 8453, ["weth"], "single", {
+                symbolOfBestTokenToZapInOut: "weth",
+                zapInOutTokenAddress:
+                  "0x4200000000000000000000000000000000000006",
+                assetAddress: "0xD4a0e0b9149BCee3C920d2E00b5dE09138fd8bb7",
+                protocolAddress: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
+                assetDecimals: 18,
+              }),
+              weight: 0.24,
+            },
+            {
+              interface: new BaseVelodrome(
                 "base",
                 8453,
                 ["weth", "mseth"],
                 "LP",
                 {
+                  protocolName: "aerodrome-v1",
+                  protocolVersion: "0",
                   assetAddress: "0xDE4FB30cCC2f1210FcE2c8aD66410C586C8D1f9A",
                   assetDecimals: 18,
+                  routerAddress: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
                   guageAddress: "0x62940D9643a130b80CA0f8bc7e94De5b7ec496C5",
                   lpTokens: [
                     ["weth", "0x4200000000000000000000000000000000000006", 18],
                     ["mseth", "0x7Ba6F01772924a82D9626c126347A28299E98c98", 18],
                   ],
+                  rewards: [
+                    {
+                      symbol: "aero",
+                      priceId: {
+                        coinmarketcapApiId: 29270,
+                      },
+                      address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+                      decimals: 18,
+                    },
+                  ],
                 },
               ),
-              weight: 0.5,
+              weight: 0.22,
             },
           ],
         },

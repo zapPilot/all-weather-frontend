@@ -35,15 +35,15 @@ const VAULTS_CONFIG = [
     imageSrc: "index500vault",
     imageAlt: "Index 500 Vault",
   },
-];
-
-const PARTNERSHIP_VAULTS_CONFIG = [
   {
-    id: 1,
+    id: 3,
     portfolioName: "ETH Vault",
     imageSrc: "eth",
     imageAlt: "ETH Vault",
   },
+];
+
+const PARTNERSHIP_VAULTS_CONFIG = [
   {
     id: 3,
     portfolioName: "Metis Vault",
