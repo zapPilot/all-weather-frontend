@@ -9,7 +9,6 @@ import { MoonwellStablecoinVault } from "../classes/Vaults/Tests/MoonwellStablec
 import { Index500Vault } from "../classes/Vaults/Index500Vault";
 import { MetisVault } from "../classes/Vaults/MetisVault";
 import { CamelotVault } from "../classes/Vaults/Tests/CamelotVault";
-import { AerodromeVault } from "../classes/Vaults/Tests/AerodromeVault";
 import { VelodromeVault } from "../classes/Vaults/Tests/VelodromeVault";
 import { VenusStablecoinVault } from "../classes/Vaults/Tests/VenusVault";
 import { VelaVault } from "../classes/Vaults/VelaVault";
@@ -43,8 +42,6 @@ export function getPortfolioHelper(
     portfolioHelper = new Index500Vault();
   } else if (portfolioName === "Camelot Vault") {
     portfolioHelper = new CamelotVault();
-  } else if (portfolioName === "Aerodrome Vault") {
-    portfolioHelper = new AerodromeVault();
   } else if (portfolioName === "Velodrome Vault") {
     portfolioHelper = new VelodromeVault();
   } else if (portfolioName === "Venus Stablecoin Vault") {
