@@ -153,6 +153,13 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
     coinmarketcapApiId: 5776,
     vaults: ["Index 500 Vault"],
   },
+  bold: {
+    geckoterminal: {
+      chain: "base",
+      address: "0x03569CC076654F82679C4BA2124D64774781B01D",
+    },
+    vaults: ["Stable+ Vault", "Index 500 Vault"],
+  },
 };
 export const tokensForDropDown = [
   "eth",

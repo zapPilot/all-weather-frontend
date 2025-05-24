@@ -22,7 +22,7 @@ export class StablecoinVault extends BaseVault {
               "single",
               {},
             ),
-            weight: 0.39,
+            weight: 0.44,
           },
           {
             interface: new Vela(
@@ -350,7 +350,7 @@ export class StablecoinVault extends BaseVault {
                 decimalOfBestTokenToZapOut: 6,
               },
             ),
-            weight: 0.05,
+            weight: 0.09,
           },
         ],
 
@@ -409,7 +409,7 @@ export class StablecoinVault extends BaseVault {
               ["msusd", "usdc"],
               "LP",
               {
-                protocolName: "aerodrome",
+                protocolName: "beefy",
                 protocolVersion: "0",
                 assetAddress: "0xcEFC8B799a8EE5D9b312aeca73262645D664AaF7",
                 assetDecimals: 18,
@@ -431,7 +431,7 @@ export class StablecoinVault extends BaseVault {
                 ],
               },
             ),
-            weight: 0,
+            weight: 0.09,
           },
           {
             interface: new BaseVelodrome(
@@ -462,7 +462,32 @@ export class StablecoinVault extends BaseVault {
                 ],
               },
             ),
-            weight: 0.36,
+            weight: 0.19,
+          },
+          {
+            interface: new BaseVelodrome("base", 8453, ["bold", "usdc"], "LP", {
+              protocolName: "aerodrome",
+              protocolVersion: "0",
+              assetAddress: "0x2De3fE21d32319a1550264dA37846737885Ad7A1",
+              assetDecimals: 18,
+              routerAddress: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
+              guageAddress: "0x7fDCBc8C442C667D41a1041bdc6e588393cEb6fe",
+              lpTokens: [
+                ["bold", "0x03569CC076654F82679C4BA2124D64774781B01D", 18],
+                ["usdc", "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", 6],
+              ],
+              rewards: [
+                {
+                  symbol: "aero",
+                  priceId: {
+                    coinmarketcapApiId: 29270,
+                  },
+                  address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+                  decimals: 18,
+                },
+              ],
+            }),
+            weight: 0.19,
           },
           {
             interface: new BaseEquilibria(
@@ -531,7 +556,7 @@ export class StablecoinVault extends BaseVault {
                 },
               ],
             }),
-            weight: 0.2,
+            weight: 0,
           },
         ],
         // bsc: [

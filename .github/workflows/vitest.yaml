@@ -11,6 +11,7 @@ on:
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 7 # Job will timeout after 7 minutes
     env:
       NEXT_PUBLIC_CHAIN_ID: ${{ secrets.NEXT_PUBLIC_CHAIN_ID }}
       NEXT_PUBLIC_BUNDLER_URL: ${{ secrets.NEXT_PUBLIC_BUNDLER_URL }}
