@@ -154,29 +154,22 @@ const ExampleUI = memo(function ExampleUI() {
       <div className={`w-full md:w-5/6 md:ml-[8.333333%] ${styles.bgStyle}`}>
         <div className="flex items-center justify-center min-h-[calc(100vh-100px)]">
           <center>
-            <Image
-              src="/logo.png"
-              alt="logo"
-              width={100}
-              height={100}
-              loading="lazy"
-              quality={50}
-              unoptimized={true}
-              priority={false}
-            />
-            <h1 className="text-5xl tracking-tight mb-8 text-[#5DFDCB]">
-              All Weather Protocol
+            <h1 className="text-5xl tracking-tight mb-8 text-[#5DFDCB] font-extrabold">
+              Zap Pilot
             </h1>
-            <h2 className="heading-subtitle">{content.siteInfo.tagline}</h2>
-            <p className="heading-subtitle">{content.siteInfo.subtitle}</p>
-            <p className="heading-subtitle">
+            <h2 className="text-4xl font-bold text-white mb-4">
+              {content.siteInfo.tagline}
+            </h2>
+            <p className="text-2xl text-gray-200 mb-2">
+              {content.siteInfo.subtitle}
+            </p>
+            <p className="text-3xl text-gray-100 font-semibold">
               Enjoy Up to
               <span
-                className="text-5xl tracking-tight text-[#5DFDCB]"
+                className="text-5xl text-[#5DFDCB] font-bold px-2"
                 data-testid="apr"
               >
-                {" "}
-                {aprDisplay}%{" "}
+                {aprDisplay}%
               </span>
               APR
             </p>
