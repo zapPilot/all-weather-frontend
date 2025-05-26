@@ -1,7 +1,8 @@
 const content = {
   siteInfo: {
-    tagline: "Your Uber for DeFi investing",
-    subtitle: "Choose your destination, and we’ll handle the rest",
+    tagline: "Your DeFi, On Autopilot",
+    subtitle:
+      "Zap Pilot lets anyone invest in DeFi with one click — no bridging, no swapping, no guessing. You keep your funds in your own wallet, and we handle the messy stuff.",
   },
 };
 
