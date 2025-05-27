@@ -1,6 +1,7 @@
 import Hlp from "../../lib/contracts/Hmx/Hlp.json" assert { type: "json" };
 import Vault from "../../lib/contracts/Hmx/Vault.json" assert { type: "json" };
 import StakeHlp from "../../lib/contracts/Hmx/StakeHlp.json" assert { type: "json" };
+import PriceHlp from "../../lib/contracts/Hmx/PriceHlp.json" assert { type: "json" };
 import BaseProtocol from "../BaseProtocol";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
@@ -119,16 +120,6 @@ export class Hmx extends BaseProtocol {
             value: executionFeeStr,
         });
 
-        // For debugging
-        console.log("Params:", [
-            bestTokenAddressToZapIn,
-            amountToZapIn,
-            minHlpAmountBN.toString(),
-            executionFeeStr,
-            false,
-            false
-        ]);
-
         return [[approveTxn, depositTxn], 0];
     }
 
@@ -141,9 +132,6 @@ export class Hmx extends BaseProtocol {
             this.stakeBalanceOf(owner, () => {}),
             this.assetUsdPrice(tokenPricesMappingTable),
         ]);
-        console.log("hlpBalance (wei):", hlpBalance.toString());
-        console.log("hlpPrice:", hlpPrice);
-        console.log("usdBalance:", (hlpBalance / Math.pow(10, this.assetDecimals)) * hlpPrice);
         return (
             (hlpBalance / Math.pow(10, this.assetDecimals)) * hlpPrice
         )
@@ -154,14 +142,16 @@ export class Hmx extends BaseProtocol {
     }
 
     async _fetchHmxPrice() {
-        const response = await fetch("https://api.dune.com/api/v1/query/3702461/results?limit=1000", {
-            headers: {
-                "X-Dune-API-Key": "NRSnP5c4r3Rb9j5Ldow4zJXZnqrnbfes",
-            },
-        });
-        const priceData = await response.json();
-        const currentPrice = priceData.result.rows[0].price;
-        return currentPrice;
+        const hlpPriceContractInstance = new ethers.Contract(
+            "0x0266868d1c144a7534513F38B816c1aadE4030A2",
+            PriceHlp,
+            PROVIDER(this.chain),
+        );
+        // getPrice() returns price in 18 decimals
+        const getPrice = await hlpPriceContractInstance.getPrice();
+        const price = parseFloat(ethers.utils.formatUnits(getPrice, 18));
+        const roundedPrice = parseFloat(price.toFixed(4));
+        return roundedPrice;
     }
 
     async stakeBalanceOf(owner) {
@@ -197,11 +187,17 @@ export class Hmx extends BaseProtocol {
     }
 
     async _unstake(owner, percentage, updateProgress) {
-        const percentageStr = percentage
-            .toFixed(this.percentagePrecision)
-            .replace(".", "");
-        const percentageBN = ethers.BigNumber.from(percentageStr);
-        
+        const percentageBN = ethers.BigNumber.from(
+            BigInt(Math.floor(percentage * 10000)),
+        );
+        const stakeBalance = await this.stakeBalanceOf(owner, updateProgress);
+        const amount = stakeBalance.mul(percentageBN).div(10000);
+        const unstakeTxn = prepareContractCall({
+            contract: this.stakeFarmContract,
+            method: "withdraw",
+            params: [amount],
+        });
+        return [[unstakeTxn], amount];
     }
 
     async customWithdrawAndClaim(
@@ -211,25 +207,50 @@ export class Hmx extends BaseProtocol {
         tokenPricesMappingTable,
         updateProgress,
     ) {
-        const [
-            symbolOfBestTokenToZapInOut,
-            bestTokenAddressToZapOut,
-            assetDecimals,
-        ] = this._getTheBestTokenAddressToZapOut();
+        // First approve HLP token
+        const approveHlpTxn = approve(
+            this.assetContract.address,
+            this.protocolContract.address,
+            amount.toString(),
+            updateProgress,
+            this.chainId,
+        );
         
+        // Get HLP price for calculation
+        const hlpPrice = await this._fetchHmxPrice();
+        
+        // Calculate USD value of HLP amount
+        const hlpAmountInUsd = parseFloat(ethers.utils.formatUnits(amount, 18)) * hlpPrice;
+        
+        // Calculate minimum output amount in USD with slippage
+        const minOutAmountUsd = hlpAmountInUsd * (100 - slippage) / 100;
+        
+        // Convert minOutAmount to wei (6 decimals for USD)
+        const minOutAmount = ethers.utils.parseUnits(minOutAmountUsd.toFixed(6), 6);
+        const [symbolOfBestTokenToZapOut, bestTokenAddressToZapOut, assetDecimals] = this._getTheBestTokenAddressToZapOut();
+        const executionFeeStr = await this._calculateExecutionFee();
+        
+        // Create remove liquidity order
         const withdrawTxn = prepareContractCall({
             contract: this.protocolContract,
-            method: "withdraw",
-            params: [amount],
+            method: "createRemoveLiquidityOrder",
+            params: [
+                bestTokenAddressToZapOut,  // token to receive
+                amount.toString(),         // amount of HLP to burn
+                minOutAmount.toString(),   // minimum amount to receive (in USD wei)
+                executionFeeStr,           // execution fee
+                false                      // isNativeOut
+            ],
+            value: executionFeeStr,
         });
         
         const tradingLoss = 0;
         return [
-            [withdrawTxn],
-            symbolOfBestTokenToZapInOut,
+            [approveHlpTxn, withdrawTxn],
+            symbolOfBestTokenToZapOut,
             bestTokenAddressToZapOut,
             assetDecimals,
-            amount,
+            minOutAmount,
             tradingLoss,
         ];
     }
