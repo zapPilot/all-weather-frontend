@@ -22,7 +22,7 @@ export class StablecoinVault extends BaseVault {
               "single",
               {},
             ),
-            weight: 0.44,
+            weight: 0.35,
           },
           {
             interface: new Vela(
@@ -350,7 +350,7 @@ export class StablecoinVault extends BaseVault {
                 decimalOfBestTokenToZapOut: 6,
               },
             ),
-            weight: 0.09,
+            weight: 0.15,
           },
         ],
 
@@ -462,7 +462,7 @@ export class StablecoinVault extends BaseVault {
                 ],
               },
             ),
-            weight: 0.19,
+            weight: 0.07,
           },
           {
             interface: new BaseVelodrome("base", 8453, ["bold", "usdc"], "LP", {
@@ -487,7 +487,7 @@ export class StablecoinVault extends BaseVault {
                 },
               ],
             }),
-            weight: 0.19,
+            weight: 0.2,
           },
           {
             interface: new BaseEquilibria(
@@ -531,7 +531,7 @@ export class StablecoinVault extends BaseVault {
                 },
               ],
             }),
-            weight: 0,
+            weight: 0.09,
           },
           {
             interface: new BaseVelodrome("op", 10, ["usdc", "msusd"], "LP", {
