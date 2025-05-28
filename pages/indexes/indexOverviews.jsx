@@ -783,12 +783,6 @@ export default function IndexOverviews() {
     setRefreshTrigger(Date.now());
   }, [portfolioName, account]);
 
-  const handleClose = () => {
-    setTotalTradingLoss(0);
-    setTradingLoss(0);
-    setOpen(false);
-  };
-
   const tabProps = {
     CHAIN_ID_TO_CHAIN,
     CHAIN_TO_CHAIN_ID,
