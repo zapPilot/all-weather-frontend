@@ -154,14 +154,11 @@ const ExampleUI = memo(function ExampleUI() {
       <div className={`w-full md:w-5/6 md:ml-[8.333333%] ${styles.bgStyle}`}>
         <div className="flex items-center justify-center min-h-[calc(100vh-100px)]">
           <center>
-            <h1 className="text-5xl tracking-tight mb-8 text-[#5DFDCB] font-extrabold">
+            <h1 className="text-5xl tracking-tight mb-4 text-[#5DFDCB] font-extrabold">
               Zap Pilot
             </h1>
-            <h2 className="text-4xl font-bold text-white mb-4">
-              {content.siteInfo.tagline}
-            </h2>
             <p className="text-2xl text-gray-200 mb-2">
-              {content.siteInfo.subtitle}
+              {content.siteInfo.tagline}
             </p>
             <p className="text-3xl text-gray-100 font-semibold">
               Enjoy Up to
