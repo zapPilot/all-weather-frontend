@@ -52,6 +52,7 @@ export class Hmx extends BaseProtocol {
     }
 
     async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
+        let rewardBalance = {};
         return {};
     }
 
@@ -64,7 +65,6 @@ export class Hmx extends BaseProtocol {
                 PROVIDER(this.chain),
             );
             const minExecutionOrderFee = await protocolContractInstance.minExecutionOrderFee();
-            console.log("minExecutionOrderFee from contract:", minExecutionOrderFee.toString());
             
             // Validate the execution fee is within uint256 range
             const maxUint256 = ethers.BigNumber.from("2").pow(256).sub(1);
@@ -124,7 +124,25 @@ export class Hmx extends BaseProtocol {
     }
 
     async customClaim(owner, tokenPricesMappingTable, updateProgress) {
-        return [[], {}];
+        const rewardContract = getContract({
+            client: THIRDWEB_CLIENT,
+            address: "0x388A954C6b7282427AA2E8AF504504Fa6bA89432",
+            chain: CHAIN_ID_TO_CHAIN[this.chainId],
+            abi: "",
+        });
+        const pendingRewards = await this.pendingRewards(owner, tokenPricesMappingTable, updateProgress);
+        // function compound(address[] _lps, address[][] _rewards, uint256 _convertRatio, uint256 _minRec, bool _lockMgp)
+        // _lps maybe is liquidity staking pool address
+        // _rewards maybe is rewards token address
+        // _convertRatio maybe is timestamp
+        // _minRec maybe is max value, means claim all rewards
+        // _lockMgp false
+        const claimTxn = prepareContractCall({
+            contract: rewardContract,
+            method: "compound",
+            params: [],
+        });
+        return [[claimTxn], pendingRewards];
     }
 
     async usdBalanceOf(owner, tokenPricesMappingTable) {
@@ -162,7 +180,6 @@ export class Hmx extends BaseProtocol {
                 PROVIDER(this.chain),
             );
             const balance = await stakeContractInstance.userTokenAmount(owner);
-            console.log("stakeBalanceOf:", balance);
             return balance;
         } catch (error) {
             console.error("Error in stakeBalanceOf:", error);
