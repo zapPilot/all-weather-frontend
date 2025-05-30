@@ -101,9 +101,10 @@ export default function PopUpModal({
   tokenPricesMappingTable,
 }) {
   // Move useEffect to top level, before any conditional returns
-  const tokenInSymbol = selectedToken?.toLowerCase()?.split("-")[0] === "eth"
-    ? "weth"
-    : selectedToken?.toLowerCase()?.split("-")[0];
+  const tokenInSymbol =
+    selectedToken?.toLowerCase()?.split("-")[0] === "eth"
+      ? "weth"
+      : selectedToken?.toLowerCase()?.split("-")[0];
   const tokenInAddress = selectedToken?.toLowerCase()?.split("-")[1];
   const outputToken = selectedToken?.toLowerCase()?.split("-")[0];
   const outputTokenAddress = selectedToken?.toLowerCase()?.split("-")[1];
@@ -327,15 +328,26 @@ export default function PopUpModal({
                       <Popover
                         content={
                           <>
-                            <div className="font-semibold mb-1">How is this calculated?</div>
+                            <div className="font-semibold mb-1">
+                              How is this calculated?
+                            </div>
                             <div className="text-xs text-gray-500">
-                              Transaction cost estimate:<br />
-                              1. DEX slippage<br />
-                              2. Deposit fee charged by protocols like Pendle, Curve, etc.<br />
-                              3. Withdrawal fee charged by protocols like Pendle, Curve, etc.<br />
+                              Transaction cost estimate:
                               <br />
-                              Arbitrage profit estimate:<br />
-                              1. Market inefficiencies between protocols may create opportunities for profitable trades<br />
+                              1. DEX slippage
+                              <br />
+                              2. Deposit fee charged by protocols like Pendle,
+                              Curve, etc.
+                              <br />
+                              3. Withdrawal fee charged by protocols like
+                              Pendle, Curve, etc.
+                              <br />
+                              <br />
+                              Arbitrage profit estimate:
+                              <br />
+                              1. Market inefficiencies between protocols may
+                              create opportunities for profitable trades
+                              <br />
                             </div>
                           </>
                         }
@@ -370,14 +382,24 @@ export default function PopUpModal({
                         content={
                           <>
                             <div>
-                              <strong>Entry Fee / APR = Performance Fee Equivalent</strong>
+                              <strong>
+                                Entry Fee / APR = Performance Fee Equivalent
+                              </strong>
                             </div>
                             <div>
-                              {portfolioHelper.entryFeeRate()} / {portfolioAPR} ={" "}
-                              {(portfolioHelper.entryFeeRate() / portfolioAPR * 100).toFixed(2)}%
+                              {portfolioHelper.entryFeeRate()} / {portfolioAPR}{" "}
+                              ={" "}
+                              {(
+                                (portfolioHelper.entryFeeRate() /
+                                  portfolioAPR) *
+                                100
+                              ).toFixed(2)}
+                              %
                             </div>
                             <div className="mt-2 text-xs text-gray-500">
-                              This shows what the entry fee would be if it were charged as a performance fee, given the current APR.
+                              This shows what the entry fee would be if it were
+                              charged as a performance fee, given the current
+                              APR.
                             </div>
                           </>
                         }
@@ -391,13 +413,24 @@ export default function PopUpModal({
                       </Popover>
                     </dt>
                     <dd className="text-sm font-semibold text-gray-900">
-                      ${ (portfolioHelper.entryFeeRate() * investmentAmount * tokenPricesMappingTable[tokenInSymbol]).toFixed(2) }
+                      $
+                      {(
+                        portfolioHelper.entryFeeRate() *
+                        investmentAmount *
+                        tokenPricesMappingTable[tokenInSymbol]
+                      ).toFixed(2)}
                     </dd>
                   </div>
                   <div className="flex items-center justify-between">
-                    <dt className="text-xs text-gray-500">Performance Fee Equivalent</dt>
+                    <dt className="text-xs text-gray-500">
+                      Performance Fee Equivalent
+                    </dt>
                     <dd className="text-xs font-semibold text-emerald-600">
-                      { entryFeeToPerformanceFee(portfolioHelper.entryFeeRate(), portfolioAPR).toFixed(2) }%
+                      {entryFeeToPerformanceFee(
+                        portfolioHelper.entryFeeRate(),
+                        portfolioAPR,
+                      ).toFixed(2)}
+                      %
                     </dd>
                   </div>
                 </div>
