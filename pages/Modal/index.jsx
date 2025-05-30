@@ -30,6 +30,14 @@ const calculatePerformanceFee = (portfolioHelper, portfolioAPR) => {
     100
   ).toFixed(2);
 };
+function entryFeeToPerformanceFee(entryFee, apr) {
+  if (apr === 0) {
+    return 0; // Avoid division by zero — no profit, no performance fee equivalent
+  }
+
+  const performanceFee = entryFee / apr;
+  return performanceFee * 100; // return as percentage
+}
 
 const AmountDisplay = ({
   propKey,
@@ -93,19 +101,22 @@ export default function PopUpModal({
   tokenPricesMappingTable,
 }) {
   // Move useEffect to top level, before any conditional returns
+  const tokenInSymbol = selectedToken?.toLowerCase()?.split("-")[0] === "eth"
+    ? "weth"
+    : selectedToken?.toLowerCase()?.split("-")[0];
+  const tokenInAddress = selectedToken?.toLowerCase()?.split("-")[1];
+  const outputToken = selectedToken?.toLowerCase()?.split("-")[0];
+  const outputTokenAddress = selectedToken?.toLowerCase()?.split("-")[1];
   React.useEffect(() => {
     if (!open || !actionName) return;
 
     const flowchartData = portfolioHelper?.getFlowChartData(
       actionName,
       {
-        tokenInSymbol:
-          selectedToken?.toLowerCase()?.split("-")[0] === "eth"
-            ? "weth"
-            : selectedToken?.toLowerCase()?.split("-")[0],
-        tokenInAddress: selectedToken?.toLowerCase()?.split("-")[1],
-        outputToken: selectedToken?.toLowerCase()?.split("-")[0],
-        outputTokenAddress: selectedToken?.toLowerCase()?.split("-")[1],
+        tokenInSymbol,
+        tokenInAddress,
+        outputToken,
+        outputTokenAddress,
         rebalancableUsdBalanceDict,
         usdBalanceDict: rebalancableUsdBalanceDict,
         chainMetadata,
@@ -294,139 +305,101 @@ export default function PopUpModal({
                 )}
               </div>
               {/* Cost summary */}
-              <dl className="mt-6 space-y-4">
+              <dl className="mt-6 flex flex-col gap-4">
+                {/* Gas Fee */}
                 <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                  <dt className="flex items-center text-sm text-gray-600">
-                    <span>⛽ Gas Fee</span>
+                  <dt className="flex items-center text-sm text-gray-600 font-medium">
+                    ⛽ Gas Fee
                   </dt>
-                  <dd className="text-sm font-medium text-gray-900">
-                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded-md font-semibold">
+                  <dd className="text-sm font-semibold text-green-700">
+                    <span className="bg-green-100 px-2 py-1 rounded-md">
                       Free
                     </span>
                   </dd>
                 </div>
-                <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                  <dt className="flex items-center text-sm text-gray-600">
-                    <span>
+                {/* Transaction Cost or Arbitrage Profit */}
+                <div className="flex flex-col gap-1 border-t border-gray-200 pt-4">
+                  <div className="flex items-center justify-between">
+                    <dt className="flex items-center text-sm text-gray-600 font-medium">
                       {totalTradingLoss > 0
                         ? "🤑 Arbitrage profit estimate"
                         : "💳 Transaction cost estimate"}
-                    </span>
-                    <a
-                      href="#"
-                      className="ml-2 shrink-0 text-gray-400 hover:text-gray-500"
-                    >
                       <Popover
                         content={
                           <>
-                            Transaction cost estimate:
-                            <br />
-                            1. DEX slippage
-                            <br />
-                            2. Deposit fee charged by protocols like Pendle,
-                            Curve, etc.
-                            <br />
-                            3. Withdrawal fee charged by protocols like Pendle,
-                            Curve, etc.
-                            <br />
-                            <br />
-                            Arbitrage profit estimate:
-                            <br />
-                            1. Market inefficiencies between protocols may
-                            create opportunities for profitable trades
-                            <br />
+                            <div className="font-semibold mb-1">How is this calculated?</div>
+                            <div className="text-xs text-gray-500">
+                              Transaction cost estimate:<br />
+                              1. DEX slippage<br />
+                              2. Deposit fee charged by protocols like Pendle, Curve, etc.<br />
+                              3. Withdrawal fee charged by protocols like Pendle, Curve, etc.<br />
+                              <br />
+                              Arbitrage profit estimate:<br />
+                              1. Market inefficiencies between protocols may create opportunities for profitable trades<br />
+                            </div>
                           </>
                         }
-                        title="How is this calculated?"
+                        title=""
                         trigger="hover"
                       >
                         <QuestionMarkCircleIcon
                           aria-hidden="true"
-                          className="size-5"
+                          className="size-5 ml-2 text-gray-400 hover:text-gray-500"
                         />
                       </Popover>
-                    </a>
-                  </dt>
-                  <dd className="text-sm font-medium text-gray-900">
-                    <AmountDisplay
-                      propKey="tansaction-costs"
-                      amount={totalTradingLoss}
-                      showEmoji={totalTradingLoss > 0 && costsCalculated}
-                      isGreen={totalTradingLoss > 0}
-                      isLoading={!costsCalculated}
-                      portfolioHelper={portfolioHelper}
-                      portfolioAPR={portfolioAPR}
-                    />
-                  </dd>
+                    </dt>
+                    <dd className="text-sm font-semibold text-gray-900">
+                      <AmountDisplay
+                        propKey="tansaction-costs"
+                        amount={totalTradingLoss}
+                        showEmoji={totalTradingLoss > 0 && costsCalculated}
+                        isGreen={totalTradingLoss > 0}
+                        isLoading={!costsCalculated}
+                        portfolioHelper={portfolioHelper}
+                        portfolioAPR={portfolioAPR}
+                      />
+                    </dd>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                  <dt className="flex items-center text-sm text-gray-600">
-                    <span>💵 Platform fee estimate</span>
-                    <a
-                      href="#"
-                      className="ml-2 shrink-0 text-gray-400 hover:text-gray-500"
-                    >
+                {/* Entry Fee & Performance Fee Equivalent */}
+                <div className="flex flex-col gap-1 border-t border-gray-200 pt-4">
+                  <div className="flex items-center justify-between">
+                    <dt className="flex items-center text-sm text-gray-600 font-medium">
+                      💵 Entry Fee
                       <Popover
                         content={
                           <>
-                            1. Zap in: 0.299%
-                            <br />
-                            2. Zap out: 0.299%
-                            <br />
-                            3. Rebalance: 0.598%
-                            <br />
-                            <br />
-                            (zap-in * 1 time + zap-out * 1 time + rebalance *
-                            {portfolioHelper?.constructor?.name === "EthVault"
-                              ? 0
-                              : 4}
-                            {""}
-                            times per year * 50%) / APR = <br />
-                            (usually of 50% of your money needs to be
-                            rebalanced) <br />
-                            (0.00299 * 1 + 0.00299 * 1 + 0.00598 *{" "}
-                            {portfolioHelper?.constructor?.name === "EthVault"
-                              ? 0
-                              : 4}{" "}
-                            * 0.5) / {portfolioAPR} = <br />
-                            {(
-                              ((0.00299 * 1 +
-                                0.00299 * 1 +
-                                0.00598 *
-                                  (portfolioHelper?.constructor?.name ===
-                                  "EthVault"
-                                    ? 0
-                                    : 4) *
-                                  0.5) /
-                                portfolioAPR) *
-                              100
-                            ).toFixed(2)}
-                            %
+                            <div>
+                              <strong>Entry Fee / APR = Performance Fee Equivalent</strong>
+                            </div>
+                            <div>
+                              {portfolioHelper.entryFeeRate()} / {portfolioAPR} ={" "}
+                              {(portfolioHelper.entryFeeRate() / portfolioAPR * 100).toFixed(2)}%
+                            </div>
+                            <div className="mt-2 text-xs text-gray-500">
+                              This shows what the entry fee would be if it were charged as a performance fee, given the current APR.
+                            </div>
                           </>
                         }
-                        title="How is Maximum Performance fee calculated?"
+                        title="How is Performance Fee Equivalent calculated?"
                         trigger="hover"
                       >
                         <QuestionMarkCircleIcon
                           aria-hidden="true"
-                          className="size-5"
+                          className="size-5 ml-2 text-gray-400 hover:text-gray-500"
                         />
                       </Popover>
-                    </a>
-                  </dt>
-                  <dd className="text-sm font-medium text-gray-900">
-                    Maximum Performance fee{" "}
-                    <AmountDisplay
-                      propKey="platformFee"
-                      amount={platformFee}
-                      showEmoji={false}
-                      isGreen={false}
-                      isLoading={!costsCalculated}
-                      showOnlyPercentage={true}
-                      portfolioHelper={portfolioHelper}
-                      portfolioAPR={portfolioAPR}
-                    />
-                  </dd>
+                    </dt>
+                    <dd className="text-sm font-semibold text-gray-900">
+                      ${ (portfolioHelper.entryFeeRate() * investmentAmount * tokenPricesMappingTable[tokenInSymbol]).toFixed(2) }
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <dt className="text-xs text-gray-500">Performance Fee Equivalent</dt>
+                    <dd className="text-xs font-semibold text-emerald-600">
+                      { entryFeeToPerformanceFee(portfolioHelper.entryFeeRate(), portfolioAPR).toFixed(2) }%
+                    </dd>
+                  </div>
                 </div>
               </dl>
             </div>
