@@ -165,7 +165,7 @@ export default function Referrals() {
             ),
           )}
           <CopyableReferralButton
-            referralLink={`${content.siteInfo.tagline} 🚀 Join All Weather Protocol using this link:  https://app.awp-capital.com?referrer=${account?.address}`}
+            referralLink={`${content.siteInfo.tagline} 🚀 Join Zap Pilot using this link:  https://app.awp-capital.com?referrer=${account?.address}`}
           />
         </p>
       </div>

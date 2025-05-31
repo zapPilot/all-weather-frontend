@@ -15,6 +15,10 @@ const onlyThisChain = false; // Must be false so bridging can occur
 
 // Bridge configuration
 const BRIDGE_CONFIG = {
+  across: {
+    address: "0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64",
+    name: "Across Bridge on Base",
+  },
   stargate: {
     address: "0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64",
     name: "Stargate Bridge",
@@ -28,28 +32,6 @@ const BRIDGE_CONFIG = {
     name: "squid Router",
   },
   // Add more bridges here as needed
-};
-
-// Helper function to detect bridges in transactions
-const detectBridges = (txns) => {
-  const bridges = [];
-
-  txns.forEach((txn, index) => {
-    const bridgeAddress = txn.to.toLowerCase();
-    const bridge = Object.values(BRIDGE_CONFIG).find(
-      (bridge) => bridge.address.toLowerCase() === bridgeAddress,
-    );
-
-    if (bridge) {
-      bridges.push({
-        ...bridge,
-        index,
-        transaction: txn,
-      });
-    }
-  });
-
-  return bridges;
 };
 
 describe("Bridge with USDT -> USDC Swap", () => {
@@ -96,7 +78,6 @@ describe("Bridge with USDT -> USDC Swap", () => {
         (bridge) => bridge.address.toLowerCase() === txn.to.toLowerCase(),
       ),
     );
-
     expect(
       bridgeIndex,
       `No bridge address found in ${txns.length} transactions`,

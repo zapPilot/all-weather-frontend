@@ -39,7 +39,6 @@ export default function ZapInTab({
   handleAAWalletAction,
   protocolAssetDustInWalletLoading,
   usdBalanceLoading,
-  zapInIsLoading,
   investmentAmount,
   tokenBalance,
   setPreviousTokenSymbol,
