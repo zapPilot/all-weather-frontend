@@ -53,7 +53,71 @@ export class Hmx extends BaseProtocol {
 
     async pendingRewards(owner, tokenPricesMappingTable, updateProgress) {
         let rewardBalance = {};
-        return {};
+        
+        try {
+            // Create contract instance directly with ethers
+            const stakeFarmContract = new ethers.Contract(
+                this.stakeFarmContract.address,
+                StakeHlp,
+                PROVIDER(this.chain)
+            );
+            
+            // Get rewarders from the contract
+            const rewarders = await stakeFarmContract.callStatic.getRewarders();
+            
+            // For each rewarder, get its pending rewards
+            for (const rewarder of rewarders) {
+                const rewarderContract = new ethers.Contract(
+                    rewarder,
+                    [
+                        "function pendingReward(address user) view returns (uint256)",
+                        "function rewardToken() view returns (address)"
+                    ],
+                    PROVIDER(this.chain)
+                );
+                
+                try {
+                    // Get reward token
+                    const rewardToken = await rewarderContract.callStatic.rewardToken();
+                    
+                    // Create reward token contract to get symbol and decimals
+                    const rewardTokenContract = new ethers.Contract(
+                        rewardToken,
+                        [
+                            "function symbol() view returns (string)",
+                            "function decimals() view returns (uint8)"
+                        ],
+                        PROVIDER(this.chain)
+                    );
+                    
+                    // Get token info
+                    const symbol = await rewardTokenContract.callStatic.symbol();
+                    const decimals = await rewardTokenContract.callStatic.decimals();
+                    // Get pending rewards
+                    const pendingReward = await rewarderContract.callStatic.pendingReward(owner);
+                    
+                    if (pendingReward.gt(0)) {
+                        // Convert amount using decimals
+                        const amount = parseFloat(ethers.utils.formatUnits(pendingReward, decimals));
+                        const price = tokenPricesMappingTable[symbol.toString().toLowerCase()] || 0;
+                        const usdValue = amount * price;
+                        rewardBalance[symbol] = {
+                            amount: pendingReward.toString(),
+                            decimals: decimals,
+                            price: price,
+                            usdValue: usdValue
+                        };
+                    }
+                } catch (error) {
+                    console.error(`Error getting rewards for rewarder ${rewarder}:`, error);
+                }
+            }
+        } catch (error) {
+            console.error("Error calculating pending rewards:", error);
+        }
+        
+        console.log("rewardBalance", rewardBalance);
+        return rewardBalance;
     }
 
     async _calculateExecutionFee() {
@@ -262,6 +326,7 @@ export class Hmx extends BaseProtocol {
         });
         
         const tradingLoss = 0;
+        await this.pendingRewards(owner, tokenPricesMappingTable, updateProgress);
         return [
             [approveHlpTxn, withdrawTxn],
             symbolOfBestTokenToZapOut,
