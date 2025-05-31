@@ -1403,37 +1403,6 @@ export class BasePortfolio {
       referrer,
     );
   }
-  async _swapFeeTxnsForZapOut(
-    owner,
-    tokenOutAddress,
-    tokenOutSymbol,
-    tokenPricesMappingTable,
-    zapOutPercentage,
-    portfolioUsdBalance,
-    chainMetadata,
-    setPlatformFee,
-  ) {
-    const referrer = await this._getReferrer(owner);
-    const tokenOutUsdBalance = portfolioUsdBalance * zapOutPercentage;
-    const swapFeeUsd = tokenOutUsdBalance * this.entryFeeRate();
-    setPlatformFee(-swapFeeUsd);
-    const tokenOutDecimals = await getTokenDecimal(
-      tokenOutAddress,
-      chainMetadata.name.toLowerCase(),
-    );
-    let platformFee = ethers.utils.parseUnits(
-      (swapFeeUsd / tokenPricesMappingTable[tokenOutSymbol]).toFixed(
-        tokenOutDecimals,
-      ),
-      tokenOutDecimals,
-    );
-    return this._getPlatformFeeTxns(
-      tokenOutAddress,
-      chainMetadata,
-      platformFee,
-      referrer,
-    );
-  }
   _calculateReferralFee(amount) {
     return this.mulReferralFeeRate(amount);
   }
