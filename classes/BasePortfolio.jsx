@@ -612,6 +612,7 @@ export class BasePortfolio {
         let txns = [];
         const allowedTokens = ["usdc", "eth", "weth"];
         if (!allowedTokens.includes(actionParams.tokenInSymbol.toLowerCase())) {
+          const handleStatusUpdate = null;
           const swapResult = await swap(
             actionParams.account,
             actionParams.chainMetadata.id,
@@ -627,7 +628,7 @@ export class BasePortfolio {
             "usdc",
             6,
             actionParams.tokenPricesMappingTable,
-            actionParams,
+            handleStatusUpdate,
           );
           // Update input token and amount after the swap
           txns = txns.concat(swapResult[0]);

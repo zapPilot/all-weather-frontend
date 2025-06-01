@@ -161,6 +161,12 @@ export class PortfolioFlowChartBuilder {
   }
 
   buildFlowChart(actionName, actionParams, tokenPricesMappingTable) {
+    if (actionName === "convertDust") {
+      return {
+        nodes: [],
+        edges: [],
+      };
+    }
     let flowChartData = {
       nodes: [],
       edges: [],

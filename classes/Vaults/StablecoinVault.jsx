@@ -350,7 +350,7 @@ export class StablecoinVault extends BaseVault {
                 decimalOfBestTokenToZapOut: 6,
               },
             ),
-            weight: 0.15,
+            weight: 0.16,
           },
         ],
 
@@ -431,7 +431,7 @@ export class StablecoinVault extends BaseVault {
                 ],
               },
             ),
-            weight: 0.09,
+            weight: 0.1,
           },
           {
             interface: new BaseVelodrome(
@@ -462,7 +462,7 @@ export class StablecoinVault extends BaseVault {
                 ],
               },
             ),
-            weight: 0.07,
+            weight: 0.09,
           },
           {
             interface: new BaseVelodrome("base", 8453, ["bold", "usdc"], "LP", {
@@ -531,7 +531,7 @@ export class StablecoinVault extends BaseVault {
                 },
               ],
             }),
-            weight: 0.09,
+            weight: 0.05,
           },
           {
             interface: new BaseVelodrome("op", 10, ["usdc", "msusd"], "LP", {

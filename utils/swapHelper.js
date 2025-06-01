@@ -20,6 +20,7 @@ async function swap(
   toTokenSymbol,
   toTokenDecimals,
   tokenPricesMappingTable,
+  handleStatusUpdate,
 ) {
   if (fromTokenAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
     return;
@@ -151,11 +152,13 @@ async function swap(
   // NOTE: because of our price timetable have a very high latency, we accept a higher price impact
   const hardcodedPriceImpactPercentage = 50;
   console.log(
-    `Input amount: ${bestSwap.normalizedInputAmount} ${fromToken} (${
+    `Input amount: ${bestSwap.normalizedInputAmount} ${fromToken} ($${(
       bestSwap.normalizedInputAmount * tokenPricesMappingTable[fromToken]
-    }) , Output amount: ${bestSwap.normalizedOutputAmount} ${toTokenSymbol} (${
+    ).toFixed(2)}) , Output amount: ${
+      bestSwap.normalizedOutputAmount
+    } ${toTokenSymbol} ($${(
       bestSwap.normalizedOutputAmount * tokenPricesMappingTable[toTokenSymbol]
-    })`,
+    ).toFixed(2)})`,
     "bestSwap",
     bestSwap,
   );
@@ -173,6 +176,17 @@ async function swap(
     `${protocolUniqueId}-${fromToken}-${toTokenSymbol}-swap`,
     bestSwap.tradingLoss,
   );
-  return [bestSwap.transactions, bestSwap.minToAmount];
+  if (handleStatusUpdate !== null) {
+    handleStatusUpdate({
+      dexAggregator: bestSwap.provider,
+      fromToken,
+      toToken: toTokenSymbol,
+      amount: bestSwap.normalizedInputAmount,
+      outputAmount: bestSwap.normalizedOutputAmount,
+      tradingLoss: bestSwap.tradingLoss,
+      inputValue: bestSwap.inputValue,
+    });
+  }
+  return [bestSwap.transactions, bestSwap.minToAmount, bestSwap.tradingLoss];
 }
 export default swap;

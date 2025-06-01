@@ -373,67 +373,68 @@ export default function PopUpModal({
                     </dd>
                   </div>
                 </div>
-                {/* Entry Fee & Performance Fee Equivalent */}
-                <div className="flex flex-col gap-1 border-t border-gray-200 pt-4">
-                  <div className="flex items-center justify-between">
-                    <dt className="flex items-center text-sm text-gray-600 font-medium">
-                      💵 Entry Fee
-                      <Popover
-                        content={
-                          <>
-                            <div>
-                              <strong>
-                                Entry Fee / APR = Performance Fee Equivalent
-                              </strong>
-                            </div>
-                            <div>
-                              {portfolioHelper.entryFeeRate()} / {portfolioAPR}{" "}
-                              ={" "}
-                              {(
-                                (portfolioHelper.entryFeeRate() /
-                                  portfolioAPR) *
-                                100
-                              ).toFixed(2)}
-                              %
-                            </div>
-                            <div className="mt-2 text-xs text-gray-500">
-                              This shows what the entry fee would be if it were
-                              charged as a performance fee, given the current
-                              APR.
-                            </div>
-                          </>
-                        }
-                        title="How is Performance Fee Equivalent calculated?"
-                        trigger="hover"
-                      >
-                        <QuestionMarkCircleIcon
-                          aria-hidden="true"
-                          className="size-5 ml-2 text-gray-400 hover:text-gray-500"
-                        />
-                      </Popover>
-                    </dt>
-                    <dd className="text-sm font-semibold text-gray-900">
-                      $
-                      {(
-                        portfolioHelper.entryFeeRate() *
-                        investmentAmount *
-                        tokenPricesMappingTable[tokenInSymbol]
-                      ).toFixed(2)}
-                    </dd>
+                {Object.values(chainStatus || {}).every((v) => !v) && (
+                  <div className="flex flex-col gap-1 border-t border-gray-200 pt-4">
+                    <div className="flex items-center justify-between">
+                      <dt className="flex items-center text-sm text-gray-600 font-medium">
+                        💵 Entry Fee
+                        <Popover
+                          content={
+                            <>
+                              <div>
+                                <strong>
+                                  Entry Fee / APR = Performance Fee Equivalent
+                                </strong>
+                              </div>
+                              <div>
+                                {portfolioHelper.entryFeeRate()} /{" "}
+                                {portfolioAPR} ={" "}
+                                {(
+                                  (portfolioHelper.entryFeeRate() /
+                                    portfolioAPR) *
+                                  100
+                                ).toFixed(2)}
+                                %
+                              </div>
+                              <div className="mt-2 text-xs text-gray-500">
+                                This shows what the entry fee would be if it
+                                were charged as a performance fee, given the
+                                current APR.
+                              </div>
+                            </>
+                          }
+                          title="How is Performance Fee Equivalent calculated?"
+                          trigger="hover"
+                        >
+                          <QuestionMarkCircleIcon
+                            aria-hidden="true"
+                            className="size-5 ml-2 text-gray-400 hover:text-gray-500"
+                          />
+                        </Popover>
+                      </dt>
+                      <dd className="text-sm font-semibold text-gray-900">
+                        $
+                        {(
+                          portfolioHelper.entryFeeRate() *
+                          investmentAmount *
+                          tokenPricesMappingTable[tokenInSymbol]
+                        ).toFixed(2)}
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <dt className="text-xs text-gray-500">
+                        Performance Fee Equivalent
+                      </dt>
+                      <dd className="text-xs font-semibold text-emerald-600">
+                        {entryFeeToPerformanceFee(
+                          portfolioHelper.entryFeeRate(),
+                          portfolioAPR,
+                        ).toFixed(2)}
+                        %
+                      </dd>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <dt className="text-xs text-gray-500">
-                      Performance Fee Equivalent
-                    </dt>
-                    <dd className="text-xs font-semibold text-emerald-600">
-                      {entryFeeToPerformanceFee(
-                        portfolioHelper.entryFeeRate(),
-                        portfolioAPR,
-                      ).toFixed(2)}
-                      %
-                    </dd>
-                  </div>
-                </div>
+                )}
               </dl>
             </div>
           </DialogPanel>

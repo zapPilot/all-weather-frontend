@@ -12,6 +12,17 @@ export const normalizeChainName = (chainName) => {
     .trim();
 };
 
+export const transformToDebankChainName = (chainName) => {
+  const chainNameToDebankChainName = {
+    ethereum: "eth",
+    "arbitrum one": "arb",
+    bsc: "bsc",
+    base: "base",
+    "op mainnet": "op",
+  };
+  return chainNameToDebankChainName[chainName] || chainName;
+};
+
 /**
  * Calculates the investment amount for a specific chain based on portfolio strategy
  * @param {string} chainName - The chain name
