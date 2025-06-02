@@ -203,7 +203,11 @@ export default function IndexOverviews() {
   } = useSelector((state) => state.strategyMetadata);
   const dispatch = useDispatch();
 
-  const handleAAWalletAction = async (actionName, onlyThisChain = false) => {
+  const handleAAWalletAction = async (
+    actionName,
+    onlyThisChain = false,
+    handleStatusUpdate = null,
+  ) => {
     const isGasPriceAcceptable = await checkGasPrice({
       chainId,
       THIRDWEB_CLIENT,
@@ -212,8 +216,9 @@ export default function IndexOverviews() {
     if (!isGasPriceAcceptable) {
       return false;
     }
-
-    setOpen(true);
+    if (actionName !== "convertDust") {
+      setOpen(true);
+    }
     setActionName(actionName);
     setOnlyThisChain(onlyThisChain);
     setCostsCalculated(false);
@@ -256,6 +261,8 @@ export default function IndexOverviews() {
       protocolAssetDustInWalletLoading,
       onlyThisChain,
       usdBalance,
+      tokenPricesMappingTable,
+      handleStatusUpdate,
     };
 
     const handleError = async (error, context) => {
@@ -276,6 +283,7 @@ export default function IndexOverviews() {
 
     try {
       const txns = await generateIntentTxns(actionParams);
+      console.log("txns", txns);
       setCostsCalculated(true);
 
       if (
@@ -285,6 +293,7 @@ export default function IndexOverviews() {
           "crossChainRebalance",
           "localRebalance",
           "transfer",
+          "convertDust",
         ].includes(actionName) &&
         txns.length < 2
       ) {
@@ -906,7 +915,7 @@ export default function IndexOverviews() {
                     className="h-6 w-6 text-green-600"
                   />
                   <Popover
-                    content="All Weather Protocol is a zero-smart-contract protocol. It's a pure JavaScript project built with an Account Abstraction (AA) wallet. Here is the audit report for the AA wallet."
+                    content="Zap Pilot is a zero-smart-contract protocol. It's a pure JavaScript project built with an Account Abstraction (AA) wallet. Here is the audit report for the AA wallet."
                     trigger="hover"
                   >
                     <span className="text-white">

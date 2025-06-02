@@ -649,7 +649,8 @@ export default class BaseProtocol extends BaseUniswap {
     if (
       tokenInAddress.toLowerCase() !== bestTokenAddressToZapIn.toLowerCase()
     ) {
-      const [swapTxns, swapEstimateAmount] = await swap(
+      const handleStatusUpdate = null;
+      const [swapTxns, swapEstimateAmount, _] = await swap(
         recipient,
         this.chainId,
         this.uniqueId(),
@@ -664,6 +665,7 @@ export default class BaseProtocol extends BaseUniswap {
         bestTokenSymbol,
         bestTokenToZapInDecimal,
         tokenPricesMappingTable,
+        handleStatusUpdate,
       );
       amountToZapIn = String(
         Math.floor((swapEstimateAmount * (100 - slippage)) / 100),
@@ -764,7 +766,8 @@ export default class BaseProtocol extends BaseUniswap {
         .div(sumOfLPTokenRatio);
 
       if (tokenInAddress.toLowerCase() !== bestTokenAddress.toLowerCase()) {
-        const [swapTxns, swapEstimateAmount] = await swap(
+        const handleStatusUpdate = null;
+        const [swapTxns, swapEstimateAmount, _] = await swap(
           recipient,
           this.chainId,
           this.uniqueId(),
@@ -779,6 +782,7 @@ export default class BaseProtocol extends BaseUniswap {
           bestTokenSymbol,
           bestTokenToZapInDecimal,
           tokenPricesMappingTable,
+          handleStatusUpdate,
         );
 
         amountToZapIn = ethers.BigNumber.from(
@@ -953,6 +957,7 @@ export default class BaseProtocol extends BaseUniswap {
       }
 
       try {
+        const handleStatusUpdate = null;
         const swapTxnResult = await swap(
           recipient,
           this.chainId,
@@ -968,6 +973,7 @@ export default class BaseProtocol extends BaseUniswap {
           outputTokenSymbol,
           outputTokenDecimals,
           tokenPricesMappingTable,
+          handleStatusUpdate,
         );
         if (swapTxnResult === undefined) {
           continue;

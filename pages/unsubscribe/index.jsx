@@ -59,7 +59,7 @@ const UnsubscribePage = () => {
               Successfully Unsubscribed
             </h2>
             <p className="mt-2 text-gray-400">
-              You have been unsubscribed from All Weather Protocol reports.
+              You have been unsubscribed from Zap Pilot reports.
             </p>
             <button
               onClick={() => router.push("/")}

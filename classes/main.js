@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import { toFixedString } from "../utils/general";
-
+import { handleDustConversion } from "../utils/dustConversion";
+import { transformToDebankChainName } from "../utils/chainHelper";
 export const generateIntentTxns = async ({
   actionName,
   chainMetadata,
@@ -21,6 +22,8 @@ export const generateIntentTxns = async ({
   protocolAssetDustInWalletLoading,
   onlyThisChain,
   usdBalance,
+  tokenPricesMappingTable,
+  handleStatusUpdate,
 }) => {
   let txns;
   if (actionName === "zapIn") {
@@ -120,6 +123,15 @@ export const generateIntentTxns = async ({
       protocolAssetDustInWallet,
       protocolAssetDustInWalletLoading,
       onlyThisChain,
+    });
+  } else if (actionName === "convertDust") {
+    txns = await handleDustConversion({
+      chainId: chainMetadata?.id,
+      chainName: transformToDebankChainName(chainMetadata?.name.toLowerCase()),
+      accountAddress,
+      tokenPricesMappingTable,
+      slippage,
+      handleStatusUpdate,
     });
   }
 

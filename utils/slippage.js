@@ -15,6 +15,9 @@ export const determineSlippage = (params) => {
   if (!["1", "2"].includes(key) && portfolioName !== "Stable+ Vault") {
     return 3;
   }
+  if (key === "5") {
+    return 50;
+  }
 
   // ETH/WETH for Stable+ Vault uses 3% slippage
   if (

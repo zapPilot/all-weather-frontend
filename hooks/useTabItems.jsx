@@ -3,6 +3,7 @@ import ZapOutTab from "../components/tabs/ZapOutTab";
 import ClaimTab from "../components/tabs/ClaimTab";
 import RebalanceTab from "../components/tabs/RebalanceTab";
 import TransferTab from "../components/tabs/TransferTab";
+import ConvertDustTab from "../components/tabs/ConvertDustTab";
 import { Typography, Spin } from "antd";
 import APRComposition from "../pages/views/components/APRComposition";
 import React, { useMemo, memo } from "react";
@@ -147,12 +148,17 @@ export default function useTabItems(props) {
         ),
         children: <ClaimTab {...props} pendingRewards={pendingRewards} />,
       },
+      {
+        key: "5",
+        label: "Convert Dust",
+        children: <ConvertDustTab {...props} />,
+      },
     ];
 
     // Only add the Transfer tab if not on app domain
     if (!isAppDomain) {
       items.push({
-        key: "5",
+        key: "6",
         label: "Transfer",
         children: <TransferTab {...props} />,
       });
