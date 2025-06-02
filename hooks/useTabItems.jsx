@@ -7,6 +7,39 @@ import ConvertDustTab from "../components/tabs/ConvertDustTab";
 import { Typography, Spin } from "antd";
 import APRComposition from "../pages/views/components/APRComposition";
 import React, { useMemo, memo } from "react";
+import { Popover } from "antd";
+import { InfoCircleOutlined } from "@ant-design/icons";
+import PropTypes from "prop-types";
+
+// Constants
+const TAB_KEYS = {
+  DEPOSIT: "1",
+  WITHDRAW: "2",
+  REBALANCE: "3",
+  CLAIM: "4",
+  DUST_ZAP: "5",
+  TRANSFER: "6",
+};
+
+const CURRENCY_FORMAT_OPTIONS = {
+  style: "currency",
+  currency: "USD",
+};
+
+// Utility functions
+const calculateSumOfPendingRewards = (pendingRewards) =>
+  Object.values(pendingRewards).reduce(
+    (acc, reward) => acc + (reward.usdDenominatedValue || 0),
+    0,
+  );
+
+const calculateCurrentAPR = (rebalancableUsdBalanceDict) =>
+  Object.entries(rebalancableUsdBalanceDict)
+    .filter(([key]) => !["pendingRewards", "metadata"].includes(key))
+    .reduce(
+      (sum, [_, { currentWeight, APR }]) => currentWeight * APR + sum,
+      0,
+    ) || 0;
 
 // Extract RebalanceLabel component
 const RebalanceLabel = memo(function RebalanceLabel({
@@ -14,7 +47,9 @@ const RebalanceLabel = memo(function RebalanceLabel({
   targetAPR,
   isLoading,
 }) {
-  if (currentAPR >= targetAPR) {
+  const isAboveTarget = currentAPR >= targetAPR;
+
+  if (isAboveTarget) {
     return (
       <button className="flex items-center gap-2 text-white bg-gradient-to-r from-purple-500 to-indigo-500 font-bold py-2 px-6 rounded-full shadow-lg hover:shadow-xl transition duration-300 transform hover:scale-110">
         Rebalance
@@ -61,10 +96,7 @@ const ClaimLabel = memo(function ClaimLabel({
             textShadow: "0 0 8px rgba(255, 184, 0, 0.3)",
           }}
         >
-          {sumOfPendingRewards.toLocaleString("en-US", {
-            style: "currency",
-            currency: "USD",
-          })}
+          {sumOfPendingRewards.toLocaleString("en-US", CURRENCY_FORMAT_OPTIONS)}
         </Typography.Text>
       )}
       ){" "}
@@ -79,24 +111,57 @@ const ClaimLabel = memo(function ClaimLabel({
   );
 });
 
-export default function useTabItems(props) {
-  const {
-    pendingRewards,
-    pendingRewardsLoading,
-    rebalancableUsdBalanceDict,
-    rebalancableUsdBalanceDictLoading,
-    portfolioApr,
-    portfolioName,
-  } = props;
+// Extract DustZapLabel component
+const DustZapLabel = memo(function DustZapLabel() {
+  return (
+    <>
+      DustZap
+      <Popover
+        style={{ width: "500px" }}
+        content="Convert leftover tokens into ETH."
+        title="DustZap"
+        trigger="hover"
+        overlayClassName="apr-composition-popover"
+      >
+        <InfoCircleOutlined
+          aria-hidden="true"
+          className="h-6 w-5 text-gray-500 ms-1 cursor-help"
+        />
+      </Popover>
+    </>
+  );
+});
 
-  // Memoize calculations
+// PropTypes definitions
+RebalanceLabel.propTypes = {
+  currentAPR: PropTypes.number.isRequired,
+  targetAPR: PropTypes.number.isRequired,
+  isLoading: PropTypes.bool.isRequired,
+};
+
+ClaimLabel.propTypes = {
+  pendingRewards: PropTypes.object.isRequired,
+  pendingRewardsLoading: PropTypes.bool.isRequired,
+  sumOfPendingRewards: PropTypes.number.isRequired,
+};
+
+export default function useTabItems({
+  pendingRewards,
+  pendingRewardsLoading,
+  rebalancableUsdBalanceDict,
+  rebalancableUsdBalanceDictLoading,
+  portfolioApr,
+  portfolioName,
+  ...props
+}) {
+  // Memoized calculations
   const sumOfPendingRewards = useMemo(
     () => calculateSumOfPendingRewards(pendingRewards),
     [pendingRewards],
   );
 
   const currentAPR = useMemo(
-    () => calCurrentAPR(rebalancableUsdBalanceDict),
+    () => calculateCurrentAPR(rebalancableUsdBalanceDict),
     [rebalancableUsdBalanceDict],
   );
 
@@ -105,7 +170,6 @@ export default function useTabItems(props) {
     [portfolioApr, portfolioName],
   );
 
-  // Check if URL starts with 'app'
   const isAppDomain = useMemo(
     () =>
       typeof window !== "undefined" &&
@@ -113,21 +177,21 @@ export default function useTabItems(props) {
     [],
   );
 
-  // Memoize tab items
+  // Memoized tab items
   const tabItems = useMemo(() => {
-    const items = [
+    const baseItems = [
       {
-        key: "1",
+        key: TAB_KEYS.DEPOSIT,
         label: "Deposit",
         children: <ZapInTab {...props} />,
       },
       {
-        key: "2",
+        key: TAB_KEYS.WITHDRAW,
         label: "Withdraw",
         children: <ZapOutTab {...props} />,
       },
       {
-        key: "3",
+        key: TAB_KEYS.REBALANCE,
         label: (
           <RebalanceLabel
             currentAPR={currentAPR}
@@ -138,7 +202,7 @@ export default function useTabItems(props) {
         children: <RebalanceTab {...props} />,
       },
       {
-        key: "4",
+        key: TAB_KEYS.CLAIM,
         label: (
           <ClaimLabel
             pendingRewards={pendingRewards}
@@ -149,22 +213,21 @@ export default function useTabItems(props) {
         children: <ClaimTab {...props} pendingRewards={pendingRewards} />,
       },
       {
-        key: "5",
-        label: "Convert Dust",
+        key: TAB_KEYS.DUST_ZAP,
+        label: <DustZapLabel />,
         children: <ConvertDustTab {...props} />,
       },
     ];
 
-    // Only add the Transfer tab if not on app domain
     if (!isAppDomain) {
-      items.push({
-        key: "6",
+      baseItems.push({
+        key: TAB_KEYS.TRANSFER,
         label: "Transfer",
         children: <TransferTab {...props} />,
       });
     }
 
-    return items;
+    return baseItems;
   }, [
     props,
     currentAPR,
@@ -179,16 +242,12 @@ export default function useTabItems(props) {
   return tabItems;
 }
 
-function calculateSumOfPendingRewards(pendingRewards) {
-  return Object.values(pendingRewards).reduce(
-    (acc, reward) => acc + (reward.usdDenominatedValue || 0),
-    0,
-  );
-}
-
-const calCurrentAPR = (rebalancableUsdBalanceDict) =>
-  Object.entries(rebalancableUsdBalanceDict)
-    .filter(([key]) => !["pendingRewards", "metadata"].includes(key))
-    .reduce((sum, [_, { currentWeight, APR }]) => {
-      return currentWeight * APR + sum;
-    }, 0) || 0;
+// PropTypes for the main hook
+useTabItems.propTypes = {
+  pendingRewards: PropTypes.object.isRequired,
+  pendingRewardsLoading: PropTypes.bool.isRequired,
+  rebalancableUsdBalanceDict: PropTypes.object.isRequired,
+  rebalancableUsdBalanceDictLoading: PropTypes.bool.isRequired,
+  portfolioApr: PropTypes.object.isRequired,
+  portfolioName: PropTypes.string.isRequired,
+};
