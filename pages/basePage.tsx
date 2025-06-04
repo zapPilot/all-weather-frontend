@@ -175,7 +175,9 @@ const BasePage: React.FC<BasePageProps> = memo(function BasePage({
   const headContent = useMemo(
     () => (
       <Head>
-        <title>Zap Pilot: {content.siteInfo.tagline}</title>
+        <title>{`Zap Pilot${
+          content?.siteInfo?.tagline ? `: ${content.siteInfo.tagline}` : ""
+        }`}</title>
         <meta content="Zap Pilot" name="description" />
         <link href="/favicon.ico" rel="icon" />
       </Head>
