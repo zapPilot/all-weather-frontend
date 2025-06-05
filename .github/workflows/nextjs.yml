@@ -7,7 +7,8 @@ name: Deploy Next.js site to Pages
 on:
   # Runs on pushes targeting main and prod branches
   push:
-    branches: ["main", "prod"]
+    # branches: ["main", "prod"]
+    branches: ["*"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -70,23 +71,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}-
       - name: Install dependencies
-        run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
+        run: yarn install
       - name: Load Environment Variables
         if: github.ref == 'refs/heads/main'
-        run: |
-          echo "${{ secrets.STAGING_ENV_FILE }}" > .env
-          echo "NEXT_PUBLIC_BASE_PATH=/zappilot" >> .env
-          echo "NEXT_PUBLIC_ASSET_PREFIX=/zappilot" >> .env
+        run: echo "${{ secrets.STAGING_ENV_FILE }}" > .env
       - name: Load Environment Variables
         if: github.ref == 'refs/heads/prod'
+        run: echo "${{ secrets.PROD_ENV_FILE }}" > .env
+      - name: Build and Export
         run: |
-          echo "${{ secrets.PROD_ENV_FILE }}" > .env
-          echo "NEXT_PUBLIC_BASE_PATH=/zappilot" >> .env
-          echo "NEXT_PUBLIC_ASSET_PREFIX=/zappilot" >> .env
-      - name: Build with Next.js
-        run: |
-          ${{ steps.detect-package-manager.outputs.runner }} next build
-          ${{ steps.detect-package-manager.outputs.runner }} next export
+          yarn build
+          yarn export
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
