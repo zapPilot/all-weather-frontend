@@ -1,4 +1,5 @@
 import flowChartEventEmitter from "../../utils/FlowChartEventEmitter";
+import { ASSET_CONFIG } from "../../config/assetConfig";
 
 export const FlowChartMixin = {
   getZapInFlowChartData(inputToken, tokenInAddress, weight) {
@@ -88,7 +89,9 @@ export const FlowChartMixin = {
       node.symbolList = this.symbolList.map((symbol) =>
         symbol.replace("(bridged)", ""),
       );
-      node.imgSrc = `/projectPictures/${this.protocolName}.webp`;
+      node.imgSrc = ASSET_CONFIG.getAssetPath(
+        `/projectPictures/${this.protocolName}.webp`,
+      );
     }
   },
 

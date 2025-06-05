@@ -5,7 +5,7 @@ import { Spin } from "antd";
 import { WarningOutlined } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import Image from "next/image";
-
+import { ASSET_CONFIG } from "../../config/assetConfig";
 const APRPopOver = () => {
   const { data, loading } = useSelector((state) => state.api);
   const [missingPools, setMissingPools] = useState([]);
@@ -53,7 +53,9 @@ const APRPopOver = () => {
               <div className="bg-gray-800 p-2" key={pool.address}>
                 <div className="flex mb-1 font-medium">
                   <Image
-                    src={`/chainPicturesWebp/${poolJson.mapping_chain}.webp`}
+                    src={ASSET_CONFIG.getAssetPath(
+                      `/chainPicturesWebp/${poolJson.mapping_chain}.webp`,
+                    )}
                     width={20}
                     height={20}
                     alt={poolJson.mapping_chain}

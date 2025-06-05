@@ -7,10 +7,7 @@ name: Deploy Next.js site to Pages
 on:
   # Runs on pushes to any branch and pull requests
   push:
-    branches: ["*"]
-  pull_request:
-    branches: ["*"]
-    types: [opened, synchronize, reopened]
+    branches: ["main", "prod"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -76,10 +73,14 @@ jobs:
         run: yarn install
       - name: Load Environment Variables
         if: github.ref == 'refs/heads/main'
-        run: echo "${{ secrets.STAGING_ENV_FILE }}" > .env
+        run: |
+          echo "${{ secrets.STAGING_ENV_FILE }}" > .env
+          echo "NEXT_PUBLIC_HOSTING=github-pages" >> .env
       - name: Load Environment Variables
         if: github.ref == 'refs/heads/prod'
-        run: echo "${{ secrets.PROD_ENV_FILE }}" > .env
+        run: |
+          echo "${{ secrets.PROD_ENV_FILE }}" > .env
+          echo "NEXT_PUBLIC_HOSTING=github-pages" >> .env
       - name: Build and Export
         run: |
           yarn build

@@ -12,7 +12,7 @@ import CategoryPieChart, {
 } from "../../components/charts/CategoryPieChart";
 import { organizeByCategory } from "./PortfolioComposition";
 import { memo, useMemo } from "react";
-
+import { ASSET_CONFIG } from "../../config/assetConfig";
 // Extract balance display component
 const BalanceDisplay = memo(function BalanceDisplay({
   usdBalance,
@@ -52,7 +52,7 @@ const BalanceDisplay = memo(function BalanceDisplay({
           className="flex items-center text-gray-500 hover:text-gray-400 transition-colors"
         >
           <Image
-            src="/projectPictures/debank.webp"
+            src={ASSET_CONFIG.getAssetPath("/projectPictures/debank.webp")}
             alt="debank"
             height={25}
             width={25}

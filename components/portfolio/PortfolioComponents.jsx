@@ -1,7 +1,7 @@
 import { Spin } from "antd";
 import Image from "next/image";
 import ImageWithFallback from "../../pages/basicComponents/ImageWithFallback";
-
+import { ASSET_CONFIG } from "../../config/assetConfig";
 export const TokenDisplay = ({ protocol }) => {
   return (
     <div className="flex flex-col gap-1 max-w-[200px]">
@@ -34,7 +34,9 @@ export const ProtocolInfo = ({ protocol }) => (
     <div className="flex items-center gap-4">
       <div className="relative inline-flex items-center">
         <Image
-          src={`/projectPictures/${protocol.interface.protocolName}.webp`}
+          src={ASSET_CONFIG.getAssetPath(
+            `/projectPictures/${protocol.interface.protocolName}.webp`,
+          )}
           alt={protocol.interface.protocolName}
           height={35}
           width={35}
@@ -42,7 +44,9 @@ export const ProtocolInfo = ({ protocol }) => (
         />
         <div className="absolute -bottom-1 -right-1">
           <Image
-            src={`/chainPicturesWebp/${protocol.interface.chain}.webp`}
+            src={ASSET_CONFIG.getAssetPath(
+              `/chainPicturesWebp/${protocol.interface.chain}.webp`,
+            )}
             alt={protocol.interface.chain}
             height={20}
             width={20}
