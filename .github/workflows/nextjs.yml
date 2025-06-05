@@ -56,11 +56,9 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:
-          # Automatically inject basePath in your Next.js configuration file and disable
-          # server side image optimization (https://nextjs.org/docs/api-reference/next/image#unoptimized).
-          #
-          # You may remove this line if you want to manage the configuration yourself.
+          # Configure for GitHub Pages with custom domain
           static_site_generator: next
+          enablement: true
       - name: Restore cache
         uses: actions/cache@v4
         with:
@@ -75,12 +73,20 @@ jobs:
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
       - name: Load Environment Variables
         if: github.ref == 'refs/heads/main'
-        run: echo "${{ secrets.STAGING_ENV_FILE }}" > .env
+        run: |
+          echo "${{ secrets.STAGING_ENV_FILE }}" > .env
+          echo "NEXT_PUBLIC_BASE_PATH=/zappilot" >> .env
+          echo "NEXT_PUBLIC_ASSET_PREFIX=/zappilot" >> .env
       - name: Load Environment Variables
         if: github.ref == 'refs/heads/prod'
-        run: echo "${{ secrets.PROD_ENV_FILE }}" > .env
+        run: |
+          echo "${{ secrets.PROD_ENV_FILE }}" > .env
+          echo "NEXT_PUBLIC_BASE_PATH=/zappilot" >> .env
+          echo "NEXT_PUBLIC_ASSET_PREFIX=/zappilot" >> .env
       - name: Build with Next.js
-        run: ${{ steps.detect-package-manager.outputs.runner }} next build
+        run: |
+          ${{ steps.detect-package-manager.outputs.runner }} next build
+          ${{ steps.detect-package-manager.outputs.runner }} next export
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
