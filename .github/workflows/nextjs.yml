@@ -5,10 +5,12 @@
 name: Deploy Next.js site to Pages
 
 on:
-  # Runs on pushes targeting main and prod branches
+  # Runs on pushes to any branch and pull requests
   push:
-    # branches: ["main", "prod"]
     branches: ["*"]
+  pull_request:
+    branches: ["*"]
+    types: [opened, synchronize, reopened]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
