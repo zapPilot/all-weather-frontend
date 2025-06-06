@@ -3,7 +3,7 @@ name: Sync to staging repo
 on:
   push:
     branches:
-      - prod # 或你使用的 production 分支
+      - main
 
 jobs:
   sync:
