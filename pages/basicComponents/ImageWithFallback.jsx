@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import Image from "next/image";
-
+import { ASSET_CONFIG } from "../../config/assetConfig";
 const ImageWithFallback = ({ token, height, width, domKey, className }) => {
   const [imgSrc, setImgSrc] = useState(() => {
-    if (!token) return "/tokenPictures/placeholder.webp";
+    if (!token)
+      return ASSET_CONFIG.getAssetPath("/tokenPictures/placeholder.webp");
 
     const cleanedToken = token
       .trim()
@@ -12,7 +13,7 @@ const ImageWithFallback = ({ token, height, width, domKey, className }) => {
       .replace("pt ", "")
       .replace(/[()]/g, "")
       .split(" ")[0];
-    return `/tokenPictures/${cleanedToken}.webp`;
+    return ASSET_CONFIG.getAssetPath(`/tokenPictures/${cleanedToken}.webp`);
   });
   return (
     <Image
@@ -34,11 +35,13 @@ const ImageWithFallback = ({ token, height, width, domKey, className }) => {
           "dai",
         ]) {
           if (token.toLowerCase().includes(commonToken)) {
-            setImgSrc(`/tokenPictures/${commonToken}.webp`);
+            setImgSrc(
+              ASSET_CONFIG.getAssetPath(`/tokenPictures/${commonToken}.webp`),
+            );
             return;
           }
         }
-        setImgSrc("/tokenPictures/placeholder.webp");
+        setImgSrc(ASSET_CONFIG.getAssetPath("/tokenPictures/placeholder.webp"));
       }}
       loading="lazy"
       quality={50}

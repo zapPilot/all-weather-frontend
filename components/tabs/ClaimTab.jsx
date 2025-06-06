@@ -2,7 +2,7 @@ import { Button } from "antd";
 import TokenDropdownInput from "../../pages/views/TokenDropdownInput.jsx";
 import Image from "next/image";
 import { MINIMUM_CLAIM_AMOUNT } from "../../config/minimumThresholds";
-
+import { ASSET_CONFIG } from "../../config/assetConfig";
 const formatUSD = (value) => value.toFixed(2);
 
 const getChainRewards = (pendingRewards, currentChain) => {
@@ -57,7 +57,9 @@ export default function ClaimTab({
         Convert Rewards to ${formatUSD(totalRewardValue)} worth of
         <Image
           key={selectedTokenSymbol}
-          src={`/tokenPictures/${selectedTokenSymbol}.webp`}
+          src={ASSET_CONFIG.getAssetPath(
+            `/tokenPictures/${selectedTokenSymbol}.webp`,
+          )}
           width="20"
           height="20"
           alt={selectedTokenSymbol}

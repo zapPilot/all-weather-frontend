@@ -1,13 +1,13 @@
 import React, { memo, useMemo } from "react";
 import { Popover, Image, Spin } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
-
+import { ASSET_CONFIG } from "../../../config/assetConfig";
 // Extracted token display component for better performance
 const TokenDisplay = memo(function TokenDisplay({ symbol, usdValue }) {
   return (
     <div className="flex items-center gap-2 py-1">
       <Image
-        src={`/tokenPictures/${symbol}.webp`}
+        src={ASSET_CONFIG.getAssetPath(`/tokenPictures/${symbol}.webp`)}
         width={20}
         height={20}
         alt={symbol}

@@ -10,7 +10,7 @@ import Image from "next/image";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { Spin } from "antd";
 import flowChartEventEmitter from "../../utils/FlowChartEventEmitter";
-
+import { ASSET_CONFIG } from "../../config/assetConfig";
 // Dynamically import FlowDirectionGraph with SSR disabled
 const FlowDirectionGraph = dynamic(
   () => import("@ant-design/graphs").then((mod) => mod.FlowDirectionGraph),
@@ -38,7 +38,7 @@ const SwapNode = React.memo(({ nodeData, displayTradingLoss }) => (
   <>
     <div className="flex items-center">
       <Image
-        src="/projectPictures/1inch-network.webp"
+        src={ASSET_CONFIG.getAssetPath("/projectPictures/1inch-network.webp")}
         alt="1inch"
         className="inline-block"
         height={20}

@@ -1,6 +1,6 @@
 import { normalizeChainName } from "../utils/chainHelper";
 import { getProtocolObjByUniqueId } from "../utils/portfolioCalculation";
-
+import { ASSET_CONFIG } from "../config/assetConfig";
 export class PortfolioFlowChartBuilder {
   constructor(portfolio) {
     this.portfolio = portfolio;
@@ -91,7 +91,9 @@ export class PortfolioFlowChartBuilder {
             )}`,
             chain: chain,
             category: category,
-            imgSrc: `/chainPicturesWebp/${chain}.webp`,
+            imgSrc: ASSET_CONFIG.getAssetPath(
+              `/chainPicturesWebp/${chain}.webp`,
+            ),
           };
           chainNodes.push(chainNode);
         } else {
@@ -201,13 +203,17 @@ export class PortfolioFlowChartBuilder {
               id: protocolObj.chain,
               name: actionName,
               chain: protocolObj.chain,
-              imgSrc: `/chainPicturesWebp/${protocolObj.chain}.webp`,
+              imgSrc: ASSET_CONFIG.getAssetPath(
+                `/chainPicturesWebp/${protocolObj.chain}.webp`,
+              ),
             };
             endOfZapOutNodeOnThisChain = {
               id: `endOfZapOutOn${protocolObj.chain}`,
               name: "Start Zapping In",
               chain: protocolObj.chain,
-              imgSrc: `/chainPicturesWebp/${protocolObj.chain}.webp`,
+              imgSrc: ASSET_CONFIG.getAssetPath(
+                `/chainPicturesWebp/${protocolObj.chain}.webp`,
+              ),
             };
             chainNodes.push(chainNode);
             flowChartData.nodes.push(endOfZapOutNodeOnThisChain);
@@ -277,7 +283,9 @@ export class PortfolioFlowChartBuilder {
               id: protocolObj.chain,
               name: `Bridge to ${protocolObj.chain}`,
               chain: protocolObj.chain,
-              imgSrc: `/chainPicturesWebp/${protocolObj.chain}.webp`,
+              imgSrc: ASSET_CONFIG.getAssetPath(
+                `/chainPicturesWebp/${protocolObj.chain}.webp`,
+              ),
             };
             const bridgeEdge = {
               id: `edge-${endOfZapOutNodeOnThisChain.id}-${chainNode.id}`,

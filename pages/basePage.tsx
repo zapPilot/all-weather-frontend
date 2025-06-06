@@ -13,7 +13,7 @@ import { useActiveAccount } from "thirdweb/react";
 import openNotificationWithIcon from "../utils/notification";
 import content from "../config/content";
 import ChainDropdown from "../components/ChainDropdown";
-
+import { ASSET_CONFIG } from "../config/assetConfig";
 const { Header, Footer, Content } = Layout;
 
 interface ChainId {
@@ -39,7 +39,7 @@ const PageHeader = memo(function PageHeader({
         <div className="div-logo">
           <Link href="/">
             <Image
-              src="/logo.png"
+              src={ASSET_CONFIG.getAssetPath("/logo.png")}
               alt="logo"
               width={40}
               height={40}
@@ -175,7 +175,9 @@ const BasePage: React.FC<BasePageProps> = memo(function BasePage({
   const headContent = useMemo(
     () => (
       <Head>
-        <title>Zap Pilot: {content.siteInfo.tagline}</title>
+        <title>{`Zap Pilot${
+          content?.siteInfo?.tagline ? `: ${content.siteInfo.tagline}` : ""
+        }`}</title>
         <meta content="Zap Pilot" name="description" />
         <link href="/favicon.ico" rel="icon" />
       </Head>
