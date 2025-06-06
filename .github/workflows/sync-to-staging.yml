@@ -3,7 +3,7 @@ name: Sync to staging repo
 on:
   push:
     branches:
-      - prod # 或你使用的 production 分支
+      - main
 
 jobs:
   sync:
@@ -13,9 +13,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Push to staging repo
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           git config user.name "GitHub Action"
           git config user.email "actions@github.com"
 
-          git remote add staging https://<YOUR_GITHUB_TOKEN>@github.com/zappilot/frontend-staging.git
-          git push -f staging prod:main
+          git remote add staging https://${{ secrets.YOUR_GITHUB_TOKEN }}@github.com/zapPilot/frontend-staging.git
+          git push -f staging main:main

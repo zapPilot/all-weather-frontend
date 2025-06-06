@@ -150,6 +150,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
     vaults: ["Index 500 Vault"],
   },
   tbtc: {
+    // coinmarketcapApiId: 32994,
     coinmarketcapApiId: 5776,
     vaults: ["Index 500 Vault"],
   },
