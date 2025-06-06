@@ -5,7 +5,7 @@ import NavBar from "./NavBar.jsx";
 import { MenuOutlined, CloseOutlined } from "@ant-design/icons";
 import { ConfigProvider, Drawer } from "antd";
 import styles from "../../styles/Home.module.css";
-import { ASSET_CONFIG } from "../../config/assetConfig";
+
 // Extract theme configuration outside component to prevent recreation
 const DRAWER_THEME = {
   token: {
@@ -30,7 +30,7 @@ const Header = memo(function Header() {
     () => (
       <Link href="/">
         <Image
-          src={ASSET_CONFIG.getAssetPath("/logo.png")}
+          src="/logo.png"
           alt="logo"
           width={40}
           height={40}

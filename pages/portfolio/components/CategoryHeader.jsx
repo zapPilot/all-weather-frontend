@@ -1,14 +1,11 @@
 import { memo, useMemo } from "react";
 import Image from "next/image";
 import { categoryMapping } from "../PortfolioComposition";
-import { ASSET_CONFIG } from "../../../config/assetConfig";
+
 const CategoryHeader = memo(({ category }) => {
   const categoryName = useMemo(() => categoryMapping[category], [category]);
   const imageSrc = useMemo(
-    () =>
-      ASSET_CONFIG.getAssetPath(
-        `/tokenPictures/${categoryName?.toLowerCase()}.webp`,
-      ),
+    () => `/tokenPictures/${categoryName?.toLowerCase()}.webp`,
     [categoryName],
   );
 

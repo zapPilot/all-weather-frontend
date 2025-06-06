@@ -15,7 +15,7 @@ import ActionItem from "../../components/common/ActionItem";
 import { getNextChain } from "../../utils/chainOrder";
 import React from "react";
 import flowChartEventEmitter from "../../utils/FlowChartEventEmitter";
-import { ASSET_CONFIG } from "../../config/assetConfig";
+
 const formatAmount = (amount) => {
   if (amount === undefined || amount === null) return <Spin />;
   const absAmount = Math.abs(amount);
@@ -203,9 +203,7 @@ export default function PopUpModal({
     );
     return {
       name: nextChain,
-      imagePath: ASSET_CONFIG.getAssetPath(
-        `/chainPicturesWebp/${nextChain?.toLowerCase()}.webp`,
-      ),
+      imagePath: `/chainPicturesWebp/${nextChain?.toLowerCase()}.webp`,
     };
   };
 
