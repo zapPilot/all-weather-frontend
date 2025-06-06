@@ -17,7 +17,7 @@ import { walletAddressChanged } from "../lib/features/subscriptionSlice.js";
 import TableComponent, { ExpandTableComponent } from "./views/PoolsTable.jsx";
 import { useWindowWidth } from "../utils/chartUtils.js";
 import { useActiveAccount } from "thirdweb/react";
-import { ASSET_CONFIG } from "../config/assetConfig";
+
 interface Pools {
   key: string;
   apr: number;
@@ -420,9 +420,7 @@ const AllWeatherPools: NextPage = () => {
               <Image
                 key={index}
                 // @ts-ignore
-                src={ASSET_CONFIG.getAssetPath(
-                  `/tokenPictures/${token.replace(/[()]/g, "")}.webp`,
-                )}
+                src={`/tokenPictures/${token.replace(/[()]/g, "")}.webp`}
                 alt={token as string}
                 className="inline-block"
                 height={20}

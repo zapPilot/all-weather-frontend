@@ -2,14 +2,14 @@ import { Button, Dropdown } from "antd";
 import Image from "next/image";
 import { normalizeChainName } from "../utils/chainHelper";
 import { base, arbitrum, optimism } from "thirdweb/chains";
-import { ASSET_CONFIG } from "../config/assetConfig";
+
 const createSwitchItems = (switchChain) => [
   {
     key: "1",
     label: (
       <Button type="link" onClick={() => switchChain(arbitrum)}>
         <Image
-          src={ASSET_CONFIG.getAssetPath(`/chainPicturesWebp/arbitrum.webp`)}
+          src={`/chainPicturesWebp/arbitrum.webp`}
           alt="arbitrum"
           height={16}
           width={16}
@@ -23,7 +23,7 @@ const createSwitchItems = (switchChain) => [
     label: (
       <Button type="link" onClick={() => switchChain(base)}>
         <Image
-          src={ASSET_CONFIG.getAssetPath(`/chainPicturesWebp/base.webp`)}
+          src={`/chainPicturesWebp/base.webp`}
           alt="base"
           height={16}
           width={16}
@@ -37,7 +37,7 @@ const createSwitchItems = (switchChain) => [
     label: (
       <Button type="link" onClick={() => switchChain(optimism)}>
         <Image
-          src={ASSET_CONFIG.getAssetPath(`/chainPicturesWebp/optimism.webp`)}
+          src={`/chainPicturesWebp/optimism.webp`}
           alt="optimism"
           height={16}
           width={16}
@@ -64,9 +64,7 @@ const ChainDropdown = ({ chainId, switchChain }) => {
       <div className="flex items-center gap-3 p-2 rounded-md bg-white/90 text-xs cursor-pointer">
         <div className="flex items-center gap-2 p-1">
           <Image
-            src={ASSET_CONFIG.getAssetPath(
-              `/chainPicturesWebp/${chainName}.webp`,
-            )}
+            src={`/chainPicturesWebp/${chainName}.webp`}
             alt={chainName}
             height={16}
             width={16}

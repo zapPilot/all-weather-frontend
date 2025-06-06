@@ -9,12 +9,12 @@ import {
 } from "@ant-design/icons";
 import ImageWithFallback from "../pages/basicComponents/ImageWithFallback";
 import { Tooltip } from "antd";
-import { ASSET_CONFIG } from "../config/assetConfig";
+
 // Memoized chain image component
 const ChainImage = memo(({ chain }) => (
   <Tooltip placement="top" title={chain}>
     <Image
-      src={ASSET_CONFIG.getAssetPath(`/chainPicturesWebp/${chain}.webp`)}
+      src={`/chainPicturesWebp/${chain}.webp`}
       height={20}
       width={20}
       alt={chain}
@@ -30,7 +30,7 @@ ChainImage.displayName = "ChainImage";
 // Memoized pool image component
 const PoolImage = memo(({ pool }) => (
   <Image
-    src={ASSET_CONFIG.getAssetPath(`/projectPictures/${pool.name}.webp`)}
+    src={`/projectPictures/${pool.name}.webp`}
     alt={pool.name}
     className="inline-block me-2"
     height={20}

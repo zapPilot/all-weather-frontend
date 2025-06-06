@@ -18,7 +18,6 @@ import { walletAddressChanged } from "../lib/features/subscriptionSlice";
 import TableComponent, { ExpandTableComponent } from "./views/PoolsTable";
 import { useWindowWidth } from "../utils/chartUtils";
 import { useActiveAccount } from "thirdweb/react";
-import { ASSET_CONFIG } from "../config/assetConfig";
 
 interface Pools {
   key: string;
@@ -145,7 +144,7 @@ const Dashboard: NextPage = () => {
   const biggerTopN = 7;
   const queriesForAllWeather: queriesObj[] = [
     {
-      img: ASSET_CONFIG.getAssetPath("tokenPictures/eth.webp"),
+      img: "/tokenPictures/eth.webp",
       wording: "ETH",
       category: "long_term_bond",
       setStateMethod: setLongTermBond,
@@ -158,7 +157,7 @@ const Dashboard: NextPage = () => {
       topN: 10,
     },
     {
-      img: ASSET_CONFIG.getAssetPath("tokenPictures/usdc.webp"),
+      img: "/tokenPictures/usdc.webp",
       wording: "Stablecoins",
       category: "gold",
       setStateMethod: setGoldData,
@@ -183,7 +182,7 @@ const Dashboard: NextPage = () => {
       topN: 20,
     },
     {
-      img: ASSET_CONFIG.getAssetPath("/tokenPictures/btc.webp"),
+      img: "/tokenPictures/btc.webp",
       wording: "BTC",
       category: "btc",
       setStateMethod: setBtc,
@@ -380,7 +379,7 @@ const Dashboard: NextPage = () => {
                     className="flex items-center gap-2"
                   >
                     <Image
-                      src={ASSET_CONFIG.getAssetPath(categoryMetaData.img)}
+                      src={categoryMetaData.img}
                       width={50}
                       height={50}
                       alt={categoryMetaData.wording}
