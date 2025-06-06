@@ -17,5 +17,5 @@ jobs:
           git config user.name "GitHub Action"
           git config user.email "actions@github.com"
 
-          git remote add staging https://${{ secrets.GITHUB_TOKEN }}@github.com/zappilot/frontend-staging.git
-          git push -f staging prod:main
+          git remote add staging https://${{ secrets.GITHUB_TOKEN }}@github.com/zapPilot/frontend-staging.git
+          git push -f staging main:main
