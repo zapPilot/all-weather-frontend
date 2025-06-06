@@ -1,0 +1,21 @@
+name: Sync to staging repo
+
+on:
+  push:
+    branches:
+      - prod # 或你使用的 production 分支
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Push to staging repo
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "actions@github.com"
+
+          git remote add staging https://<YOUR_GITHUB_TOKEN>@github.com/zappilot/frontend-staging.git
+          git push -f staging prod:main
