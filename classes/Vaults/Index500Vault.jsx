@@ -247,39 +247,40 @@ export class Index500Vault extends BaseVault {
                 decimalOfBestTokenToZapOut: 8,
               },
             ),
-            weight: 0.6,
+            // weight: 0.6,
+            weight: 1,
           },
-          {
-            interface: new BaseVelodrome(
-              "base",
-              8453,
-              ["tbtc", "cbbtc"],
-              "LP",
-              {
-                protocolName: "aerodrome",
-                routerAddress: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
-                protocolVersion: "0",
-                assetAddress: "0x488d6ea6064eEE9352fdCDB7BC50d98A7fF3AD4E",
-                assetDecimals: 18,
-                guageAddress: "0x80AAd55965d1eA36bAf15Ae6Ed798145ec65916F",
-                lpTokens: [
-                  ["tbtc", "0x236aa50979D5f3De3Bd1Eeb40E81137F22ab794b", 18],
-                  ["cbbtc", "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf", 8],
-                ],
-                rewards: [
-                  {
-                    symbol: "aero",
-                    priceId: {
-                      coinmarketcapApiId: 29270,
-                    },
-                    address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
-                    decimals: 18,
-                  },
-                ],
-              },
-            ),
-            weight: 0.4,
-          },
+          // {
+          //   interface: new BaseVelodrome(
+          //     "base",
+          //     8453,
+          //     ["tbtc", "cbbtc"],
+          //     "LP",
+          //     {
+          //       protocolName: "aerodrome",
+          //       routerAddress: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
+          //       protocolVersion: "0",
+          //       assetAddress: "0x488d6ea6064eEE9352fdCDB7BC50d98A7fF3AD4E",
+          //       assetDecimals: 18,
+          //       guageAddress: "0x80AAd55965d1eA36bAf15Ae6Ed798145ec65916F",
+          //       lpTokens: [
+          //         ["tbtc", "0x236aa50979D5f3De3Bd1Eeb40E81137F22ab794b", 18],
+          //         ["cbbtc", "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf", 8],
+          //       ],
+          //       rewards: [
+          //         {
+          //           symbol: "aero",
+          //           priceId: {
+          //             coinmarketcapApiId: 29270,
+          //           },
+          //           address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+          //           decimals: 18,
+          //         },
+          //       ],
+          //     },
+          //   ),
+          //   weight: 0.4,
+          // },
         ],
       },
     };
