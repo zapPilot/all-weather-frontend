@@ -1,3 +1,4 @@
+// copy from this Tailwind template: https://tailwindui.com/components/application-ui/page-examples/detail-screens
 "use client";
 import BasePage from "../basePage.tsx";
 import { useState, useCallback, useEffect, useRef } from "react";
@@ -67,7 +68,7 @@ import {
   prepareTransactionMetadata,
 } from "../../utils/transactionHelpers.js";
 import { getNextChain } from "../../utils/chainOrder";
-import { ASSET_CONFIG } from "../../config/assetConfig";
+
 // Extract chain switching logic
 const useChainSwitching = (switchChain) => {
   const isProcessingChainChangeRef = useRef(false);
@@ -355,9 +356,7 @@ export default function IndexOverviews() {
                     <span className="text-gray-500">Completed on</span>
                     <div className="flex items-center gap-1">
                       <img
-                        src={ASSET_CONFIG.getAssetPath(
-                          `/chainPicturesWebp/${currentChain?.toLowerCase()}.webp`,
-                        )}
+                        src={`/chainPicturesWebp/${currentChain?.toLowerCase()}.webp`}
                         alt={currentChain}
                         className="w-5 h-5 rounded-full"
                       />
@@ -366,9 +365,7 @@ export default function IndexOverviews() {
                     <span className="text-gray-500">→</span>
                     <div className="flex items-center gap-1">
                       <img
-                        src={ASSET_CONFIG.getAssetPath(
-                          `/chainPicturesWebp/${nextChain?.toLowerCase()}.webp`,
-                        )}
+                        src={`/chainPicturesWebp/${nextChain?.toLowerCase()}.webp`}
                         alt={nextChain}
                         className="w-5 h-5 rounded-full"
                       />
@@ -898,16 +895,12 @@ export default function IndexOverviews() {
               <div className="flex items-center">
                 <img
                   alt=""
-                  src={ASSET_CONFIG.getAssetPath(
-                    `/indexFunds/${encodeURIComponent(
-                      portfolioName?.toLowerCase(),
-                    )}.webp`,
-                  )}
+                  src={`/indexFunds/${encodeURIComponent(
+                    portfolioName?.toLowerCase(),
+                  )}.webp`}
                   onError={(e) => {
                     e.target.onerror = null; // Prevent infinite loop
-                    e.target.src = ASSET_CONFIG.getAssetPath(
-                      "/tokenPictures/usdc.webp",
-                    );
+                    e.target.src = "/tokenPictures/usdc.webp";
                   }}
                   className="h-8 w-8 rounded-full me-2"
                 />

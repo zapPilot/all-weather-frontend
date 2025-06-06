@@ -13,7 +13,7 @@ import { useActiveAccount } from "thirdweb/react";
 import openNotificationWithIcon from "../utils/notification";
 import content from "../config/content";
 import ChainDropdown from "../components/ChainDropdown";
-import { ASSET_CONFIG } from "../config/assetConfig";
+
 const { Header, Footer, Content } = Layout;
 
 interface ChainId {
@@ -39,7 +39,7 @@ const PageHeader = memo(function PageHeader({
         <div className="div-logo">
           <Link href="/">
             <Image
-              src={ASSET_CONFIG.getAssetPath("/logo.png")}
+              src="/logo.png"
               alt="logo"
               width={40}
               height={40}

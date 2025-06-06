@@ -7,7 +7,6 @@ import axios from "axios";
 import { timeAgo, unixToCustomFormat } from "../../utils/general";
 import { useRouter } from "next/router";
 import Image from "next/image";
-import { ASSET_CONFIG } from "../../config/assetConfig";
 // Constants
 const ACTION_LABELS = {
   zapIn: "Deposit",
@@ -45,9 +44,7 @@ const updateBalance = (balance, symbol, amount) => ({
 // Memoized components
 const ChainImage = memo(({ chain }) => (
   <Image
-    src={ASSET_CONFIG.getAssetPath(
-      `/chainPicturesWebp/${chain?.replace(" one", "")}.webp`,
-    )}
+    src={`/chainPicturesWebp/${chain?.replace(" one", "")}.webp`}
     height={20}
     width={20}
     loading="lazy"

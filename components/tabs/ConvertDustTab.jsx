@@ -4,7 +4,7 @@ import { getTokens } from "../../utils/dustConversion";
 import ImageWithFallback from "../../pages/basicComponents/ImageWithFallback";
 import { transformToDebankChainName } from "../../utils/chainHelper";
 import Image from "next/image";
-import { ASSET_CONFIG } from "../../config/assetConfig";
+
 // =============== Types ===============
 /**
  * @typedef {Object} Token
@@ -293,9 +293,7 @@ const ConversionStatus = ({
           return (
             <div key={index} className="flex items-center gap-4 p-3">
               <Image
-                src={ASSET_CONFIG.getAssetPath(
-                  `/projectPictures/${msg.dexAggregator}.webp`,
-                )}
+                src={`/projectPictures/${msg.dexAggregator}.webp`}
                 alt={msg.dexAggregator}
                 height={32}
                 width={32}
