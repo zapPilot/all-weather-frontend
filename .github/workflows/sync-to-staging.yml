@@ -19,4 +19,4 @@ jobs:
 
           git remote add staging https://x-access-token:${{ secrets.YOUR_GITHUB_TOKEN }}@github.com/zapPilot/frontend-staging.git
 
-          git push -f staging prod:main
+          git push -f staging main:main
