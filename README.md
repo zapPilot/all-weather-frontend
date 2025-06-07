@@ -1,87 +1,142 @@
+# Zap Pilot Frontend
+
+A DeFi portfolio management application built around a modular protocol architecture for cross-chain yield farming and liquidity provision.
+
 ## Getting Started
 
-First, `cp .env.sample .env.local` and update the values if needed.
+### Prerequisites
 
-Then:
+1. Copy environment configuration: `cp .env.sample .env.local` and update values as needed
+2. Install dependencies: `yarn`
+3. Start development server: `doppler run -- yarn dev`
 
-1. `yarn`
-2. `doppler run -- yarn dev`
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+You can start editing by modifying `pages/index.tsx` - the page auto-updates as you edit.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+## Development Commands
 
-## Some Routines
+- `yarn` - Install dependencies
+- `doppler run -- yarn dev` - Start development server (requires `.env.local` config)
+- `yarn build` - Build for production
+- `yarn lint` - Run ESLint with auto-fix
+- `yarn format` - Format code with Prettier and Black
+- `yarn test` - Run Vitest tests (140s timeout)
+- `yarn test-ui` - Start Vitest UI at http://localhost:51204/__vitest__/
+- `yarn coverage` - Run test coverage report
 
-1. How do we update Chains/Protocols/Tokens's Pictures? Refer to [public/README.md](public/README.md) please
+## Architecture Overview
 
-## Vitest
+### Core Protocol System
 
-1. Configuring Vitest: `Vitest` will read your root `vite.config.js` to match with the plugins and setup as your app.
-2. Add Vitest Unit Test: Create `__tests__` folder in root. Create `basepage.test.jsx` for example.
-3. Running your tests: run `yarn test`.
+The application is built around a modular protocol architecture:
 
-### Vitest Coverage
+- **BaseProtocol** (`classes/BaseProtocol.js`) - Abstract base class for all DeFi protocol integrations
+- **BaseVault** (`classes/Vaults/BaseVault.js`) - Portfolio orchestrator managing multiple protocols with weighted allocations
+- **Protocol Classes** - Concrete implementations for specific protocols (Aave, Convex, Moonwell, Camelot, etc.)
 
-1. install @vitest/coverage-v8 `yarn add @vitest/coverage-v8 --dev`
-2. Showing your Vitest Coverage : run `yarn coverage`.
+### Key Operations
 
-### Vitest UI
+All protocols support standard operations:
+- `zapIn` - Deposit funds into protocol
+- `zapOut` - Withdraw funds from protocol  
+- `stake`/`unstake` - Manage staking positions
+- `transfer` - Move assets between accounts
+- `claimAndSwap` - Harvest rewards and convert
 
-1. Start the tests with UI: run `yarn test-ui`.
-2. Then you can visit the Vitest UI at [http://localhost:51204/**vitest**/](http://localhost:51204/__vitest__/).
+### Vault Strategy
 
-## CI/CD
+Vaults combine multiple protocols with weighted allocations across categories and chains:
+- **Strategy Definition**: `{category: {chain: [{interface: protocol, weight: number}]}}`
+- **Weight Mapping**: Category-level allocations that must sum to 1.0
+- **Auto-normalization**: Weights within categories are automatically normalized
 
-1. [./github/workflows/lint.yaml]: before committing to Github, run `yarn format`. Otherwise, `prettier` would raise an exception
-2. [./github/workflows/vitest.yaml]: before committing to Github, run `yarn test`.
-3. Fleek: Click this link
-   ![fleek](docs/fleek.png)
-4. Deployment:
-   1. staging(branch `main`): <https://all-weather-protocol-staging.on.fleek.co/>
-   2. prod(prod `prod`): <https://all-weather-protocol.on.fleek.co/>
+## Testing
 
-## TO-DO
+### Vitest Configuration
 
-need a linter like this one <https://github.com/david30907d/all-weather-scaffold/actions/runs/5637981937/job/15271636819>
+1. Tests are located in `__tests__/` directory
+2. Protocol-specific tests in `__tests__/intent/` subdirectory
+3. Running tests: `yarn test`
+4. UI interface: `yarn test-ui` → http://localhost:51204/__vitest__/
+5. Coverage reports: `yarn coverage`
 
-## For Devs
+### Testing Guidelines
 
-### How to Integrate New Protocols
+- Create test vaults containing only your protocol for isolated testing
+- Copy existing test patterns from `__tests__/intent/` when adding new protocol tests
+- Comment out `loading={zapInIsLoading}` in ZapInTab.jsx for faster testing
+- Use `TEST=true` environment variable for test-specific behavior
 
-1. Get the Txns for the New Protocol:
-   1. Interact with the protocol using your wallet in your browser. For instance, if you want to integrate a staking pool into All Weather, first stake $1 in it with your EOA wallet.
-   2. Then check your transaction on the explorer to get the method name and parameters we need (e.g., [txn](https://arbiscan.io/tx/0x89732a3f4d946ba1a29b78aabac6114bb62aba236cd77eacbd7417d8c49fb15e))
-      1. function name ![function](./docs/function.png)
-      2. params ![params](./docs/params.png)
-      3. contract address ![contract_address](./docs/contract_address.png)
-      4. contract code ![contract_code](./docs/contract_code.png)
-      5. ABI ![ABI](./docs/ABI.png)
-   3. Save those ABI json files to this [folder](https://github.com/all-weather-protocol/all-weather-frontend/tree/main/lib/contracts) by protocol
-2. Development - Implement Transactions from Step 1 in JS:
-   1. Inherit from [BaseProtocol.js](./classes/BaseProtocol.js)
-   2. Add your new protocol class to an existing vault (like [EthVault](./classes/Vaults/EthVault.jsx)) or create a new one
-      - Tip: While developing, comment out other protocols in the vault to speed up bundled transactions
-   3. Integrate into the Vault: [./utils/thirdwebSmartWallet.ts](./utils/thirdwebSmartWallet.ts)
-   4. Add your new vault to the [landing page](./pages/indexes/index.jsx)
-   5. Test on the frontend-side
-3. Testing:
-   1. Create a test vault containing only your protocol, similar to [this example](https://github.com/all-weather-protocol/all-weather-frontend/blob/main/utils/thirdwebSmartWallet.ts#L17-L22)
-   2. Copy existing test cases from [./**tests**/intent](./__tests__/intent/) and modify them for your protocol
-4. Update Transaction Parser in Rebalance Backend: `_find_refund_data_by_txn_hash()`
-5. Tips:
-   1. comment the `loading={zapInIsLoading}` in ZapInTab.jsx for testing
-   2. comment the `depositTxn`, `stakeTxn` etc in the new protocol class for testing
+## Development Workflows
 
-### How to Integrate New Chain
+### Integrating New Protocols
 
-<https://portal.thirdweb.com/connect#supported-chains>
+1. **Research Phase**
+   - Interact with the protocol using your wallet
+   - Capture transaction details from block explorer ([example txn](https://arbiscan.io/tx/0x89732a3f4d946ba1a29b78aabac6114bb62aba236cd77eacbd7417d8c49fb15e))
+   - Extract: function name, parameters, contract address, ABI
+   - Save ABI files to `lib/contracts/` directory
 
-1. Need to check if bridge supports the new chain
-2. Update UI of course
-3. Update CHAIN_ID_TO_CHAIN, etc... in general.js
-4. Need to update the gas sponsorship settings on ThirdWeb
-5. check these funcs in indexOverviews.jsx:
-   * `switchNextChain`
-   * `const [chainStatus, setChainStatus]`
-   * `chainMap`
+2. **Implementation**
+   - Inherit from [BaseProtocol.js](./classes/BaseProtocol.js)
+   - Implement required methods: `customDeposit`, `customWithdrawAndClaim`, `_stake`, `_unstake`, `pendingRewards`
+   - Set protocol metadata: `protocolName`, `protocolVersion`, contract addresses
+   - Handle both "single" token and "LP" token modes
+
+3. **Integration**
+   - Add protocol to existing vault (like [EthVault](./classes/Vaults/EthVault.jsx)) or create new vault
+   - Update vault strategy in [./utils/thirdwebSmartWallet.ts](./utils/thirdwebSmartWallet.ts)
+   - Add vault to [landing page](./pages/indexes/index.jsx)
+
+4. **Testing**
+   - Create isolated test vault with only your protocol
+   - Copy and modify test cases from [__tests__/intent/](./__tests__/intent/)
+   - Test frontend integration
+
+5. **Backend Integration**
+   - Update transaction parser in rebalance backend: `_find_refund_data_by_txn_hash()`
+
+### Integrating New Chains
+
+Reference: [ThirdWeb Supported Chains](https://portal.thirdweb.com/connect#supported-chains)
+
+1. Verify bridge support for the new chain
+2. Update chain mappings in `utils/general.js` (`CHAIN_ID_TO_CHAIN`, etc.)
+3. Configure gas sponsorship settings in ThirdWeb
+4. Update UI components for chain selection
+5. Modify chain-specific functions in `indexOverviews.jsx`:
+   - `switchNextChain`
+   - `chainStatus` state management
+   - `chainMap` object
+
+## CI/CD & Deployment
+
+### Pre-commit Requirements
+
+1. Code formatting: Run `yarn format` before committing (enforced by Prettier in CI)
+2. Tests: Run `yarn test` before committing
+
+### Deployment Environments
+
+- **Staging** (branch `main`): https://all-weather-protocol-staging.on.fleek.co/
+- **Production** (branch `prod`): https://all-weather-protocol.on.fleek.co/
+
+## Asset Management
+
+For updating chain/protocol/token images, refer to [public/README.md](public/README.md).
+
+Images are stored in WebP format in:
+- `public/chainPicturesWebp/` - Chain logos
+- `public/projectPictures/` - Protocol logos
+
+## Development Tips
+
+- Comment out other protocols in vaults during development to speed up testing
+- Comment out transaction calls (`depositTxn`, `stakeTxn`) in protocol classes for UI testing
+- Use isolated test vaults for protocol development
+- Environment setup requires Doppler for environment variable management
+
+---
+
+For detailed architecture information, see [CLAUDE.md](./CLAUDE.md).
