@@ -8,6 +8,9 @@ jobs:
     if: github.repository == 'zapPilot/frontend-staging'
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
       - uses: repo-sync/github-sync@v2
         with:
           source_repo: zapPilot/all-weather-frontend
