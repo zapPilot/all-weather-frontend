@@ -1,27 +1,16 @@
-name: Sync to staging repo
-
 on:
-  push:
-    branches:
-      - main
+  schedule:
+    - cron: '0 * * * *' # hourly
+  workflow_dispatch:
 
 jobs:
   sync:
+    if: github.repository == 'zapPilot/frontend-staging'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Git and push
-        run: |
-          # Debug: Check if tokens exist
-          echo "YOUR_GITHUB_TOKEN exists: ${{ secrets.YOUR_GITHUB_TOKEN != '' }}"
-          echo "GITHUB_TOKEN exists: ${{ secrets.GITHUB_TOKEN != '' }}"
-          echo "PAT_TOKEN exists: ${{ secrets.PAT_TOKEN != '' }}"
-
-          git config user.name "david30907d"
-          git config user.email "davidtnfsh@gmail.com"
-
-          git remote add staging https://x-access-token:${{ secrets.YOUR_GITHUB_TOKEN }}@github.com/zapPilot/frontend-staging.git
-
-          git push -f staging HEAD:main
+      - uses: repo-sync/github-sync@v2
+        with:
+          source_repo: zapPilot/all-weather-frontend
+          source_branch: main
+          destination_branch: main
+          github_token: ${{ secrets.YOUR_GITHUB_TOKEN }}
