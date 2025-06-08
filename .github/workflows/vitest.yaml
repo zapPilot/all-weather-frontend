@@ -10,6 +10,7 @@ on:
 
 jobs:
   test:
+    if: github.repository != 'zapPilot/frontend-staging'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 7 # Job will timeout after 7 minutes
     env:

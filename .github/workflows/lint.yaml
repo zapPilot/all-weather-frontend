@@ -10,6 +10,7 @@ on:
 
 jobs:
   ci:
+    if: github.repository != 'zapPilot/frontend-staging'
     runs-on: ${{ matrix.os }}
 
     strategy:

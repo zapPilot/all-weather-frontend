@@ -1,6 +1,6 @@
 on:
   schedule:
-    - cron: '0 * * * *' # hourly
+    - cron: "0 * * * *" # hourly
   workflow_dispatch:
 
 jobs:
@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - uses: repo-sync/github-sync@v2
         with:
           source_repo: zapPilot/all-weather-frontend
