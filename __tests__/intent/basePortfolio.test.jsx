@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 import { describe, it, expect, beforeEach } from "vitest";
 const mockProtocolInterface = {
   uniqueId: () => "mock-protocol-1",
+  oldUniqueId: () => "mock-protocol-1",
   getZapInFlowChartData: (tokenSymbol, tokenAddress, weight) => ({
     nodes: [{ id: "mock-zap-in-node", name: "Zap In" }],
     edges: [
