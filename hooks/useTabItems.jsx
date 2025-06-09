@@ -170,13 +170,6 @@ export default function useTabItems({
     [portfolioApr, portfolioName],
   );
 
-  const isAppDomain = useMemo(
-    () =>
-      typeof window !== "undefined" &&
-      window.location.hostname.startsWith("app"),
-    [],
-  );
-
   // Memoized tab items
   const tabItems = useMemo(() => {
     const baseItems = [
@@ -222,15 +215,12 @@ export default function useTabItems({
         label: <DustZapLabel />,
         children: <ConvertDustTab {...props} />,
       },
-    ];
-
-    if (!isAppDomain) {
-      baseItems.push({
+      {
         key: TAB_KEYS.TRANSFER,
         label: "Transfer",
         children: <TransferTab {...props} />,
-      });
-    }
+      },
+    ];
 
     return baseItems;
   }, [
@@ -241,7 +231,6 @@ export default function useTabItems({
     pendingRewards,
     pendingRewardsLoading,
     sumOfPendingRewards,
-    isAppDomain,
   ]);
 
   return tabItems;
