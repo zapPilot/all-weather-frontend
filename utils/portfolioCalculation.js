@@ -75,7 +75,7 @@ export const getProtocolObjByUniqueId = (strategy, uniqueId) => {
   for (const protocolsInThisCategory of Object.values(strategy)) {
     for (const protocolsOnThisChain of Object.values(protocolsInThisCategory)) {
       for (const protocol of protocolsOnThisChain) {
-        if (protocol.interface.uniqueId() === uniqueId) return protocol;
+        if (protocol.interface.oldUniqueId() === uniqueId) return protocol;
       }
     }
   }

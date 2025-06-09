@@ -199,7 +199,12 @@ export default function useTabItems({
             isLoading={rebalancableUsdBalanceDictLoading}
           />
         ),
-        children: <RebalanceTab {...props} />,
+        children: (
+          <RebalanceTab
+            {...props}
+            rebalancableUsdBalanceDict={rebalancableUsdBalanceDict}
+          />
+        ),
       },
       {
         key: TAB_KEYS.CLAIM,
