@@ -776,7 +776,9 @@ export class BasePortfolio {
       currentChain,
       onlyThisChain,
     );
-    if (zapOutUsdcBalance === 0 && actionName !== "localRebalance") return [];
+    if (zapOutUsdcBalance === 0 && actionName !== "localRebalance") {
+      throw new Error("Something went wrong, no assets to zap out");
+    }
     // TODO(david): currently we don't support zap in different token than zap out
     // Also, we don't reinvest rewards back to pools, due to the risk of slippage
     const zapInAmount = this.mul_with_slippage_in_bignumber_format(
@@ -1031,7 +1033,6 @@ export class BasePortfolio {
           },
         ),
     );
-
     // Wait for all protocol processing to complete
     const results = await Promise.all(protocolPromises);
 
@@ -1040,7 +1041,6 @@ export class BasePortfolio {
       txns = txns.concat(result.txns);
       zapOutUsdcBalance += result.balance;
     });
-
     return [txns, zapOutUsdcBalance];
   }
 
@@ -1058,10 +1058,8 @@ export class BasePortfolio {
       owner,
       tokenPricesMappingTable,
     );
-
-    const protocolClassName = protocol.interface.uniqueId();
-    const zapOutPercentage =
-      rebalancableDict[protocolClassName]?.zapOutPercentage;
+    const uniqueId = protocol.interface.oldUniqueId();
+    const zapOutPercentage = rebalancableDict[uniqueId].zapOutPercentage;
     if (
       usdBalance === 0 ||
       usdBalance * zapOutPercentage < 1 ||

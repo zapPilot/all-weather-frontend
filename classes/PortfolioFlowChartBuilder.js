@@ -194,6 +194,11 @@ export class PortfolioFlowChartBuilder {
           !zapOutChains.includes(protocolObj.chain)
         )
           continue;
+        if (!protocolObjInterface) {
+          throw new Error(
+            `Protocol object interface not found for key: ${key}`,
+          );
+        }
         if (protocolObj.weightDiff > this.portfolio.rebalanceThreshold()) {
           if (!chainSet.has(protocolObj.chain)) {
             chainSet.add(protocolObj.chain);
