@@ -113,6 +113,7 @@ export const handleTransactionError = async (
   actionName,
   actionParams,
 ) => {
+  console.error("error", error);
   const userMessage = mapErrorToUserFriendlyMessage(error);
   if (userMessage === ERROR_MESSAGES.REJECTED_TRANSACTION) return;
   // Log error to Discord in production

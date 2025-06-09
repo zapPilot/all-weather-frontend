@@ -57,7 +57,7 @@ export default function ClaimTab({
         Convert Rewards to ${formatUSD(totalRewardValue)} worth of
         <Image
           key={selectedTokenSymbol}
-          src={`/tokenPictures/${selectedTokenSymbol}.webp`}
+          src={`/tokenPictures/${selectedTokenSymbol.toLowerCase()}.webp`}
           width="20"
           height="20"
           alt={selectedTokenSymbol}

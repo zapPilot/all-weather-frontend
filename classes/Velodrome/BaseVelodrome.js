@@ -219,12 +219,12 @@ export class BaseVelodrome extends BaseProtocol {
     slippage,
     updateProgress,
   ) {
-    // NOTE: This is a temporary fix to the issue of the minAmount being too low. Slippage is set to 10% for now.
+    // NOTE: This is a temporary fix to the issue of the minAmount being too low. Slippage is set to 20% for now.
     const tokens = [tokenAmetadata, tokenBmetadata].map(
       ([symbol, address, decimals, amount]) => ({
         address,
         amount,
-        minAmount: this.mul_with_slippage_in_bignumber_format(amount, 10),
+        minAmount: this.mul_with_slippage_in_bignumber_format(amount, 20),
         decimals,
         symbol,
       }),
