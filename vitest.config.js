@@ -18,6 +18,7 @@ export default defineConfig({
       ],
     },
     env: {
+      ...config({ path: "./.env" }).parsed,
       ...config({ path: "./.env.local" }).parsed,
     },
     testTimeout: 140000,
