@@ -16,7 +16,7 @@ export const determineSlippage = (params) => {
     return 3;
   }
   if (key === "5") {
-    return 50;
+    return 40;
   }
 
   // ETH/WETH for Stable+ Vault uses 3% slippage

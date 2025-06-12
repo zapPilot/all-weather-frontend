@@ -1,41 +1,61 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 
 const useWindowWidth = () => {
-  const [windowWidth, setWindowWidth] = useState(0); // 視窗高度狀態
+  const [windowWidth, setWindowWidth] = useState(0);
+  const timeoutRef = useRef(null);
+
+  const debouncedHandleResize = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      setWindowWidth(window.innerWidth);
+    }, 150); // 150ms debounce delay
+  }, []);
 
   useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth); // 調整視窗高度並減去 Header 的高度（64）
-    };
+    // Set initial value
+    setWindowWidth(window.innerWidth);
 
-    window.addEventListener("resize", handleResize); // 監聽視窗大小改變事件
-
-    handleResize(); // 初始化視窗高度
+    window.addEventListener("resize", debouncedHandleResize);
 
     return () => {
-      window.removeEventListener("resize", handleResize); // 移除事件監聽器
+      window.removeEventListener("resize", debouncedHandleResize);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
     };
-  }, []);
+  }, [debouncedHandleResize]);
 
   return windowWidth;
 };
 
 const useWindowHeight = () => {
-  const [windowHeight, setWindowHeight] = useState(0); // 視窗高度狀態
+  const [windowHeight, setWindowHeight] = useState(0);
+  const timeoutRef = useRef(null);
+
+  const debouncedHandleResize = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      setWindowHeight(window.innerHeight - 170);
+    }, 150); // 150ms debounce delay
+  }, []);
 
   useEffect(() => {
-    const handleResize = () => {
-      setWindowHeight(window.innerHeight - 170); // 調整視窗高度並減去 Header 的高度（64）
-    };
+    // Set initial value
+    setWindowHeight(window.innerHeight - 170);
 
-    window.addEventListener("resize", handleResize); // 監聽視窗大小改變事件
-
-    handleResize(); // 初始化視窗高度
+    window.addEventListener("resize", debouncedHandleResize);
 
     return () => {
-      window.removeEventListener("resize", handleResize); // 移除事件監聽器
+      window.removeEventListener("resize", debouncedHandleResize);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
     };
-  }, []);
+  }, [debouncedHandleResize]);
 
   return windowHeight;
 };

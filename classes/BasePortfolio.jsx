@@ -16,6 +16,7 @@ import swap from "../utils/swapHelper";
 import { PortfolioFlowChartBuilder } from "./PortfolioFlowChartBuilder";
 import { getProtocolObjByUniqueId } from "../utils/portfolioCalculation";
 import flowChartEventEmitter from "../utils/FlowChartEventEmitter";
+import logger from "../utils/logger";
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 
@@ -82,16 +83,16 @@ export class BasePortfolio {
   }
   async usdBalanceOf(address, portfolioAprDict) {
     // Get token prices
-    console.time("getTokenPricesMappingTable");
+    logger.time("getTokenPricesMappingTable");
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
-    console.timeEnd("getTokenPricesMappingTable");
+    logger.timeEnd("getTokenPricesMappingTable");
     // Get balances and rewards
-    console.time("getBalances");
+    logger.time("getBalances");
     const balanceResults = await this._getBalances(
       address,
       tokenPricesMappingTable,
     );
-    console.timeEnd("getBalances");
+    logger.timeEnd("getBalances");
     // Initialize balance dictionary with rewards
     let usdBalance = 0;
     const usdBalanceDict = this._initializeBalanceDict();
@@ -370,7 +371,7 @@ export class BasePortfolio {
           tvl: data.tvl,
         };
       } catch (error) {
-        console.error(`Error fetching data for ${url}:`, error);
+        logger.error(`Error fetching data for ${url}:`, error);
         return null;
       }
     };
@@ -419,7 +420,7 @@ export class BasePortfolio {
           (prevTotalTradingLoss) => prevTotalTradingLoss + tradingLoss,
         );
       } else {
-        console.error(`${nodeID}: tradingLoss is not a number: ${tradingLoss}`);
+        logger.error(`${nodeID}: tradingLoss is not a number: ${tradingLoss}`);
       }
     };
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
@@ -471,7 +472,7 @@ export class BasePortfolio {
         actionParams.updateProgress,
       );
     }
-    console.time("processProtocolActions");
+    logger.time("processProtocolActions");
     // Process each protocol
     const protocolTxns = await this._processProtocolActions(
       actionName,
@@ -681,7 +682,7 @@ export class BasePortfolio {
               );
               return txns || [];
             } catch (error) {
-              console.error(
+              logger.error(
                 `Error processing protocol ${protocol.interface?.uniqueId?.()}:`,
                 error,
               );
@@ -709,7 +710,7 @@ export class BasePortfolio {
               Math.pow(10, actionParams.tokenDecimals)) *
             actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol];
           if (totalWeight === 0 || bridgeUsd < 1) {
-            console.warn(
+            logger.warn(
               `Skipping bridge to ${chain} because of low amount: ${bridgeUsd} USD`,
             );
             return [];
@@ -717,7 +718,7 @@ export class BasePortfolio {
           try {
             return await actionHandlers["bridge"](chain, totalWeight);
           } catch (error) {
-            console.error(`Error processing bridge to ${chain}:`, error);
+            logger.error(`Error processing bridge to ${chain}:`, error);
             return [];
           }
         },
@@ -848,7 +849,7 @@ export class BasePortfolio {
         tokenPricesMappingTable[
           this._getRebalanceMiddleTokenConfig(currentChain, true).symbol
         ];
-      console.log(`Bridge amount: ${bridgeUsd} to ${chain}`);
+      logger.debug(`Bridge amount`, { bridgeUsd, chain });
       if (bridgeUsd < this.bridgeUsdThreshold) return [];
       const bridgeToOtherChainTxns = await getTheBestBridgeTxns(
         owner,
@@ -995,7 +996,7 @@ export class BasePortfolio {
                     chain,
                   };
                 } catch (error) {
-                  console.error(
+                  logger.error(
                     `Failed to process protocol ${
                       protocol.interface.uniqueId() || "Unknown"
                     } on chain ${chain}:`,
@@ -1018,7 +1019,7 @@ export class BasePortfolio {
               (result) => !result.success,
             );
             if (failedProtocols.length > 0) {
-              console.warn(
+              logger.warn(
                 "Failed protocols:",
                 failedProtocols.map((fp) => ({
                   protocol: fp.protocol,

@@ -1,3 +1,4 @@
+import logger from "./logger";
 import axios from "axios";
 import { isLocalEnvironment } from "./general";
 
@@ -94,7 +95,7 @@ const logErrorToDiscord = async (error, address, chain, actionName) => {
       } on ${chain} ${actionName}`,
     });
   } catch (webhookError) {
-    console.error("Failed to log error to Discord:", webhookError);
+    logger.error("Failed to log error to Discord:", webhookError);
   }
 };
 
@@ -113,7 +114,7 @@ export const handleTransactionError = async (
   actionName,
   actionParams,
 ) => {
-  console.error("error", error);
+  logger.error("error", error);
   const userMessage = mapErrorToUserFriendlyMessage(error);
   if (userMessage === ERROR_MESSAGES.REJECTED_TRANSACTION) return;
   // Log error to Discord in production

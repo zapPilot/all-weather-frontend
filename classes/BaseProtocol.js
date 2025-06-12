@@ -12,6 +12,7 @@ import {
   addPendingRewardsToBalance,
   createTokenBalanceEntry,
 } from "../utils/portfolioCalculation";
+import logger from "../utils/logger";
 
 export default class BaseProtocol extends BaseUniswap {
   constructor(chain, chaindId, symbolList, mode, customParams) {
@@ -174,7 +175,7 @@ export default class BaseProtocol extends BaseUniswap {
       );
       return finalTxns;
     } catch (error) {
-      console.error("Error in zapIn:", error);
+      logger.error("Error in zapIn:", error);
       throw error;
     }
   }
@@ -371,7 +372,7 @@ export default class BaseProtocol extends BaseUniswap {
       this.checkTxnsToDataNotUndefined(txns, "zapOut");
       return txns;
     } catch (error) {
-      console.error("Error in zapOut:", error);
+      logger.error("Error in zapOut:", error);
       throw error;
     }
   }
@@ -409,7 +410,7 @@ export default class BaseProtocol extends BaseUniswap {
       this.checkTxnsToDataNotUndefined(finalTxns, "claimAndSwap");
       return finalTxns;
     } catch (error) {
-      console.error("Error in claimAndSwap:", error);
+      logger.error("Error in claimAndSwap:", error);
       throw error;
     }
   }
@@ -872,7 +873,7 @@ export default class BaseProtocol extends BaseUniswap {
     if (this._isAmountInValidRange(newAmount, maxUint256)) {
       balancedAmounts[indexToAdjust] = newAmount;
     } else {
-      console.error(
+      logger.error(
         `Amount[${indexToAdjust}] outside safe uint256 range - setting to 0`,
       );
       balancedAmounts[indexToAdjust] = ethers.BigNumber.from("0");
@@ -902,7 +903,7 @@ export default class BaseProtocol extends BaseUniswap {
       !withdrawTokenAndBalance ||
       typeof withdrawTokenAndBalance !== "object"
     ) {
-      console.warn(
+      logger.warn(
         `${this.uniqueId()}: Invalid withdrawTokenAndBalance format:`,
         withdrawTokenAndBalance,
       );
@@ -914,7 +915,7 @@ export default class BaseProtocol extends BaseUniswap {
     )) {
       // Validate token metadata
       if (!tokenMetadata || typeof tokenMetadata !== "object") {
-        console.warn(
+        logger.warn(
           `${this.uniqueId()}: Invalid tokenMetadata for address ${address}:`,
           tokenMetadata,
         );
@@ -927,7 +928,7 @@ export default class BaseProtocol extends BaseUniswap {
 
       // Validate required fields
       if (!amount || !fromTokenSymbol || !fromTokenDecimals) {
-        console.warn(
+        logger.warn(
           `${this.uniqueId()}: Missing required fields for token at address ${address}:`,
           {
             amount,
@@ -947,7 +948,7 @@ export default class BaseProtocol extends BaseUniswap {
         // if usd value of this token is less than 1, then it's easy to suffer from high slippage
         tokenMetadata.usdDenominatedValue < 1
       ) {
-        console.warn(
+        logger.warn(
           `Skip selling ${fromTokenSymbol} because its usdDenominatedValue is less than 1`,
           tokenMetadata.usdDenominatedValue,
           "amount:",
@@ -980,7 +981,7 @@ export default class BaseProtocol extends BaseUniswap {
         }
         txns = txns.concat(swapTxnResult[0]);
       } catch (error) {
-        console.error(
+        logger.error(
           `${this.uniqueId()}: Error processing swap for token ${fromTokenSymbol}:`,
           error,
         );
@@ -1183,7 +1184,7 @@ export default class BaseProtocol extends BaseUniswap {
   checkTxnsToDataNotUndefined(txns, methodName) {
     for (const txn of txns) {
       if (txn.data === undefined || txn.to === undefined) {
-        console.error(txn);
+        logger.error(txn);
         throw new Error(
           `${methodName} of ${this.uniqueId()} has undefined data or undefined to. Cannot proceed with executing.`,
         );
@@ -1198,7 +1199,7 @@ export default class BaseProtocol extends BaseUniswap {
 
       // ... rest of rebalance code ...
     } catch (error) {
-      console.error("Error in rebalance:", error);
+      logger.error("Error in rebalance:", error);
       throw error;
     }
   }

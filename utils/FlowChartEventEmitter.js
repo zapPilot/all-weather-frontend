@@ -1,3 +1,4 @@
+import logger from "./logger";
 // Define event types outside the class
 const EVENT_TYPES = {
   NODE_UPDATE: "NODE_UPDATE",
@@ -44,7 +45,7 @@ class FlowChartEventEmitter {
         try {
           callback(data);
         } catch (error) {
-          console.error(`Error in event listener for ${eventType}:`, error);
+          logger.error(`Error in event listener for ${eventType}:`, error);
         }
       });
     }
@@ -106,7 +107,7 @@ class FlowChartEventEmitter {
     const { type, nodeId, status, tradingLoss } = update;
     // Check if node exists in states
     if (!this.nodeStates.has(nodeId)) {
-      console.warn(`Node ${nodeId} not found in states, skipping update`);
+      logger.warn(`Node ${nodeId} not found in states, skipping update`);
       return;
     }
 
@@ -117,7 +118,7 @@ class FlowChartEventEmitter {
       case EVENT_TYPES.BATCH_UPDATE:
         for (const nodeUpdate of status) {
           if (!this.nodeStates.has(nodeUpdate.nodeId)) {
-            console.warn(
+            logger.warn(
               `Node ${nodeUpdate.nodeId} not found in states, skipping batch update`,
             );
             continue;
@@ -130,7 +131,7 @@ class FlowChartEventEmitter {
         }
         break;
       default:
-        console.warn(`Unknown update type: ${type}`);
+        logger.warn(`Unknown update type: ${type}`);
     }
   }
 

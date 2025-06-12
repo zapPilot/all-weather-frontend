@@ -1,3 +1,4 @@
+import logger from "../../utils/logger";
 import Vault from "../../lib/contracts/Vela/Vault.json" assert { type: "json" };
 import TokenFarm from "../../lib/contracts/Vela/TokenFarm.json" assert { type: "json" };
 import ERC20_ABI from "../../lib/contracts/ERC20.json" assert { type: "json" };
@@ -239,7 +240,7 @@ export class Vela extends BaseProtocol {
         return 0;
       }
     } catch (error) {
-      console.error("Error fetching lock-up period:", error);
+      logger.error("Error fetching lock-up period:", error);
       return 0;
     }
   }

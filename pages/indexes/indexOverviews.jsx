@@ -8,6 +8,7 @@ import { Signer } from "ethers";
 import { useDispatch, useSelector } from "react-redux";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
+import logger from "../../utils/logger";
 import { base, arbitrum, optimism } from "thirdweb/chains";
 import PopUpModal from "../Modal";
 import {
@@ -86,7 +87,7 @@ const useChainSwitching = (switchChain) => {
     if (selectedChain) {
       switchChain(selectedChain);
     } else {
-      console.error(`Invalid chain: ${chain}`);
+      logger.error(`Invalid chain: ${chain}`);
     }
   };
 
@@ -149,9 +150,16 @@ export default function IndexOverviews() {
   const [tradingLoss, setTradingLoss] = useState(0);
   const [platformFee, setPlatformFee] = useState(0);
   const [costsCalculated, setCostsCalculated] = useState(false);
+  const [tabKey, setTabKey] = useState("");
   const [slippage, setSlippage] = useState(() =>
-    determineSlippage({ portfolioName }),
+    determineSlippage({
+      portfolioName,
+      selectedTokenSymbol: selectedToken?.toLowerCase()?.split("-")[0],
+      key: tabKey || "",
+      actionName,
+    }),
   );
+  const [isSlippageManuallySet, setIsSlippageManuallySet] = useState(false);
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
@@ -175,7 +183,6 @@ export default function IndexOverviews() {
   const [finishedTxn, setFinishedTxn] = useState(false);
   const [txnLink, setTxnLink] = useState("");
   const [tokenPricesMappingTable, setTokenPricesMappingTable] = useState({});
-  const [tabKey, setTabKey] = useState("");
   const [lockUpPeriod, setLockUpPeriod] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
   const [notificationAPI, notificationContextHolder] =
@@ -283,7 +290,6 @@ export default function IndexOverviews() {
 
     try {
       const txns = await generateIntentTxns(actionParams);
-      console.log("txns", txns);
       setCostsCalculated(true);
 
       if (
@@ -339,7 +345,7 @@ export default function IndexOverviews() {
                       url: `${process.env.NEXT_PUBLIC_SDK_API_URL}/portfolio-cache/portfolio-${portfolioName}-${account.address}`,
                     });
                   } catch (error) {
-                    console.error("Failed to clear portfolio cache:", error);
+                    logger.error("Failed to clear portfolio cache:", error);
                   }
                   setRefreshTrigger(Date.now());
                 })();
@@ -485,19 +491,23 @@ export default function IndexOverviews() {
   // Handle tab changes
   const handleTabChange = (tabKey) => {
     setTabKey(tabKey);
-    const newSlippage = determineSlippage({
-      portfolioName,
-      selectedTokenSymbol: selectedToken?.toLowerCase()?.split("-")[0],
-      key: tabKey,
-      actionName,
-    });
-    setSlippage(newSlippage);
+    // Only set default slippage if user hasn't manually changed it
+    if (!isSlippageManuallySet) {
+      const newSlippage = determineSlippage({
+        portfolioName,
+        selectedTokenSymbol: selectedToken?.toLowerCase()?.split("-")[0],
+        key: tabKey,
+        actionName,
+      });
+      setSlippage(newSlippage);
+    }
   };
 
   // Handle slippage input changes
   const handleSlippageChange = (e) => {
     const newSlippage = e.target.value;
     setSlippage(newSlippage);
+    setIsSlippageManuallySet(true);
   };
 
   const tokenAddress = selectedToken?.split("-")[1];
@@ -553,7 +563,7 @@ export default function IndexOverviews() {
     }
   }, [portfolioName, selectedToken, chainId, tabKey, actionName]);
   useEffect(() => {
-    console.time("🚀 Portfolio data fetch");
+    logger.time("🚀 Portfolio data fetch");
     // Clear states on initial load/refresh
     setUsdBalance(0);
     setUsdBalanceLoading(true);
@@ -577,7 +587,7 @@ export default function IndexOverviews() {
         chain: chainId,
         account,
       });
-      console.log(`Signer is signer: ${Signer.isSigner(signer)}`);
+      logger.log(`Signer is signer: ${Signer.isSigner(signer)}`);
       try {
         isProcessingChainChangeRef.current = true;
         // Check cache first
@@ -618,7 +628,7 @@ export default function IndexOverviews() {
           lockUpPeriodPromise.then((result) => result),
         ]);
 
-        console.timeEnd("🚀 Portfolio data fetch");
+        logger.timeEnd("🚀 Portfolio data fetch");
 
         const [
           [usdBalance, usdBalanceDict, tokenPricesMappingTable],
@@ -632,13 +642,13 @@ export default function IndexOverviews() {
         setLockUpPeriod(lockUpPeriod);
 
         // Update pending rewards
-        console.time("🚀 Pending rewards fetch");
+        logger.time("🚀 Pending rewards fetch");
         const pendingRewards = await portfolioHelper.pendingRewards(
           account.address,
           () => {},
           tokenPricesMappingTable,
         );
-        console.timeEnd("🚀 Pending rewards fetch");
+        logger.timeEnd("🚀 Pending rewards fetch");
         setPendingRewards(pendingRewards.pendingRewardsDict);
         setPendingRewardsLoading(false);
 
@@ -680,7 +690,7 @@ export default function IndexOverviews() {
             notificationAPI,
           );
         } catch (error) {
-          console.warn("Failed to cache portfolio data:", error);
+          logger.warn("Failed to cache portfolio data:", error);
         }
         setErrorMsg("");
       } catch (error) {
@@ -976,7 +986,7 @@ export default function IndexOverviews() {
                         size="small"
                         onChange={handleSlippageChange}
                       >
-                        {[0.5, 1, 2, 3, 5].map((slippageValue) => (
+                        {[0.5, 1, 3, 5, 10, 50].map((slippageValue) => (
                           <Radio.Button
                             value={slippageValue}
                             key={slippageValue}

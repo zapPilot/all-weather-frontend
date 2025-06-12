@@ -1,3 +1,4 @@
+import logger from "../../utils/logger";
 import { useState, useEffect } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import { CheckCircleIcon, XMarkIcon } from "@heroicons/react/20/solid";
@@ -21,7 +22,7 @@ const EmailSubscription = () => {
         const data = await response.json();
         setIsSubscribed(data.subscriptionStatus === true);
       } catch (error) {
-        console.error("Failed to check subscription status:", error);
+        logger.error("Failed to check subscription status:", error);
       }
     }
 

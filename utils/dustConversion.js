@@ -1,3 +1,4 @@
+import logger from "./logger";
 import { ethers } from "ethers";
 import swap from "./swapHelper";
 const BATCH_SIZE = 3; // Process 3 tokens at a time to avoid rate limits
@@ -54,7 +55,7 @@ export const fetchDustConversionRoutes = async ({
         );
         return [txns, tradingLoss];
       } catch (err) {
-        console.error(`Failed to fetch route for ${token.symbol}:`, err);
+        logger.error(`Failed to fetch route for ${token.symbol}:`, err);
         return [[], 0];
       }
     });
@@ -96,7 +97,6 @@ export const handleDustConversion = async ({
 }) => {
   try {
     const tokens = await getTokens(chainName, accountAddress);
-    console.log("tokens", tokens);
     // Step 1: Fetch routes
     const [txns, totalTradingLoss] = await fetchDustConversionRoutes({
       tokens,
@@ -108,7 +108,7 @@ export const handleDustConversion = async ({
     });
     return txns;
   } catch (error) {
-    console.error("Dust conversion failed:", error);
+    logger.error("Dust conversion failed:", error);
     return [];
   }
 };

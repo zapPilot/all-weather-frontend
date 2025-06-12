@@ -1,3 +1,4 @@
+import logger from "../../utils/logger";
 import Vault from "../../lib/contracts/Venus/Vault.json" assert { type: "json" };
 import BaseProtocol from "../BaseProtocol";
 import { getContract, prepareContractCall } from "thirdweb";
@@ -122,7 +123,7 @@ export class Venus extends BaseProtocol {
 
       return balanceInUSDC * usdcPrice;
     } catch (error) {
-      console.error("Error in usdBalanceOf:", error);
+      logger.error("Error in usdBalanceOf:", error);
       return 0;
     }
   }

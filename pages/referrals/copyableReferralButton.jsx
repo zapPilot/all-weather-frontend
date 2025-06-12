@@ -1,3 +1,4 @@
+import logger from "../../utils/logger";
 import React, { useState } from "react";
 import { Button, message } from "antd";
 import { CopyOutlined, CheckOutlined } from "@ant-design/icons";
@@ -12,7 +13,7 @@ const CopyableReferralButton = ({ referralLink }) => {
       message.success("Referral link copied!");
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy text: ", err);
+      logger.error("Failed to copy text: ", err);
       message.error("Failed to copy referral link");
     }
   };
