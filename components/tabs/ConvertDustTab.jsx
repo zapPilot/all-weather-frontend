@@ -464,7 +464,6 @@ export default function ConvertDustTab({
   );
 
   const handleConvert = async () => {
-    console.log("in handleConvert");
     setIsConverting(true);
     setStatusMessages([]);
     setTotalSteps(filteredAndSortedTokens.length);
@@ -473,10 +472,8 @@ export default function ConvertDustTab({
     } catch (err) {
       console.error("Conversion error:", err);
     } finally {
-      console.log("finally");
       setIsConverting(false);
     }
-    console.log("after finally");
   };
 
   return (
