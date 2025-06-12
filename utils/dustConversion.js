@@ -96,7 +96,6 @@ export const handleDustConversion = async ({
 }) => {
   try {
     const tokens = await getTokens(chainName, accountAddress);
-    console.log("tokens", tokens);
     // Step 1: Fetch routes
     const [txns, totalTradingLoss] = await fetchDustConversionRoutes({
       tokens,

@@ -149,9 +149,16 @@ export default function IndexOverviews() {
   const [tradingLoss, setTradingLoss] = useState(0);
   const [platformFee, setPlatformFee] = useState(0);
   const [costsCalculated, setCostsCalculated] = useState(false);
+  const [tabKey, setTabKey] = useState("");
   const [slippage, setSlippage] = useState(() =>
-    determineSlippage({ portfolioName }),
+    determineSlippage({
+      portfolioName,
+      selectedTokenSymbol: selectedToken?.toLowerCase()?.split("-")[0],
+      key: tabKey || "",
+      actionName,
+    }),
   );
+  const [isSlippageManuallySet, setIsSlippageManuallySet] = useState(false);
   const [zapOutPercentage, setZapOutPercentage] = useState(0);
   const [usdBalance, setUsdBalance] = useState(0);
   const [pendingRewards, setPendingRewards] = useState(0);
@@ -175,7 +182,6 @@ export default function IndexOverviews() {
   const [finishedTxn, setFinishedTxn] = useState(false);
   const [txnLink, setTxnLink] = useState("");
   const [tokenPricesMappingTable, setTokenPricesMappingTable] = useState({});
-  const [tabKey, setTabKey] = useState("");
   const [lockUpPeriod, setLockUpPeriod] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
   const [notificationAPI, notificationContextHolder] =
@@ -283,7 +289,6 @@ export default function IndexOverviews() {
 
     try {
       const txns = await generateIntentTxns(actionParams);
-      console.log("txns", txns);
       setCostsCalculated(true);
 
       if (
@@ -485,19 +490,23 @@ export default function IndexOverviews() {
   // Handle tab changes
   const handleTabChange = (tabKey) => {
     setTabKey(tabKey);
-    const newSlippage = determineSlippage({
-      portfolioName,
-      selectedTokenSymbol: selectedToken?.toLowerCase()?.split("-")[0],
-      key: tabKey,
-      actionName,
-    });
-    setSlippage(newSlippage);
+    // Only set default slippage if user hasn't manually changed it
+    if (!isSlippageManuallySet) {
+      const newSlippage = determineSlippage({
+        portfolioName,
+        selectedTokenSymbol: selectedToken?.toLowerCase()?.split("-")[0],
+        key: tabKey,
+        actionName,
+      });
+      setSlippage(newSlippage);
+    }
   };
 
   // Handle slippage input changes
   const handleSlippageChange = (e) => {
     const newSlippage = e.target.value;
     setSlippage(newSlippage);
+    setIsSlippageManuallySet(true);
   };
 
   const tokenAddress = selectedToken?.split("-")[1];
@@ -976,7 +985,7 @@ export default function IndexOverviews() {
                         size="small"
                         onChange={handleSlippageChange}
                       >
-                        {[0.5, 1, 2, 3, 5].map((slippageValue) => (
+                        {[0.5, 1, 3, 5, 10, 50].map((slippageValue) => (
                           <Radio.Button
                             value={slippageValue}
                             key={slippageValue}
