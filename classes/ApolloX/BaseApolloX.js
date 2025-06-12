@@ -1,3 +1,4 @@
+import logger from "../../utils/logger";
 import ApolloXABI from "../../lib/contracts/ApolloX.json" assert { type: "json" };
 import ERC20_ABI from "../../lib/contracts/ERC20.json" assert { type: "json" };
 import axios from "axios";
@@ -236,7 +237,7 @@ export class BaseApolloX extends BaseProtocol {
       }
       return 0;
     } catch (error) {
-      console.error("Error fetching lock-up period:", error);
+      logger.error("Error fetching lock-up period:", error);
       return 0;
     }
   }

@@ -1,3 +1,4 @@
+import logger from "../../utils/logger";
 import flowChartEventEmitter from "../../utils/FlowChartEventEmitter";
 
 export const FlowChartMixin = {
@@ -256,7 +257,7 @@ export const FlowChartMixin = {
 
       return true;
     } catch (error) {
-      console.error("Error updating progress:", error);
+      logger.error("Error updating progress:", error);
       if (typeof updateProgress === "function") {
         updateProgress(nodeId, tradingLoss);
       }
@@ -295,13 +296,13 @@ export const FlowChartMixin = {
       if (updateSuccess) {
         const isActivated = await this._verifyNodeActivation(nodeId);
         if (!isActivated) {
-          console.warn(`Node ${nodeId} not activated after ${operation}`);
+          logger.warn(`Node ${nodeId} not activated after ${operation}`);
         }
       }
 
       return updateSuccess;
     } catch (error) {
-      console.error(`Error in transaction progress for ${operation}:`, error);
+      logger.error(`Error in transaction progress for ${operation}:`, error);
       return false;
     }
   },

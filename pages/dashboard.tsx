@@ -1,5 +1,6 @@
 //@ts-nocheck
 // All code in this file will be ignored by the TypeScript compiler
+import logger from "../utils/logger";
 import type { NextPage } from "next";
 import Image from "next/image";
 import { Spin, Button } from "antd";
@@ -242,7 +243,7 @@ const Dashboard: NextPage = () => {
           );
         }
       } catch (error) {
-        console.error("failed to fetch pool data", error);
+        logger.error("failed to fetch pool data", error);
       }
     };
 
@@ -260,10 +261,10 @@ const Dashboard: NextPage = () => {
           const data = JSON.parse(response.data);
           setProtocolList(data);
         } else {
-          console.error("Invalid or no data available from the API");
+          logger.error("Invalid or no data available from the API");
         }
       } catch (error) {
-        console.error("An error occurred while fetching protocol link:", error);
+        logger.error("An error occurred while fetching protocol link:", error);
         throw error;
       }
     };

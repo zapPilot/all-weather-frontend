@@ -1,3 +1,4 @@
+import logger from "../../utils/logger";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState, useCallback, memo } from "react";
@@ -78,7 +79,7 @@ const Vaults = memo(function Vaults({ vaults }) {
       const json = await response.json();
       setProtocolName(json.data[1].data[0].pool.name);
     } catch (error) {
-      console.error("failed to fetch pool data", error);
+      logger.error("failed to fetch pool data", error);
     }
   }, []);
 

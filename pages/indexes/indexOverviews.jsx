@@ -8,6 +8,7 @@ import { Signer } from "ethers";
 import { useDispatch, useSelector } from "react-redux";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
+import logger from "../../utils/logger";
 import { base, arbitrum, optimism } from "thirdweb/chains";
 import PopUpModal from "../Modal";
 import {
@@ -86,7 +87,7 @@ const useChainSwitching = (switchChain) => {
     if (selectedChain) {
       switchChain(selectedChain);
     } else {
-      console.error(`Invalid chain: ${chain}`);
+      logger.error(`Invalid chain: ${chain}`);
     }
   };
 
@@ -344,7 +345,7 @@ export default function IndexOverviews() {
                       url: `${process.env.NEXT_PUBLIC_SDK_API_URL}/portfolio-cache/portfolio-${portfolioName}-${account.address}`,
                     });
                   } catch (error) {
-                    console.error("Failed to clear portfolio cache:", error);
+                    logger.error("Failed to clear portfolio cache:", error);
                   }
                   setRefreshTrigger(Date.now());
                 })();
@@ -562,7 +563,7 @@ export default function IndexOverviews() {
     }
   }, [portfolioName, selectedToken, chainId, tabKey, actionName]);
   useEffect(() => {
-    console.time("🚀 Portfolio data fetch");
+    logger.time("🚀 Portfolio data fetch");
     // Clear states on initial load/refresh
     setUsdBalance(0);
     setUsdBalanceLoading(true);
@@ -586,7 +587,7 @@ export default function IndexOverviews() {
         chain: chainId,
         account,
       });
-      console.log(`Signer is signer: ${Signer.isSigner(signer)}`);
+      logger.log(`Signer is signer: ${Signer.isSigner(signer)}`);
       try {
         isProcessingChainChangeRef.current = true;
         // Check cache first
@@ -627,7 +628,7 @@ export default function IndexOverviews() {
           lockUpPeriodPromise.then((result) => result),
         ]);
 
-        console.timeEnd("🚀 Portfolio data fetch");
+        logger.timeEnd("🚀 Portfolio data fetch");
 
         const [
           [usdBalance, usdBalanceDict, tokenPricesMappingTable],
@@ -641,13 +642,13 @@ export default function IndexOverviews() {
         setLockUpPeriod(lockUpPeriod);
 
         // Update pending rewards
-        console.time("🚀 Pending rewards fetch");
+        logger.time("🚀 Pending rewards fetch");
         const pendingRewards = await portfolioHelper.pendingRewards(
           account.address,
           () => {},
           tokenPricesMappingTable,
         );
-        console.timeEnd("🚀 Pending rewards fetch");
+        logger.timeEnd("🚀 Pending rewards fetch");
         setPendingRewards(pendingRewards.pendingRewardsDict);
         setPendingRewardsLoading(false);
 
@@ -689,7 +690,7 @@ export default function IndexOverviews() {
             notificationAPI,
           );
         } catch (error) {
-          console.warn("Failed to cache portfolio data:", error);
+          logger.warn("Failed to cache portfolio data:", error);
         }
         setErrorMsg("");
       } catch (error) {

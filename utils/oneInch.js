@@ -1,3 +1,4 @@
+import logger from "./logger";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const portfolioContractAddress =
@@ -52,7 +53,7 @@ export async function fetchSwapData(
 
     return res.json();
   } catch (error) {
-    console.error("Error fetching swap data:", error);
+    logger.error("Error fetching swap data:", error);
     return {};
   }
 }

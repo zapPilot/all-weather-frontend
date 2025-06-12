@@ -1,3 +1,4 @@
+import logger from "../../utils/logger";
 import { useEffect, useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import PopUp from "./popUp";
@@ -32,7 +33,7 @@ export default function Bundle() {
         setAddresses(data);
         setLoading(false);
       } catch (error) {
-        console.error(error);
+        logger.error(error);
       }
     };
     fetchData();

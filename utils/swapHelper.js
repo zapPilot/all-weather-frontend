@@ -1,3 +1,4 @@
+import logger from "./logger";
 import { fetchSwapData } from "./oneInch";
 import { approve } from "./general";
 import { prepareTransaction } from "thirdweb";
@@ -58,7 +59,7 @@ async function swap(
         }
 
         if ("error" in swapCallData) {
-          console.warn(`${provider} swap failed:`, swapCallData.error);
+          logger.warn(`${provider} swap failed:`, swapCallData.error);
           return null;
         }
         const normalizedInputAmount = ethers.utils.formatUnits(
@@ -106,7 +107,7 @@ async function swap(
           ],
         };
       } catch (error) {
-        console.warn(`Failed to fetch swap data from ${provider}:`, error);
+        logger.warn(`Failed to fetch swap data from ${provider}:`, error);
         return null;
       }
     }),
@@ -151,7 +152,7 @@ async function swap(
   const priceImpactPercentage = (1 - priceRatio) * 100;
   // NOTE: because of our price timetable have a very high latency, we accept a higher price impact
   const hardcodedPriceImpactPercentage = 50;
-  console.log(
+  logger.log(
     `Input amount: ${bestSwap.normalizedInputAmount} ${fromToken} ($${(
       bestSwap.normalizedInputAmount * tokenPricesMappingTable[fromToken]
     ).toFixed(2)}) , Output amount: ${

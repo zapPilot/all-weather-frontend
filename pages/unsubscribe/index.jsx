@@ -1,3 +1,4 @@
+import logger from "../../utils/logger";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/20/solid";
@@ -32,7 +33,7 @@ const UnsubscribePage = () => {
 
         setStatus("success");
       } catch (error) {
-        console.error("Unsubscribe error:", error);
+        logger.error("Unsubscribe error:", error);
         setStatus("error");
       }
     }

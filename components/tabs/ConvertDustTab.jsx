@@ -1,3 +1,4 @@
+import logger from "../../utils/logger";
 import { Button } from "antd";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { getTokens } from "../../utils/dustConversion";
@@ -206,7 +207,7 @@ const DustSummary = ({
           try {
             await onConvert();
           } catch (err) {
-            console.error("Conversion error:", err);
+            logger.error("Conversion error:", err);
           }
         }}
         loading={converting || loading}
@@ -470,7 +471,7 @@ export default function ConvertDustTab({
     try {
       await handleAAWalletAction("convertDust", true, handleStatusUpdate);
     } catch (err) {
-      console.error("Conversion error:", err);
+      logger.error("Conversion error:", err);
     } finally {
       setIsConverting(false);
     }

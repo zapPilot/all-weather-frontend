@@ -1,3 +1,4 @@
+import logger from "../../utils/logger";
 import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Spin } from "antd";
@@ -90,7 +91,7 @@ const HistoricalDataChart = ({ portfolioName }) => {
           }
         }
       } catch (error) {
-        console.error("Error loading performance data:", error);
+        logger.error("Error loading performance data:", error);
         if (isMounted) {
           setError(error.message);
         }

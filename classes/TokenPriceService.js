@@ -1,3 +1,4 @@
+import logger from "../utils/logger";
 import axios from "axios";
 
 class PriceService {
@@ -47,7 +48,7 @@ class PriceService {
       }
       throw new Error("Invalid price data received");
     } catch (error) {
-      console.error(`Failed to fetch price for ${token}:`, error.message);
+      logger.error(`Failed to fetch price for ${token}:`, error.message);
       return this._getFallbackPrice(token);
     }
   }

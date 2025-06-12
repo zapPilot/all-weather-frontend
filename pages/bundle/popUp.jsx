@@ -1,3 +1,4 @@
+import logger from "../../utils/logger";
 import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
@@ -50,7 +51,7 @@ export default function PopUp({
       );
       await response.json();
     } catch (error) {
-      console.error(error);
+      logger.error(error);
     }
   };
 

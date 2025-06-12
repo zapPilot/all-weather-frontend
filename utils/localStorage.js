@@ -1,3 +1,4 @@
+import logger from "./logger";
 import LZString from "lz-string";
 import { ethers } from "ethers";
 import openNotificationWithIcon from "./notification.js";
@@ -31,7 +32,7 @@ const storeViaAPI = async (key, compressedValue) => {
 
     return true;
   } catch (e) {
-    console.error("Error storing data via API:", e);
+    logger.error("Error storing data via API:", e);
     return false;
   }
 };
@@ -66,7 +67,7 @@ export const safeSetLocalStorage = async (key, value, notificationAPI) => {
       "error",
       "Failed to cache portfolio data",
     );
-    console.error("Error in safeSetLocalStorage:", e);
+    logger.error("Error in safeSetLocalStorage:", e);
     return false;
   }
 };
@@ -168,7 +169,7 @@ export const safeGetLocalStorage = async (
 
     return decompressedData;
   } catch (e) {
-    console.error("Error retrieving from API:", e);
+    logger.error("Error retrieving from API:", e);
     openNotificationWithIcon(
       notificationAPI,
       "Error getting portfolio data",
