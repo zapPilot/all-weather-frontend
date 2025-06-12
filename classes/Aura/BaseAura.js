@@ -1,3 +1,4 @@
+import logger from "../../utils/logger";
 import Vault from "../../lib/contracts/Aura/Vault.json" assert { type: "json" };
 import BoosterLite from "../../lib/contracts/Aura/BoosterLite.json" assert { type: "json" };
 import axios from "axios";
@@ -256,7 +257,7 @@ export class BaseAura extends BaseProtocol {
       const response = await axios.get(url);
       return response.data.price / 10 ** this.assetDecimals;
     } catch (error) {
-      console.error("Error fetching LP price:", error);
+      logger.error("Error fetching LP price:", error);
       return 0;
     }
   }

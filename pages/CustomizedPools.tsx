@@ -1,5 +1,6 @@
-//@ts-nocheck
+// @ts-nocheck
 // All code in this file will be ignored by the TypeScript compiler
+import logger from "../utils/logger";
 import type { NextPage } from "next";
 import Image from "next/image";
 import { Spin, Button } from "antd";
@@ -41,6 +42,7 @@ interface queriesObj {
   setUnexpandable: (key: string, value: boolean) => void;
   chain_blacklist?: string[];
   chain_whitelist?: string[];
+  topN: number;
 }
 
 const AllWeatherPools: NextPage = () => {
@@ -59,7 +61,7 @@ const AllWeatherPools: NextPage = () => {
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const dispatch = useDispatch();
   const subscriptionStatus = useSelector(
-    (state) => state.subscriptionStatus.subscriptionStatus,
+    (state: any) => state.subscriptionStatus.subscriptionStatus,
   );
 
   const handleLinkButton = (url: string) => {
@@ -290,7 +292,7 @@ const AllWeatherPools: NextPage = () => {
           );
         }
       } catch (error) {
-        console.error("failed to fetch pool data", error);
+        logger.error("failed to fetch pool data", error);
       }
     };
 
@@ -308,10 +310,10 @@ const AllWeatherPools: NextPage = () => {
           const data = JSON.parse(response.data);
           setProtocolList(data);
         } else {
-          console.error("Invalid or no data available from the API");
+          logger.error("Invalid or no data available from the API");
         }
       } catch (error) {
-        console.error("An error occurred while fetching protocol link:", error);
+        logger.error("An error occurred while fetching protocol link:", error);
         throw error;
       }
     };
@@ -390,7 +392,7 @@ const AllWeatherPools: NextPage = () => {
     }
     setPortfolioComposition(portfolioComposition);
   };
-  const handleScroll = (id) => {
+  const handleScroll = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
@@ -471,6 +473,7 @@ const AllWeatherPools: NextPage = () => {
                       height: "15rem",
                     }}
                   >
+                    {/* @ts-ignore: Antd Spin props type mismatch */}
                     <Spin size="large" role="spin" />
                   </div>
                 ) : unexpandable[categoryMetaData.category] === true ? (

@@ -1,3 +1,4 @@
+import logger from "../../../utils/logger";
 import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
 import dynamic from "next/dynamic";
 import { CHART_CONFIGS } from "./chartConfig";
@@ -67,7 +68,7 @@ const HistoricalGenericDataChart = memo(function HistoricalGenericDataChart({
       const config = CHART_CONFIGS[configType];
       setCalculatedTitle(config?.calculateTitle?.(transformedData) || title);
     } catch (error) {
-      console.error("Failed to fetch chart data:", error);
+      logger.error("Failed to fetch chart data:", error);
       setError(error.message);
     } finally {
       setIsLoading(false);

@@ -1,3 +1,4 @@
+import logger from "../../utils/logger";
 import BaseBridge from "./BaseBridge";
 import { Squid } from "@0xsquid/sdk";
 import { CHAIN_ID_TO_CHAIN, PROVIDER } from "../../utils/general";
@@ -54,7 +55,7 @@ class SquidBridge extends BaseBridge {
 
         const route = await this.getRoute(routeParams);
         if (route.estimate.estimatedRouteDuration > this.maxBridgeDuration) {
-          console.log(
+          logger.log(
             "Route duration is greater than maxBridgeDuration. Returning Infinity.",
           );
           // the unit is seconds
@@ -81,12 +82,12 @@ class SquidBridge extends BaseBridge {
         const bridgeAddress = route.transactionRequest.target;
         return [bridgeTxn, bridgeAddress, feeInUSD];
       } catch (error) {
-        console.error(`Attempt ${retryCount + 1} failed:`, error);
+        logger.error(`Attempt ${retryCount + 1} failed:`, error);
         retryCount++;
 
         if (retryCount < maxRetries) {
           const waitTime = 3000;
-          console.log(`Retrying in ${waitTime / 1000} seconds...`);
+          logger.log(`Retrying in ${waitTime / 1000} seconds...`);
           await this.delay(waitTime);
           continue;
         }

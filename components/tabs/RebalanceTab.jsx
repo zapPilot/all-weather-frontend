@@ -1,3 +1,4 @@
+import logger from "../../utils/logger";
 import { Button, Spin } from "antd";
 import { useState } from "react";
 import ActionItem from "../common/ActionItem";
@@ -107,7 +108,7 @@ export default function RebalanceTab({
                             setCurrentStep(currentStep + 1);
                           }
                         } catch (error) {
-                          console.error("Transaction failed:", error);
+                          logger.error("Transaction failed:", error);
                         }
                       }}
                       loading={usdBalanceLoading}

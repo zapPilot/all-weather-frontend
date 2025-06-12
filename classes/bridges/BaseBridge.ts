@@ -1,3 +1,4 @@
+import logger from "../../utils/logger";
 import { approve } from "../../utils/general";
 
 class BaseBridge {
@@ -55,7 +56,7 @@ class BaseBridge {
 
       return [[approveTxn, customBridgeTxn], feeInUSD];
     } catch (error) {
-      console.error("Error in getBridgeTxns:", error);
+      logger.error("Error in getBridgeTxns:", error);
       return [[], Infinity];
     }
   }
