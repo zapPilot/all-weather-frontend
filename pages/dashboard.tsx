@@ -11,7 +11,7 @@ import {
   getExpandableColumnsForSuggestionsTable,
   columnMapping,
 } from "../utils/tableExpansionUtils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import LinkModal from "./views/components/LinkModal";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
@@ -126,12 +126,12 @@ const Dashboard: NextPage = () => {
     non_us_emerging_market_stocks: true,
     airdrop: true,
   });
-  const updateState = (key: string, value: boolean) => {
+  const updateState = useCallback((key: string, value: boolean) => {
     setUnexpandable((prevState) => ({
       ...prevState,
       [key]: value,
     }));
-  };
+  }, []);
 
   const [portfolioComposition, setPortfolioComposition] = useState<{
     [key: string]: any;
@@ -143,7 +143,9 @@ const Dashboard: NextPage = () => {
 
   const defaultTopN = 5;
   const biggerTopN = 7;
-  const queriesForAllWeather: queriesObj[] = [
+  
+  // Memoize queriesForAllWeather to prevent recreation on every render
+  const queriesForAllWeather: queriesObj[] = useMemo(() => [
     {
       img: "/tokenPictures/eth.webp",
       wording: "ETH",
@@ -195,15 +197,31 @@ const Dashboard: NextPage = () => {
       chain_blacklist: ["ethereum"],
       topN: defaultTopN,
     },
-  ];
+  ], [
+    longTermBond,
+    longTermBondFilterDict,
+    unexpandable.long_term_bond,
+    goldData,
+    goldDataFilterDict,
+    unexpandable.gold,
+    btc,
+    btcFilterDict,
+    unexpandable.btc,
+    updateState,
+    defaultTopN,
+  ]);
 
-  const uniqueTokens = new Set();
-  queriesForAllWeather.forEach((item) => {
-    // @ts-ignore
-    item.uniqueQueryTokens.forEach((query: string) => {
-      uniqueTokens.add(query);
+  // Memoize uniqueTokens computation
+  const uniqueTokens = useMemo(() => {
+    const tokens = new Set();
+    queriesForAllWeather.forEach((item) => {
+      // @ts-ignore
+      item.uniqueQueryTokens.forEach((query: string) => {
+        tokens.add(query);
+      });
     });
-  });
+    return tokens;
+  }, [queriesForAllWeather]);
 
   useEffect(() => {
     if (!walletAddress) return;
