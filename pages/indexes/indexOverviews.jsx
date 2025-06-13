@@ -52,7 +52,7 @@ import { SettingOutlined } from "@ant-design/icons";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
-import tokens from "../views/components/tokens.json";
+import tokens from "../views/components/slim_tokens.json";
 import useTabItems from "../../hooks/useTabItems";
 // Lazy load heavy portfolio components
 const PortfolioSummary = lazy(() => import("../portfolio/PortfolioSummary"));

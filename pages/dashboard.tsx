@@ -11,7 +11,7 @@ import {
   getExpandableColumnsForSuggestionsTable,
   columnMapping,
 } from "../utils/tableExpansionUtils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import LinkModal from "./views/components/LinkModal";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
@@ -126,12 +126,12 @@ const Dashboard: NextPage = () => {
     non_us_emerging_market_stocks: true,
     airdrop: true,
   });
-  const updateState = (key: string, value: boolean) => {
+  const updateState = useCallback((key: string, value: boolean) => {
     setUnexpandable((prevState) => ({
       ...prevState,
       [key]: value,
     }));
-  };
+  }, []);
 
   const [portfolioComposition, setPortfolioComposition] = useState<{
     [key: string]: any;
@@ -143,67 +143,88 @@ const Dashboard: NextPage = () => {
 
   const defaultTopN = 5;
   const biggerTopN = 7;
-  const queriesForAllWeather: queriesObj[] = [
-    {
-      img: "/tokenPictures/eth.webp",
-      wording: "ETH",
-      category: "long_term_bond",
-      setStateMethod: setLongTermBond,
-      state: longTermBond,
-      setUniqueQueryTokens: setLongTermBondFilterDict,
-      uniqueQueryTokens: longTermBondFilterDict,
-      unexpandable: unexpandable.long_term_bond,
-      setUnexpandable: updateState,
-      chain_blacklist: ["ethereum", "flare", "iota evm"],
-      topN: 10,
-    },
-    {
-      img: "/tokenPictures/usdc.webp",
-      wording: "Stablecoins",
-      category: "gold",
-      setStateMethod: setGoldData,
-      state: goldData,
-      setUniqueQueryTokens: setGoldDataFilterDict,
-      uniqueQueryTokens: goldDataFilterDict,
-      unexpandable: unexpandable.gold,
-      setUnexpandable: updateState,
-      chain_blacklist: [
-        "ethereum",
-        "aptos",
-        "sui",
-        "core",
-        "bob",
-        "iota evm",
-        "polynomial",
-        "flare",
-        "ton",
-        "kava",
-        "gravity",
-      ],
-      topN: 20,
-    },
-    {
-      img: "/tokenPictures/btc.webp",
-      wording: "BTC",
-      category: "btc",
-      setStateMethod: setBtc,
-      state: btc,
-      setUniqueQueryTokens: setBtcFilterDict,
-      uniqueQueryTokens: btcFilterDict,
-      unexpandable: unexpandable.btc,
-      setUnexpandable: updateState,
-      chain_blacklist: ["ethereum"],
-      topN: defaultTopN,
-    },
-  ];
 
-  const uniqueTokens = new Set();
-  queriesForAllWeather.forEach((item) => {
-    // @ts-ignore
-    item.uniqueQueryTokens.forEach((query: string) => {
-      uniqueTokens.add(query);
+  // Memoize queriesForAllWeather to prevent recreation on every render
+  const queriesForAllWeather: queriesObj[] = useMemo(
+    () => [
+      {
+        img: "/tokenPictures/eth.webp",
+        wording: "ETH",
+        category: "long_term_bond",
+        setStateMethod: setLongTermBond,
+        state: longTermBond,
+        setUniqueQueryTokens: setLongTermBondFilterDict,
+        uniqueQueryTokens: longTermBondFilterDict,
+        unexpandable: unexpandable.long_term_bond,
+        setUnexpandable: updateState,
+        chain_blacklist: ["ethereum", "flare", "iota evm"],
+        topN: 10,
+      },
+      {
+        img: "/tokenPictures/usdc.webp",
+        wording: "Stablecoins",
+        category: "gold",
+        setStateMethod: setGoldData,
+        state: goldData,
+        setUniqueQueryTokens: setGoldDataFilterDict,
+        uniqueQueryTokens: goldDataFilterDict,
+        unexpandable: unexpandable.gold,
+        setUnexpandable: updateState,
+        chain_blacklist: [
+          "ethereum",
+          "aptos",
+          "sui",
+          "core",
+          "bob",
+          "iota evm",
+          "polynomial",
+          "flare",
+          "ton",
+          "kava",
+          "gravity",
+        ],
+        topN: 20,
+      },
+      {
+        img: "/tokenPictures/btc.webp",
+        wording: "BTC",
+        category: "btc",
+        setStateMethod: setBtc,
+        state: btc,
+        setUniqueQueryTokens: setBtcFilterDict,
+        uniqueQueryTokens: btcFilterDict,
+        unexpandable: unexpandable.btc,
+        setUnexpandable: updateState,
+        chain_blacklist: ["ethereum"],
+        topN: defaultTopN,
+      },
+    ],
+    [
+      longTermBond,
+      longTermBondFilterDict,
+      unexpandable.long_term_bond,
+      goldData,
+      goldDataFilterDict,
+      unexpandable.gold,
+      btc,
+      btcFilterDict,
+      unexpandable.btc,
+      updateState,
+      defaultTopN,
+    ],
+  );
+
+  // Memoize uniqueTokens computation
+  const uniqueTokens = useMemo(() => {
+    const tokens = new Set();
+    queriesForAllWeather.forEach((item) => {
+      // @ts-ignore
+      item.uniqueQueryTokens.forEach((query: string) => {
+        tokens.add(query);
+      });
     });
-  });
+    return tokens;
+  }, [queriesForAllWeather]);
 
   useEffect(() => {
     if (!walletAddress) return;
