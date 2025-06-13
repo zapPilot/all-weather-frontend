@@ -1,8 +1,108 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { generateIntentTxns } from "../../classes/main.js";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
-import { encode } from "thirdweb";
 import { base } from "thirdweb/chains";
+
+// Mock TokenPriceService to avoid API calls in tests
+vi.mock("../../classes/TokenPriceService.js", () => {
+  const mockPrices = {
+    usdc: 1,
+    usdt: 1,
+    cvx: 3.5,
+    eth: 3000,
+    weth: 3000,
+    base: 1,
+    xeqb: 0.5,
+    gyd: 1.02,
+    pendle: 2.5,
+    eqb: 1.5,
+    bold: 1,
+    ousdt: 1,
+  };
+
+  return {
+    PriceService: class MockPriceService {
+      static get STATIC_PRICES() {
+        return {
+          usd: 1,
+          usdc: 1,
+          usdt: 1,
+          dai: 1,
+          frax: 0.997,
+          usde: 1,
+          gho: 0.9986,
+        };
+      }
+
+      static async getAllTokenPrices() {
+        return mockPrices;
+      }
+
+      async fetchPrices() {
+        return mockPrices;
+      }
+    },
+    TokenPriceBatcher: class MockTokenPriceBatcher {
+      constructor() {}
+
+      async fetchPrices(tokens) {
+        // Comprehensive token price map for testing
+        const allTokenPrices = {
+          // Static stable coins
+          usd: 1,
+          usdc: 1,
+          usdt: 1,
+          dai: 1,
+          frax: 0.997,
+          usde: 1,
+          gho: 0.9986,
+
+          // Main tokens
+          eth: 3000,
+          weth: 3000,
+          btc: 45000,
+          wbtc: 45000,
+
+          // DeFi tokens
+          cvx: 3.5,
+          pendle: 2.5,
+          eqb: 1.5,
+          xeqb: 0.5,
+          grail: 1.2,
+          gyd: 1.02,
+
+          // Base chain tokens
+          base: 1,
+          bold: 1,
+          ousdt: 1,
+          msusd: 1,
+
+          // Additional protocol tokens that might be needed
+          aave: 95,
+          crv: 0.35,
+          bal: 2.8,
+          ldo: 1.2,
+          rpl: 25,
+
+          // Override with mockPrices
+          ...mockPrices,
+        };
+
+        // For any token not in our list, return price of 1
+        const result = tokens.reduce((acc, token) => {
+          acc[token] = allTokenPrices[token] || 1;
+          return acc;
+        }, {});
+
+        // Always include essential tokens
+        return {
+          ...allTokenPrices,
+          ...result,
+        };
+      }
+    },
+  };
+});
 
 const setTradingLoss = () => {};
 const setStepName = () => {};
@@ -97,7 +197,10 @@ describe("Bridge with USDT -> USDC Swap", () => {
     ]);
 
     // 2) Check the call data references USDT -> USDC
-    const swapData = await encode(swapTxn);
+    // We can verify the transaction contains swap data
+    expect(swapTxn.data).toBeDefined();
+    expect(swapTxn.data.length).toBeGreaterThan(10); // Should have substantial calldata
+
     // 3) Confirm bridging is indeed after the swap
     const bridgeTxn = txns[bridgeIndex];
     expect(bridgeTxn).toBeDefined();
