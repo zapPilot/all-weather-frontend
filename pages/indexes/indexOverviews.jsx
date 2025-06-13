@@ -1,9 +1,18 @@
 // copy from this Tailwind template: https://tailwindui.com/components/application-ui/page-examples/detail-screens
 "use client";
 import BasePage from "../basePage.tsx";
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  useMemo,
+  Suspense,
+  lazy,
+} from "react";
 import { ethers5Adapter } from "thirdweb/adapters/ethers5";
 import Link from "next/link";
+import Image from "next/image";
 import { Signer } from "ethers";
 import { useDispatch, useSelector } from "react-redux";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
@@ -45,10 +54,15 @@ import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
 import tokens from "../views/components/tokens.json";
 import useTabItems from "../../hooks/useTabItems";
-import PortfolioSummary from "../portfolio/PortfolioSummary";
-import PortfolioComposition from "../portfolio/PortfolioComposition";
-import HistoricalData from "../portfolio/HistoricalData";
-import TransactionHistoryPanel from "../portfolio/TransactionHistoryPanel";
+// Lazy load heavy portfolio components
+const PortfolioSummary = lazy(() => import("../portfolio/PortfolioSummary"));
+const PortfolioComposition = lazy(() =>
+  import("../portfolio/PortfolioComposition"),
+);
+const HistoricalData = lazy(() => import("../portfolio/HistoricalData"));
+const TransactionHistoryPanel = lazy(() =>
+  import("../portfolio/TransactionHistoryPanel"),
+);
 import {
   safeSetLocalStorage,
   safeGetLocalStorage,
@@ -380,18 +394,22 @@ export default function IndexOverviews() {
                     <div className="flex items-center gap-2 text-sm">
                       <span className="text-gray-500">Completed on</span>
                       <div className="flex items-center gap-1">
-                        <img
+                        <Image
                           src={`/chainPicturesWebp/${currentChain?.toLowerCase()}.webp`}
                           alt={currentChain}
+                          width={20}
+                          height={20}
                           className="w-5 h-5 rounded-full"
                         />
                         <span className="font-medium">{currentChain}</span>
                       </div>
                       <span className="text-gray-500">→</span>
                       <div className="flex items-center gap-1">
-                        <img
+                        <Image
                           src={`/chainPicturesWebp/${nextChain?.toLowerCase()}.webp`}
                           alt={nextChain}
+                          width={20}
+                          height={20}
                           className="w-5 h-5 rounded-full"
                         />
                         <span className="font-medium">{nextChain}</span>
@@ -1005,16 +1023,18 @@ export default function IndexOverviews() {
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
             <div className="sm:flex items-center justify-between gap-x-6">
               <div className="flex items-center">
-                <img
-                  alt=""
+                <Image
+                  alt={`${portfolioName} logo`}
                   src={`/indexFunds/${encodeURIComponent(
                     portfolioName?.toLowerCase(),
                   )}.webp`}
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 rounded-full me-2"
                   onError={(e) => {
-                    e.target.onerror = null; // Prevent infinite loop
                     e.target.src = "/tokenPictures/usdc.webp";
                   }}
-                  className="h-8 w-8 rounded-full me-2"
+                  priority
                 />
                 <h1 className="text-2xl font-bold text-white" role="vault">
                   {portfolioName}
@@ -1133,33 +1153,57 @@ export default function IndexOverviews() {
             </div>
           </div>
           <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-2 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
-            <PortfolioComposition
-              portfolioName={portfolioName}
-              portfolioHelper={portfolioHelper}
-              portfolioApr={portfolioApr}
-              loading={loading}
-              usdBalanceLoading={usdBalanceLoading}
-              lockUpPeriod={lockUpPeriod}
-              yieldContent={yieldContent}
-            />
+            <Suspense
+              fallback={
+                <div className="animate-pulse bg-gray-700 h-64 rounded-lg"></div>
+              }
+            >
+              <PortfolioComposition
+                portfolioName={portfolioName}
+                portfolioHelper={portfolioHelper}
+                portfolioApr={portfolioApr}
+                loading={loading}
+                usdBalanceLoading={usdBalanceLoading}
+                lockUpPeriod={lockUpPeriod}
+                yieldContent={yieldContent}
+              />
+            </Suspense>
 
-            <PortfolioSummary
-              usdBalanceLoading={usdBalanceLoading}
-              tokenPricesMappingTable={tokenPricesMappingTable}
-              usdBalance={usdBalance}
-              account={account}
-              principalBalance={principalBalance}
-              onRefresh={handleRefresh}
-              rebalancableUsdBalanceDict={rebalancableUsdBalanceDict}
-              portfolioHelper={portfolioHelper}
-            />
+            <Suspense
+              fallback={
+                <div className="animate-pulse bg-gray-700 h-64 rounded-lg"></div>
+              }
+            >
+              <PortfolioSummary
+                usdBalanceLoading={usdBalanceLoading}
+                tokenPricesMappingTable={tokenPricesMappingTable}
+                usdBalance={usdBalance}
+                account={account}
+                principalBalance={principalBalance}
+                onRefresh={handleRefresh}
+                rebalancableUsdBalanceDict={rebalancableUsdBalanceDict}
+                portfolioHelper={portfolioHelper}
+              />
+            </Suspense>
 
-            <HistoricalData portfolioName={portfolioName} />
+            <Suspense
+              fallback={
+                <div className="animate-pulse bg-gray-700 h-32 rounded-lg"></div>
+              }
+            >
+              <HistoricalData portfolioName={portfolioName} />
+            </Suspense>
 
-            <TransactionHistoryPanel
-              setPrincipalBalance={setPrincipalBalance}
-              tokenPricesMappingTable={tokenPricesMappingTable}
-            />
+            <Suspense
+              fallback={
+                <div className="animate-pulse bg-gray-700 h-64 rounded-lg"></div>
+              }
+            >
+              <TransactionHistoryPanel
+                setPrincipalBalance={setPrincipalBalance}
+                tokenPricesMappingTable={tokenPricesMappingTable}
+              />
+            </Suspense>
           </div>
         </div>
       </main>
