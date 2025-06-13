@@ -95,14 +95,13 @@ function ZapInTab({
       setShowCountdown(true);
       switchNextStepChain(chain);
 
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
 
-    await new Promise((resolve) => {
-      timeoutRef.current = setTimeout(resolve, COUNTDOWN_TIME * 1000);
-    });
-
+      await new Promise((resolve) => {
+        timeoutRef.current = setTimeout(resolve, COUNTDOWN_TIME * 1000);
+      });
 
       setPreviousTokenSymbol(selectedToken.split("-")[0].toLowerCase());
       const tokenSymbol = selectedToken.split("-")[0].toLowerCase();
