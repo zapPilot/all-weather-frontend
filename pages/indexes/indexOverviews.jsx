@@ -1,7 +1,15 @@
 // copy from this Tailwind template: https://tailwindui.com/components/application-ui/page-examples/detail-screens
 "use client";
 import BasePage from "../basePage.tsx";
-import { useState, useCallback, useEffect, useRef, useMemo, Suspense, lazy } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  useMemo,
+  Suspense,
+  lazy,
+} from "react";
 import { ethers5Adapter } from "thirdweb/adapters/ethers5";
 import Link from "next/link";
 import Image from "next/image";
@@ -48,9 +56,13 @@ import tokens from "../views/components/tokens.json";
 import useTabItems from "../../hooks/useTabItems";
 // Lazy load heavy portfolio components
 const PortfolioSummary = lazy(() => import("../portfolio/PortfolioSummary"));
-const PortfolioComposition = lazy(() => import("../portfolio/PortfolioComposition"));
+const PortfolioComposition = lazy(() =>
+  import("../portfolio/PortfolioComposition"),
+);
 const HistoricalData = lazy(() => import("../portfolio/HistoricalData"));
-const TransactionHistoryPanel = lazy(() => import("../portfolio/TransactionHistoryPanel"));
+const TransactionHistoryPanel = lazy(() =>
+  import("../portfolio/TransactionHistoryPanel"),
+);
 import {
   safeSetLocalStorage,
   safeGetLocalStorage,
@@ -1141,7 +1153,11 @@ export default function IndexOverviews() {
             </div>
           </div>
           <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-2 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
-            <Suspense fallback={<div className="animate-pulse bg-gray-700 h-64 rounded-lg"></div>}>
+            <Suspense
+              fallback={
+                <div className="animate-pulse bg-gray-700 h-64 rounded-lg"></div>
+              }
+            >
               <PortfolioComposition
                 portfolioName={portfolioName}
                 portfolioHelper={portfolioHelper}
@@ -1153,7 +1169,11 @@ export default function IndexOverviews() {
               />
             </Suspense>
 
-            <Suspense fallback={<div className="animate-pulse bg-gray-700 h-64 rounded-lg"></div>}>
+            <Suspense
+              fallback={
+                <div className="animate-pulse bg-gray-700 h-64 rounded-lg"></div>
+              }
+            >
               <PortfolioSummary
                 usdBalanceLoading={usdBalanceLoading}
                 tokenPricesMappingTable={tokenPricesMappingTable}
@@ -1166,11 +1186,19 @@ export default function IndexOverviews() {
               />
             </Suspense>
 
-            <Suspense fallback={<div className="animate-pulse bg-gray-700 h-32 rounded-lg"></div>}>
+            <Suspense
+              fallback={
+                <div className="animate-pulse bg-gray-700 h-32 rounded-lg"></div>
+              }
+            >
               <HistoricalData portfolioName={portfolioName} />
             </Suspense>
 
-            <Suspense fallback={<div className="animate-pulse bg-gray-700 h-64 rounded-lg"></div>}>
+            <Suspense
+              fallback={
+                <div className="animate-pulse bg-gray-700 h-64 rounded-lg"></div>
+              }
+            >
               <TransactionHistoryPanel
                 setPrincipalBalance={setPrincipalBalance}
                 tokenPricesMappingTable={tokenPricesMappingTable}
