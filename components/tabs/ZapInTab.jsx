@@ -2,7 +2,7 @@ import { Button, Statistic, Switch } from "antd";
 import TokenDropdownInput from "../../pages/views/TokenDropdownInput.jsx";
 import ConfiguredConnectButton from "../../pages/ConnectButton";
 import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
 import { TOKEN_ADDRESS_MAP } from "../../utils/general";
 import ActionItem from "../common/ActionItem";
 import { getMinimumTokenAmount } from "../../utils/environment.js";
@@ -27,7 +27,7 @@ const getCurrentChain = (chainId) => {
     .trim();
 };
 
-export default function ZapInTab({
+function ZapInTab({
   nextStepChain,
   selectedToken,
   handleSetSelectedToken,
@@ -68,44 +68,59 @@ export default function ZapInTab({
     };
   }, []);
 
-  const currentChain = getCurrentChain(chainId);
-  const falseChains = availableAssetChains.filter(
-    (chain) => !chainStatus[chain],
-  );
-  const skipBridge = availableAssetChains.length > falseChains.length;
+  const currentChain = useMemo(() => getCurrentChain(chainId), [chainId]);
 
-  const shouldSkipBridge = () => {
+  const falseChains = useMemo(
+    () => availableAssetChains.filter((chain) => !chainStatus[chain]),
+    [availableAssetChains, chainStatus],
+  );
+
+  const skipBridge = useMemo(
+    () => availableAssetChains.length > falseChains.length,
+    [availableAssetChains.length, falseChains.length],
+  );
+
+  const shouldSkipBridge = useCallback(() => {
     if (enableBridgingRef.current === false) {
       return true;
     }
     return skipBridge;
-  };
+  }, [skipBridge]);
 
-  const handleSwitchChain = async (chain) => {
-    setIsLoading(true);
-    const deadlineTime = getCurrentTimeSeconds() + COUNTDOWN_TIME;
-    setDeadline(deadlineTime * 1000);
-    setShowCountdown(true);
-    switchNextStepChain(chain);
+  const handleSwitchChain = useCallback(
+    async (chain) => {
+      setIsLoading(true);
+      const deadlineTime = getCurrentTimeSeconds() + COUNTDOWN_TIME;
+      setDeadline(deadlineTime * 1000);
+      setShowCountdown(true);
+      switchNextStepChain(chain);
 
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
 
-    await new Promise((resolve) => {
-      timeoutRef.current = setTimeout(resolve, COUNTDOWN_TIME * 1000);
-    });
+      await new Promise((resolve) => {
+        timeoutRef.current = setTimeout(resolve, COUNTDOWN_TIME * 1000);
+      });
 
-    setPreviousTokenSymbol(selectedToken.split("-")[0].toLowerCase());
-    const tokenSymbol = selectedToken.split("-")[0].toLowerCase();
-    if (tokenSymbol === "usdt") {
-      const newSelectedToken = `usdc-${TOKEN_ADDRESS_MAP["usdc"][nextStepChain]}-6`;
-      handleSetSelectedToken(newSelectedToken);
-    }
+      setPreviousTokenSymbol(selectedToken.split("-")[0].toLowerCase());
+      const tokenSymbol = selectedToken.split("-")[0].toLowerCase();
+      if (tokenSymbol === "usdt") {
+        const newSelectedToken = `usdc-${TOKEN_ADDRESS_MAP["usdc"][nextStepChain]}-6`;
+        handleSetSelectedToken(newSelectedToken);
+      }
 
-    setShowCountdown(false);
-    setIsLoading(false);
-  };
+      setShowCountdown(false);
+      setIsLoading(false);
+    },
+    [
+      selectedToken,
+      nextStepChain,
+      switchNextStepChain,
+      handleSetSelectedToken,
+      setPreviousTokenSymbol,
+    ],
+  );
 
   const renderCountdown = () => {
     if (!showCountdown || !deadline) return null;
@@ -233,3 +248,5 @@ export default function ZapInTab({
     </div>
   );
 }
+
+export default memo(ZapInTab);
