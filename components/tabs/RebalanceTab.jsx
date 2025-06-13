@@ -1,6 +1,6 @@
 import logger from "../../utils/logger";
 import { Button, Spin } from "antd";
-import { useState } from "react";
+import { useState, useCallback, useMemo, memo } from "react";
 import ActionItem from "../common/ActionItem";
 import TokenDropdownInput from "../../pages/views/TokenDropdownInput.jsx";
 import { actionNameMap } from "../common/ActionItem";
@@ -8,7 +8,7 @@ import { formatLockUpPeriod } from "../../utils/general";
 // Add sleep utility function
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export default function RebalanceTab({
+function RebalanceTab({
   rebalancableUsdBalanceDict,
   chainId,
   handleAAWalletAction,
@@ -153,3 +153,5 @@ export default function RebalanceTab({
     </div>
   );
 }
+
+export default memo(RebalanceTab);

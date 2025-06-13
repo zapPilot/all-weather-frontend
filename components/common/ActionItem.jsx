@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo, useMemo, useCallback } from "react";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import CompletionActions from "../../components/CompletionActions";
 import { sortChains } from "../../utils/chainOrder";
@@ -163,5 +163,5 @@ const ActionItem = (props) => {
   );
 };
 
-export default ActionItem;
+export default memo(ActionItem);
 export { actionNameMap };

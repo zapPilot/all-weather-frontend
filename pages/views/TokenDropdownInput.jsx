@@ -1,4 +1,4 @@
-import React, { useEffect, memo, useState } from "react";
+import React, { useEffect, memo, useState, useMemo, useCallback } from "react";
 import { Button, Space } from "antd";
 import {
   useWalletBalance,
@@ -42,20 +42,23 @@ const TokenDropdownInput = memo(
       }),
     });
 
-    const getTokenPrice = () => {
+    const tokenPrice = useMemo(() => {
       return tokenPricesMappingTable?.[tokenSymbol] || 0;
-    };
+    }, [tokenPricesMappingTable, tokenSymbol]);
 
-    const getUsdValue = (amount) => {
-      return (amount * getTokenPrice()).toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-    };
+    const getUsdValue = useCallback(
+      (amount) => {
+        return (amount * tokenPrice).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+      },
+      [tokenPrice],
+    );
 
-    const isInsufficientBalance = () => {
+    const isInsufficientBalance = useMemo(() => {
       return localInvestmentAmount > parseFloat(data?.displayValue || "0");
-    };
+    }, [localInvestmentAmount, data?.displayValue]);
 
     const handleInputChange = (eventValue) => {
       setLocalInvestmentAmount(parseFloat(eventValue) || 0);
@@ -87,9 +90,7 @@ const TokenDropdownInput = memo(
         <div className="mt-2 text-sm">
           Balance:{" "}
           <span
-            className={
-              isInsufficientBalance() ? "text-red-400" : "text-gray-400"
-            }
+            className={isInsufficientBalance ? "text-red-400" : "text-gray-400"}
           >
             {isLoading ? "Loading..." : data?.displayValue || "0"}
             {tokenPricesMappingTable &&
@@ -100,7 +101,7 @@ const TokenDropdownInput = memo(
                 </span>
               )}
           </span>
-          {isInsufficientBalance() && (
+          {isInsufficientBalance && (
             <p className="text-red-400">
               Please send more {tokenSymbol?.toUpperCase()} to your AA Wallet to
               continue.
