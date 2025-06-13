@@ -1,4 +1,4 @@
-import logger from "./logger";
+// Removed logger import to avoid circular dependency
 import { ethers } from "ethers";
 import { arbitrum, base, optimism, bsc, polygon } from "thirdweb/chains";
 import { ERC20_ABI } from "../node_modules/@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
@@ -79,7 +79,7 @@ export const PROVIDER = (chain) => {
   };
   const providerUrl = rpcProviders[chain.toLowerCase()];
   if (!providerUrl) {
-    logger.warn(
+    console.warn(
       `Warning: No RPC provider URL found for chain: ${chain}, need to update PROVIDER in general.js`,
     );
   }

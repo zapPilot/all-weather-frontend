@@ -1,6 +1,6 @@
 // Production-safe logging utility
-const isDevelopment =
-  process.env.NODE_ENV === "development" || process.env.TEST === "true";
+import { isLocalEnvironment } from "./general";
+
 const isTest = process.env.TEST === "true";
 
 class Logger {
@@ -9,20 +9,20 @@ class Logger {
   }
 
   log(...args) {
-    if (isDevelopment && !isTest) {
+    if (isLocalEnvironment && !isTest) {
       console.log(...args);
     }
   }
 
   warn(...args) {
-    if (isDevelopment) {
+    if (isLocalEnvironment) {
       console.warn(...args);
     }
   }
 
   error(...args) {
     // Always log errors, but limit object depth in production
-    if (isDevelopment) {
+    if (isLocalEnvironment) {
       console.error(...args);
     } else {
       // In production, log simplified error messages
@@ -40,13 +40,13 @@ class Logger {
   }
 
   time(label) {
-    if (isDevelopment && !isTest) {
+    if (isLocalEnvironment && !isTest) {
       this.timers.set(label, Date.now());
     }
   }
 
   timeEnd(label) {
-    if (isDevelopment && !isTest) {
+    if (isLocalEnvironment && !isTest) {
       const startTime = this.timers.get(label);
       if (startTime) {
         const duration = Date.now() - startTime;
@@ -58,7 +58,7 @@ class Logger {
 
   // For debugging large objects - only in development
   debug(label, obj) {
-    if (isDevelopment && !isTest) {
+    if (isLocalEnvironment && !isTest) {
       console.log(`[DEBUG] ${label}:`, obj);
     }
   }
@@ -66,8 +66,9 @@ class Logger {
   // Performance-safe logging for frequently called functions
   trace(...args) {
     if (
-      isDevelopment &&
+      isLocalEnvironment &&
       !isTest &&
+      typeof window !== "undefined" &&
       window?.location?.search?.includes("debug=true")
     ) {
       console.log("[TRACE]", ...args);
