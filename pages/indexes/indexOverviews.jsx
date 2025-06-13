@@ -753,6 +753,8 @@ export default function IndexOverviews() {
   };
 
   useEffect(() => {
+    let cleanupTimeoutId;
+
     const getDefaultTokenMetadata = () => {
       if (previousTokenSymbol) {
         const tokenSymbol =
@@ -791,10 +793,16 @@ export default function IndexOverviews() {
       }
     } finally {
       // Reset processing flag after a short delay
-      setTimeout(() => {
+      cleanupTimeoutId = setTimeout(() => {
         isProcessingChainChangeRef.current = false;
       }, 100);
     }
+
+    return () => {
+      if (cleanupTimeoutId) {
+        clearTimeout(cleanupTimeoutId);
+      }
+    };
   }, [chainId, previousTokenSymbol, nextStepChain]);
 
   // Add this function outside useEffect
