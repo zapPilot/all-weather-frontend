@@ -19,15 +19,6 @@ React Performance Problems:
 - Inefficient state management: Direct
   mutations, oversized props objects
 
-Memory Leaks:
-
-- Chart utilities (chartUtils.js:6-18):
-  Resize handlers without debouncing
-- Event listeners: Missing cleanup in
-  several components
-- Console logging: 35+ files with
-  excessive logging in production
-
 🔴 Critical Backend/API Issues
 
 Sequential API Calls:
@@ -57,28 +48,7 @@ DEX Aggregator Inefficiency:
 - No performance tracking or adaptive
   routing
 
-📊 Bundle & Assets Issues
 
-Large Asset Load:
-
-- 8,234 image files (1.6MB+ just for
-  chain images)
-- Images unoptimized (next.config.js:17)
-- No code splitting for heavy components
-- No lazy loading implementation
-
-⚡ Priority Fixes (Immediate Impact)
-
-High Impact - Frontend:
-
-1. Move queriesForAllWeather outside
-   render - 60-70% improvement
-2. Parallelize dashboard API calls -
-   50-60% faster loading
-3. Add React.memo to table components -
-   Reduce unnecessary re-renders
-4. Implement debounced resize handlers -
-   Fix memory leaks
 
 High Impact - Backend:
 
@@ -91,29 +61,3 @@ High Impact - Backend:
 4. Implement provider performance
    tracking for DEX calls
 
-Medium Impact - Assets:
-
-1. Enable Next.js image optimization
-   (images: { unoptimized: false })
-2. Implement lazy loading for images and
-   heavy components
-3. Add code splitting for
-   protocol-specific components
-
-🎯 Recommended Implementation Order
-
-1. Dashboard sequential → parallel API
-   calls (immediate 60%+ improvement)
-2. Add React performance optimizations
-   (useCallback, useMemo, React.memo)
-3. Implement batch API endpoints on
-   backend
-4. Fix resize handler memory leaks
-5. Optimize image loading and caching
-
-The most critical issue is the
-dashboard's sequential API fetching
-pattern, which should be your first
-priority. This single fix will provide
-the most noticeable performance
-improvement for users.
