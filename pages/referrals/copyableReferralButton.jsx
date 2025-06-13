@@ -1,17 +1,30 @@
 import logger from "../../utils/logger";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button, message } from "antd";
 import { CopyOutlined, CheckOutlined } from "@ant-design/icons";
 
 const CopyableReferralButton = ({ referralLink }) => {
   const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(referralLink);
       setCopied(true);
       message.success("Referral link copied!");
-      setTimeout(() => setCopied(false), 2000);
+
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       logger.error("Failed to copy text: ", err);
       message.error("Failed to copy referral link");

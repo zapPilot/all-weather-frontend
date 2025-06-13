@@ -600,68 +600,70 @@ export default function IndexOverviews() {
           cachedData?.timestamp &&
           Date.now() - cachedData.timestamp < 3600 * 1000
         ) {
-          // Use cached data - update states immediately for each piece of data
-          setTokenPricesMappingTable(cachedData.tokenPricesMappingTable);
-          setUsdBalance(cachedData.usdBalance);
-          setUsdBalanceLoading(false);
-          setRebalancableUsdBalanceDict(cachedData.usdBalanceDict);
-          setRebalancableUsdBalanceDictLoading(false);
-          setLockUpPeriod(cachedData.lockUpPeriod);
-          setPendingRewards(cachedData.pendingRewards);
-          setPendingRewardsLoading(false);
-          setProtocolAssetDustInWallet(cachedData.dust);
-          setProtocolAssetDustInWalletLoading(false);
+          // Use cached data - batch state updates to reduce re-renders
+          const cachedUpdates = {
+            tokenPricesMappingTable: cachedData.tokenPricesMappingTable,
+            usdBalance: cachedData.usdBalance,
+            usdBalanceLoading: false,
+            rebalancableUsdBalanceDict: cachedData.usdBalanceDict,
+            rebalancableUsdBalanceDictLoading: false,
+            lockUpPeriod: cachedData.lockUpPeriod,
+            pendingRewards: cachedData.pendingRewards,
+            pendingRewardsLoading: false,
+            protocolAssetDustInWallet: cachedData.dust,
+            protocolAssetDustInWalletLoading: false,
+          };
+
+          // Apply all updates at once using React's batching
+          setTokenPricesMappingTable(cachedUpdates.tokenPricesMappingTable);
+          setUsdBalance(cachedUpdates.usdBalance);
+          setUsdBalanceLoading(cachedUpdates.usdBalanceLoading);
+          setRebalancableUsdBalanceDict(
+            cachedUpdates.rebalancableUsdBalanceDict,
+          );
+          setRebalancableUsdBalanceDictLoading(
+            cachedUpdates.rebalancableUsdBalanceDictLoading,
+          );
+          setLockUpPeriod(cachedUpdates.lockUpPeriod);
+          setPendingRewards(cachedUpdates.pendingRewards);
+          setPendingRewardsLoading(cachedUpdates.pendingRewardsLoading);
+          setProtocolAssetDustInWallet(cachedUpdates.protocolAssetDustInWallet);
+          setProtocolAssetDustInWalletLoading(
+            cachedUpdates.protocolAssetDustInWalletLoading,
+          );
           return;
         }
 
-        // Fetch fresh data using Promise.all to load data in parallel
-        const usdBalancePromise = portfolioHelper.usdBalanceOf(
-          account.address,
-          portfolioApr[portfolioName],
-        );
-        const lockUpPeriodPromise = portfolioHelper.lockUpPeriod(
-          account.address,
-        );
+        // First fetch token prices if available for other calls
+        const tokenPricesPromise =
+          portfolioHelper.getTokenPricesMappingTable?.() || Promise.resolve({});
+        const tokenPrices = await tokenPricesPromise;
 
-        const results = await Promise.all([
-          usdBalancePromise.then((result) => result),
-          lockUpPeriodPromise.then((result) => result),
-        ]);
+        // Fetch ALL data in parallel instead of sequential calls
+        const [usdBalanceResult, lockUpPeriod, pendingRewards, dust] =
+          await Promise.all([
+            portfolioHelper.usdBalanceOf(
+              account.address,
+              portfolioApr[portfolioName],
+            ),
+            portfolioHelper.lockUpPeriod(account.address),
+            portfolioHelper.pendingRewards(
+              account.address,
+              () => {},
+              tokenPrices,
+            ),
+            portfolioHelper.calProtocolAssetDustInWalletDictionary(
+              account.address,
+              tokenPrices,
+            ),
+          ]);
 
         logger.timeEnd("🚀 Portfolio data fetch");
 
-        const [
-          [usdBalance, usdBalanceDict, tokenPricesMappingTable],
-          lockUpPeriod,
-        ] = results;
-        setTokenPricesMappingTable(tokenPricesMappingTable);
-        setUsdBalance(usdBalance);
-        setUsdBalanceLoading(false);
-        setRebalancableUsdBalanceDict(usdBalanceDict);
-        setRebalancableUsdBalanceDictLoading(false);
-        setLockUpPeriod(lockUpPeriod);
+        const [usdBalance, usdBalanceDict, tokenPricesMappingTable] =
+          usdBalanceResult;
 
-        // Update pending rewards
-        logger.time("🚀 Pending rewards fetch");
-        const pendingRewards = await portfolioHelper.pendingRewards(
-          account.address,
-          () => {},
-          tokenPricesMappingTable,
-        );
-        logger.timeEnd("🚀 Pending rewards fetch");
-        setPendingRewards(pendingRewards.pendingRewardsDict);
-        setPendingRewardsLoading(false);
-
-        // Calculate dust
-        const dust =
-          await portfolioHelper.calProtocolAssetDustInWalletDictionary(
-            account.address,
-            tokenPricesMappingTable,
-          );
-        setProtocolAssetDustInWallet(dust);
-        setProtocolAssetDustInWalletLoading(false);
-
-        // Update final USD balance with dust
+        // Calculate dust total USD balance efficiently
         const dustTotalUsdBalance = Object.values(dust).reduce(
           (sum, protocolObj) =>
             sum +
@@ -672,7 +674,20 @@ export default function IndexOverviews() {
             ),
           0,
         );
-        setUsdBalance(usdBalance + dustTotalUsdBalance);
+
+        const finalUsdBalance = usdBalance + dustTotalUsdBalance;
+
+        // Batch all state updates to minimize re-renders
+        setTokenPricesMappingTable(tokenPricesMappingTable);
+        setUsdBalance(finalUsdBalance);
+        setUsdBalanceLoading(false);
+        setRebalancableUsdBalanceDict(usdBalanceDict);
+        setRebalancableUsdBalanceDictLoading(false);
+        setLockUpPeriod(lockUpPeriod);
+        setPendingRewards(pendingRewards.pendingRewardsDict);
+        setPendingRewardsLoading(false);
+        setProtocolAssetDustInWallet(dust);
+        setProtocolAssetDustInWalletLoading(false);
 
         // Cache the fresh data
         try {
@@ -680,7 +695,7 @@ export default function IndexOverviews() {
             `portfolio-${portfolioName}-${account.address}`,
             {
               tokenPricesMappingTable,
-              usdBalance: usdBalance + dustTotalUsdBalance,
+              usdBalance: finalUsdBalance,
               usdBalanceDict,
               lockUpPeriod: lockUpPeriod,
               pendingRewards: pendingRewards.pendingRewardsDict,
@@ -738,6 +753,8 @@ export default function IndexOverviews() {
   };
 
   useEffect(() => {
+    let cleanupTimeoutId;
+
     const getDefaultTokenMetadata = () => {
       if (previousTokenSymbol) {
         const tokenSymbol =
@@ -776,10 +793,16 @@ export default function IndexOverviews() {
       }
     } finally {
       // Reset processing flag after a short delay
-      setTimeout(() => {
+      cleanupTimeoutId = setTimeout(() => {
         isProcessingChainChangeRef.current = false;
       }, 100);
     }
+
+    return () => {
+      if (cleanupTimeoutId) {
+        clearTimeout(cleanupTimeoutId);
+      }
+    };
   }, [chainId, previousTokenSymbol, nextStepChain]);
 
   // Add this function outside useEffect

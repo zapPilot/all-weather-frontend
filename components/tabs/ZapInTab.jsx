@@ -2,7 +2,7 @@ import { Button, Statistic, Switch } from "antd";
 import TokenDropdownInput from "../../pages/views/TokenDropdownInput.jsx";
 import ConfiguredConnectButton from "../../pages/ConnectButton";
 import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { TOKEN_ADDRESS_MAP } from "../../utils/general";
 import ActionItem from "../common/ActionItem";
 import { getMinimumTokenAmount } from "../../utils/environment.js";
@@ -58,6 +58,15 @@ export default function ZapInTab({
   const [deadline, setDeadline] = useState(null);
   const [enableBridging, setEnableBridging] = useState(true);
   const enableBridgingRef = useRef(enableBridging);
+  const timeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const currentChain = getCurrentChain(chainId);
   const falseChains = availableAssetChains.filter(
@@ -79,7 +88,13 @@ export default function ZapInTab({
     setShowCountdown(true);
     switchNextStepChain(chain);
 
-    await new Promise((resolve) => setTimeout(resolve, COUNTDOWN_TIME * 1000));
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    await new Promise((resolve) => {
+      timeoutRef.current = setTimeout(resolve, COUNTDOWN_TIME * 1000);
+    });
 
     setPreviousTokenSymbol(selectedToken.split("-")[0].toLowerCase());
     const tokenSymbol = selectedToken.split("-")[0].toLowerCase();
