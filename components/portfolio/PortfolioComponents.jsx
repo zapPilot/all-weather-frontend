@@ -1,8 +1,9 @@
 import { Spin } from "antd";
 import Image from "next/image";
+import { memo } from "react";
 import ImageWithFallback from "../../pages/basicComponents/ImageWithFallback";
 
-export const TokenDisplay = ({ protocol }) => {
+const TokenDisplay = ({ protocol }) => {
   return (
     <div className="flex flex-col gap-1 max-w-[200px]">
       <div className="relative flex items-center">
@@ -29,7 +30,9 @@ export const TokenDisplay = ({ protocol }) => {
   );
 };
 
-export const ProtocolInfo = ({ protocol }) => (
+export const MemoizedTokenDisplay = memo(TokenDisplay);
+
+const ProtocolInfo = ({ protocol }) => (
   <div className="ms-2 truncate relative">
     <div className="flex items-center gap-4">
       <div className="relative inline-flex items-center">
@@ -62,6 +65,15 @@ export const ProtocolInfo = ({ protocol }) => (
   </div>
 );
 
-export const APRDisplay = ({ apr }) => (
+export const MemoizedProtocolInfo = memo(ProtocolInfo);
+
+const APRDisplay = ({ apr }) => (
   <span>{isNaN(apr * 100) ? <Spin /> : `${(apr * 100 || 0).toFixed(2)}%`}</span>
 );
+
+export const MemoizedAPRDisplay = memo(APRDisplay);
+
+// Keep original exports for backward compatibility
+export { MemoizedTokenDisplay as TokenDisplay };
+export { MemoizedProtocolInfo as ProtocolInfo };
+export { MemoizedAPRDisplay as APRDisplay };

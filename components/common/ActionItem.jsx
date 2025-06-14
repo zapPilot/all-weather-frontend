@@ -10,7 +10,7 @@ const actionNameMap = {
   localRebalance: "Rebalance",
 };
 
-const ChainIndicator = ({
+const ChainIndicator = memo(({
   chain,
   index,
   isActive,
@@ -56,9 +56,10 @@ const ChainIndicator = ({
       </p>
     </div>
   );
-};
+});
+ChainIndicator.displayName = 'ChainIndicator';
 
-const CompletionStatus = ({ allActionsCompleted, account }) => {
+const CompletionStatus = memo(({ allActionsCompleted, account }) => {
   if (!allActionsCompleted) return null;
 
   return (
@@ -70,7 +71,8 @@ const CompletionStatus = ({ allActionsCompleted, account }) => {
       <CompletionActions account={account} />
     </div>
   );
-};
+});
+CompletionStatus.displayName = 'CompletionStatus';
 
 const ActionItem = (props) => {
   const {

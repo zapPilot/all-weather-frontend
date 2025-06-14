@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import { PlusCircleOutlined } from "@ant-design/icons";
 import PropTypes from "prop-types";
 
-export const ExpandTableComponent = ({
+const ExpandTableComponent = ({
   column,
   columnData,
   expandedRowRender,
@@ -232,4 +232,8 @@ class MobileTableBody extends React.Component {
   }
 }
 
-export default TableComponent;
+const MemoizedExpandTableComponent = memo(ExpandTableComponent);
+const MemoizedTableComponent = memo(TableComponent);
+
+export { MemoizedExpandTableComponent as ExpandTableComponent };
+export default MemoizedTableComponent;
