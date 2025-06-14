@@ -1,0 +1,1 @@
+Try to optimize the memory usage when we run `doppler run -- yarn dev` to start this Next.js server:
