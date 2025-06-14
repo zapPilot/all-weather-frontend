@@ -234,35 +234,45 @@ const Dashboard: NextPage = () => {
   useEffect(() => {
     const fetchDefaultPools = async () => {
       try {
-        for (const categoryMetaData of Object.values(queriesForAllWeather)) {
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/all_weather_pools`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
+        // Parallelize API calls for better performance
+        const fetchPromises = Object.values(queriesForAllWeather).map(
+          async (categoryMetaData) => {
+            const response = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/all_weather_pools`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  user_api_key: userApiKey,
+                  category: categoryMetaData.category,
+                  top_n: categoryMetaData.topN,
+                  ...(categoryMetaData.chain_blacklist && {
+                    chain_blacklist: categoryMetaData.chain_blacklist,
+                  }),
+                  ...(categoryMetaData.chain_whitelist && {
+                    chain_whitelist: categoryMetaData.chain_whitelist,
+                  }),
+                }),
               },
-              body: JSON.stringify({
-                user_api_key: userApiKey,
-                category: categoryMetaData.category,
-                top_n: categoryMetaData.topN,
-                ...(categoryMetaData.chain_blacklist && {
-                  chain_blacklist: categoryMetaData.chain_blacklist,
-                }),
-                ...(categoryMetaData.chain_whitelist && {
-                  chain_whitelist: categoryMetaData.chain_whitelist,
-                }),
-              }),
-            },
-          );
-          const json = await response.json();
+            );
+            const json = await response.json();
+            return { categoryMetaData, json };
+          },
+        );
+
+        const results = await Promise.all(fetchPromises);
+
+        // Update state with results
+        results.forEach(({ categoryMetaData, json }) => {
           categoryMetaData.setStateMethod(json.data);
           categoryMetaData.setUniqueQueryTokens(json.unique_query_tokens);
           categoryMetaData.setUnexpandable(
             categoryMetaData.category,
             json.unexpandable,
           );
-        }
+        });
       } catch (error) {
         logger.error("failed to fetch pool data", error);
       }
