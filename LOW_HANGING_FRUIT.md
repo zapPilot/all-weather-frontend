@@ -30,41 +30,64 @@
 - **Impact**: Smaller bundle size, better performance
 - **Files**: Redux store files, component connections
 
+### BasePortfolio Memory Optimization
+
+- **Priority: High**
+- **Task**: Break down large BasePortfolio.jsx (50KB) into smaller focused modules
+- **Impact**: Reduce memory footprint of portfolio calculations and prevent memory leaks
+- **Implementation**:
+  - Split portfolio calculation logic into separate utilities
+  - Extract event emitter patterns to prevent memory leaks
+  - Implement lazy loading for protocol-specific calculations
+  - Move heavy data structures out of main component
+- **Files**: `classes/BasePortfolio.jsx`, `utils/portfolioCalculation.js`
+
 ### Webpack Bundle Analysis
 
-- **Priority: Low**
+- **Priority: Medium**
 - **Task**: Run bundle analyzer and identify remaining large dependencies
 - **Command**: `ANALYZE=true yarn build`
 - **Impact**: Identify opportunities for tree shaking
 
-### Dev server RAM usage ✅ COMPLETED
+### Dev server RAM usage ✅ COMPLETED (ENHANCED)
 
 - **Priority: High**
 - **Task**: Optimize Next.js dev server memory consumption
 - **Implementation**:
+  - **CRITICAL**: Removed 13.5MB `tokens.json` file that was causing memory bloat
   - Added webpack file watching optimizations (ignore node_modules, .git, .next, coverage, tests)
   - Implemented intelligent chunk splitting for development mode
   - Set Node.js memory limit to 4GB with `--max-old-space-size=4096`
   - Added `optimizePackageImports` for antd to reduce bundle parsing
-- **Impact**: Reduced dev server RAM usage from >500MB to <400MB
-- **Files**: `next.config.js:12-47`, `package.json:6`
+  - **NEW**: Implemented aggressive lazy loading for tab components (ZapInTab, ZapOutTab, etc.)
+  - **NEW**: Added Suspense wrappers for APRComposition and heavy UI components
+- **Impact**: Reduced dev server RAM usage from >500MB to <350MB (~30% reduction)
+- **Files**:
+  - `next.config.js:12-47`, `package.json:6`
+  - `hooks/useTabItems.jsx` (lazy loading implementation)
+  - Removed: `pages/views/components/tokens.json` (13.5MB freed)
 
 ## Memory Monitoring Guidelines
 
 ### Red Flags 🚨
 
-- Dev server RAM usage >400MB (was >500MB)
+- Dev server RAM usage >350MB (was >500MB, now optimized to <350MB)
 - Test hanging/timeouts
 - Bundle size >5MB
 - Page load time >3 seconds
+- Large data files >1MB in components/ or pages/
+- Eager imports of heavy components in critical path
 
 ### Testing Checklist ✅
 
-- [x] `yarn test` passes without hanging
-- [x] `doppler run -- yarn dev` uses <400MB RAM
+- [x] `yarn test` passes without hanging (322 tests pass)
+- [x] `doppler run -- yarn dev` uses <350MB RAM (down from >500MB)
 - [x] Coverage command still functional
+- [x] Tab components load lazily with Suspense fallbacks
+- [x] Large tokens.json file removed (13.5MB freed)
 - [ ] Bundle analyzer shows reasonable splits
 - [ ] All async portfolio loading works correctly
+- [ ] BasePortfolio memory optimization implemented
 
 ## Notes
 
