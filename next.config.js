@@ -14,7 +14,7 @@ const nextConfig = {
     return config;
   },
   images: {
-    unoptimized: true,
+    unoptimized: false,
   },
   basePath: "",
   assetPrefix: "/",
