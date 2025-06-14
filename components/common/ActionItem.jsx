@@ -10,54 +10,49 @@ const actionNameMap = {
   localRebalance: "Rebalance",
 };
 
-const ChainIndicator = memo(({
-  chain,
-  index,
-  isActive,
-  isCurrentChain,
-  theme,
-  actionText,
-}) => {
-  const styles = {
-    text: isActive
-      ? "text-green-500"
-      : isCurrentChain
-      ? theme === "dark"
-        ? "text-white"
-        : "text-gray-900"
-      : "text-gray-500",
-    border: isActive
-      ? "border-green-500"
-      : isCurrentChain
-      ? theme === "dark"
-        ? "border-white"
-        : "border-gray-900"
-      : "border-gray-500",
-  };
+const ChainIndicator = memo(
+  ({ chain, index, isActive, isCurrentChain, theme, actionText }) => {
+    const styles = {
+      text: isActive
+        ? "text-green-500"
+        : isCurrentChain
+        ? theme === "dark"
+          ? "text-white"
+          : "text-gray-900"
+        : "text-gray-500",
+      border: isActive
+        ? "border-green-500"
+        : isCurrentChain
+        ? theme === "dark"
+          ? "border-white"
+          : "border-gray-900"
+        : "border-gray-500",
+    };
 
-  const showPulsingDot = isCurrentChain && !isActive;
-  return (
-    <div className={`flex flex-col items-center mx-2 ${styles.text}`}>
-      <div
-        className={`w-10 h-10 border-2 rounded-full flex items-center justify-center relative ${styles.border}`}
-      >
-        {showPulsingDot && (
-          <div className="absolute -top-2">
-            <span className="relative flex size-3">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex size-3 rounded-full bg-red-500"></span>
-            </span>
-          </div>
-        )}
-        {index + 1}
+    const showPulsingDot = isCurrentChain && !isActive;
+    return (
+      <div className={`flex flex-col items-center mx-2 ${styles.text}`}>
+        <div
+          className={`w-10 h-10 border-2 rounded-full flex items-center justify-center relative ${styles.border}`}
+        >
+          {showPulsingDot && (
+            <div className="absolute -top-2">
+              <span className="relative flex size-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex size-3 rounded-full bg-red-500"></span>
+              </span>
+            </div>
+          )}
+          {index + 1}
+        </div>
+        <p>
+          {actionText} on {chain}
+        </p>
       </div>
-      <p>
-        {actionText} on {chain}
-      </p>
-    </div>
-  );
-});
-ChainIndicator.displayName = 'ChainIndicator';
+    );
+  },
+);
+ChainIndicator.displayName = "ChainIndicator";
 
 const CompletionStatus = memo(({ allActionsCompleted, account }) => {
   if (!allActionsCompleted) return null;
@@ -72,7 +67,7 @@ const CompletionStatus = memo(({ allActionsCompleted, account }) => {
     </div>
   );
 });
-CompletionStatus.displayName = 'CompletionStatus';
+CompletionStatus.displayName = "CompletionStatus";
 
 const ActionItem = (props) => {
   const {

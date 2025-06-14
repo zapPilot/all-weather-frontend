@@ -263,7 +263,7 @@ const Dashboard: NextPage = () => {
         );
 
         const results = await Promise.all(fetchPromises);
-        
+
         // Update state with results
         results.forEach(({ categoryMetaData, json }) => {
           categoryMetaData.setStateMethod(json.data);
