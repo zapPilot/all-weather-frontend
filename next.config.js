@@ -9,9 +9,49 @@ const nextConfig = {
     "rc-picker",
   ],
   trailingSlash: true,
-  webpack: (config) => {
+  webpack: (config, { dev }) => {
     config.resolve.fallback = { fs: false, net: false, tls: false };
+
+    // Memory optimizations for development
+    if (dev) {
+      config.watchOptions = {
+        poll: false,
+        ignored: [
+          "**/node_modules/**",
+          "**/.git/**",
+          "**/.next/**",
+          "**/coverage/**",
+          "**/out/**",
+          "**/__tests__/**",
+        ],
+      };
+
+      // Reduce memory usage by limiting concurrent chunks
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: "async",
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            // Only create a vendor chunk for frequently used modules
+            vendor: {
+              name: "vendor",
+              chunks: "all",
+              test: /[\\/]node_modules[\\/](react|react-dom|next)[\\/]/,
+              priority: 20,
+            },
+          },
+        },
+      };
+    }
+
     return config;
+  },
+  experimental: {
+    // Optimize memory usage during development
+    optimizePackageImports: ["antd", "@ant-design/icons"],
+    webVitalsAttribution: ["CLS", "LCP"],
   },
   images: {
     unoptimized: false,
