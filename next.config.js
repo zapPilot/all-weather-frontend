@@ -1,13 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: [
-    "@ant-design",
-    "antd",
-    "rc-util",
-    "rc-pagination",
-    "rc-picker",
-  ],
+  // TESTING: Only transpile essential antd packages
+  transpilePackages: ["antd", "rc-util"],
   trailingSlash: true,
   webpack: (config, { dev }) => {
     config.resolve.fallback = { fs: false, net: false, tls: false };
@@ -22,11 +17,22 @@ const nextConfig = {
           "**/.next/**",
           "**/coverage/**",
           "**/out/**",
-          "**/__tests__/**",
+          "**/.__tests__/**",
         ],
       };
 
-      // Reduce memory usage by limiting concurrent chunks
+      // TEST: Ignore heavy chart packages during module resolution
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        "@ant-design/charts": false,
+        "@ant-design/graphs": false,
+        "@ant-design/plots": false,
+        "@antv/g2": false,
+        "@antv/g6": false,
+        "@antv/l7": false,
+      };
+
+      // Gentler memory reduction - keep basic functionality
       config.optimization = {
         ...config.optimization,
         splitChunks: {
@@ -34,24 +40,29 @@ const nextConfig = {
           cacheGroups: {
             default: false,
             vendors: false,
-            // Only create a vendor chunk for frequently used modules
+            // Only React core
             vendor: {
               name: "vendor",
               chunks: "all",
-              test: /[\\/]node_modules[\\/](react|react-dom|next)[\\/]/,
+              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
               priority: 20,
             },
           },
         },
+      };
+
+      // Reduce cache but don't disable entirely
+      config.cache = {
+        type: "memory",
+        maxGenerations: 1,
       };
     }
 
     return config;
   },
   experimental: {
-    // Optimize memory usage during development
-    optimizePackageImports: ["antd", "@ant-design/icons"],
-    webVitalsAttribution: ["CLS", "LCP"],
+    // TESTING: Only optimize basic antd, avoid charts
+    optimizePackageImports: ["antd"],
   },
   images: {
     unoptimized: false,
@@ -60,48 +71,33 @@ const nextConfig = {
   assetPrefix: "/",
 };
 
+// TEMPORARILY DISABLE MEMORY-HEAVY PLUGINS FOR TESTING
+// Comment out Sentry and PWA to test memory usage
+
+// const { withSentryConfig } = require("@sentry/nextjs");
+// const withPWA = require("next-pwa")({
+//   dest: "public",
+//   register: true,
+//   skipWaiting: true,
+//   disable: process.env.NODE_ENV === "development",
+// });
+
+// module.exports = withPWA(
+//   withSentryConfig(
+//     module.exports,
+//     {
+//       silent: true,
+//       org: "all-weather-portfolio",
+//       project: "webapp",
+//     },
+//     {
+//       widenClientFileUpload: true,
+//       transpileClientSDK: true,
+//       tunnelRoute: "/monitoring",
+//       hideSourceMaps: true,
+//       disableLogger: true,
+//     },
+//   ),
+// );
+
 module.exports = nextConfig;
-
-// Injected content via Sentry wizard below
-
-const { withSentryConfig } = require("@sentry/nextjs");
-const withPWA = require("next-pwa")({
-  dest: "public",
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === "development",
-});
-
-module.exports = withPWA(
-  withSentryConfig(
-    module.exports,
-    {
-      // For all available options, see:
-      // https://github.com/getsentry/sentry-webpack-plugin#options
-
-      // Suppresses source map uploading logs during build
-      silent: true,
-      org: "all-weather-portfolio",
-      project: "webapp",
-    },
-    {
-      // For all available options, see:
-      // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
-
-      // Upload a larger set of source maps for prettier stack traces (increases build time)
-      widenClientFileUpload: true,
-
-      // Transpiles SDK to be compatible with IE11 (increases bundle size)
-      transpileClientSDK: true,
-
-      // Routes browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers (increases server load)
-      tunnelRoute: "/monitoring",
-
-      // Hides source maps from generated client bundles
-      hideSourceMaps: true,
-
-      // Automatically tree-shake Sentry logger statements to reduce bundle size
-      disableLogger: true,
-    },
-  ),
-);
