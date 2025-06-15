@@ -1,6 +1,7 @@
 import { BaseVault } from "./BaseVault";
 import { BaseCamelot } from "../camelot/BaseCamelot";
 import { StablecoinVault } from "./StablecoinVault";
+import { EthVault } from "./EthVault";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import { BaseVelodrome } from "../Velodrome/BaseVelodrome";
 import { BasePendlePT } from "../Pendle/BasePendlePT";
@@ -8,78 +9,21 @@ export class Index500Vault extends BaseVault {
   constructor() {
     // Get StablecoinVault's strategy
     const stablecoinVault = new StablecoinVault();
+    const ethVault = new EthVault();
     const strategies = {
-      gold: {
+      // gold: {
+      //   imports: [
+      //     {
+      //       strategy: stablecoinVault.strategy.gold,
+      //       weight: 1,
+      //     },
+      //   ],
+      // },
+      eth: {
         imports: [
           {
-            strategy: stablecoinVault.strategy.gold,
+            strategy: ethVault.strategy.long_term_bond,
             weight: 1,
-          },
-        ],
-      },
-      eth: {
-        arbitrum: [
-          {
-            interface: new BaseEquilibria(
-              "arbitrum",
-              42161,
-              ["pt wsteth 26jun2025", "wsteth"],
-              "single",
-              {
-                assetAddress: "0x08a152834de126d2ef83D612ff36e4523FD0017F",
-                symbolOfBestTokenToZapOut: "weth",
-                bestTokenAddressToZapOut:
-                  "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-                decimalOfBestTokenToZapOut: 18,
-                pidOfEquilibria: 7,
-              },
-            ),
-            weight: 0,
-          },
-          {
-            interface: new BasePendlePT(
-              "arbitrum",
-              42161,
-              ["pt wsteth 26jun2025"],
-              "single",
-              {
-                marketAddress: "0x08a152834de126d2ef83D612ff36e4523FD0017F",
-                assetAddress: "0x1255638EFeca62e12E344E0b6B22ea853eC6e2c7",
-                assetDecimals: 18,
-                symbolOfBestTokenToZapOut: "weth",
-                bestTokenAddressToZapOut:
-                  "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-                decimalOfBestTokenToZapOut: 18,
-              },
-            ),
-            weight: 0.7,
-          },
-        ],
-        base: [
-          {
-            interface: new BaseVelodrome("base", 8453, ["eth", "mseth"], "LP", {
-              protocolName: "aerodrome",
-              routerAddress: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
-              protocolVersion: "0",
-              assetAddress: "0xDE4FB30cCC2f1210FcE2c8aD66410C586C8D1f9A",
-              assetDecimals: 18,
-              guageAddress: "0x62940D9643a130b80CA0f8bc7e94De5b7ec496C5",
-              lpTokens: [
-                ["eth", "0x4200000000000000000000000000000000000006", 18],
-                ["mseth", "0x7Ba6F01772924a82D9626c126347A28299E98c98", 18],
-              ],
-              rewards: [
-                {
-                  symbol: "aero",
-                  priceId: {
-                    coinmarketcapApiId: 29270,
-                  },
-                  address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
-                  decimals: 18,
-                },
-              ],
-            }),
-            weight: 0.3,
           },
         ],
       },
@@ -247,49 +191,50 @@ export class Index500Vault extends BaseVault {
                 decimalOfBestTokenToZapOut: 8,
               },
             ),
-            // weight: 0.6,
-            weight: 1,
+            weight: 0.3,
+            // weight: 1,
           },
-          // {
-          //   interface: new BaseVelodrome(
-          //     "base",
-          //     8453,
-          //     ["tbtc", "cbbtc"],
-          //     "LP",
-          //     {
-          //       protocolName: "aerodrome",
-          //       routerAddress: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
-          //       protocolVersion: "0",
-          //       assetAddress: "0x488d6ea6064eEE9352fdCDB7BC50d98A7fF3AD4E",
-          //       assetDecimals: 18,
-          //       guageAddress: "0x80AAd55965d1eA36bAf15Ae6Ed798145ec65916F",
-          //       lpTokens: [
-          //         ["tbtc", "0x236aa50979D5f3De3Bd1Eeb40E81137F22ab794b", 18],
-          //         ["cbbtc", "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf", 8],
-          //       ],
-          //       rewards: [
-          //         {
-          //           symbol: "aero",
-          //           priceId: {
-          //             coinmarketcapApiId: 29270,
-          //           },
-          //           address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
-          //           decimals: 18,
-          //         },
-          //       ],
-          //     },
-          //   ),
-          //   weight: 0.4,
-          // },
+          {
+            interface: new BaseVelodrome(
+              "base",
+              8453,
+              ["tbtc", "cbbtc"],
+              "LP",
+              {
+                protocolName: "aerodrome",
+                routerAddress: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
+                protocolVersion: "0",
+                assetAddress: "0x488d6ea6064eEE9352fdCDB7BC50d98A7fF3AD4E",
+                assetDecimals: 18,
+                guageAddress: "0x80AAd55965d1eA36bAf15Ae6Ed798145ec65916F",
+                lpTokens: [
+                  ["tbtc", "0x236aa50979D5f3De3Bd1Eeb40E81137F22ab794b", 18],
+                  ["cbbtc", "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf", 8],
+                ],
+                rewards: [
+                  {
+                    symbol: "aero",
+                    priceId: {
+                      coinmarketcapApiId: 29270,
+                    },
+                    address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+                    decimals: 18,
+                  },
+                ],
+              },
+            ),
+            weight: 0.7,
+          },
         ],
       },
     };
     const weightMapping = {
-      gold: 0.5,
-      eth: 0.0795,
+      // gold: 0.5,
+      eth: 0.0795 * 2,
       large_cap_us_stocks: 0,
       intermediate_term_bond: 0,
-      btc: 0.4205,
+      btc: 0.4205 * 2,
+      // btc: 1,
     };
     super(strategies, weightMapping, "Index 500 Vault");
   }
