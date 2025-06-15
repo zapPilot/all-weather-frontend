@@ -1,6 +1,6 @@
 import PendleMarketV3 from "../../lib/contracts/Pendle/PendleMarketV3.json" assert { type: "json" };
 import PendlePrincipalToken from "../../lib/contracts/Pendle/PendlePrincipalToken.json" assert { type: "json" };
-import ActionAddRemoveLiqV3 from "../../lib/contracts/Pendle/ActionAddRemoveLiqV3.json" assert { type: "json" };
+import ActionAddRemoveLiqV3 from "../../lib/contracts/Pendle/ActionAddRemoveLiqV3-minimal.json" assert { type: "json" };
 import axios from "axios";
 import { ethers } from "ethers";
 import { PROVIDER } from "../../utils/general.js";

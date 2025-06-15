@@ -6,6 +6,7 @@ import { configDefaults } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   test: {
+    forceExit: true,
     setupFiles: ["./vitest.setup.js"],
     environment: "jsdom",
     coverage: {

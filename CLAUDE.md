@@ -86,3 +86,26 @@ Vaults combine multiple protocols with weighted allocations:
 - CI/CD requires `yarn format` before commits (Prettier enforcement)
 - Deployment: staging on `main` branch, production on `prod` branch via Fleek
 - Asset images stored in `public/` with WebP format for chains and protocols
+
+## Memory Optimization
+
+### Critical Memory Optimizations Implemented
+
+- **Large Data Files**: Removed 13.5MB `tokens.json`, using `slim_tokens.json` (163KB) instead
+- **Smart Contract ABIs**: Replaced large complete ABIs with minimal versions (~160KB saved)
+  - PermanentPortfolioLPToken.json: 112KB → 1KB (ERC20_Minimal.json)
+  - ActionAddRemoveLiqV3.json: 63KB → 15KB (ActionAddRemoveLiqV3-minimal.json)
+- **Lazy Loading**: Tab components (ZapInTab, ZapOutTab, etc.) load on-demand with Suspense
+- **Component Splitting**: Heavy UI components wrapped in lazy() and Suspense for better memory management
+- **Dev Server**: Target <350MB RAM usage during development (down from >500MB)
+
+### Memory Best Practices
+
+- Never import large JSON files (>1MB) in eager-loaded components
+- **Smart Contract ABIs**: Only include functions you actually use - avoid complete ABIs
+  - Create minimal ABIs in `lib/contracts/minimal/` for commonly used functions
+  - Standard ERC20 functions (approve, transfer, etc.) should use `ERC20_Minimal.json`
+- Use lazy() + Suspense for components that aren't immediately visible
+- Monitor dev server RAM usage with Activity Monitor during development
+- Run `yarn coverage` regularly to ensure optimizations don't break functionality
+- Check bundle size with `ANALYZE=true yarn build` when adding new dependencies
