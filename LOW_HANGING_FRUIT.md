@@ -32,7 +32,7 @@
 
 ### Smart Contract ABI Optimization ✅ COMPLETED
 
-- **Priority: High** 
+- **Priority: High**
 - **Task**: Replace large complete ABIs with minimal ABIs containing only used functions
 - **Implementation**:
   - **CRITICAL**: Reduced PermanentPortfolioLPToken.json from 112KB to ~1KB (ERC20_Minimal.json)
@@ -40,7 +40,7 @@
   - Created lib/contracts/minimal/ directory for optimized ABIs
   - Updated imports in utils/general.js and Pendle protocol classes
 - **Impact**: Saved ~160KB of unused ABI functions (~85% reduction)
-- **Files**: 
+- **Files**:
   - `lib/contracts/minimal/ERC20_Minimal.json` (new)
   - `lib/contracts/Pendle/ActionAddRemoveLiqV3-minimal.json` (new)
   - `utils/general.js`, `classes/Pendle/BaseEquilibria.js`, `classes/Pendle/BasePendlePT.js`
