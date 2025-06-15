@@ -2,7 +2,7 @@
 import { ethers } from "ethers";
 import { arbitrum, base, optimism, bsc, polygon } from "thirdweb/chains";
 import { ERC20_ABI } from "../node_modules/@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
-import permanentPortfolioJson from "../lib/contracts/PermanentPortfolioLPToken.json" assert { type: "json" };
+import ERC20_Minimal from "../lib/contracts/minimal/ERC20_Minimal.json" assert { type: "json" };
 import { prepareContractCall, getContract, defineChain } from "thirdweb";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 export const CHAIN_ID_TO_CHAIN = {
@@ -149,7 +149,7 @@ export function approve(
       client: THIRDWEB_CLIENT,
       address: tokenAddress,
       chain: CHAIN_ID_TO_CHAIN[chainId],
-      abi: permanentPortfolioJson.abi,
+      abi: ERC20_Minimal,
     }),
     method: "approve", // <- this gets inferred from the contract
     params: [spenderAddress, approvalAmount],

@@ -30,9 +30,24 @@
 - **Impact**: Smaller bundle size, better performance
 - **Files**: Redux store files, component connections
 
+### Smart Contract ABI Optimization ✅ COMPLETED
+
+- **Priority: High** 
+- **Task**: Replace large complete ABIs with minimal ABIs containing only used functions
+- **Implementation**:
+  - **CRITICAL**: Reduced PermanentPortfolioLPToken.json from 112KB to ~1KB (ERC20_Minimal.json)
+  - **MAJOR**: Reduced ActionAddRemoveLiqV3.json from 63KB to 15KB (ActionAddRemoveLiqV3-minimal.json)
+  - Created lib/contracts/minimal/ directory for optimized ABIs
+  - Updated imports in utils/general.js and Pendle protocol classes
+- **Impact**: Saved ~160KB of unused ABI functions (~85% reduction)
+- **Files**: 
+  - `lib/contracts/minimal/ERC20_Minimal.json` (new)
+  - `lib/contracts/Pendle/ActionAddRemoveLiqV3-minimal.json` (new)
+  - `utils/general.js`, `classes/Pendle/BaseEquilibria.js`, `classes/Pendle/BasePendlePT.js`
+
 ### BasePortfolio Memory Optimization
 
-- **Priority: High**
+- **Priority: Medium**
 - **Task**: Break down large BasePortfolio.jsx (50KB) into smaller focused modules
 - **Impact**: Reduce memory footprint of portfolio calculations and prevent memory leaks
 - **Implementation**:
@@ -85,6 +100,7 @@
 - [x] Coverage command still functional
 - [x] Tab components load lazily with Suspense fallbacks
 - [x] Large tokens.json file removed (13.5MB freed)
+- [x] Smart contract ABIs optimized (~160KB saved from minimal ABIs)
 - [ ] Bundle analyzer shows reasonable splits
 - [ ] All async portfolio loading works correctly
 - [ ] BasePortfolio memory optimization implemented

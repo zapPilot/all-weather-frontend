@@ -1,5 +1,5 @@
 import PendleMarketV3 from "../../lib/contracts/Pendle/PendleMarketV3.json" assert { type: "json" };
-import ActionAddRemoveLiqV3 from "../../lib/contracts/Pendle/ActionAddRemoveLiqV3.json" assert { type: "json" };
+import ActionAddRemoveLiqV3 from "../../lib/contracts/Pendle/ActionAddRemoveLiqV3-minimal.json" assert { type: "json" };
 import PendleBoosterSidechain from "../../lib/contracts/Pendle/PendleBoosterSidechain.json" assert { type: "json" };
 import EqbMinterSidechain from "../../lib/contracts/Pendle/EqbMinterSidechain.json" assert { type: "json" };
 import BaseRewardPool from "../../lib/contracts/Pendle/BaseRewardPool.json" assert { type: "json" };
