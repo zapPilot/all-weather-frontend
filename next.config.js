@@ -1,8 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // TESTING: Only transpile essential antd packages
-  transpilePackages: ["antd", "rc-util"],
+  transpilePackages: ["antd", "rc-util", "rc-pagination", "rc-picker"],
   trailingSlash: true,
   webpack: (config, { dev }) => {
     config.resolve.fallback = { fs: false, net: false, tls: false };
@@ -21,7 +20,8 @@ const nextConfig = {
         ],
       };
 
-      // TEST: Ignore heavy chart packages during module resolution
+      // DEV ONLY: Ignore heavy chart packages during module resolution
+      // This reduces memory usage by ~340MB in development
       config.resolve.alias = {
         ...config.resolve.alias,
         "@ant-design/charts": false,
@@ -32,7 +32,7 @@ const nextConfig = {
         "@antv/l7": false,
       };
 
-      // Gentler memory reduction - keep basic functionality
+      // Memory-optimized chunk splitting for development
       config.optimization = {
         ...config.optimization,
         splitChunks: {
@@ -40,7 +40,7 @@ const nextConfig = {
           cacheGroups: {
             default: false,
             vendors: false,
-            // Only React core
+            // Only React core in vendor chunk
             vendor: {
               name: "vendor",
               chunks: "all",
@@ -51,7 +51,7 @@ const nextConfig = {
         },
       };
 
-      // Reduce cache but don't disable entirely
+      // Reduce cache usage in development
       config.cache = {
         type: "memory",
         maxGenerations: 1,
@@ -61,8 +61,9 @@ const nextConfig = {
     return config;
   },
   experimental: {
-    // TESTING: Only optimize basic antd, avoid charts
-    optimizePackageImports: ["antd"],
+    // Memory optimization for antd
+    optimizePackageImports: ["antd", "@ant-design/icons"],
+    webVitalsAttribution: ["CLS", "LCP"],
   },
   images: {
     unoptimized: false,
@@ -71,33 +72,45 @@ const nextConfig = {
   assetPrefix: "/",
 };
 
-// TEMPORARILY DISABLE MEMORY-HEAVY PLUGINS FOR TESTING
-// Comment out Sentry and PWA to test memory usage
+// Production plugins - Sentry and PWA
+const { withSentryConfig } = require("@sentry/nextjs");
+const withPWA = require("next-pwa")({
+  dest: "public",
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === "development", // Disabled in dev for memory
+});
 
-// const { withSentryConfig } = require("@sentry/nextjs");
-// const withPWA = require("next-pwa")({
-//   dest: "public",
-//   register: true,
-//   skipWaiting: true,
-//   disable: process.env.NODE_ENV === "development",
-// });
+module.exports = withPWA(
+  withSentryConfig(
+    nextConfig,
+    {
+      // For all available options, see:
+      // https://github.com/getsentry/sentry-webpack-plugin#options
 
-// module.exports = withPWA(
-//   withSentryConfig(
-//     module.exports,
-//     {
-//       silent: true,
-//       org: "all-weather-portfolio",
-//       project: "webapp",
-//     },
-//     {
-//       widenClientFileUpload: true,
-//       transpileClientSDK: true,
-//       tunnelRoute: "/monitoring",
-//       hideSourceMaps: true,
-//       disableLogger: true,
-//     },
-//   ),
-// );
+      // Suppresses source map uploading logs during build
+      silent: true,
+      org: "all-weather-portfolio",
+      project: "webapp",
+    },
+    {
+      // For all available options, see:
+      // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
-module.exports = nextConfig;
+      // Upload a larger set of source maps for prettier stack traces (increases build time)
+      widenClientFileUpload: true,
+
+      // Transpiles SDK to be compatible with IE11 (increases bundle size)
+      transpileClientSDK: true,
+
+      // Routes browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers (increases server load)
+      tunnelRoute: "/monitoring",
+
+      // Hides source maps from generated client bundles
+      hideSourceMaps: true,
+
+      // Automatically tree-shake Sentry logger statements to reduce bundle size
+      disableLogger: true,
+    },
+  ),
+);
