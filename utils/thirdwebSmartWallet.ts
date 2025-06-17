@@ -13,7 +13,7 @@ import { VelodromeVault } from "../classes/Vaults/Tests/VelodromeVault";
 import { VenusStablecoinVault } from "../classes/Vaults/Tests/VenusVault";
 import { VelaVault } from "../classes/Vaults/VelaVault";
 import { DeprecatedVault } from "../classes/Vaults/DeprecatedVault";
-
+import { Index500VaultPlus } from "../classes/Vaults/Index500+Vault";
 export function getPortfolioHelper(
   portfolioName: string,
 ): BasePortfolio | undefined {
@@ -40,6 +40,8 @@ export function getPortfolioHelper(
     portfolioHelper = new MoonwellStablecoinVault();
   } else if (portfolioName === "Index 500 Vault") {
     portfolioHelper = new Index500Vault();
+  } else if (portfolioName === "Index 500+ Vault") {
+    portfolioHelper = new Index500VaultPlus();
   } else if (portfolioName === "Camelot Vault") {
     portfolioHelper = new CamelotVault();
   } else if (portfolioName === "Velodrome Vault") {

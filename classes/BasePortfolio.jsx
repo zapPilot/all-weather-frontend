@@ -57,9 +57,6 @@ export class BasePortfolio {
     );
   }
 
-  denomination() {
-    throw new Error("Method 'denomination()' must be implemented.");
-  }
   async lockUpPeriod(address) {
     let maxLockUpPeriod = 0;
     for (const protocolsInThisCategory of Object.values(this.strategy)) {

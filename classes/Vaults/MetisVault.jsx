@@ -27,7 +27,4 @@ export class MetisVault extends BasePortfolio {
     );
     this.validateStrategyWeights();
   }
-  denomination() {
-    return "$";
-  }
 }

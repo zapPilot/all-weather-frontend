@@ -31,12 +31,18 @@ const VAULTS_CONFIG = [
   },
   {
     id: 2,
-    portfolioName: "Index 500 Vault",
+    portfolioName: "Index 500+ Vault",
     imageSrc: "index500vault",
     imageAlt: "Index 500 Vault",
   },
   {
     id: 3,
+    portfolioName: "Index 500 Vault",
+    imageSrc: "index500vault",
+    imageAlt: "Index 500 Vault",
+  },
+  {
+    id: 4,
     portfolioName: "ETH Vault",
     imageSrc: "eth",
     imageAlt: "ETH Vault",
