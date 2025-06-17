@@ -5,6 +5,8 @@ import { useEffect, useState, useCallback, memo } from "react";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { Spin } from "antd";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
+import { Tooltip, Popover } from "antd";
+import { InfoCircleOutlined } from "@ant-design/icons";
 
 // Extract API request configuration
 const API_CONFIG = {
@@ -43,7 +45,20 @@ const VaultCard = memo(function VaultCard({ product }) {
         </div>
         <div className="mt-4 grid grid-cols-2 gap-4 divide-x divide-gray-400">
           <div className="text-center">
-            <p className="text-gray-400">TVL</p>
+            <p className="text-gray-400">
+              Underlying TVL{" "}
+              <Popover
+                style={{ width: "500px" }}
+                content="Total TVL across third-party pools selected for this vault."
+                title="Underlying TVL"
+                trigger="hover"
+              >
+                <InfoCircleOutlined
+                  aria-hidden="true"
+                  className="h-6 w-5 text-gray-500 ms-1 cursor-help"
+                />
+              </Popover>
+            </p>
             <p className="text-3xl text-white">
               {product.tvl === undefined ? <Spin /> : product.tvl}
             </p>

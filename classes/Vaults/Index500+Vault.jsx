@@ -1,13 +1,24 @@
 import { BaseVault } from "./BaseVault";
 import { BaseCamelot } from "../camelot/BaseCamelot";
-import { EthVault } from "./EthVault";
+import { StablecoinVault } from "./StablecoinVault";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
 import { BasePendlePT } from "../Pendle/BasePendlePT";
+import { EthVault } from "./EthVault";
 import { BaseVelodrome } from "../Velodrome/BaseVelodrome";
-export class Index500Vault extends BaseVault {
+export class Index500VaultPlus extends BaseVault {
   constructor() {
+    // Get StablecoinVault's strategy
+    const stablecoinVault = new StablecoinVault();
     const ethVault = new EthVault();
     const strategies = {
+      gold: {
+        imports: [
+          {
+            strategy: stablecoinVault.strategy.gold,
+            weight: 1,
+          },
+        ],
+      },
       eth: {
         imports: [
           {
@@ -180,7 +191,8 @@ export class Index500Vault extends BaseVault {
           //       decimalOfBestTokenToZapOut: 8,
           //     },
           //   ),
-          //   weight: 0.2,
+          //   // weight: 0.6,
+          //   weight: 1,
           // },
           {
             interface: new BaseVelodrome(
@@ -211,17 +223,18 @@ export class Index500Vault extends BaseVault {
                 ],
               },
             ),
-            weight: 0.8,
+            weight: 0.4,
           },
         ],
       },
     };
     const weightMapping = {
-      eth: 0.0795 * 2,
+      gold: 0.5,
+      eth: 0.0795,
       large_cap_us_stocks: 0,
       intermediate_term_bond: 0,
-      btc: 0.4205 * 2,
+      btc: 0.4205,
     };
-    super(strategies, weightMapping, "Index 500 Vault");
+    super(strategies, weightMapping, "Index 500+ Vault");
   }
 }
