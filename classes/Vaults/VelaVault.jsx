@@ -26,7 +26,4 @@ export class VelaVault extends BasePortfolio {
     );
     this.validateStrategyWeights();
   }
-  denomination() {
-    return "$";
-  }
 }

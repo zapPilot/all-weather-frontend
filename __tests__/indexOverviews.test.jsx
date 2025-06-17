@@ -65,7 +65,6 @@ const mockPortfolioHelper = {
   sumUsdDenominatedValues: vi.fn().mockReturnValue("$"),
   rebalanceThreshold: vi.fn().mockReturnValue(0.05),
   entryFeeRate: vi.fn().mockReturnValue(0.01),
-  denomination: vi.fn().mockReturnValue("$"),
   getTokenPricesMappingTable: vi.fn().mockResolvedValue({}),
   usdBalanceOf: vi.fn().mockResolvedValue(
     Object.assign([0, { pendingRewards: { pendingRewardsDict: {} } }], {

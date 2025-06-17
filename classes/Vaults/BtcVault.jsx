@@ -1,79 +1,83 @@
-import { BasePortfolio } from "../BasePortfolio";
 import { BaseEquilibria } from "../Pendle/BaseEquilibria";
-import { BaseConvex } from "../Convex/BaseConvex";
-export class BtcVault extends BasePortfolio {
+import { BaseVelodrome } from "../Velodrome/BaseVelodrome";
+import { BaseVault } from "./BaseVault";
+export class BtcVault extends BaseVault {
   constructor() {
-    super(
-      {
-        gold: {
-          arbitrum: [
-            {
-              interface: new BaseEquilibria(
-                "arbitrum",
-                42161,
-                ["dwbtc", "pt dwbtc 26jun2025"],
-                "single",
-                {
-                  assetAddress: "0x8cAB5Fd029ae2FBF28c53E965E4194C7260aDF0C",
-                  symbolOfBestTokenToZapOut: "wbtc",
-                  bestTokenAddressToZapOut:
-                    "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f",
-                  decimalOfBestTokenToZapOut: 8,
-                  pidOfEquilibria: 53,
-                },
-              ),
-              weight: 1,
-            },
-            // {
-            //   interface: new BaseConvex(
-            //     "arbitrum",
-            //     42161,
-            //     ["wbtc", "tbtc"],
-            //     "LP",
-            //     {
-            //       pid: 33,
-            //       assetDecimals: 18,
-            //       assetAddress: "0x186cF879186986A20aADFb7eAD50e3C20cb26CeC",
-            //       protocolAddress: "0x186cF879186986A20aADFb7eAD50e3C20cb26CeC",
-            //       convexRewardPool:
-            //         "0xa4Ed1e1Db18d65A36B3Ef179AaFB549b45a635A4",
-            //       lpTokens: [
-            //         [
-            //           "wbtc",
-            //           "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f",
-            //           8,
-            //         ],
-            //         ["tbtc", "0x6c84a8f1c29108F47a79964b5Fe888D4f4D0dE40", 18],
-            //       ],
-            //       rewards: [
-            //         {
-            //           symbol: "crv",
-            //           coinmarketcapApiId: 6538,
-            //           address: "0x11cDb42B0EB46D95f990BeDD4695A6e3fA034978",
-            //           decimals: 18,
-            //         },
-            //         {
-            //           symbol: "cvx",
-            //           coinmarketcapApiId: 9903,
-            //           address: "0xaAFcFD42c9954C6689ef1901e03db742520829c5",
-            //           decimals: 18,
-            //         },
-            //       ],
-            //     },
-            //   ),
-            //   weight: 0.5,
-            // },
-          ],
-        },
+    const strategies = {
+      btc: {
+        base: [
+          {
+            interface: new BaseEquilibria(
+              "base",
+              8453,
+              ["pt mcbbtc 26jun2025", "mcbbtc"],
+              "single",
+              {
+                assetAddress: "0xd94Fd7bcEb29159405Ae1E06Ce80e51EF1A484B0",
+                symbolOfBestTokenToZapOut: "cbbtc",
+                bestTokenAddressToZapOut:
+                  "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+                decimalOfBestTokenToZapOut: 8,
+                pidOfEquilibria: 1,
+              },
+            ),
+            weight: 0,
+          },
+          // {
+          //   interface: new BasePendlePT(
+          //     "base",
+          //     8453,
+          //     ["pt mcbbtc 26jun2025"],
+          //     "single",
+          //     {
+          //       marketAddress: "0xd94Fd7bcEb29159405Ae1E06Ce80e51EF1A484B0",
+          //       assetAddress: "0x5C6593F57EE95519fF6a8Cd16A5e41Ff50af239a",
+          //       assetDecimals: 8,
+          //       symbolOfBestTokenToZapOut: "cbbtc",
+          //       bestTokenAddressToZapOut:
+          //         "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+          //       decimalOfBestTokenToZapOut: 8,
+          //     },
+          //   ),
+          //   weight: 0.2,
+          // },
+          {
+            interface: new BaseVelodrome(
+              "base",
+              8453,
+              ["tbtc", "cbbtc"],
+              "LP",
+              {
+                protocolName: "aerodrome",
+                routerAddress: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
+                protocolVersion: "0",
+                assetAddress: "0x488d6ea6064eEE9352fdCDB7BC50d98A7fF3AD4E",
+                assetDecimals: 18,
+                guageAddress: "0x80AAd55965d1eA36bAf15Ae6Ed798145ec65916F",
+                lpTokens: [
+                  ["tbtc", "0x236aa50979D5f3De3Bd1Eeb40E81137F22ab794b", 18],
+                  ["cbbtc", "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf", 8],
+                ],
+                rewards: [
+                  {
+                    symbol: "aero",
+                    priceId: {
+                      coinmarketcapApiId: 29270,
+                    },
+                    address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+                    decimals: 18,
+                  },
+                ],
+              },
+            ),
+            weight: 0.8,
+          },
+        ],
       },
-      {
-        gold: 1,
-      },
-      "BTC Vault",
-    );
-    this.validateStrategyWeights();
-  }
-  denomination() {
-    return "₿";
+    };
+    const weightMapping = {
+      btc: 1,
+    };
+    super(strategies, weightMapping, "BTC Vault");
   }
 }
