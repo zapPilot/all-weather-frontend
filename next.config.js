@@ -62,7 +62,7 @@ const nextConfig = {
   },
   experimental: {
     // Memory optimization for antd
-    optimizePackageImports: ["antd", "@ant-design/icons"],
+    optimizePackageImports: ["antd"],
     webVitalsAttribution: ["CLS", "LCP"],
   },
   images: {
