@@ -16,7 +16,7 @@ const nextConfig = {
           "**/.next/**",
           "**/coverage/**",
           "**/out/**",
-          "**/.__tests__/**",
+          "**/__tests__/**",
         ],
       };
 
