@@ -722,7 +722,6 @@ export default function IndexOverviews() {
 
         const [usdBalance, usdBalanceDict, tokenPricesMappingTable] =
           usdBalanceResult;
-
         // Calculate dust total USD balance efficiently
         const dustTotalUsdBalance = Object.values(dust).reduce(
           (sum, protocolObj) =>

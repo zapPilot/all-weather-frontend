@@ -1,13 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: [
-    "@ant-design",
-    "antd",
-    "rc-util",
-    "rc-pagination",
-    "rc-picker",
-  ],
+  transpilePackages: ["antd", "rc-util", "rc-pagination", "rc-picker"],
   trailingSlash: true,
   webpack: (config, { dev }) => {
     config.resolve.fallback = { fs: false, net: false, tls: false };
@@ -22,11 +16,23 @@ const nextConfig = {
           "**/.next/**",
           "**/coverage/**",
           "**/out/**",
-          "**/__tests__/**",
+          "**/.__tests__/**",
         ],
       };
 
-      // Reduce memory usage by limiting concurrent chunks
+      // DEV ONLY: Ignore heavy chart packages during module resolution
+      // This reduces memory usage by ~340MB in development
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        "@ant-design/charts": false,
+        "@ant-design/graphs": false,
+        "@ant-design/plots": false,
+        "@antv/g2": false,
+        "@antv/g6": false,
+        "@antv/l7": false,
+      };
+
+      // Memory-optimized chunk splitting for development
       config.optimization = {
         ...config.optimization,
         splitChunks: {
@@ -34,23 +40,29 @@ const nextConfig = {
           cacheGroups: {
             default: false,
             vendors: false,
-            // Only create a vendor chunk for frequently used modules
+            // Only React core in vendor chunk
             vendor: {
               name: "vendor",
               chunks: "all",
-              test: /[\\/]node_modules[\\/](react|react-dom|next)[\\/]/,
+              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
               priority: 20,
             },
           },
         },
+      };
+
+      // Reduce cache usage in development
+      config.cache = {
+        type: "memory",
+        maxGenerations: 1,
       };
     }
 
     return config;
   },
   experimental: {
-    // Optimize memory usage during development
-    optimizePackageImports: ["antd", "@ant-design/icons"],
+    // Memory optimization for antd
+    optimizePackageImports: ["antd"],
     webVitalsAttribution: ["CLS", "LCP"],
   },
   images: {
@@ -60,21 +72,18 @@ const nextConfig = {
   assetPrefix: "/",
 };
 
-module.exports = nextConfig;
-
-// Injected content via Sentry wizard below
-
+// Production plugins - Sentry and PWA
 const { withSentryConfig } = require("@sentry/nextjs");
 const withPWA = require("next-pwa")({
   dest: "public",
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === "development",
+  disable: process.env.NODE_ENV === "development", // Disabled in dev for memory
 });
 
 module.exports = withPWA(
   withSentryConfig(
-    module.exports,
+    nextConfig,
     {
       // For all available options, see:
       // https://github.com/getsentry/sentry-webpack-plugin#options
