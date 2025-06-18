@@ -25,7 +25,6 @@
     "**/tests/**",
     "**/__tests__/**",
     "**/*.test.ts",
-    "**/*.test.tsx",
-    "**/CustomizedPools.tsx" // Temporarily exclude this file from type checking
+    "**/*.test.tsx"
   ]
 }

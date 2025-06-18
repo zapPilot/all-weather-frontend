@@ -2,10 +2,9 @@ import React, { memo, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import NavBar from "./NavBar.jsx";
-import { MenuOutlined, CloseOutlined } from "@ant-design/icons";
 import { ConfigProvider, Drawer } from "antd";
 import styles from "../../styles/Home.module.css";
-
+import { MenuIcon, CloseIcon } from "../../utils/icons.jsx";
 // Extract theme configuration outside component to prevent recreation
 const DRAWER_THEME = {
   token: {
@@ -48,7 +47,7 @@ const Header = memo(function Header() {
   const drawerExtra = useCallback(
     () => (
       <span style={{ color: "#999999" }}>
-        <CloseOutlined onClick={onClose} />
+        <CloseIcon onClick={onClose} />
       </span>
     ),
     [onClose],
@@ -60,7 +59,7 @@ const Header = memo(function Header() {
         <NavBar mode="horizontal" />
       </div>
       <div className={styles.menuIcon}>
-        <MenuOutlined onClick={showDrawer} />
+        <MenuIcon onClick={showDrawer} />
       </div>
       <ConfigProvider theme={DRAWER_THEME}>
         <Drawer

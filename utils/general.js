@@ -1,7 +1,7 @@
 // Removed logger import to avoid circular dependency
 import { ethers } from "ethers";
 import { arbitrum, base, optimism, bsc, polygon } from "thirdweb/chains";
-import { ERC20_ABI } from "../node_modules/@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
+import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import ERC20_Minimal from "../lib/contracts/minimal/ERC20_Minimal.json" assert { type: "json" };
 import { prepareContractCall, getContract, defineChain } from "thirdweb";
 import THIRDWEB_CLIENT from "../utils/thirdweb";

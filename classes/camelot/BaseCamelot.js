@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { ERC20_ABI } from "@etherspot/prime-sdk/dist/sdk/helpers/abi/ERC20_ABI.js";
+import ERC20_ABI from "../../lib/contracts/ERC20.json" assert { type: "json" };
 import CamelotNFTPositionManager from "../../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import {
   approve,

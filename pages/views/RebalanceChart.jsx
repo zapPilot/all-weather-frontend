@@ -27,7 +27,7 @@ import { useSelector } from "react-redux";
 import { useActiveAccount } from "thirdweb/react";
 import Link from "next/link";
 import { Typography, message } from "antd";
-import { CopyOutlined } from "@ant-design/icons";
+import { CopyIcon } from "../../utils/icons.jsx";
 import ConfiguredConnectButton from "../ConnectButton";
 const { Title, Paragraph, Text } = Typography;
 
@@ -476,7 +476,7 @@ const AntdInstructions = ({ account }) => {
               style={{ backgroundColor: "#5DFDCB" }}
               onClick={copyToClipboard}
             >
-              <CopyOutlined className="h-5 w-5 justify-center text-black" />
+              <CopyIcon className="h-5 w-5 justify-center text-black" />
             </button>
           </div>
         </Paragraph>

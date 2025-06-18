@@ -2,10 +2,9 @@
 // All code in this file will be ignored by the TypeScript compiler
 import React, { useState, useEffect } from "react";
 import { Spin } from "antd";
-import { WarningOutlined } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import Image from "next/image";
-
+import { WarningIcon } from "../../utils/icons.jsx";
 const APRPopOver = () => {
   const { data, loading } = useSelector((state) => state.api);
   const [missingPools, setMissingPools] = useState([]);
@@ -39,7 +38,7 @@ const APRPopOver = () => {
         style={{ display: missingPools.length === 0 ? "none" : "block" }}
       >
         Missing APR data for {missingPools.length} Pools
-        <WarningOutlined className="text-red-400 ms-2" />
+        <WarningIcon className="text-red-400 ms-2" />
       </p>
       {open && (
         <div className="grid grid-cols-1 gap-4">

@@ -1,12 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { memo, useMemo, useCallback } from "react";
-import {
-  UnlockOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
-  ExportOutlined,
-} from "@ant-design/icons";
+import { UnlockIcon, ArrowUpIcon, ArrowDownIcon, LinkIcon } from "./icons";
 import ImageWithFallback from "../pages/basicComponents/ImageWithFallback";
 import { Tooltip } from "antd";
 
@@ -93,9 +88,9 @@ const AprDisplay = memo(({ apr }) => {
         {apr.value.toFixed(2)}%
       </span>
       {apr.predictions.predictedClass === "Down" ? (
-        <ArrowDownOutlined className="text-red-400 px-2" />
+        <ArrowDownIcon className="text-red-400 px-2" />
       ) : apr.predictions.predictedClass === "Up" ? (
-        <ArrowUpOutlined className="text-green-400 px-2" />
+        <ArrowUpIcon className="text-green-400 px-2" />
       ) : null}
     </div>
   );
@@ -144,7 +139,6 @@ const PoolWithLink = memo(
         setLinkModalOpen(true);
       }
     }, [matchingProtocol, handleLinkButton, setLinkModalOpen]);
-
     return (
       <>
         <Tooltip placement="top" title={pool.poolID}>
@@ -152,13 +146,16 @@ const PoolWithLink = memo(
           <PoolName pool={pool} />
         </Tooltip>
         {matchingProtocol && (
-          <button
-            type="button"
-            className="text-sm text-gray-400 shadow-sm hover:text-white"
+          <a
+            href={matchingProtocol.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-gray-400 shadow-sm hover:text-white transition-colors"
+            style={{ display: "inline-flex", alignItems: "center" }}
             onClick={handleClick}
           >
-            <ExportOutlined />
-          </button>
+            <LinkIcon />
+          </a>
         )}
       </>
     );
@@ -192,7 +189,7 @@ export const columnMapping = (
             href="/indexes/indexOverviews/?portfolioName=All+Weather+Vault"
             className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm text-black"
           >
-            <UnlockOutlined className="-ml-0.5 h-5 w-5" />
+            <UnlockIcon className="-ml-0.5 h-5 w-5" />
             Subscribe weekly report to unlock
           </Link>
         );

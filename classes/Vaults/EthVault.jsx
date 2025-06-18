@@ -4,7 +4,6 @@ import { BaseVelodrome } from "../Velodrome/BaseVelodrome";
 import { BasePendlePT } from "../Pendle/BasePendlePT";
 import { BaseAave } from "../Aave/BaseAave";
 import { BaseVault } from "./BaseVault";
-
 export class EthVault extends BaseVault {
   constructor() {
     const strategies = {

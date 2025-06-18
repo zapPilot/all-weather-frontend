@@ -1,11 +1,11 @@
 import { useMemo, memo } from "react";
-import { InfoCircleOutlined } from "@ant-design/icons";
 import { Popover, Table } from "antd";
 import {
   TokenDisplay,
   ProtocolInfo,
   APRDisplay,
 } from "../../../components/portfolio/PortfolioComponents";
+import { InfoIcon } from "../../../utils/icons.jsx";
 
 const CategoryTable = memo(
   ({ protocolArray, portfolioName, portfolioApr, yieldContent }) => {
@@ -51,7 +51,14 @@ const CategoryTable = memo(
                 title="Source of Yield"
                 trigger="hover"
               >
-                <InfoCircleOutlined className="ms-2 text-gray-500" />
+                <span style={{ display: "inline-flex" }}>
+                  <InfoIcon
+                    style={{
+                      width: 15,
+                      height: 15,
+                    }}
+                  />
+                </span>
               </Popover>
             </span>
           ),
