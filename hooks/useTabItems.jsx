@@ -1,6 +1,5 @@
 import { Typography, Spin } from "antd";
 import React, { useMemo, memo, lazy, Suspense } from "react";
-import { InfoCircleOutlined } from "@ant-design/icons";
 // Lazy load APRComposition as well
 const APRComposition = lazy(() =>
   import("../pages/views/components/APRComposition"),
