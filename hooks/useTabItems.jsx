@@ -1,6 +1,6 @@
 import { Typography, Spin } from "antd";
 import React, { useMemo, memo, lazy, Suspense } from "react";
-
+import { InfoCircleOutlined } from "@ant-design/icons";
 // Lazy load APRComposition as well
 const APRComposition = lazy(() =>
   import("../pages/views/components/APRComposition"),
@@ -14,8 +14,8 @@ const RebalanceTab = lazy(() => import("../components/tabs/RebalanceTab"));
 const TransferTab = lazy(() => import("../components/tabs/TransferTab"));
 const ConvertDustTab = lazy(() => import("../components/tabs/ConvertDustTab"));
 import { Popover } from "antd";
-import { InfoCircleOutlined } from "@ant-design/icons";
 import PropTypes from "prop-types";
+import { InfoIcon } from "../utils/icons.jsx";
 
 // Constants
 const TAB_KEYS = {
@@ -131,10 +131,14 @@ const DustZapLabel = memo(function DustZapLabel() {
         trigger="hover"
         overlayClassName="apr-composition-popover"
       >
-        <InfoCircleOutlined
-          aria-hidden="true"
-          className="h-6 w-5 text-gray-500 ms-1 cursor-help"
-        />
+        <span style={{ display: "inline-flex" }}>
+          <InfoIcon
+            style={{
+              width: 15,
+              height: 15,
+            }}
+          />
+        </span>
       </Popover>
     </>
   );

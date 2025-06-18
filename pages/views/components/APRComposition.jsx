@@ -1,6 +1,6 @@
 import React, { memo, useMemo } from "react";
 import { Popover, Image, Spin } from "antd";
-import { InfoCircleOutlined } from "@ant-design/icons";
+import { InfoIcon } from "../../../utils/icons.jsx";
 
 // Extracted token display component for better performance
 const TokenDisplay = memo(function TokenDisplay({ symbol, usdValue }) {
@@ -87,10 +87,14 @@ const APRComposition = memo(function APRComposition({
       trigger="hover"
       overlayClassName="apr-composition-popover"
     >
-      <InfoCircleOutlined
-        aria-hidden="true"
-        className="h-6 w-5 text-gray-500 ms-1 cursor-help"
-      />
+      <span style={{ display: "inline-flex" }}>
+        <InfoIcon
+          style={{
+            width: 15,
+            height: 15,
+          }}
+        />
+      </span>
     </Popover>
   );
 });

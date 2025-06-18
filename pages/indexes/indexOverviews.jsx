@@ -48,7 +48,6 @@ import openNotificationWithIcon from "../../utils/notification.js";
 import APRComposition from "../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
-import { SettingOutlined } from "@ant-design/icons";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
@@ -83,6 +82,7 @@ import {
   prepareTransactionMetadata,
 } from "../../utils/transactionHelpers.js";
 import { getNextChain } from "../../utils/chainOrder";
+import { SettingsIcon } from "../../utils/icons.jsx";
 
 // Extract chain switching logic
 const useChainSwitching = (switchChain) => {
@@ -1123,7 +1123,7 @@ export default function IndexOverviews() {
                   placement="bottom"
                 >
                   <a className="text-black" onClick={(e) => e.preventDefault()}>
-                    <SettingOutlined />
+                    <SettingsIcon />
                   </a>
                 </Dropdown>
               </div>

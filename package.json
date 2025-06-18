@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@0xsquid/sdk": "^2.9.2",
+    "@0xsquid/squid-types": "^0.1.163",
     "@across-protocol/app-sdk": "^0.0.4",
     "@ant-design/graphs": "^2.0.1",
     "@ant-design/plots": "1.2.5",
