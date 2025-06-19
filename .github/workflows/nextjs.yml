@@ -82,7 +82,9 @@ jobs:
         run: |
           echo "${{ secrets.PROD_ENV_FILE }}" > .env
       - name: Build and Export
-        run: yarn build
+        run: |
+          yarn build
+          yarn export
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
