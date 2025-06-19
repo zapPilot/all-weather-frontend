@@ -3,6 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["antd", "rc-util", "rc-pagination", "rc-picker"],
   trailingSlash: true,
+  output: "export",
   webpack: (config, { dev }) => {
     config.resolve.fallback = { fs: false, net: false, tls: false };
 
