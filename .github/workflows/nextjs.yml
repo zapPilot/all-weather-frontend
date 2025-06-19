@@ -59,8 +59,8 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           # Configure for GitHub Pages with custom domain
-          static_site_generator: next
-          enablement: true
+          # REMOVE THIS LINE: static_site_generator: next
+          enablement: true # Keep this, as it enables Pages for the repo if not already enabled
       - name: Restore cache
         uses: actions/cache@v4
         with:
@@ -82,13 +82,16 @@ jobs:
         run: |
           echo "${{ secrets.PROD_ENV_FILE }}" > .env
       - name: Build and Export
+        # Your `yarn build` command automatically triggers 'next build' which handles 'output: export'
+        # if configured in next.config.js. The separate 'yarn export' is redundant if 'output: export' is set.
+        # However, keeping both is fine if your 'export' script specifically handles things.
         run: |
           yarn build
-          yarn export
+          yarn export # This command is key for generating the 'out' directory
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./out
+          path: ./out # This is correct for static export
 
   # Deployment job
   deploy:

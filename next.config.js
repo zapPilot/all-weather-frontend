@@ -4,6 +4,9 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["antd", "rc-util", "rc-pagination", "rc-picker"],
   trailingSlash: true,
+  // === ADD THIS LINE BACK ===
+  output: isDev ? "standalone" : "export",
+  // ==========================
   webpack: (config, { dev }) => {
     config.resolve.fallback = { fs: false, net: false, tls: false };
 
@@ -69,8 +72,8 @@ const nextConfig = {
   images: {
     unoptimized: isDev ? false : true,
   },
-  basePath: "",
-  assetPrefix: "/",
+  basePath: "", // Keep this if you're deploying to the root of your GitHub Pages domain (e.g., username.github.io)
+  assetPrefix: "/", // Keep this
 };
 
 // Production plugins - Sentry and PWA
