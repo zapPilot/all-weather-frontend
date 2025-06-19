@@ -1,9 +1,10 @@
 /** @type {import('next').NextConfig} */
+const isDev = process.env.NODE_ENV === "development";
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["antd", "rc-util", "rc-pagination", "rc-picker"],
   trailingSlash: true,
-  output: "export",
+  output: isDev ? "standalone" : "export",
   webpack: (config, { dev }) => {
     config.resolve.fallback = { fs: false, net: false, tls: false };
 
@@ -67,7 +68,7 @@ const nextConfig = {
     webVitalsAttribution: ["CLS", "LCP"],
   },
   images: {
-    unoptimized: false,
+    unoptimized: isDev ? false : true,
   },
   basePath: "",
   assetPrefix: "/",
@@ -79,7 +80,7 @@ const withPWA = require("next-pwa")({
   dest: "public",
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === "development", // Disabled in dev for memory
+  disable: isDev, // Disabled in dev for memory
 });
 
 module.exports = withPWA(
