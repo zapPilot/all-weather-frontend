@@ -31,12 +31,18 @@ const VAULTS_CONFIG = [
   },
   {
     id: 2,
-    portfolioName: "Index 500 Vault",
+    portfolioName: "Index 500+ Vault",
     imageSrc: "index500vault",
     imageAlt: "Index 500 Vault",
   },
   {
     id: 3,
+    portfolioName: "Index 500 Vault",
+    imageSrc: "index500vault",
+    imageAlt: "Index 500 Vault",
+  },
+  {
+    id: 4,
     portfolioName: "ETH Vault",
     imageSrc: "eth",
     imageAlt: "ETH Vault",
@@ -157,6 +163,12 @@ const ExampleUI = memo(function ExampleUI() {
             <h1 className="text-5xl tracking-tight mb-4 text-[#5DFDCB] font-extrabold">
               Zap Pilot
             </h1>
+            <p
+              className="text-xl text-[#B2FFF6] mb-2 font-medium mx-auto px-4 sm:px-8"
+              style={{ maxWidth: "800px", lineHeight: "1.5" }}
+            >
+              {content.siteInfo.subtitle}
+            </p>
             <p className="text-2xl text-gray-200 mb-2">
               {content.siteInfo.tagline}
             </p>

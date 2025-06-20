@@ -1,7 +1,7 @@
 import logger from "../../utils/logger";
 import React, { useState, useEffect, useRef, useCallback, memo } from "react";
 import { Button, message } from "antd";
-import { CopyOutlined, CheckOutlined } from "@ant-design/icons";
+import { CopyIcon, CheckIcon } from "../../utils/icons.jsx";
 
 const CopyableReferralButton = ({ referralLink }) => {
   const [copied, setCopied] = useState(false);
@@ -43,7 +43,7 @@ const CopyableReferralButton = ({ referralLink }) => {
     <Button
       onClick={copyToClipboard}
       type={copied ? "primary" : "default"}
-      icon={copied ? <CheckOutlined /> : <CopyOutlined />}
+      icon={copied ? <CheckIcon /> : <CopyIcon />}
       className={`flex items-center justify-center font-medium transition-colors ${
         copied
           ? "bg-green-500 hover:bg-green-600 border-green-500"

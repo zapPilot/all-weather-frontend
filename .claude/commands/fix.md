@@ -1,0 +1,1 @@
+Fix all errors in the project. Make sure the server starts successfully and all tests pass when running `yarn test`. Do not introduce new errors or break existing features. If you encounter multiple errors, fix all of them, not just the first one.

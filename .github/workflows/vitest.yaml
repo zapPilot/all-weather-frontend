@@ -14,7 +14,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 7 # Job will timeout after 7 minutes
     env:
-      NEXT_PUBLIC_ETHERSPOT_PROJECT_KEY: ${{ secrets.NEXT_PUBLIC_ETHERSPOT_PROJECT_KEY }}
       NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
       NEXT_PUBLIC_SDK_API_URL: ${{ vars.NEXT_PUBLIC_SDK_API_URL }}
       NEXT_PUBLIC_ARBITRUM_RPC_PROVIDER_URL: ${{ secrets.NEXT_PUBLIC_ARBITRUM_RPC_PROVIDER_URL }}

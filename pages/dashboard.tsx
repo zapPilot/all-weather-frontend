@@ -287,13 +287,11 @@ const Dashboard: NextPage = () => {
         const response = await axios.get(
           `${process.env.NEXT_PUBLIC_SDK_API_URL}/protocols`,
         );
-
-        if (response && response.data) {
-          const data = JSON.parse(response.data);
-          setProtocolList(data);
-        } else {
-          logger.error("Invalid or no data available from the API");
-        }
+        const data =
+          typeof response.data === "string"
+            ? JSON.parse(response.data)
+            : response.data;
+        setProtocolList(data);
       } catch (error) {
         logger.error("An error occurred while fetching protocol link:", error);
         throw error;

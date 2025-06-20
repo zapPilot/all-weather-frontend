@@ -2,7 +2,6 @@ import logger from "../../utils/logger";
 import { useEffect, useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import PopUp from "./popUp";
-import Link from "next/link";
 
 export default function Bundle() {
   const account = useActiveAccount();

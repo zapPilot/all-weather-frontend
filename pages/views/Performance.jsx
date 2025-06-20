@@ -1,6 +1,5 @@
 import React from "react";
 import { ConfigProvider, Row, Col, Card, Statistic } from "antd";
-import { ReloadOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
 import { useActiveAccount } from "thirdweb/react";
@@ -16,7 +15,7 @@ import {
   fetchDataSuccess,
   fetchDataFailure,
 } from "../../lib/features/apiSlice";
-
+import { ReloadIcon } from "../../utils/icons.jsx";
 const getBalanceHistoryUrl = (searchWalletAddress, walletAddress) =>
   `${process.env.NEXT_PUBLIC_SDK_API_URL}/balances/${
     searchWalletAddress === undefined ? walletAddress : searchWalletAddress
@@ -203,7 +202,7 @@ const Performance = ({ portfolioApr }) => {
               style={{ backgroundColor: "#5DFDCB" }}
               onClick={() => fetchBundlePortfolio(true)}
             >
-              <ReloadOutlined className="h-5 w-5 justify-center text-black" />
+              <ReloadIcon className="h-5 w-5 justify-center text-black" />
             </button>
           </div>
           <span className="text-sm text-gray-500">

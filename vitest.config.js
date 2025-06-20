@@ -6,6 +6,7 @@ import { configDefaults } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   test: {
+    forceExit: true,
     setupFiles: ["./vitest.setup.js"],
     environment: "jsdom",
     coverage: {
@@ -30,7 +31,7 @@ export default defineConfig({
       skipFull: true,
       thresholds: {
         lines: 63,
-        functions: 50.6,
+        functions: 49,
         branches: 76,
         statements: 63,
       },

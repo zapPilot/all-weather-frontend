@@ -1,15 +1,20 @@
-import ZapInTab from "../components/tabs/ZapInTab";
-import ZapOutTab from "../components/tabs/ZapOutTab";
-import ClaimTab from "../components/tabs/ClaimTab";
-import RebalanceTab from "../components/tabs/RebalanceTab";
-import TransferTab from "../components/tabs/TransferTab";
-import ConvertDustTab from "../components/tabs/ConvertDustTab";
 import { Typography, Spin } from "antd";
-import APRComposition from "../pages/views/components/APRComposition";
-import React, { useMemo, memo } from "react";
+import React, { useMemo, memo, lazy, Suspense } from "react";
+// Lazy load APRComposition as well
+const APRComposition = lazy(() =>
+  import("../pages/views/components/APRComposition"),
+);
+
+// Lazy load heavy tab components to reduce initial bundle size
+const ZapInTab = lazy(() => import("../components/tabs/ZapInTab"));
+const ZapOutTab = lazy(() => import("../components/tabs/ZapOutTab"));
+const ClaimTab = lazy(() => import("../components/tabs/ClaimTab"));
+const RebalanceTab = lazy(() => import("../components/tabs/RebalanceTab"));
+const TransferTab = lazy(() => import("../components/tabs/TransferTab"));
+const ConvertDustTab = lazy(() => import("../components/tabs/ConvertDustTab"));
 import { Popover } from "antd";
-import { InfoCircleOutlined } from "@ant-design/icons";
 import PropTypes from "prop-types";
+import { InfoIcon } from "../utils/icons.jsx";
 
 // Constants
 const TAB_KEYS = {
@@ -100,13 +105,15 @@ const ClaimLabel = memo(function ClaimLabel({
         </Typography.Text>
       )}
       ){" "}
-      <APRComposition
-        APRData={pendingRewards}
-        mode="pendingRewards"
-        currency="$"
-        exchangeRateWithUSD={1}
-        pendingRewardsLoading={pendingRewardsLoading}
-      />
+      <Suspense fallback={<Spin size="small" />}>
+        <APRComposition
+          APRData={pendingRewards}
+          mode="pendingRewards"
+          currency="$"
+          exchangeRateWithUSD={1}
+          pendingRewardsLoading={pendingRewardsLoading}
+        />
+      </Suspense>
     </span>
   );
 });
@@ -123,10 +130,14 @@ const DustZapLabel = memo(function DustZapLabel() {
         trigger="hover"
         overlayClassName="apr-composition-popover"
       >
-        <InfoCircleOutlined
-          aria-hidden="true"
-          className="h-6 w-5 text-gray-500 ms-1 cursor-help"
-        />
+        <span style={{ display: "inline-flex" }}>
+          <InfoIcon
+            style={{
+              width: 15,
+              height: 15,
+            }}
+          />
+        </span>
       </Popover>
     </>
   );
@@ -170,18 +181,26 @@ export default function useTabItems({
     [portfolioApr, portfolioName],
   );
 
-  // Memoized tab items
+  // Memoized tab items with Suspense wrappers for lazy loading
   const tabItems = useMemo(() => {
     const baseItems = [
       {
         key: TAB_KEYS.DEPOSIT,
         label: "Deposit",
-        children: <ZapInTab {...props} />,
+        children: (
+          <Suspense fallback={<Spin size="large" />}>
+            <ZapInTab {...props} />
+          </Suspense>
+        ),
       },
       {
         key: TAB_KEYS.WITHDRAW,
         label: "Withdraw",
-        children: <ZapOutTab {...props} />,
+        children: (
+          <Suspense fallback={<Spin size="large" />}>
+            <ZapOutTab {...props} />
+          </Suspense>
+        ),
       },
       {
         key: TAB_KEYS.REBALANCE,
@@ -193,10 +212,12 @@ export default function useTabItems({
           />
         ),
         children: (
-          <RebalanceTab
-            {...props}
-            rebalancableUsdBalanceDict={rebalancableUsdBalanceDict}
-          />
+          <Suspense fallback={<Spin size="large" />}>
+            <RebalanceTab
+              {...props}
+              rebalancableUsdBalanceDict={rebalancableUsdBalanceDict}
+            />
+          </Suspense>
         ),
       },
       {
@@ -208,17 +229,29 @@ export default function useTabItems({
             sumOfPendingRewards={sumOfPendingRewards}
           />
         ),
-        children: <ClaimTab {...props} pendingRewards={pendingRewards} />,
+        children: (
+          <Suspense fallback={<Spin size="large" />}>
+            <ClaimTab {...props} pendingRewards={pendingRewards} />
+          </Suspense>
+        ),
       },
       {
         key: TAB_KEYS.DUST_ZAP,
         label: <DustZapLabel />,
-        children: <ConvertDustTab {...props} />,
+        children: (
+          <Suspense fallback={<Spin size="large" />}>
+            <ConvertDustTab {...props} />
+          </Suspense>
+        ),
       },
       {
         key: TAB_KEYS.TRANSFER,
         label: "Transfer",
-        children: <TransferTab {...props} />,
+        children: (
+          <Suspense fallback={<Spin size="large" />}>
+            <TransferTab {...props} />
+          </Suspense>
+        ),
       },
     ];
 

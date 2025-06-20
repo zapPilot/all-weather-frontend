@@ -3,7 +3,9 @@ import BaseBridge from "./BaseBridge";
 import SquidBridge from "./squid";
 
 type BridgeConstructor = new () => AcrossBridge | SquidBridge | BaseBridge;
-const BRIDGE_REGISTRY: BridgeConstructor[] = [AcrossBridge, SquidBridge];
+// const BRIDGE_REGISTRY: BridgeConstructor[] = [AcrossBridge, SquidBridge];
+// sometimes squid would fail
+const BRIDGE_REGISTRY: BridgeConstructor[] = [AcrossBridge];
 
 async function getTheBestBridgeTxns(
   account: string,
