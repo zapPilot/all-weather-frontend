@@ -28,7 +28,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   dai: {
     coinmarketcapApiId: 4943,
-    vaults: ["Stable+ Vault", "Index 500 Vault"],
+    vaults: ["Stable+ Vault", "Index 500 Vault", "Index 500+ Vault"],
   },
   usde: {
     coinmarketcapApiId: 29470,
@@ -40,18 +40,23 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   eurc: {
     coinmarketcapApiId: 20641,
-    vaults: ["Stable+ Vault", "Moonwell Vault", "Index 500 Vault"],
+    vaults: [
+      "Stable+ Vault",
+      "Moonwell Vault",
+      "Index 500 Vault",
+      "Index 500+ Vault",
+    ],
   },
   bal: {
     coinmarketcapApiId: 5728,
-    vaults: ["Stable+ Vault", "Index 500 Vault"],
+    vaults: ["Stable+ Vault", "Index 500 Vault", "Index 500+ Vault"],
   },
   mseth: {
     geckoterminal: {
       chain: "base",
       address: "0x7Ba6F01772924a82D9626c126347A28299E98c98",
     },
-    vaults: ["ETH Vault", "Index 500 Vault"],
+    vaults: ["ETH Vault", "Index 500 Vault", "Index 500+ Vault"],
   },
   zuneth: {
     coinmarketcapApiId: 2396,
@@ -66,7 +71,12 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
       chain: "arbitrum",
       address: "0xb2f30a7c980f052f02563fb518dcc39e6bf38175",
     },
-    vaults: ["Stable+ Vault", "Convex Stablecoin Vault", "Index 500 Vault"],
+    vaults: [
+      "Stable+ Vault",
+      "Convex Stablecoin Vault",
+      "Index 500 Vault",
+      "Index 500+ Vault",
+    ],
   },
   msusd: {
     geckoterminal: {
@@ -77,6 +87,7 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
       "Stable+ Vault",
       "Aerodrome Vault",
       "Index 500 Vault",
+      "Index 500+ Vault",
       "Velodrome Vault",
     ],
   },
@@ -85,81 +96,97 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
       chain: "arbitrum",
       address: "0x12275DCB9048680c4Be40942eA4D92c74C63b844",
     },
-    vaults: ["Stable+ Vault", "Index 500 Vault"],
+    vaults: ["Stable+ Vault", "Index 500 Vault", "Index 500+ Vault"],
   },
   gusdc: {
     geckoterminal: {
       chain: "arbitrum",
       address: "0xd3443ee1e91aF28e5FB858Fbd0D72A63bA8046E0",
     },
-    vaults: ["Stable+ Vault", "Equilibria Vault", "Index 500 Vault"],
+    vaults: [
+      "Stable+ Vault",
+      "Equilibria Vault",
+      "Index 500 Vault",
+      "Index 500+ Vault",
+    ],
   },
   dusdc: {
     coinmarketcapApiId: 3408,
-    vaults: ["Stable+ Vault", "Index 500 Vault"],
+    vaults: ["Stable+ Vault", "Index 500 Vault", "Index 500+ Vault"],
   },
   usdx: {
     coinmarketcapApiId: 34060,
-    vaults: ["Stable+ Vault", "Convex Stablecoin Vault", "Index 500 Vault"],
+    vaults: [
+      "Stable+ Vault",
+      "Convex Stablecoin Vault",
+      "Index 500 Vault",
+      "Index 500+ Vault",
+    ],
   },
   susdx: {
     coinmarketcapApiId: 34088,
-    vaults: ["Stable+ Vault", "Index 500 Vault"],
+    vaults: ["Stable+ Vault", "Index 500 Vault", "Index 500+ Vault"],
   },
   gho: {
     coinmarketcapApiId: 23508,
-    vaults: ["Stable+ Vault", "Index 500 Vault"],
+    vaults: ["Stable+ Vault", "Index 500 Vault", "Index 500+ Vault"],
   },
   gyd: {
     coinmarketcapApiId: 31996,
-    vaults: ["Stable+ Vault", "Index 500 Vault"],
+    vaults: ["Stable+ Vault", "Index 500 Vault", "Index 500+ Vault"],
   },
   wausdcn: {
     geckoterminal: {
       chain: "arbitrum",
       address: "0x11092be90af6553434e0962cddfd7d84a4444154",
     },
-    vaults: ["Stable+ Vault", "Index 500 Vault"],
+    vaults: ["Stable+ Vault", "Index 500 Vault", "Index 500+ Vault"],
   },
   wsteth: {
     coinmarketcapApiId: 12409,
-    vaults: ["Index 500 Vault"],
+    vaults: ["Index 500 Vault", "Index 500+ Vault"],
   },
   pendle: {
     coinmarketcapApiId: 9481,
-    vaults: ["Index 500 Vault", "ETH Vault", "Stable+ Vault", "Camelot Vault"],
+    vaults: [
+      "Index 500 Vault",
+      "Index 500+ Vault",
+      "ETH Vault",
+      "Stable+ Vault",
+      "Camelot Vault",
+    ],
   },
   link: {
     coinmarketcapApiId: 1975,
-    vaults: ["Index 500 Vault"],
+    vaults: ["Index 500 Vault", "Index 500+ Vault"],
   },
   sol: {
     coinmarketcapApiId: 5426,
-    vaults: ["Index 500 Vault"],
+    vaults: ["Index 500 Vault", "Index 500+ Vault"],
   },
   gmx: {
     coinmarketcapApiId: 11857,
-    vaults: ["Index 500 Vault"],
+    vaults: ["Index 500 Vault", "Index 500+ Vault"],
   },
   magic: {
     coinmarketcapApiId: 14783,
-    vaults: ["Index 500 Vault"],
+    vaults: ["Index 500 Vault", "Index 500+ Vault"],
   },
   cbbtc: {
     coinmarketcapApiId: 32994,
-    vaults: ["Index 500 Vault"],
+    vaults: ["Index 500 Vault", "Index 500+ Vault"],
   },
   tbtc: {
     // coinmarketcapApiId: 32994,
     coinmarketcapApiId: 5776,
-    vaults: ["Index 500 Vault"],
+    vaults: ["Index 500 Vault", "Index 500+ Vault"],
   },
   bold: {
     geckoterminal: {
       chain: "base",
       address: "0x03569CC076654F82679C4BA2124D64774781B01D",
     },
-    vaults: ["Stable+ Vault", "Index 500 Vault"],
+    vaults: ["Stable+ Vault", "Index 500 Vault", "Index 500+ Vault"],
   },
 };
 export const tokensForDropDown = [
