@@ -24,7 +24,7 @@ describe("Velodrome Vault", () => {
     const tokenAddress = "0x7F5c764cBc14f9669B88837ca1490cCa17c31607";
     const investmentAmount = 20000;
     const tokenDecimals = 6;
-    const zapOutPercentage = NaN;
+    const zapOutPercentage = undefined;
     const portfolioHelper = getPortfolioHelper("Velodrome Vault");
     const txns = await generateIntentTxns({
       actionName,
@@ -82,7 +82,7 @@ describe("Velodrome Vault", () => {
     const tokenSymbol = "usdc";
     const tokenAddress = "0x7F5c764cBc14f9669B88837ca1490cCa17c31607";
     const investmentAmount = 2000;
-    const tokenDecimals = 18;
+    const tokenDecimals = 6;
     const zapOutPercentage = 1;
     const setTradingLoss = () => {};
     const setStepName = () => {};
@@ -164,7 +164,7 @@ describe("Velodrome Vault", () => {
     const tokenSymbol = "usdc";
     const tokenAddress = "0x7F5c764cBc14f9669B88837ca1490cCa17c31607";
     const investmentAmount = 0;
-    const tokenDecimals = 18;
+    const tokenDecimals = 6;
     const zapOutPercentage = 1;
     const setTradingLoss = () => {};
     const setStepName = () => {};
