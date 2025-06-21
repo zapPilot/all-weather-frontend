@@ -30,10 +30,10 @@ export default defineConfig({
       all: false,
       skipFull: true,
       thresholds: {
-        lines: 63,
-        functions: 49,
-        branches: 76,
-        statements: 63,
+        lines: 70,
+        functions: 57,
+        branches: 84,
+        statements: 70,
       },
     },
     env: {
