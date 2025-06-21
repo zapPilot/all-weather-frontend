@@ -21,7 +21,7 @@ describe("Camelot Vault", () => {
     const tokenAddress = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1";
     const investmentAmount = 10000;
     const tokenDecimals = 18;
-    const zapOutPercentage = NaN;
+    const zapOutPercentage = undefined;
     const portfolioHelper = getPortfolioHelper("Camelot Vault");
     const txns = await generateIntentTxns({
       actionName,
