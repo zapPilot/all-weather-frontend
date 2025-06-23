@@ -294,7 +294,7 @@ describe("chainHelper", () => {
         "arbitrum",
         portfolioWithStringWeight,
       );
-      expect(result).toBe("000.50.2");
+      expect(result).toBe(0.7);
     });
 
     it("should handle protocolArray containing null elements by throwing an error", () => {

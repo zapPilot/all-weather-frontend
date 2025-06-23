@@ -43,7 +43,7 @@ export const calCrossChainInvestmentAmount = (chainName, portfolioHelper) => {
             return (
               innerSum +
               protocolArray.reduce((weightSum, protocol) => {
-                return weightSum + protocol.weight;
+                return weightSum + Number(protocol.weight);
               }, 0)
             );
           }

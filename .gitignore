@@ -50,3 +50,6 @@ token_dictionary.json
 sw.js*
 workbox*
 gitdiff
+
+# serena cache
+*.pkl
