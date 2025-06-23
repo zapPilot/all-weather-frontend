@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Core Protocol System
 
-This is a DeFi portfolio management application built around a modular protocol architecture:
+This is a **general-purpose intent-based DeFi execution engine** that provides a universal interface for DeFi operations across multiple protocols and chains. Originally implementing Ray Dalio's All Weather Portfolio strategy, the system has evolved into a modular protocol aggregation platform:
 
 - **BaseProtocol** (`classes/BaseProtocol.js`) - Abstract base class for all DeFi protocol integrations. Defines standard operations: `zapIn`, `zapOut`, `stake`, `unstake`, `transfer`, `claimAndSwap`
 - **BaseVault** (`classes/Vaults/BaseVault.js`) - Portfolio orchestrator that manages multiple protocols with weighted allocations across categories and chains

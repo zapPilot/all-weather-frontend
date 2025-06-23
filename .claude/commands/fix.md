@@ -1,1 +1,3 @@
-Fix all errors in the project. Make sure the server starts successfully and all tests pass when running `yarn test`. Do not introduce new errors or break existing features. If you encounter multiple errors, fix all of them, not just the first one.
+1. Read the initial instructions.
+2. Use zen if you want to read a large codebase.
+3. Fix all project errors so that the server starts, all tests pass with the test, format, and lint commands listed in package.json without issues, and without breaking existing features.

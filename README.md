@@ -1,6 +1,6 @@
-# Zap Pilot Frontend
+# Intent-Based DeFi Execution Engine
 
-A DeFi portfolio management application built around a modular protocol architecture for cross-chain yield farming and liquidity provision.
+**Zap Pilot** is a general-purpose intent-based DeFi execution engine that provides a universal interface for DeFi operations across multiple protocols and chains. The platform enables users to manage various vault strategies including Stablecoin Vault, Index500 (S&P500-like index fund), BTC vault, ETH vault, with support for customizable vaults.
 
 ## Getting Started
 
