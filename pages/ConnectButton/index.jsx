@@ -67,10 +67,10 @@ function ConfiguredConnectButton() {
       wallets={WALLETS}
       theme="light"
       chains={SUPPORTED_CHAINS}
-      accountAbstraction={{
-        chain: base,
-        sponsorGas: true,
-      }}
+      // accountAbstraction={{
+      //   chain: base,
+      //   sponsorGas: true,
+      // }}
       connectModal={{
         size: "compact",
         title: "Create Your AA Wallet",
