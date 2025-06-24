@@ -1,9 +1,1 @@
-1. Read the initial instructions.
-2. Use zen if you want to read a large codebase.
-3. Read the whole project if needed. If you do, update both CLAUDE.md and serena to reflect your understanding and any changes.
-4. Check the todo tasks from serena and proceed step by step. Prioritize optimizations with the highest impact (e.g., memory, performance, maintainability).
-5. Always validate your changes by running tests. Use test command listed in package.json` to test the whole project or just specific test files.
-6. Add or update test cases to cover your changes.
-7. Run format and lint command listed in package.json to ensure code quality.
-8. Update MAINTAINABILITY_PLAN.md and any other relevant documentation after completing each task.
-9. If you encounter ambiguity or uncertainty, ask for clarification before proceeding.
+. 2. Use zen if you want to read a large codebase. 3. Read the whole project if needed. If you do, update both CLAUDE.md and serena to reflect your understanding and any changes. 4. Check the todo tasks from proceed step by step. Prioritize optimizations with the highest impact (e.g., memory, performance, maintainability). 5. Always validate your changes by running tests. Use test command listed in package.json` to test the whole project or just specific test files. 6. Add or update test cases to cover your changes. 7. Run format and lint command listed in package.json to ensure code quality. 8. Update MAINTAINABILITY_PLAN.md and any other relevant documentation after completing each task. 9. If you encounter ambiguity or uncertainty, ask for clarification before proceeding.

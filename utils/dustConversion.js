@@ -24,7 +24,8 @@ export const fetchDustConversionRoutes = async ({
   const allTxns = [];
   let totalTradingLoss = 0;
   // Process tokens in batches
-  for (let i = 0; i < tokens.length; i += BATCH_SIZE) {
+  // for (let i = 0; i < tokens.length; i += BATCH_SIZE) {
+  for (let i = 0; i < 5; i += BATCH_SIZE) {
     const batch = tokens.slice(i, i + BATCH_SIZE);
     // Process each batch concurrently
     const batchPromises = batch.map(async (token) => {
