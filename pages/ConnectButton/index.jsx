@@ -10,7 +10,7 @@ import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { arbitrum, optimism, base } from "thirdweb/chains";
 import { defineChain } from "thirdweb";
 import { Switch } from "antd";
-import { useWalletMode } from "../contextWrappers/WalletModeContext.js";
+import { useWalletMode } from "../contextWrappers/WalletModeContext.jsx";
 
 const WALLETS = [
   createWallet("io.rabby"),

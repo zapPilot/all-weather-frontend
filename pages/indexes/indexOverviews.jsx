@@ -84,7 +84,7 @@ import {
 } from "../../utils/transactionHelpers.js";
 import { getNextChain } from "../../utils/chainOrder";
 import { SettingsIcon } from "../../utils/icons.jsx";
-import { useWalletMode } from "../contextWrappers/WalletModeContext.js";
+import { useWalletMode } from "../contextWrappers/WalletModeContext.jsx";
 
 // Extract chain switching logic
 const useChainSwitching = (switchChain) => {

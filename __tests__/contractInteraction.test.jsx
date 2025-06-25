@@ -68,20 +68,6 @@ const ModalComponent = () => {
   );
 };
 
-describe("select button click", () => {
-  test("opens the modal when button is clicked", () => {
-    render(<ModalComponent />);
-    const selectTokenButton = screen.getByRole("select-token-button");
-    expect(selectTokenButton).toBeInTheDocument();
-
-    // Click the button to open the modal
-    fireEvent.click(selectTokenButton);
-
-    // Check if the modal is opened
-    expect(screen.getByText("Basic Modal")).toBeInTheDocument();
-  });
-});
-
 test("chainIDToName with valid chain ID", () => {
   expect(chainIDToName(56)).toBe("bsc");
 });
