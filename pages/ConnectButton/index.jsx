@@ -10,6 +10,7 @@ import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { arbitrum, optimism, base } from "thirdweb/chains";
 import { defineChain } from "thirdweb";
 import { Switch } from "antd";
+import { useWalletMode } from "../contextWrappers/WalletModeContext.js";
 
 const WALLETS = [
   createWallet("io.rabby"),
@@ -58,7 +59,7 @@ const DetailsButton = memo(function DetailsButton({ address }) {
 });
 
 function ConfiguredConnectButton() {
-  const [aaOn, setAaOn] = useState(true);
+  const { aaOn, setAaOn } = useWalletMode();
   const activeAccount = useActiveAccount();
   const activeWallet = useActiveWallet();
   const { disconnect, isLoading: isDisconnecting } = useDisconnect();
