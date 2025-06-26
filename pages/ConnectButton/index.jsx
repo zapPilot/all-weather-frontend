@@ -1,16 +1,21 @@
-import React, { memo } from "react";
-import { ConnectButton, useActiveAccount } from "thirdweb/react";
+import React, { memo, useState, useCallback } from "react";
+import {
+  ConnectButton,
+  useActiveAccount,
+  useActiveWallet,
+  useDisconnect,
+} from "thirdweb/react";
 import { createWallet, walletConnect, inAppWallet } from "thirdweb/wallets";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { arbitrum, optimism, base } from "thirdweb/chains";
 import { defineChain } from "thirdweb";
+import { Switch } from "antd";
+import { useWalletMode } from "../contextWrappers/WalletModeContext.jsx";
 
-// Extracted wallet configuration
 const WALLETS = [
   createWallet("io.rabby"),
-  createWallet("me.rainbow"),
-  createWallet("io.metamask"),
   createWallet("app.phantom"),
+  createWallet("com.ambire"),
   walletConnect(),
   inAppWallet({
     auth: {
@@ -19,13 +24,10 @@ const WALLETS = [
   }),
 ];
 
-// Extracted chains configuration
 const SUPPORTED_CHAINS = [arbitrum, base, defineChain(1088), optimism];
 
-// Extracted address display component
 const AddressDisplay = memo(function AddressDisplay({ address }) {
   if (!address) return <span className="font-mono inline">No Address</span>;
-
   return (
     <span className="font-mono inline">
       {`${address.slice(0, 5)}...${address.slice(-4)}`}
@@ -33,7 +35,6 @@ const AddressDisplay = memo(function AddressDisplay({ address }) {
   );
 });
 
-// Extracted details button component
 const DetailsButton = memo(function DetailsButton({ address }) {
   return (
     <div className="flex items-center gap-3 p-2 rounded-md bg-white/90 text-xs cursor-pointer">
@@ -58,33 +59,53 @@ const DetailsButton = memo(function DetailsButton({ address }) {
 });
 
 function ConfiguredConnectButton() {
+  const { aaOn, setAaOn } = useWalletMode();
   const activeAccount = useActiveAccount();
+  const activeWallet = useActiveWallet();
+  const { disconnect, isLoading: isDisconnecting } = useDisconnect();
+
+  const handleSwitch = useCallback(
+    async (checked) => {
+      if (activeWallet) {
+        await disconnect(activeWallet);
+      }
+      setAaOn(checked);
+    },
+    [activeWallet, disconnect],
+  );
 
   return (
-    <ConnectButton
-      client={THIRDWEB_CLIENT}
-      autoConnect={true}
-      wallets={WALLETS}
-      theme="light"
-      chains={SUPPORTED_CHAINS}
-      accountAbstraction={{
-        chain: base,
-        sponsorGas: true,
-      }}
-      connectModal={{
-        size: "compact",
-        title: "Create Your AA Wallet",
-      }}
-      detailsButton={{
-        render() {
-          return <DetailsButton address={activeAccount?.address} />;
-        },
-        style: {
-          borderRadius: "9999px",
-        },
-      }}
-    />
+    <>
+      <Switch
+        checked={aaOn}
+        onChange={handleSwitch}
+        disabled={isDisconnecting}
+        checkedChildren="AA"
+        unCheckedChildren="EOA"
+      />
+      <ConnectButton
+        key={aaOn ? "aa-mode" : "eoa-mode"}
+        client={THIRDWEB_CLIENT}
+        autoConnect={true}
+        wallets={WALLETS}
+        theme="light"
+        chains={SUPPORTED_CHAINS}
+        accountAbstraction={
+          aaOn ? { chain: base, sponsorGas: true } : undefined
+        }
+        connectModal={{
+          size: "compact",
+          title: aaOn ? "Create Your AA Wallet" : "Connect Wallet",
+        }}
+        detailsButton={{
+          render() {
+            return <DetailsButton address={activeAccount?.address} />;
+          },
+          style: { borderRadius: "9999px" },
+        }}
+      />
+    </>
   );
 }
 
-export default memo(ConfiguredConnectButton);
+export default ConfiguredConnectButton;
