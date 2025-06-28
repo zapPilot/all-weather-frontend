@@ -41,8 +41,8 @@ const PageHeader = memo(function PageHeader({
             <Image
               src="/logo.png"
               alt="logo"
-              width={40}
-              height={40}
+              width={110}
+              height={110}
               loading="lazy"
               quality={50}
               unoptimized={true}
