@@ -31,8 +31,8 @@ const Header = memo(function Header() {
         <Image
           src="/logo.png"
           alt="logo"
-          width={40}
-          height={40}
+          width={64}
+          height={64}
           loading="lazy"
           quality={50}
           unoptimized={true}

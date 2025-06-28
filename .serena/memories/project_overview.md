@@ -7,7 +7,6 @@ The all-weather-frontend is a **DeFi portfolio management application** built ar
 - **Intent-based DeFi Protocol Aggregation**: Universal interface for DeFi operations across multiple protocols and chains
 - **Cross-chain Portfolio Management**: Manages yield farming positions and liquidity provision across 20+ blockchain networks
 - **Modular Architecture**: Extensible system for adding new DeFi protocols and chains
-- **Automated Rebalancing**: Intelligent portfolio rebalancing with mathematical models
 
 ## Architecture Components
 

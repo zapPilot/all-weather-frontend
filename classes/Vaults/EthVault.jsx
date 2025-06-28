@@ -193,7 +193,7 @@ export class EthVault extends BaseVault {
                 decimalOfBestTokenToZapOut: 18,
               },
             ),
-            weight: 0.26,
+            weight: 0,
           },
           {
             interface: new BasePendlePT(
@@ -204,6 +204,42 @@ export class EthVault extends BaseVault {
               {
                 marketAddress: "0xbf5e60ddf654085f80dae9dd33ec0e345773e1f8",
                 assetAddress: "0xb33808ea0e883138680BA29311a220A7377cdb92",
+                assetDecimals: 18,
+                symbolOfBestTokenToZapOut: "weth",
+                bestTokenAddressToZapOut:
+                  "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                decimalOfBestTokenToZapOut: 18,
+              },
+            ),
+            weight: 0,
+          },
+          {
+            interface: new BasePendlePT(
+              "arbitrum",
+              42161,
+              ["pt wsteth 25jun2026"],
+              "single",
+              {
+                marketAddress: "0xf78452e0f5C0B95fc5dC8353B8CD1e06E53fa25B",
+                assetAddress: "0x71fBF40651E9D4278a74586AfC99F307f369Ce9A",
+                assetDecimals: 18,
+                symbolOfBestTokenToZapOut: "weth",
+                bestTokenAddressToZapOut:
+                  "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                decimalOfBestTokenToZapOut: 18,
+              },
+            ),
+            weight: 0.26,
+          },
+          {
+            interface: new BasePendlePT(
+              "arbitrum",
+              42161,
+              ["pt eeth 25jun2026"],
+              "single",
+              {
+                marketAddress: "0x46d62a8dede1bf2d0de04f2ed863245cbba5e538",
+                assetAddress: "0xaB7F3837E6e721abBc826927B655180Af6A04388",
                 assetDecimals: 18,
                 symbolOfBestTokenToZapOut: "weth",
                 bestTokenAddressToZapOut:
