@@ -350,6 +350,25 @@ export class StablecoinVault extends BaseVault {
                 decimalOfBestTokenToZapOut: 6,
               },
             ),
+            weight: 0,
+          },
+          {
+            interface: new BasePendlePT(
+              "arbitrum",
+              42161,
+              ["pt gusdc 18dec2025"],
+              "single",
+              {
+                marketAddress: "0x18ffb61c6d223bd91ec15acc248bb7e670abcc48",
+                assetAddress: "0x247f150C90c9EEb7d733219bfA36D189C76D5Ec5",
+                ytAddress: "0x59e4e0FE7981E31Eb1283ff9aDc5F851FE9A216D",
+                assetDecimals: 6,
+                symbolOfBestTokenToZapOut: "usdc",
+                bestTokenAddressToZapOut:
+                  "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+                decimalOfBestTokenToZapOut: 6,
+              },
+            ),
             weight: 0.16,
           },
         ],
