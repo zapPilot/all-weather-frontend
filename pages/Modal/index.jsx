@@ -286,7 +286,7 @@ export default function PopUpModal({
                     />
 
                     {/* Tenderly Simulation Section */}
-                    {generatedTransactions.length > 0 && costsCalculated && (
+                    {/* {generatedTransactions.length > 0 && costsCalculated && (
                       <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="text-sm font-medium text-gray-900">
@@ -306,7 +306,7 @@ export default function PopUpModal({
                           💡 Test your transactions safely before execution
                         </p>
                       </div>
-                    )}
+                    )} */}
                   </div>
                 ) : (
                   <>
