@@ -159,7 +159,8 @@ export default function TenderlySimulation({
           <div style={{ marginTop: 16 }}>
             <Title level={4}>Ready to Simulate</Title>
             <Text type="secondary">
-              Click "Simulate" to test {transactions.length} transactions
+              Click &quot;Simulate&quot; to test {transactions.length}{" "}
+              transactions
             </Text>
           </div>
         </div>

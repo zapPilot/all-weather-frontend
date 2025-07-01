@@ -71,8 +71,8 @@ describe("Venus", () => {
 
     expect(txns.length).toBe(4);
 
-    const approveTx = txns[0];
-    const depositTx = txns[1];
+    const approveTx = txns[2];
+    const depositTx = txns[3];
     const approveTxData = await approveTx.data();
     const depositTxData = await depositTx.data();
 
