@@ -69,7 +69,7 @@ describe("Venus", () => {
       }
     }
 
-    expect(txns.length).toBe(2);
+    expect(txns.length).toBe(4);
 
     const approveTx = txns[0];
     const depositTx = txns[1];
