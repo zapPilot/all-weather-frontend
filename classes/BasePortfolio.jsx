@@ -1,7 +1,7 @@
 import { tokensAndCoinmarketcapIdsFromDropdownOptions } from "../utils/contractInteractions";
 import assert from "assert";
 import { oneInchAddress } from "../utils/oneInch";
-import { getTokenDecimal, approve } from "../utils/general";
+import { approve } from "../utils/general";
 import { ethers } from "ethers";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
@@ -17,6 +17,7 @@ import { PortfolioFlowChartBuilder } from "./PortfolioFlowChartBuilder";
 import { getProtocolObjByUniqueId } from "../utils/portfolioCalculation";
 import flowChartEventEmitter from "../utils/FlowChartEventEmitter";
 import logger from "../utils/logger";
+import { normalizeChainName } from "../utils/chainHelper";
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 
@@ -442,22 +443,13 @@ export class BasePortfolio {
         actionParams.tokenInAddress = wethAddress;
         totalTxns.push(wethTxn);
       }
-      if (actionParams.onlyThisChain === false) {
-        const platformFee = this.mulEntryFeeRate(actionParams.zapInAmount);
-        const normalizedPlatformFeeUSD =
-          ethers.utils.formatUnits(platformFee, actionParams.tokenDecimals) *
-          actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol];
-        const referrer = await this._getReferrer(actionParams.account);
-        const platformFeeTxns = this._getPlatformFeeTxns(
-          actionParams.tokenInAddress,
-          actionParams.chainMetadata,
-          platformFee,
-          referrer,
-        );
-        actionParams.zapInAmount = actionParams.zapInAmount.sub(platformFee);
-        actionParams.setPlatformFee(-normalizedPlatformFeeUSD);
-        totalTxns = totalTxns.concat(platformFeeTxns);
-      }
+      // Calculate and charge entry fees based on chain weights
+      const { platformFeeTxns, totalPlatformFeeUSD, zapInAmountAfterFees } =
+        await this._calculateAndChargeEntryFees(actionParams);
+
+      actionParams.zapInAmount = zapInAmountAfterFees;
+      actionParams.setPlatformFee(-totalPlatformFeeUSD);
+      totalTxns = totalTxns.concat(platformFeeTxns);
     } else if (
       actionName === "crossChainRebalance" ||
       actionName === "localRebalance"
@@ -509,10 +501,7 @@ export class BasePortfolio {
   }
 
   async _processProtocolActions(actionName, actionParams) {
-    const currentChain = actionParams.chainMetadata.name
-      .toLowerCase()
-      .replace(" one", "")
-      .replace(" mainnet", "");
+    const currentChain = normalizeChainName(actionParams.chainMetadata.name);
     const actionHandlers = {
       zapIn: async (protocol, chain, derivative) => {
         if (protocol.weight === 0) return null;
@@ -749,10 +738,7 @@ export class BasePortfolio {
       tokenInAddress,
       zapInAmount: zapInAmountFromUI,
     } = actionParams;
-    const currentChain = chainMetadata.name
-      .toLowerCase()
-      .replace(" one", "")
-      .replace(" mainnet", "");
+    const currentChain = normalizeChainName(chainMetadata.name);
     const middleTokenConfig = this._getRebalanceMiddleTokenConfig(
       currentChain,
       false,
@@ -1471,12 +1457,7 @@ export class BasePortfolio {
     let wrappedTokenABI;
     if (tokenSymbol === "eth") {
       wrappedTokenAddress =
-        TOKEN_ADDRESS_MAP.weth[
-          chainMetadata.name
-            .toLowerCase()
-            .replace(" one", "")
-            .replace(" mainnet", "")
-        ];
+        TOKEN_ADDRESS_MAP.weth[normalizeChainName(chainMetadata.name)];
       wrappedTokenSymbol = "weth";
       wrappedTokenABI = WETH;
     }
@@ -1526,10 +1507,11 @@ export class BasePortfolio {
     return Object.values(this.strategy).reduce(
       (acc, protocolsInThisCategory) => {
         Object.entries(protocolsInThisCategory)
-          .filter(([chain]) => chain.toLowerCase() !== currentChain)
+          .filter(([chain]) => normalizeChainName(chain) !== currentChain)
           .forEach(([chain, protocols]) => {
-            if (!acc[chain]) acc[chain] = 0;
-            acc[chain] += protocols.reduce(
+            const normalizedChain = normalizeChainName(chain);
+            if (!acc[normalizedChain]) acc[normalizedChain] = 0;
+            acc[normalizedChain] += protocols.reduce(
               (sum, protocol) => sum + (protocol.weight || 0),
               0,
             );
@@ -1538,5 +1520,77 @@ export class BasePortfolio {
       },
       {},
     );
+  }
+
+  _calculateAllChainWeights() {
+    return Object.values(this.strategy).reduce(
+      (acc, protocolsInThisCategory) => {
+        Object.entries(protocolsInThisCategory).forEach(
+          ([chain, protocols]) => {
+            const normalizedChain = normalizeChainName(chain);
+            if (!acc[normalizedChain]) acc[normalizedChain] = 0;
+            acc[normalizedChain] += protocols.reduce(
+              (sum, protocol) => sum + (protocol.weight || 0),
+              0,
+            );
+          },
+        );
+        return acc;
+      },
+      {},
+    );
+  }
+
+  async _calculateAndChargeEntryFees(actionParams) {
+    const currentChain = normalizeChainName(actionParams.chainMetadata.name);
+
+    // Calculate the appropriate fee amount based on mode
+    let feeAmount;
+    if (actionParams.onlyThisChain === true) {
+      // Single chain mode: charge 1% fee on the full deposit amount
+      feeAmount = this.mulEntryFeeRate(actionParams.zapInAmount);
+    } else {
+      // Multi-chain mode: charge fee proportionally based on current chain's weight
+      const allChainWeights = this._calculateAllChainWeights();
+      const currentChainWeight = allChainWeights[currentChain] || 0;
+
+      if (currentChainWeight === 0) {
+        throw new Error(`No protocols found for chain ${currentChain}`);
+      }
+
+      // Calculate fee as: zapInAmount * currentChainWeight * 0.01
+      const chainWeightPrecision = 1000000;
+      const chainWeightPrecisionBN =
+        ethers.BigNumber.from(chainWeightPrecision);
+      feeAmount = this.mulEntryFeeRate(actionParams.zapInAmount)
+        .mul(
+          ethers.BigNumber.from(
+            BigInt(Math.floor(currentChainWeight * chainWeightPrecision)),
+          ),
+        )
+        .div(chainWeightPrecisionBN);
+    }
+
+    // Calculate USD value of the fee
+    const feeUSD =
+      ethers.utils.formatUnits(feeAmount, actionParams.tokenDecimals) *
+      actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol];
+
+    // Generate fee transactions
+    const referrer = await this._getReferrer(actionParams.account);
+    const platformFeeTxns = this._getPlatformFeeTxns(
+      actionParams.tokenInAddress,
+      actionParams.chainMetadata,
+      feeAmount,
+      referrer,
+    );
+
+    const zapInAmountAfterFees = actionParams.zapInAmount.sub(feeAmount);
+
+    return {
+      platformFeeTxns,
+      totalPlatformFeeUSD: feeUSD,
+      zapInAmountAfterFees,
+    };
   }
 }

@@ -15,6 +15,7 @@ import ActionItem from "../../components/common/ActionItem";
 import { getNextChain } from "../../utils/chainOrder";
 import React from "react";
 import flowChartEventEmitter from "../../utils/FlowChartEventEmitter";
+import TenderlySimulation from "../../components/TenderlySimulation";
 
 const formatAmount = (amount) => {
   if (amount === undefined || amount === null) return <Spin />;
@@ -99,6 +100,8 @@ export default function PopUpModal({
   allChainsComplete,
   errorMsg,
   tokenPricesMappingTable,
+  generatedTransactions = [],
+  tenderlySimulationContext = {},
 }) {
   // Move useEffect to top level, before any conditional returns
   const tokenInSymbol =
@@ -275,11 +278,36 @@ export default function PopUpModal({
               </div>
               <div className="flex-grow">
                 {finishedTxn === false && actionName !== "" ? (
-                  <DemoFlowDirectionGraph
-                    data={flowchartData}
-                    tradingLoss={tradingLoss}
-                    currentChain={chainId?.name}
-                  />
+                  <div className="space-y-6">
+                    <DemoFlowDirectionGraph
+                      data={flowchartData}
+                      tradingLoss={tradingLoss}
+                      currentChain={chainId?.name}
+                    />
+
+                    {/* Tenderly Simulation Section */}
+                    {generatedTransactions.length > 0 && costsCalculated && (
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-gray-900">
+                            🔬 Transaction Simulation
+                          </h4>
+                          <span className="text-xs text-gray-500">
+                            {generatedTransactions.length} transactions
+                          </span>
+                        </div>
+                        <TenderlySimulation
+                          transactions={generatedTransactions}
+                          context={tenderlySimulationContext}
+                          buttonText="Simulate Bundle"
+                          size="small"
+                        />
+                        <p className="text-xs text-gray-500 mt-2">
+                          💡 Test your transactions safely before execution
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <>
                     <div className="flex flex-col items-center gap-4 w-full mt-4">
@@ -414,11 +442,9 @@ export default function PopUpModal({
                       </dt>
                       <dd className="text-sm font-semibold text-gray-900">
                         $
-                        {(
-                          portfolioHelper.entryFeeRate() *
-                          investmentAmount *
-                          tokenPricesMappingTable[tokenInSymbol]
-                        ).toFixed(2)}
+                        {platformFee < 0
+                          ? -platformFee.toFixed(2)
+                          : "something goes wrong"}
                       </dd>
                     </div>
                     <div className="flex items-center justify-between">
