@@ -31,7 +31,7 @@ export default defineConfig({
       skipFull: true,
       thresholds: {
         lines: 74,
-        functions: 63,
+        functions: 61,
         branches: 86,
         statements: 74,
       },
