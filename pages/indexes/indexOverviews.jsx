@@ -85,7 +85,6 @@ import {
 import { getNextChain } from "../../utils/chainOrder";
 import { SettingsIcon } from "../../utils/icons.jsx";
 import { useWalletMode } from "../contextWrappers/WalletModeContext.jsx";
-import TenderlySimulation from "../../components/TenderlySimulation.jsx";
 
 // Extract chain switching logic
 const useChainSwitching = (switchChain) => {
@@ -215,7 +214,6 @@ export default function IndexOverviews() {
     notification.useNotification();
   const [recipientError, setRecipientError] = useState(false);
   const [showZapIn, setShowZapIn] = useState(false);
-  const [generatedTransactions, setGeneratedTransactions] = useState([]);
 
   const preservedAmountRef = useRef(null);
 
@@ -328,11 +326,6 @@ export default function IndexOverviews() {
       try {
         const txns = await generateIntentTxns(actionParams);
         setCostsCalculated(true);
-
-        // Store flattened transactions for Tenderly simulation
-        const flattenedTxns = txns.flat(Infinity);
-        setGeneratedTransactions(flattenedTxns);
-
         if (
           [
             "zapIn",
@@ -1030,15 +1023,6 @@ export default function IndexOverviews() {
         allChainsComplete={Object.values(chainStatus || {}).every(Boolean)}
         errorMsg={errorMsg}
         tokenPricesMappingTable={tokenPricesMappingTable}
-        generatedTransactions={generatedTransactions}
-        tenderlySimulationContext={{
-          chainId,
-          accountAddress: account?.address,
-          portfolioName,
-          actionName,
-          selectedToken,
-          investmentAmount,
-        }}
       />
       <main className={styles.bgStyle}>
         <header className="relative isolate pt-6">

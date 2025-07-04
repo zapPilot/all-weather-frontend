@@ -90,7 +90,7 @@ const logErrorToDiscord = async (error, address, chain, actionName) => {
 
   try {
     await axios.post(`${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`, {
-      errorMsg: `<@&1172000757764075580> ${address}: ${
+      errorMsg: `<@648492945938317334> ${address}: ${
         error.message || error.toString()
       } on ${chain} ${actionName}`,
     });
