@@ -1102,18 +1102,7 @@ export class BasePortfolio {
       () => {},
       chainMetadata.id,
     );
-
-    // need to multiply by 2 because we charge for zap in and zap out
-    const platformFee = this.mulEntryFeeRate(zapInAmount);
-    const zapInAmountAfterFee = zapInAmount.sub(platformFee);
-
-    const rebalanceFeeTxns = await this._getSwapFeeTxnsForZapIn(
-      actionParams,
-      platformFee,
-      middleTokenConfig,
-    );
-
-    return [[approveTxn, ...rebalanceFeeTxns], zapInAmountAfterFee];
+    return [[approveTxn], zapInAmount];
   }
 
   async _generateZapInTxns(
@@ -1373,19 +1362,7 @@ export class BasePortfolio {
       `Total weight across all strategies should be 1, but is ${totalWeight}`,
     );
   }
-  async _getSwapFeeTxnsForZapIn(actionParams, platformFee, middleTokenConfig) {
-    const normalizedPlatformFeeUsd =
-      ethers.utils.formatUnits(platformFee, middleTokenConfig.decimals) *
-      actionParams.tokenPricesMappingTable[middleTokenConfig.symbol];
-    actionParams.setPlatformFee(-normalizedPlatformFeeUsd);
-    const referrer = await this._getReferrer(actionParams.account);
-    return this._getPlatformFeeTxns(
-      middleTokenConfig.address,
-      actionParams.chainMetadata,
-      platformFee,
-      referrer,
-    );
-  }
+
   _calculateReferralFee(amount) {
     return this.mulReferralFeeRate(amount);
   }

@@ -423,7 +423,7 @@ describe("API Error Handling and Retry Mechanisms", () => {
           "https://sdk-api.example.com/discord/webhook",
           {
             errorMsg:
-              "<@&1172000757764075580> 0xuser: Critical error on arbitrum zapIn",
+              "<@648492945938317334> 0xuser: Critical error on arbitrum zapIn",
           },
         );
       });
@@ -510,7 +510,7 @@ describe("API Error Handling and Retry Mechanisms", () => {
           "https://sdk-api.example.com/discord/webhook",
           {
             errorMsg:
-              "<@&1172000757764075580> 0xuser: Custom error string on arbitrum zapIn",
+              "<@648492945938317334> 0xuser: Custom error string on arbitrum zapIn",
           },
         );
       });

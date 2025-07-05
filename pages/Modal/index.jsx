@@ -15,7 +15,6 @@ import ActionItem from "../../components/common/ActionItem";
 import { getNextChain } from "../../utils/chainOrder";
 import React from "react";
 import flowChartEventEmitter from "../../utils/FlowChartEventEmitter";
-import TenderlySimulation from "../../components/TenderlySimulation";
 
 const formatAmount = (amount) => {
   if (amount === undefined || amount === null) return <Spin />;
@@ -100,8 +99,6 @@ export default function PopUpModal({
   allChainsComplete,
   errorMsg,
   tokenPricesMappingTable,
-  generatedTransactions = [],
-  tenderlySimulationContext = {},
 }) {
   // Move useEffect to top level, before any conditional returns
   const tokenInSymbol =
@@ -284,29 +281,6 @@ export default function PopUpModal({
                       tradingLoss={tradingLoss}
                       currentChain={chainId?.name}
                     />
-
-                    {/* Tenderly Simulation Section */}
-                    {/* {generatedTransactions.length > 0 && costsCalculated && (
-                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="text-sm font-medium text-gray-900">
-                            🔬 Transaction Simulation
-                          </h4>
-                          <span className="text-xs text-gray-500">
-                            {generatedTransactions.length} transactions
-                          </span>
-                        </div>
-                        <TenderlySimulation
-                          transactions={generatedTransactions}
-                          context={tenderlySimulationContext}
-                          buttonText="Simulate Bundle"
-                          size="small"
-                        />
-                        <p className="text-xs text-gray-500 mt-2">
-                          💡 Test your transactions safely before execution
-                        </p>
-                      </div>
-                    )} */}
                   </div>
                 ) : (
                   <>
@@ -401,7 +375,7 @@ export default function PopUpModal({
                     </dd>
                   </div>
                 </div>
-                {Object.values(chainStatus || {}).every((v) => !v) && (
+                {actionName === "zapIn" && (
                   <div className="flex flex-col gap-1 border-t border-gray-200 pt-4">
                     <div className="flex items-center justify-between">
                       <dt className="flex items-center text-sm text-gray-600 font-medium">
@@ -442,7 +416,7 @@ export default function PopUpModal({
                       </dt>
                       <dd className="text-sm font-semibold text-gray-900">
                         $
-                        {platformFee < 0
+                        {platformFee <= 0
                           ? -platformFee.toFixed(2)
                           : "something goes wrong"}
                       </dd>
