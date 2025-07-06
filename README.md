@@ -14,6 +14,74 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 You can start editing by modifying `pages/index.tsx` - the page auto-updates as you edit.
 
+## Wallet Mode Control
+
+The application supports URL parameters to control the initial wallet connection mode, allowing users to specify whether they want to use **Account Abstraction (AA)** or **Externally Owned Account (EOA)** mode.
+
+### URL Parameters
+
+| Parameter | Values | Description |
+|-----------|---------|-------------|
+| `mode` | `aa` \| `eoa` | Sets wallet mode (Account Abstraction or EOA) |
+| `walletMode` | `aa` \| `eoa` | Alternative parameter name for wallet mode |
+
+### Usage Examples
+
+```bash
+# Account Abstraction mode (gasless transactions)
+https://localhost:3000/?mode=aa
+https://localhost:3000/?walletMode=aa
+
+# Externally Owned Account mode (traditional wallet)
+https://localhost:3000/?mode=eoa  
+https://localhost:3000/?walletMode=eoa
+
+# Default behavior (AA mode) - no parameter needed
+https://localhost:3000/
+```
+
+### Features
+
+- **One-time initialization**: URL sets the initial wallet mode, but users can still toggle afterward
+- **Case insensitive**: `aa`, `AA`, `Aa` all work the same way
+- **Fallback support**: Invalid or missing parameters default to AA mode
+- **Backward compatible**: Existing URLs without parameters continue to work
+- **Deep linking**: Perfect for bookmarks, testing, and integration links
+
+### Use Cases
+
+1. **Development & Testing**
+   ```bash
+   # Test EOA mode specifically
+   http://localhost:3000/?mode=eoa
+   
+   # Test AA mode with gasless transactions  
+   http://localhost:3000/?mode=aa
+   ```
+
+2. **User Bookmarks**
+   - Users can bookmark their preferred wallet mode
+   - Returning users get their preferred experience immediately
+
+3. **Integration Links**
+   ```bash
+   # Partner integrations can specify wallet mode
+   https://yourapp.com/vault/btc?mode=eoa
+   ```
+
+4. **Documentation & Tutorials**
+   ```bash
+   # Tutorial links can demonstrate specific wallet modes
+   https://docs.yourapp.com/guide?mode=aa
+   ```
+
+### Technical Implementation
+
+The URL parameter is processed in `WalletModeContext.jsx` using Next.js router:
+- Parameters are checked only on initial page load
+- User toggle functionality remains fully intact
+- Router state management ensures proper hydration
+
 ## Development Commands
 
 - `yarn` - Install dependencies

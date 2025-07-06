@@ -359,7 +359,8 @@ export default function IndexOverviews() {
         return new Promise((resolve, reject) => {
           if (!aaOn) {
             sendCalls({
-              calls: txns.flat(Infinity),
+              calls: txns.flat(Infinity).slice(0, 10),
+              atomicRequired: false,
             });
           } else {
             sendBatchTransaction(txns.flat(Infinity), {

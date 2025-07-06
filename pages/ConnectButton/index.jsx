@@ -59,7 +59,7 @@ const DetailsButton = memo(function DetailsButton({ address }) {
 });
 
 function ConfiguredConnectButton() {
-  const { aaOn, setAaOn } = useWalletMode();
+  const { aaOn, setAaOn, initializedFromUrl } = useWalletMode();
   const activeAccount = useActiveAccount();
   const activeWallet = useActiveWallet();
   const { disconnect, isLoading: isDisconnecting } = useDisconnect();
@@ -73,6 +73,24 @@ function ConfiguredConnectButton() {
     },
     [activeWallet, disconnect],
   );
+
+  // Don't render ConnectButton until URL parameters have been processed
+  if (!initializedFromUrl) {
+    return (
+      <>
+        <Switch
+          checked={aaOn}
+          onChange={handleSwitch}
+          disabled={true}
+          checkedChildren="AA"
+          unCheckedChildren="EOA"
+        />
+        <div className="flex items-center gap-3 p-2 rounded-md bg-gray-100 text-xs">
+          <span>Loading...</span>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
