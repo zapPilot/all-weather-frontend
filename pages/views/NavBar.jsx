@@ -7,6 +7,17 @@ import { ConfigProvider, notification, Menu } from "antd";
 import openNotificationWithIcon from "../../utils/notification.js";
 
 const items = [
+      {
+        label: (
+          <a
+            href="https://www.zap-pilot.org/"
+            target="_blank"
+          >
+            Landing Page
+          </a>
+        ),
+        key: "landing",
+      },
   {
     label: <Link href="/">Vaults</Link>,
     key: "indexes",
@@ -16,30 +27,9 @@ const items = [
     key: "profile",
   },
   {
-    label: <Link href="/vote">Pools</Link>,
-    key: "vote",
-  },
-  {
-    label: "More",
-    key: "More",
-    children: [
-      {
-        label: <Link href="/referrals">Referrals</Link>,
-        key: "referrals",
-      },
-      {
-        label: (
-          <a
-            href="https://all-weather-protocol.gitbook.io/all-weather-protocol"
-            target="_blank"
-          >
-            Docs
-          </a>
-        ),
-        key: "docs",
-      },
-    ],
-  },
+    label: <Link href="/dustzap">Dust Zap</Link>,
+    key: "dustZap",
+  }
 ];
 export default function NavBar({ mode }) {
   const router = useRouter();
