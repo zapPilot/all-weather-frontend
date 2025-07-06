@@ -1,7 +1,7 @@
 import logger from "./logger";
 import { ethers } from "ethers";
 import swap from "./swapHelper";
-const BATCH_SIZE = 3; // Process 3 tokens at a time to avoid rate limits
+const BATCH_SIZE = 10; // Process 3 tokens at a time to avoid rate limits
 const DELAY_BETWEEN_BATCHES = 1000; // 1 second delay between batches
 
 /**
@@ -106,6 +106,7 @@ export const handleDustConversion = async ({
       slippage,
       handleStatusUpdate,
     });
+    console.log("txns", txns);
     return txns;
   } catch (error) {
     logger.error("Dust conversion failed:", error);

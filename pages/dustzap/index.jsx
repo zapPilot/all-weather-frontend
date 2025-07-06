@@ -22,7 +22,7 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { useWalletMode } from "../contextWrappers/WalletModeContext";
-import PriceService from "../../classes/TokenPriceService";
+import { PriceService } from "../../classes/TokenPriceService";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -543,8 +543,9 @@ export default function DustZap() {
     setStatusMessages([]);
     setTotalSteps(filteredAndSortedTokens.length);
     const priceService = new PriceService(process.env.NEXT_PUBLIC_API_URL);
-    const ethPrice = await priceService.fetchPrice("eth", 2396); // 2396 is eth's coinmarketcap id
-    logger.info("ethPrice", ethPrice);
+    const ethPrice = await priceService.fetchPrice("eth", {
+      coinmarketcapApiId: 2396,
+    }); // 2396 is eth's coinmarketcap id
     try {
       const txns = await handleDustConversion({
         chainId: activeChain?.id,

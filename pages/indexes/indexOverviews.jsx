@@ -346,14 +346,6 @@ export default function IndexOverviews() {
           investmentAmount *
           (1 - portfolioHelper.entryFeeRate()) *
           (1 - slippage / 100);
-        const chainWeight = calCrossChainInvestmentAmount(
-          normalizeChainName(chainId?.name),
-          portfolioHelper,
-        );
-        const chainWeightPerYourPortfolio =
-          Object.values(rebalancableUsdBalanceDict)
-            .filter(({ chain }) => chain === normalizeChainName(chainId?.name))
-            .reduce((sum, value) => sum + value.usdBalance, 0) / usdBalance;
         // Return a promise that resolves when the transaction is successful
         return new Promise((resolve, reject) => {
           const transactionCallbacks = {
