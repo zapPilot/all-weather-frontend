@@ -44,39 +44,66 @@ const getFilteredAndSortedTokens = (tokens) => {
 
 // =============== Components ===============
 const SlippageSelector = ({ slippage, onChange, className = "" }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const slippageOptions = [
-    { value: 1, label: "1% (Conservative)" },
-    { value: 5, label: "5% (Low)" },
-    { value: 10, label: "10% (Moderate)" },
-    { value: 20, label: "20% (High)" },
-    { value: 30, label: "30% (Very High)" },
+    { value: 1, label: "1%" },
+    { value: 5, label: "5%" },
+    { value: 10, label: "10%" },
+    { value: 20, label: "20%" },
+    { value: 30, label: "30%" },
   ];
 
   return (
     <div className={`${className}`}>
-      <div className="mb-2">
-        <Text className="text-sm font-medium text-gray-600">
-          Slippage Tolerance
-        </Text>
-      </div>
-      <Select
-        value={slippage}
-        onChange={onChange}
-        className="w-full"
-        size="large"
-        placeholder="Select slippage tolerance"
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
       >
-        {slippageOptions.map((option) => (
-          <Option key={option.value} value={option.value}>
-            {option.label}
-          </Option>
-        ))}
-      </Select>
-      <div className="mt-1">
-        <Text className="text-xs text-gray-500">
-          Higher slippage allows conversion when prices move quickly
-        </Text>
-      </div>
+        <span>Slippage: {slippage}%</span>
+        <svg
+          className={`w-3 h-3 transition-transform ${
+            isExpanded ? "rotate-180" : ""
+          }`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      {isExpanded && (
+        <div className="mt-2 p-3 bg-gray-50 rounded-lg border">
+          <div className="mb-2">
+            <Text className="text-xs font-medium text-gray-600">
+              Slippage Tolerance
+            </Text>
+          </div>
+          <Select
+            value={slippage}
+            onChange={onChange}
+            className="w-full"
+            size="small"
+            placeholder="Select tolerance"
+          >
+            {slippageOptions.map((option) => (
+              <Option key={option.value} value={option.value}>
+                {option.label}
+              </Option>
+            ))}
+          </Select>
+          <div className="mt-1">
+            <Text className="text-xs text-gray-400">
+              Higher values allow conversion during price volatility
+            </Text>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -178,27 +205,28 @@ const HeroSection = ({
           </div>
         </div>
 
-        {/* Slippage Selector */}
-        <div className="mb-8 max-w-xs mx-auto">
-          <SlippageSelector
-            slippage={slippage}
-            onChange={onSlippageChange}
-            className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-white/50"
-          />
-        </div>
+        {/* Action Button with Slippage Option */}
+        <div className="space-y-3">
+          <div className="flex justify-center">
+            <SlippageSelector
+              slippage={slippage}
+              onChange={onSlippageChange}
+              className=""
+            />
+          </div>
 
-        {/* Action Button */}
-        <Button
-          type="primary"
-          size="large"
-          loading={isConverting}
-          disabled={!hasTokens || totalValue === 0}
-          onClick={onConvert}
-          className="h-14 px-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 border-0 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-0.5"
-          icon={<SparklesIcon className="h-5 w-5" />}
-        >
-          {isConverting ? "Converting..." : "Convert All Dust to ETH"}
-        </Button>
+          <Button
+            type="primary"
+            size="large"
+            loading={isConverting}
+            disabled={!hasTokens || totalValue === 0}
+            onClick={onConvert}
+            className="h-14 px-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 border-0 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-0.5"
+            icon={<SparklesIcon className="h-5 w-5" />}
+          >
+            {isConverting ? "Converting..." : "Convert All Dust to ETH"}
+          </Button>
+        </div>
 
         {/* Service features */}
         <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm text-gray-600">
@@ -452,7 +480,7 @@ export default function DustZap() {
   const [showDetails, setShowDetails] = useState(false);
   const [statusMessages, setStatusMessages] = useState([]);
   const [totalSteps, setTotalSteps] = useState(0);
-  const [slippage, setSlippage] = useState(10); // Default to 10% (Moderate)
+  const [slippage, setSlippage] = useState(30); // Default to 30% (Moderate)
 
   const statusMessagesRef = useRef([]);
 
