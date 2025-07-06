@@ -358,7 +358,7 @@ export default function IndexOverviews() {
             .filter(({ chain }) => chain === normalizeChainName(chainId?.name))
             .reduce((sum, value) => sum + value.usdBalance, 0) / usdBalance;
         // Return a promise that resolves when the transaction is successful
-        return new Promise(async (resolve, reject) => {
+        return new Promise((resolve, reject) => {
           const transactionCallbacks = {
             onSuccess: async (data, lastBatch = true) => {
               let txnHash = "";
@@ -433,40 +433,7 @@ export default function IndexOverviews() {
               });
 
               setTxnLink(`${explorerUrl}/tx/${txnHash}`);
-
-              await axios({
-                method: "post",
-                url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
-                headers: { "Content-Type": "application/json" },
-                data: {
-                  user_api_key: "placeholder",
-                  tx_hash: txnHash,
-                  address: account.address,
-                  metadata: JSON.stringify(
-                    prepareTransactionMetadata({
-                      portfolioName,
-                      actionName,
-                      tokenSymbol,
-                      investmentAmountAfterFee,
-                      zapOutPercentage,
-                      chainId,
-                      chainWeightPerYourPortfolio,
-                      usdBalance,
-                      chainWeight,
-                      rebalancableUsdBalanceDict,
-                      pendingRewards,
-                      portfolioHelper,
-                      currentChain,
-                      recipient,
-                      protocolAssetDustInWallet,
-                      onlyThisChain,
-                    }),
-                  ),
-                  actionParams: cleanupActionParams(actionParams),
-                },
-              });
-
-              if (actionName === "transfer") {
+              try {
                 await axios({
                   method: "post",
                   url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
@@ -474,38 +441,39 @@ export default function IndexOverviews() {
                   data: {
                     user_api_key: "placeholder",
                     tx_hash: txnHash,
-                    address: recipient,
-                    metadata: JSON.stringify({
-                      portfolioName,
-                      actionName: "receive",
-                      tokenSymbol,
-                      investmentAmount: investmentAmountAfterFee,
-                      timestamp: Math.floor(Date.now() / 1000),
-                      chain:
-                        CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
-                      zapInAmountOnThisChain:
-                        usdBalance *
-                        zapOutPercentage *
-                        chainWeightPerYourPortfolio,
-                      sender: account.address,
-                    }),
+                    address: account.address,
+                    metadata: JSON.stringify(
+                      {
+                        portfolioName,
+                        actionName,
+                        tokenSymbol,
+                        investmentAmountAfterFee,
+                        zapOutPercentage,
+                        chainId,
+                      }
+                    ),
+                    actionParams: cleanupActionParams(actionParams),
                   },
                 });
+              } catch (error) {
+                logger.error("Failed to send transaction:", error);
               }
 
-              // Resolve the promise with true to indicate success
-              resolve(true);
+              // Only resolve the promise when the last batch completes
+              if (lastBatch) {
+                resolve(true);
+              }
             },
             onError: async (error) => {
               reject(await handleError(error, "Transaction Failed"));
             },
           };
           if (!aaOn) {
-            await executeAllTxnsWithSendCalls(
+            executeAllTxnsWithSendCalls(
               txns,
               sendCalls,
               transactionCallbacks,
-            );
+            ).catch(reject);
           } else {
             sendBatchTransaction(txns.flat(Infinity), transactionCallbacks);
           }
