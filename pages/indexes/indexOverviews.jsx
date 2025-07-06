@@ -339,7 +339,156 @@ export default function IndexOverviews() {
         ) {
           throw new Error("No transactions to send");
         }
+        const transactionCallbacks = {
+          onSuccess: async (data) => {
+            const explorerUrl =
+              data?.chain?.blockExplorers !== undefined
+                ? data.chain.blockExplorers[0].url
+                : `https://explorer.${CHAIN_ID_TO_CHAIN_STRING[
+                    chainId?.id
+                  ].toLowerCase()}.io`;
 
+            setChainStatus((prevStatus) => {
+              const newStatus = { ...prevStatus, [currentChain]: true };
+              const allChainsComplete =
+                Object.values(newStatus).every(Boolean);
+
+              if (allChainsComplete) {
+                (async () => {
+                  try {
+                    await axios({
+                      method: "delete",
+                      url: `${process.env.NEXT_PUBLIC_SDK_API_URL}/portfolio-cache/portfolio-${portfolioName}-${account.address}`,
+                    });
+                  } catch (error) {
+                    logger.error("Failed to clear portfolio cache:", error);
+                  }
+                  setRefreshTrigger(Date.now());
+                })();
+              }
+
+              const nextChain = Object.entries(newStatus).find(
+                ([chain, isComplete]) => !isComplete,
+              )?.[0];
+              const notificationContent = allChainsComplete ? (
+                "All Chains Complete"
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-500">Completed on</span>
+                    <div className="flex items-center gap-1">
+                      <Image
+                        src={`/chainPicturesWebp/${currentChain?.toLowerCase()}.webp`}
+                        alt={currentChain}
+                        width={20}
+                        height={20}
+                        className="w-5 h-5 rounded-full"
+                      />
+                      <span className="font-medium">{currentChain}</span>
+                    </div>
+                    <span className="text-gray-500">→</span>
+                    <div className="flex items-center gap-1">
+                      <Image
+                        src={`/chainPicturesWebp/${nextChain?.toLowerCase()}.webp`}
+                        alt={nextChain}
+                        width={20}
+                        height={20}
+                        className="w-5 h-5 rounded-full"
+                      />
+                      <span className="font-medium">{nextChain}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+
+              openNotificationWithIcon(
+                notificationAPI,
+                notificationContent,
+                allChainsComplete ? "success" : "info",
+                `${explorerUrl}/tx/${data.transactionHash}`,
+              );
+
+              // Get the next chain using the updated status
+              const newNextChain = getNextChain(
+                availableAssetChains,
+                newStatus,
+                normalizeChainName(data.chain.name),
+              );
+
+              // Update the next chain state
+              setNextStepChain(newNextChain);
+              return newStatus;
+            });
+
+            setFinishedTxn(true);
+            setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
+
+            await axios({
+              method: "post",
+              url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
+              headers: { "Content-Type": "application/json" },
+              data: {
+                user_api_key: "placeholder",
+                tx_hash: data.transactionHash,
+                address: account.address,
+                metadata: JSON.stringify(
+                  prepareTransactionMetadata({
+                    portfolioName,
+                    actionName,
+                    tokenSymbol,
+                    investmentAmountAfterFee,
+                    zapOutPercentage,
+                    chainId,
+                    chainWeightPerYourPortfolio,
+                    usdBalance,
+                    chainWeight,
+                    rebalancableUsdBalanceDict,
+                    pendingRewards,
+                    portfolioHelper,
+                    currentChain,
+                    recipient,
+                    protocolAssetDustInWallet,
+                    onlyThisChain,
+                  }),
+                ),
+                actionParams: cleanupActionParams(actionParams),
+              },
+            });
+
+            if (actionName === "transfer") {
+              await axios({
+                method: "post",
+                url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
+                headers: { "Content-Type": "application/json" },
+                data: {
+                  user_api_key: "placeholder",
+                  tx_hash: data.transactionHash,
+                  address: recipient,
+                  metadata: JSON.stringify({
+                    portfolioName,
+                    actionName: "receive",
+                    tokenSymbol,
+                    investmentAmount: investmentAmountAfterFee,
+                    timestamp: Math.floor(Date.now() / 1000),
+                    chain:
+                      CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
+                    zapInAmountOnThisChain:
+                      usdBalance *
+                      zapOutPercentage *
+                      chainWeightPerYourPortfolio,
+                    sender: account.address,
+                  }),
+                },
+              });
+            }
+
+            // Resolve the promise with true to indicate success
+            resolve(true);
+          },
+          onError: async (error) => {
+            reject(await handleError(error, "Transaction Failed"));
+          },
+        };
         // Reset the processing flag before changing chain
         hasProcessedChainChangeRef.current = false;
         preservedAmountRef.current = investmentAmount;
@@ -360,159 +509,10 @@ export default function IndexOverviews() {
           if (!aaOn) {
             sendCalls({
               calls: txns.flat(Infinity).slice(0, 10),
-              atomicRequired: false,
-            });
+              atomicRequired: true,
+            }, transactionCallbacks);
           } else {
-            sendBatchTransaction(txns.flat(Infinity), {
-              onSuccess: async (data) => {
-                const explorerUrl =
-                  data?.chain?.blockExplorers !== undefined
-                    ? data.chain.blockExplorers[0].url
-                    : `https://explorer.${CHAIN_ID_TO_CHAIN_STRING[
-                        chainId?.id
-                      ].toLowerCase()}.io`;
-
-                setChainStatus((prevStatus) => {
-                  const newStatus = { ...prevStatus, [currentChain]: true };
-                  const allChainsComplete =
-                    Object.values(newStatus).every(Boolean);
-
-                  if (allChainsComplete) {
-                    (async () => {
-                      try {
-                        await axios({
-                          method: "delete",
-                          url: `${process.env.NEXT_PUBLIC_SDK_API_URL}/portfolio-cache/portfolio-${portfolioName}-${account.address}`,
-                        });
-                      } catch (error) {
-                        logger.error("Failed to clear portfolio cache:", error);
-                      }
-                      setRefreshTrigger(Date.now());
-                    })();
-                  }
-
-                  const nextChain = Object.entries(newStatus).find(
-                    ([chain, isComplete]) => !isComplete,
-                  )?.[0];
-                  const notificationContent = allChainsComplete ? (
-                    "All Chains Complete"
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-gray-500">Completed on</span>
-                        <div className="flex items-center gap-1">
-                          <Image
-                            src={`/chainPicturesWebp/${currentChain?.toLowerCase()}.webp`}
-                            alt={currentChain}
-                            width={20}
-                            height={20}
-                            className="w-5 h-5 rounded-full"
-                          />
-                          <span className="font-medium">{currentChain}</span>
-                        </div>
-                        <span className="text-gray-500">→</span>
-                        <div className="flex items-center gap-1">
-                          <Image
-                            src={`/chainPicturesWebp/${nextChain?.toLowerCase()}.webp`}
-                            alt={nextChain}
-                            width={20}
-                            height={20}
-                            className="w-5 h-5 rounded-full"
-                          />
-                          <span className="font-medium">{nextChain}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-
-                  openNotificationWithIcon(
-                    notificationAPI,
-                    notificationContent,
-                    allChainsComplete ? "success" : "info",
-                    `${explorerUrl}/tx/${data.transactionHash}`,
-                  );
-
-                  // Get the next chain using the updated status
-                  const newNextChain = getNextChain(
-                    availableAssetChains,
-                    newStatus,
-                    normalizeChainName(data.chain.name),
-                  );
-
-                  // Update the next chain state
-                  setNextStepChain(newNextChain);
-                  return newStatus;
-                });
-
-                setFinishedTxn(true);
-                setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
-
-                await axios({
-                  method: "post",
-                  url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
-                  headers: { "Content-Type": "application/json" },
-                  data: {
-                    user_api_key: "placeholder",
-                    tx_hash: data.transactionHash,
-                    address: account.address,
-                    metadata: JSON.stringify(
-                      prepareTransactionMetadata({
-                        portfolioName,
-                        actionName,
-                        tokenSymbol,
-                        investmentAmountAfterFee,
-                        zapOutPercentage,
-                        chainId,
-                        chainWeightPerYourPortfolio,
-                        usdBalance,
-                        chainWeight,
-                        rebalancableUsdBalanceDict,
-                        pendingRewards,
-                        portfolioHelper,
-                        currentChain,
-                        recipient,
-                        protocolAssetDustInWallet,
-                        onlyThisChain,
-                      }),
-                    ),
-                    actionParams: cleanupActionParams(actionParams),
-                  },
-                });
-
-                if (actionName === "transfer") {
-                  await axios({
-                    method: "post",
-                    url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
-                    headers: { "Content-Type": "application/json" },
-                    data: {
-                      user_api_key: "placeholder",
-                      tx_hash: data.transactionHash,
-                      address: recipient,
-                      metadata: JSON.stringify({
-                        portfolioName,
-                        actionName: "receive",
-                        tokenSymbol,
-                        investmentAmount: investmentAmountAfterFee,
-                        timestamp: Math.floor(Date.now() / 1000),
-                        chain:
-                          CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
-                        zapInAmountOnThisChain:
-                          usdBalance *
-                          zapOutPercentage *
-                          chainWeightPerYourPortfolio,
-                        sender: account.address,
-                      }),
-                    },
-                  });
-                }
-
-                // Resolve the promise with true to indicate success
-                resolve(true);
-              },
-              onError: async (error) => {
-                reject(await handleError(error, "Transaction Failed"));
-              },
-            });
+            sendBatchTransaction(txns.flat(Infinity), transactionCallbacks);
           }
         });
       } catch (error) {
