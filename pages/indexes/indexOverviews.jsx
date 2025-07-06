@@ -442,16 +442,14 @@ export default function IndexOverviews() {
                     user_api_key: "placeholder",
                     tx_hash: txnHash,
                     address: account.address,
-                    metadata: JSON.stringify(
-                      {
-                        portfolioName,
-                        actionName,
-                        tokenSymbol,
-                        investmentAmountAfterFee,
-                        zapOutPercentage,
-                        chainId,
-                      }
-                    ),
+                    metadata: JSON.stringify({
+                      portfolioName,
+                      actionName,
+                      tokenSymbol,
+                      investmentAmountAfterFee,
+                      zapOutPercentage,
+                      chainId,
+                    }),
                     actionParams: cleanupActionParams(actionParams),
                   },
                 });
