@@ -284,22 +284,11 @@ export default function RebalanceChart(props) {
     async function fetchData() {
       if (mode === "portfolioStrategy") {
         let portfolioHelper;
-        if (portfolioStrategyName === "AllWeatherPortfolio") {
-          // TODO: about to deprecate
-          portfolioHelper = getPortfolioHelper(portfolioStrategyName);
-          portfolioHelper.reuseFetchedDataFromRedux(strategyMetadata);
-          // convertPortfolioStrategyToChartData is deprecated
-          // const [chartData, totalAPR] =
-          //   convertPortfolioStrategyToChartData(portfolioHelper);
-          // setData(chartData);
-          // setAPR(totalAPR);
-        } else {
           portfolioHelper = getPortfolioHelper(portfolioStrategyName);
           const [chartData, totalAPR] =
             await convertPortfolioStrategyToChartDataV2(portfolioHelper);
           setData(chartData);
           setAPR(totalAPR);
-        }
       } else {
         if (!rebalanceSuggestions || rebalanceSuggestions.length === 0) return;
         // set showCategory = true, to show its category. For instance, long_term_bond
