@@ -360,7 +360,7 @@ export default function IndexOverviews() {
         // Return a promise that resolves when the transaction is successful
         return new Promise(async (resolve, reject) => {
           const transactionCallbacks = {
-            onSuccess: async (data, lastBatch=true) => {
+            onSuccess: async (data, lastBatch = true) => {
               let txnHash = "";
               const explorerUrl =
                 data?.chain?.blockExplorers !== undefined
@@ -414,21 +414,22 @@ export default function IndexOverviews() {
                   `${explorerUrl}/tx/${txnHash}`,
                 );
                 if (lastBatch) {
-                // Get the next chain using the updated status
-                const newNextChain = getNextChain(
-                  availableAssetChains,
-                  newStatus,
-                  normalizeChainName(
-                    data?.chain?.name ||
-                      CHAIN_ID_TO_CHAIN?.[data?.chainId]?.name,
-                  ),
-                );
+                  // Get the next chain using the updated status
+                  const newNextChain = getNextChain(
+                    availableAssetChains,
+                    newStatus,
+                    normalizeChainName(
+                      data?.chain?.name ||
+                        CHAIN_ID_TO_CHAIN?.[data?.chainId]?.name,
+                    ),
+                  );
 
-                // Update the next chain state
-                setNextStepChain(newNextChain);
-                setFinishedTxn(true);
-                return newStatus;
-              }
+                  // Update the next chain state
+                  setNextStepChain(newNextChain);
+                  setFinishedTxn(true);
+                  return newStatus
+                }
+                return prevStatus
               });
 
               setTxnLink(`${explorerUrl}/tx/${txnHash}`);
@@ -984,11 +985,10 @@ export default function IndexOverviews() {
     transactionCallbacks,
   ) {
     const flatTxns = txns.flat(Infinity);
-    console.log("flatTxns length", flatTxns.length);
     const BATCH_SIZE = 10;
     for (let i = 0; i < flatTxns.length; i += BATCH_SIZE) {
       const batch = flatTxns.slice(i, i + BATCH_SIZE);
-      const isLastBatch = i === flatTxns.length - 1;
+      const isLastBatch = i + BATCH_SIZE >= flatTxns.length;
       await new Promise((resolve, reject) => {
         sendCalls(
           { calls: batch, atomicRequired: false },
