@@ -25,7 +25,7 @@ import {
   CHAIN_ID_TO_CHAIN,
   CHAIN_TO_CHAIN_ID,
   CHAIN_ID_TO_CHAIN_STRING,
-  LOCK_EXPLORER_URLS
+  LOCK_EXPLORER_URLS,
 } from "../../utils/general.js";
 import {
   ConfigProvider,
@@ -360,8 +360,7 @@ export default function IndexOverviews() {
         // Return a promise that resolves when the transaction is successful
         return new Promise(async (resolve, reject) => {
           const transactionCallbacks = {
-            onSuccess: async (data) => {
-              console.log("transactionCallbacks data", data)
+            onSuccess: async (data, lastBatch=true) => {
               let txnHash = "";
               const explorerUrl =
                 data?.chain?.blockExplorers !== undefined
@@ -387,9 +386,6 @@ export default function IndexOverviews() {
                   })();
                 }
 
-                const nextChain = Object.entries(newStatus).find(
-                  ([chain, isComplete]) => !isComplete,
-                )?.[0];
                 const notificationContent = allChainsComplete ? (
                   "All Chains Complete"
                 ) : (
@@ -409,14 +405,15 @@ export default function IndexOverviews() {
                     </div>
                   </div>
                 );
-                txnHash = data?.transactionHash || data?.receipts?.[0]?.transactionHash;
+                txnHash =
+                  data?.transactionHash || data?.receipts?.[0]?.transactionHash;
                 openNotificationWithIcon(
                   notificationAPI,
                   notificationContent,
                   allChainsComplete ? "success" : "info",
                   `${explorerUrl}/tx/${txnHash}`,
                 );
-
+                if (lastBatch) {
                 // Get the next chain using the updated status
                 const newNextChain = getNextChain(
                   availableAssetChains,
@@ -429,10 +426,11 @@ export default function IndexOverviews() {
 
                 // Update the next chain state
                 setNextStepChain(newNextChain);
+                setFinishedTxn(true);
                 return newStatus;
+              }
               });
 
-              setFinishedTxn(true);
               setTxnLink(`${explorerUrl}/tx/${txnHash}`);
 
               await axios({
@@ -502,7 +500,11 @@ export default function IndexOverviews() {
             },
           };
           if (!aaOn) {
-            await executeAllTxnsWithSendCalls(txns, sendCalls, transactionCallbacks);
+            await executeAllTxnsWithSendCalls(
+              txns,
+              sendCalls,
+              transactionCallbacks,
+            );
           } else {
             sendBatchTransaction(txns.flat(Infinity), transactionCallbacks);
           }
@@ -976,25 +978,30 @@ export default function IndexOverviews() {
     // Add portfolioName to tabProps if not already included
     portfolioName,
   });
-  async function executeAllTxnsWithSendCalls(txns, sendCalls, transactionCallbacks) {
+  async function executeAllTxnsWithSendCalls(
+    txns,
+    sendCalls,
+    transactionCallbacks,
+  ) {
     const flatTxns = txns.flat(Infinity);
-    console.log("flatTxns length", flatTxns.length)
+    console.log("flatTxns length", flatTxns.length);
     const BATCH_SIZE = 10;
     for (let i = 0; i < flatTxns.length; i += BATCH_SIZE) {
       const batch = flatTxns.slice(i, i + BATCH_SIZE);
+      const isLastBatch = i === flatTxns.length - 1;
       await new Promise((resolve, reject) => {
         sendCalls(
-          { calls: batch, atomicRequired: true },
+          { calls: batch, atomicRequired: false },
           {
             onSuccess: async (data) => {
-              await transactionCallbacks.onSuccess?.(data);
+              await transactionCallbacks.onSuccess?.(data, isLastBatch);
               resolve();
             },
             onError: async (err) => {
               await transactionCallbacks.onError?.(err);
               reject(err); // Stop on first error
             },
-          }
+          },
         );
       });
     }

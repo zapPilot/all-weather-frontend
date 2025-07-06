@@ -24,6 +24,12 @@ export const CHAIN_TO_CHAIN_ID = {
   mantle: 5000,
   metis: 1088,
 };
+
+export const LOCK_EXPLORER_URLS = {
+  10: "https://optimism.blockscout.com/",
+  8453: "https://base.blockscout.com/",
+  42161: "https://arbitrum.blockscout.com/",
+};
 // reverse CHAIN_TO_CHAIN_ID
 export const CHAIN_ID_TO_CHAIN_STRING = Object.fromEntries(
   Object.entries(CHAIN_TO_CHAIN_ID).map(([key, value]) => [value, key]),
