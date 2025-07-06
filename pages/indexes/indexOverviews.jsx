@@ -61,9 +61,6 @@ const PortfolioComposition = lazy(() =>
   import("../portfolio/PortfolioComposition"),
 );
 const HistoricalData = lazy(() => import("../portfolio/HistoricalData"));
-const TransactionHistoryPanel = lazy(() =>
-  import("../portfolio/TransactionHistoryPanel"),
-);
 import {
   safeSetLocalStorage,
   safeGetLocalStorage,
@@ -1187,17 +1184,6 @@ export default function IndexOverviews() {
               }
             >
               <HistoricalData portfolioName={portfolioName} />
-            </Suspense>
-
-            <Suspense
-              fallback={
-                <div className="animate-pulse bg-gray-700 h-64 rounded-lg"></div>
-              }
-            >
-              <TransactionHistoryPanel
-                setPrincipalBalance={setPrincipalBalance}
-                tokenPricesMappingTable={tokenPricesMappingTable}
-              />
             </Suspense>
           </div>
         </div>

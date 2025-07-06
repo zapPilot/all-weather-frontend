@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import BasePage from "../basePage";
-import { Button, Card, Typography, Alert, Spin, Badge } from "antd";
+import { Button, Card, Typography, Alert, Spin, Badge, Select } from "antd";
 import {
   useActiveAccount,
   useActiveWalletChain,
@@ -22,8 +22,10 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { useWalletMode } from "../contextWrappers/WalletModeContext";
+import PriceService from "../../classes/TokenPriceService";
 
 const { Title, Text, Paragraph } = Typography;
+const { Option } = Select;
 
 // =============== Utils ===============
 const formatSmallNumber = (num) => {
@@ -41,6 +43,44 @@ const getFilteredAndSortedTokens = (tokens) => {
 };
 
 // =============== Components ===============
+const SlippageSelector = ({ slippage, onChange, className = "" }) => {
+  const slippageOptions = [
+    { value: 1, label: "1% (Conservative)" },
+    { value: 5, label: "5% (Low)" },
+    { value: 10, label: "10% (Moderate)" },
+    { value: 20, label: "20% (High)" },
+    { value: 30, label: "30% (Very High)" },
+  ];
+
+  return (
+    <div className={`${className}`}>
+      <div className="mb-2">
+        <Text className="text-sm font-medium text-gray-600">
+          Slippage Tolerance
+        </Text>
+      </div>
+      <Select
+        value={slippage}
+        onChange={onChange}
+        className="w-full"
+        size="large"
+        placeholder="Select slippage tolerance"
+      >
+        {slippageOptions.map((option) => (
+          <Option key={option.value} value={option.value}>
+            {option.label}
+          </Option>
+        ))}
+      </Select>
+      <div className="mt-1">
+        <Text className="text-xs text-gray-500">
+          Higher slippage allows conversion when prices move quickly
+        </Text>
+      </div>
+    </div>
+  );
+};
+
 const TokenImage = ({ token, size = 20, className = "" }) => {
   const symbol = token.optimized_symbol || token.symbol;
 
@@ -72,6 +112,8 @@ const HeroSection = ({
   isConverting,
   onConvert,
   hasTokens,
+  slippage,
+  onSlippageChange,
 }) => (
   <div className="relative overflow-hidden">
     {/* Background gradient */}
@@ -134,6 +176,15 @@ const HeroSection = ({
               Gas-Free Service (coming soon)
             </div>
           </div>
+        </div>
+
+        {/* Slippage Selector */}
+        <div className="mb-8 max-w-xs mx-auto">
+          <SlippageSelector
+            slippage={slippage}
+            onChange={onSlippageChange}
+            className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-white/50"
+          />
         </div>
 
         {/* Action Button */}
@@ -401,6 +452,7 @@ export default function DustZap() {
   const [showDetails, setShowDetails] = useState(false);
   const [statusMessages, setStatusMessages] = useState([]);
   const [totalSteps, setTotalSteps] = useState(0);
+  const [slippage, setSlippage] = useState(10); // Default to 10% (Moderate)
 
   const statusMessagesRef = useRef([]);
 
@@ -457,23 +509,23 @@ export default function DustZap() {
   );
 
   const handleConvert = async () => {
-    console.log("handleConvert", activeChain, account?.address);
     if (!account?.address || !activeChain) return;
 
     setIsConverting(true);
     setStatusMessages([]);
     setTotalSteps(filteredAndSortedTokens.length);
-
+    const priceService = new PriceService(process.env.NEXT_PUBLIC_API_URL);
+    const ethPrice = await priceService.fetchPrice("eth", 2396); // 2396 is eth's coinmarketcap id
+    logger.info("ethPrice", ethPrice);
     try {
       const txns = await handleDustConversion({
         chainId: activeChain?.id,
         chainName: transformToDebankChainName(activeChain?.name.toLowerCase()),
         accountAddress: account?.address,
-        tokenPricesMappingTable: { eth: 2520 },
-        slippage: 30, // there's no much MEV on layer2 so
+        tokenPricesMappingTable: { eth: ethPrice },
+        slippage: slippage,
         handleStatusUpdate,
       });
-      console.log("txns", txns);
       if (txns && txns.length > 0) {
         if (!aaOn) {
           await sendCalls({ calls: txns, atomicRequired: false });
@@ -482,11 +534,8 @@ export default function DustZap() {
         }
       }
     } catch (err) {
-      console.log("err", err);
-      logger.error("Conversion error:", err);
       setError(err.message || "Conversion failed");
     } finally {
-      console.log("finally");
       setIsConverting(false);
     }
   };
@@ -521,6 +570,8 @@ export default function DustZap() {
           isConverting={isConverting}
           onConvert={handleConvert}
           hasTokens={filteredAndSortedTokens.length > 0}
+          slippage={slippage}
+          onSlippageChange={setSlippage}
         />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
