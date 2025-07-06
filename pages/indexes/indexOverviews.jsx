@@ -427,9 +427,9 @@ export default function IndexOverviews() {
                   // Update the next chain state
                   setNextStepChain(newNextChain);
                   setFinishedTxn(true);
-                  return newStatus
+                  return newStatus;
                 }
-                return prevStatus
+                return prevStatus;
               });
 
               setTxnLink(`${explorerUrl}/tx/${txnHash}`);
