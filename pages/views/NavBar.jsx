@@ -1,36 +1,62 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 import { ethers } from "ethers";
 import { ConfigProvider, notification, Menu } from "antd";
 import openNotificationWithIcon from "../../utils/notification.js";
 
-const items = [
-  {
-    label: (
-      <a href="https://www.zap-pilot.org/" target="_blank">
-        Landing Page
-      </a>
-    ),
-    key: "landing",
-  },
-  {
-    label: <Link href="/">Vaults</Link>,
-    key: "indexes",
-  },
-  {
-    label: <Link href="/profile">Profile</Link>,
-    key: "profile",
-  },
-  {
-    label: <Link href="/dustzap">Dust Zap</Link>,
-    key: "dustZap",
-  },
-];
 export default function NavBar({ mode }) {
   const router = useRouter();
   const [current, setCurrent] = useState(router.pathname);
+
+  // Helper function to build URLs with preserved query parameters
+  const buildUrlWithQuery = useCallback(
+    (path) => {
+      const preservedParams = {};
+
+      // Preserve the mode parameter if it exists
+      if (router.query.mode) {
+        preservedParams.mode = router.query.mode;
+      }
+
+      // Create query string if we have parameters to preserve
+      const queryString =
+        Object.keys(preservedParams).length > 0
+          ? "?" + new URLSearchParams(preservedParams).toString()
+          : "";
+
+      return `${path}${queryString}`;
+    },
+    [router.query.mode],
+  );
+
+  // Dynamic navigation items that preserve query parameters
+  const items = useMemo(
+    () => [
+      {
+        label: (
+          <a href="https://www.zap-pilot.org/" target="_blank">
+            Landing Page
+          </a>
+        ),
+        key: "landing",
+      },
+      {
+        label: <Link href={buildUrlWithQuery("/")}>Vaults</Link>,
+        key: "indexes",
+      },
+      {
+        label: <Link href={buildUrlWithQuery("/profile")}>Profile</Link>,
+        key: "profile",
+      },
+      {
+        label: <Link href={buildUrlWithQuery("/dustzap")}>Dust Zap</Link>,
+        key: "dustZap",
+      },
+    ],
+    [buildUrlWithQuery],
+  );
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
 
@@ -47,7 +73,16 @@ export default function NavBar({ mode }) {
   const navigateToUrl = () => {
     const trimmedAddress = address.trim();
     if (trimmedAddress && ethers.utils.isAddress(trimmedAddress)) {
-      window.location.href = `/profile?address=${trimmedAddress}`;
+      // Build profile URL with preserved query parameters
+      const preservedParams = { address: trimmedAddress };
+
+      // Preserve the mode parameter if it exists
+      if (router.query.mode) {
+        preservedParams.mode = router.query.mode;
+      }
+
+      const queryString = new URLSearchParams(preservedParams).toString();
+      window.location.href = `/profile?${queryString}`;
       setAddress("");
     } else {
       openNotificationWithIcon(

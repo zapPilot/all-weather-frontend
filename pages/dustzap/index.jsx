@@ -481,6 +481,8 @@ export default function DustZap() {
   const [statusMessages, setStatusMessages] = useState([]);
   const [totalSteps, setTotalSteps] = useState(0);
   const [slippage, setSlippage] = useState(30); // Default to 30% (Moderate)
+  const [showProgressCard, setShowProgressCard] = useState(false);
+  const [ethPrice, setEthPrice] = useState(null);
 
   const statusMessagesRef = useRef([]);
 
@@ -543,15 +545,16 @@ export default function DustZap() {
     setStatusMessages([]);
     setTotalSteps(filteredAndSortedTokens.length);
     const priceService = new PriceService(process.env.NEXT_PUBLIC_API_URL);
-    const ethPrice = await priceService.fetchPrice("eth", {
+    const fetchedEthPrice = await priceService.fetchPrice("eth", {
       coinmarketcapApiId: 2396,
-    }); // 2396 is eth's coinmarketcap id
+    });
+    setEthPrice(fetchedEthPrice);
     try {
       const txns = await handleDustConversion({
         chainId: activeChain?.id,
         chainName: transformToDebankChainName(activeChain?.name.toLowerCase()),
         accountAddress: account?.address,
-        tokenPricesMappingTable: { eth: ethPrice },
+        tokenPricesMappingTable: { eth: fetchedEthPrice },
         slippage: slippage,
         handleStatusUpdate,
       });
@@ -566,8 +569,10 @@ export default function DustZap() {
       setError(err.message || "Conversion failed");
     } finally {
       setIsConverting(false);
+      setShowProgressCard(true);
     }
   };
+
   if (!account) {
     return (
       <BasePage chainId={activeChain} switchChain={switchChain}>
@@ -642,12 +647,12 @@ export default function DustZap() {
           )}
 
           {/* Conversion Progress */}
-          {isConverting && statusMessages.length > 0 && (
+          {showProgressCard && statusMessages.length > 0 && (
             <div className="mb-8">
               <ProgressCard
                 messages={statusMessages}
                 tokens={tokens}
-                tokenPricesMappingTable={{}} // You may need to pass this if required
+                tokenPricesMappingTable={{ eth: ethPrice }}
                 totalSteps={totalSteps}
               />
             </div>
