@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import BasePage from "../basePage";
-import { Button, Card, Typography, Alert, Spin, Badge, Select } from "antd";
+import {
+  Button,
+  Card,
+  Typography,
+  Alert,
+  Spin,
+  Badge,
+  Select,
+  notification,
+} from "antd";
 import {
   useActiveAccount,
   useActiveWalletChain,
@@ -23,6 +32,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { useWalletMode } from "../contextWrappers/WalletModeContext";
 import { PriceService } from "../../classes/TokenPriceService";
+import openNotificationWithIcon from "../../utils/notification";
+import { LOCK_EXPLORER_URLS } from "../../utils/general";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -253,11 +264,17 @@ const ProgressCard = ({
   tokens,
   tokenPricesMappingTable,
   totalSteps,
+  batchProgress,
+  isConverting,
 }) => {
-  if (!messages.length) return null;
+  if (!messages.length && !isConverting) return null;
 
   const totalLoss = messages.reduce((sum, msg) => sum + msg.tradingLoss, 0);
   const progress = Math.min(100, (messages.length / totalSteps) * 100);
+  const batchProgressPercent =
+    batchProgress.total > 0
+      ? Math.min(100, (batchProgress.completed / batchProgress.total) * 100)
+      : 0;
 
   const getTokenInfo = (symbol) => {
     return (
@@ -285,14 +302,19 @@ const ProgressCard = ({
             </Title>
             <Text className="text-gray-600">
               {messages.length} of {totalSteps} conversions completed
+              {batchProgress.total > 0 && (
+                <span className="ml-2 text-blue-600">
+                  • Batch {batchProgress.completed}/{batchProgress.total}
+                </span>
+              )}
             </Text>
           </div>
         </div>
 
-        {/* Progress Bar */}
-        <div className="mb-6">
+        {/* Token Progress Bar */}
+        <div className="mb-4">
           <div className="flex justify-between text-sm text-gray-600 mb-2">
-            <span>Progress</span>
+            <span>Token Conversion Progress</span>
             <span>{Math.round(progress)}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
@@ -302,6 +324,22 @@ const ProgressCard = ({
             />
           </div>
         </div>
+
+        {/* Batch Progress Bar */}
+        {batchProgress.total > 0 && (
+          <div className="mb-6">
+            <div className="flex justify-between text-sm text-gray-600 mb-2">
+              <span>Batch Signing Progress</span>
+              <span>{Math.round(batchProgressPercent)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${batchProgressPercent}%` }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Trading Loss Summary */}
         <div className="bg-white rounded-lg p-4 mb-6 border border-gray-100">
@@ -483,8 +521,15 @@ export default function DustZap() {
   const [slippage, setSlippage] = useState(30); // Default to 30% (Moderate)
   const [showProgressCard, setShowProgressCard] = useState(false);
   const [ethPrice, setEthPrice] = useState(null);
+  const [batchProgress, setBatchProgress] = useState({
+    completed: 0,
+    total: 0,
+  });
+  const [transactionSigned, setTransactionSigned] = useState(false);
 
   const statusMessagesRef = useRef([]);
+  const [notificationAPI, notificationContextHolder] =
+    notification.useNotification();
 
   useEffect(() => {
     statusMessagesRef.current = statusMessages;
@@ -538,17 +583,60 @@ export default function DustZap() {
     [filteredAndSortedTokens],
   );
 
+  // Simplified version of executeAllTxnsWithSendCalls for dust conversion
+  async function executeAllTxnsWithSendCalls(
+    txns,
+    sendCalls,
+    transactionCallbacks,
+  ) {
+    const flatTxns = txns.flat(Infinity);
+    const BATCH_SIZE = 10;
+    const totalBatches = Math.ceil(flatTxns.length / BATCH_SIZE);
+
+    setBatchProgress({ completed: 0, total: totalBatches });
+
+    for (let i = 0; i < flatTxns.length; i += BATCH_SIZE) {
+      const batch = flatTxns.slice(i, i + BATCH_SIZE);
+      const isLastBatch = i + BATCH_SIZE >= flatTxns.length;
+      const batchIndex = Math.floor(i / BATCH_SIZE) + 1;
+
+      await new Promise((resolve, reject) => {
+        sendCalls(
+          { calls: batch, atomicRequired: false },
+          {
+            onSuccess: async (data) => {
+              await transactionCallbacks.onSuccess?.(
+                data,
+                isLastBatch,
+                batchIndex,
+              );
+              resolve();
+            },
+            onError: async (err) => {
+              await transactionCallbacks.onError?.(err, batchIndex);
+              reject(err);
+            },
+          },
+        );
+      });
+    }
+  }
+
   const handleConvert = async () => {
     if (!account?.address || !activeChain) return;
 
     setIsConverting(true);
     setStatusMessages([]);
+    setTransactionSigned(false);
     setTotalSteps(filteredAndSortedTokens.length);
+    setShowProgressCard(true);
+
     const priceService = new PriceService(process.env.NEXT_PUBLIC_API_URL);
     const fetchedEthPrice = await priceService.fetchPrice("eth", {
       coinmarketcapApiId: 2396,
     });
     setEthPrice(fetchedEthPrice);
+
     try {
       const txns = await handleDustConversion({
         chainId: activeChain?.id,
@@ -558,18 +646,87 @@ export default function DustZap() {
         slippage: slippage,
         handleStatusUpdate,
       });
+
       if (txns && txns.length > 0) {
+        const transactionCallbacks = {
+          onSuccess: async (data, isLastBatch = true, batchIndex = 1) => {
+            // Extract transaction hash
+            const txnHash =
+              data?.transactionHash || data?.receipts?.[0]?.transactionHash;
+
+            // Get explorer URL
+            const explorerUrl =
+              data?.chain?.blockExplorers !== undefined
+                ? data.chain.blockExplorers[0].url
+                : LOCK_EXPLORER_URLS[activeChain?.id];
+
+            // Update batch progress
+            setBatchProgress((prev) => ({ ...prev, completed: batchIndex }));
+
+            // Show notification for this batch
+            const notificationTitle = isLastBatch
+              ? "All Dust Conversions Complete!"
+              : `Batch ${batchIndex} Complete`;
+
+            openNotificationWithIcon(
+              notificationAPI,
+              notificationTitle,
+              "success",
+              txnHash ? `${explorerUrl}/tx/${txnHash}` : undefined,
+            );
+
+            // Hide progress card once first transaction is signed
+            if (batchIndex === 1) {
+              setTransactionSigned(true);
+            }
+
+            logger.info(`Batch ${batchIndex} completed with hash: ${txnHash}`);
+          },
+
+          onError: async (error, batchIndex = 1) => {
+            logger.error(`Batch ${batchIndex} failed:`, error);
+
+            openNotificationWithIcon(
+              notificationAPI,
+              `Batch ${batchIndex} Failed`,
+              "error",
+              error?.message || "Transaction failed",
+            );
+
+            throw error;
+          },
+        };
+
         if (!aaOn) {
-          await sendCalls({ calls: txns, atomicRequired: false });
+          await executeAllTxnsWithSendCalls(
+            txns,
+            sendCalls,
+            transactionCallbacks,
+          );
         } else {
-          await sendBatchTransaction({ transactions: txns });
+          // For AA wallets, still use sendBatchTransaction but with callbacks
+          await new Promise((resolve, reject) => {
+            sendBatchTransaction(
+              { transactions: txns.flat(Infinity) },
+              {
+                onSuccess: async (data) => {
+                  await transactionCallbacks.onSuccess(data, true, 1);
+                  resolve();
+                },
+                onError: async (error) => {
+                  await transactionCallbacks.onError(error, 1);
+                  reject(error);
+                },
+              },
+            );
+          });
         }
       }
     } catch (err) {
       setError(err.message || "Conversion failed");
+      logger.error("Dust conversion failed:", err);
     } finally {
       setIsConverting(false);
-      setShowProgressCard(true);
     }
   };
 
@@ -597,6 +754,7 @@ export default function DustZap() {
 
   return (
     <BasePage chainId={activeChain} switchChain={switchChain}>
+      {notificationContextHolder}
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
         <HeroSection
           totalValue={totalValue}
@@ -647,16 +805,20 @@ export default function DustZap() {
           )}
 
           {/* Conversion Progress */}
-          {showProgressCard && statusMessages.length > 0 && (
-            <div className="mb-8">
-              <ProgressCard
-                messages={statusMessages}
-                tokens={tokens}
-                tokenPricesMappingTable={{ eth: ethPrice }}
-                totalSteps={totalSteps}
-              />
-            </div>
-          )}
+          {showProgressCard &&
+            !transactionSigned &&
+            (statusMessages.length > 0 || isConverting) && (
+              <div className="mb-8">
+                <ProgressCard
+                  messages={statusMessages}
+                  tokens={tokens}
+                  tokenPricesMappingTable={{ eth: ethPrice }}
+                  totalSteps={totalSteps}
+                  batchProgress={batchProgress}
+                  isConverting={isConverting}
+                />
+              </div>
+            )}
 
           {/* Token Grid */}
           {!loading && filteredAndSortedTokens.length > 0 && (
