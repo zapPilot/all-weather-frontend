@@ -25,6 +25,7 @@ import {
   CHAIN_ID_TO_CHAIN,
   CHAIN_TO_CHAIN_ID,
   CHAIN_ID_TO_CHAIN_STRING,
+  LOCK_EXPLORER_URLS
 } from "../../utils/general.js";
 import {
   ConfigProvider,
@@ -41,7 +42,7 @@ import {
   useActiveWalletChain,
   useWalletBalance,
   useSwitchActiveWalletChain,
-  useSendAndConfirmCalls
+  useSendAndConfirmCalls,
 } from "thirdweb/react";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import axios from "axios";
@@ -228,7 +229,9 @@ export default function IndexOverviews() {
   }, []);
   const portfolioHelper = getPortfolioHelper(portfolioName);
   const { mutate: sendBatchTransaction } = useSendBatchTransaction();
-  const { mutate: sendCalls } = useSendAndConfirmCalls({ client: THIRDWEB_CLIENT });
+  const { mutate: sendCalls } = useSendAndConfirmCalls({
+    client: THIRDWEB_CLIENT,
+  });
   const {
     strategyMetadata: portfolioApr,
     loading,
@@ -355,21 +358,21 @@ export default function IndexOverviews() {
             .filter(({ chain }) => chain === normalizeChainName(chainId?.name))
             .reduce((sum, value) => sum + value.usdBalance, 0) / usdBalance;
         // Return a promise that resolves when the transaction is successful
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
           const transactionCallbacks = {
             onSuccess: async (data) => {
               console.log("transactionCallbacks data", data)
+              let txnHash = "";
               const explorerUrl =
                 data?.chain?.blockExplorers !== undefined
                   ? data.chain.blockExplorers[0].url
-                  : `https://${CHAIN_ID_TO_CHAIN_STRING[
-                    chainId?.id
-                  ].toLowerCase()}.blockscout.com`;
-  
+                  : LOCK_EXPLORER_URLS[chainId?.id];
+
               setChainStatus((prevStatus) => {
                 const newStatus = { ...prevStatus, [currentChain]: true };
-                const allChainsComplete = Object.values(newStatus).every(Boolean);
-  
+                const allChainsComplete =
+                  Object.values(newStatus).every(Boolean);
+
                 if (allChainsComplete) {
                   (async () => {
                     try {
@@ -383,7 +386,7 @@ export default function IndexOverviews() {
                     setRefreshTrigger(Date.now());
                   })();
                 }
-  
+
                 const nextChain = Object.entries(newStatus).find(
                   ([chain, isComplete]) => !isComplete,
                 )?.[0];
@@ -403,51 +406,42 @@ export default function IndexOverviews() {
                         />
                         <span className="font-medium">{currentChain}</span>
                       </div>
-                      <span className="text-gray-500">→</span>
-                      <div className="flex items-center gap-1">
-                        <Image
-                          src={`/chainPicturesWebp/${nextChain?.toLowerCase()}.webp`}
-                          alt={nextChain}
-                          width={20}
-                          height={20}
-                          className="w-5 h-5 rounded-full"
-                        />
-                        <span className="font-medium">{nextChain}</span>
-                      </div>
                     </div>
                   </div>
                 );
-  
+                txnHash = data?.transactionHash || data?.receipts?.[0]?.transactionHash;
                 openNotificationWithIcon(
                   notificationAPI,
                   notificationContent,
                   allChainsComplete ? "success" : "info",
-                  `${explorerUrl}/tx/${data?.transactionHash || data?.receipts?.[0]?.transactionHash}`,
+                  `${explorerUrl}/tx/${txnHash}`,
                 );
-  
+
                 // Get the next chain using the updated status
-                console.log("data?.chain?.name", data?.chain?.name, CHAIN_ID_TO_CHAIN?.[data?.chainId])
                 const newNextChain = getNextChain(
                   availableAssetChains,
                   newStatus,
-                  normalizeChainName(data?.chain?.name || CHAIN_ID_TO_CHAIN?.[data?.chainId]?.name)
+                  normalizeChainName(
+                    data?.chain?.name ||
+                      CHAIN_ID_TO_CHAIN?.[data?.chainId]?.name,
+                  ),
                 );
-  
+
                 // Update the next chain state
                 setNextStepChain(newNextChain);
                 return newStatus;
               });
-  
+
               setFinishedTxn(true);
-              setTxnLink(`${explorerUrl}/tx/${data.transactionHash}`);
-  
+              setTxnLink(`${explorerUrl}/tx/${txnHash}`);
+
               await axios({
                 method: "post",
                 url: `${process.env.NEXT_PUBLIC_API_URL}/transaction/category`,
                 headers: { "Content-Type": "application/json" },
                 data: {
                   user_api_key: "placeholder",
-                  tx_hash: data.transactionHash,
+                  tx_hash: txnHash,
                   address: account.address,
                   metadata: JSON.stringify(
                     prepareTransactionMetadata({
@@ -472,7 +466,7 @@ export default function IndexOverviews() {
                   actionParams: cleanupActionParams(actionParams),
                 },
               });
-  
+
               if (actionName === "transfer") {
                 await axios({
                   method: "post",
@@ -480,7 +474,7 @@ export default function IndexOverviews() {
                   headers: { "Content-Type": "application/json" },
                   data: {
                     user_api_key: "placeholder",
-                    tx_hash: data.transactionHash,
+                    tx_hash: txnHash,
                     address: recipient,
                     metadata: JSON.stringify({
                       portfolioName,
@@ -488,7 +482,8 @@ export default function IndexOverviews() {
                       tokenSymbol,
                       investmentAmount: investmentAmountAfterFee,
                       timestamp: Math.floor(Date.now() / 1000),
-                      chain: CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
+                      chain:
+                        CHAIN_ID_TO_CHAIN_STRING[chainId?.id].toLowerCase(),
                       zapInAmountOnThisChain:
                         usdBalance *
                         zapOutPercentage *
@@ -498,7 +493,7 @@ export default function IndexOverviews() {
                   },
                 });
               }
-  
+
               // Resolve the promise with true to indicate success
               resolve(true);
             },
@@ -507,13 +502,7 @@ export default function IndexOverviews() {
             },
           };
           if (!aaOn) {
-            sendCalls(
-              {
-                calls: txns.flat(Infinity).slice(0, 10),
-                atomicRequired: true,
-              },
-              transactionCallbacks,
-            );
+            await executeAllTxnsWithSendCalls(txns, sendCalls, transactionCallbacks);
           } else {
             sendBatchTransaction(txns.flat(Infinity), transactionCallbacks);
           }
@@ -987,6 +976,29 @@ export default function IndexOverviews() {
     // Add portfolioName to tabProps if not already included
     portfolioName,
   });
+  async function executeAllTxnsWithSendCalls(txns, sendCalls, transactionCallbacks) {
+    const flatTxns = txns.flat(Infinity);
+    console.log("flatTxns length", flatTxns.length)
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < flatTxns.length; i += BATCH_SIZE) {
+      const batch = flatTxns.slice(i, i + BATCH_SIZE);
+      await new Promise((resolve, reject) => {
+        sendCalls(
+          { calls: batch, atomicRequired: true },
+          {
+            onSuccess: async (data) => {
+              await transactionCallbacks.onSuccess?.(data);
+              resolve();
+            },
+            onError: async (err) => {
+              await transactionCallbacks.onError?.(err);
+              reject(err); // Stop on first error
+            },
+          }
+        );
+      });
+    }
+  }
   return (
     <BasePage chainId={chainId} switchChain={switchChain}>
       {notificationContextHolder}
