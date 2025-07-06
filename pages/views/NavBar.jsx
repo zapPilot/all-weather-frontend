@@ -7,17 +7,14 @@ import { ConfigProvider, notification, Menu } from "antd";
 import openNotificationWithIcon from "../../utils/notification.js";
 
 const items = [
-      {
-        label: (
-          <a
-            href="https://www.zap-pilot.org/"
-            target="_blank"
-          >
-            Landing Page
-          </a>
-        ),
-        key: "landing",
-      },
+  {
+    label: (
+      <a href="https://www.zap-pilot.org/" target="_blank">
+        Landing Page
+      </a>
+    ),
+    key: "landing",
+  },
   {
     label: <Link href="/">Vaults</Link>,
     key: "indexes",
@@ -29,7 +26,7 @@ const items = [
   {
     label: <Link href="/dustzap">Dust Zap</Link>,
     key: "dustZap",
-  }
+  },
 ];
 export default function NavBar({ mode }) {
   const router = useRouter();

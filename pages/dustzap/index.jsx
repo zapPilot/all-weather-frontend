@@ -1,13 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import BasePage from "../basePage";
-import {
-  Button,
-  Card,
-  Typography,
-  Alert,
-  Spin,
-  Badge,
-} from "antd";
+import { Button, Card, Typography, Alert, Spin, Badge } from "antd";
 import {
   useActiveAccount,
   useActiveWalletChain,
@@ -476,14 +469,14 @@ export default function DustZap() {
         chainId: activeChain?.id,
         chainName: transformToDebankChainName(activeChain?.name.toLowerCase()),
         accountAddress: account?.address,
-        tokenPricesMappingTable: {eth: 2520},
-        slippage: 30, // there's no much MEV on layer2 so 
+        tokenPricesMappingTable: { eth: 2520 },
+        slippage: 30, // there's no much MEV on layer2 so
         handleStatusUpdate,
       });
       console.log("txns", txns);
       if (txns && txns.length > 0) {
         if (!aaOn) {
-          await sendCalls({ calls: txns,atomicRequired: false });
+          await sendCalls({ calls: txns, atomicRequired: false });
         } else {
           await sendBatchTransaction({ transactions: txns });
         }
