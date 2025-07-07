@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import BasePage from "../basePage";
+import WETH from "../../lib/contracts/Weth.json" assert { type: "json" };
 import {
   Button,
   Card,
@@ -33,10 +34,17 @@ import {
 import { useWalletMode } from "../contextWrappers/WalletModeContext";
 import { PriceService } from "../../classes/TokenPriceService";
 import openNotificationWithIcon from "../../utils/notification";
-import { LOCK_EXPLORER_URLS } from "../../utils/general";
+import { LOCK_EXPLORER_URLS, TOKEN_ADDRESS_MAP } from "../../utils/general";
 import { ethers } from "ethers";
-import { prepareTransaction, toWei } from "thirdweb";
+import {
+  prepareTransaction,
+  prepareContractCall,
+  getContract,
+  toWei,
+} from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
+import ERC20_ABI from "../../lib/contracts/ERC20.json" assert { type: "json" };
+import { normalizeChainName } from "../../utils/chainHelper";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -57,15 +65,6 @@ const calculateReferralFee = (amount) => {
   return mulReferralFeeRate(amount);
 };
 
-const prepareTransferTxn = (chainMetadata, recipient, amount) => {
-  return prepareTransaction({
-    to: recipient,
-    value: toWei(amount, 18),
-    chain: chainMetadata,
-    client: THIRDWEB_CLIENT,
-  });
-};
-
 const getReferrer = async (owner) => {
   try {
     const response = await fetch(
@@ -82,23 +81,56 @@ const getReferrer = async (owner) => {
 };
 
 const getPlatformFeeTxns = (chainMetadata, platformFee, referrer) => {
+  const wrappedTokenAddress =
+    TOKEN_ADDRESS_MAP.weth[normalizeChainName(chainMetadata.name)];
+  const wethContract = getContract({
+    client: THIRDWEB_CLIENT,
+    address: wrappedTokenAddress,
+    chain: chainMetadata,
+    abi: WETH,
+  });
+
   let txns = [];
+
+  // First, wrap ETH to WETH (deposit)
+  const wrapEthTxn = prepareContractCall({
+    contract: wethContract,
+    method: "deposit",
+    params: [],
+    value: platformFee,
+  });
+  txns.push(wrapEthTxn);
+
+  // Then transfer WETH as fees
   if (referrer) {
     const referralFee = calculateReferralFee(platformFee);
-    platformFee = platformFee.sub(referralFee);
-    const referralFeeTxn = prepareTransferTxn(
-      chainMetadata,
-      referrer,
-      referralFee,
-    );
+    const remainingPlatformFee = platformFee.sub(referralFee);
+
+    // Transfer referral fee in WETH
+    const referralFeeTxn = prepareContractCall({
+      contract: wethContract,
+      method: "transfer",
+      params: [referrer, referralFee],
+    });
     txns.push(referralFeeTxn);
+
+    // Transfer remaining platform fee to treasury in WETH
+    const treasuryFeeTxn = prepareContractCall({
+      contract: wethContract,
+      method: "transfer",
+      params: [PROTOCOL_TREASURY_ADDRESS, remainingPlatformFee],
+    });
+    txns.push(treasuryFeeTxn);
+  } else {
+    // Transfer full platform fee to treasury in WETH
+    const treasuryFeeTxn = prepareContractCall({
+      contract: wethContract,
+      method: "transfer",
+      params: [PROTOCOL_TREASURY_ADDRESS, platformFee],
+    });
+    txns.push(treasuryFeeTxn);
   }
-  const swapFeeTxn = prepareTransferTxn(
-    chainMetadata,
-    PROTOCOL_TREASURY_ADDRESS,
-    platformFee,
-  );
-  txns.push(swapFeeTxn);
+
   return txns;
 };
 
@@ -108,39 +140,30 @@ const calculateAndChargeEntryFees = async (
   account,
   ethPrice,
 ) => {
-  try {
-    const feeUSD = totalValueUSD * FEE_RATE;
-    const feeAmountInEth = feeUSD / ethPrice;
+  const feeUSD = totalValueUSD * FEE_RATE;
+  const feeAmountInEth = feeUSD / ethPrice;
 
-    if (feeAmountInEth < 1e-18) {
-      return {
-        platformFeeTxns: [],
-        totalPlatformFeeUSD: 0,
-        feeAmount: ethers.BigNumber.from(0),
-      };
-    }
-
-    const feeAmount = ethers.utils.parseEther(feeAmountInEth.toFixed(18));
-    const referrer = await getReferrer(account.address);
-    const platformFeeTxns = getPlatformFeeTxns(
-      chainMetadata,
-      feeAmount,
-      referrer,
-    );
-
-    return {
-      platformFeeTxns,
-      totalPlatformFeeUSD: feeUSD,
-      feeAmount,
-    };
-  } catch (error) {
-    logger.error("Fee calculation failed:", error);
+  if (feeAmountInEth < 1e-18) {
     return {
       platformFeeTxns: [],
       totalPlatformFeeUSD: 0,
       feeAmount: ethers.BigNumber.from(0),
     };
   }
+
+  const feeAmount = ethers.utils.parseEther(feeAmountInEth.toFixed(18));
+  const referrer = await getReferrer(account.address);
+  const platformFeeTxns = getPlatformFeeTxns(
+    chainMetadata,
+    feeAmount,
+    referrer,
+  );
+
+  return {
+    platformFeeTxns,
+    totalPlatformFeeUSD: feeUSD,
+    feeAmount,
+  };
 };
 
 // =============== UTILITY FUNCTIONS ===============
@@ -341,7 +364,7 @@ const HeroSection = ({
           <Button
             type="primary"
             size="large"
-            loading={isConverting}
+            // loading={isConverting}
             disabled={!hasTokens || totalValue === 0}
             onClick={onConvert}
             className="h-14 px-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 border-0 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-0.5"
@@ -778,7 +801,6 @@ export default function DustZap() {
           account,
           fetchedEthPrice,
         );
-
       // Get dust conversion transactions
       const dustConversionTxns = await handleDustConversion({
         chainId: activeChain?.id,
