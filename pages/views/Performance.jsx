@@ -166,21 +166,10 @@ const Performance = ({ portfolioApr }) => {
         color="white"
         wording="Your Portfolio Chart"
       />
-
       {shouldShowCharts && (
         <>
           <ChartWithConfig
             chartId="historicalBalances"
-            searchWalletAddress={searchWalletAddress}
-            walletAddress={walletAddress}
-          />
-          <ChartWithConfig
-            chartId="dailyPnL"
-            searchWalletAddress={searchWalletAddress}
-            walletAddress={walletAddress}
-          />
-          <ChartWithConfig
-            chartId="dailyROI"
             searchWalletAddress={searchWalletAddress}
             walletAddress={walletAddress}
           />

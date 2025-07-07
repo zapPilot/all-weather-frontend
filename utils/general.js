@@ -24,6 +24,12 @@ export const CHAIN_TO_CHAIN_ID = {
   mantle: 5000,
   metis: 1088,
 };
+
+export const LOCK_EXPLORER_URLS = {
+  10: "https://optimistic.etherscan.io/",
+  8453: "https://basescan.org/tx/",
+  42161: "https://arbiscan.io/",
+};
 // reverse CHAIN_TO_CHAIN_ID
 export const CHAIN_ID_TO_CHAIN_STRING = Object.fromEntries(
   Object.entries(CHAIN_TO_CHAIN_ID).map(([key, value]) => [value, key]),

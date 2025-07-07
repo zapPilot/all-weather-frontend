@@ -53,3 +53,5 @@ gitdiff
 
 # serena cache
 *.pkl
+uploads/
+usage_tracking2.json
