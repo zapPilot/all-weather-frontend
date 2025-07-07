@@ -61,9 +61,6 @@ const PortfolioComposition = lazy(() =>
   import("../portfolio/PortfolioComposition"),
 );
 const HistoricalData = lazy(() => import("../portfolio/HistoricalData"));
-const TransactionHistoryPanel = lazy(() =>
-  import("../portfolio/TransactionHistoryPanel"),
-);
 import {
   safeSetLocalStorage,
   safeGetLocalStorage,
@@ -349,14 +346,6 @@ export default function IndexOverviews() {
           investmentAmount *
           (1 - portfolioHelper.entryFeeRate()) *
           (1 - slippage / 100);
-        const chainWeight = calCrossChainInvestmentAmount(
-          normalizeChainName(chainId?.name),
-          portfolioHelper,
-        );
-        const chainWeightPerYourPortfolio =
-          Object.values(rebalancableUsdBalanceDict)
-            .filter(({ chain }) => chain === normalizeChainName(chainId?.name))
-            .reduce((sum, value) => sum + value.usdBalance, 0) / usdBalance;
         // Return a promise that resolves when the transaction is successful
         return new Promise((resolve, reject) => {
           const transactionCallbacks = {
@@ -1187,17 +1176,6 @@ export default function IndexOverviews() {
               }
             >
               <HistoricalData portfolioName={portfolioName} />
-            </Suspense>
-
-            <Suspense
-              fallback={
-                <div className="animate-pulse bg-gray-700 h-64 rounded-lg"></div>
-              }
-            >
-              <TransactionHistoryPanel
-                setPrincipalBalance={setPrincipalBalance}
-                tokenPricesMappingTable={tokenPricesMappingTable}
-              />
             </Suspense>
           </div>
         </div>

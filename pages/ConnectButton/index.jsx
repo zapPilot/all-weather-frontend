@@ -11,6 +11,7 @@ import { arbitrum, optimism, base } from "thirdweb/chains";
 import { defineChain } from "thirdweb";
 import { Switch } from "antd";
 import { useWalletMode } from "../contextWrappers/WalletModeContext.jsx";
+import { useRouter } from "next/router";
 
 const WALLETS = [
   createWallet("io.rabby"),
@@ -63,6 +64,7 @@ function ConfiguredConnectButton() {
   const activeAccount = useActiveAccount();
   const activeWallet = useActiveWallet();
   const { disconnect, isLoading: isDisconnecting } = useDisconnect();
+  const router = useRouter();
 
   const handleSwitch = useCallback(
     async (checked) => {
@@ -70,8 +72,22 @@ function ConfiguredConnectButton() {
         await disconnect(activeWallet);
       }
       setAaOn(checked);
+
+      // Update URL query parameter to maintain consistency
+      const currentQuery = { ...router.query };
+      currentQuery.mode = checked ? "aa" : "eoa";
+
+      // Update URL without triggering navigation
+      await router.replace(
+        {
+          pathname: router.pathname,
+          query: currentQuery,
+        },
+        undefined,
+        { shallow: true },
+      );
     },
-    [activeWallet, disconnect],
+    [activeWallet, disconnect, setAaOn, router],
   );
 
   // Don't render ConnectButton until URL parameters have been processed

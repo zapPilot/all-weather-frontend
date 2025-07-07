@@ -71,6 +71,7 @@ const nextConfig = {
   },
   images: {
     unoptimized: isDev ? false : true,
+    domains: ["static.debank.com"],
   },
   basePath: "", // Keep this if you're deploying to the root of your GitHub Pages domain (e.g., username.github.io)
   assetPrefix: "/", // Keep this
