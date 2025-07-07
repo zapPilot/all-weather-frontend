@@ -364,7 +364,7 @@ const HeroSection = ({
           <Button
             type="primary"
             size="large"
-            // loading={isConverting}
+            loading={isConverting}
             disabled={!hasTokens || totalValue === 0}
             onClick={onConvert}
             className="h-14 px-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 border-0 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-0.5"
@@ -728,7 +728,7 @@ export default function DustZap() {
     const totalBatches = Math.ceil(dustTxns.length / BATCH_SIZE);
 
     if (totalBatches <= 1 || feeTxns.length === 0) {
-      return [...feeTxns, ...dustTxns];
+      return [...dustTxns, ...feeTxns];
     }
 
     const feeInsertionBatch = calculateFeeInsertionBatch(totalBatches);
