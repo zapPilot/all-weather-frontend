@@ -338,7 +338,7 @@ const HeroSection = ({
               <BoltIcon className="h-8 w-8" />
             </div>
             <div className="text-sm text-gray-600 font-medium">
-              Gas-Free Service (coming soon)
+              <div>Gas-Free</div> (AA wallets; EOA soon)
             </div>
           </div>
         </div>
@@ -374,7 +374,7 @@ const HeroSection = ({
           </div>
           <div className="flex items-center gap-2">
             <CheckCircleIcon className="h-4 w-4 text-emerald-500" />
-            <span>Gas Sponsored (coming soon)</span>
+            <span>Gas-Free (AA wallets; EOA soon)</span>
           </div>
           <div className="flex items-center gap-2">
             <CheckCircleIcon className="h-4 w-4 text-emerald-500" />
@@ -982,20 +982,18 @@ export default function DustZap() {
           );
         } else {
           // For AA wallets, still use sendBatchTransaction but with callbacks
+          logger.log("aa mode", allTxns);
           await new Promise((resolve, reject) => {
-            sendBatchTransaction(
-              { transactions: allTxns.flat(Infinity) },
-              {
-                onSuccess: async (data) => {
-                  await transactionCallbacks.onSuccess(data, true, 1);
-                  resolve();
-                },
-                onError: async (error) => {
-                  await transactionCallbacks.onError(error, 1);
-                  reject(error);
-                },
+            sendBatchTransaction(allTxns.flat(Infinity), {
+              onSuccess: async (data) => {
+                await transactionCallbacks.onSuccess(data, true, 1);
+                resolve();
               },
-            );
+              onError: async (error) => {
+                await transactionCallbacks.onError(error, 1);
+                reject(error);
+              },
+            });
           });
         }
       }
