@@ -114,16 +114,24 @@ const calculateAndChargeEntryFees = async (
     // Calculate fee amount: 1% of total dust value in ETH
     const feeUSD = totalValueUSD * 0.0001; // 0.01% fee
     const feeAmountInEth = feeUSD / ethPrice;
-
+    logger.log("feeAmountInEth", feeAmountInEth);
     // Convert to Wei (18 decimals for ETH)
-    const feeAmount = ethers.utils.parseEther(feeAmountInEth.toString());
-
+    if (feeAmountInEth < 1e-18) {
+      // Too small to be represented in Wei, set to zero or a minimum value
+      return {
+        platformFeeTxns: [],
+        totalPlatformFeeUSD: 0,
+        feeAmount: ethers.BigNumber.from(0),
+      };
+    }
+    const feeAmount = ethers.utils.parseEther(feeAmountInEth.toFixed(18));
+    logger.log("feeAmount", feeAmount);
     // Get ETH address for the current chain
     const chainName = normalizeChainName(chainMetadata.name);
 
     // Get referrer information
     const referrer = await getReferrer(account.address);
-
+    logger.log("referrer", referrer);
     // Generate fee transactions
     const platformFeeTxns = getPlatformFeeTxns(
       chainMetadata,
@@ -348,7 +356,7 @@ const HeroSection = ({
           <Button
             type="primary"
             size="large"
-            loading={isConverting}
+            // loading={isConverting}
             disabled={!hasTokens || totalValue === 0}
             onClick={onConvert}
             className="h-14 px-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 border-0 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-0.5"
@@ -385,7 +393,6 @@ const ProgressCard = ({
   totalSteps,
   batchProgress,
   isConverting,
-  feeTimingInfo,
 }) => {
   if (!messages.length && !isConverting) return null;
 
@@ -457,25 +464,6 @@ const ProgressCard = ({
                 className="h-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${batchProgressPercent}%` }}
               />
-            </div>
-          </div>
-        )}
-
-        {/* Fee Timing Info */}
-        {feeTimingInfo && (
-          <div className="bg-amber-50 rounded-lg p-3 mb-4 border border-amber-200">
-            <div className="flex items-center gap-2 text-sm">
-              <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-              <span className="text-amber-800 font-medium">
-                Platform fee will be charged in batch{" "}
-                {feeTimingInfo.feeInsertionBatch} of{" "}
-                {feeTimingInfo.totalBatches}
-              </span>
-            </div>
-            <div className="text-xs text-amber-700 mt-1">
-              {feeTimingInfo.strategy === "smart-middle-insertion"
-                ? `Smart timing (${feeTimingInfo.percentage}% through) reduces abandonment risk`
-                : "Single batch - fee charged first"}
             </div>
           </div>
         )}
@@ -732,13 +720,9 @@ export default function DustZap() {
     const totalBatches = Math.ceil(dustTxns.length / BATCH_SIZE);
 
     if (totalBatches <= 1 || feeTxns.length === 0) {
+      console.log("totalBatches", totalBatches, "feeTxns", feeTxns);
       // Single batch or no fees: add fee first (unavoidable)
       const result = [...feeTxns, ...dustTxns];
-      setFeeTimingInfo({
-        feeInsertionBatch: 1,
-        totalBatches: Math.ceil(result.length / BATCH_SIZE),
-        strategy: "single-batch-first",
-      });
       return result;
     }
 
@@ -762,15 +746,6 @@ export default function DustZap() {
     ];
 
     const finalBatches = Math.ceil(result.length / BATCH_SIZE);
-
-    // Store fee timing info for UI display
-    setFeeTimingInfo({
-      feeInsertionBatch,
-      totalBatches: finalBatches,
-      strategy: "smart-middle-insertion",
-      percentage: Math.round((feeInsertionBatch / finalBatches) * 100),
-    });
-
     logger.log("Strategic fee insertion", {
       totalDustTxns: dustTxns.length,
       totalBatches,
@@ -882,6 +857,7 @@ export default function DustZap() {
           account,
           fetchedEthPrice,
         );
+      console.log("platformFeeTxns", platformFeeTxns);
 
       // Validate ETH balance for fees
       if (platformFeeTxns.length > 0) {
@@ -1117,7 +1093,6 @@ export default function DustZap() {
                   totalSteps={totalSteps}
                   batchProgress={batchProgress}
                   isConverting={isConverting}
-                  feeTimingInfo={feeTimingInfo}
                 />
               </div>
             )}
