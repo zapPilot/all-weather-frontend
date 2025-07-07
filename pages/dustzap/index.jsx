@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import BasePage from "../basePage";
+import WETH from "../../lib/contracts/Weth.json" assert { type: "json" };
 import {
   Button,
   Card,
@@ -35,7 +36,12 @@ import { PriceService } from "../../classes/TokenPriceService";
 import openNotificationWithIcon from "../../utils/notification";
 import { LOCK_EXPLORER_URLS, TOKEN_ADDRESS_MAP } from "../../utils/general";
 import { ethers } from "ethers";
-import { prepareTransaction } from "thirdweb";
+import {
+  prepareTransaction,
+  prepareContractCall,
+  getContract,
+  toWei,
+} from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import ERC20_ABI from "../../lib/contracts/ERC20.json" assert { type: "json" };
 import { normalizeChainName } from "../../utils/chainHelper";
@@ -43,24 +49,20 @@ import { normalizeChainName } from "../../utils/chainHelper";
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 
-// Fee constants (following BasePortfolio pattern)
+// =============== CONSTANTS ===============
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
+const BATCH_SIZE = 10;
+const FEE_RATE = 0.0001; // 0.01% fee
+const REFERRAL_FEE_PERCENTAGE = 0.7; // 70% of fee goes to referrer
+const DEFAULT_SLIPPAGE = 30;
 
+// =============== FEE CALCULATION UTILITIES ===============
 const mulReferralFeeRate = (inputBigNumber) => {
-  return inputBigNumber.mul(7).div(10); // 70% of fee goes to referrer
+  return inputBigNumber.mul(Math.floor(REFERRAL_FEE_PERCENTAGE * 10)).div(10);
 };
 
 const calculateReferralFee = (amount) => {
   return mulReferralFeeRate(amount);
-};
-
-const prepareTransferTxn = (chainMetadata, recipient, amount) => {
-  return prepareTransaction({
-    to: recipient,
-    value: amount,
-    chain: chainMetadata,
-    client: THIRDWEB_CLIENT,
-  });
 };
 
 const getReferrer = async (owner) => {
@@ -79,93 +81,92 @@ const getReferrer = async (owner) => {
 };
 
 const getPlatformFeeTxns = (chainMetadata, platformFee, referrer) => {
+  const wrappedTokenAddress =
+    TOKEN_ADDRESS_MAP.weth[normalizeChainName(chainMetadata.name)];
+  const wethContract = getContract({
+    client: THIRDWEB_CLIENT,
+    address: wrappedTokenAddress,
+    chain: chainMetadata,
+    abi: WETH,
+  });
+
   let txns = [];
+
+  // First, wrap ETH to WETH (deposit)
+  const wrapEthTxn = prepareContractCall({
+    contract: wethContract,
+    method: "deposit",
+    params: [],
+    value: platformFee,
+  });
+  txns.push(wrapEthTxn);
+
+  // Then transfer WETH as fees
   if (referrer) {
     const referralFee = calculateReferralFee(platformFee);
-    platformFee = platformFee.sub(referralFee);
-    const referralFeeTxn = prepareTransferTxn(
-      chainMetadata,
-      referrer,
-      referralFee,
-    );
+    const remainingPlatformFee = platformFee.sub(referralFee);
+
+    // Transfer referral fee in WETH
+    const referralFeeTxn = prepareContractCall({
+      contract: wethContract,
+      method: "transfer",
+      params: [referrer, referralFee],
+    });
     txns.push(referralFeeTxn);
+
+    // Transfer remaining platform fee to treasury in WETH
+    const treasuryFeeTxn = prepareContractCall({
+      contract: wethContract,
+      method: "transfer",
+      params: [PROTOCOL_TREASURY_ADDRESS, remainingPlatformFee],
+    });
+    txns.push(treasuryFeeTxn);
+  } else {
+    // Transfer full platform fee to treasury in WETH
+    const treasuryFeeTxn = prepareContractCall({
+      contract: wethContract,
+      method: "transfer",
+      params: [PROTOCOL_TREASURY_ADDRESS, platformFee],
+    });
+    txns.push(treasuryFeeTxn);
   }
 
-  const swapFeeTxn = prepareTransferTxn(
-    chainMetadata,
-    PROTOCOL_TREASURY_ADDRESS,
-    platformFee,
-  );
-  txns.push(swapFeeTxn);
   return txns;
 };
 
-/**
- * Calculate and create fee transactions for dust conversion
- * Following the BasePortfolio pattern for consistency
- */
 const calculateAndChargeEntryFees = async (
   totalValueUSD,
   chainMetadata,
   account,
   ethPrice,
 ) => {
-  try {
-    // Calculate fee amount: 1% of total dust value in ETH
-    const feeUSD = totalValueUSD * 0.0001; // 0.01% fee
-    const feeAmountInEth = feeUSD / ethPrice;
-    logger.log("feeAmountInEth", feeAmountInEth);
-    // Convert to Wei (18 decimals for ETH)
-    if (feeAmountInEth < 1e-18) {
-      // Too small to be represented in Wei, set to zero or a minimum value
-      return {
-        platformFeeTxns: [],
-        totalPlatformFeeUSD: 0,
-        feeAmount: ethers.BigNumber.from(0),
-      };
-    }
-    const feeAmount = ethers.utils.parseEther(feeAmountInEth.toFixed(18));
-    logger.log("feeAmount", feeAmount);
-    // Get ETH address for the current chain
-    const chainName = normalizeChainName(chainMetadata.name);
+  const feeUSD = totalValueUSD * FEE_RATE;
+  const feeAmountInEth = feeUSD / ethPrice;
 
-    // Get referrer information
-    const referrer = await getReferrer(account.address);
-    logger.log("referrer", referrer);
-    // Generate fee transactions
-    const platformFeeTxns = getPlatformFeeTxns(
-      chainMetadata,
-      feeAmount,
-      referrer,
-    );
-
-    logger.log("DustZap fee calculation completed", {
-      totalValueUSD,
-      feeUSD,
-      feeAmountInEth,
-      feeAmountWei: feeAmount.toString(),
-      referrer,
-      chainName,
-      txnCount: platformFeeTxns.length,
-    });
-
-    return {
-      platformFeeTxns,
-      totalPlatformFeeUSD: feeUSD,
-      feeAmount,
-    };
-  } catch (error) {
-    logger.error("Fee calculation failed:", error);
-    // Return empty fee transactions if calculation fails to avoid blocking dust conversion
+  if (feeAmountInEth < 1e-18) {
     return {
       platformFeeTxns: [],
       totalPlatformFeeUSD: 0,
       feeAmount: ethers.BigNumber.from(0),
     };
   }
+
+  const feeAmount = ethers.utils.parseEther(feeAmountInEth.toFixed(18));
+  const referrer = await getReferrer(account.address);
+  const platformFeeTxns = getPlatformFeeTxns(
+    chainMetadata,
+    feeAmount,
+    referrer,
+  );
+
+  return {
+    platformFeeTxns,
+    totalPlatformFeeUSD: feeUSD,
+    feeAmount,
+  };
 };
 
-// =============== Utils ===============
+// =============== UTILITY FUNCTIONS ===============
 const formatSmallNumber = (num) => {
   const n = Number(num);
   if (isNaN(n)) return "-";
@@ -178,6 +179,13 @@ const getFilteredAndSortedTokens = (tokens) => {
   return tokens
     .filter((token) => token.price > 0)
     .sort((a, b) => b.amount * b.price - a.amount * a.price);
+};
+
+const calculateFeeInsertionBatch = (totalBatches) => {
+  if (totalBatches <= 1) return 1;
+  if (totalBatches === 2) return 2;
+  if (totalBatches <= 4) return 2;
+  return Math.max(2, Math.ceil(totalBatches * 0.33));
 };
 
 // =============== Components ===============
@@ -370,7 +378,7 @@ const HeroSection = ({
         <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm text-gray-600">
           <div className="flex items-center gap-2">
             <CheckCircleIcon className="h-4 w-4 text-emerald-500" />
-            <span>0.01% fee (${(totalValue * 0.0001).toFixed(4)})</span>
+            <span>0.01% fee (${(totalValue * FEE_RATE).toFixed(4)})</span>
           </div>
           <div className="flex items-center gap-2">
             <CheckCircleIcon className="h-4 w-4 text-emerald-500" />
@@ -629,15 +637,19 @@ const TokenGrid = ({ tokens, showDetails, onToggleDetails }) => {
   );
 };
 
+// =============== MAIN COMPONENT ===============
 export default function DustZap() {
+  // =============== HOOKS ===============
   const account = useActiveAccount();
   const activeChain = useActiveWalletChain();
   const switchChain = useSwitchActiveWalletChain();
-
   const { aaOn } = useWalletMode();
   const { mutate: sendBatchTransaction } = useSendBatchTransaction();
   const { mutate: sendCalls } = useSendAndConfirmCalls();
+  const [notificationAPI, notificationContextHolder] =
+    notification.useNotification();
 
+  // =============== STATE ===============
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
@@ -645,7 +657,7 @@ export default function DustZap() {
   const [showDetails, setShowDetails] = useState(false);
   const [statusMessages, setStatusMessages] = useState([]);
   const [totalSteps, setTotalSteps] = useState(0);
-  const [slippage, setSlippage] = useState(30); // Default to 30% (Moderate)
+  const [slippage, setSlippage] = useState(DEFAULT_SLIPPAGE);
   const [showProgressCard, setShowProgressCard] = useState(false);
   const [ethPrice, setEthPrice] = useState(null);
   const [batchProgress, setBatchProgress] = useState({
@@ -653,26 +665,13 @@ export default function DustZap() {
     total: 0,
   });
   const [transactionSigned, setTransactionSigned] = useState(false);
-  const [feeTimingInfo, setFeeTimingInfo] = useState(null);
 
   const statusMessagesRef = useRef([]);
-  const [notificationAPI, notificationContextHolder] =
-    notification.useNotification();
 
+  // =============== EFFECTS ===============
   useEffect(() => {
     statusMessagesRef.current = statusMessages;
   }, [statusMessages]);
-
-  const handleStatusUpdate = (message) => {
-    const currentMessages = statusMessagesRef.current;
-    const updatedMessages = [...currentMessages, message];
-
-    if (currentMessages.length === 0 && message.totalSteps) {
-      setTotalSteps(message.totalSteps);
-    }
-
-    setStatusMessages(updatedMessages);
-  };
 
   useEffect(() => {
     if (!account?.address || !activeChain?.name) return;
@@ -697,6 +696,7 @@ export default function DustZap() {
     fetchTokens();
   }, [account?.address, activeChain?.name]);
 
+  // =============== COMPUTED VALUES ===============
   const filteredAndSortedTokens = useMemo(
     () => getFilteredAndSortedTokens(tokens),
     [tokens],
@@ -711,91 +711,42 @@ export default function DustZap() {
     [filteredAndSortedTokens],
   );
 
-  /**
-   * Smart fee insertion strategy: Insert fee transactions at optimal middle position
-   * to reduce abandonment risk while ensuring fee collection
-   */
+  // =============== HANDLERS ===============
+  const handleStatusUpdate = (message) => {
+    const currentMessages = statusMessagesRef.current;
+    const updatedMessages = [...currentMessages, message];
+
+    if (currentMessages.length === 0 && message.totalSteps) {
+      setTotalSteps(message.totalSteps);
+    }
+
+    setStatusMessages(updatedMessages);
+  };
+
+  // =============== TRANSACTION HELPERS ===============
   const insertFeeTransactionsStrategically = (dustTxns, feeTxns) => {
-    const BATCH_SIZE = 10;
     const totalBatches = Math.ceil(dustTxns.length / BATCH_SIZE);
 
     if (totalBatches <= 1 || feeTxns.length === 0) {
-      console.log("totalBatches", totalBatches, "feeTxns", feeTxns);
-      // Single batch or no fees: add fee first (unavoidable)
-      const result = [...feeTxns, ...dustTxns];
-      return result;
+      return [...feeTxns, ...dustTxns];
     }
 
-    // Calculate optimal insertion position
-    let feeInsertionBatch;
-    if (totalBatches === 2) {
-      feeInsertionBatch = 2; // Second batch
-    } else if (totalBatches <= 4) {
-      feeInsertionBatch = 2; // Still second batch
-    } else {
-      // For 5+ batches, insert at ~33% position, minimum batch 2
-      feeInsertionBatch = Math.max(2, Math.ceil(totalBatches * 0.33));
-    }
-
-    // Insert fee transactions at the calculated position
+    const feeInsertionBatch = calculateFeeInsertionBatch(totalBatches);
     const insertionIndex = (feeInsertionBatch - 1) * BATCH_SIZE;
-    const result = [
+
+    return [
       ...dustTxns.slice(0, insertionIndex),
       ...feeTxns,
       ...dustTxns.slice(insertionIndex),
     ];
-
-    const finalBatches = Math.ceil(result.length / BATCH_SIZE);
-    logger.log("Strategic fee insertion", {
-      totalDustTxns: dustTxns.length,
-      totalBatches,
-      feeInsertionBatch,
-      insertionIndex,
-      feeTxnCount: feeTxns.length,
-      finalTxnCount: result.length,
-      finalBatches,
-    });
-
-    return result;
   };
 
-  /**
-   * Validate user has sufficient ETH balance for fees
-   */
-  const validateETHBalance = async (feeAmountWei, account, activeChain) => {
-    try {
-      // This is a simplified check - in production you'd use web3 to check actual balance
-      // For now, we'll just log the requirement
-      const feeAmountEth = ethers.utils.formatEther(feeAmountWei);
-
-      logger.log("ETH balance validation", {
-        requiredFeeETH: feeAmountEth,
-        feeAmountWei: feeAmountWei.toString(),
-        account: account.address,
-        chain: activeChain.name,
-      });
-
-      // TODO: Add actual balance check using thirdweb or ethers
-      // const balance = await getBalance(account.address, activeChain);
-      // if (balance.lt(feeAmountWei)) {
-      //   throw new Error(`Insufficient ETH for fee. Need ${feeAmountEth} ETH`);
-      // }
-
-      return true;
-    } catch (error) {
-      logger.error("ETH balance validation failed:", error);
-      return false;
-    }
-  };
-
-  // Simplified version of executeAllTxnsWithSendCalls for dust conversion
-  async function executeAllTxnsWithSendCalls(
+  const executeAllTxnsWithSendCalls = async (
     txns,
     sendCalls,
     transactionCallbacks,
-  ) {
+  ) => {
     const flatTxns = txns.flat(Infinity);
-    const BATCH_SIZE = 10;
     const totalBatches = Math.ceil(flatTxns.length / BATCH_SIZE);
 
     setBatchProgress({ completed: 0, total: totalBatches });
@@ -825,7 +776,7 @@ export default function DustZap() {
         );
       });
     }
-  }
+  };
 
   const handleConvert = async () => {
     if (!account?.address || !activeChain) return;
@@ -843,13 +794,6 @@ export default function DustZap() {
     setEthPrice(fetchedEthPrice);
 
     try {
-      // Calculate and charge entry fees following BasePortfolio pattern
-      logger.log("Calculating platform fees for dust conversion", {
-        totalValueUSD: totalValue,
-        ethPrice: fetchedEthPrice,
-        account: account.address,
-      });
-
       const { platformFeeTxns, totalPlatformFeeUSD, feeAmount } =
         await calculateAndChargeEntryFees(
           totalValue,
@@ -857,21 +801,6 @@ export default function DustZap() {
           account,
           fetchedEthPrice,
         );
-      console.log("platformFeeTxns", platformFeeTxns);
-
-      // Validate ETH balance for fees
-      if (platformFeeTxns.length > 0) {
-        const hasBalance = await validateETHBalance(
-          feeAmount,
-          account,
-          activeChain,
-        );
-        if (!hasBalance) {
-          logger.warn("ETH balance validation failed, proceeding anyway");
-          // In production, you might want to throw an error here
-        }
-      }
-
       // Get dust conversion transactions
       const dustConversionTxns = await handleDustConversion({
         chainId: activeChain?.id,
@@ -887,13 +816,6 @@ export default function DustZap() {
         dustConversionTxns,
         platformFeeTxns,
       );
-
-      logger.log("Transaction preparation completed", {
-        feeTxnCount: platformFeeTxns.length,
-        dustTxnCount: dustConversionTxns.length,
-        totalTxnCount: allTxns.length,
-        totalPlatformFeeUSD,
-      });
 
       if (allTxns && allTxns.length > 0) {
         const transactionCallbacks = {
@@ -912,19 +834,11 @@ export default function DustZap() {
             setBatchProgress((prev) => ({ ...prev, completed: batchIndex }));
 
             // Determine if this batch contains fee transactions
-            const BATCH_SIZE = 10;
             const totalDustBatches = Math.ceil(
               dustConversionTxns.length / BATCH_SIZE,
             );
             const feeInsertionBatch =
-              totalDustBatches <= 1
-                ? 1
-                : totalDustBatches === 2
-                ? 2
-                : totalDustBatches <= 4
-                ? 2
-                : Math.max(2, Math.ceil(totalDustBatches * 0.33));
-
+              calculateFeeInsertionBatch(totalDustBatches);
             const isFeeBatch =
               batchIndex === feeInsertionBatch && platformFeeTxns.length > 0;
 
@@ -974,6 +888,7 @@ export default function DustZap() {
           },
         };
 
+        // Execute transactions based on wallet mode
         if (!aaOn) {
           await executeAllTxnsWithSendCalls(
             allTxns,
@@ -981,8 +896,6 @@ export default function DustZap() {
             transactionCallbacks,
           );
         } else {
-          // For AA wallets, still use sendBatchTransaction but with callbacks
-          logger.log("aa mode", allTxns);
           await new Promise((resolve, reject) => {
             sendBatchTransaction(allTxns.flat(Infinity), {
               onSuccess: async (data) => {
@@ -1005,6 +918,7 @@ export default function DustZap() {
     }
   };
 
+  // =============== RENDER ===============
   if (!account) {
     return (
       <BasePage chainId={activeChain} switchChain={switchChain}>
