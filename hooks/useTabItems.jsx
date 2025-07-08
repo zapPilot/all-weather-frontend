@@ -11,7 +11,6 @@ const ZapOutTab = lazy(() => import("../components/tabs/ZapOutTab"));
 const ClaimTab = lazy(() => import("../components/tabs/ClaimTab"));
 const RebalanceTab = lazy(() => import("../components/tabs/RebalanceTab"));
 const TransferTab = lazy(() => import("../components/tabs/TransferTab"));
-const ConvertDustTab = lazy(() => import("../components/tabs/ConvertDustTab"));
 import { Popover } from "antd";
 import PropTypes from "prop-types";
 import { InfoIcon } from "../utils/icons.jsx";
@@ -232,15 +231,6 @@ export default function useTabItems({
         children: (
           <Suspense fallback={<Spin size="large" />}>
             <ClaimTab {...props} pendingRewards={pendingRewards} />
-          </Suspense>
-        ),
-      },
-      {
-        key: TAB_KEYS.DUST_ZAP,
-        label: <DustZapLabel />,
-        children: (
-          <Suspense fallback={<Spin size="large" />}>
-            <ConvertDustTab {...props} />
           </Suspense>
         ),
       },
