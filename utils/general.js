@@ -27,7 +27,7 @@ export const CHAIN_TO_CHAIN_ID = {
 
 export const LOCK_EXPLORER_URLS = {
   10: "https://optimistic.etherscan.io/",
-  8453: "https://basescan.org/tx/",
+  8453: "https://basescan.org/",
   42161: "https://arbiscan.io/",
 };
 // reverse CHAIN_TO_CHAIN_ID

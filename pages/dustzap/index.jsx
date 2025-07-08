@@ -96,8 +96,7 @@ const getPlatformFeeTxns = (chainMetadata, platformFee, referrer) => {
   const wrapEthTxn = prepareContractCall({
     contract: wethContract,
     method: "deposit",
-    params: [],
-    value: platformFee,
+    value: toWei(ethers.utils.formatEther(platformFee)),
   });
   txns.push(wrapEthTxn);
 
@@ -849,15 +848,7 @@ export default function DustZap() {
               ? `Platform Fee Charged - Batch ${batchIndex}`
               : `Dust Conversion - Batch ${batchIndex}`;
 
-            const notificationDescription = isFeeBatch
-              ? `Platform fee of $${totalPlatformFeeUSD.toFixed(
-                  4,
-                )} charged (0.01% of dust value). Smart timing reduces abandonment risk. ${
-                  txnHash ? `View: ${explorerUrl}/tx/${txnHash}` : ""
-                }`
-              : txnHash
-              ? `Batch ${batchIndex} processed successfully. View: ${explorerUrl}/tx/${txnHash}`
-              : "Transaction completed successfully";
+            const notificationDescription = `Batch ${batchIndex} processed successfully. View: ${explorerUrl}/tx/${txnHash}`;
 
             openNotificationWithIcon(
               notificationAPI,
