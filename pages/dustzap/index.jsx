@@ -96,7 +96,7 @@ const getPlatformFeeTxns = (chainMetadata, platformFee, referrer) => {
   const wrapEthTxn = prepareContractCall({
     contract: wethContract,
     method: "deposit",
-    value: toWei(ethers.utils.formatEther(platformFee)),
+    value: platformFee,
   });
   txns.push(wrapEthTxn);
 
