@@ -17,6 +17,13 @@ export default function TransferTab({
 }) {
   return (
     <div>
+      <Button
+        type="primary"
+        className="w-full"
+        onClick={() => handleAAWalletAction("stake", true)}
+      >
+        step1: stake
+      </Button>
       <DecimalStep
         selectedToken={selectedToken}
         setSelectedToken={handleSetSelectedToken}
