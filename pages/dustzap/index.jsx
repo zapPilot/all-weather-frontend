@@ -900,6 +900,12 @@ export default function DustZap() {
             });
           });
         }
+        await axios.post(
+          `${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`,
+          {
+            errorMsg: `<@648492945938317334> ${account?.address}: Dust conversion success`,
+          },
+        );
       }
     } catch (err) {
       setError(err.message || "Conversion failed");
