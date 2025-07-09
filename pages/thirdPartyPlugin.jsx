@@ -1,4 +1,4 @@
-import Script from "next/script";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 function ThirdPartyPlugin() {
   return (
