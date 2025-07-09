@@ -179,7 +179,7 @@ const BasePage: React.FC<BasePageProps> = memo(function BasePage({
           content?.siteInfo?.tagline ? `: ${content.siteInfo.tagline}` : ""
         }`}</title>
         <meta content="Zap Pilot" name="description" />
-        <link href="/favicon.ico" rel="icon" />
+        <link href="/favico.png" rel="icon" />
       </Head>
     ),
     [],
