@@ -36,15 +36,10 @@ import { PriceService } from "../../classes/TokenPriceService";
 import openNotificationWithIcon from "../../utils/notification";
 import { LOCK_EXPLORER_URLS, TOKEN_ADDRESS_MAP } from "../../utils/general";
 import { ethers } from "ethers";
-import {
-  prepareTransaction,
-  prepareContractCall,
-  getContract,
-  toWei,
-} from "thirdweb";
+import { prepareContractCall, getContract, toWei } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
-import ERC20_ABI from "../../lib/contracts/ERC20.json" assert { type: "json" };
 import { normalizeChainName } from "../../utils/chainHelper";
+import axios from "axios";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -900,6 +895,12 @@ export default function DustZap() {
             });
           });
         }
+        await axios.post(
+          `${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`,
+          {
+            errorMsg: `<@648492945938317334> ${account?.address}: Dust conversion success`,
+          },
+        );
       }
     } catch (err) {
       setError(err.message || "Conversion failed");
