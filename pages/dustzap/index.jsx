@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import BasePage from "../basePage";
 import WETH from "../../lib/contracts/Weth.json" assert { type: "json" };
 import {
@@ -40,6 +46,7 @@ import { prepareContractCall, getContract, toWei } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { normalizeChainName } from "../../utils/chainHelper";
 import axios from "axios";
+import SocialShareModal from "../../components/modals/SocialShareModal";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -358,7 +365,7 @@ const HeroSection = ({
           <Button
             type="primary"
             size="large"
-            loading={isConverting}
+            // loading={isConverting}
             disabled={!hasTokens || totalValue === 0}
             onClick={onConvert}
             className="h-14 px-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 border-0 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-0.5"
@@ -395,10 +402,15 @@ const ProgressCard = ({
   totalSteps,
   batchProgress,
   isConverting,
+  fetchingSwapRoutes,
+  aggregateTradingLoss,
 }) => {
   if (!messages.length && !isConverting) return null;
 
-  const totalLoss = messages.reduce((sum, msg) => sum + msg.tradingLoss, 0);
+  // Use aggregated trading loss instead of calculating from individual messages
+  const totalLoss =
+    aggregateTradingLoss ||
+    messages.reduce((sum, msg) => sum + msg.tradingLoss, 0);
   const progress = Math.min(100, (messages.length / totalSteps) * 100);
   const batchProgressPercent =
     batchProgress.total > 0
@@ -427,11 +439,15 @@ const ProgressCard = ({
           </div>
           <div>
             <Title level={4} className="mb-0 text-gray-800">
-              Converting Tokens
+              {fetchingSwapRoutes
+                ? "Preparing Conversion"
+                : "Converting Tokens"}
             </Title>
             <Text className="text-gray-600">
-              {messages.length} of {totalSteps} conversions completed
-              {batchProgress.total > 0 && (
+              {fetchingSwapRoutes
+                ? "Fetching swap routes for selected tokens..."
+                : `${messages.length} of ${totalSteps} conversions completed`}
+              {!fetchingSwapRoutes && batchProgress.total > 0 && (
                 <span className="ml-2 text-blue-600">
                   • Batch {batchProgress.completed}/{batchProgress.total}
                 </span>
@@ -543,11 +559,16 @@ const ProgressCard = ({
   );
 };
 
-const TokenGrid = ({ tokens, showDetails, onToggleDetails }) => {
-  const filteredAndSortedTokens = useMemo(
-    () => getFilteredAndSortedTokens(tokens),
-    [tokens],
-  );
+const TokenGrid = ({
+  tokens,
+  showDetails,
+  onToggleDetails,
+  onDeleteToken,
+  deletedTokenIds,
+  onRestoreDeletedTokens,
+}) => {
+  // Use the already filtered tokens from parent instead of filtering again
+  const filteredAndSortedTokens = tokens;
 
   if (!filteredAndSortedTokens.length) return null;
 
@@ -563,15 +584,26 @@ const TokenGrid = ({ tokens, showDetails, onToggleDetails }) => {
           <span className="text-lg font-semibold text-gray-800">
             Token Details
           </span>
-          <Button
-            type="link"
-            onClick={onToggleDetails}
-            className="p-0 h-auto text-blue-600 hover:text-blue-700"
-          >
-            {showDetails
-              ? "Show Less"
-              : `Show All ${filteredAndSortedTokens.length}`}
-          </Button>
+          <div className="flex gap-2">
+            {deletedTokenIds.size > 0 && (
+              <Button
+                type="link"
+                onClick={onRestoreDeletedTokens}
+                className="p-0 h-auto text-green-600 hover:text-green-700"
+              >
+                Restore {deletedTokenIds.size} Deleted
+              </Button>
+            )}
+            <Button
+              type="link"
+              onClick={onToggleDetails}
+              className="p-0 h-auto text-blue-600 hover:text-blue-700"
+            >
+              {showDetails
+                ? "Show Less"
+                : `Show All ${filteredAndSortedTokens.length}`}
+            </Button>
+          </div>
         </div>
       }
     >
@@ -583,8 +615,15 @@ const TokenGrid = ({ tokens, showDetails, onToggleDetails }) => {
           return (
             <div
               key={token.id}
-              className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+              className="relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
             >
+              <button
+                onClick={() => onDeleteToken(token.id)}
+                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold transition-colors duration-200"
+                title="Remove this token from conversion"
+              >
+                ×
+              </button>
               <div className="flex items-center gap-3 mb-3">
                 <TokenImage
                   token={token}
@@ -659,6 +698,11 @@ export default function DustZap() {
     total: 0,
   });
   const [transactionSigned, setTransactionSigned] = useState(false);
+  const [deletedTokenIds, setDeletedTokenIds] = useState(new Set());
+  const [showSocialModal, setShowSocialModal] = useState(false);
+  const [socialModalData, setSocialModalData] = useState(null);
+  const [fetchingSwapRoutes, setFetchingSwapRoutes] = useState(false);
+  const [aggregateTradingLoss, setAggregateTradingLoss] = useState(0);
 
   const statusMessagesRef = useRef([]);
 
@@ -691,10 +735,10 @@ export default function DustZap() {
   }, [account?.address, activeChain?.name]);
 
   // =============== COMPUTED VALUES ===============
-  const filteredAndSortedTokens = useMemo(
-    () => getFilteredAndSortedTokens(tokens),
-    [tokens],
-  );
+  const filteredAndSortedTokens = useMemo(() => {
+    const baseFiltered = getFilteredAndSortedTokens(tokens);
+    return baseFiltered.filter((token) => !deletedTokenIds.has(token.id));
+  }, [tokens, deletedTokenIds]);
 
   const totalValue = useMemo(
     () =>
@@ -716,6 +760,14 @@ export default function DustZap() {
 
     setStatusMessages(updatedMessages);
   };
+
+  const handleDeleteToken = useCallback((tokenId) => {
+    setDeletedTokenIds((prev) => new Set([...prev, tokenId]));
+  }, []);
+
+  const handleRestoreDeletedTokens = useCallback(() => {
+    setDeletedTokenIds(new Set());
+  }, []);
 
   // =============== TRANSACTION HELPERS ===============
   const insertFeeTransactionsStrategically = (dustTxns, feeTxns) => {
@@ -780,6 +832,7 @@ export default function DustZap() {
     setTransactionSigned(false);
     setTotalSteps(filteredAndSortedTokens.length);
     setShowProgressCard(true);
+    setFetchingSwapRoutes(true);
 
     const priceService = new PriceService(process.env.NEXT_PUBLIC_API_URL);
     const fetchedEthPrice = await priceService.fetchPrice("eth", {
@@ -795,15 +848,25 @@ export default function DustZap() {
           account,
           fetchedEthPrice,
         );
-      // Get dust conversion transactions
-      const dustConversionTxns = await handleDustConversion({
-        chainId: activeChain?.id,
-        chainName: transformToDebankChainName(activeChain?.name.toLowerCase()),
-        accountAddress: account?.address,
-        tokenPricesMappingTable: { eth: fetchedEthPrice },
-        slippage: slippage,
-        handleStatusUpdate,
-      });
+
+      // NEW: Fetch swap routes only for selected tokens at conversion time
+      const { fetchDustConversionRoutes } = await import(
+        "../../utils/dustConversion"
+      );
+      const [dustConversionTxns, totalTradingLoss] =
+        await fetchDustConversionRoutes({
+          tokens: filteredAndSortedTokens, // Use filtered tokens (excluding deleted)
+          chainId: activeChain?.id,
+          accountAddress: account?.address,
+          tokenPricesMappingTable: { eth: fetchedEthPrice },
+          slippage: slippage,
+          handleStatusUpdate,
+        });
+
+      setFetchingSwapRoutes(false);
+
+      // Set the aggregate trading loss state
+      setAggregateTradingLoss(totalTradingLoss);
 
       // Use strategic fee insertion instead of simple concatenation
       const allTxns = insertFeeTransactionsStrategically(
@@ -857,6 +920,17 @@ export default function DustZap() {
               setTransactionSigned(true);
             }
 
+            // Show social sharing modal after final successful batch
+            if (isLastBatch) {
+              setSocialModalData({
+                totalValue,
+                tokenCount: filteredAndSortedTokens.length,
+                transactionHash: txnHash,
+                explorerUrl,
+              });
+              setShowSocialModal(true);
+            }
+
             logger.log(`Batch ${batchIndex} completed with hash: ${txnHash}`);
           },
 
@@ -873,7 +947,7 @@ export default function DustZap() {
             throw error;
           },
         };
-
+        console.log("allTxns", allTxns);
         // Execute transactions based on wallet mode
         if (!aaOn) {
           await executeAllTxnsWithSendCalls(
@@ -907,6 +981,7 @@ export default function DustZap() {
       logger.error("Dust conversion failed:", err);
     } finally {
       setIsConverting(false);
+      setFetchingSwapRoutes(false);
     }
   };
 
@@ -936,6 +1011,11 @@ export default function DustZap() {
   return (
     <BasePage chainId={activeChain} switchChain={switchChain}>
       {notificationContextHolder}
+      <SocialShareModal
+        visible={showSocialModal}
+        onClose={() => setShowSocialModal(false)}
+        conversionData={socialModalData}
+      />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
         <HeroSection
           totalValue={totalValue}
@@ -997,6 +1077,8 @@ export default function DustZap() {
                   totalSteps={totalSteps}
                   batchProgress={batchProgress}
                   isConverting={isConverting}
+                  fetchingSwapRoutes={fetchingSwapRoutes}
+                  aggregateTradingLoss={aggregateTradingLoss}
                 />
               </div>
             )}
@@ -1004,9 +1086,12 @@ export default function DustZap() {
           {/* Token Grid */}
           {!loading && filteredAndSortedTokens.length > 0 && (
             <TokenGrid
-              tokens={tokens}
+              tokens={filteredAndSortedTokens}
               showDetails={showDetails}
               onToggleDetails={() => setShowDetails(!showDetails)}
+              onDeleteToken={handleDeleteToken}
+              deletedTokenIds={deletedTokenIds}
+              onRestoreDeletedTokens={handleRestoreDeletedTokens}
             />
           )}
         </div>
