@@ -14,20 +14,26 @@ const SocialShareModal = memo(function SocialShareModal({
     if (!value) return "0.00";
     return value.toFixed(2);
   };
-
-  const twitterMessage = `Just cleaned up my wallet with @zap_pilot! 🧹✨
+  const url = "https://app.zap-pilot.org/dustzap/?mode=eoa";
+  const twitterMessage = `Just cleaned up my wallet with @zapPilot ! 🧹✨
 
 Converted ${tokenCount} dust tokens worth $${formatValue(
     totalValue,
   )} to ETH in one transaction. 
 
-Clean wallet = better portfolio management! #DeFi #DustConversion #ZapPilot`;
+Clean wallet = better portfolio management! 
+
+Try it: ${url}
+
+#DeFi #DustConversion #ZapPilot`;
 
   const farcasterMessage = `Cleaned up my wallet with Zap Pilot! 🧹
 
 Converted ${tokenCount} dust tokens worth $${formatValue(
     totalValue,
-  )} to ETH. Such a satisfying feeling when your wallet is organized! ✨`;
+  )} to ETH. Such a satisfying feeling when your wallet is organized! ✨
+
+Try dust cleanup: ${url}`;
 
   const handleTwitterShare = useCallback(() => {
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(

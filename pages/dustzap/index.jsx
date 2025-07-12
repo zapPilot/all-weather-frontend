@@ -16,7 +16,9 @@ import {
   Badge,
   Select,
   notification,
+  Tooltip,
 } from "antd";
+import { InfoCircleOutlined } from "@ant-design/icons";
 import {
   useActiveAccount,
   useActiveWalletChain,
@@ -207,6 +209,12 @@ const SlippageSelector = ({ slippage, onChange, className = "" }) => {
         className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
       >
         <span>Slippage: {slippage}%</span>
+        <Tooltip
+          title="High slippage (30%) is recommended for dust tokens due to poor liquidity. Since dust values are small, the trading loss is minimal compared to successful conversion."
+          placement="top"
+        >
+          <InfoCircleOutlined className="w-3 h-3 cursor-help text-gray-400 hover:text-gray-600" />
+        </Tooltip>
         <svg
           className={`w-3 h-3 transition-transform ${
             isExpanded ? "rotate-180" : ""
@@ -365,7 +373,7 @@ const HeroSection = ({
           <Button
             type="primary"
             size="large"
-            // loading={isConverting}
+            loading={isConverting}
             disabled={!hasTokens || totalValue === 0}
             onClick={onConvert}
             className="h-14 px-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 border-0 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-0.5"
@@ -947,7 +955,6 @@ export default function DustZap() {
             throw error;
           },
         };
-        console.log("allTxns", allTxns);
         // Execute transactions based on wallet mode
         if (!aaOn) {
           await executeAllTxnsWithSendCalls(
