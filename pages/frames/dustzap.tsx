@@ -1,5 +1,6 @@
 import React from "react";
 import Head from "next/head";
+import Link from "next/link";
 
 const FRAME_BASE_URL = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
 
@@ -67,7 +68,7 @@ export default function DustZapFrame() {
         </div>
 
         <div style={{ marginTop: "30px" }}>
-          <a
+          <Link
             href="/dustzap"
             style={{
               background: "linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%)",
@@ -79,7 +80,7 @@ export default function DustZapFrame() {
             }}
           >
             Try Full App →
-          </a>
+          </Link>
         </div>
 
         <div style={{ marginTop: "20px", fontSize: "14px", color: "#666" }}>
