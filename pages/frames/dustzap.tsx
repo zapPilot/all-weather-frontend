@@ -60,7 +60,8 @@ export default function DustZapFrame() {
               Users will see an interactive frame showing their dust tokens
             </li>
             <li>
-              Clicking "Clean My Dust" redirects to the full Zap Pilot app
+              Clicking &quot;Clean My Dust&quot; redirects to the full Zap Pilot
+              app
             </li>
           </ol>
         </div>
