@@ -49,6 +49,13 @@ import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { normalizeChainName } from "../../utils/chainHelper";
 import axios from "axios";
 import SocialShareModal from "../../components/modals/SocialShareModal";
+import TokenImage from "../../components/shared/TokenImage";
+import SlippageSelector from "../../components/dustzap/SlippageSelector";
+import { formatSmallNumber } from "../../utils/formatters";
+import {
+  getFilteredAndSortedTokens,
+  getTokenSymbol,
+} from "../../utils/tokenUtils";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -170,19 +177,6 @@ const calculateAndChargeEntryFees = async (
 };
 
 // =============== UTILITY FUNCTIONS ===============
-const formatSmallNumber = (num) => {
-  const n = Number(num);
-  if (isNaN(n)) return "-";
-  if (n < 0.000001 && n > 0) return "< 0.000001";
-  return Number(n.toFixed(6)).toString();
-};
-
-const getFilteredAndSortedTokens = (tokens) => {
-  if (!tokens?.length) return [];
-  return tokens
-    .filter((token) => token.price > 0)
-    .sort((a, b) => b.amount * b.price - a.amount * a.price);
-};
 
 const calculateFeeInsertionBatch = (totalBatches) => {
   if (totalBatches <= 1) return 1;
@@ -192,102 +186,6 @@ const calculateFeeInsertionBatch = (totalBatches) => {
 };
 
 // =============== Components ===============
-const SlippageSelector = ({ slippage, onChange, className = "" }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const slippageOptions = [
-    { value: 1, label: "1%" },
-    { value: 5, label: "5%" },
-    { value: 10, label: "10%" },
-    { value: 20, label: "20%" },
-    { value: 30, label: "30%" },
-  ];
-
-  return (
-    <div className={`${className}`}>
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
-      >
-        <span>Slippage: {slippage}%</span>
-        <Tooltip
-          title="High slippage (30%) is recommended for dust tokens due to poor liquidity. Since dust values are small, the trading loss is minimal compared to successful conversion."
-          placement="top"
-        >
-          <InfoCircleOutlined className="w-3 h-3 cursor-help text-gray-400 hover:text-gray-600" />
-        </Tooltip>
-        <svg
-          className={`w-3 h-3 transition-transform ${
-            isExpanded ? "rotate-180" : ""
-          }`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </button>
-
-      {isExpanded && (
-        <div className="mt-2 p-3 bg-gray-50 rounded-lg border">
-          <div className="mb-2">
-            <Text className="text-xs font-medium text-gray-600">
-              Slippage Tolerance
-            </Text>
-          </div>
-          <Select
-            value={slippage}
-            onChange={onChange}
-            className="w-full"
-            size="small"
-            placeholder="Select tolerance"
-          >
-            {slippageOptions.map((option) => (
-              <Option key={option.value} value={option.value}>
-                {option.label}
-              </Option>
-            ))}
-          </Select>
-          <div className="mt-1">
-            <Text className="text-xs text-gray-400">
-              Higher values allow conversion during price volatility
-            </Text>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const TokenImage = ({ token, size = 20, className = "" }) => {
-  const symbol = token.optimized_symbol || token.symbol;
-
-  if (token.logo_url) {
-    return (
-      <Image
-        src={token.logo_url}
-        alt={symbol}
-        width={size}
-        height={size}
-        className={`rounded-full ${className}`}
-      />
-    );
-  }
-
-  return (
-    <ImageWithFallback
-      token={symbol}
-      height={size}
-      width={size}
-      className={className}
-    />
-  );
-};
-
 const HeroSection = ({
   totalValue,
   tokenCount,
@@ -618,7 +516,7 @@ const TokenGrid = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {displayTokens.map((token) => {
           const totalValue = token.amount * token.price;
-          const symbol = token.optimized_symbol || token.symbol;
+          const symbol = getTokenSymbol(token);
 
           return (
             <div

@@ -5,6 +5,12 @@ import { getTokens } from "../../utils/dustConversion";
 import ImageWithFallback from "../../pages/basicComponents/ImageWithFallback";
 import { transformToDebankChainName } from "../../utils/chainHelper";
 import Image from "next/image";
+import { formatSmallNumber } from "../../utils/formatters";
+import {
+  getFilteredAndSortedTokens,
+  getTokenSymbol,
+} from "../../utils/tokenUtils";
+import TokenImage from "../shared/TokenImage";
 
 // =============== Types ===============
 /**
@@ -28,29 +34,6 @@ import Image from "next/image";
  */
 
 // =============== Utils ===============
-/**
- * Formats small numbers with appropriate precision
- * @param {number} num - The number to format
- * @returns {string} Formatted number string
- */
-const formatSmallNumber = (num) => {
-  const n = Number(num);
-  if (isNaN(n)) return "-";
-  if (n < 0.000001 && n > 0) return "< 0.000001";
-  return Number(n.toFixed(6)).toString();
-};
-
-/**
- * Filters and sorts tokens by their total value
- * @param {Token[]} tokens - Array of tokens
- * @returns {Token[]} Filtered and sorted tokens
- */
-const getFilteredAndSortedTokens = (tokens) => {
-  if (!tokens?.length) return [];
-  return tokens
-    .filter((token) => token.price > 0)
-    .sort((a, b) => b.amount * b.price - a.amount * a.price);
-};
 
 // =============== Components ===============
 /**
@@ -61,7 +44,7 @@ const getFilteredAndSortedTokens = (tokens) => {
  * @param {string} [props.className=""] - Additional CSS classes
  */
 const TokenImage = ({ token, size = 20, className = "" }) => {
-  const symbol = token.optimized_symbol || token.symbol;
+  const symbol = getTokenSymbol(token);
 
   if (token.logo_url) {
     return (
@@ -91,7 +74,7 @@ const TokenImage = ({ token, size = 20, className = "" }) => {
  */
 const TokenRow = ({ token }) => {
   const totalValue = token.amount * token.price;
-  const symbol = token.optimized_symbol || token.symbol;
+  const symbol = getTokenSymbol(token);
 
   return (
     <div className="flex items-center gap-4 p-3 hover:bg-gray-50">
@@ -257,9 +240,7 @@ const ConversionStatus = ({
   const getTokenInfo = (symbol) => {
     return (
       tokens.find(
-        (t) =>
-          (t.optimized_symbol || t.symbol).toLowerCase() ===
-          symbol.toLowerCase(),
+        (t) => getTokenSymbol(t).toLowerCase() === symbol.toLowerCase(),
       ) || { symbol }
     );
   };
@@ -288,8 +269,7 @@ const ConversionStatus = ({
           const fromToken = getTokenInfo(msg.fromToken);
           const toToken = getTokenInfo(msg.toToken);
           const outputValue =
-            msg.outputAmount *
-            tokenPricesMappingTable[toToken.optimized_symbol || toToken.symbol];
+            msg.outputAmount * tokenPricesMappingTable[getTokenSymbol(toToken)];
 
           return (
             <div key={index} className="flex items-center gap-4 p-3">
@@ -303,14 +283,14 @@ const ConversionStatus = ({
               <div className="flex-1">
                 <div className="font-medium text-gray-900 flex items-center gap-2">
                   <TokenImage token={fromToken} size={24} className="w-6 h-6" />
-                  {fromToken.optimized_symbol || fromToken.symbol}
+                  {getTokenSymbol(fromToken)}
                   <span className="text-xs text-gray-500">
                     {formatSmallNumber(msg.amount)} tokens
                   </span>
                   <span className="text-gray-400">→</span>
                   {formatSmallNumber(msg.outputAmount)}
                   <TokenImage token={toToken} size={24} className="w-6 h-6" />
-                  {toToken.optimized_symbol || toToken.symbol}
+                  {getTokenSymbol(toToken)}
                   <span className="text-xs text-gray-500">
                     ${formatSmallNumber(outputValue)}
                   </span>
