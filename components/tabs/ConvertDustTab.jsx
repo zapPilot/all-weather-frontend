@@ -12,61 +12,6 @@ import {
 } from "../../utils/tokenUtils";
 import TokenImage from "../shared/TokenImage";
 
-// =============== Types ===============
-/**
- * @typedef {Object} Token
- * @property {string} id - Unique identifier
- * @property {string} symbol - Token symbol
- * @property {string} [optimized_symbol] - Optimized token symbol
- * @property {number} amount - Token amount
- * @property {number} price - Token price in USD
- * @property {string} [logo_url] - URL to token logo
- */
-
-/**
- * @typedef {Object} ConversionMessage
- * @property {string} fromToken - Source token symbol
- * @property {string} toToken - Target token symbol
- * @property {number} amount - Amount to convert
- * @property {number} outputAmount - Output amount
- * @property {number} tradingLoss - Trading loss in USD
- * @property {string} dexAggregator - DEX aggregator name
- */
-
-// =============== Utils ===============
-
-// =============== Components ===============
-/**
- * Displays a token image with fallback
- * @param {Object} props
- * @param {Token} props.token - Token object
- * @param {number} [props.size=20] - Size of the image in pixels
- * @param {string} [props.className=""] - Additional CSS classes
- */
-const TokenImage = ({ token, size = 20, className = "" }) => {
-  const symbol = getTokenSymbol(token);
-
-  if (token.logo_url) {
-    return (
-      <img
-        src={token.logo_url}
-        alt={symbol}
-        className={`rounded-full ${className}`}
-        style={{ width: size, height: size }}
-      />
-    );
-  }
-
-  return (
-    <ImageWithFallback
-      token={symbol}
-      height={size}
-      width={size}
-      className={className}
-    />
-  );
-};
-
 /**
  * Displays a single token row with its details
  * @param {Object} props
