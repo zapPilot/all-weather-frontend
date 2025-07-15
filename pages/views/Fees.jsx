@@ -41,7 +41,7 @@ const items = [
       >
         <Button
           type="link"
-          href="https://all-weather-protocol.gitbook.io/all-weather-protocol#competitive-product-analysis-with-traditional-finance"
+          href="https://docs.zap-pilot.org/"
           target="_blank"
           style={{ textWrap: "wrap" }}
         >
