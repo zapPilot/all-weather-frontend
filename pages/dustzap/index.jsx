@@ -930,11 +930,13 @@ export default function DustZap() {
 
             // Show social sharing modal after final successful batch
             if (isLastBatch) {
+              const ethAmount = ethPrice ? totalValue / ethPrice : 0;
               setSocialModalData({
                 totalValue,
                 tokenCount: filteredAndSortedTokens.length,
                 transactionHash: txnHash,
                 explorerUrl,
+                ethAmount,
               });
               setShowSocialModal(true);
             }

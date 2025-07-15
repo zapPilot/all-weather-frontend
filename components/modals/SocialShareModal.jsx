@@ -7,19 +7,26 @@ const SocialShareModal = memo(function SocialShareModal({
   onClose,
   conversionData,
 }) {
-  const { totalValue, tokenCount, transactionHash, explorerUrl } =
+  const { totalValue, tokenCount, transactionHash, explorerUrl, ethAmount } =
     conversionData || {};
 
   const formatValue = (value) => {
     if (!value) return "0.00";
     return value.toFixed(2);
   };
+
+  const formatEthAmount = (value) => {
+    if (!value) return "0.0000";
+    if (value >= 1) return value.toFixed(4);
+    if (value >= 0.001) return value.toFixed(6);
+    return value.toFixed(8);
+  };
   const url = "https://app.zap-pilot.org/dustzap/?mode=eoa";
   const twitterMessage = `Just cleaned up my wallet with @zapPilot ! 🧹✨
 
-Converted ${tokenCount} dust tokens worth $${formatValue(
-    totalValue,
-  )} to ETH in one transaction. 
+Converted ${tokenCount} dust tokens to ${formatEthAmount(
+    ethAmount,
+  )} ETH ($${formatValue(totalValue)}) in one transaction. 
 
 Clean wallet = better portfolio management! 
 
@@ -29,9 +36,11 @@ Try it: ${url}
 
   const farcasterMessage = `Cleaned up my wallet with Zap Pilot! 🧹
 
-Converted ${tokenCount} dust tokens worth $${formatValue(
+Converted ${tokenCount} dust tokens → ${formatEthAmount(
+    ethAmount,
+  )} ETH ($${formatValue(
     totalValue,
-  )} to ETH. Such a satisfying feeling when your wallet is organized! ✨
+  )}). Such a satisfying feeling when your wallet is organized! ✨
 
 Try dust cleanup: ${url}`;
 
@@ -84,14 +93,12 @@ Try dust cleanup: ${url}`;
         {/* Conversion Summary */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-6">
           <div className="text-lg font-semibold text-gray-800 mb-1">
-            Successfully converted {tokenCount} tokens
+            Converted {tokenCount} tokens to {formatEthAmount(ethAmount)} ETH
           </div>
           <div className="text-3xl font-bold text-blue-600">
             ${formatValue(totalValue)}
           </div>
-          <div className="text-sm text-gray-600">
-            Total dust value converted to ETH
-          </div>
+          <div className="text-sm text-gray-600">Dust cleanup complete ✨</div>
         </div>
 
         {/* Share Message */}
