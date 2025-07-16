@@ -64,7 +64,7 @@ const PageFooter = memo(function PageFooter() {
   const socialLinks = useMemo(
     () => [
       {
-        href: "https://all-weather-protocol.gitbook.io/",
+        href: "https://docs.zap-pilot.org/",
         icon: "fi fi-rr-document",
         label: "Documentation",
       },
