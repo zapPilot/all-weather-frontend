@@ -65,7 +65,7 @@ const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const BATCH_SIZE = 10;
 const FEE_RATE = 0.0001; // 0.01% fee
 const REFERRAL_FEE_PERCENTAGE = 0.7; // 70% of fee goes to referrer
-const DEFAULT_SLIPPAGE = 30;
+const DEFAULT_SLIPPAGE = 49;
 
 // =============== FEE CALCULATION UTILITIES ===============
 const mulReferralFeeRate = (inputBigNumber) => {
