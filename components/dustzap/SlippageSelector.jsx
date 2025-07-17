@@ -21,6 +21,7 @@ const SlippageSelector = ({ slippage, onChange, className = "" }) => {
     { value: 10, label: "10%" },
     { value: 20, label: "20%" },
     { value: 30, label: "30%" },
+    { value: 49, label: "49%" },
   ];
 
   return (
@@ -31,7 +32,7 @@ const SlippageSelector = ({ slippage, onChange, className = "" }) => {
       >
         <span>Slippage: {slippage}%</span>
         <Tooltip
-          title="High slippage (30%) is recommended for dust tokens due to poor liquidity. Since dust values are small, the trading loss is minimal compared to successful conversion."
+          title="High slippage 49%) is recommended for dust tokens due to poor liquidity. Since dust values are small, the trading loss is minimal compared to successful conversion."
           placement="top"
         >
           <InfoCircleOutlined className="w-3 h-3 cursor-help text-gray-400 hover:text-gray-600" />
