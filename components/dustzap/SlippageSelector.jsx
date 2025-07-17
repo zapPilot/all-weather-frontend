@@ -32,7 +32,7 @@ const SlippageSelector = ({ slippage, onChange, className = "" }) => {
       >
         <span>Slippage: {slippage}%</span>
         <Tooltip
-          title="High slippage 490%) is recommended for dust tokens due to poor liquidity. Since dust values are small, the trading loss is minimal compared to successful conversion."
+          title="High slippage 49%) is recommended for dust tokens due to poor liquidity. Since dust values are small, the trading loss is minimal compared to successful conversion."
           placement="top"
         >
           <InfoCircleOutlined className="w-3 h-3 cursor-help text-gray-400 hover:text-gray-600" />
