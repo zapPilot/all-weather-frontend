@@ -406,7 +406,10 @@ export default class BaseProtocol extends BaseUniswap {
         tokenPricesMappingTable,
         updateProgress,
       );
-      const finalTxns = [...claimTxns, ...txns];
+      const redeemTxns = await this.customRedeemVestingRewards({}, recipient);
+      const finalTxns = [...claimTxns, ...txns, ...redeemTxns];
+      // uncomment this line for camelot redeem
+      // const finalTxns = [...claimTxns, ...redeemTxns];
       this.checkTxnsToDataNotUndefined(finalTxns, "claimAndSwap");
       return finalTxns;
     } catch (error) {
