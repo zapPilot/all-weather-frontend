@@ -517,7 +517,6 @@ const TokenGrid = ({
         {displayTokens.map((token) => {
           const totalValue = token.amount * token.price;
           const symbol = getTokenSymbol(token);
-
           return (
             <div
               key={token.id}
@@ -747,13 +746,12 @@ export default function DustZap() {
     setEthPrice(fetchedEthPrice);
 
     try {
-      const { platformFeeTxns, totalPlatformFeeUSD, feeAmount } =
-        await calculateAndChargeEntryFees(
-          totalValue,
-          activeChain,
-          account,
-          fetchedEthPrice,
-        );
+      const { platformFeeTxns } = await calculateAndChargeEntryFees(
+        totalValue,
+        activeChain,
+        account,
+        fetchedEthPrice,
+      );
 
       // NEW: Fetch swap routes only for selected tokens at conversion time
       const { fetchDustConversionRoutes } = await import(
@@ -828,7 +826,9 @@ export default function DustZap() {
 
             // Show social sharing modal after final successful batch
             if (isLastBatch) {
-              const ethAmount = ethPrice ? totalValue / ethPrice : 0;
+              const ethAmount = fetchedEthPrice
+                ? totalValue / fetchedEthPrice
+                : 0;
               setSocialModalData({
                 totalValue,
                 tokenCount: filteredAndSortedTokens.length,
