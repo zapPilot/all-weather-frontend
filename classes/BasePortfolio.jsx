@@ -333,10 +333,13 @@ export class BasePortfolio {
   }
 
   mulEntryFeeRate(inputBigBumber) {
+    if (this.portfolioName.toLowerCase().includes("eth"))
+      return inputBigBumber.div(200);
     return inputBigBumber.div(100);
   }
 
   entryFeeRate() {
+    if (this.portfolioName.toLowerCase().includes("eth")) return 0.005;
     return 0.01;
   }
   mulReferralFeeRate(inputBigBumber) {
