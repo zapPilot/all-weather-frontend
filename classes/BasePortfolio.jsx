@@ -427,6 +427,7 @@ export class BasePortfolio {
     const tokenPricesMappingTable = await this.getTokenPricesMappingTable();
     actionParams.tokenPricesMappingTable = tokenPricesMappingTable;
     actionParams.updateProgress = updateProgress;
+    console.log("actionParams", actionParams);
     return await this._generateTxnsByAction(actionName, actionParams);
   }
 
@@ -446,10 +447,13 @@ export class BasePortfolio {
         actionParams.tokenInAddress = wethAddress;
         totalTxns.push(wethTxn);
       }
+      console.log("before _calculateAndChargeEntryFees");
       // Calculate and charge entry fees based on chain weights
       const { platformFeeTxns, totalPlatformFeeUSD, zapInAmountAfterFees } =
         await this._calculateAndChargeEntryFees(actionParams);
-
+      console.log("platformFeeTxns", platformFeeTxns);
+      console.log("totalPlatformFeeUSD", totalPlatformFeeUSD);
+      console.log("zapInAmountAfterFees", zapInAmountAfterFees);
       actionParams.zapInAmount = zapInAmountAfterFees;
       actionParams.setPlatformFee(-totalPlatformFeeUSD);
       totalTxns = totalTxns.concat(platformFeeTxns);
@@ -457,8 +461,10 @@ export class BasePortfolio {
       actionName === "crossChainRebalance" ||
       actionName === "localRebalance"
     ) {
+      console.log("before _generateRebalanceTxns");
       return await this._generateRebalanceTxns(actionName, actionParams);
     } else if (actionName === "stake") {
+      console.log("before _generateStakeTxns");
       return await this._generateStakeTxns(
         actionParams.protocolAssetDustInWallet,
         actionParams.updateProgress,
@@ -470,17 +476,20 @@ export class BasePortfolio {
       actionName,
       actionParams,
     );
+    console.log("protocolTxns", protocolTxns, "totalTxns", totalTxns);
     totalTxns = totalTxns.concat(protocolTxns);
     if (
       actionName === "zapIn" &&
       actionParams.protocolAssetDustInWalletLoading === false
     ) {
+      console.log("before _generateStakeTxns");
       const stakeTxns = await this._generateStakeTxns(
         actionParams.protocolAssetDustInWallet,
         actionParams.updateProgress,
       );
       totalTxns = totalTxns.concat(stakeTxns);
     }
+    console.log("totalTxns", totalTxns);
     return totalTxns;
   }
 
