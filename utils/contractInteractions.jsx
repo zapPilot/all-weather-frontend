@@ -144,7 +144,11 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
   },
   wsteth: {
     coinmarketcapApiId: 12409,
-    vaults: ["Index 500 Vault", "Index 500+ Vault"],
+    vaults: ["Index 500 Vault", "Index 500+ Vault", "ETH Vault"],
+  },
+  wrseth: {
+    coinmarketcapApiId: 32690,
+    vaults: ["Index 500 Vault", "Index 500+ Vault", "ETH Vault"],
   },
   pendle: {
     coinmarketcapApiId: 9481,
