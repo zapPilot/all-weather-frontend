@@ -149,7 +149,6 @@ export default class BaseProtocol extends BaseUniswap {
         tokenDecimals,
         tokenPricesMappingTable,
       );
-      console.log("depositParams", depositParams);
       const [zapinTxns, tradingLoss] = await this._executeDeposit(
         recipient,
         depositParams,
@@ -157,7 +156,6 @@ export default class BaseProtocol extends BaseUniswap {
         slippage,
         updateProgress,
       );
-      console.log("zapinTxns", zapinTxns);
       finalTxns = beforeZapInTxns.concat(zapinTxns);
       await this._handleTransactionProgress(
         updateProgress,
@@ -368,8 +366,7 @@ export default class BaseProtocol extends BaseUniswap {
         tokenPricesMappingTable,
         updateProgress,
       );
-      // const txns = [...withdrawTxns, ...redeemTxns, ...batchSwapTxns];
-      const txns = [...withdrawTxns, ...redeemTxns];
+      const txns = [...withdrawTxns, ...redeemTxns, ...batchSwapTxns];
       this.checkTxnsToDataNotUndefined(txns, "zapOut");
       return txns;
     } catch (error) {
