@@ -233,7 +233,7 @@ export class EthVault extends BaseVault {
                 decimalOfBestTokenToZapOut: 18,
               },
             ),
-            weight: 0.1,
+            weight: 0,
           },
           {
             interface: new BasePendlePT(
@@ -265,7 +265,7 @@ export class EthVault extends BaseVault {
               protocolAddress: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
               assetDecimals: 18,
             }),
-            weight: 0.1,
+            weight: 0.05,
           },
           {
             interface: new BaseVelodrome(
@@ -394,6 +394,44 @@ export class EthVault extends BaseVault {
               },
             ),
             weight: 0.3,
+          },
+          {
+            interface: new BasePendlePT(
+              "base",
+              8453,
+              ["pt yoeth 26sep2025"],
+              "single",
+              {
+                marketAddress: "0xee2058f408a43f6d952ebd55812b4bf0d1ca8854",
+                assetAddress: "0xDe4f5ADc052AEd60000F3171785B168A3d27Dcd7",
+                ytAddress: "0x621beDE1CA0043E96735BF7D1BEde903d55Cd62A",
+                assetDecimals: 18,
+                symbolOfBestTokenToZapOut: "weth",
+                bestTokenAddressToZapOut:
+                  "0x4200000000000000000000000000000000000006",
+                decimalOfBestTokenToZapOut: 18,
+              },
+            ),
+            weight: 0.1,
+          },
+          {
+            interface: new BasePendlePT(
+              "base",
+              8453,
+              ["pt wsuperOETHb 26jun2026"],
+              "single",
+              {
+                marketAddress: "0x9621342d8fb87359abe8ab2270f402f202f87b67",
+                assetAddress: "0x5FAB08F1Ec79cA9C21C4516AA38a12EF2c42c0Cc",
+                ytAddress: "0x0000fcEc03d0B1FA261985175b3F0e2D98e3CA24",
+                assetDecimals: 18,
+                symbolOfBestTokenToZapOut: "weth",
+                bestTokenAddressToZapOut:
+                  "0x4200000000000000000000000000000000000006",
+                decimalOfBestTokenToZapOut: 18,
+              },
+            ),
+            weight: 0.1,
           },
         ],
       },
