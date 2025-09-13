@@ -449,7 +449,6 @@ export class BasePortfolio {
       // Calculate and charge entry fees based on chain weights
       const { platformFeeTxns, totalPlatformFeeUSD, zapInAmountAfterFees } =
         await this._calculateAndChargeEntryFees(actionParams);
-
       actionParams.zapInAmount = zapInAmountAfterFees;
       actionParams.setPlatformFee(-totalPlatformFeeUSD);
       totalTxns = totalTxns.concat(platformFeeTxns);
