@@ -325,6 +325,7 @@ export default function IndexOverviews() {
 
       try {
         const txns = await generateIntentTxns(actionParams);
+        console.log("txns", txns);
         setCostsCalculated(true);
         if (
           [

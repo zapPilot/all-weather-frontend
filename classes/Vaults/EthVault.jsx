@@ -4,6 +4,7 @@ import { BaseVelodrome } from "../Velodrome/BaseVelodrome";
 import { BasePendlePT } from "../Pendle/BasePendlePT";
 import { BaseAave } from "../Aave/BaseAave";
 import { BaseVault } from "./BaseVault";
+import { BaseVelodromeV3 } from "../Velodrome/BaseVelodromeV3";
 export class EthVault extends BaseVault {
   constructor() {
     const strategies = {
@@ -186,6 +187,7 @@ export class EthVault extends BaseVault {
               {
                 marketAddress: "0x08a152834de126d2ef83D612ff36e4523FD0017F",
                 assetAddress: "0x1255638EFeca62e12E344E0b6B22ea853eC6e2c7",
+                ytAddress: "0xC8D9369809e48d03FF7B69D7979b174e2D34874C",
                 assetDecimals: 18,
                 symbolOfBestTokenToZapOut: "weth",
                 bestTokenAddressToZapOut:
@@ -204,6 +206,7 @@ export class EthVault extends BaseVault {
               {
                 marketAddress: "0xbf5e60ddf654085f80dae9dd33ec0e345773e1f8",
                 assetAddress: "0xb33808ea0e883138680BA29311a220A7377cdb92",
+                ytAddress: "0xCf1699A84F9eAC75e049ca8134C602cE24509Db6",
                 assetDecimals: 18,
                 symbolOfBestTokenToZapOut: "weth",
                 bestTokenAddressToZapOut:
@@ -222,6 +225,7 @@ export class EthVault extends BaseVault {
               {
                 marketAddress: "0xf78452e0f5C0B95fc5dC8353B8CD1e06E53fa25B",
                 assetAddress: "0x71fBF40651E9D4278a74586AfC99F307f369Ce9A",
+                ytAddress: "0x25BdA1EDd6aF17C61399aA0eb84b93dAA3069764",
                 assetDecimals: 18,
                 symbolOfBestTokenToZapOut: "weth",
                 bestTokenAddressToZapOut:
@@ -229,7 +233,7 @@ export class EthVault extends BaseVault {
                 decimalOfBestTokenToZapOut: 18,
               },
             ),
-            weight: 0.26,
+            weight: 0.1,
           },
           {
             interface: new BasePendlePT(
@@ -240,6 +244,7 @@ export class EthVault extends BaseVault {
               {
                 marketAddress: "0x46d62a8dede1bf2d0de04f2ed863245cbba5e538",
                 assetAddress: "0xaB7F3837E6e721abBc826927B655180Af6A04388",
+                ytAddress: "0xfF9826C358a822D00187B487C349BC5E7F30788A",
                 assetDecimals: 18,
                 symbolOfBestTokenToZapOut: "weth",
                 bestTokenAddressToZapOut:
@@ -247,7 +252,7 @@ export class EthVault extends BaseVault {
                 decimalOfBestTokenToZapOut: 18,
               },
             ),
-            weight: 0.28,
+            weight: 0.1,
           },
         ],
         base: [
@@ -260,7 +265,7 @@ export class EthVault extends BaseVault {
               protocolAddress: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
               assetDecimals: 18,
             }),
-            weight: 0.24,
+            weight: 0.1,
           },
           {
             interface: new BaseVelodrome(
@@ -291,7 +296,104 @@ export class EthVault extends BaseVault {
                 ],
               },
             ),
-            weight: 0.22,
+            weight: 0,
+          },
+          {
+            interface: new BaseVelodromeV3(
+              "base",
+              8453,
+              ["weth", "mseth"],
+              "LP",
+              {
+                protocolName: "aerodrome",
+                protocolVersion: "v3",
+                assetDecimals: 18,
+                assetAddress: "0x827922686190790b37229fd06084350E74485b72",
+                poolAddress: "0x74F72788F4814D7fF3C49B44684aa98Eee140C0E",
+                guageAddress: "0x4f665e05d23a5AB1D1A581e8040B585Fb4d0453d",
+                lpTokens: [
+                  ["weth", "0x4200000000000000000000000000000000000006", 18],
+                  ["mseth", "0x7Ba6F01772924a82D9626c126347A28299E98c98", 18],
+                ],
+                tickers: {
+                  //   const minPrice =
+                  //   1.0001 ** tickLower * 10 ** (18 * 2 - 18 - 6);
+                  // const maxPrice =
+                  //   1.0001 ** tickUpper * 10 ** (18 * 2 - 18 - 6);
+                  // if minPirnce = 3000, then tickLower = log(3000/10^12)/log(1.0001)
+                  tickLower: -50,
+                  tickUpper: 50,
+                  tickSpacing: 50,
+                },
+                rewards: [
+                  {
+                    symbol: "grail",
+                    priceId: {
+                      coinmarketcapApiId: 22949,
+                    },
+                    address: "0x3d9907F9a368ad0a51Be60f7Da3b97cf940982D8",
+                    decimals: 18,
+                  },
+                  {
+                    symbol: "xgrail",
+                    priceId: {
+                      coinmarketcapApiId: 22949,
+                    },
+                    address: "0x3caae25ee616f2c8e13c74da0813402eae3f496b",
+                    decimals: 18,
+                  },
+                  {
+                    symbol: "link",
+                    priceId: {
+                      coinmarketcapApiId: 1975,
+                    },
+                    address: "0xf97f4df75117a78c1A5a0DBb814Af92458539FB4",
+                    decimals: 18,
+                  },
+                  {
+                    symbol: "weth",
+                    priceId: {
+                      coinmarketcapApiId: 1027,
+                    },
+                    address: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                    decimals: 18,
+                  },
+                ],
+              },
+            ),
+            weight: 0.4,
+          },
+          {
+            interface: new BaseVelodromeV3(
+              "base",
+              8453,
+              ["wsteth", "wrseth"],
+              "LP",
+              {
+                protocolName: "aerodrome",
+                protocolVersion: "v3",
+                assetDecimals: 18,
+                assetAddress: "0x827922686190790b37229fd06084350E74485b72",
+                poolAddress: "0x14dcCDd311Ab827c42CCA448ba87B1ac1039e2A4",
+                guageAddress: "0x4197186D3D65f694018Ae4B80355225Ce1dD64AD",
+                lpTokens: [
+                  ["wsteth", "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452", 18],
+                  ["wrseth", "0xEDfa23602D0EC14714057867A78d01e94176BEA0", 18],
+                ],
+                tickers: {
+                  //   const minPrice =
+                  //   1.0001 ** tickLower * 10 ** (18 * 2 - 18 - 6);
+                  // const maxPrice =
+                  //   1.0001 ** tickUpper * 10 ** (18 * 2 - 18 - 6);
+                  // if minPirnce = 3000, then tickLower = log(3000/10^12)/log(1.0001)
+                  tickLower: 1411,
+                  tickUpper: 1415,
+                  tickSpacing: 1,
+                },
+                rewards: [],
+              },
+            ),
+            weight: 0.3,
           },
         ],
       },
