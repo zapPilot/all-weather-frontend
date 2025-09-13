@@ -147,7 +147,10 @@ export const tokensAndCoinmarketcapIdsFromDropdownOptions = {
     vaults: ["Index 500 Vault", "Index 500+ Vault", "ETH Vault"],
   },
   wrseth: {
-    coinmarketcapApiId: 32690,
+    geckoterminal: {
+      chain: "base",
+      address: "0xedfa23602d0ec14714057867a78d01e94176bea0",
+    },
     vaults: ["Index 500 Vault", "Index 500+ Vault", "ETH Vault"],
   },
   pendle: {
