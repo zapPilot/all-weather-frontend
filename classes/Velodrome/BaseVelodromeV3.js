@@ -287,7 +287,7 @@ export class BaseVelodromeV3 extends BaseProtocol {
       1.0001 ** tickUpper * 10 ** (18 * 2 - token0Decimals - token1Decimals);
     const P =
       this.uniqueId() === "base/aerodrome/v3/wsteth-wrseth/BaseVelodromeV3"
-        ? 1.1518081013176722
+        ? 1.0357599662929062
         : tokenPricesMappingTable[tokenMetadatas[0][0]] /
           tokenPricesMappingTable[tokenMetadatas[1][0]];
     const ratio = this.calculateUniswapV3LP(

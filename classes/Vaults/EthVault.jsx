@@ -364,38 +364,6 @@ export class EthVault extends BaseVault {
             weight: 0.4,
           },
           {
-            interface: new BaseVelodromeV3(
-              "base",
-              8453,
-              ["wsteth", "wrseth"],
-              "LP",
-              {
-                protocolName: "aerodrome",
-                protocolVersion: "v3",
-                assetDecimals: 18,
-                assetAddress: "0x827922686190790b37229fd06084350E74485b72",
-                poolAddress: "0x14dcCDd311Ab827c42CCA448ba87B1ac1039e2A4",
-                guageAddress: "0x4197186D3D65f694018Ae4B80355225Ce1dD64AD",
-                lpTokens: [
-                  ["wsteth", "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452", 18],
-                  ["wrseth", "0xEDfa23602D0EC14714057867A78d01e94176BEA0", 18],
-                ],
-                tickers: {
-                  //   const minPrice =
-                  //   1.0001 ** tickLower * 10 ** (18 * 2 - 18 - 6);
-                  // const maxPrice =
-                  //   1.0001 ** tickUpper * 10 ** (18 * 2 - 18 - 6);
-                  // if minPirnce = 3000, then tickLower = log(3000/10^12)/log(1.0001)
-                  tickLower: 1411,
-                  tickUpper: 1415,
-                  tickSpacing: 1,
-                },
-                rewards: [],
-              },
-            ),
-            weight: 0.3,
-          },
-          {
             interface: new BasePendlePT(
               "base",
               8453,
