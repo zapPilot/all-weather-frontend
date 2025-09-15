@@ -321,7 +321,7 @@ export class EthVault extends BaseVault {
                   // const maxPrice =
                   //   1.0001 ** tickUpper * 10 ** (18 * 2 - 18 - 6);
                   // if minPirnce = 3000, then tickLower = log(3000/10^12)/log(1.0001)
-                  tickLower: -50,
+                  tickLower: 0,
                   tickUpper: 50,
                   tickSpacing: 50,
                 },
