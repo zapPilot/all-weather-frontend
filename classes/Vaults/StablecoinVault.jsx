@@ -369,7 +369,26 @@ export class StablecoinVault extends BaseVault {
                 decimalOfBestTokenToZapOut: 6,
               },
             ),
-            weight: 0.16,
+            weight: 0.08,
+          },
+          {
+            interface: new BasePendlePT(
+              "arbitrum",
+              42161,
+              ["pt susdai 20nov2025"],
+              "single",
+              {
+                marketAddress: "0x43023675c804a759cbf900da83dbcc97ee2afbe7",
+                assetAddress: "0x936F210d277bf489A3211CeF9AB4BC47a7B69C96",
+                ytAddress: "0x8dc95C58a25a0E0E041D5fA715a2bdcb3D74Ac1A",
+                assetDecimals: 18,
+                symbolOfBestTokenToZapOut: "usdc",
+                bestTokenAddressToZapOut:
+                  "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+                decimalOfBestTokenToZapOut: 6,
+              },
+            ),
+            weight: 0,
           },
         ],
 
@@ -506,7 +525,7 @@ export class StablecoinVault extends BaseVault {
                 },
               ],
             }),
-            weight: 0.2,
+            weight: 0.1,
           },
           {
             interface: new BaseEquilibria(
@@ -524,6 +543,25 @@ export class StablecoinVault extends BaseVault {
               },
             ),
             weight: 0,
+          },
+          {
+            interface: new BasePendlePT(
+              "base",
+              8453,
+              ["pt yousd 25sep2025"],
+              "single",
+              {
+                marketAddress: "0x44e2b05b2c17a12b37f11de18000922e64e23faa",
+                assetAddress: "0xB04CEe9901C0A8d783fe280DED66e60c13A4e296",
+                ytAddress: "0xe8652183D21bd5DE4C8168c1D6c085DB5333df11",
+                assetDecimals: 6,
+                symbolOfBestTokenToZapOut: "usdc",
+                bestTokenAddressToZapOut:
+                  "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+                decimalOfBestTokenToZapOut: 6,
+              },
+            ),
+            weight: 0.1,
           },
         ],
         op: [
