@@ -557,7 +557,7 @@ export class StablecoinVault extends BaseVault {
                 assetDecimals: 6,
                 symbolOfBestTokenToZapOut: "usdc",
                 bestTokenAddressToZapOut:
-                  "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+                  "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
                 decimalOfBestTokenToZapOut: 6,
               },
             ),
