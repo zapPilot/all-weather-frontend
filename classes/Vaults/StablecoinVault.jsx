@@ -561,6 +561,25 @@ export class StablecoinVault extends BaseVault {
                 decimalOfBestTokenToZapOut: 6,
               },
             ),
+            weight: 0,
+          },
+          {
+            interface: new BasePendlePT(
+              "base",
+              8453,
+              ["pt yu 25dec2025"],
+              "single",
+              {
+                marketAddress: "0x10c2b26cb728b672f78c5badda8c5376d08cbfd0",
+                assetAddress: "0x945c047AF002588F17eFD1Cba951a5a447284d3C",
+                ytAddress: "0x6DF7E4C782A19CbfD3C6D9020B4Ce5Eb5272Fa6b",
+                assetDecimals: 18,
+                symbolOfBestTokenToZapOut: "usdc",
+                bestTokenAddressToZapOut:
+                  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                decimalOfBestTokenToZapOut: 6,
+              },
+            ),
             weight: 0.1,
           },
         ],
