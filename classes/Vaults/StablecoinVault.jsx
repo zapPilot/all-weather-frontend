@@ -369,7 +369,7 @@ export class StablecoinVault extends BaseVault {
                 decimalOfBestTokenToZapOut: 6,
               },
             ),
-            weight: 0.08,
+            weight: 0,
           },
           {
             interface: new BasePendlePT(
@@ -580,7 +580,7 @@ export class StablecoinVault extends BaseVault {
                 decimalOfBestTokenToZapOut: 6,
               },
             ),
-            weight: 0.1,
+            weight: 0,
           },
         ],
         op: [
