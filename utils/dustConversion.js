@@ -129,8 +129,6 @@ export const getTokens = async (chainName, accountAddress) => {
           (token) =>
             !token.optimized_symbol.toLowerCase().includes("-") &&
             !token.optimized_symbol.toLowerCase().includes("/") &&
-            token.optimized_symbol.toLowerCase() !== "usdc" &&
-            token.optimized_symbol.toLowerCase() !== "usdt" &&
             token.optimized_symbol.toLowerCase() !== "eth" &&
             token.optimized_symbol.toLowerCase() !== "alp",
         )
