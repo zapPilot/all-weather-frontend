@@ -113,7 +113,7 @@ export class BasePendlePT extends BaseProtocol {
       this.chainId,
     );
     const resp = await axios.get(
-      `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/markets/${this.customParams.marketAddress}/swap`,
+      `https://api-v2.pendle.finance/core/v2/sdk/${this.chainId}/markets/${this.customParams.marketAddress}/swap`,
       {
         params: {
           receiver: owner,
@@ -171,7 +171,7 @@ export class BasePendlePT extends BaseProtocol {
 
   async _fetchPendleAssetPrice(updateProgress) {
     const resp = await axios.get(
-      `https://api-v2.pendle.finance/core/v1/${this.chainId}/assets/prices`,
+      `https://api-v2.pendle.finance/core/v2/${this.chainId}/assets/prices`,
       {
         params: {
           addresses: this.assetContract.address,
@@ -245,7 +245,7 @@ export class BasePendlePT extends BaseProtocol {
     let zapOutResp;
     if (await this.isExpired()) {
       zapOutResp = await axios.get(
-        `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/redeem`,
+        `https://api-v2.pendle.finance/core/v2/sdk/${this.chainId}/redeem`,
         {
           params: {
             receiver: owner,
@@ -267,7 +267,7 @@ export class BasePendlePT extends BaseProtocol {
       tradingLoss = 0;
     } else {
       zapOutResp = await axios.get(
-        `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/markets/${this.customParams.marketAddress}/swap`,
+        `https://api-v2.pendle.finance/core/v2/sdk/${this.chainId}/markets/${this.customParams.marketAddress}/swap`,
         {
           params: {
             receiver: owner,

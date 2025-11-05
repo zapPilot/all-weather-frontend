@@ -247,7 +247,7 @@ export class BaseEquilibria extends BaseProtocol {
       this.chainId,
     );
     const resp = await axios.get(
-      `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/markets/${this.assetContract.address}/add-liquidity`,
+      `https://api-v2.pendle.finance/core/v2/sdk/${this.chainId}/markets/${this.assetContract.address}/add-liquidity`,
       {
         params: {
           receiver: owner,
@@ -334,7 +334,7 @@ export class BaseEquilibria extends BaseProtocol {
 
   async _fetchPendleAssetPrice(updateProgress) {
     const resp = await axios.get(
-      `https://api-v2.pendle.finance/core/v1/${this.chainId}/prices/assets/addresses`,
+      `https://api-v2.pendle.finance/core/v2/${this.chainId}/prices/assets/addresses`,
       {
         params: {
           addresses: this.assetContract.address,
@@ -448,7 +448,7 @@ export class BaseEquilibria extends BaseProtocol {
       decimalOfBestTokenToZapOut,
     ] = this._getTheBestTokenAddressToZapOut();
     const zapOutResp = await axios.get(
-      `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/markets/${this.assetContract.address}/remove-liquidity`,
+      `https://api-v2.pendle.finance/core/v2/sdk/${this.chainId}/markets/${this.assetContract.address}/remove-liquidity`,
       {
         params: {
           receiver: owner,
