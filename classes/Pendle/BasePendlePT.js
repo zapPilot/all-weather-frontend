@@ -171,7 +171,7 @@ export class BasePendlePT extends BaseProtocol {
 
   async _fetchPendleAssetPrice(updateProgress) {
     const resp = await axios.get(
-      `https://api-v2.pendle.finance/core/v2/${this.chainId}/assets/prices`,
+      `https://api-v2.pendle.finance/core/v1/${this.chainId}/assets/prices`,
       {
         params: {
           addresses: this.assetContract.address,

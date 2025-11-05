@@ -334,7 +334,7 @@ export class BaseEquilibria extends BaseProtocol {
 
   async _fetchPendleAssetPrice(updateProgress) {
     const resp = await axios.get(
-      `https://api-v2.pendle.finance/core/v2/${this.chainId}/prices/assets/addresses`,
+      `https://api-v2.pendle.finance/core/v1/${this.chainId}/prices/assets/addresses`,
       {
         params: {
           addresses: this.assetContract.address,
