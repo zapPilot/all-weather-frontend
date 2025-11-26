@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal, Button, Input, message, Alert } from "antd";
 import {
   useActiveAccount,
@@ -10,6 +10,8 @@ import { transfer } from "thirdweb/extensions/erc20";
 import { isAddress } from "ethers/lib/utils";
 import TokenDropdownInput from "../views/TokenDropdownInput";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
+import tokens from "../views/components/slim_tokens.json";
+import { tokensForDropDown } from "../../utils/contractInteractions";
 
 const WithdrawModal = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,6 +24,26 @@ const WithdrawModal = () => {
   const chain = useActiveWalletChain();
   const { mutate: sendTransaction } = useSendTransaction();
 
+  // Set default token when modal opens and chain is available
+  useEffect(() => {
+    if (isModalOpen && chain && !selectedToken) {
+      const chainId = chain.id;
+      const availableTokens = tokens.props.pageProps.tokenList[
+        String(chainId)
+      ]?.filter((option) =>
+        tokensForDropDown.some(
+          (symbol) => option.symbol.toLowerCase() === symbol && option.logoURI2,
+        ),
+      );
+
+      if (availableTokens && availableTokens.length > 0) {
+        const firstToken = availableTokens[0];
+        const tokenKey = `${firstToken.symbol}-${firstToken.address}-${firstToken.decimals}`;
+        setSelectedToken(tokenKey);
+      }
+    }
+  }, [isModalOpen, chain, selectedToken]);
+
   const showModal = () => {
     setIsModalOpen(true);
   };
@@ -29,6 +51,7 @@ const WithdrawModal = () => {
   const handleCancel = () => {
     setIsModalOpen(false);
     // Reset state
+    setSelectedToken(null);
     setAmount(0);
     setRecipient("");
   };
