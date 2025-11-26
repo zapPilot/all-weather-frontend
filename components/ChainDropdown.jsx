@@ -3,50 +3,54 @@ import Image from "next/image";
 import { normalizeChainName } from "../utils/chainHelper";
 import { base, arbitrum, optimism } from "thirdweb/chains";
 
-const createSwitchItems = (switchChain) => [
-  {
-    key: "1",
-    label: (
-      <Button type="link" onClick={() => switchChain(arbitrum)}>
-        <Image
-          src={`/chainPicturesWebp/arbitrum.webp`}
-          alt="arbitrum"
-          height={16}
-          width={16}
-          className="rounded-full"
-        />
-      </Button>
-    ),
-  },
-  {
-    key: "2",
-    label: (
-      <Button type="link" onClick={() => switchChain(base)}>
-        <Image
-          src={`/chainPicturesWebp/base.webp`}
-          alt="base"
-          height={16}
-          width={16}
-          className="rounded-full"
-        />
-      </Button>
-    ),
-  },
-  {
-    key: "3",
-    label: (
-      <Button type="link" onClick={() => switchChain(optimism)}>
-        <Image
-          src={`/chainPicturesWebp/optimism.webp`}
-          alt="optimism"
-          height={16}
-          width={16}
-          className="rounded-full"
-        />
-      </Button>
-    ),
-  },
-];
+const createSwitchItems = (switchChain) => {
+  const safeSwitch =
+    switchChain || (() => console.warn("switchChain is not available"));
+  return [
+    {
+      key: "1",
+      label: (
+        <Button type="link" onClick={() => safeSwitch(arbitrum)}>
+          <Image
+            src={`/chainPicturesWebp/arbitrum.webp`}
+            alt="arbitrum"
+            height={16}
+            width={16}
+            className="rounded-full"
+          />
+        </Button>
+      ),
+    },
+    {
+      key: "2",
+      label: (
+        <Button type="link" onClick={() => safeSwitch(base)}>
+          <Image
+            src={`/chainPicturesWebp/base.webp`}
+            alt="base"
+            height={16}
+            width={16}
+            className="rounded-full"
+          />
+        </Button>
+      ),
+    },
+    {
+      key: "3",
+      label: (
+        <Button type="link" onClick={() => safeSwitch(optimism)}>
+          <Image
+            src={`/chainPicturesWebp/optimism.webp`}
+            alt="optimism"
+            height={16}
+            width={16}
+            className="rounded-full"
+          />
+        </Button>
+      ),
+    },
+  ];
+};
 
 const ChainDropdown = ({ chainId, switchChain }) => {
   const switchItems = createSwitchItems(switchChain);

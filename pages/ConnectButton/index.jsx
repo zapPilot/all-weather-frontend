@@ -12,6 +12,7 @@ import { defineChain } from "thirdweb";
 import { Switch } from "antd";
 import { useWalletMode } from "../contextWrappers/WalletModeContext.jsx";
 import { useRouter } from "next/router";
+import WithdrawModal from "./WithdrawModal";
 
 const WALLETS = [
   createWallet("io.rabby"),
@@ -117,6 +118,7 @@ function ConfiguredConnectButton() {
         checkedChildren="AA"
         unCheckedChildren="EOA"
       />
+      {aaOn && <WithdrawModal />}
       <ConnectButton
         key={aaOn ? "aa-mode" : "eoa-mode"}
         client={THIRDWEB_CLIENT}
