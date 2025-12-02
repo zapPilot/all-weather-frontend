@@ -469,7 +469,7 @@ export class StablecoinVault extends BaseVault {
                 ],
               },
             ),
-            weight: 0.1,
+            weight: 0.05,
           },
           {
             interface: new BaseVelodrome(
@@ -607,7 +607,7 @@ export class StablecoinVault extends BaseVault {
                 },
               ],
             }),
-            weight: 0,
+            weight: 0.05,
           },
           {
             interface: new BaseVelodrome("op", 10, ["usdc", "msusd"], "LP", {
