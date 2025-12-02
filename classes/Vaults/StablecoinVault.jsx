@@ -22,7 +22,7 @@ export class StablecoinVault extends BaseVault {
               "single",
               {},
             ),
-            weight: 0.35,
+            weight: 0.8,
           },
           {
             interface: new Vela(
@@ -500,7 +500,7 @@ export class StablecoinVault extends BaseVault {
                 ],
               },
             ),
-            weight: 0.09,
+            weight: 0,
           },
           {
             interface: new BaseVelodrome("base", 8453, ["bold", "usdc"], "LP", {
@@ -607,7 +607,7 @@ export class StablecoinVault extends BaseVault {
                 },
               ],
             }),
-            weight: 0.05,
+            weight: 0,
           },
           {
             interface: new BaseVelodrome("op", 10, ["usdc", "msusd"], "LP", {
