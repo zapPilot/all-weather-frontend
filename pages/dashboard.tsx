@@ -157,7 +157,7 @@ const Dashboard: NextPage = () => {
         uniqueQueryTokens: longTermBondFilterDict,
         unexpandable: unexpandable.long_term_bond,
         setUnexpandable: updateState,
-        chain_blacklist: ["ethereum", "flare", "iota evm"],
+        chain_blacklist: ["flare", "iota evm"],
         topN: 10,
       },
       {
@@ -171,7 +171,6 @@ const Dashboard: NextPage = () => {
         unexpandable: unexpandable.gold,
         setUnexpandable: updateState,
         chain_blacklist: [
-          "ethereum",
           "aptos",
           "sui",
           "core",
@@ -195,7 +194,7 @@ const Dashboard: NextPage = () => {
         uniqueQueryTokens: btcFilterDict,
         unexpandable: unexpandable.btc,
         setUnexpandable: updateState,
-        chain_blacklist: ["ethereum"],
+        chain_blacklist: [],
         topN: defaultTopN,
       },
     ],
