@@ -66,13 +66,14 @@
     "thirdweb": "^5.68.0",
     "tslib": "^2.6.2",
     "viem": "2.x",
-    "zod": "^3.22.2"
+    "zod": "^3.22.2",
+    "@types/node": "^18.16.12",
+    "@types/react": "^18.2.6",
+    "@types/react-dom": "^18.2.4"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.1.2",
-    "@types/node": "^18.16.12",
-    "@types/react": "^18.2.6",
     "@types/testing-library__user-event": "^4.2.0",
     "@vitejs/plugin-react": "^4.2.1",
     "@vitest/coverage-v8": "^3.2.4",
