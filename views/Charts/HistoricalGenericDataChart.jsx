@@ -1,4 +1,4 @@
-import logger from "../../../utils/logger";
+import logger from "../../utils/logger";
 import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
 import dynamic from "next/dynamic";
 import { CHART_CONFIGS } from "./chartConfig";

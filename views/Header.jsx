@@ -3,8 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import NavBar from "./NavBar.jsx";
 import { ConfigProvider, Drawer } from "antd";
-import styles from "../../styles/Home.module.css";
-import { MenuIcon, CloseIcon } from "../../utils/icons.jsx";
+import styles from "../styles/Home.module.css";
+import { MenuIcon, CloseIcon } from "../utils/icons.jsx";
 // Extract theme configuration outside component to prevent recreation
 const DRAWER_THEME = {
   token: {

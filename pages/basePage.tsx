@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Layout, Affix, notification } from "antd";
 import styles from "../styles/Home.module.css";
-import HeaderInner from "./views/Header";
+import HeaderInner from "../views/Header";
 import "@flaticon/flaticon-uicons/css/brands/all.css";
 import "@flaticon/flaticon-uicons/css/regular/all.css";
 import ConfiguredConnectButton from "./ConnectButton";

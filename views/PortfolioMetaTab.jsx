@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Bundle from "../bundle";
+import Bundle from "../pages/bundle";
 import { ConfigProvider, Tabs } from "antd";
 import Performance from "./Performance.jsx";
 import { useSelector } from "react-redux";

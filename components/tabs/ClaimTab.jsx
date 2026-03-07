@@ -1,5 +1,5 @@
 import { Button } from "antd";
-import TokenDropdownInput from "../../pages/views/TokenDropdownInput.jsx";
+import TokenDropdownInput from "../../views/TokenDropdownInput.jsx";
 import Image from "next/image";
 import { MINIMUM_CLAIM_AMOUNT } from "../../config/minimumThresholds";
 

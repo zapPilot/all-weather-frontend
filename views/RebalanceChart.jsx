@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 import React, { useState, useEffect, useCallback } from "react";
-import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
+import { getPortfolioHelper } from "../utils/thirdwebSmartWallet.ts";
 
 import { Sunburst, LabelSeries } from "react-vis";
 import { EXTENDED_DISCRETE_COLOR_RANGE } from "react-vis/dist/theme";
@@ -27,8 +27,8 @@ import { useSelector } from "react-redux";
 import { useActiveAccount } from "thirdweb/react";
 import Link from "next/link";
 import { Typography, message } from "antd";
-import { CopyIcon } from "../../utils/icons.jsx";
-import ConfiguredConnectButton from "../ConnectButton";
+import { CopyIcon } from "../utils/icons.jsx";
+import ConfiguredConnectButton from "../pages/ConnectButton";
 const { Title, Paragraph, Text } = Typography;
 
 const DefaultValue = {

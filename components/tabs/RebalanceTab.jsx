@@ -2,7 +2,7 @@ import logger from "../../utils/logger";
 import { Button, Spin } from "antd";
 import { useState, useCallback, useMemo, memo } from "react";
 import ActionItem from "../common/ActionItem";
-import TokenDropdownInput from "../../pages/views/TokenDropdownInput.jsx";
+import TokenDropdownInput from "../../views/TokenDropdownInput.jsx";
 import { actionNameMap } from "../common/ActionItem";
 import { formatLockUpPeriod } from "../../utils/general";
 // Add sleep utility function

@@ -12,11 +12,11 @@ import {
   columnMapping,
 } from "../utils/tableExpansionUtils";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import LinkModal from "./views/components/LinkModal";
+import LinkModal from "../views/components/LinkModal";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { walletAddressChanged } from "../lib/features/subscriptionSlice";
-import TableComponent, { ExpandTableComponent } from "./views/PoolsTable";
+import TableComponent, { ExpandTableComponent } from "../views/PoolsTable";
 import { useWindowWidth } from "../utils/chartUtils";
 import { useActiveAccount } from "thirdweb/react";
 

@@ -1,23 +1,23 @@
 import React, { memo, useMemo, useCallback } from "react";
 import { useEffect } from "react";
 import Image from "next/image";
-import styles from "../../styles/Home.module.css";
+import styles from "../styles/Home.module.css";
 import { useDispatch, useSelector } from "react-redux";
 import { useActiveAccount } from "thirdweb/react";
-import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
+import { getPortfolioHelper } from "../utils/thirdwebSmartWallet.ts";
 import Link from "next/link";
 import {
   fetchDataStart,
   fetchDataSuccess,
   fetchDataFailure,
-} from "../../lib/features/apiSlice";
-import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
-import { walletAddressChanged } from "../../lib/features/subscriptionSlice";
+} from "../lib/features/apiSlice";
+import { fetchStrategyMetadata } from "../lib/features/strategyMetadataSlice.js";
+import { walletAddressChanged } from "../lib/features/subscriptionSlice";
 import axios from "axios";
 import { Spin } from "antd";
 import { useRouter } from "next/router";
-import Vaults from "../indexes/index.jsx";
-import content from "../../config/content";
+import Vaults from "../pages/indexes/index.jsx";
+import content from "../config/content";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 

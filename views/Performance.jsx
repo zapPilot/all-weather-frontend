@@ -8,14 +8,14 @@ import { CHART_CONFIGS } from "./Charts/chartConfig";
 import RebalanceChart from "./RebalanceChart";
 import APRDetails from "./APRrelated.jsx";
 import HistoricalGenericDataChart from "./Charts/HistoricalGenericDataChart.jsx";
-import { useWindowWidth } from "../../utils/chartUtils";
-import { timeAgo } from "../../utils/general";
+import { useWindowWidth } from "../utils/chartUtils";
+import { timeAgo } from "../utils/general";
 import {
   fetchDataStart,
   fetchDataSuccess,
   fetchDataFailure,
-} from "../../lib/features/apiSlice";
-import { ReloadIcon } from "../../utils/icons.jsx";
+} from "../lib/features/apiSlice";
+import { ReloadIcon } from "../utils/icons.jsx";
 const getBalanceHistoryUrl = (searchWalletAddress, walletAddress) =>
   `${process.env.NEXT_PUBLIC_SDK_API_URL}/balances/${
     searchWalletAddress === undefined ? walletAddress : searchWalletAddress

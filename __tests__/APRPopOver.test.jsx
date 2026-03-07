@@ -1,6 +1,6 @@
 import { expect, describe, it } from "vitest";
 import { render, screen } from "./test-utils.tsx";
-import APRPopOver from "../pages/views/APRPopOver";
+import APRPopOver from "../views/APRPopOver";
 
 describe("APRPopOver Component", () => {
   it("Test its default rendering", async () => {

@@ -1,7 +1,7 @@
 import { expect, describe, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "./test-utils.tsx";
 import React from "react";
-import TokenDropdownInput from "../pages/views/TokenDropdownInput";
+import TokenDropdownInput from "../views/TokenDropdownInput";
 import * as thirdwebReact from "thirdweb/react";
 
 // Mock the thirdweb hooks
@@ -16,7 +16,7 @@ vi.mock("thirdweb/react", async () => {
 });
 
 // Mock the NumericInput component
-vi.mock("../pages/views/NumberInput", () => ({
+vi.mock("../views/NumberInput", () => ({
   default: ({ placeholder, value, onChange }) => (
     <input
       data-testid="numeric-input"

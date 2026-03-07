@@ -1,5 +1,5 @@
 import { Button, Statistic, Switch } from "antd";
-import TokenDropdownInput from "../../pages/views/TokenDropdownInput.jsx";
+import TokenDropdownInput from "../../views/TokenDropdownInput.jsx";
 import ConfiguredConnectButton from "../../pages/ConnectButton";
 import { getCurrentTimeSeconds } from "@across-protocol/app-sdk";
 import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";

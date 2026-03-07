@@ -1,6 +1,6 @@
 import React from "react";
 import { useEffect } from "react";
-import PortfolioMetaTab from "../views/PortfolioMetaTab.jsx";
+import PortfolioMetaTab from "../../views/PortfolioMetaTab.jsx";
 import { Row, Col } from "antd";
 import BasePage from "../basePage";
 import styles from "../../styles/Home.module.css";

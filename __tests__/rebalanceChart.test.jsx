@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { expect, describe, it, vi } from "vitest";
 import { render, screen, fireEvent } from "./test-utils.tsx";
-import RebalanceChart from "../pages/views/RebalanceChart";
+import RebalanceChart from "../views/RebalanceChart";
 
 // mock the thirdweb react module
 vi.mock("thirdweb/react", async () => {

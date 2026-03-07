@@ -5,11 +5,11 @@ import {
   useActiveWalletChain,
   useActiveAccount,
 } from "thirdweb/react";
-import THIRDWEB_CLIENT from "../../utils/thirdweb";
+import THIRDWEB_CLIENT from "../utils/thirdweb";
 import { arbitrum, base, optimism, bsc, polygon } from "thirdweb/chains";
 import { defineChain } from "thirdweb";
 import NumericInput from "./NumberInput";
-import { selectBefore } from "../../utils/contractInteractions";
+import { selectBefore } from "../utils/contractInteractions";
 
 const chainIdToChain = {
   8453: base,
