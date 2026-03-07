@@ -82,12 +82,7 @@ jobs:
         run: |
           echo "${{ secrets.PROD_ENV_FILE }}" > .env
       - name: Build and Export
-        # Your `yarn build` command automatically triggers 'next build' which handles 'output: export'
-        # if configured in next.config.js. The separate 'yarn export' is redundant if 'output: export' is set.
-        # However, keeping both is fine if your 'export' script specifically handles things.
-        run: |
-          yarn build
-          yarn export # This command is key for generating the 'out' directory
+        run: yarn build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
