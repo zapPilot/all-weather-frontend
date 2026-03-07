@@ -47,13 +47,13 @@ import {
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import axios from "axios";
 import openNotificationWithIcon from "../../utils/notification.js";
-import APRComposition from "../views/components/APRComposition";
+import APRComposition from "../../views/components/APRComposition";
 import { fetchStrategyMetadata } from "../../lib/features/strategyMetadataSlice.js";
 import { generateIntentTxns } from "../../classes/main.js";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
 import { isAddress } from "ethers/lib/utils";
 import styles from "../../styles/indexOverviews.module.css";
-import tokens from "../views/components/slim_tokens.json";
+import tokens from "../../views/components/slim_tokens.json";
 import useTabItems from "../../hooks/useTabItems";
 // Lazy load heavy portfolio components
 const PortfolioSummary = lazy(() => import("../portfolio/PortfolioSummary"));

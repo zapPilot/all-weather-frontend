@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Spin } from "antd";
 import { useSelector } from "react-redux";
 import Image from "next/image";
-import { WarningIcon } from "../../utils/icons.jsx";
+import { WarningIcon } from "../utils/icons.jsx";
 const APRPopOver = () => {
   const { data, loading } = useSelector((state) => state.api);
   const [missingPools, setMissingPools] = useState([]);

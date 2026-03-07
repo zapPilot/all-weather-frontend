@@ -1,5 +1,5 @@
 import type { NextPage } from "next";
-import ExampleUI from "./views/ExampleUI.jsx";
+import ExampleUI from "../views/ExampleUI.jsx";
 import BasePage from "./basePage.tsx";
 
 const Home: NextPage = () => {

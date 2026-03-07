@@ -8,9 +8,9 @@ import {
 import { getContract, prepareTransaction, toWei } from "thirdweb";
 import { transfer } from "thirdweb/extensions/erc20";
 import { isAddress } from "ethers/lib/utils";
-import TokenDropdownInput from "../views/TokenDropdownInput";
+import TokenDropdownInput from "../../views/TokenDropdownInput";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
-import tokens from "../views/components/slim_tokens.json";
+import tokens from "../../views/components/slim_tokens.json";
 import { tokensForDropDown } from "../../utils/contractInteractions";
 
 const WithdrawModal = () => {

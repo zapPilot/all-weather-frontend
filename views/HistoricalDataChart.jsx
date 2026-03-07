@@ -1,4 +1,4 @@
-import logger from "../../utils/logger";
+import logger from "../utils/logger";
 import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Spin } from "antd";
@@ -41,7 +41,7 @@ const HistoricalDataChart = ({ portfolioName }) => {
         if (portfolioName === "Index 500 Vault") {
           // Lazy load performance data
           performanceData = await import(
-            "../../public/performanceCharts/performance_data.json"
+            "../public/performanceCharts/performance_data.json"
           );
 
           if (!isMounted) return;

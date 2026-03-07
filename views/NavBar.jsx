@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 import { ethers } from "ethers";
 import { ConfigProvider, notification, Menu } from "antd";
-import openNotificationWithIcon from "../../utils/notification.js";
+import openNotificationWithIcon from "../utils/notification.js";
 
 export default function NavBar({ mode }) {
   const router = useRouter();

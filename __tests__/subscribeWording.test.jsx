@@ -1,6 +1,6 @@
 import { expect, describe, it } from "vitest";
 import { render, screen } from "./test-utils.tsx";
-import SubscribeWording from "../pages/views/SubscribeWording";
+import SubscribeWording from "../views/SubscribeWording";
 
 describe("SubscribeWording Component", () => {
   it("Test its default rendering", async () => {

@@ -1,5 +1,5 @@
 import React, { memo } from "react";
-import HistoricalDataChart from "../views/HistoricalDataChart";
+import HistoricalDataChart from "../../views/HistoricalDataChart";
 
 const HistoricalData = memo(function HistoricalData({ portfolioName }) {
   return (

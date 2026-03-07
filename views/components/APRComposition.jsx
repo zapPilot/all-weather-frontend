@@ -1,6 +1,6 @@
 import React, { memo, useMemo } from "react";
 import { Popover, Image, Spin } from "antd";
-import { InfoIcon } from "../../../utils/icons.jsx";
+import { InfoIcon } from "../../utils/icons.jsx";
 
 // Extracted token display component for better performance
 const TokenDisplay = memo(function TokenDisplay({ symbol, usdValue }) {

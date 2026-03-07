@@ -1,9 +1,7 @@
 import { Typography, Spin } from "antd";
 import React, { useMemo, memo, lazy, Suspense } from "react";
 // Lazy load APRComposition as well
-const APRComposition = lazy(() =>
-  import("../pages/views/components/APRComposition"),
-);
+const APRComposition = lazy(() => import("../views/components/APRComposition"));
 
 // Lazy load heavy tab components to reduce initial bundle size
 const ZapInTab = lazy(() => import("../components/tabs/ZapInTab"));

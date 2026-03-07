@@ -1,6 +1,6 @@
 import React, { useState, memo } from "react";
 import PropTypes from "prop-types";
-import { PlusCircleIcon } from "../../utils/icons.jsx";
+import { PlusCircleIcon } from "../utils/icons.jsx";
 const ExpandTableComponent = ({
   column,
   columnData,

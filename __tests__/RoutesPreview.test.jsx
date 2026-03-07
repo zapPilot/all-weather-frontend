@@ -1,6 +1,6 @@
 import { expect, describe, it } from "vitest";
 import { render, screen } from "./test-utils";
-import ExampleUI from "../pages/views/ExampleUI";
+import ExampleUI from "../views/ExampleUI";
 import userEvent from "@testing-library/user-event";
 
 describe("RoutesPreview Component", () => {
