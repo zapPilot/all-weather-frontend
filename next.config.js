@@ -73,6 +73,7 @@ const nextConfig = {
     unoptimized: isDev ? false : true,
     domains: ["static.debank.com"],
   },
+  turbopack: {},
   basePath: "", // Keep this if you're deploying to the root of your GitHub Pages domain (e.g., username.github.io)
   assetPrefix: "/", // Keep this
 };
