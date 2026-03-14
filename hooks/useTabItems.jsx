@@ -186,7 +186,10 @@ export default function useTabItems({
         label: "Deposit",
         children: (
           <Suspense fallback={<Spin size="large" />}>
-            <ZapInTab {...props} />
+            <ZapInTab
+              {...props}
+              availableAssetChains={props.availableAssetChainsForDeposit}
+            />
           </Suspense>
         ),
       },

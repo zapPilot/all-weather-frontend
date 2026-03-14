@@ -69,6 +69,7 @@ import { determineSlippage } from "../../utils/slippage";
 import {
   normalizeChainName,
   getAvailableAssetChains,
+  getAvailableAssetChainsForDeposit,
   calCrossChainInvestmentAmount,
 } from "../../utils/chainHelper";
 import {
@@ -247,6 +248,8 @@ export default function IndexOverviews() {
 
   const currentChain = normalizeChainName(chainId?.name);
   const availableAssetChains = getAvailableAssetChains(portfolioHelper);
+  const availableAssetChainsForDeposit =
+    getAvailableAssetChainsForDeposit(portfolioHelper);
 
   const handleAAWalletAction = useCallback(
     async (actionName, onlyThisChain = false, handleStatusUpdate = null) => {
@@ -359,8 +362,13 @@ export default function IndexOverviews() {
 
               setChainStatus((prevStatus) => {
                 const newStatus = { ...prevStatus, [currentChain]: true };
-                const allChainsComplete =
-                  Object.values(newStatus).every(Boolean);
+                const chainsForAction =
+                  actionName === "zapIn"
+                    ? availableAssetChainsForDeposit
+                    : availableAssetChains;
+                const allChainsComplete = chainsForAction.every(
+                  (c) => newStatus[c],
+                );
 
                 if (allChainsComplete) {
                   (async () => {
@@ -404,9 +412,8 @@ export default function IndexOverviews() {
                   `${explorerUrl}/tx/${txnHash}`,
                 );
                 if (lastBatch) {
-                  // Get the next chain using the updated status
                   const newNextChain = getNextChain(
-                    availableAssetChains,
+                    chainsForAction,
                     newStatus,
                     normalizeChainName(
                       data?.chain?.name ||
@@ -503,6 +510,7 @@ export default function IndexOverviews() {
       setRefreshTrigger,
       currentChain,
       availableAssetChains,
+      availableAssetChainsForDeposit,
       sendBatchTransaction,
     ],
   );
@@ -885,6 +893,7 @@ export default function IndexOverviews() {
       pendingRewards,
       pendingRewardsLoading,
       availableAssetChains,
+      availableAssetChainsForDeposit,
       chainStatus,
       onRefresh: handleRefresh,
       lockUpPeriod,
@@ -920,6 +929,7 @@ export default function IndexOverviews() {
       pendingRewards,
       pendingRewardsLoading,
       availableAssetChains,
+      availableAssetChainsForDeposit,
       chainStatus,
       handleRefresh,
       lockUpPeriod,
@@ -995,11 +1005,18 @@ export default function IndexOverviews() {
           portfolioHelper,
         )}
         zapOutAmount={usdBalance * zapOutPercentage}
-        availableAssetChains={availableAssetChains}
+        availableAssetChains={
+          actionName === "zapIn"
+            ? availableAssetChainsForDeposit
+            : availableAssetChains
+        }
         currentChain={currentChain}
         chainStatus={chainStatus || {}}
         currentTab={tabKey}
-        allChainsComplete={Object.values(chainStatus || {}).every(Boolean)}
+        allChainsComplete={(actionName === "zapIn"
+          ? availableAssetChainsForDeposit
+          : availableAssetChains
+        ).every((c) => (chainStatus || {})[c])}
         errorMsg={errorMsg}
         tokenPricesMappingTable={tokenPricesMappingTable}
       />

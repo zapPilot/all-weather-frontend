@@ -72,3 +72,17 @@ export const getAvailableAssetChains = (portfolioHelper) => {
     ),
   ];
 };
+
+const DEPRECATED_DEPOSIT_CHAINS = ["op"];
+
+/**
+ * Gets available chains for deposit, excluding deprecated chains.
+ * Withdraw still uses the full list from getAvailableAssetChains.
+ * @param {Object} portfolioHelper - The portfolio helper instance
+ * @returns {string[]} Array of chain names eligible for deposit
+ */
+export const getAvailableAssetChainsForDeposit = (portfolioHelper) => {
+  return getAvailableAssetChains(portfolioHelper).filter(
+    (chain) => !DEPRECATED_DEPOSIT_CHAINS.includes(chain),
+  );
+};
