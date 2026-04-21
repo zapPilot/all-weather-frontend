@@ -149,11 +149,13 @@ export class PortfolioFlowChartBuilder {
           actionParams.outputToken,
           actionParams.outputTokenAddress,
           weight,
+          false,
         );
       case "claimAndSwap":
         return protocol.interface.getClaimFlowChartData(
           actionParams.outputToken,
           actionParams.outputTokenAddress,
+          false,
         );
       default:
         throw new Error(`Invalid action name ${actionName}`);

@@ -124,9 +124,14 @@ describe("Equilibria ETH Vault", () => {
       // redeem
       expect(txns[4].to).toBe("0x96c4a48abdf781e9c931cfa92ec0167ba219ad8e");
 
-      // swap
-      expect(txns[6].to).toBe("0x1111111254EEB25477B68fb85Ed929f73A960582");
-      expect(txns[8].to).toBe("0x82af49447d8a07e3bd95bd0d56f35241523fbab1");
+      // direct zapOut no longer auto-swaps rewards/principal
+      expect(
+        txns.some(
+          (txn) =>
+            txn.to?.toLowerCase() ===
+            "0x1111111254eeb25477b68fb85ed929f73a960582",
+        ),
+      ).toBe(false);
     } catch (error) {
       expect(error.message).toBe("No protocol txns");
     }
@@ -171,16 +176,12 @@ describe("Equilibria ETH Vault", () => {
     // if xeqb is 0, then no redeem
     // expect(txns[1][0].to).toBe("0x96c4a48abdf781e9c931cfa92ec0167ba219ad8e");
 
-    if (txns.length === 4) {
-      // approve and swap * 2
-      expect(
-        (await encode(txns[2])).includes(
-          "1111111254eeb25477b68fb85ed929f73a960582",
-        ),
-      ).toBe(true);
-      expect(txns[3].to).toBe("0x1111111254EEB25477B68fb85Ed929f73A960582");
-    } else {
-      expect(txns.length).toBe(1);
-    }
+    expect(
+      txns.some(
+        (txn) =>
+          txn.to?.toLowerCase() ===
+          "0x1111111254eeb25477b68fb85ed929f73a960582",
+      ),
+    ).toBe(false);
   });
 });

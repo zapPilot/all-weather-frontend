@@ -295,6 +295,7 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
     customParams,
     existingInvestmentPositionsInThisChain,
+    options = {},
   ) {
     try {
       let withdrawTxns = [];
@@ -356,16 +357,19 @@ export default class BaseProtocol extends BaseUniswap {
         redeemTxns = redeemTxnsFromLP;
         withdrawTokenAndBalance = withdrawTokenAndBalanceFromLP;
       }
-      const batchSwapTxns = await this._batchSwap(
-        recipient,
-        withdrawTokenAndBalance,
-        outputToken,
-        outputTokenSymbol,
-        outputTokenDecimals,
-        slippage,
-        tokenPricesMappingTable,
-        updateProgress,
-      );
+      const batchSwapTxns =
+        options.autoSwap === false
+          ? []
+          : await this._batchSwap(
+              recipient,
+              withdrawTokenAndBalance,
+              outputToken,
+              outputTokenSymbol,
+              outputTokenDecimals,
+              slippage,
+              tokenPricesMappingTable,
+              updateProgress,
+            );
       const txns = [...withdrawTxns, ...redeemTxns, ...batchSwapTxns];
       this.checkTxnsToDataNotUndefined(txns, "zapOut");
       return txns;
@@ -382,6 +386,7 @@ export default class BaseProtocol extends BaseUniswap {
     slippage,
     tokenPricesMappingTable,
     updateProgress,
+    options = {},
   ) {
     try {
       await this._updateProgressAndWait(
@@ -394,16 +399,19 @@ export default class BaseProtocol extends BaseUniswap {
         tokenPricesMappingTable,
         updateProgress,
       );
-      const txns = await this._batchSwap(
-        recipient,
-        claimedTokenAndBalance,
-        outputToken,
-        outputTokenSymbol,
-        outputTokenDecimals,
-        slippage,
-        tokenPricesMappingTable,
-        updateProgress,
-      );
+      const txns =
+        options.autoSwap === false
+          ? []
+          : await this._batchSwap(
+              recipient,
+              claimedTokenAndBalance,
+              outputToken,
+              outputTokenSymbol,
+              outputTokenDecimals,
+              slippage,
+              tokenPricesMappingTable,
+              updateProgress,
+            );
       const redeemTxns = await this.customRedeemVestingRewards({}, recipient);
       const finalTxns = [...claimTxns, ...txns, ...redeemTxns];
       // uncomment this line for camelot redeem

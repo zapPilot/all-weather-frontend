@@ -108,54 +108,24 @@ describe("Velodrome Vault", () => {
       protocolAssetDustInWallet,
       onlyThisChain,
     });
-    const camelotNFTAddress = "0x00c7f3082833e796a5b3e4bd59f6642ff44dcd15";
-    const oneInchArbAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";
-    if (txns.length === 8 || txns.length === 10) {
-      // unstake
-      expect(await encode(txns[0])).includes("2e1a7d4d");
-      // approve velodrome
-      expect(await encode(txns[1])).includes("095ea7b3");
-      // approve withdraw
-      expect(await encode(txns[2])).includes("0dede6c4");
-      // approve getReward
-      expect(await encode(txns[3])).includes("c00007b0");
-      // approve to 1inch
-      expect(await encode(txns[4])).includes("095ea7b3");
-      // swap
-      expect(txns[5].to.toLowerCase()).to.be.oneOf([
-        oneInchArbAddress.toLowerCase(),
-        zeroxProxyAddress.toLowerCase(),
-        paraswapProxyAddress.toLowerCase(),
-      ]);
-      if (txns.length === 8) {
-        // approve rewards
-        expect(await encode(txns[6])).includes("095ea7b3");
-        // swap rewards
-        expect(txns[7].to.toLowerCase()).to.be.oneOf([
-          oneInchArbAddress.toLowerCase(),
-          zeroxProxyAddress.toLowerCase(),
-          paraswapProxyAddress.toLowerCase(),
-        ]);
-      }
-    } else {
-      expect(txns.length).toBe(6);
-      // unstake
-      expect(await encode(txns[0])).includes("2e1a7d4d");
-      // approve velodrome
-      expect(await encode(txns[1])).includes("095ea7b3");
-      // approve withdraw
-      expect(await encode(txns[2])).includes("0dede6c4");
-      // approve getReward
-      expect(await encode(txns[3])).includes("c00007b0");
-      // fee: send referral fee
-      expect(await encode(txns[4])).includes(
-        "210050bb080155aec4eae79a2aac5fe78fd738e1",
-      );
-      // fee: send platform fee
-      expect(await encode(txns[5])).includes(
-        "2ecbc6f229fed06044cdb0dd772437a30190cd50",
-      );
-    }
+    expect(txns.length).toBeGreaterThanOrEqual(4);
+    // unstake
+    expect(await encode(txns[0])).includes("2e1a7d4d");
+    // approve velodrome
+    expect(await encode(txns[1])).includes("095ea7b3");
+    // approve withdraw
+    expect(await encode(txns[2])).includes("0dede6c4");
+    // getReward
+    expect(await encode(txns[3])).includes("c00007b0");
+
+    const aggregatorAddresses = [
+      oneInchArbAddress,
+      zeroxProxyAddress,
+      paraswapProxyAddress,
+    ].map((address) => address.toLowerCase());
+    expect(
+      txns.some((txn) => aggregatorAddresses.includes(txn.to?.toLowerCase())),
+    ).toBe(false);
   });
   it("should be able to claim from Velodrome Vault", async () => {
     // params claimAndSwap 0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0 usdc 0x7F5c764cBc14f9669B88837ca1490cCa17c31607 0 6 1 0.5

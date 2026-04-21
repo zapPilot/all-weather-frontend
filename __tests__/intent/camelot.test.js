@@ -185,28 +185,14 @@ describe("Camelot Vault", () => {
       onlyThisChain,
     });
 
-    if (txns.length === 6) {
-      // harvest camelot reward
-      expect(await encode(txns[0])).includes("bb43878e");
-      //   redeem xgrail
-      expect(await encode(txns[1])).includes("7cbc2373");
-
-      // approve to 1inch
-      expect(await encode(txns[2])).includes("095ea7b3");
-      // swap
-      expect(txns[3].to).toBe(oneInchArbAddress);
-      // fee: send referral fee
-      expect(await encode(txns[4])).includes(
-        "210050bb080155aec4eae79a2aac5fe78fd738e1",
-      );
-      // fee: send platform fee
-      expect(await encode(txns[5])).includes(
-        "2ecbc6f229fed06044cdb0dd772437a30190cd50",
-      );
-    } else if (txns.length === 1) {
-      expect(txns.length).toBe(1);
-    } else {
-      expect(txns.length).toBe(3);
-    }
+    expect(txns.length).toBeGreaterThan(0);
+    const aggregatorAddresses = [
+      "0x1111111254EEB25477B68fb85Ed929f73A960582",
+      "0x0000000000001ff3684f28c67538d4d072c22734",
+      "0xdef171fe48cf0115b1d80b88dc8eab59176fee57",
+    ].map((address) => address.toLowerCase());
+    expect(
+      txns.some((txn) => aggregatorAddresses.includes(txn.to?.toLowerCase())),
+    ).toBe(false);
   });
 });

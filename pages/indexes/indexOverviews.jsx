@@ -272,7 +272,7 @@ export default function IndexOverviews() {
       setTotalTradingLoss(0);
       setTradingLoss(0);
       setErrorMsg("");
-      const tokenSymbolAndAddress = selectedToken.toLowerCase();
+      const tokenSymbolAndAddress = selectedToken?.toLowerCase();
 
       if (!tokenSymbolAndAddress) {
         alert("Please select a token");
@@ -385,7 +385,17 @@ export default function IndexOverviews() {
                 }
 
                 const notificationContent = allChainsComplete ? (
-                  "All Chains Complete"
+                  <div>
+                    <p>All Chains Complete</p>
+                    {["zapOut", "claimAndSwap"].includes(actionName) && (
+                      <p className="text-sm mt-1">
+                        Principal and reward tokens may remain in your wallet.
+                        Use{" "}
+                        <span className="font-bold text-blue-500">DustZap</span>{" "}
+                        to convert small balances to ETH.
+                      </p>
+                    )}
+                  </div>
                 ) : (
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2 text-sm">
