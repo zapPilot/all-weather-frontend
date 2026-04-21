@@ -10,7 +10,6 @@ import {
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb.js";
 import BaseProtocol from "../BaseProtocol.js";
-import axios from "axios";
 import CLGauge from "../../lib/contracts/AerodromeV3/CLGauge.json" assert { type: "json" };
 import NonfungiblePositionManager from "../../lib/contracts/AerodromeV3/NonfungiblePositionManager.json" assert { type: "json" };
 
@@ -146,18 +145,9 @@ export class BaseVelodromeV3 extends BaseProtocol {
       return {};
     }
 
-    const [lpFeesRewards, marketMakerRewards, vestingRewards] =
-      await Promise.all([
-        this._getLPFeesRewards(tokenPricesMappingTable),
-        this._getMarketMakerRewards(owner, tokenPricesMappingTable),
-        this._checkIfVestingRewardsFinished(owner, tokenPricesMappingTable),
-      ]);
+    const lpFeesRewards = await this._getLPFeesRewards(tokenPricesMappingTable);
 
-    return this._mergeRewards(
-      lpFeesRewards,
-      marketMakerRewards,
-      vestingRewards,
-    );
+    return this._mergeRewards(lpFeesRewards);
   }
 
   async _getLPFeesRewards(tokenPricesMappingTable) {
@@ -191,13 +181,11 @@ export class BaseVelodromeV3 extends BaseProtocol {
     };
   }
 
-  _mergeRewards(rewardBalance, marketMakerRewards, vestingRewards) {
+  _mergeRewards(...rewardSources) {
     // Merge all rewards sources into a single array of [address, reward] entries
-    const allRewards = [
-      ...Object.entries(rewardBalance),
-      ...Object.entries(marketMakerRewards),
-      ...Object.entries(vestingRewards),
-    ];
+    const allRewards = rewardSources.flatMap((source) =>
+      Object.entries(source),
+    );
 
     return allRewards.reduce((acc, [address, reward]) => {
       reward.chain = this.chain;
@@ -513,45 +501,6 @@ export class BaseVelodromeV3 extends BaseProtocol {
       return false;
     }
   }
-  async _getMarketMakerRewards(owner, tokenPricesMappingTable) {
-    const response = await axios.get(
-      `https://api.camelot.exchange/campaigns/rewards?chainId=${this.chainId}&user=${owner}`,
-    );
-    const data = response.data;
-    const marketMakerRewards = {};
-
-    // Get rewards info from this.rewards()
-    const rewardsInfo = this.rewards().reduce((acc, reward) => {
-      acc[reward.address.toLowerCase()] = reward;
-      return acc;
-    }, {});
-
-    for (const reward of data.data.rewards) {
-      const rewardAddress = reward.tokenAddress.toLowerCase();
-      const rewardInfo = rewardsInfo[rewardAddress];
-
-      if (rewardInfo) {
-        const balance = ethers.BigNumber.from(
-          BigInt(Math.floor(Number(reward.rewards) - Number(reward.claimed))),
-        );
-
-        const newBalance = marketMakerRewards[rewardAddress]
-          ? marketMakerRewards[rewardAddress].balance.add(balance)
-          : balance;
-
-        marketMakerRewards[rewardAddress] = {
-          symbol: rewardInfo.symbol,
-          balance: newBalance,
-          usdDenominatedValue:
-            tokenPricesMappingTable[rewardInfo.symbol] *
-            (newBalance.toString() / 10 ** rewardInfo.decimals),
-          decimals: rewardInfo.decimals,
-          vesting: true,
-        };
-      }
-    }
-    return marketMakerRewards;
-  }
   async _checkIfVestingRewardsFinished(owner, tokenPricesMappingTable) {
     const finalizableRewards = {
       [this.aeroContract.address]: {
@@ -606,39 +555,6 @@ export class BaseVelodromeV3 extends BaseProtocol {
         10 ** 18);
 
     return finalizableRewards;
-  }
-  async customRedeemVestingRewards(pendingRewards, owner) {
-    const response = await axios.get(
-      `https://api.camelot.exchange/campaigns/rewards?chainId=${this.chainId}&user=${owner}`,
-    );
-    const data = response.data;
-    for (const reward of data.data.rewards) {
-      if (
-        String(reward.positionIdentifierDecoded) === this.token_id.toString()
-      ) {
-        const vestingDuration = 15552000;
-        const claimableAmount = Number(reward.rewards) - Number(reward.claimed);
-        const harvestTxn = prepareContractCall({
-          contract: this.rewardContract,
-          method: "harvest",
-          params: [
-            owner,
-            reward.poolAddress,
-            reward.tokenAddress,
-            Number(reward.rewards),
-            reward.positionIdentifier,
-            reward.proof,
-          ],
-        });
-        const redeemTxn = prepareContractCall({
-          contract: this.xgrailContract,
-          method: "redeem",
-          params: [claimableAmount, vestingDuration],
-        });
-        return [harvestTxn, redeemTxn];
-      }
-    }
-    return [];
   }
   async finalizeRedeem(owner, pendingRewards) {
     // TODO, need to call this function in BasePortolio
