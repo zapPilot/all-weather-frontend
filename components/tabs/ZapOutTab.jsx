@@ -53,7 +53,7 @@ export default function ZapOutTab({
           depositBalance={usdBalance}
           setZapOutPercentage={setZapOutPercentage}
           currency="$"
-          noTokenSelect={false}
+          noTokenSelect={true}
           zapOutIsLoading={zapOutIsLoading}
           usdBalanceLoading={usdBalanceLoading}
           portfolioHelper={portfolioHelper}
@@ -98,16 +98,19 @@ export default function ZapOutTab({
           onClick={() => handleAAWalletAction("zapOut", true)}
           loading={usdBalanceLoading}
           disabled={
-            usdBalance < 0.01 ||
-            zapOutPercentage === 0 ||
-            selectedToken?.split("-")[0].toLowerCase() === "eth" ||
-            lockUpPeriod > 0
+            usdBalance < 0.01 || zapOutPercentage === 0 || lockUpPeriod > 0
           }
         >
           {lockUpPeriod > 0
             ? `Withdraw (unlocks in ${formatLockUpPeriod(lockUpPeriod)})`
             : "Withdraw"}
         </Button>
+      )}
+      {Object.values(chainStatus).some((status) => status) ? null : (
+        <p className="text-sm text-gray-300">
+          Principal and rewards will stay in their original tokens. Use DustZap
+          after withdrawing to convert small balances to ETH.
+        </p>
       )}
     </div>
   );

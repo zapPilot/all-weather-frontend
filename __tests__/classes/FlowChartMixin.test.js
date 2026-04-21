@@ -276,6 +276,18 @@ describe("FlowChartMixin", () => {
         expect(result.nodes).toHaveLength(1); // claim only
         expect(result.nodes[0].name).toBe("Claim Rewards");
       });
+
+      it("should generate direct claim flow chart data without auto-swap", () => {
+        const result = mockProtocol.getClaimFlowChartData(
+          "WETH",
+          "0xWETHAddress",
+          false,
+        );
+
+        expect(result.nodes).toHaveLength(1);
+        expect(result.edges).toHaveLength(0);
+        expect(result.nodes[0].name).toBe("Claim Rewards");
+      });
     });
 
     describe("LP Mode", () => {
@@ -299,6 +311,18 @@ describe("FlowChartMixin", () => {
         expect(result.nodes[2]).toMatchObject({
           name: "Swap TOKEN2 to WETH",
         });
+      });
+
+      it("should generate direct LP claim flow chart data without auto-swap", () => {
+        const result = mockProtocol.getClaimFlowChartData(
+          "WETH",
+          "0xWETHAddress",
+          false,
+        );
+
+        expect(result.nodes).toHaveLength(1);
+        expect(result.edges).toHaveLength(0);
+        expect(result.nodes[0].name).toBe("Claim Rewards");
       });
     });
   });
@@ -340,6 +364,22 @@ describe("FlowChartMixin", () => {
 
         expect(result.nodes).toHaveLength(3); // unstake + claim + withdraw (no swap)
       });
+
+      it("should generate direct zap out flow chart data without auto-swap", () => {
+        mockProtocol.mode = "single";
+        const result = mockProtocol.getZapOutFlowChartData(
+          "WETH",
+          "0xWETHAddress",
+          0.5,
+          false,
+        );
+
+        expect(result.nodes).toHaveLength(3);
+        expect(result.edges).toHaveLength(2);
+        expect(result.nodes[0].name).toBe("Unstake");
+        expect(result.nodes[1].name).toBe("Claim Rewards");
+        expect(result.nodes[2].name).toBe("Withdraw TEST");
+      });
     });
 
     describe("LP Mode", () => {
@@ -356,6 +396,24 @@ describe("FlowChartMixin", () => {
         expect(result.nodes).toHaveLength(5); // unstake + claim + withdraw + 2 swaps
         expect(result.edges).toHaveLength(4);
 
+        expect(result.nodes[0].name).toBe("Unstake");
+        expect(result.nodes[1].name).toBe("Claim Rewards");
+        expect(result.nodes[2].name).toBe("Withdraw TOKEN1-TOKEN2");
+      });
+
+      it("should generate direct LP zap out flow chart data without auto-swap", () => {
+        mockProtocol.mode = "LP";
+        mockProtocol.symbolList = ["TOKEN1", "TOKEN2"];
+
+        const result = mockProtocol.getZapOutFlowChartData(
+          "WETH",
+          "0xWETHAddress",
+          0.5,
+          false,
+        );
+
+        expect(result.nodes).toHaveLength(3);
+        expect(result.edges).toHaveLength(2);
         expect(result.nodes[0].name).toBe("Unstake");
         expect(result.nodes[1].name).toBe("Claim Rewards");
         expect(result.nodes[2].name).toBe("Withdraw TOKEN1-TOKEN2");

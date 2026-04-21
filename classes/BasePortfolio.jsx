@@ -551,7 +551,9 @@ export class BasePortfolio {
           actionParams.slippage,
           actionParams.tokenPricesMappingTable,
           actionParams.updateProgress,
+          {},
           this.existingInvestmentPositions[chain],
+          { autoSwap: false },
         );
       },
 
@@ -564,6 +566,7 @@ export class BasePortfolio {
           actionParams.slippage,
           actionParams.tokenPricesMappingTable,
           actionParams.updateProgress,
+          { autoSwap: false },
         );
       },
 

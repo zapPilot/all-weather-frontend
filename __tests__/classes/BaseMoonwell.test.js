@@ -538,6 +538,168 @@ describe("BaseMoonwell", () => {
     });
   });
 
+  describe("auto-swap control", () => {
+    beforeEach(() => {
+      vi.spyOn(baseMoonwell, "_updateProgressAndWait").mockResolvedValue(true);
+      vi.spyOn(baseMoonwell, "checkTxnsToDataNotUndefined").mockImplementation(
+        () => {},
+      );
+    });
+
+    it("should skip claim reward swaps when autoSwap is false", async () => {
+      vi.spyOn(baseMoonwell, "customClaim").mockResolvedValue([
+        [{ type: "claim_txn" }],
+        {
+          "0xReward": {
+            symbol: "well",
+            balance: "1000",
+            decimals: 18,
+            usdDenominatedValue: 2,
+          },
+        },
+      ]);
+      const batchSwapSpy = vi
+        .spyOn(baseMoonwell, "_batchSwap")
+        .mockResolvedValue([{ type: "swap_txn" }]);
+
+      const txns = await baseMoonwell.claimAndSwap(
+        "0xOwner",
+        "0xUSDC",
+        "usdc",
+        6,
+        1,
+        { usdc: 1, well: 1, eth: 3000 },
+        vi.fn(),
+        { autoSwap: false },
+      );
+
+      expect(batchSwapSpy).not.toHaveBeenCalled();
+      expect(txns).toEqual([{ type: "claim_txn" }]);
+    });
+
+    it("should keep claim reward swaps enabled by default", async () => {
+      vi.spyOn(baseMoonwell, "customClaim").mockResolvedValue([
+        [{ type: "claim_txn" }],
+        {
+          "0xReward": {
+            symbol: "well",
+            balance: "1000",
+            decimals: 18,
+            usdDenominatedValue: 2,
+          },
+        },
+      ]);
+      const batchSwapSpy = vi
+        .spyOn(baseMoonwell, "_batchSwap")
+        .mockResolvedValue([{ type: "swap_txn" }]);
+
+      const txns = await baseMoonwell.claimAndSwap(
+        "0xOwner",
+        "0xUSDC",
+        "usdc",
+        6,
+        1,
+        { usdc: 1, well: 1, eth: 3000 },
+        vi.fn(),
+      );
+
+      expect(batchSwapSpy).toHaveBeenCalledTimes(1);
+      expect(txns).toEqual([{ type: "claim_txn" }, { type: "swap_txn" }]);
+    });
+
+    it("should skip zap out swaps when autoSwap is false", async () => {
+      vi.spyOn(baseMoonwell, "baseWithdrawAndClaim").mockResolvedValue([
+        [{ type: "withdraw_txn" }],
+        "usdc",
+        "0xUSDC",
+        6,
+        "1000",
+      ]);
+      vi.spyOn(
+        baseMoonwell,
+        "_calculateWithdrawTokenAndBalance",
+      ).mockResolvedValue([
+        [{ type: "redeem_vesting_txn" }],
+        {
+          "0xUSDC": {
+            symbol: "usdc",
+            balance: "1000",
+            decimals: 6,
+            usdDenominatedValue: 1,
+          },
+        },
+      ]);
+      const batchSwapSpy = vi
+        .spyOn(baseMoonwell, "_batchSwap")
+        .mockResolvedValue([{ type: "swap_txn" }]);
+
+      const txns = await baseMoonwell.zapOut(
+        "0xOwner",
+        1,
+        "0xUSDC",
+        "usdc",
+        6,
+        1,
+        { usdc: 1, eth: 3000 },
+        vi.fn(),
+        {},
+        {},
+        { autoSwap: false },
+      );
+
+      expect(batchSwapSpy).not.toHaveBeenCalled();
+      expect(txns).toEqual([
+        { type: "withdraw_txn" },
+        { type: "redeem_vesting_txn" },
+      ]);
+    });
+
+    it("should keep zap out swaps enabled by default", async () => {
+      vi.spyOn(baseMoonwell, "baseWithdrawAndClaim").mockResolvedValue([
+        [{ type: "withdraw_txn" }],
+        "usdc",
+        "0xUSDC",
+        6,
+        "1000",
+      ]);
+      vi.spyOn(
+        baseMoonwell,
+        "_calculateWithdrawTokenAndBalance",
+      ).mockResolvedValue([
+        [{ type: "redeem_vesting_txn" }],
+        {
+          "0xUSDC": {
+            symbol: "usdc",
+            balance: "1000",
+            decimals: 6,
+            usdDenominatedValue: 1,
+          },
+        },
+      ]);
+      const batchSwapSpy = vi
+        .spyOn(baseMoonwell, "_batchSwap")
+        .mockResolvedValue([{ type: "swap_txn" }]);
+
+      const txns = await baseMoonwell.zapOut(
+        "0xOwner",
+        1,
+        "0xUSDC",
+        "usdc",
+        6,
+        1,
+        { usdc: 1, eth: 3000 },
+        vi.fn(),
+      );
+
+      expect(batchSwapSpy).toHaveBeenCalledTimes(1);
+      expect(txns).toEqual([
+        { type: "withdraw_txn" },
+        { type: "redeem_vesting_txn" },
+        { type: "swap_txn" },
+      ]);
+    });
+  });
+
   describe("_calculateRedeemAmount()", () => {
     beforeEach(() => {
       vi.spyOn(baseMoonwell, "exchangeRateOfAssetToRedeem").mockResolvedValue(

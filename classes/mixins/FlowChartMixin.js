@@ -93,13 +93,18 @@ export const FlowChartMixin = {
     }
   },
 
-  getClaimFlowChartData(outputToken, outputTokenAddress) {
+  getClaimFlowChartData(outputToken, outputTokenAddress, autoSwap = true) {
     const nodes = [];
     if (this.mode === "single") {
       nodes.push({
         id: `${this.uniqueId()}-claim`,
         name: "Claim Rewards",
       });
+      if (autoSwap === false) {
+        const edges = this._generateEdges(nodes, 1);
+        this._enrichNodesWithMetadata(nodes);
+        return { nodes, edges };
+      }
       const [bestTokenSymbol, bestTokenAddressToZapIn, _] =
         this._getTheBestTokenAddressToZapOut();
       if (
@@ -116,6 +121,11 @@ export const FlowChartMixin = {
         id: `${this.uniqueId()}-claim`,
         name: "Claim Rewards",
       });
+      if (autoSwap === false) {
+        const edges = this._generateEdges(nodes, 1);
+        this._enrichNodesWithMetadata(nodes);
+        return { nodes, edges };
+      }
       const { lpTokens: tokenMetadatas } = this._getLPTokenAddressesToZapOut();
       for (const [
         bestTokenSymbol,
@@ -137,7 +147,12 @@ export const FlowChartMixin = {
     return { nodes, edges };
   },
 
-  getZapOutFlowChartData(outputToken, outputTokenAddress, weight) {
+  getZapOutFlowChartData(
+    outputToken,
+    outputTokenAddress,
+    weight,
+    autoSwap = true,
+  ) {
     const nodes = [];
     if (this.mode === "single") {
       nodes.push(
@@ -154,6 +169,11 @@ export const FlowChartMixin = {
           name: `Withdraw ${this.symbolList.join("-")}`,
         },
       );
+      if (autoSwap === false) {
+        const edges = this._generateEdges(nodes, weight);
+        this._enrichNodesWithMetadata(nodes);
+        return { nodes, edges };
+      }
       const [bestTokenSymbol, bestTokenAddressToZapIn, _] =
         this._getTheBestTokenAddressToZapOut();
       if (
@@ -180,6 +200,11 @@ export const FlowChartMixin = {
           name: `Withdraw ${this.symbolList.join("-")}`,
         },
       );
+      if (autoSwap === false) {
+        const edges = this._generateEdges(nodes, weight);
+        this._enrichNodesWithMetadata(nodes);
+        return { nodes, edges };
+      }
       const { lpTokens: tokenMetadatas } = this._getLPTokenAddressesToZapOut();
       for (const [
         bestTokenSymbol,

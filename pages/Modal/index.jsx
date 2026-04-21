@@ -285,7 +285,20 @@ export default function PopUpModal({
                 ) : (
                   <>
                     <div className="flex flex-col items-center gap-4 w-full mt-4">
-                      {allChainsComplete === true ? null : (
+                      {allChainsComplete === true ? (
+                        ["zapOut", "claimAndSwap"].includes(actionName) && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center max-w-md">
+                            <p className="text-blue-800 font-medium">
+                              Success! Principal and reward tokens may now
+                              remain in your wallet because auto-swap is off.
+                            </p>
+                            <p className="text-blue-600 text-sm mt-2">
+                              Use the <strong>DustZap</strong> tab to convert
+                              small balances to ETH when you're ready.
+                            </p>
+                          </div>
+                        )
+                      ) : (
                         <button
                           type="button"
                           onClick={handleClose}

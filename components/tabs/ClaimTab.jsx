@@ -1,6 +1,4 @@
 import { Button } from "antd";
-import TokenDropdownInput from "../../views/TokenDropdownInput.jsx";
-import Image from "next/image";
 import { MINIMUM_CLAIM_AMOUNT } from "../../config/minimumThresholds";
 
 const formatUSD = (value) => value.toFixed(2);
@@ -27,10 +25,6 @@ const getChainRewards = (pendingRewards, currentChain) => {
 };
 
 export default function ClaimTab({
-  selectedToken,
-  handleSetSelectedToken,
-  handleSetInvestmentAmount,
-  tokenPricesMappingTable,
   handleAAWalletAction,
   pendingRewards,
   chainId,
@@ -41,7 +35,6 @@ export default function ClaimTab({
     .replace(" mainnet", "")
     .trim();
 
-  const selectedTokenSymbol = selectedToken?.split("-")[0];
   const { biggest: biggestRewardValue, total: totalRewardValue } =
     getChainRewards(pendingRewards, currentChain);
 
@@ -52,35 +45,12 @@ export default function ClaimTab({
       )} USD)`;
     }
 
-    return (
-      <>
-        Convert Rewards to ${formatUSD(totalRewardValue)} worth of
-        <Image
-          key={selectedTokenSymbol}
-          src={`/tokenPictures/${selectedTokenSymbol.toLowerCase()}.webp`}
-          width="20"
-          height="20"
-          alt={selectedTokenSymbol}
-          className="inline-block"
-          loading="lazy"
-          quality={50}
-          unoptimized={true}
-        />
-        {selectedTokenSymbol}
-      </>
-    );
+    return `Claim ${formatUSD(totalRewardValue)} USD rewards`;
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 gap-4">
       <div>
-        <TokenDropdownInput
-          selectedToken={selectedToken}
-          setSelectedToken={handleSetSelectedToken}
-          setInvestmentAmount={handleSetInvestmentAmount}
-          tokenPricesMappingTable={tokenPricesMappingTable}
-          mode="claim"
-        />
         <Button
           type="primary"
           className="w-full my-2 flex items-center justify-center gap-1"
@@ -90,6 +60,10 @@ export default function ClaimTab({
         >
           {renderButtonContent()}
         </Button>
+        <p className="text-sm text-gray-300">
+          Rewards will stay in their original tokens. Use DustZap after claiming
+          to convert them to ETH.
+        </p>
       </div>
     </div>
   );
