@@ -1,5 +1,6 @@
 import { Typography, Spin } from "antd";
-import React, { useMemo, memo, lazy, Suspense } from "react";
+import React, { useMemo, memo, lazy, Suspense, useEffect } from "react";
+import { useRouter } from "next/router";
 // Lazy load APRComposition as well
 const APRComposition = lazy(() => import("../views/components/APRComposition"));
 
@@ -9,7 +10,14 @@ const ZapOutTab = lazy(() => import("../components/tabs/ZapOutTab"));
 const ClaimTab = lazy(() => import("../components/tabs/ClaimTab"));
 const RebalanceTab = lazy(() => import("../components/tabs/RebalanceTab"));
 const TransferTab = lazy(() => import("../components/tabs/TransferTab"));
-const ConvertDustTab = lazy(() => import("../components/tabs/ConvertDustTab"));
+// Simple redirect component for DustZap tab
+const DustZapRedirect = () => {
+  const router = useRouter();
+  useEffect(() => {
+    router.push("/dustzap");
+  }, [router]);
+  return <Spin size="large" />;
+};
 import { Popover } from "antd";
 import PropTypes from "prop-types";
 import { InfoIcon } from "../utils/icons.jsx";
@@ -239,11 +247,7 @@ export default function useTabItems({
       {
         key: TAB_KEYS.DUST_ZAP,
         label: <DustZapLabel />,
-        children: (
-          <Suspense fallback={<Spin size="large" />}>
-            <ConvertDustTab {...props} />
-          </Suspense>
-        ),
+        children: <DustZapRedirect />,
       },
       {
         key: TAB_KEYS.TRANSFER,
