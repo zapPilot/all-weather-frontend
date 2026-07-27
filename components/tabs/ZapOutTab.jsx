@@ -1,9 +1,12 @@
-import { Button } from "antd";
+import { Button, Spin } from "antd";
+import { lazy, Suspense } from "react";
 import DecimalStep from "../../pages/indexes/DecimalStep";
 import ConfiguredConnectButton from "../../pages/ConnectButton";
 import { formatLockUpPeriod } from "../../utils/general";
 import ActionItem from "../common/ActionItem";
 import { getNextChain } from "../../utils/chainOrder";
+
+const EmergencyExitPanel = lazy(() => import("./EmergencyExitPanel"));
 
 export default function ZapOutTab({
   selectedToken,
@@ -27,6 +30,11 @@ export default function ZapOutTab({
   errorMsg,
   isLoading,
   setFinishedTxn,
+  recipient,
+  recipientError,
+  validateRecipient,
+  handleEmergencyExit,
+  emergencyExitStatus,
 }) {
   const currentChain = chainId?.name
     ?.toLowerCase()
@@ -112,6 +120,17 @@ export default function ZapOutTab({
           after withdrawing to convert small balances to ETH.
         </p>
       )}
+      <Suspense fallback={<Spin size="small" />}>
+        <EmergencyExitPanel
+          recipient={recipient}
+          recipientError={recipientError}
+          validateRecipient={validateRecipient}
+          handleEmergencyExit={handleEmergencyExit}
+          emergencyExitStatus={emergencyExitStatus}
+          account={account}
+          chainId={chainId}
+        />
+      </Suspense>
     </div>
   );
 }

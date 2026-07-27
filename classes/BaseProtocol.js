@@ -462,6 +462,54 @@ export default class BaseProtocol extends BaseUniswap {
     this.checkTxnsToDataNotUndefined(finalTxns, "transfer");
     return finalTxns;
   }
+
+  // Escape hatch: unstake everything and hand the raw asset token to the user.
+  // Unlike transfer(), this reads nothing but on-chain BigNumbers — no token
+  // prices, no slippage, no swaps — so a broken price feed (e.g. OP's depegged
+  // sUSD) cannot block the exit. Only valid where assetContract is a plain
+  // ERC20; NFT-based positions will fail here and get skipped by the caller.
+  async emergencyTransfer(owner, recipient, updateProgress) {
+    let unstakeTxns;
+    let unstakedAmount;
+    if (this.mode === "single") {
+      [unstakeTxns, unstakedAmount] = await this._unstake(
+        owner,
+        1,
+        updateProgress,
+      );
+    } else if (this.mode === "LP") {
+      [unstakeTxns, unstakedAmount] = await this._unstakeLP(
+        owner,
+        1,
+        updateProgress,
+      );
+    } else {
+      throw new Error("Invalid mode for emergencyTransfer");
+    }
+
+    // _unstakeLP returns undefined here when an NFT position was already burned
+    const unstakedAmountBN = ethers.BigNumber.from(unstakedAmount || 0);
+    // Sweeping the wallet balance too costs no extra txn and makes a
+    // half-finished exit (unstake landed, transfer didn't) heal on the retry
+    const walletBalance = await this.assetBalanceOf(owner);
+    const total = unstakedAmountBN.add(walletBalance);
+    if (total.isZero()) {
+      return [];
+    }
+
+    const transferTxn = prepareContractCall({
+      contract: this.assetContract,
+      method: "transfer",
+      params: [recipient, total],
+    });
+    // withdraw(0) reverts on some gauges
+    const finalTxns = unstakedAmountBN.isZero()
+      ? [transferTxn]
+      : [...unstakeTxns, transferTxn];
+    this.checkTxnsToDataNotUndefined(finalTxns, "emergencyTransfer");
+    return finalTxns;
+  }
+
   async stake(protocolAssetDustInWallet, updateProgress) {
     await this._updateProgressAndWait(
       updateProgress,
