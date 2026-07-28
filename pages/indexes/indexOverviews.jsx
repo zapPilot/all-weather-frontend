@@ -213,6 +213,7 @@ export default function IndexOverviews() {
     notification.useNotification();
   const [recipientError, setRecipientError] = useState(false);
   const [showZapIn, setShowZapIn] = useState(false);
+  const [emergencyExitStatus, setEmergencyExitStatus] = useState({});
 
   const preservedAmountRef = useRef(null);
 
@@ -525,6 +526,150 @@ export default function IndexOverviews() {
     ],
   );
 
+  // Escape hatch for when the bundled zapOut can't complete — e.g. OP's
+  // permanently depegged sUSD poisons the price feed the slippage math depends
+  // on. Sends one small batch per protocol so a single failing position can't
+  // strand the others, and skips the gas-price gate that would otherwise block
+  // an exit the user urgently needs.
+  const handleEmergencyExit = useCallback(
+    async (uniqueIds = null) => {
+      if (!account?.address) return false;
+      if (!recipient || !isAddress(recipient)) {
+        openNotificationWithIcon(
+          notificationAPI,
+          "Emergency Exit",
+          "error",
+          "Enter a valid recipient address first.",
+        );
+        return false;
+      }
+
+      const chainMetadata =
+        chainId?.name === undefined
+          ? { name: CHAIN_ID_TO_CHAIN_STRING[chainId?.id], ...chainId }
+          : chainId;
+      const explorerUrl =
+        CHAIN_ID_TO_CHAIN[chainId?.id]?.blockExplorers?.[0]?.url ||
+        LOCK_EXPLORER_URLS[chainId?.id];
+      const reportError = (error, context) =>
+        handleTransactionError(
+          context,
+          error,
+          notificationAPI,
+          account.address,
+          chainId?.name,
+          "emergencyExit",
+          { recipient, chain: currentChain },
+        );
+
+      let groups;
+      try {
+        groups = await portfolioHelper.getEmergencyExitTxnsByProtocol({
+          account: account.address,
+          chainMetadata,
+          recipient,
+          // The panel shows its own per-protocol status instead of the flow
+          // chart, but protocols still expect a callable
+          updateProgress: () => {},
+          uniqueIds,
+        });
+      } catch (error) {
+        await reportError(error, "Emergency Exit failed to build");
+        return false;
+      }
+
+      if (groups.length === 0) {
+        openNotificationWithIcon(
+          notificationAPI,
+          "Emergency Exit",
+          "info",
+          `No positions found on ${currentChain}.`,
+        );
+        return false;
+      }
+
+      const freshStatus = Object.fromEntries(
+        groups.map((group) => [
+          group.uniqueId,
+          { label: group.label, status: "pending" },
+        ]),
+      );
+      // A retry merges into the existing results; a full run replaces them, so
+      // stale rows from another chain don't linger
+      setEmergencyExitStatus((prev) =>
+        uniqueIds ? { ...prev, ...freshStatus } : freshStatus,
+      );
+
+      for (const group of groups) {
+        const mark = (patch) =>
+          setEmergencyExitStatus((prev) => ({
+            ...prev,
+            [group.uniqueId]: { ...prev[group.uniqueId], ...patch },
+          }));
+
+        if (group.buildError) {
+          mark({ status: "failed", error: group.buildError });
+          continue;
+        }
+
+        mark({ status: "sending" });
+        const calls = group.txns.flat(Infinity);
+        try {
+          const data = await new Promise((resolve, reject) => {
+            const callbacks = { onSuccess: resolve, onError: reject };
+            if (aaOn) {
+              sendBatchTransaction(calls, callbacks);
+            } else {
+              // atomicRequired: false is safe here — an unstake that lands
+              // without its transfer just leaves LP in the wallet, and the next
+              // attempt sweeps that balance too
+              sendCalls({ calls, atomicRequired: false }, callbacks);
+            }
+          });
+          const txnHash =
+            data?.transactionHash || data?.receipts?.[0]?.transactionHash;
+          mark({
+            status: "success",
+            txnLink: txnHash ? `${explorerUrl}/tx/${txnHash}` : "",
+          });
+        } catch (error) {
+          const message = await reportError(
+            error,
+            `Emergency Exit failed for ${group.label}`,
+          );
+          // Deliberately not rethrowing: the remaining protocols still go out
+          mark({
+            status: "failed",
+            error: message || error?.message || "Transaction failed",
+          });
+        }
+      }
+
+      try {
+        await axios({
+          method: "delete",
+          url: `${process.env.NEXT_PUBLIC_SDK_API_URL}/portfolio-cache/portfolio-${portfolioName}-${account.address}`,
+        });
+      } catch (error) {
+        logger.error("Failed to clear portfolio cache:", error);
+      }
+      setRefreshTrigger(Date.now());
+      return true;
+    },
+    [
+      account,
+      recipient,
+      chainId,
+      currentChain,
+      notificationAPI,
+      portfolioHelper,
+      portfolioName,
+      aaOn,
+      sendBatchTransaction,
+      sendCalls,
+    ],
+  );
+
   // Handle tab changes
   const handleTabChange = (tabKey) => {
     setTabKey(tabKey);
@@ -779,13 +924,14 @@ export default function IndexOverviews() {
   }, [selectedToken, walletBalanceData, investmentAmount]);
 
   const validateRecipient = (address) => {
+    // Still mirror the value into state on rejection, otherwise the input
+    // freezes and the user can't edit their way out of the error
+    setRecipient(address);
     if (address === account?.address) {
       setRecipientError(true);
       return;
     }
-    const isValid = isAddress(address);
-    setRecipientError(!isValid);
-    setRecipient(address);
+    setRecipientError(!isAddress(address));
   };
 
   useEffect(() => {
@@ -909,6 +1055,8 @@ export default function IndexOverviews() {
       lockUpPeriod,
       rebalancableUsdBalanceDictLoading,
       errorMsg,
+      handleEmergencyExit,
+      emergencyExitStatus,
     }),
     [
       account,
@@ -945,6 +1093,8 @@ export default function IndexOverviews() {
       lockUpPeriod,
       rebalancableUsdBalanceDictLoading,
       errorMsg,
+      handleEmergencyExit,
+      emergencyExitStatus,
     ],
   );
 

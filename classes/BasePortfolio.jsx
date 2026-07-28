@@ -483,6 +483,60 @@ export class BasePortfolio {
     return totalTxns;
   }
 
+  // Escape hatch behind the Emergency Exit panel. Deliberately bypasses
+  // portfolioAction() — which always awaits getTokenPricesMappingTable() — and
+  // _processProtocolActions(), whose Promise.all drops the entire batch as soon
+  // as one protocol throws. Returns one group per protocol so the caller can
+  // submit and fail each independently.
+  async getEmergencyExitTxnsByProtocol({
+    account,
+    chainMetadata,
+    recipient,
+    updateProgress,
+    uniqueIds = null,
+  }) {
+    const currentChain = normalizeChainName(chainMetadata.name);
+    const targets = [];
+    for (const protocolsInThisCategory of Object.values(this.strategy)) {
+      for (const [chain, protocols] of Object.entries(
+        protocolsInThisCategory,
+      )) {
+        if (chain.toLowerCase() !== currentChain) continue;
+        for (const protocol of protocols) {
+          // weight === 0 protocols are precisely the ones needing rescue:
+          // deprecated chains get zeroed out while still holding user funds
+          if (uniqueIds && !uniqueIds.includes(protocol.interface.uniqueId())) {
+            continue;
+          }
+          targets.push(protocol);
+        }
+      }
+    }
+
+    const settled = await Promise.allSettled(
+      targets.map((protocol) =>
+        protocol.interface.emergencyTransfer(
+          account,
+          recipient,
+          updateProgress,
+        ),
+      ),
+    );
+
+    return targets
+      .map((protocol, i) => ({
+        uniqueId: protocol.interface.uniqueId(),
+        label: protocol.interface.toString(),
+        chain: currentChain,
+        txns: settled[i].status === "fulfilled" ? settled[i].value : [],
+        buildError:
+          settled[i].status === "rejected"
+            ? settled[i].reason?.message || String(settled[i].reason)
+            : null,
+      }))
+      .filter((group) => group.txns.length > 0 || group.buildError);
+  }
+
   _calculateDerivative(currentChain, onlyThisChain) {
     if (!onlyThisChain) return 1;
     // Calculate total weight for the current chain across all categories
