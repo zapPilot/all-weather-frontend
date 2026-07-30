@@ -1,9 +1,9 @@
 import { tokensAndCoinmarketcapIdsFromDropdownOptions } from "../utils/contractInteractions";
 import assert from "assert";
 import { oneInchAddress } from "../utils/oneInch";
-import { approve } from "../utils/general";
+import { approve, PROVIDER } from "../utils/general";
 import { ethers } from "ethers";
-import { getContract, prepareContractCall } from "thirdweb";
+import { getContract, prepareContractCall, prepareTransaction } from "thirdweb";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import WETH from "../lib/contracts/Weth.json" assert { type: "json" };
@@ -18,8 +18,32 @@ import { getProtocolObjByUniqueId } from "../utils/portfolioCalculation";
 import flowChartEventEmitter from "../utils/FlowChartEventEmitter";
 import logger from "../utils/logger";
 import { normalizeChainName } from "../utils/chainHelper";
+import { fetchWalletTokens } from "../utils/dustConversion";
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
+// Keyed on both thirdweb's display name and the normalized form, because the
+// emergency exit can be handed either. Unknown chains throw rather than build a
+// URL the backend will reject, so the panel reports the gap instead of hiding it.
+const DEBANK_CHAIN_CODE = {
+  ethereum: "eth",
+  eth: "eth",
+  arbitrum: "arb",
+  "arbitrum one": "arb",
+  base: "base",
+  optimism: "op",
+  op: "op",
+  "op mainnet": "op",
+  bsc: "bsc",
+};
+const debankChainCode = (chainMetadata) => {
+  const raw = String(chainMetadata?.name || "").toLowerCase();
+  const code =
+    DEBANK_CHAIN_CODE[raw] || DEBANK_CHAIN_CODE[normalizeChainName(raw)];
+  if (!code) {
+    throw new Error(`no Debank chain code for "${chainMetadata?.name}"`);
+  }
+  return code;
+};
 
 // Add cache for the entire mapping table
 const GLOBAL_MAPPING_CACHE = {
@@ -486,16 +510,26 @@ export class BasePortfolio {
   // Escape hatch behind the Emergency Exit panel. Deliberately bypasses
   // portfolioAction() — which always awaits getTokenPricesMappingTable() — and
   // _processProtocolActions(), whose Promise.all drops the entire batch as soon
-  // as one protocol throws. Returns one group per protocol so the caller can
-  // submit and fail each independently.
+  // as one protocol throws. Every group is submittable on its own so one dead
+  // protocol cannot strand the rest.
+  //
+  // The reward claim inside emergencyTransfer is allowed to fail silently
+  // (protocol-specific, sometimes third-party); losing it only forfeits rewards.
+  // The wallet scan is not: a missing scan means loose tokens stayed behind, and
+  // an exit that reports success while leaving funds is worse than one that says
+  // it could not look.
   async getEmergencyExitTxnsByProtocol({
     account,
     chainMetadata,
     recipient,
     updateProgress,
     uniqueIds = null,
+    aaOn = true,
   }) {
     const currentChain = normalizeChainName(chainMetadata.name);
+    // a retry names the groups it wants; the synthetic groups below match no
+    // protocol, so they have to be recognised by name
+    const wanted = (uniqueId) => !uniqueIds || uniqueIds.includes(uniqueId);
     const targets = [];
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const [chain, protocols] of Object.entries(
@@ -505,9 +539,7 @@ export class BasePortfolio {
         for (const protocol of protocols) {
           // weight === 0 protocols are precisely the ones needing rescue:
           // deprecated chains get zeroed out while still holding user funds
-          if (uniqueIds && !uniqueIds.includes(protocol.interface.uniqueId())) {
-            continue;
-          }
+          if (!wanted(protocol.interface.uniqueId())) continue;
           targets.push(protocol);
         }
       }
@@ -523,18 +555,166 @@ export class BasePortfolio {
       ),
     );
 
-    return targets
-      .map((protocol, i) => ({
+    // lowercase token address -> amount. Rewards are kept apart from the wallet
+    // snapshot because their amounts come from different places: a Debank balance
+    // is what the wallet demonstrably holds, while a reward amount is what a
+    // protocol predicts its claim will deliver (Equilibria multiplies out a
+    // factor, Camelot reads an API). Mixing them would let one bad prediction
+    // revert the transfer of tokens the user definitely owns.
+    const walletTotals = {};
+    const rewardTotals = {};
+    const addTo = (bucket, address, balance) => {
+      const key = address.toLowerCase();
+      bucket[key] = (bucket[key] || ethers.constants.Zero).add(balance);
+    };
+    // A protocol group already sweeps its own asset token out of the wallet, so
+    // the wallet scan must not build a second transfer for the same address —
+    // but only where that group actually produced the transfer. A protocol that
+    // failed to build moves nothing, and its receipt token has to stay eligible.
+    const sweptByProtocol = new Set();
+
+    const groups = [];
+    targets.forEach((protocol, i) => {
+      const result = settled[i];
+      const txns =
+        result.status === "fulfilled" ? result.value?.txns || [] : [];
+      const buildError =
+        result.status === "rejected"
+          ? result.reason?.message || String(result.reason)
+          : null;
+      if (txns.length === 0 && !buildError) return;
+      groups.push({
         uniqueId: protocol.interface.uniqueId(),
         label: protocol.interface.toString(),
         chain: currentChain,
-        txns: settled[i].status === "fulfilled" ? settled[i].value : [],
-        buildError:
-          settled[i].status === "rejected"
-            ? settled[i].reason?.message || String(settled[i].reason)
+        txns,
+        buildError,
+      });
+      if (buildError) return;
+      const assetAddress = protocol.interface.assetContract?.address;
+      if (assetAddress && !protocol.interface.assetIsNFT) {
+        sweptByProtocol.add(assetAddress.toLowerCase());
+      }
+      // rewards only ever reach the wallet if this group's claim goes out
+      for (const { address, balance } of result.value?.rewardBalances || []) {
+        addTo(rewardTotals, address, balance);
+      }
+    });
+
+    const erc20TransferTxn = (address, amount) =>
+      prepareContractCall({
+        contract: getContract({
+          client: THIRDWEB_CLIENT,
+          address,
+          chain: chainMetadata,
+          abi: ERC20_ABI,
+        }),
+        method: "function transfer(address to, uint256 amount)",
+        params: [recipient, amount],
+      });
+    const bucketToTxns = (bucket) =>
+      Object.entries(bucket)
+        .filter(([, amount]) => amount.gt(0))
+        .map(([address, amount]) => erc20TransferTxn(address, amount));
+
+    // In EOA mode `account` is the user's own wallet, holding whatever else they
+    // keep there. They asked to exit their positions, not to have their wallet
+    // emptied, so the indiscriminate sweeps only run against an AA wallet, which
+    // holds nothing but what this app put there.
+    if (aaOn && wanted("wallet-tokens")) {
+      let scanError = null;
+      try {
+        const walletTokens = await fetchWalletTokens(
+          debankChainCode(chainMetadata),
+          account,
+        );
+        for (const token of walletTokens) {
+          // the native token is listed under a chain name rather than an
+          // address, and needs a value transfer instead of an ERC20 one
+          if (!ethers.utils.isAddress(token.id)) continue;
+          if (sweptByProtocol.has(token.id.toLowerCase())) continue;
+          try {
+            addTo(
+              walletTotals,
+              token.id,
+              ethers.BigNumber.from(token.raw_amount_hex_str),
+            );
+          } catch (error) {
+            // one unreadable amount must not drop the tokens listed after it
+            logger.warn(
+              `Emergency Exit: skipping ${
+                token.optimized_symbol || token.id
+              }, unreadable balance`,
+              error,
+            );
+          }
+        }
+      } catch (error) {
+        scanError = error;
+        logger.warn("Emergency Exit: wallet token scan unavailable", error);
+      }
+      const walletTxns = bucketToTxns(walletTotals);
+      if (walletTxns.length > 0 || scanError) {
+        groups.push({
+          uniqueId: "wallet-tokens",
+          label: scanError
+            ? "Loose wallet tokens"
+            : `Loose wallet tokens (${walletTxns.length})`,
+          chain: currentChain,
+          txns: scanError ? [] : walletTxns,
+          // surfaced as a failed row rather than swallowed, so the panel can
+          // never imply the wallet was emptied when it was never read
+          buildError: scanError
+            ? `Could not list wallet tokens (${
+                scanError.message || scanError
+              }). Loose tokens were left behind — retry this row once the API recovers.`
             : null,
-      }))
-      .filter((group) => group.txns.length > 0 || group.buildError);
+        });
+      }
+    }
+
+    if (aaOn && wanted("claimed-rewards")) {
+      const rewardTxns = bucketToTxns(rewardTotals);
+      if (rewardTxns.length > 0) {
+        groups.push({
+          uniqueId: "claimed-rewards",
+          label: `Claimed rewards (${rewardTxns.length})`,
+          chain: currentChain,
+          txns: rewardTxns,
+          buildError: null,
+        });
+      }
+    }
+
+    // Native goes last: by then every earlier batch has already paid its gas.
+    if (aaOn && wanted("native")) {
+      try {
+        const nativeBalance = await PROVIDER(currentChain).getBalance(account);
+        if (nativeBalance.gt(0)) {
+          groups.push({
+            uniqueId: "native",
+            label: "Native ETH",
+            chain: currentChain,
+            txns: [
+              prepareTransaction({
+                to: recipient,
+                chain: chainMetadata,
+                client: THIRDWEB_CLIENT,
+                value: BigInt(nativeBalance.toString()),
+              }),
+            ],
+            buildError: null,
+          });
+        }
+      } catch (error) {
+        logger.warn(
+          "Emergency Exit: could not read native balance, skipping it",
+          error,
+        );
+      }
+    }
+
+    return groups;
   }
 
   _calculateDerivative(currentChain, onlyThisChain) {
@@ -705,6 +885,9 @@ export class BasePortfolio {
 
     const processProtocolTxns = async (currentChain) => {
       const protocolPromises = [];
+      // parallel to protocolPromises: allSettled results carry no identity, so
+      // a skipped protocol has to be named from its index
+      const protocolUniqueIds = [];
 
       const derivative = this._calculateDerivative(
         currentChain,
@@ -736,7 +919,44 @@ export class BasePortfolio {
           });
 
           protocolPromises.push(...chainProtocolPromises);
+          protocolUniqueIds.push(
+            ...protocols.map((protocol) => protocol.interface?.uniqueId?.()),
+          );
         }
+      }
+      // zapOut is the only action that can survive a partial batch: each
+      // protocol sizes its withdrawal from its own balance and nothing is
+      // carried between them, so dropping one cannot skew the others' amounts.
+      if (actionName === "zapOut") {
+        const settled = await Promise.allSettled(protocolPromises);
+        const skipped = settled.flatMap((result, i) =>
+          result.status === "rejected"
+            ? [
+                {
+                  uniqueId: protocolUniqueIds[i],
+                  error: result.reason?.message || String(result.reason),
+                },
+              ]
+            : [],
+        );
+        if (skipped.length > 0) {
+          actionParams.onProtocolsSkipped?.(skipped);
+        }
+        const txns = settled
+          .flatMap((result) =>
+            result.status === "fulfilled" ? result.value : [],
+          )
+          .filter(Boolean);
+        // Tolerating failures must not also hide them: with nothing left to send
+        // the generic "no txns" downstream would bury why every protocol failed.
+        if (txns.length === 0 && skipped.length > 0) {
+          throw new Error(
+            `Withdrawal failed for every position: ${skipped
+              .map((entry) => `${entry.uniqueId || "unknown"} (${entry.error})`)
+              .join("; ")}`,
+          );
+        }
+        return txns;
       }
       // Wait for all protocol transactions to complete
       const results = await Promise.all(protocolPromises);

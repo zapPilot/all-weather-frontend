@@ -108,24 +108,37 @@ export default function EmergencyExitPanel({
                 description={
                   <div className="text-sm">
                     <p className="mb-1">
-                      This unstakes every position on {chainName} and sends the
-                      raw LP / receipt tokens to the address below.{" "}
+                      This hands everything this app holds for you on{" "}
+                      {chainName} to the address below: every position unstaked
+                      and sent as raw LP / receipt tokens, NFT positions moved
+                      whole, pending rewards claimed, plus any loose ERC20 and
+                      ETH left in your smart wallet.{" "}
                       <span className="font-bold">
                         No swaps, no slippage, no price lookups
                       </span>{" "}
                       — so it still works when a token has depegged and breaks
-                      the normal withdraw path.
+                      the normal withdraw path. Native ETH goes last, so there
+                      is gas left for everything ahead of it.
                     </p>
                     <p className="mb-1">
-                      Each position is sent as its own transaction. If one
-                      fails, the rest still go through and you can retry just
-                      that one.
+                      Each line in the results below is its own transaction. If
+                      one fails, the rest still go through and you can retry
+                      just that one.
+                    </p>
+                    <p className="mb-1">
+                      The list of loose wallet tokens comes from our backend. If
+                      that API is down you will see a failed{" "}
+                      <span className="font-mono">Loose wallet tokens</span> row
+                      — your positions still exit, but the loose tokens stay put
+                      until you retry that row.
                     </p>
                     <p className="mb-0">
                       You will receive{" "}
-                      <span className="font-bold">LP tokens</span>, not
-                      stablecoins. To cash out you then remove liquidity
-                      yourself on the protocol&apos;s own site (e.g.
+                      <span className="font-bold">
+                        raw LP / receipt tokens, plain ERC20s and ETH
+                      </span>
+                      , not stablecoins. Anything held as liquidity you then
+                      unwind yourself on the protocol&apos;s own site (e.g.
                       velodrome.finance for Velodrome pools).
                     </p>
                   </div>
@@ -218,9 +231,23 @@ export default function EmergencyExitPanel({
               )}
 
               <p className="text-xs text-gray-400">
-                Pending reward tokens stay credited to this wallet and can still
-                be collected from the Claim tab afterwards. Positions held as
-                NFTs cannot be moved this way and will show as failed.
+                Pending rewards are claimed first and then sent as a separate{" "}
+                <span className="font-mono">Claimed rewards</span> row, so a
+                protocol that over-reports what its claim will pay out can only
+                cost you that row. Amounts are fixed while the transactions are
+                built, so a little dust can stay behind, and rewards still
+                locked in vesting are left alone because nothing can move them
+                yet. Retrying a single position re-claims its rewards but does
+                not re-send them — run the full exit again to sweep those up.
+              </p>
+              <p className="text-xs text-gray-400">
+                NFT positions (Camelot, Velodrome V3) are moved whole, except
+                any NFT you staked into a gauge or nitro pool outside zapPilot:
+                only what the position manager reports for this wallet is
+                visible here. Loose wallet tokens and ETH are only swept from a
+                smart wallet — in <span className="font-mono">?mode=eoa</span>{" "}
+                the exit touches your protocol positions and nothing else, so
+                the rest of your wallet is left alone.
               </p>
             </div>
           ),
