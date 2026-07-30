@@ -24,6 +24,7 @@ export const generateIntentTxns = async ({
   usdBalance,
   tokenPricesMappingTable,
   handleStatusUpdate,
+  onProtocolsSkipped,
 }) => {
   let txns;
   if (actionName === "zapIn") {
@@ -60,6 +61,7 @@ export const generateIntentTxns = async ({
       onlyThisChain,
       protocolAssetDustInWallet,
       protocolAssetDustInWalletLoading,
+      onProtocolsSkipped,
     });
   } else if (actionName === "claimAndSwap") {
     txns = await portfolioHelper.portfolioAction(actionName, {

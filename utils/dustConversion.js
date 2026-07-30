@@ -114,7 +114,16 @@ export const handleDustConversion = async ({
   }
 };
 
-export const getTokens = async (chainName, accountAddress) => {
+/**
+ * Raw wallet token list, unfiltered.
+ * Emergency exit must move everything the user holds, including assets the dust
+ * conversion filters intentionally drop (native ETH, unpriced/depegged tokens,
+ * sub-cent balances, aTokens).
+ * @param {string} chainName - Chain name
+ * @param {string} accountAddress - User's wallet address
+ * @returns {Promise<Array>} Token objects as returned by the backend
+ */
+export const fetchWalletTokens = async (chainName, accountAddress) => {
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/user/${accountAddress}/${chainName}/tokens`,
   );
@@ -122,19 +131,22 @@ export const getTokens = async (chainName, accountAddress) => {
     throw new Error("Failed to fetch tokens");
   }
   const data = await response.json();
+  return Array.isArray(data) ? data : [];
+};
+
+export const getTokens = async (chainName, accountAddress) => {
+  const data = await fetchWalletTokens(chainName, accountAddress);
   const filteredAndSortedTokens = data
-    ? data
-        .filter((token) => token.price > 0)
-        .filter(
-          (token) =>
-            !token.optimized_symbol.toLowerCase().includes("-") &&
-            !token.optimized_symbol.toLowerCase().includes("/") &&
-            token.optimized_symbol.toLowerCase() !== "eth" &&
-            token.optimized_symbol.toLowerCase() !== "alp",
-        )
-        .filter((token) => !token.protocol_id.includes("aave"))
-        .filter((token) => token.amount * token.price > 0.005)
-        .sort((a, b) => b.amount * b.price - a.amount * a.price)
-    : [];
+    .filter((token) => token.price > 0)
+    .filter(
+      (token) =>
+        !token.optimized_symbol.toLowerCase().includes("-") &&
+        !token.optimized_symbol.toLowerCase().includes("/") &&
+        token.optimized_symbol.toLowerCase() !== "eth" &&
+        token.optimized_symbol.toLowerCase() !== "alp",
+    )
+    .filter((token) => !token.protocol_id.includes("aave"))
+    .filter((token) => token.amount * token.price > 0.005)
+    .sort((a, b) => b.amount * b.price - a.amount * a.price);
   return filteredAndSortedTokens;
 };

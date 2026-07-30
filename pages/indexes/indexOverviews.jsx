@@ -147,6 +147,15 @@ const cleanupActionParams = (params) => {
 
   return cleanedParams;
 };
+// uniqueId is chain/protocol/version/symbols/type, which is too long for a
+// notification line — only the protocol and its symbols mean anything to a user
+const shortenProtocolId = (uniqueId) => {
+  // a protocol whose interface never resolved reports no id at all, and a
+  // notification that throws is worse than one naming an unknown position
+  if (typeof uniqueId !== "string") return "unknown position";
+  const [, protocolName, , symbols] = uniqueId.split("/");
+  return protocolName ? `${protocolName} ${symbols || ""}`.trim() : uniqueId;
+};
 export default function IndexOverviews() {
   const router = useRouter();
   const { portfolioName } = router.query;
@@ -216,6 +225,9 @@ export default function IndexOverviews() {
   const [emergencyExitStatus, setEmergencyExitStatus] = useState({});
 
   const preservedAmountRef = useRef(null);
+  // Read back inside the same handleAAWalletAction call that filled it, so state
+  // would only cost a render and arrive too late for the success notification
+  const skippedProtocolsRef = useRef([]);
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { aaOn } = useWalletMode();
@@ -273,6 +285,7 @@ export default function IndexOverviews() {
       setTotalTradingLoss(0);
       setTradingLoss(0);
       setErrorMsg("");
+      skippedProtocolsRef.current = [];
       const tokenSymbolAndAddress = selectedToken?.toLowerCase();
 
       if (!tokenSymbolAndAddress) {
@@ -309,6 +322,9 @@ export default function IndexOverviews() {
         usdBalance,
         tokenPricesMappingTable,
         handleStatusUpdate,
+        onProtocolsSkipped: (skipped) => {
+          skippedProtocolsRef.current = skipped;
+        },
       };
 
       const handleError = async (error, context) => {
@@ -331,6 +347,9 @@ export default function IndexOverviews() {
         const txns = await generateIntentTxns(actionParams);
         console.log("txns", txns);
         setCostsCalculated(true);
+        // A single txn is a legitimate zapOut result: some protocols withdraw in
+        // one call, and skipping a failing protocol can leave just one behind
+        const minTxnCount = actionName === "zapOut" ? 1 : 2;
         if (
           [
             "zapIn",
@@ -340,7 +359,7 @@ export default function IndexOverviews() {
             "transfer",
             "convertDust",
           ].includes(actionName) &&
-          txns.length < 2
+          txns.length < minTxnCount
         ) {
           throw new Error("No transactions to send");
         }
@@ -385,6 +404,16 @@ export default function IndexOverviews() {
                   })();
                 }
 
+                const skippedNotice =
+                  skippedProtocolsRef.current.length > 0 ? (
+                    <p className="text-sm mt-1 text-amber-500">
+                      {skippedProtocolsRef.current.length} position(s) skipped
+                      and still invested:{" "}
+                      {skippedProtocolsRef.current
+                        .map((skipped) => shortenProtocolId(skipped.uniqueId))
+                        .join(", ")}
+                    </p>
+                  ) : null;
                 const notificationContent = allChainsComplete ? (
                   <div>
                     <p>All Chains Complete</p>
@@ -396,22 +425,26 @@ export default function IndexOverviews() {
                         to convert small balances to ETH.
                       </p>
                     )}
+                    {skippedNotice}
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-gray-500">Completed on</span>
-                      <div className="flex items-center gap-1">
-                        <Image
-                          src={`/chainPicturesWebp/${currentChain?.toLowerCase()}.webp`}
-                          alt={currentChain}
-                          width={20}
-                          height={20}
-                          className="w-5 h-5 rounded-full"
-                        />
-                        <span className="font-medium">{currentChain}</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-gray-500">Completed on</span>
+                        <div className="flex items-center gap-1">
+                          <Image
+                            src={`/chainPicturesWebp/${currentChain?.toLowerCase()}.webp`}
+                            alt={currentChain}
+                            width={20}
+                            height={20}
+                            className="w-5 h-5 rounded-full"
+                          />
+                          <span className="font-medium">{currentChain}</span>
+                        </div>
                       </div>
                     </div>
+                    {skippedNotice}
                   </div>
                 );
                 txnHash =
@@ -572,6 +605,7 @@ export default function IndexOverviews() {
           // chart, but protocols still expect a callable
           updateProgress: () => {},
           uniqueIds,
+          aaOn,
         });
       } catch (error) {
         await reportError(error, "Emergency Exit failed to build");
