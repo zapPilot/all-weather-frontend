@@ -16,6 +16,7 @@ import NonfungiblePositionManager from "../../lib/contracts/AerodromeV3/Nonfungi
 export class BaseVelodromeV3 extends BaseProtocol {
   constructor(chain, chainId, symbolList, mode, customParams) {
     super(chain, chainId, symbolList, mode, customParams);
+    this.assetIsNFT = true;
     this.initializeProtocolDetails();
     this.initializeContracts();
     this._checkIfParamsAreSet();
@@ -492,6 +493,38 @@ export class BaseVelodromeV3 extends BaseProtocol {
       }
     }
     return 0;
+  }
+  // Every position this wallet holds in *this* pool, unlike _getNftID which
+  // stops at the first. Scoped to the pool on purpose: several protocols in a
+  // vault share one position manager, so an unscoped list would make each of
+  // their emergency-exit groups try to move all of the wallet's NFTs and only
+  // the first would succeed.
+  async _getAllNftIDs(owner) {
+    const { tickLower, tickUpper } = this.customParams.tickers;
+    const [token0Metadata, token1Metadata] = this.customParams.lpTokens;
+    const balances = await this.assetContractInstance.balanceOf(owner);
+    const tokenIds = [];
+    for (let idx = 0; idx < Math.min(Number(balances), 50); idx++) {
+      // A single unreadable position must not strand the remaining ones
+      try {
+        const token_id = await this.assetContractInstance.tokenOfOwnerByIndex(
+          owner,
+          idx,
+        );
+        const position = await this.assetContractInstance.positions(token_id);
+        if (
+          position.tickLower === tickLower &&
+          position.tickUpper === tickUpper &&
+          position.token0.toLowerCase() === token0Metadata[1].toLowerCase() &&
+          position.token1.toLowerCase() === token1Metadata[1].toLowerCase()
+        ) {
+          tokenIds.push(token_id);
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+    return tokenIds;
   }
   async _checkIfNFTExists(token_id) {
     try {

@@ -25,6 +25,9 @@ export default class BaseProtocol extends BaseUniswap {
     this.assetContract = "placeholder";
     this.protocolContract = "placeholder";
     this.stakeFarmContract = "placeholder";
+    // subclasses whose assetContract is an ERC721 position manager flip this,
+    // because balance/transfer semantics differ from a fungible position
+    this.assetIsNFT = false;
 
     this.chain = chain;
     this.chainId = chaindId;
@@ -463,51 +466,115 @@ export default class BaseProtocol extends BaseUniswap {
     return finalTxns;
   }
 
-  // Escape hatch: unstake everything and hand the raw asset token to the user.
-  // Unlike transfer(), this reads nothing but on-chain BigNumbers — no token
-  // prices, no slippage, no swaps — so a broken price feed (e.g. OP's depegged
-  // sUSD) cannot block the exit. Only valid where assetContract is a plain
-  // ERC20; NFT-based positions will fail here and get skipped by the caller.
+  // Escape hatch: hand the whole position back to the user untouched.
+  // The principal path reads nothing but on-chain BigNumbers — no token prices,
+  // no slippage, no swaps — so a broken price feed (e.g. OP's depegged sUSD)
+  // cannot block the exit. Claiming rewards is the one part that reaches into
+  // protocol-specific code with third-party dependencies (Camelot's API,
+  // Equilibria's reward assumptions), so it is best-effort only: forfeiting
+  // rewards is survivable, being unable to withdraw principal is not.
   async emergencyTransfer(owner, recipient, updateProgress) {
-    let unstakeTxns;
-    let unstakedAmount;
-    if (this.mode === "single") {
-      [unstakeTxns, unstakedAmount] = await this._unstake(
+    let claimTxns = [];
+    let rewardBalances = [];
+    try {
+      // an empty price table only NaNs out usdDenominatedValue, which nothing
+      // downstream of an emergency exit reads
+      const [txns, rewardsDict] = await this.customClaim(
         owner,
-        1,
+        {},
         updateProgress,
       );
-    } else if (this.mode === "LP") {
-      [unstakeTxns, unstakedAmount] = await this._unstakeLP(
-        owner,
-        1,
-        updateProgress,
+      claimTxns = txns || [];
+      // A claim that emits no transaction delivers nothing, so any balance it
+      // reported is still locked in the protocol and must not be promised to a
+      // transfer. Same for escrowed entries: Camelot reports vesting xGRAIL as
+      // a pending reward, but only customRedeemVestingRewards can release it —
+      // and xGRAIL cannot be transferred even once released.
+      rewardBalances =
+        claimTxns.length === 0
+          ? []
+          : Object.entries(rewardsDict || {}).flatMap(([address, metadata]) => {
+              if (metadata?.balance === undefined || metadata?.vesting) {
+                return [];
+              }
+              const balance = ethers.BigNumber.from(metadata.balance);
+              return balance.isZero()
+                ? []
+                : [{ address: address.toLowerCase(), balance }];
+            });
+    } catch (error) {
+      logger.warn(
+        `emergencyTransfer: giving up on rewards for ${this.uniqueId()}, continuing with principal`,
+        error,
+      );
+    }
+
+    let principalTxns = [];
+    if (this.assetIsNFT) {
+      // NFT positions are never staked (_stakeLP is a no-op for them), so there
+      // is nothing to unstake, and assetBalanceOf would report liquidity rather
+      // than a token count
+      const tokenIds = await this._getAllNftIDs(owner);
+      principalTxns = (tokenIds || []).map((tokenId) =>
+        prepareContractCall({
+          contract: this.assetContract,
+          // the 4-arg overload lives in the same ABI, so the full signature is
+          // needed to resolve which one this is
+          method:
+            "function safeTransferFrom(address from, address to, uint256 tokenId)",
+          params: [owner, recipient, tokenId],
+        }),
       );
     } else {
-      throw new Error("Invalid mode for emergencyTransfer");
+      let unstakeTxns;
+      let unstakedAmount;
+      if (this.mode === "single") {
+        [unstakeTxns, unstakedAmount] = await this._unstake(
+          owner,
+          1,
+          updateProgress,
+        );
+      } else if (this.mode === "LP") {
+        [unstakeTxns, unstakedAmount] = await this._unstakeLP(
+          owner,
+          1,
+          updateProgress,
+        );
+      } else {
+        throw new Error("Invalid mode for emergencyTransfer");
+      }
+
+      const unstakedAmountBN = ethers.BigNumber.from(unstakedAmount || 0);
+      // Protocols with no separate staking contract (Aave, Moonwell, PendlePT)
+      // return no unstake txn and size the amount off assetBalanceOf itself, so
+      // it already *is* the wallet balance — adding it again asks for twice what
+      // the user holds and reverts. Only where an unstake txn moves tokens into
+      // the wallet are the two amounts distinct; sweeping the pre-existing
+      // balance there costs no extra txn and heals a half-finished exit
+      // (unstake landed, transfer didn't) on the retry.
+      const total =
+        unstakeTxns.length === 0
+          ? unstakedAmountBN
+          : unstakedAmountBN.add((await this.assetBalanceOf(owner)) || 0);
+      if (!total.isZero()) {
+        const transferTxn = prepareContractCall({
+          contract: this.assetContract,
+          method: "transfer",
+          params: [recipient, total],
+        });
+        // withdraw(0) reverts on some gauges
+        principalTxns = unstakedAmountBN.isZero()
+          ? [transferTxn]
+          : [...unstakeTxns, transferTxn];
+      }
     }
 
-    // _unstakeLP returns undefined here when an NFT position was already burned
-    const unstakedAmountBN = ethers.BigNumber.from(unstakedAmount || 0);
-    // Sweeping the wallet balance too costs no extra txn and makes a
-    // half-finished exit (unstake landed, transfer didn't) heal on the retry
-    const walletBalance = await this.assetBalanceOf(owner);
-    const total = unstakedAmountBN.add(walletBalance);
-    if (total.isZero()) {
-      return [];
+    // claims go first so the rewards land in the wallet within the same batch
+    const finalTxns = [...claimTxns, ...principalTxns];
+    if (finalTxns.length > 0) {
+      this.checkTxnsToDataNotUndefined(finalTxns, "emergencyTransfer");
     }
-
-    const transferTxn = prepareContractCall({
-      contract: this.assetContract,
-      method: "transfer",
-      params: [recipient, total],
-    });
-    // withdraw(0) reverts on some gauges
-    const finalTxns = unstakedAmountBN.isZero()
-      ? [transferTxn]
-      : [...unstakeTxns, transferTxn];
-    this.checkTxnsToDataNotUndefined(finalTxns, "emergencyTransfer");
-    return finalTxns;
+    return { txns: finalTxns, rewardBalances };
   }
 
   async stake(protocolAssetDustInWallet, updateProgress) {
