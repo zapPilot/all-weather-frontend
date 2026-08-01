@@ -8,6 +8,7 @@
     "React": "readonly",
     "Promise": "readonly",
     "Set": "readonly",
-    "Map": "readonly"
+    "Map": "readonly",
+    "BigInt": "readonly"
   }
 }
