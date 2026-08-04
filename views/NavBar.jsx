@@ -54,6 +54,14 @@ export default function NavBar({ mode }) {
         label: <Link href={buildUrlWithQuery("/dustzap")}>Dust Zap</Link>,
         key: "dustZap",
       },
+      {
+        label: (
+          <Link href={buildUrlWithQuery("/velodrome-rescue")}>
+            Velodrome Rescue
+          </Link>
+        ),
+        key: "velodromeRescue",
+      },
     ],
     [buildUrlWithQuery],
   );
