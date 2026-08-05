@@ -7,11 +7,15 @@ const STATUS_COLOR = {
   sending: "text-blue-400",
   success: "text-green-400",
   failed: "text-red-400",
+  cancelled: "text-yellow-400",
+  unknown: "text-yellow-400",
 };
 
 const STATUS_ICON = {
   success: "✅",
   failed: "❌",
+  cancelled: "⏹️",
+  unknown: "⚠️",
 };
 
 function ResultRow({ uniqueId, result, onRetry, disabled }) {
@@ -63,6 +67,7 @@ export default function EmergencyExitPanel({
   validateRecipient,
   handleEmergencyExit,
   emergencyExitStatus = {},
+  emergencyExitPhase = "idle",
   account,
   chainId,
 }) {
@@ -121,9 +126,11 @@ export default function EmergencyExitPanel({
                       is gas left for everything ahead of it.
                     </p>
                     <p className="mb-1">
-                      Each line in the results below is its own transaction. If
-                      one fails, the rest still go through and you can retry
-                      just that one.
+                      In AA mode, the app first tries to move everything in one
+                      atomic transaction. If that transaction safely fails
+                      before changing state, it automatically retries each line
+                      separately, so one broken position cannot strand the rest.
+                      EOA mode continues to send the lines separately.
                     </p>
                     <p className="mb-1">
                       The list of loose wallet tokens comes from our backend. If
@@ -144,6 +151,24 @@ export default function EmergencyExitPanel({
                   </div>
                 }
               />
+
+              {emergencyExitPhase === "fallback" && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  message="Combined exit failed — retrying positions separately"
+                  description="Completed positions will stay completed even if a later position fails."
+                />
+              )}
+
+              {emergencyExitPhase === "unknown" && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  message="The combined transaction status is unknown"
+                  description="Do not retry yet. Refresh balances and check your wallet or block explorer first; the original transaction may still confirm."
+                />
+              )}
 
               <div>
                 <label className="block text-sm text-gray-300 mb-1">
