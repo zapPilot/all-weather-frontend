@@ -35,6 +35,7 @@ export default function ZapOutTab({
   validateRecipient,
   handleEmergencyExit,
   emergencyExitStatus,
+  emergencyExitPhase,
 }) {
   const currentChain = chainId?.name
     ?.toLowerCase()
@@ -127,6 +128,7 @@ export default function ZapOutTab({
           validateRecipient={validateRecipient}
           handleEmergencyExit={handleEmergencyExit}
           emergencyExitStatus={emergencyExitStatus}
+          emergencyExitPhase={emergencyExitPhase}
           account={account}
           chainId={chainId}
         />

@@ -77,6 +77,7 @@ import {
   getTokenMetadata,
 } from "../../utils/portfolioCalculation";
 import { handleTransactionError } from "../../utils/transactionErrorHandler";
+import { executeEmergencyExitGroups } from "../../utils/emergencyExitExecution";
 import {
   checkGasPrice,
   prepareTransactionMetadata,
@@ -223,6 +224,7 @@ export default function IndexOverviews() {
   const [recipientError, setRecipientError] = useState(false);
   const [showZapIn, setShowZapIn] = useState(false);
   const [emergencyExitStatus, setEmergencyExitStatus] = useState({});
+  const [emergencyExitPhase, setEmergencyExitPhase] = useState("idle");
 
   const preservedAmountRef = useRef(null);
   // Read back inside the same handleAAWalletAction call that filled it, so state
@@ -561,9 +563,9 @@ export default function IndexOverviews() {
 
   // Escape hatch for when the bundled zapOut can't complete — e.g. OP's
   // permanently depegged sUSD poisons the price feed the slippage math depends
-  // on. Sends one small batch per protocol so a single failing position can't
-  // strand the others, and skips the gas-price gate that would otherwise block
-  // an exit the user urgently needs.
+  // on. AA wallets first try one atomic batch, then fall back to one small batch
+  // per protocol only when the combined failure is known to be safe to retry.
+  // It also skips the gas-price gate that could block an urgent exit.
   const handleEmergencyExit = useCallback(
     async (uniqueIds = null) => {
       if (!account?.address) return false;
@@ -596,6 +598,7 @@ export default function IndexOverviews() {
         );
 
       let groups;
+      setEmergencyExitPhase(aaOn ? "building-combined" : "individual");
       try {
         groups = await portfolioHelper.getEmergencyExitTxnsByProtocol({
           account: account.address,
@@ -608,11 +611,13 @@ export default function IndexOverviews() {
           aaOn,
         });
       } catch (error) {
+        setEmergencyExitPhase("idle");
         await reportError(error, "Emergency Exit failed to build");
         return false;
       }
 
       if (groups.length === 0) {
+        setEmergencyExitPhase("idle");
         openNotificationWithIcon(
           notificationAPI,
           "Emergency Exit",
@@ -634,50 +639,51 @@ export default function IndexOverviews() {
         uniqueIds ? { ...prev, ...freshStatus } : freshStatus,
       );
 
-      for (const group of groups) {
-        const mark = (patch) =>
-          setEmergencyExitStatus((prev) => ({
-            ...prev,
-            [group.uniqueId]: { ...prev[group.uniqueId], ...patch },
-          }));
-
-        if (group.buildError) {
-          mark({ status: "failed", error: group.buildError });
-          continue;
+      const updateGroup = (uniqueId, patch) => {
+        const { transactionHash, ...statusPatch } = patch;
+        if (transactionHash !== undefined) {
+          statusPatch.txnLink = transactionHash
+            ? `${explorerUrl}/tx/${transactionHash}`
+            : "";
         }
+        setEmergencyExitStatus((prev) => ({
+          ...prev,
+          [uniqueId]: { ...prev[uniqueId], ...statusPatch },
+        }));
+      };
 
-        mark({ status: "sending" });
-        const calls = group.txns.flat(Infinity);
-        try {
-          const data = await new Promise((resolve, reject) => {
-            const callbacks = { onSuccess: resolve, onError: reject };
-            if (aaOn) {
-              sendBatchTransaction(calls, callbacks);
-            } else {
-              // atomicRequired: false is safe here — an unstake that lands
-              // without its transfer just leaves LP in the wallet, and the next
-              // attempt sweeps that balance too
-              sendCalls({ calls, atomicRequired: false }, callbacks);
-            }
-          });
-          const txnHash =
-            data?.transactionHash || data?.receipts?.[0]?.transactionHash;
-          mark({
-            status: "success",
-            txnLink: txnHash ? `${explorerUrl}/tx/${txnHash}` : "",
-          });
-        } catch (error) {
-          const message = await reportError(
+      const result = await executeEmergencyExitGroups({
+        groups,
+        aaOn,
+        sendBatchTransaction,
+        sendCalls,
+        updateGroup,
+        onFallback: (error) => {
+          logger.warn(
+            "Combined Emergency Exit failed safely; falling back to isolated groups",
             error,
-            `Emergency Exit failed for ${group.label}`,
           );
-          // Deliberately not rethrowing: the remaining protocols still go out
-          mark({
-            status: "failed",
-            error: message || error?.message || "Transaction failed",
-          });
-        }
+          setEmergencyExitPhase("fallback");
+          openNotificationWithIcon(
+            notificationAPI,
+            "Emergency Exit",
+            "info",
+            "The combined exit could not complete. Retrying each position separately.",
+          );
+        },
+        onGroupError: (error, group) =>
+          reportError(error, `Emergency Exit failed for ${group.label}`),
+      });
+
+      if (result.status === "cancelled") {
+        setEmergencyExitPhase("cancelled");
+        return false;
       }
+      if (result.status === "unknown") {
+        setEmergencyExitPhase("unknown");
+        return false;
+      }
+      setEmergencyExitPhase("complete");
 
       try {
         await axios({
@@ -1091,6 +1097,7 @@ export default function IndexOverviews() {
       errorMsg,
       handleEmergencyExit,
       emergencyExitStatus,
+      emergencyExitPhase,
     }),
     [
       account,
@@ -1129,6 +1136,7 @@ export default function IndexOverviews() {
       errorMsg,
       handleEmergencyExit,
       emergencyExitStatus,
+      emergencyExitPhase,
     ],
   );
 
