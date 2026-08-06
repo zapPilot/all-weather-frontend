@@ -563,9 +563,10 @@ export default function IndexOverviews() {
 
   // Escape hatch for when the bundled zapOut can't complete — e.g. OP's
   // permanently depegged sUSD poisons the price feed the slippage math depends
-  // on. AA wallets first try one atomic batch, then fall back to one small batch
-  // per protocol only when the combined failure is known to be safe to retry.
-  // It also skips the gas-price gate that could block an urgent exit.
+  // on. Both AA and EOA wallets first try one atomic batch, then fall back to
+  // one small batch per protocol only when the combined failure is known to be
+  // safe to retry. It also skips the gas-price gate that could block an urgent
+  // exit.
   const handleEmergencyExit = useCallback(
     async (uniqueIds = null) => {
       if (!account?.address) return false;
@@ -598,7 +599,7 @@ export default function IndexOverviews() {
         );
 
       let groups;
-      setEmergencyExitPhase(aaOn ? "building-combined" : "individual");
+      setEmergencyExitPhase("building-combined");
       try {
         groups = await portfolioHelper.getEmergencyExitTxnsByProtocol({
           account: account.address,

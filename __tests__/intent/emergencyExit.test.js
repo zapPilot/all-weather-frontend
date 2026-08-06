@@ -264,6 +264,28 @@ describe("emergencyTransfer", () => {
     expect(rewardBalances).toEqual([]);
   });
 
+  // Velodrome's claim builds getReward() regardless of the staked balance, so an
+  // empty position used to hand back a claim-only group: a row in the panel and
+  // a signature for a protocol the user never entered
+  it("skips the reward claim entirely when there is no position", async () => {
+    const [protocol] = protocolsOn(
+      getPortfolioHelper("Velodrome Vault"),
+      "op",
+    ).map((p) => p.interface);
+    stubBalances(protocol, { staked: "0", wallet: "0" });
+    const customClaim = vi.spyOn(protocol, "customClaim");
+
+    const { txns, rewardBalances } = await protocol.emergencyTransfer(
+      OWNER,
+      RECIPIENT,
+      noop,
+    );
+
+    expect(txns).toEqual([]);
+    expect(rewardBalances).toEqual([]);
+    expect(customClaim).not.toHaveBeenCalled();
+  });
+
   it("never reads token prices", async () => {
     const [protocol] = protocolsOn(
       getPortfolioHelper("Velodrome Vault"),
@@ -413,6 +435,44 @@ describe("getEmergencyExitTxnsByProtocol", () => {
       expect(group.buildError).toBeNull();
       expect(group.txns).toHaveLength(2);
     });
+  });
+
+  it("omits the group for a protocol that holds nothing", async () => {
+    const portfolioHelper = getPortfolioHelper("Stable+ Vault");
+    const protocols = protocolsOn(portfolioHelper, "op").map(
+      (p) => p.interface,
+    );
+    expect(protocols.length).toBeGreaterThan(1);
+
+    protocols.forEach((protocol, i) => {
+      if (i === 0) {
+        stubBalances(protocol, { staked: "0", wallet: "0" });
+        // the real claim would still build a getReward txn from this
+        stubPendingRewards(protocol, {
+          [ethers.utils.getAddress(VELO)]: {
+            symbol: "velo",
+            balance: ethers.BigNumber.from("700"),
+            decimals: 18,
+            chain: "op",
+          },
+        });
+      } else {
+        stubBalances(protocol, { staked: "1000", wallet: "0" });
+        stubNoRewards(protocol);
+      }
+    });
+
+    const groups = await portfolioHelper.getEmergencyExitTxnsByProtocol({
+      account: OWNER,
+      chainMetadata: optimism,
+      recipient: RECIPIENT,
+      updateProgress: noop,
+    });
+
+    expect(groups).toHaveLength(protocols.length - 1);
+    expect(
+      groups.every((group) => group.uniqueId !== protocols[0].uniqueId()),
+    ).toBe(true);
   });
 
   it("never fetches the token price mapping table", async () => {

@@ -59,7 +59,19 @@ export const classifyEmergencyExitBatchError = (error) => {
     details.includes("paymaster") ||
     details.includes("validation") ||
     details.includes("insufficient funds") ||
-    /\baa\d{2}\b/.test(details)
+    /\baa\d{2}\b/.test(details) ||
+    // A wallet that cannot do EIP-5792 batching rejects before broadcasting, so
+    // resending the groups one by one is safe
+    details.includes("5792") ||
+    (details.includes("wallet_sendcalls") &&
+      (details.includes("not support") ||
+        details.includes("unsupport") ||
+        details.includes("does not exist") ||
+        details.includes("not available"))) ||
+    details.includes("method not found") ||
+    details.includes("-32601") ||
+    // EIP-5792 atomicity-not-supported; word-bounded so it cannot match a hash
+    /\b5740\b/.test(details)
   ) {
     return FAILURE_KIND.SAFE_TO_FALLBACK;
   }
@@ -95,7 +107,13 @@ export async function executeEmergencyExitGroups({
     }
   }
 
-  if (aaOn && executableGroups.length > 0) {
+  // A lone EOA group is already one signature, so the combined attempt could
+  // only add a second one when the wallet turns out not to support batching
+  const attemptCombined = aaOn
+    ? executableGroups.length > 0
+    : executableGroups.length > 1;
+
+  if (attemptCombined) {
     executableGroups.forEach((group) =>
       updateGroup(group.uniqueId, { status: "sending", error: undefined }),
     );
@@ -103,7 +121,16 @@ export async function executeEmergencyExitGroups({
       const calls = executableGroups.flatMap((group) =>
         group.txns.flat(Infinity),
       );
-      const data = await submit(sendBatchTransaction, calls);
+      const data = aaOn
+        ? await submit(sendBatchTransaction, calls)
+        : await submit(sendCalls, { calls, atomicRequired: true });
+      // thirdweb resolves an atomic bundle that landed on-chain but reverted
+      // wholesale with status "failure" instead of rejecting; left unchecked it
+      // would paint every failed exit green. atomicRequired guarantees nothing
+      // executed, so falling back is safe.
+      if (!aaOn && data?.status === "failure") {
+        throw new Error("Combined atomic batch reverted");
+      }
       const transactionHash = transactionHashFromResult(data);
       executableGroups.forEach((group) =>
         updateGroup(group.uniqueId, {

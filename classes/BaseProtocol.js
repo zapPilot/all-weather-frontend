@@ -473,42 +473,9 @@ export default class BaseProtocol extends BaseUniswap {
   // protocol-specific code with third-party dependencies (Camelot's API,
   // Equilibria's reward assumptions), so it is best-effort only: forfeiting
   // rewards is survivable, being unable to withdraw principal is not.
+  // A protocol holding no principal returns nothing at all and never even
+  // attempts a claim, so it costs neither a row nor a signature.
   async emergencyTransfer(owner, recipient, updateProgress) {
-    let claimTxns = [];
-    let rewardBalances = [];
-    try {
-      // an empty price table only NaNs out usdDenominatedValue, which nothing
-      // downstream of an emergency exit reads
-      const [txns, rewardsDict] = await this.customClaim(
-        owner,
-        {},
-        updateProgress,
-      );
-      claimTxns = txns || [];
-      // A claim that emits no transaction delivers nothing, so any balance it
-      // reported is still locked in the protocol and must not be promised to a
-      // transfer. Same for escrowed entries: Camelot reports vesting xGRAIL as
-      // a pending reward, but only customRedeemVestingRewards can release it —
-      // and xGRAIL cannot be transferred even once released.
-      rewardBalances =
-        claimTxns.length === 0
-          ? []
-          : Object.entries(rewardsDict || {}).flatMap(([address, metadata]) => {
-              if (metadata?.balance === undefined || metadata?.vesting) {
-                return [];
-              }
-              const balance = ethers.BigNumber.from(metadata.balance);
-              return balance.isZero()
-                ? []
-                : [{ address: address.toLowerCase(), balance }];
-            });
-    } catch (error) {
-      logger.warn(
-        `emergencyTransfer: giving up on rewards for ${this.uniqueId()}, continuing with principal`,
-        error,
-      );
-    }
-
     let principalTxns = [];
     if (this.assetIsNFT) {
       // NFT positions are never staked (_stakeLP is a no-op for them), so there
@@ -569,11 +536,50 @@ export default class BaseProtocol extends BaseUniswap {
       }
     }
 
+    // A claim-only group still costs a signature, so a protocol with no
+    // principal is skipped outright even when dust rewards remain claimable
+    if (principalTxns.length === 0) {
+      return { txns: [], rewardBalances: [] };
+    }
+
+    let claimTxns = [];
+    let rewardBalances = [];
+    try {
+      // an empty price table only NaNs out usdDenominatedValue, which nothing
+      // downstream of an emergency exit reads
+      const [txns, rewardsDict] = await this.customClaim(
+        owner,
+        {},
+        updateProgress,
+      );
+      claimTxns = txns || [];
+      // A claim that emits no transaction delivers nothing, so any balance it
+      // reported is still locked in the protocol and must not be promised to a
+      // transfer. Same for escrowed entries: Camelot reports vesting xGRAIL as
+      // a pending reward, but only customRedeemVestingRewards can release it —
+      // and xGRAIL cannot be transferred even once released.
+      rewardBalances =
+        claimTxns.length === 0
+          ? []
+          : Object.entries(rewardsDict || {}).flatMap(([address, metadata]) => {
+              if (metadata?.balance === undefined || metadata?.vesting) {
+                return [];
+              }
+              const balance = ethers.BigNumber.from(metadata.balance);
+              return balance.isZero()
+                ? []
+                : [{ address: address.toLowerCase(), balance }];
+            });
+    } catch (error) {
+      logger.warn(
+        `emergencyTransfer: giving up on rewards for ${this.uniqueId()}, continuing with principal`,
+        error,
+      );
+    }
+
     // claims go first so the rewards land in the wallet within the same batch
     const finalTxns = [...claimTxns, ...principalTxns];
-    if (finalTxns.length > 0) {
-      this.checkTxnsToDataNotUndefined(finalTxns, "emergencyTransfer");
-    }
+    this.checkTxnsToDataNotUndefined(finalTxns, "emergencyTransfer");
     return { txns: finalTxns, rewardBalances };
   }
 
