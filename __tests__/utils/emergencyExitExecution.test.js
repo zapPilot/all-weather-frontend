@@ -52,6 +52,27 @@ describe("classifyEmergencyExitBatchError", () => {
       EMERGENCY_EXIT_FAILURE_KIND.UNKNOWN,
     );
   });
+
+  // A wallet without EIP-5792 rejects before broadcasting, so the per-group
+  // retry cannot duplicate anything
+  it("treats a wallet that cannot batch as safe to fall back", () => {
+    [
+      new Error("wallet MetaMask does not support EIP-5792"),
+      new Error("errored calling wallet_sendCalls: not supported"),
+      new Error("The method does not exist / is not available (-32601)"),
+      new Error("atomicity not supported (5740)"),
+    ].forEach((error) =>
+      expect(classifyEmergencyExitBatchError(error)).toBe(
+        EMERGENCY_EXIT_FAILURE_KIND.SAFE_TO_FALLBACK,
+      ),
+    );
+    // a wallet_sendCalls failure with no capability wording may have broadcast
+    expect(
+      classifyEmergencyExitBatchError(
+        new Error("wallet_sendCalls something else"),
+      ),
+    ).toBe(EMERGENCY_EXIT_FAILURE_KIND.UNKNOWN);
+  });
 });
 
 describe("executeEmergencyExitGroups", () => {
@@ -143,20 +164,114 @@ describe("executeEmergencyExitGroups", () => {
     });
   });
 
-  it("keeps EOA execution isolated and non-atomic", async () => {
+  it("asks an EOA for one atomic signature covering every group", async () => {
     const sendCalls = vi.fn((_payload, callbacks) =>
       callbacks.onSuccess({ receipts: [{ transactionHash: "0xeoa" }] }),
     );
-    const { sendBatchTransaction, statuses } = await run({
+    const { sendBatchTransaction, statuses, result } = await run({
       aaOn: false,
       sendCalls,
     });
 
     expect(sendBatchTransaction).not.toHaveBeenCalled();
-    expect(sendCalls).toHaveBeenCalledTimes(groups.length);
-    sendCalls.mock.calls.forEach(([payload]) =>
-      expect(payload.atomicRequired).toBe(false),
+    expect(sendCalls).toHaveBeenCalledTimes(1);
+    expect(sendCalls.mock.calls[0][0]).toEqual({
+      calls: ["claim-a", "transfer-a", "rewards", "native"],
+      atomicRequired: true,
+    });
+    expect(result).toEqual({ status: "success", transactionHash: "0xeoa" });
+    Object.values(statuses).forEach((status) =>
+      expect(status).toMatchObject({
+        status: "success",
+        transactionHash: "0xeoa",
+      }),
     );
-    expect(statuses.native.transactionHash).toBe("0xeoa");
+  });
+
+  it("falls back to isolated non-atomic EOA groups when the wallet cannot batch", async () => {
+    let attempt = 0;
+    const sendCalls = vi.fn((_payload, callbacks) => {
+      attempt += 1;
+      if (attempt === 1) {
+        callbacks.onError(new Error("wallet does not support EIP-5792"));
+      } else {
+        callbacks.onSuccess({
+          receipts: [{ transactionHash: `0x${attempt}` }],
+        });
+      }
+    });
+    const { statuses, onFallback } = await run({ aaOn: false, sendCalls });
+
+    expect(onFallback).toHaveBeenCalledTimes(1);
+    expect(sendCalls).toHaveBeenCalledTimes(1 + groups.length);
+    sendCalls.mock.calls
+      .slice(1)
+      .forEach(([payload]) => expect(payload.atomicRequired).toBe(false));
+    Object.values(statuses).forEach((status) =>
+      expect(status.status).toBe("success"),
+    );
+  });
+
+  // thirdweb resolves an atomic bundle that reverted wholesale instead of
+  // rejecting, so an unguarded success path would paint every failed exit green
+  it("treats a resolved atomic failure as a failure, not a success", async () => {
+    let attempt = 0;
+    const sendCalls = vi.fn((_payload, callbacks) => {
+      attempt += 1;
+      if (attempt === 1) {
+        callbacks.onSuccess({ status: "failure" });
+      } else {
+        callbacks.onError(new Error("still broken"));
+      }
+    });
+    const onGroupError = vi.fn(async () => "still broken");
+    const { statuses, onFallback } = await run({
+      aaOn: false,
+      sendCalls,
+      onGroupError,
+    });
+
+    expect(onFallback).toHaveBeenCalledTimes(1);
+    Object.values(statuses).forEach((status) =>
+      expect(status.status).toBe("failed"),
+    );
+  });
+
+  it("does not fall back after an EOA rejection or an unknown result", async () => {
+    for (const [error, expected] of [
+      [{ code: 4001 }, "cancelled"],
+      [new Error("Bundle not confirmed after 100 blocks"), "unknown"],
+    ]) {
+      const sendCalls = vi.fn((_payload, callbacks) =>
+        callbacks.onError(error),
+      );
+      const { statuses, onFallback } = await run({ aaOn: false, sendCalls });
+
+      expect(sendCalls).toHaveBeenCalledTimes(1);
+      expect(onFallback).not.toHaveBeenCalled();
+      Object.values(statuses).forEach((status) =>
+        expect(status.status).toBe(expected),
+      );
+    }
+  });
+
+  // A lone group is already one signature; a combined attempt could only add a
+  // second one when the wallet turns out not to support batching
+  it("skips the combined attempt for a single EOA group", async () => {
+    const sendCalls = vi.fn((_payload, callbacks) =>
+      callbacks.onSuccess({ receipts: [{ transactionHash: "0xsolo" }] }),
+    );
+    const { statuses } = await run({
+      aaOn: false,
+      sendCalls,
+      groups: [groups[0]],
+    });
+
+    expect(sendCalls).toHaveBeenCalledTimes(1);
+    expect(sendCalls.mock.calls[0][0].atomicRequired).toBe(false);
+    expect(statuses["protocol-a"]).toMatchObject({
+      status: "success",
+      transactionHash: "0xsolo",
+    });
   });
 });

@@ -126,11 +126,13 @@ export default function EmergencyExitPanel({
                       is gas left for everything ahead of it.
                     </p>
                     <p className="mb-1">
-                      In AA mode, the app first tries to move everything in one
-                      atomic transaction. If that transaction safely fails
-                      before changing state, it automatically retries each line
+                      Only positions you actually hold something in are
+                      included, so a protocol you never entered — or already
+                      left — does not cost a signature. In both AA and EOA mode,
+                      the app first tries to move everything in one atomic
+                      transaction. If that transaction safely fails before
+                      changing state, it automatically retries each line
                       separately, so one broken position cannot strand the rest.
-                      EOA mode continues to send the lines separately.
                     </p>
                     <p className="mb-1">
                       The list of loose wallet tokens comes from our backend. If
@@ -262,8 +264,11 @@ export default function EmergencyExitPanel({
                 cost you that row. Amounts are fixed while the transactions are
                 built, so a little dust can stay behind, and rewards still
                 locked in vesting are left alone because nothing can move them
-                yet. Retrying a single position re-claims its rewards but does
-                not re-send them — run the full exit again to sweep those up.
+                yet. Rewards are only claimed alongside a position&apos;s
+                principal, so a protocol where you hold nothing is skipped even
+                if dust rewards are still claimable there. Retrying a single
+                position re-claims its rewards but does not re-send them — run
+                the full exit again to sweep those up.
               </p>
               <p className="text-xs text-gray-400">
                 NFT positions (Camelot, Velodrome V3) are moved whole, except

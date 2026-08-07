@@ -45,13 +45,13 @@ const baseProps = {
 afterEach(cleanup);
 
 describe("EmergencyExitPanel batch states", () => {
-  it("explains combined AA execution and isolated EOA execution", () => {
+  it("explains that only held positions are included and both modes batch first", () => {
     render(<EmergencyExitPanel {...baseProps} />);
 
     expect(
-      screen.getByText(/In AA mode, the app first tries to move everything/),
+      screen.getByText(/Only positions you actually hold/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/EOA mode continues to send/)).toBeInTheDocument();
+    expect(screen.getByText(/In both AA and EOA mode/)).toBeInTheDocument();
   });
 
   it("shows when the combined exit falls back", () => {
