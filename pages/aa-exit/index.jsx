@@ -157,6 +157,7 @@ export default function AaExit() {
   const [rows, setRows] = useState([]);
   const [feePlan, setFeePlan] = useState(null);
   const [walletScanFailed, setWalletScanFailed] = useState(false);
+  const [untransferableTokens, setUntransferableTokens] = useState([]);
   const [fellBack, setFellBack] = useState(false);
   const [retrying, setRetrying] = useState(null);
 
@@ -183,6 +184,7 @@ export default function AaExit() {
     setRows([]);
     setFeePlan(null);
     setWalletScanFailed(false);
+    setUntransferableTokens([]);
     setFellBack(false);
     setPhase("idle");
   }, []);
@@ -277,6 +279,7 @@ export default function AaExit() {
       setRows(result.groups.map(toRow));
       setFeePlan(result.feePlan);
       setWalletScanFailed(!!result.walletScanError);
+      setUntransferableTokens(result.untransferableTokens || []);
       setPhase("ready");
     } catch (error) {
       openNotificationWithIcon(
@@ -498,14 +501,42 @@ export default function AaExit() {
             </Card>
           )}
 
+          {untransferableTokens.length > 0 && (
+            <Alert
+              type="warning"
+              showIcon
+              message={`${untransferableTokens.length} token${
+                untransferableTokens.length === 1 ? "" : "s"
+              } cannot be transferred`}
+              description={
+                <div className="text-xs">
+                  These tokens were excluded before batching because their
+                  contracts fail a transfer simulation. They remain in the smart
+                  wallet and do not block the rest of the exit.
+                  <div className="mt-1 break-all">
+                    {untransferableTokens.map((token) => (
+                      <div key={token.address}>
+                        {token.symbol}: {shortAddress(token.address)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              }
+            />
+          )}
+
           {phase === "ready" && rows.length === 0 && (
             <Alert
               type="success"
               showIcon
-              message={`Nothing to exit on ${
+              message={`Nothing transferable to exit on ${
                 CHAIN_LABEL[chainName] || chainName
               }`}
-              description="This smart wallet holds no positions, tokens or ETH on this chain, so there is nothing to move and no fee to charge."
+              description={
+                untransferableTokens.length > 0
+                  ? "No transferable positions, tokens or ETH remain. The token warning above lists assets whose contracts prevent them from being moved, and no fee will be charged."
+                  : "This smart wallet holds no positions, tokens or ETH on this chain, so there is nothing to move and no fee to charge."
+              }
             />
           )}
 

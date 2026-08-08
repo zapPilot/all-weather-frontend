@@ -60,6 +60,10 @@ const USD_SCALE = 18;
 
 const ZERO = ethers.constants.Zero;
 const noop = () => {};
+const ERC20_EXIT_INTERFACE = new ethers.utils.Interface([
+  "function balanceOf(address owner) view returns (uint256)",
+  "function transfer(address to, uint256 amount) returns (bool)",
+]);
 
 export const debankChainCode = (chainName) => {
   const code = DEBANK_CHAIN_CODE[chainName];
@@ -143,6 +147,95 @@ const rawAmountOf = (token) => {
     return null;
   }
 };
+
+const exitPreflightError = (error) =>
+  error?.error?.message || error?.reason || error?.message || String(error);
+
+export async function preflightWalletTokens({
+  walletTokens,
+  owner,
+  recipient,
+  chainName,
+  excludeAddresses = new Set(),
+  provider,
+}) {
+  const rpc = provider || PROVIDER(chainName);
+  const candidates = new Map();
+
+  for (const token of walletTokens || []) {
+    if (!token?.id || !ethers.utils.isAddress(token.id)) continue;
+    const key = token.id.toLowerCase();
+    if (excludeAddresses.has(key) || candidates.has(key)) continue;
+    const raw = rawAmountOf(token);
+    if (!raw || raw.lte(0)) continue;
+    candidates.set(key, token);
+  }
+
+  const results = await Promise.all(
+    [...candidates.entries()].map(async ([address, token]) => {
+      try {
+        const balanceResult = await rpc.call({
+          to: address,
+          data: ERC20_EXIT_INTERFACE.encodeFunctionData("balanceOf", [owner]),
+        });
+        const [balance] = ERC20_EXIT_INTERFACE.decodeFunctionResult(
+          "balanceOf",
+          balanceResult,
+        );
+        if (balance.lte(0)) return null;
+
+        const transferResult = await rpc.call({
+          from: owner,
+          to: address,
+          data: ERC20_EXIT_INTERFACE.encodeFunctionData("transfer", [
+            recipient,
+            balance,
+          ]),
+        });
+        // Some legacy ERC20s return no data on success. When a token does return
+        // the standard bool, false is still a failed transfer even without a
+        // revert and must not be admitted to the atomic batch.
+        if (transferResult && transferResult !== "0x") {
+          const [wouldTransfer] = ERC20_EXIT_INTERFACE.decodeFunctionResult(
+            "transfer",
+            transferResult,
+          );
+          if (!wouldTransfer) throw new Error("ERC20 transfer returned false");
+        }
+
+        return {
+          token: {
+            ...token,
+            raw_amount_hex_str: balance.toHexString(),
+          },
+        };
+      } catch (error) {
+        logger.warn(
+          `AA Exit: token ${
+            token?.optimized_symbol || address
+          } cannot be transferred, leaving it behind`,
+          error,
+        );
+        return {
+          untransferable: {
+            address,
+            symbol: token?.optimized_symbol || token?.symbol || "Unknown token",
+            reason: exitPreflightError(error),
+          },
+        };
+      }
+    }),
+  );
+
+  return {
+    walletTokens: results
+      .filter((result) => result?.token)
+      .map((result) => result.token),
+    untransferableTokens: results
+      .filter((result) => result?.untransferable)
+      .map((result) => result.untransferable),
+  };
+}
 
 /**
  * Pick the token to take the exit fee from, and how much of it.
@@ -522,6 +615,19 @@ export async function scanAaExit({
     logger.warn("AA Exit: wallet token scan unavailable", error);
   }
 
+  let untransferableTokens = [];
+  if (!walletScanError) {
+    const preflight = await preflightWalletTokens({
+      walletTokens,
+      owner,
+      recipient,
+      chainName,
+      excludeAddresses,
+    });
+    walletTokens = preflight.walletTokens;
+    untransferableTokens = preflight.untransferableTokens;
+  }
+
   let feePlan = walletScanError
     ? null
     : selectFeeToken({ walletTokens, excludeAddresses });
@@ -574,10 +680,11 @@ export async function scanAaExit({
       ),
       feePlan: null,
       walletScanError,
+      untransferableTokens,
     };
   }
 
-  return { groups, feePlan, walletScanError };
+  return { groups, feePlan, walletScanError, untransferableTokens };
 }
 
 // 0: as built. 1: rebuilt without the claim leg (protocols only). 2: the same
