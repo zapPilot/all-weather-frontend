@@ -39,7 +39,7 @@ export const AA_EXIT_CHAIN_IDS = { arbitrum: 42161, base: 8453, op: 10 };
 // silently passes unknown names through, which would build a URL the backend
 // answers with an error rather than a list
 const DEBANK_CHAIN_CODE = { arbitrum: "arb", base: "base", op: "op" };
-const AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS = 120_000;
+const AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS = 60 * 60 * 1000;
 const aaExitWalletTokenCache = new Map();
 const aaExitWalletTokenRequests = new Map();
 let aaExitWalletTokenCacheGeneration = 0;

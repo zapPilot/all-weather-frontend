@@ -319,7 +319,7 @@ describe("scanAaExit", () => {
     expect(groups.filter((group) => group.txns.length > 0)).toEqual([]);
   });
 
-  it("reuses the wallet token scan for 120 seconds", async () => {
+  it("reuses the wallet token scan for 1 hour", async () => {
     fetchWalletTokens.mockResolvedValue([]);
 
     await scanOnOptimism();
@@ -347,12 +347,12 @@ describe("scanAaExit", () => {
     expect(fetchWalletTokens).toHaveBeenCalledTimes(1);
   });
 
-  it("refreshes the wallet token scan after 120 seconds", async () => {
+  it("refreshes the wallet token scan after 1 hour", async () => {
     vi.useFakeTimers();
     fetchWalletTokens.mockResolvedValue([]);
 
     await scanOnOptimism();
-    vi.advanceTimersByTime(120_001);
+    vi.advanceTimersByTime(60 * 60 * 1000 + 1);
     await scanOnOptimism();
 
     expect(fetchWalletTokens).toHaveBeenCalledTimes(2);
