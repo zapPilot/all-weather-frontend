@@ -5,6 +5,7 @@
 // unpriceable token cannot block the exit.
 import { ethers } from "ethers";
 import { getContract, prepareContractCall, prepareTransaction } from "thirdweb";
+import { prepareUserOp } from "thirdweb/wallets/smart";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import THIRDWEB_CLIENT from "./thirdweb";
 import { PROVIDER } from "./general";
@@ -38,6 +39,10 @@ export const AA_EXIT_CHAIN_IDS = { arbitrum: 42161, base: 8453, op: 10 };
 // silently passes unknown names through, which would build a URL the backend
 // answers with an error rather than a list
 const DEBANK_CHAIN_CODE = { arbitrum: "arb", base: "base", op: "op" };
+const AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS = 120_000;
+const aaExitWalletTokenCache = new Map();
+const aaExitWalletTokenRequests = new Map();
+let aaExitWalletTokenCacheGeneration = 0;
 
 export const EXIT_FEE_USD = 1;
 
@@ -70,6 +75,54 @@ export const debankChainCode = (chainName) => {
   if (!code) throw new Error(`Unsupported chain for AA Exit: ${chainName}`);
   return code;
 };
+
+const aaExitWalletTokenCacheKey = (chainName, owner) =>
+  `${debankChainCode(chainName)}:${owner.toLowerCase()}`;
+
+export const clearAaExitWalletTokenCache = () => {
+  aaExitWalletTokenCacheGeneration += 1;
+  aaExitWalletTokenCache.clear();
+  aaExitWalletTokenRequests.clear();
+};
+
+async function fetchAaExitWalletTokens(chainName, owner) {
+  const key = aaExitWalletTokenCacheKey(chainName, owner);
+  const cached = aaExitWalletTokenCache.get(key);
+  const now = Date.now();
+
+  if (cached && now - cached.fetchedAt < AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS) {
+    return cached.tokens;
+  }
+  if (cached) aaExitWalletTokenCache.delete(key);
+
+  const pending = aaExitWalletTokenRequests.get(key);
+  if (pending) return pending;
+
+  const generation = aaExitWalletTokenCacheGeneration;
+  const request = fetchWalletTokens(debankChainCode(chainName), owner)
+    .then((tokens) => {
+      // A request that started before an explicit cache clear must never
+      // repopulate stale data after the clear. This also keeps a fresh scan
+      // genuinely fresh when a previous request finishes late.
+      if (generation === aaExitWalletTokenCacheGeneration) {
+        aaExitWalletTokenCache.set(key, {
+          tokens,
+          fetchedAt: Date.now(),
+        });
+      }
+      return tokens;
+    })
+    .finally(() => {
+      // Do not let an old request remove a newer coalesced request for the same
+      // wallet after clear + refetch.
+      if (aaExitWalletTokenRequests.get(key) === request) {
+        aaExitWalletTokenRequests.delete(key);
+      }
+    });
+
+  aaExitWalletTokenRequests.set(key, request);
+  return request;
+}
 
 /**
  * Every protocol on `chainName` across every production vault, deduped.
@@ -551,6 +604,247 @@ export function buildClaimedRewardsGroup({
   };
 }
 
+const executableExitUnits = (groups) =>
+  (groups || []).filter(
+    (group) =>
+      group.kind !== "rewards" &&
+      !group.buildError &&
+      (group.txns || []).flat(Infinity).length > 0,
+  );
+
+/**
+ * Rewards are derived transactions, not an isolation unit. Rebuild them from
+ * only the protocol units that are actually present in a candidate batch so a
+ * removed producer can never leave behind a transfer for rewards it did not
+ * claim.
+ */
+export function materializeExitCandidate({ units, chainMetadata, recipient }) {
+  const materialized = [];
+  let rewardsInserted = false;
+  const insertRewards = () => {
+    if (rewardsInserted) return;
+    rewardsInserted = true;
+    const rewards = buildClaimedRewardsGroup({
+      protocolGroups: units.filter((group) => group.kind === "protocol"),
+      chainMetadata,
+      recipient,
+    });
+    if (rewards) materialized.push(rewards);
+  };
+
+  for (const unit of units) {
+    if (unit.kind !== "protocol") insertRewards();
+    materialized.push(unit);
+  }
+  insertRewards();
+  return materialized;
+}
+
+const preparedTransactionsOf = (groups) =>
+  (groups || []).flatMap((group) => (group.txns || []).flat(Infinity));
+
+/**
+ * Build the same unsigned smart-account UserOp Thirdweb would build for a real
+ * batch and stop after sponsorship / gas estimation. prepareUserOp never calls
+ * eth_sendUserOperation, so this is safe to use as a dry-run gate.
+ *
+ * Passing sponsorGas=false is used only for singleton diagnosis: if gas
+ * estimation succeeds without sponsorship while the sponsored probe failed,
+ * the failure is paymaster-specific rather than transaction execution itself.
+ */
+export async function probeAaBatch({
+  groups,
+  adminAccount,
+  chainMetadata,
+  smartAccountAddress,
+  sponsorGas = true,
+  prepareUserOpFn = prepareUserOp,
+}) {
+  const transactions = preparedTransactionsOf(groups);
+  if (transactions.length === 0) return { ok: true, userOp: null };
+  if (!adminAccount?.address) {
+    throw new Error("AA Exit probe requires the smart wallet admin account");
+  }
+  if (!chainMetadata?.id) {
+    throw new Error("AA Exit probe requires the active chain metadata");
+  }
+
+  const userOp = await prepareUserOpFn({
+    transactions,
+    adminAccount,
+    client: THIRDWEB_CLIENT,
+    smartWalletOptions: { chain: chainMetadata, sponsorGas },
+    // A counterfactual smart account may legitimately not be deployed on this
+    // chain yet. Probing must not mark it as "deploying" and then wait for a
+    // transaction that, by definition, we never submit.
+    waitForDeployment: false,
+  });
+
+  if (
+    smartAccountAddress &&
+    userOp?.sender &&
+    userOp.sender.toLowerCase() !== smartAccountAddress.toLowerCase()
+  ) {
+    throw new Error(
+      `AA Exit probe built UserOp for ${userOp.sender}, expected ${smartAccountAddress}`,
+    );
+  }
+  return { ok: true, userOp };
+}
+
+export async function diagnoseAaBatchFailure(args) {
+  try {
+    await probeAaBatch({ ...args, sponsorGas: false });
+    return {
+      kind: "sponsorship",
+      message:
+        "Transaction simulation passed, but Thirdweb sponsorship failed.",
+    };
+  } catch (error) {
+    return {
+      kind: "execution",
+      message: `Transaction simulation failed: ${exitPreflightError(error)}`,
+    };
+  }
+}
+
+const mergeAdjacentPassingChunks = async (chunks, probeUnits) => {
+  const merged = chunks.map((chunk) => [...chunk]);
+  let index = 0;
+  while (index < merged.length - 1) {
+    const candidate = [...merged[index], ...merged[index + 1]];
+    const result = await probeUnits(candidate);
+    if (result.ok) {
+      merged.splice(index, 2, candidate);
+      if (index > 0) index -= 1;
+    } else {
+      index += 1;
+    }
+  }
+  return merged;
+};
+
+/**
+ * Find the largest practical AA batches without degrading every healthy unit to
+ * a separate signature. The recursion is dependency-aware because each group is
+ * indivisible; a protocol's approve -> unstake -> transfer sequence is never
+ * split during isolation.
+ */
+export async function planAaExitBatches({
+  groups,
+  chainMetadata,
+  recipient,
+  probe,
+  diagnose,
+}) {
+  const units = executableExitUnits(groups);
+  let probeCount = 0;
+  const probeUnits = async (candidateUnits) => {
+    const materialized = materializeExitCandidate({
+      units: candidateUnits,
+      chainMetadata,
+      recipient,
+    });
+    try {
+      probeCount += 1;
+      await probe(materialized);
+      return { ok: true, groups: materialized };
+    } catch (error) {
+      return { ok: false, error, groups: materialized };
+    }
+  };
+
+  if (units.length === 0) {
+    return { batches: [], excluded: [], probeCount };
+  }
+
+  const full = await probeUnits(units);
+  if (full.ok) {
+    return {
+      batches: [{ units, groups: full.groups }],
+      excluded: [],
+      probeCount,
+    };
+  }
+
+  const isolate = async (candidateUnits, knownFailure = null) => {
+    const result = knownFailure || (await probeUnits(candidateUnits));
+    if (result.ok) return { chunks: [candidateUnits], excluded: [] };
+    if (candidateUnits.length === 1) {
+      const group = candidateUnits[0];
+      const diagnosis = diagnose
+        ? await diagnose(group, result.error)
+        : { kind: "unknown", message: exitPreflightError(result.error) };
+      return {
+        chunks: [],
+        excluded: [
+          {
+            group,
+            error: result.error,
+            diagnosis,
+          },
+        ],
+      };
+    }
+
+    const middle = Math.ceil(candidateUnits.length / 2);
+    const left = candidateUnits.slice(0, middle);
+    const right = candidateUnits.slice(middle);
+    const [leftResult, rightResult] = await Promise.all([
+      isolate(left),
+      isolate(right),
+    ]);
+    return {
+      chunks: [...leftResult.chunks, ...rightResult.chunks],
+      excluded: [...leftResult.excluded, ...rightResult.excluded],
+    };
+  };
+
+  const isolated = await isolate(units, full);
+  const excludedIds = new Set(
+    isolated.excluded.map(({ group }) => group.uniqueId),
+  );
+  const healthy = units.filter((group) => !excludedIds.has(group.uniqueId));
+
+  if (healthy.length === 0) {
+    return { batches: [], excluded: isolated.excluded, probeCount };
+  }
+
+  // The common case: one or more bad units were removed, and every survivor can
+  // still stay in one atomic UserOp.
+  const healthyCombined = await probeUnits(healthy);
+  if (healthyCombined.ok) {
+    return {
+      batches: [{ units: healthy, groups: healthyCombined.groups }],
+      excluded: isolated.excluded,
+      probeCount,
+    };
+  }
+
+  // If every individual side passed but the aggregate still does not, this is
+  // an aggregate-size/gas/paymaster limit. Repartition only the healthy units,
+  // then greedily merge adjacent passing chunks so we keep a few large batches
+  // rather than N singletons.
+  const repartitioned = await isolate(healthy, healthyCombined);
+  const allExcluded = [...isolated.excluded, ...repartitioned.excluded];
+  const passingChunks = await mergeAdjacentPassingChunks(
+    repartitioned.chunks,
+    probeUnits,
+  );
+  const batches = [];
+  for (const chunk of passingChunks) {
+    const result = await probeUnits(chunk);
+    if (result.ok) batches.push({ units: chunk, groups: result.groups });
+  }
+
+  return {
+    batches,
+    excluded: allExcluded,
+    probeCount,
+    aggregateLimited: batches.length > 1,
+  };
+}
+
 export async function buildNativeGroup({
   owner,
   chainName,
@@ -609,7 +903,7 @@ export async function scanAaExit({
   let walletTokens = [];
   let walletScanError = null;
   try {
-    walletTokens = await fetchWalletTokens(debankChainCode(chainName), owner);
+    walletTokens = await fetchAaExitWalletTokens(chainName, owner);
   } catch (error) {
     walletScanError = error;
     logger.warn("AA Exit: wallet token scan unavailable", error);
@@ -635,13 +929,9 @@ export async function scanAaExit({
     feePlan = await clampFeeToChainBalance(feePlan, { owner, chainName });
   }
 
+  // Rewards are intentionally NOT stored as their own isolation group. They are
+  // materialized later from whichever protocol units survive UserOp probing.
   const groups = [...protocolGroups];
-  const rewardsGroup = buildClaimedRewardsGroup({
-    protocolGroups,
-    chainMetadata,
-    recipient,
-  });
-  if (rewardsGroup) groups.push(rewardsGroup);
 
   const feeGroup = buildFeeGroup({ feePlan, chainMetadata });
   if (feeGroup) groups.push(feeGroup);
@@ -728,6 +1018,78 @@ export const transactionHashFromResult = (data) =>
  * rebuildGroup(group, nextLevel, allGroups) returns a group with fresh
  * transactions for that level, or null when there is nothing left to move.
  */
+export async function executeAaExitPlan({
+  plan,
+  sendBatchTransaction,
+  updateGroup,
+}) {
+  let completedBatches = 0;
+  for (const excluded of plan.excluded || []) {
+    const reason =
+      excluded.diagnosis?.message ||
+      exitPreflightError(excluded.error) ||
+      "UserOperation probe failed";
+    updateGroup(excluded.group.uniqueId, {
+      status: "failed",
+      error: reason,
+      note:
+        excluded.diagnosis?.kind === "sponsorship"
+          ? "Thirdweb sponsorship rejected this item; it was left in the smart wallet."
+          : "This item failed dry-run simulation and was left in the smart wallet.",
+    });
+  }
+
+  for (const batch of plan.batches || []) {
+    const units = batch.units || [];
+    const calls = preparedTransactionsOf(batch.groups);
+    units.forEach((group) =>
+      updateGroup(group.uniqueId, { status: "sending", error: undefined }),
+    );
+    try {
+      const data = await submit(sendBatchTransaction, calls);
+      const transactionHash = transactionHashFromResult(data);
+      units.forEach((group) =>
+        updateGroup(group.uniqueId, {
+          status: "success",
+          error: undefined,
+          transactionHash,
+        }),
+      );
+      completedBatches += 1;
+    } catch (error) {
+      const kind = classifyEmergencyExitBatchError(error);
+      const status =
+        kind === FAILURE.USER_REJECTED
+          ? "cancelled"
+          : kind === FAILURE.UNKNOWN
+          ? "unknown"
+          : "pre-submit-failed";
+      const message =
+        status === "cancelled"
+          ? TERMINAL_MESSAGE.cancelled
+          : status === "unknown"
+          ? TERMINAL_MESSAGE.unknown
+          : error?.message || "UserOperation failed before submission";
+      const rowStatus = status === "pre-submit-failed" ? "failed" : status;
+      units.forEach((group) =>
+        updateGroup(group.uniqueId, { status: rowStatus, error: message }),
+      );
+      return {
+        status,
+        error,
+        failedBatch: batch,
+        completedBatches,
+      };
+    }
+  }
+
+  return {
+    status:
+      (plan.excluded || []).length > 0 ? "completed-with-groups" : "success",
+    completedBatches,
+  };
+}
+
 export async function runAaExitGroups({
   groups,
   sendBatchTransaction,

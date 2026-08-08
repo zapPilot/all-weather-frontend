@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ethers } from "ethers";
 import { encode } from "thirdweb";
-import { arbitrum, optimism } from "thirdweb/chains";
+import { arbitrum, base, optimism } from "thirdweb/chains";
 import {
   AA_EXIT_VAULTS,
   EXIT_FEE_USD,
@@ -11,8 +11,12 @@ import {
   buildWalletSweepGroups,
   collectExitProtocols,
   debankChainCode,
+  executeAaExitPlan,
+  materializeExitCandidate,
   nextExitLevel,
+  planAaExitBatches,
   preflightWalletTokens,
+  probeAaBatch,
   runAaExitGroups,
   selectFeeToken,
   sweptAddressesOf,
@@ -833,6 +837,205 @@ describe("runAaExitGroups", () => {
     const result = await harness.promise;
 
     expect(result.groups[0].level).toBe(2);
+  });
+});
+
+describe("AA UserOp probing and isolation", () => {
+  const probeGroup = (index, overrides = {}) => ({
+    kind: "protocol",
+    uniqueId: `p${index}`,
+    label: `protocol ${index}`,
+    level: 0,
+    dependent: true,
+    txns: [`txn-${index}`],
+    buildError: null,
+    rewardBalances: [],
+    ...overrides,
+  });
+
+  const idsOf = (candidateGroups) =>
+    candidateGroups
+      .filter((group) => group.kind !== "rewards")
+      .map((group) => group.uniqueId);
+
+  it("keeps 19 healthy groups in one batch when one of 20 is bad", async () => {
+    const groups = Array.from({ length: 20 }, (_, index) => probeGroup(index));
+    const probe = vi.fn(async (candidateGroups) => {
+      if (idsOf(candidateGroups).includes("p7"))
+        throw new Error("paymaster 500");
+    });
+
+    const plan = await planAaExitBatches({
+      groups,
+      chainMetadata: arbitrum,
+      recipient: RECIPIENT,
+      probe,
+    });
+
+    expect(plan.excluded.map(({ group }) => group.uniqueId)).toEqual(["p7"]);
+    expect(plan.batches).toHaveLength(1);
+    expect(plan.batches[0].units).toHaveLength(19);
+    expect(plan.batches[0].units.some((group) => group.uniqueId === "p7")).toBe(
+      false,
+    );
+  });
+
+  it("never splits an approve -> unstake -> transfer protocol dependency", async () => {
+    const dependency = probeGroup(1, {
+      txns: ["approve", "unstake", "transfer"],
+    });
+    const observed = [];
+    const probe = vi.fn(async (candidateGroups) => {
+      const protocol = candidateGroups.find((group) => group.uniqueId === "p1");
+      if (protocol) {
+        observed.push(protocol.txns);
+        throw new Error("reverted");
+      }
+    });
+
+    const plan = await planAaExitBatches({
+      groups: [probeGroup(0), dependency, probeGroup(2)],
+      chainMetadata: arbitrum,
+      recipient: RECIPIENT,
+      probe,
+    });
+
+    expect(plan.excluded.map(({ group }) => group.uniqueId)).toContain("p1");
+    expect(observed.length).toBeGreaterThan(0);
+    observed.forEach((txns) =>
+      expect(txns).toEqual(["approve", "unstake", "transfer"]),
+    );
+  });
+
+  it("turns aggregate-only failure into a few large passing batches", async () => {
+    const groups = Array.from({ length: 8 }, (_, index) => probeGroup(index));
+    const probe = vi.fn(async (candidateGroups) => {
+      if (idsOf(candidateGroups).length > 4)
+        throw new Error("UserOp too large");
+    });
+
+    const plan = await planAaExitBatches({
+      groups,
+      chainMetadata: base,
+      recipient: RECIPIENT,
+      probe,
+    });
+
+    expect(plan.excluded).toEqual([]);
+    expect(plan.aggregateLimited).toBe(true);
+    expect(plan.batches).toHaveLength(2);
+    expect(plan.batches.map((batch) => batch.units.length)).toEqual([4, 4]);
+  });
+
+  it("isolates two bad groups and recombines every survivor", async () => {
+    const groups = Array.from({ length: 12 }, (_, index) => probeGroup(index));
+    const bad = new Set(["p2", "p9"]);
+    const probe = vi.fn(async (candidateGroups) => {
+      if (idsOf(candidateGroups).some((id) => bad.has(id))) {
+        throw new Error("bad group");
+      }
+    });
+
+    const plan = await planAaExitBatches({
+      groups,
+      chainMetadata: optimism,
+      recipient: RECIPIENT,
+      probe,
+    });
+
+    expect(plan.excluded.map(({ group }) => group.uniqueId).sort()).toEqual([
+      "p2",
+      "p9",
+    ]);
+    expect(plan.batches).toHaveLength(1);
+    expect(plan.batches[0].units).toHaveLength(10);
+  });
+
+  it("rebuilds claimed rewards from surviving protocol producers only", async () => {
+    const badReward = ethers.BigNumber.from(100);
+    const goodReward = ethers.BigNumber.from(7);
+    const groups = [
+      probeGroup(0, {
+        rewardBalances: [{ address: USDC_ARB, balance: badReward }],
+      }),
+      probeGroup(1, {
+        rewardBalances: [{ address: USDC_ARB, balance: goodReward }],
+      }),
+    ];
+    const probe = vi.fn(async (candidateGroups) => {
+      if (idsOf(candidateGroups).includes("p0"))
+        throw new Error("bad producer");
+    });
+
+    const plan = await planAaExitBatches({
+      groups,
+      chainMetadata: arbitrum,
+      recipient: RECIPIENT,
+      probe,
+    });
+    const rewards = plan.batches[0].groups.find(
+      (group) => group.uniqueId === "claimed-rewards",
+    );
+
+    expect(rewards).toBeDefined();
+    expect(rewards.txns).toHaveLength(1);
+    const data = await encode(rewards.txns[0]);
+    expect(ethers.BigNumber.from(`0x${data.slice(-64)}`).toString()).toBe(
+      goodReward.toString(),
+    );
+  });
+
+  it("probes Arbitrum, Base and Optimism without broadcasting a UserOp", async () => {
+    const adminAccount = { address: RECIPIENT };
+    const smartAccountAddress = "0x9999999999999999999999999999999999999999";
+    for (const chainMetadata of [arbitrum, base, optimism]) {
+      const prepareUserOpFn = vi.fn(async (options) => ({
+        sender: smartAccountAddress,
+        chainId: options.smartWalletOptions.chain.id,
+      }));
+      await probeAaBatch({
+        groups: [probeGroup(0)],
+        adminAccount,
+        chainMetadata,
+        smartAccountAddress,
+        prepareUserOpFn,
+      });
+
+      expect(prepareUserOpFn).toHaveBeenCalledTimes(1);
+      const options = prepareUserOpFn.mock.calls[0][0];
+      expect(options.smartWalletOptions).toMatchObject({
+        chain: chainMetadata,
+        sponsorGas: true,
+      });
+      expect(options.waitForDeployment).toBe(false);
+    }
+  });
+
+  it("does not retry after user rejection or unknown submission state", async () => {
+    const plan = {
+      excluded: [],
+      batches: [
+        {
+          units: [probeGroup(0)],
+          groups: [probeGroup(0)],
+        },
+      ],
+    };
+    for (const error of [
+      { code: 4001, message: "user rejected" },
+      new Error("timeout waiting for userop hash"),
+    ]) {
+      const sendBatchTransaction = vi.fn((_calls, callbacks) =>
+        callbacks.onError(error),
+      );
+      const result = await executeAaExitPlan({
+        plan,
+        sendBatchTransaction,
+        updateGroup: vi.fn(),
+      });
+      expect(sendBatchTransaction).toHaveBeenCalledTimes(1);
+      expect(["cancelled", "unknown"]).toContain(result.status);
+    }
   });
 });
 
