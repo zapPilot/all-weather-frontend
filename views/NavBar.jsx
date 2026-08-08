@@ -62,6 +62,10 @@ export default function NavBar({ mode }) {
         ),
         key: "velodromeRescue",
       },
+      {
+        label: <Link href={buildUrlWithQuery("/aa-exit")}>AA Exit</Link>,
+        key: "aaExit",
+      },
     ],
     [buildUrlWithQuery],
   );

@@ -1,0 +1,639 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Alert,
+  Button,
+  Card,
+  Checkbox,
+  Input,
+  Spin,
+  Tag,
+  Typography,
+  notification,
+} from "antd";
+import {
+  useActiveAccount,
+  useActiveWalletChain,
+  useAdminWallet,
+  useSendBatchTransaction,
+  useSwitchActiveWalletChain,
+} from "thirdweb/react";
+import { ethers } from "ethers";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import BasePage from "../basePage";
+import { useWalletMode } from "../contextWrappers/WalletModeContext";
+import openNotificationWithIcon from "../../utils/notification.js";
+import { normalizeChainName } from "../../utils/chainHelper";
+import {
+  CHAIN_ID_TO_CHAIN,
+  CHAIN_ID_TO_CHAIN_STRING,
+  LOCK_EXPLORER_URLS,
+} from "../../utils/general";
+import {
+  AA_EXIT_CHAINS,
+  AA_EXIT_CHAIN_IDS,
+  EXIT_FEE_USD,
+  PROTOCOL_TREASURY_ADDRESS,
+  buildClaimedRewardsGroup,
+  buildProtocolGroups,
+  runAaExitGroups,
+  scanAaExit,
+} from "../../utils/aaExit";
+
+const { Title, Text, Paragraph } = Typography;
+
+const CHAIN_LABEL = { arbitrum: "Arbitrum", base: "Base", op: "Optimism" };
+
+const KIND_TAG = {
+  protocol: { color: "blue", text: "Position" },
+  rewards: { color: "purple", text: "Rewards" },
+  fee: { color: "gold", text: "Fee" },
+  sweep: { color: "cyan", text: "Wallet" },
+  native: { color: "geekblue", text: "ETH" },
+};
+
+const STATUS_COLOR = {
+  pending: "text-gray-400",
+  sending: "text-blue-500",
+  success: "text-green-600",
+  partial: "text-orange-500",
+  failed: "text-red-500",
+  cancelled: "text-yellow-600",
+  unknown: "text-yellow-600",
+};
+
+const STATUS_ICON = {
+  success: "✅",
+  partial: "⚠️",
+  failed: "❌",
+  cancelled: "⏹️",
+  unknown: "⚠️",
+};
+
+const LEVEL_TAG = { 1: "no-claim", 2: "split" };
+
+const PAGE_SURFACE =
+  "min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100";
+
+const toRow = (group) => ({
+  uniqueId: group.uniqueId,
+  kind: group.kind,
+  label: group.label,
+  level: group.level,
+  status: group.buildError ? "failed" : "pending",
+  error: group.buildError || undefined,
+  txnCount: group.txns.length,
+});
+
+const formatAmount = (raw, decimals) =>
+  Number(ethers.utils.formatUnits(raw, decimals)).toLocaleString("en-US", {
+    maximumFractionDigits: 6,
+  });
+
+const shortAddress = (address) =>
+  `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+function ResultRow({ row, explorerUrl, onRetry, disabled }) {
+  const tag = KIND_TAG[row.kind] || KIND_TAG.protocol;
+  return (
+    <div className="flex items-start justify-between gap-3 py-2 border-b border-gray-100 last:border-0">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={STATUS_COLOR[row.status] || STATUS_COLOR.pending}>
+            {row.status === "sending" ? (
+              <Spin size="small" />
+            ) : (
+              STATUS_ICON[row.status] || "…"
+            )}
+          </span>
+          <Tag color={tag.color}>{tag.text}</Tag>
+          <Text className="break-all">{row.label}</Text>
+          {LEVEL_TAG[row.level] && <Tag>{LEVEL_TAG[row.level]}</Tag>}
+          {row.progress && <Text type="secondary">{row.progress}</Text>}
+        </div>
+        {row.note && (
+          <Text type="secondary" className="text-xs block mt-1">
+            {row.note}
+          </Text>
+        )}
+        {row.error && (
+          <Text type="danger" className="text-xs block mt-1 break-words">
+            {row.error}
+          </Text>
+        )}
+        {row.transactionHash && explorerUrl && (
+          <a
+            className="text-xs"
+            href={`${explorerUrl}tx/${row.transactionHash}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            View transaction
+          </a>
+        )}
+      </div>
+      {(row.status === "failed" || row.status === "partial") && (
+        <Button size="small" disabled={disabled} onClick={onRetry}>
+          Retry
+        </Button>
+      )}
+    </div>
+  );
+}
+
+export default function AaExit() {
+  const account = useActiveAccount();
+  const activeChain = useActiveWalletChain();
+  const switchChain = useSwitchActiveWalletChain();
+  const adminWallet = useAdminWallet();
+  const { aaOn, initializedFromUrl } = useWalletMode();
+  const { mutate: sendBatchTransaction } = useSendBatchTransaction();
+  const [notificationAPI, notificationContextHolder] =
+    notification.useNotification();
+
+  const [recipient, setRecipient] = useState("");
+  const [recipientTouched, setRecipientTouched] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [phase, setPhase] = useState("idle");
+  const [rows, setRows] = useState([]);
+  const [feePlan, setFeePlan] = useState(null);
+  const [walletScanFailed, setWalletScanFailed] = useState(false);
+  const [fellBack, setFellBack] = useState(false);
+  const [retrying, setRetrying] = useState(null);
+
+  // The live groups hold protocol instances and prepared transactions, neither
+  // of which belongs in React state
+  const groupsRef = useRef([]);
+  // Mirrors each row's status outside React so a run can decide its final phase
+  // without reading state it just queued an update for
+  const statusRef = useRef({});
+
+  const chainMetadata = useMemo(() => {
+    if (!activeChain) return null;
+    return activeChain.name
+      ? activeChain
+      : { ...activeChain, name: CHAIN_ID_TO_CHAIN_STRING[activeChain.id] };
+  }, [activeChain]);
+  const chainName = normalizeChainName(chainMetadata?.name);
+  const onSupportedChain = AA_EXIT_CHAINS.includes(chainName);
+  const explorerUrl = LOCK_EXPLORER_URLS[activeChain?.id];
+
+  const resetResults = useCallback(() => {
+    groupsRef.current = [];
+    statusRef.current = {};
+    setRows([]);
+    setFeePlan(null);
+    setWalletScanFailed(false);
+    setFellBack(false);
+    setPhase("idle");
+  }, []);
+
+  // A scan is only valid for the wallet and chain it was taken on
+  useEffect(() => {
+    resetResults();
+  }, [account?.address, activeChain?.id, resetResults]);
+
+  // useAdminWallet falls back to the active wallet when there is no admin, which
+  // would prefill the smart wallet's own address — the one address this must not
+  // send to
+  useEffect(() => {
+    if (recipientTouched) return;
+    const adminAddress = adminWallet?.getAccount()?.address;
+    if (
+      adminAddress &&
+      adminAddress.toLowerCase() !== account?.address?.toLowerCase()
+    ) {
+      setRecipient(adminAddress);
+    }
+  }, [adminWallet, account?.address, recipientTouched]);
+
+  useEffect(() => {
+    setConfirmed(false);
+  }, [recipient]);
+
+  const recipientError =
+    recipient.length > 0 &&
+    (!ethers.utils.isAddress(recipient) ||
+      recipient.toLowerCase() === account?.address?.toLowerCase());
+
+  const busy = phase === "scanning" || phase === "running";
+  const canScan =
+    !!account &&
+    aaOn &&
+    onSupportedChain &&
+    !!recipient &&
+    !recipientError &&
+    confirmed &&
+    !busy;
+
+  const updateGroup = useCallback((uniqueId, patch) => {
+    if (patch.status) statusRef.current[uniqueId] = patch.status;
+    setRows((current) =>
+      current.map((row) =>
+        row.uniqueId === uniqueId ? { ...row, ...patch } : row,
+      ),
+    );
+  }, []);
+
+  // Level 1 sheds the claim leg; level 2 reuses whatever the group holds and
+  // splits it. Rebuilding at any level re-reads balances, so a position an
+  // earlier attempt already moved comes back empty instead of reverting.
+  const rebuildGroup = useCallback(
+    async (group, level, allGroups) => {
+      if (group.kind === "protocol") {
+        const [rebuilt] = await buildProtocolGroups({
+          protocols: [group.protocol],
+          owner: account.address,
+          recipient,
+          level,
+        });
+        return rebuilt || null;
+      }
+      if (group.kind === "rewards") {
+        return buildClaimedRewardsGroup({
+          protocolGroups: (allGroups || []).filter(
+            (candidate) => candidate.kind === "protocol",
+          ),
+          chainMetadata,
+          recipient,
+        });
+      }
+      return group;
+    },
+    [account?.address, recipient, chainMetadata],
+  );
+
+  const handleScan = useCallback(async () => {
+    setPhase("scanning");
+    setFellBack(false);
+    try {
+      const result = await scanAaExit({
+        owner: account.address,
+        recipient,
+        chainName,
+        chainMetadata,
+      });
+      groupsRef.current = result.groups;
+      statusRef.current = {};
+      setRows(result.groups.map(toRow));
+      setFeePlan(result.feePlan);
+      setWalletScanFailed(!!result.walletScanError);
+      setPhase("ready");
+    } catch (error) {
+      openNotificationWithIcon(
+        notificationAPI,
+        "Scan failed",
+        "error",
+        error?.message || String(error),
+      );
+      setPhase("idle");
+    }
+  }, [account?.address, recipient, chainName, chainMetadata, notificationAPI]);
+
+  const finishRun = useCallback((status) => {
+    if (status === "cancelled" || status === "unknown") {
+      setPhase(status);
+      return;
+    }
+    const stalled = Object.values(statusRef.current).some(
+      (rowStatus) => rowStatus === "failed" || rowStatus === "partial",
+    );
+    setPhase(stalled ? "partial" : "done");
+  }, []);
+
+  const handleRun = useCallback(async () => {
+    setPhase("running");
+    setFellBack(false);
+    const result = await runAaExitGroups({
+      groups: groupsRef.current,
+      sendBatchTransaction,
+      updateGroup,
+      rebuildGroup,
+      onFallback: () => setFellBack(true),
+    });
+    // the run's copies carry the level each group ended on, so a later retry
+    // continues the degradation instead of starting over
+    groupsRef.current = result.groups;
+    finishRun(result.status);
+  }, [sendBatchTransaction, updateGroup, rebuildGroup, finishRun]);
+
+  const handleRetry = useCallback(
+    async (uniqueId) => {
+      const slot = groupsRef.current.find(
+        (group) => group.uniqueId === uniqueId,
+      );
+      if (!slot) return;
+      setRetrying(uniqueId);
+      setPhase("running");
+      try {
+        // rebuilt from fresh balances, so a row whose transactions actually
+        // landed comes back empty rather than reverting a second time
+        const rebuilt = await rebuildGroup(slot, slot.level, groupsRef.current);
+        const target = { ...slot, txns: rebuilt ? rebuilt.txns : [] };
+        const result = await runAaExitGroups({
+          groups: [target],
+          sendBatchTransaction,
+          updateGroup,
+          rebuildGroup,
+          // a single group is already one signature, so there is no combined
+          // attempt to make
+          combinedAllowed: false,
+        });
+        groupsRef.current = groupsRef.current.map((group) =>
+          group.uniqueId === uniqueId ? result.groups[0] || group : group,
+        );
+        finishRun(result.status);
+      } finally {
+        setRetrying(null);
+      }
+    },
+    [rebuildGroup, sendBatchTransaction, updateGroup, finishRun],
+  );
+
+  if (!account) {
+    return (
+      <BasePage chainId={activeChain} switchChain={switchChain}>
+        {notificationContextHolder}
+        {/* antd's default typography is dark, and the app shell is black, so
+            this page paints its own light surface the way the other standalone
+            rescue pages do */}
+        <div className={PAGE_SURFACE}>
+          <div className="max-w-2xl mx-auto px-4 py-8">
+            <Card className="text-center">
+              <ExclamationTriangleIcon className="h-14 w-14 text-amber-500 mx-auto mb-4" />
+              <Title level={4}>Connect your wallet</Title>
+              <Paragraph type="secondary">
+                Connect in AA mode to exit everything your zapPilot smart wallet
+                holds.
+              </Paragraph>
+            </Card>
+          </div>
+        </div>
+      </BasePage>
+    );
+  }
+
+  const movableRows = rows.filter((row) => row.txnCount > 0);
+
+  return (
+    <BasePage chainId={activeChain} switchChain={switchChain}>
+      {notificationContextHolder}
+      <div className={PAGE_SURFACE}>
+        <div className="max-w-3xl mx-auto px-4 py-8 flex flex-col gap-4">
+          <Card>
+            <Title level={3}>
+              AA Exit — everything back to your own wallet
+            </Title>
+            <Paragraph type="secondary" className="mb-2">
+              Hands over everything your zapPilot smart wallet holds on one
+              chain: each position unstaked and sent as its raw LP / receipt
+              token, NFT positions moved whole, plus every loose ERC20 and the
+              native ETH.{" "}
+              <Text strong>No swaps, no slippage, no price lookups</Text> — so
+              it still works when a token has depegged and breaks the normal
+              withdraw.
+            </Paragraph>
+            <Paragraph type="secondary" className="mb-0">
+              Nothing is unwound: liquidity stays liquidity. You receive the LP
+              and receipt tokens themselves and unwind them yourself on each
+              protocol&apos;s own site. Only positions you actually hold
+              something in are included, so a protocol you never entered costs
+              nothing.
+            </Paragraph>
+          </Card>
+
+          {initializedFromUrl && !aaOn && (
+            <Alert
+              type="error"
+              showIcon
+              message="AA mode required"
+              description="This tool exits your zapPilot smart wallet. You are in EOA mode, where your wallet is already your own — switch with the AA/EOA toggle in the header, or reload with ?mode=aa."
+            />
+          )}
+
+          {aaOn && !onSupportedChain && (
+            <Alert
+              type="warning"
+              showIcon
+              message="Unsupported network"
+              description={
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span>AA Exit runs on Arbitrum, Base and Optimism.</span>
+                  {Object.entries(AA_EXIT_CHAIN_IDS).map(([key, id]) => (
+                    <Button
+                      key={key}
+                      size="small"
+                      type="primary"
+                      onClick={() => switchChain(CHAIN_ID_TO_CHAIN[id])}
+                    >
+                      {CHAIN_LABEL[key]}
+                    </Button>
+                  ))}
+                </div>
+              }
+            />
+          )}
+
+          {aaOn && (
+            <Card title="Where should everything go?">
+              <label className="block text-sm mb-1" htmlFor="aa-exit-recipient">
+                Your own wallet address
+              </label>
+              <Input
+                id="aa-exit-recipient"
+                placeholder="0x..."
+                status={recipientError ? "error" : ""}
+                value={recipient}
+                disabled={busy}
+                onChange={(event) => {
+                  setRecipientTouched(true);
+                  setRecipient(event.target.value.trim());
+                }}
+              />
+              {recipientError && (
+                <Text type="danger" className="text-sm block mt-1">
+                  Enter a valid address that is not this smart wallet itself.
+                </Text>
+              )}
+              <Alert
+                className="mt-3"
+                type="warning"
+                showIcon
+                message="Never use an exchange deposit address"
+                description={
+                  <div className="text-sm">
+                    <p className="mb-1">
+                      Use a wallet whose keys <Text strong>you control</Text>{" "}
+                      (MetaMask, Rabby, a hardware wallet). The address that
+                      signs for this smart wallet is prefilled.
+                    </p>
+                    <p className="mb-0">
+                      LP and receipt tokens sent to an exchange are{" "}
+                      <Text strong>permanently lost</Text> — exchanges do not
+                      recognise them and cannot return them.
+                    </p>
+                  </div>
+                }
+              />
+              <Checkbox
+                className="mt-3"
+                checked={confirmed}
+                disabled={busy}
+                onChange={(event) => setConfirmed(event.target.checked)}
+              >
+                <span className="text-sm">
+                  I confirm this is a wallet I hold the keys to, not an exchange
+                  deposit address.
+                </span>
+              </Checkbox>
+              <div className="mt-3">
+                <Button
+                  type="primary"
+                  disabled={!canScan}
+                  loading={phase === "scanning"}
+                  onClick={handleScan}
+                >
+                  Scan {CHAIN_LABEL[chainName] || "this network"}
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {phase === "ready" && rows.length === 0 && (
+            <Alert
+              type="success"
+              showIcon
+              message={`Nothing to exit on ${
+                CHAIN_LABEL[chainName] || chainName
+              }`}
+              description="This smart wallet holds no positions, tokens or ETH on this chain, so there is nothing to move and no fee to charge."
+            />
+          )}
+
+          {rows.length > 0 && (
+            <Card
+              title={`Exit plan — ${movableRows.length} ${
+                movableRows.length === 1 ? "item" : "items"
+              }`}
+            >
+              {walletScanFailed && (
+                <Alert
+                  className="mb-3"
+                  type="warning"
+                  showIcon
+                  message="Wallet token list unavailable"
+                  description="Your positions still exit, but loose tokens were left behind and the service fee is waived. Retry that row once the API recovers."
+                />
+              )}
+
+              <div className="mb-3 text-sm">
+                {feePlan ? (
+                  <Text type="secondary">
+                    Service fee ~${EXIT_FEE_USD} →{" "}
+                    <Text strong>
+                      {formatAmount(feePlan.feeRaw, feePlan.decimals)}{" "}
+                      {feePlan.symbol}
+                    </Text>{" "}
+                    to the protocol treasury (
+                    {shortAddress(PROTOCOL_TREASURY_ADDRESS)}). Rounded down, so
+                    it is never more than ${EXIT_FEE_USD}.
+                  </Text>
+                ) : (
+                  <Text type="secondary">
+                    Service fee: waived — no priced token available to charge it
+                    in.
+                  </Text>
+                )}
+              </div>
+
+              {fellBack && (
+                <Alert
+                  className="mb-3"
+                  type="info"
+                  showIcon
+                  message="Sending one item at a time"
+                  description="The single combined transaction failed before changing anything, so each item now goes separately. Anything that has already gone through stays done."
+                />
+              )}
+
+              {phase === "unknown" && (
+                <Alert
+                  className="mb-3"
+                  type="warning"
+                  showIcon
+                  message="One transaction's status is unknown"
+                  description="Do not retry yet — it may still confirm. Check your wallet or the block explorer, then scan again."
+                />
+              )}
+
+              {phase === "cancelled" && (
+                <Alert
+                  className="mb-3"
+                  type="warning"
+                  showIcon
+                  message="Cancelled in your wallet"
+                  description="Nothing further was sent. Scan again when you are ready."
+                />
+              )}
+
+              {phase === "partial" && (
+                <Alert
+                  className="mb-3"
+                  type="warning"
+                  showIcon
+                  message="Some items did not go through"
+                  description="Everything that succeeded is done. Retry the rows below, or scan again to rebuild the plan from fresh balances."
+                />
+              )}
+
+              {phase === "done" && (
+                <Alert
+                  className="mb-3"
+                  type="success"
+                  showIcon
+                  message="Exit complete"
+                  description="Everything listed below has been sent to your wallet."
+                />
+              )}
+
+              <div>
+                {rows.map((row) => (
+                  <ResultRow
+                    key={row.uniqueId}
+                    row={row}
+                    explorerUrl={explorerUrl}
+                    disabled={busy || retrying !== null}
+                    onRetry={() => handleRetry(row.uniqueId)}
+                  />
+                ))}
+              </div>
+
+              {/* Only a fresh scan may be run wholesale: after a run, rows that
+                succeeded are done, and re-sending them would ask for balances
+                that have already left the wallet. Individual rows retry above. */}
+              <Button
+                className="mt-4 w-full"
+                danger
+                type="primary"
+                loading={phase === "running" && retrying === null}
+                disabled={phase !== "ready" || movableRows.length === 0}
+                onClick={handleRun}
+              >
+                Exit everything on {CHAIN_LABEL[chainName] || chainName}
+              </Button>
+
+              <Paragraph type="secondary" className="text-xs mt-3 mb-0">
+                Everything goes in one transaction first. If that fails before
+                changing anything, each item is retried on its own; a position
+                that still fails is retried without claiming its rewards, and
+                then one transaction at a time — so a single broken position
+                cannot strand the rest. Amounts are fixed when you scan, so a
+                little dust can stay behind, and rewards still vesting are left
+                alone because nothing can move them yet.
+              </Paragraph>
+            </Card>
+          )}
+        </div>
+      </div>
+    </BasePage>
+  );
+}

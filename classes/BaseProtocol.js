@@ -100,6 +100,13 @@ export default class BaseProtocol extends BaseUniswap {
   async stakeBalanceOf(address) {
     throw new Error("Method 'stakeBalanceOf()' must be implemented.");
   }
+  // Which ERC20 an emergencyTransfer hands over, so a wallet-wide sweep does not
+  // build a second transfer for a balance this protocol already moves. NFT
+  // positions travel by token id and have no fungible balance to double-count.
+  sweptAssetAddress() {
+    return this.assetIsNFT ? null : this.assetContract?.address || null;
+  }
+
   async assetBalanceOf(recipient) {
     const assetContractInstance = new ethers.Contract(
       this.assetContract.address,
@@ -475,7 +482,10 @@ export default class BaseProtocol extends BaseUniswap {
   // rewards is survivable, being unable to withdraw principal is not.
   // A protocol holding no principal returns nothing at all and never even
   // attempts a claim, so it costs neither a row nor a signature.
-  async emergencyTransfer(owner, recipient, updateProgress) {
+  // options.skipRewards drops the claim leg entirely: a caller retrying a failed
+  // exit needs a way to shed the one part that can fail on its own, and a claim
+  // left unmade only postpones rewards, it cannot lose them.
+  async emergencyTransfer(owner, recipient, updateProgress, options = {}) {
     let principalTxns = [];
     if (this.assetIsNFT) {
       // NFT positions are never staked (_stakeLP is a no-op for them), so there
@@ -544,37 +554,41 @@ export default class BaseProtocol extends BaseUniswap {
 
     let claimTxns = [];
     let rewardBalances = [];
-    try {
-      // an empty price table only NaNs out usdDenominatedValue, which nothing
-      // downstream of an emergency exit reads
-      const [txns, rewardsDict] = await this.customClaim(
-        owner,
-        {},
-        updateProgress,
-      );
-      claimTxns = txns || [];
-      // A claim that emits no transaction delivers nothing, so any balance it
-      // reported is still locked in the protocol and must not be promised to a
-      // transfer. Same for escrowed entries: Camelot reports vesting xGRAIL as
-      // a pending reward, but only customRedeemVestingRewards can release it —
-      // and xGRAIL cannot be transferred even once released.
-      rewardBalances =
-        claimTxns.length === 0
-          ? []
-          : Object.entries(rewardsDict || {}).flatMap(([address, metadata]) => {
-              if (metadata?.balance === undefined || metadata?.vesting) {
-                return [];
-              }
-              const balance = ethers.BigNumber.from(metadata.balance);
-              return balance.isZero()
-                ? []
-                : [{ address: address.toLowerCase(), balance }];
-            });
-    } catch (error) {
-      logger.warn(
-        `emergencyTransfer: giving up on rewards for ${this.uniqueId()}, continuing with principal`,
-        error,
-      );
+    if (!options.skipRewards) {
+      try {
+        // an empty price table only NaNs out usdDenominatedValue, which nothing
+        // downstream of an emergency exit reads
+        const [txns, rewardsDict] = await this.customClaim(
+          owner,
+          {},
+          updateProgress,
+        );
+        claimTxns = txns || [];
+        // A claim that emits no transaction delivers nothing, so any balance it
+        // reported is still locked in the protocol and must not be promised to a
+        // transfer. Same for escrowed entries: Camelot reports vesting xGRAIL as
+        // a pending reward, but only customRedeemVestingRewards can release it —
+        // and xGRAIL cannot be transferred even once released.
+        rewardBalances =
+          claimTxns.length === 0
+            ? []
+            : Object.entries(rewardsDict || {}).flatMap(
+                ([address, metadata]) => {
+                  if (metadata?.balance === undefined || metadata?.vesting) {
+                    return [];
+                  }
+                  const balance = ethers.BigNumber.from(metadata.balance);
+                  return balance.isZero()
+                    ? []
+                    : [{ address: address.toLowerCase(), balance }];
+                },
+              );
+      } catch (error) {
+        logger.warn(
+          `emergencyTransfer: giving up on rewards for ${this.uniqueId()}, continuing with principal`,
+          error,
+        );
+      }
     }
 
     // claims go first so the rewards land in the wallet within the same batch
