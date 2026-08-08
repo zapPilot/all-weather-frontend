@@ -591,8 +591,8 @@ export class BasePortfolio {
         buildError,
       });
       if (buildError) return;
-      const assetAddress = protocol.interface.assetContract?.address;
-      if (assetAddress && !protocol.interface.assetIsNFT) {
+      const assetAddress = protocol.interface.sweptAssetAddress();
+      if (assetAddress) {
         sweptByProtocol.add(assetAddress.toLowerCase());
       }
       // rewards only ever reach the wallet if this group's claim goes out

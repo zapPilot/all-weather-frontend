@@ -195,6 +195,30 @@ export class Venus extends BaseProtocol {
     return [[], withdrawAmount];
   }
 
+  // emergencyTransfer hands over the vToken, not the underlying assetContract
+  sweptAssetAddress() {
+    return this.protocolContract.address;
+  }
+
+  // assetContract here is the *underlying* (USDC), while the position the user
+  // holds is the vToken. The base implementation would build a transfer on the
+  // underlying using the vToken share amount _unstake returns — wrong token and
+  // wrong amount. The vToken is a plain transferable ERC20 sitting loose in the
+  // wallet (_stake is a no-op), so handing it over untouched is both the
+  // simplest and the only correct exit. Venus pays no rewards.
+  async emergencyTransfer(owner, recipient, updateProgress, options = {}) {
+    const vTokenBalance = await this.stakeFarmContractInstance.balanceOf(owner);
+    if (vTokenBalance.isZero()) {
+      return { txns: [], rewardBalances: [] };
+    }
+    const transferTxn = prepareContractCall({
+      contract: this.protocolContract,
+      method: "transfer",
+      params: [recipient, vTokenBalance],
+    });
+    return { txns: [transferTxn], rewardBalances: [] };
+  }
+
   async customWithdrawAndClaim(
     owner,
     amount,

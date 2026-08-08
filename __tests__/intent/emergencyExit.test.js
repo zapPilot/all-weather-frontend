@@ -334,6 +334,30 @@ describe("emergencyTransfer", () => {
     expect(rewardBalances[0].balance.toString()).toBe("700");
   });
 
+  // A retry needs a way to shed the claim leg, which is the only part that can
+  // fail on its own. Rewards left unclaimed are postponed, not lost.
+  it("leaves the claim out entirely when asked to skip rewards", async () => {
+    const [protocol] = protocolsOn(
+      getPortfolioHelper("Velodrome Vault"),
+      "op",
+    ).map((p) => p.interface);
+    stubBalances(protocol, { staked: "1000", wallet: "0" });
+    const customClaim = vi.spyOn(protocol, "customClaim");
+
+    const { txns, rewardBalances } = await protocol.emergencyTransfer(
+      OWNER,
+      RECIPIENT,
+      noop,
+      { skipRewards: true },
+    );
+
+    expect(customClaim).not.toHaveBeenCalled();
+    expect(txns).toHaveLength(2);
+    expect(await encode(txns[0])).includes(WITHDRAW_SELECTOR);
+    expect(await encode(txns[1])).includes(TRANSFER_SELECTOR);
+    expect(rewardBalances).toEqual([]);
+  });
+
   it("still moves the principal when the reward claim blows up", async () => {
     const [protocol] = protocolsOn(
       getPortfolioHelper("Velodrome Vault"),
