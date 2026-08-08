@@ -35,6 +35,12 @@ import {
   PROTOCOL_TREASURY_ADDRESS,
   buildClaimedRewardsGroup,
   buildProtocolGroups,
+  clearAaExitWalletTokenCache,
+  diagnoseAaBatchFailure,
+  executeAaExitPlan,
+  materializeExitCandidate,
+  planAaExitBatches,
+  probeAaBatch,
   runAaExitGroups,
   scanAaExit,
 } from "../../utils/aaExit";
@@ -164,6 +170,9 @@ export default function AaExit() {
   // The live groups hold protocol instances and prepared transactions, neither
   // of which belongs in React state
   const groupsRef = useRef([]);
+  // Preflighted AA batches. These contain the dynamically materialized rewards
+  // transactions that correspond only to surviving protocol groups.
+  const planRef = useRef(null);
   // Mirrors each row's status outside React so a run can decide its final phase
   // without reading state it just queued an update for
   const statusRef = useRef({});
@@ -180,6 +189,7 @@ export default function AaExit() {
 
   const resetResults = useCallback(() => {
     groupsRef.current = [];
+    planRef.current = null;
     statusRef.current = {};
     setRows([]);
     setFeePlan(null);
@@ -264,22 +274,88 @@ export default function AaExit() {
     [account?.address, recipient, chainMetadata],
   );
 
+  const prepareExitPlan = useCallback(async () => {
+    const adminAccount = adminWallet?.getAccount();
+    if (!adminAccount?.address) {
+      throw new Error(
+        "AA Exit could not resolve the smart wallet admin account",
+      );
+    }
+
+    const result = await scanAaExit({
+      owner: account.address,
+      recipient,
+      chainName,
+      chainMetadata,
+    });
+    const probe = (candidateGroups) =>
+      probeAaBatch({
+        groups: candidateGroups,
+        adminAccount,
+        chainMetadata,
+        smartAccountAddress: account.address,
+      });
+    const diagnose = (group) =>
+      diagnoseAaBatchFailure({
+        groups: materializeExitCandidate({
+          units: [group],
+          chainMetadata,
+          recipient,
+        }),
+        adminAccount,
+        chainMetadata,
+        smartAccountAddress: account.address,
+      });
+    const plan = await planAaExitBatches({
+      groups: result.groups,
+      chainMetadata,
+      recipient,
+      probe,
+      diagnose,
+    });
+    return { result, plan };
+  }, [account?.address, adminWallet, recipient, chainName, chainMetadata]);
+
+  const applyPreparedPlan = useCallback(({ result, plan }) => {
+    groupsRef.current = result.groups;
+    planRef.current = plan;
+    statusRef.current = {};
+    const excluded = new Map(
+      (plan.excluded || []).map((item) => [item.group.uniqueId, item]),
+    );
+    setRows(
+      result.groups.map((group) => {
+        const row = toRow(group);
+        const omitted = excluded.get(group.uniqueId);
+        if (!omitted) return row;
+        return {
+          ...row,
+          status: "failed",
+          error:
+            omitted.diagnosis?.message ||
+            omitted.error?.message ||
+            "UserOperation probe failed",
+          note: "Excluded during dry-run so it cannot block the healthy exit batch.",
+        };
+      }),
+    );
+    excluded.forEach((_, uniqueId) => {
+      statusRef.current[uniqueId] = "failed";
+    });
+    setFeePlan(result.feePlan);
+    setWalletScanFailed(!!result.walletScanError);
+    setUntransferableTokens(result.untransferableTokens || []);
+    setFellBack(
+      (plan.excluded || []).length > 0 || (plan.batches || []).length > 1,
+    );
+  }, []);
+
   const handleScan = useCallback(async () => {
     setPhase("scanning");
     setFellBack(false);
     try {
-      const result = await scanAaExit({
-        owner: account.address,
-        recipient,
-        chainName,
-        chainMetadata,
-      });
-      groupsRef.current = result.groups;
-      statusRef.current = {};
-      setRows(result.groups.map(toRow));
-      setFeePlan(result.feePlan);
-      setWalletScanFailed(!!result.walletScanError);
-      setUntransferableTokens(result.untransferableTokens || []);
+      const prepared = await prepareExitPlan();
+      applyPreparedPlan(prepared);
       setPhase("ready");
     } catch (error) {
       openNotificationWithIcon(
@@ -290,7 +366,7 @@ export default function AaExit() {
       );
       setPhase("idle");
     }
-  }, [account?.address, recipient, chainName, chainMetadata, notificationAPI]);
+  }, [prepareExitPlan, applyPreparedPlan, notificationAPI]);
 
   const finishRun = useCallback((status) => {
     if (status === "cancelled" || status === "unknown") {
@@ -305,19 +381,50 @@ export default function AaExit() {
 
   const handleRun = useCallback(async () => {
     setPhase("running");
-    setFellBack(false);
-    const result = await runAaExitGroups({
-      groups: groupsRef.current,
-      sendBatchTransaction,
-      updateGroup,
-      rebuildGroup,
-      onFallback: () => setFellBack(true),
-    });
-    // the run's copies carry the level each group ended on, so a later retry
-    // continues the degradation instead of starting over
-    groupsRef.current = result.groups;
+    const executePlan = (plan) =>
+      executeAaExitPlan({
+        plan,
+        sendBatchTransaction,
+        updateGroup,
+      });
+
+    let result = await executePlan(
+      planRef.current || { batches: [], excluded: [] },
+    );
+
+    // A deterministic failure before ANY planned batch landed is safe to
+    // rebuild from fresh balances/nonce and isolate again. Unknown submission
+    // state or user rejection never enters this path, and once one chunk landed
+    // we stop rather than risk charging/sending an already completed unit twice.
+    if (
+      result.status === "pre-submit-failed" &&
+      result.completedBatches === 0
+    ) {
+      try {
+        // The normal scan deliberately caches DeBank for cost control, but a
+        // deterministic send failure is the one path where the plan explicitly
+        // requires fresh balances before rebuilding and probing again.
+        clearAaExitWalletTokenCache();
+        const prepared = await prepareExitPlan();
+        applyPreparedPlan(prepared);
+        result = await executePlan(prepared.plan);
+      } catch (error) {
+        result = { status: "pre-submit-failed", error, completedBatches: 0 };
+      }
+    }
+
+    if (result.status === "pre-submit-failed") {
+      setPhase("partial");
+      return;
+    }
     finishRun(result.status);
-  }, [sendBatchTransaction, updateGroup, rebuildGroup, finishRun]);
+  }, [
+    sendBatchTransaction,
+    updateGroup,
+    prepareExitPlan,
+    applyPreparedPlan,
+    finishRun,
+  ]);
 
   const handleRetry = useCallback(
     async (uniqueId) => {
@@ -581,8 +688,8 @@ export default function AaExit() {
                   className="mb-3"
                   type="info"
                   showIcon
-                  message="Sending one item at a time"
-                  description="The single combined transaction failed before changing anything, so each item now goes separately. Anything that has already gone through stays done."
+                  message="Dry-run optimized the exit batches"
+                  description="The full sponsored UserOp did not pass preflight. Problematic items were excluded, or the healthy items were kept in a small number of large batches instead of being split one by one."
                 />
               )}
 
@@ -653,13 +760,14 @@ export default function AaExit() {
               </Button>
 
               <Paragraph type="secondary" className="text-xs mt-3 mb-0">
-                Everything goes in one transaction first. If that fails before
-                changing anything, each item is retried on its own; a position
-                that still fails is retried without claiming its rewards, and
-                then one transaction at a time — so a single broken position
-                cannot strand the rest. Amounts are fixed when you scan, so a
-                little dust can stay behind, and rewards still vesting are left
-                alone because nothing can move them yet.
+                Scan now dry-runs the exact sponsored AA UserOp without
+                broadcasting it. If the full batch fails, dependency-aware
+                binary isolation removes only the broken group; if the issue is
+                aggregate gas/paymaster size, healthy items stay in a few large
+                batches instead of one signature per item. Claimed-reward
+                transfers are rebuilt only from protocol groups that survive
+                preflight. Amounts are fixed when you scan, so a little dust can
+                stay behind.
               </Paragraph>
             </Card>
           )}

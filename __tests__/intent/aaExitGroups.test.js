@@ -4,7 +4,11 @@ import { encode } from "thirdweb";
 import { arbitrum, optimism } from "thirdweb/chains";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { fetchWalletTokens } from "../../utils/dustConversion";
-import { buildProtocolGroups, scanAaExit } from "../../utils/aaExit";
+import {
+  buildProtocolGroups,
+  clearAaExitWalletTokenCache,
+  scanAaExit,
+} from "../../utils/aaExit";
 
 vi.mock("../../utils/dustConversion", async (importOriginal) => ({
   ...(await importOriginal()),
@@ -40,6 +44,28 @@ const token = ({ id, price, decimals = 6, amount, symbol = "TKN" }) => ({
 const amountIn = async (txn) =>
   ethers.BigNumber.from(`0x${(await encode(txn)).slice(-64)}`);
 
+const mockUsdcOnChainBalance = (amount) => {
+  ethers.providers.BaseProvider.prototype.call.mockImplementation(
+    async (request) => {
+      const to = ((await request?.to) || "").toLowerCase();
+      if (to !== USDC_OP.toLowerCase()) return ethers.constants.HashZero;
+      const data = (await request?.data) || "0x";
+      // balanceOf(address)
+      if (data.slice(0, 10) === "0x70a08231") {
+        return ethers.utils.hexZeroPad(
+          ethers.BigNumber.from(amount).toHexString(),
+          32,
+        );
+      }
+      // transfer(address,uint256) simulated successfully
+      if (data.slice(0, 10) === "0xa9059cbb") {
+        return ethers.utils.hexZeroPad("0x01", 32);
+      }
+      return ethers.constants.HashZero;
+    },
+  );
+};
+
 const stub = (protocol, { staked, wallet }) => {
   vi.spyOn(protocol, "stakeBalanceOf").mockResolvedValue(
     ethers.BigNumber.from(staked),
@@ -51,6 +77,7 @@ const stub = (protocol, { staked, wallet }) => {
 };
 
 beforeEach(() => {
+  clearAaExitWalletTokenCache();
   fetchWalletTokens.mockResolvedValue([]);
   vi.spyOn(
     ethers.providers.BaseProvider.prototype,
@@ -240,6 +267,7 @@ describe("scanAaExit", () => {
   // fee + a full-balance sweep of the same token asks for more than the wallet
   // holds and reverts the whole atomic batch
   it("sweeps the fee token short by the fee", async () => {
+    mockUsdcOnChainBalance("5000000");
     fetchWalletTokens.mockResolvedValue([
       token({ id: USDC_OP, price: 1, amount: "5000000", symbol: "USDC" }),
     ]);
@@ -279,6 +307,7 @@ describe("scanAaExit", () => {
   // A wallet whose only asset is worth less than the fee would otherwise pay it
   // and receive nothing
   it("charges nothing when there is nothing to hand over", async () => {
+    mockUsdcOnChainBalance("400000");
     fetchWalletTokens.mockResolvedValue([
       token({ id: USDC_OP, price: 1, amount: "400000", symbol: "USDC" }),
     ]);
@@ -288,6 +317,46 @@ describe("scanAaExit", () => {
     expect(feePlan).toBeNull();
     expect(groups.filter((group) => group.kind === "fee")).toEqual([]);
     expect(groups.filter((group) => group.txns.length > 0)).toEqual([]);
+  });
+
+  it("reuses the wallet token scan for 120 seconds", async () => {
+    fetchWalletTokens.mockResolvedValue([]);
+
+    await scanOnOptimism();
+    await scanOnOptimism();
+
+    expect(fetchWalletTokens).toHaveBeenCalledTimes(1);
+    expect(fetchWalletTokens).toHaveBeenCalledWith("op", OWNER);
+  });
+
+  it("coalesces concurrent wallet token scans", async () => {
+    let resolveTokens;
+    fetchWalletTokens.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveTokens = resolve;
+        }),
+    );
+
+    const first = scanOnOptimism();
+    const second = scanOnOptimism();
+    await vi.waitFor(() => expect(fetchWalletTokens).toHaveBeenCalledTimes(1));
+    resolveTokens([]);
+
+    await Promise.all([first, second]);
+    expect(fetchWalletTokens).toHaveBeenCalledTimes(1);
+  });
+
+  it("refreshes the wallet token scan after 120 seconds", async () => {
+    vi.useFakeTimers();
+    fetchWalletTokens.mockResolvedValue([]);
+
+    await scanOnOptimism();
+    vi.advanceTimersByTime(120_001);
+    await scanOnOptimism();
+
+    expect(fetchWalletTokens).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
   });
 
   it("refuses a chain it has no wallet-token mapping for", async () => {
