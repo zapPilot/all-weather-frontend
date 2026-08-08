@@ -467,7 +467,7 @@ export function buildFeeGroup({ feePlan, chainMetadata }) {
   return {
     kind: "fee",
     uniqueId: "exit-fee",
-    label: `Service fee (~$${EXIT_FEE_USD} in ${feePlan.symbol})`,
+    label: `Gas fee (~$${EXIT_FEE_USD} in ${feePlan.symbol})`,
     level: 0,
     dependent: false,
     txns: [

@@ -784,7 +784,7 @@ describe("runAaExitGroups", () => {
         {
           kind: "fee",
           uniqueId: "exit-fee",
-          label: "Service fee",
+          label: "Gas fee",
           level: 0,
           dependent: false,
           txns: ["fee-transfer"],
