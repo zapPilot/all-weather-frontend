@@ -333,6 +333,20 @@ export class BaseCamelot extends BaseProtocol {
     return [[lpFeesTxn], pendingRewards];
   }
 
+  // Camelot positions are ERC721s. Moving the NFT already moves ownership of
+  // the position (including its uncollected LP fees), while customClaim also
+  // reports address-bound campaign rewards that its `collect` transaction does
+  // not actually deliver. Treating those as claimed makes the later ERC20
+  // reward sweep ask for a balance the wallet never received and can revert an
+  // otherwise-valid NFT transfer. Emergency exit therefore prioritizes the
+  // self-contained NFT principal and leaves optional rewards behind.
+  async emergencyTransfer(owner, recipient, updateProgress, options = {}) {
+    return super.emergencyTransfer(owner, recipient, updateProgress, {
+      ...options,
+      skipRewards: true,
+    });
+  }
+
   async lockUpPeriod() {
     return 0;
   }

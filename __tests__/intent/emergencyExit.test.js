@@ -14,8 +14,14 @@ const OWNER = "0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0";
 const RECIPIENT = "0x1234567890123456789012345678901234567890";
 // transfer(address,uint256)
 const TRANSFER_SELECTOR = "a9059cbb";
-// Gauge.withdraw(uint256)
+// approve(address,uint256)
+const APPROVE_SELECTOR = "095ea7b3";
+// Gauge / SmartChef withdraw(uint256)
 const WITHDRAW_SELECTOR = "2e1a7d4d";
+// burnAlp(address,uint256,uint256,address)
+const BURN_ALP_SELECTOR = ethers.utils
+  .id("burnAlp(address,uint256,uint256,address)")
+  .slice(2, 10);
 // Gauge.getReward(address)
 const GET_REWARD_SELECTOR = "c00007b0";
 // safeTransferFrom(address,address,uint256)
@@ -407,6 +413,87 @@ describe("emergencyTransfer", () => {
     expect(encoded[1]).includes(word("202"));
     // assetBalanceOf reports pooled liquidity for an NFT, not a token count
     expect(assetBalanceOf).not.toHaveBeenCalled();
+  });
+
+  it("does not let Camelot reward accounting block an otherwise-valid NFT move", async () => {
+    const [protocol] = protocolsOn(
+      getPortfolioHelper("Camelot Vault"),
+      "arbitrum",
+    ).map((p) => p.interface);
+    vi.spyOn(protocol, "_getAllNftIDs").mockResolvedValue([
+      ethers.BigNumber.from("303"),
+    ]);
+    const customClaim = vi
+      .spyOn(protocol, "customClaim")
+      .mockRejectedValue(new Error("campaign reward is not transferable yet"));
+
+    const { txns, rewardBalances } = await protocol.emergencyTransfer(
+      OWNER,
+      RECIPIENT,
+      noop,
+    );
+
+    expect(customClaim).not.toHaveBeenCalled();
+    expect(rewardBalances).toEqual([]);
+    expect(txns).toHaveLength(1);
+    expect(await encode(txns[0])).includes(SAFE_TRANSFER_FROM_SELECTOR);
+  });
+
+  it("unwinds non-transferable Arbitrum ALP instead of ERC20-transferring it", async () => {
+    const protocol = protocolsOn(
+      getPortfolioHelper("Stable+ Vault"),
+      "arbitrum",
+    )
+      .map((p) => p.interface)
+      .find((candidate) => candidate.protocolName === "pancakeswap");
+    expect(protocol).toBeDefined();
+    vi.spyOn(protocol, "assetBalanceOf").mockResolvedValue(
+      ethers.BigNumber.from("300"),
+    );
+    vi.spyOn(protocol, "_legacyStakedAlpBalance").mockResolvedValue(
+      ethers.BigNumber.from("700"),
+    );
+    const priceLookup = vi.spyOn(protocol, "_fetchAlpPrice");
+
+    const { txns, rewardBalances } = await protocol.emergencyTransfer(
+      OWNER,
+      RECIPIENT,
+      noop,
+    );
+
+    expect(txns).toHaveLength(3);
+    const encoded = await Promise.all(txns.map((txn) => encode(txn)));
+    expect(encoded[0]).includes(WITHDRAW_SELECTOR);
+    expect(encoded[0]).includes(word("700"));
+    expect(encoded[1]).includes(APPROVE_SELECTOR);
+    expect(encoded[1]).includes(word("1000"));
+    expect(encoded[2]).includes(BURN_ALP_SELECTOR);
+    expect(encoded[2]).includes(word("1000"));
+    expect(encoded[2].toLowerCase()).includes(RECIPIENT.slice(2).toLowerCase());
+    encoded.forEach((data) => expect(data).not.toContain(TRANSFER_SELECTOR));
+    expect(rewardBalances).toEqual([]);
+    expect(priceLookup).not.toHaveBeenCalled();
+  });
+
+  it("does not emit a legacy ALP withdraw when all ALP is already in the wallet", async () => {
+    const protocol = protocolsOn(
+      getPortfolioHelper("Stable+ Vault"),
+      "arbitrum",
+    )
+      .map((p) => p.interface)
+      .find((candidate) => candidate.protocolName === "pancakeswap");
+    vi.spyOn(protocol, "assetBalanceOf").mockResolvedValue(
+      ethers.BigNumber.from("500"),
+    );
+    vi.spyOn(protocol, "_legacyStakedAlpBalance").mockResolvedValue(
+      ethers.constants.Zero,
+    );
+
+    const { txns } = await protocol.emergencyTransfer(OWNER, RECIPIENT, noop);
+
+    expect(txns).toHaveLength(2);
+    expect(await encode(txns[0])).includes(APPROVE_SELECTOR);
+    expect(await encode(txns[1])).includes(BURN_ALP_SELECTOR);
   });
 
   it("tolerates a wallet balance read that comes back undefined", async () => {

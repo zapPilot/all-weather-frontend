@@ -170,6 +170,77 @@ export class BaseApolloX extends BaseProtocol {
     // return [[claimTxn], pendingRewards];
   }
 
+  // Arbitrum ALP is intentionally non-transferable between wallets. Some old
+  // positions may also still sit in the historical Pancake SmartChef that this
+  // integration used before staking rewards were removed. Emergency exit must
+  // therefore unwind the position instead of building an ERC20 transfer:
+  // legacy withdraw (when needed) -> approve -> burn ALP, with the underlying
+  // sent straight to the user's recipient address.
+  async _legacyStakedAlpBalance(owner) {
+    try {
+      const stakeFarmContractInstance = new ethers.Contract(
+        this.stakeFarmContract.address,
+        SmartChefInitializable,
+        PROVIDER(this.chain),
+      );
+      const userInfo =
+        await stakeFarmContractInstance.functions.userInfo(owner);
+      return ethers.BigNumber.from(userInfo.amount || userInfo[0] || 0);
+    } catch (error) {
+      logger.warn(
+        "ApolloX emergency exit: could not read legacy Pancake stake; continuing with wallet ALP",
+        error,
+      );
+      return ethers.constants.Zero;
+    }
+  }
+
+  async emergencyTransfer(owner, recipient, updateProgress) {
+    const [walletBalance, stakedBalance] = await Promise.all([
+      this.assetBalanceOf(owner),
+      this._legacyStakedAlpBalance(owner),
+    ]);
+    const walletAlp = ethers.BigNumber.from(walletBalance || 0);
+    const stakedAlp = ethers.BigNumber.from(stakedBalance || 0);
+    const totalAlp = walletAlp.add(stakedAlp);
+    if (totalAlp.isZero()) {
+      return { txns: [], rewardBalances: [] };
+    }
+
+    const txns = [];
+    if (!stakedAlp.isZero()) {
+      txns.push(
+        prepareContractCall({
+          contract: this.stakeFarmContract,
+          method: "withdraw",
+          params: [stakedAlp],
+        }),
+      );
+    }
+
+    txns.push(
+      approve(
+        this.assetContract.address,
+        this.protocolContract.address,
+        totalAlp,
+        updateProgress,
+        this.chainId,
+      ),
+    );
+    const [, tokenOutAddress] = this._getTheBestTokenAddressToZapOut();
+    txns.push(
+      prepareContractCall({
+        contract: this.protocolContract,
+        method: "burnAlp",
+        // This is an escape hatch, not a price-sensitive zap-out. Avoid the
+        // third-party ALP price API and let the protocol redeem at its own NAV.
+        params: [tokenOutAddress, totalAlp, 0, recipient],
+      }),
+    );
+
+    return { txns, rewardBalances: [] };
+  }
+
   async usdBalanceOf(owner, tokenPricesMappingTable) {
     const [balance, latestAlpPrice] = await Promise.all([
       this.assetBalanceOf(owner),
