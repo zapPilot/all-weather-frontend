@@ -12,6 +12,7 @@ import {
   collectExitProtocols,
   debankChainCode,
   nextExitLevel,
+  preflightWalletTokens,
   runAaExitGroups,
   selectFeeToken,
   sweptAddressesOf,
@@ -242,6 +243,101 @@ describe("sweptAddressesOf", () => {
     ]);
 
     expect(swept).toEqual(new Set([USDC_ARB.toLowerCase()]));
+  });
+});
+
+describe("preflightWalletTokens", () => {
+  const OWNER = "0xd33668a245da0D1d00e9e651F93939da09B4Fd9d";
+
+  it("keeps a token that can transfer and refreshes its on-chain balance", async () => {
+    const iface = new ethers.utils.Interface([
+      "function balanceOf(address owner) view returns (uint256)",
+    ]);
+    const provider = {
+      call: vi
+        .fn()
+        .mockResolvedValueOnce(
+          iface.encodeFunctionResult("balanceOf", [ethers.BigNumber.from(7)]),
+        )
+        .mockResolvedValueOnce("0x"),
+    };
+
+    const result = await preflightWalletTokens({
+      walletTokens: [token({ id: USDC_ARB, price: 1, amount: "1000000" })],
+      owner: OWNER,
+      recipient: RECIPIENT,
+      chainName: "arbitrum",
+      provider,
+    });
+
+    expect(result.untransferableTokens).toEqual([]);
+    expect(result.walletTokens).toHaveLength(1);
+    expect(result.walletTokens[0].raw_amount_hex_str).toBe("0x07");
+    expect(provider.call).toHaveBeenCalledTimes(2);
+    expect(provider.call.mock.calls[1][0].from).toBe(OWNER);
+  });
+
+  it("excludes hostile tokens whose transfer simulation reverts", async () => {
+    const iface = new ethers.utils.Interface([
+      "function balanceOf(address owner) view returns (uint256)",
+    ]);
+    const provider = {
+      call: vi
+        .fn()
+        .mockResolvedValueOnce(
+          iface.encodeFunctionResult("balanceOf", [ethers.BigNumber.from(1)]),
+        )
+        .mockRejectedValueOnce(
+          new Error(
+            "execution reverted: ERC20: transfer amount exceeds balance",
+          ),
+        ),
+    };
+
+    const result = await preflightWalletTokens({
+      walletTokens: [
+        token({ id: USDC_ARB, price: 0, amount: "1", symbol: "SPAM" }),
+      ],
+      owner: OWNER,
+      recipient: RECIPIENT,
+      chainName: "arbitrum",
+      provider,
+    });
+
+    expect(result.walletTokens).toEqual([]);
+    expect(result.untransferableTokens).toEqual([
+      expect.objectContaining({
+        address: USDC_ARB.toLowerCase(),
+        symbol: "SPAM",
+        reason: expect.stringContaining("transfer amount exceeds balance"),
+      }),
+    ]);
+  });
+
+  it("does not use price or symbol as a transferability filter", async () => {
+    const iface = new ethers.utils.Interface([
+      "function balanceOf(address owner) view returns (uint256)",
+    ]);
+    const provider = {
+      call: vi
+        .fn()
+        .mockResolvedValueOnce(
+          iface.encodeFunctionResult("balanceOf", [ethers.BigNumber.from(5)]),
+        )
+        .mockResolvedValueOnce("0x"),
+    };
+
+    const result = await preflightWalletTokens({
+      walletTokens: [
+        token({ id: USDT_ARB, price: 0, amount: "5", symbol: "WEIRD/TOKEN" }),
+      ],
+      owner: OWNER,
+      recipient: RECIPIENT,
+      chainName: "arbitrum",
+      provider,
+    });
+
+    expect(result.walletTokens).toHaveLength(1);
   });
 });
 
