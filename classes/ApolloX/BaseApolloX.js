@@ -241,6 +241,29 @@ export class BaseApolloX extends BaseProtocol {
     return { txns, rewardBalances: [] };
   }
 
+  async fullExitUnwind(
+    owner,
+    slippage,
+    tokenPricesMappingTable,
+    updateProgress,
+  ) {
+    const { txns } = await this.emergencyTransfer(owner, owner, updateProgress);
+    if (!txns.length) return { txns: [], expectedTokens: [] };
+    const [symbol, address, decimals] = this._getTheBestTokenAddressToZapOut();
+    return {
+      txns,
+      expectedTokens: [
+        {
+          id: address,
+          address,
+          symbol,
+          optimized_symbol: symbol,
+          decimals,
+        },
+      ],
+    };
+  }
+
   async usdBalanceOf(owner, tokenPricesMappingTable) {
     const [balance, latestAlpPrice] = await Promise.all([
       this.assetBalanceOf(owner),

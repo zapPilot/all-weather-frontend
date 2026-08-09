@@ -597,6 +597,228 @@ export default class BaseProtocol extends BaseUniswap {
     return { txns: finalTxns, rewardBalances };
   }
 
+  async _fullExitTokenMetadata(address) {
+    try {
+      const token = new ethers.Contract(
+        address,
+        ERC20_ABI,
+        PROVIDER(this.chain),
+      );
+      const [symbol, decimals] = await Promise.all([
+        token.symbol(),
+        token.decimals(),
+      ]);
+      return {
+        id: address,
+        address,
+        symbol: String(symbol).toLowerCase(),
+        optimized_symbol: String(symbol).toLowerCase(),
+        decimals: Number(decimals),
+      };
+    } catch (error) {
+      logger.warn(
+        `${this.uniqueId()}: could not read full-exit token metadata for ${address}`,
+        error,
+      );
+      return null;
+    }
+  }
+
+  _fullExitRewardTokens() {
+    try {
+      return (this.rewards?.() || [])
+        .filter(
+          (token) =>
+            token?.address &&
+            ethers.utils.isAddress(token.address) &&
+            token?.decimals !== undefined,
+        )
+        .map((token) => ({
+          id: token.address,
+          address: token.address,
+          symbol: String(token.symbol || "").toLowerCase(),
+          optimized_symbol: String(token.symbol || "").toLowerCase(),
+          decimals: Number(token.decimals),
+          priceId: token.priceId,
+        }));
+    } catch (error) {
+      logger.warn(`${this.uniqueId()}: could not list reward tokens`, error);
+      return [];
+    }
+  }
+
+  // EOA full exit: turn a protocol position into ordinary wallet tokens, but do
+  // not swap them yet. The caller waits for these txns to confirm, re-reads the
+  // actual wallet balances, then builds swaps from those balances. This avoids
+  // sizing a swap from an estimated withdrawal amount.
+  async fullExitUnwind(
+    owner,
+    slippage,
+    tokenPricesMappingTable = {},
+    updateProgress = () => {},
+  ) {
+    if (this.assetIsNFT) {
+      const tokenIds = await this._getAllNftIDs(owner);
+      if (!tokenIds?.length) {
+        return { txns: [], expectedTokens: [] };
+      }
+
+      const maxUint128 = ethers.BigNumber.from(
+        "340282366920938463463374607431768211455",
+      );
+      const positions = await Promise.all(
+        tokenIds.map(async (tokenId) => ({
+          tokenId,
+          position: await this.assetContractInstance.positions(tokenId),
+        })),
+      );
+      const txns = [];
+      const tokenAddresses = new Set();
+
+      for (const { tokenId, position } of positions) {
+        tokenAddresses.add(position.token0.toLowerCase());
+        tokenAddresses.add(position.token1.toLowerCase());
+        const liquidity = ethers.BigNumber.from(position.liquidity || 0);
+        if (!liquidity.isZero()) {
+          txns.push(
+            prepareContractCall({
+              contract: this.assetContract,
+              method: "decreaseLiquidity",
+              params: [
+                {
+                  tokenId,
+                  liquidity,
+                  // Full exit is followed by a real-balance swap with its own
+                  // slippage guard. Do not let an estimate strand the NFT here.
+                  amount0Min: 0,
+                  amount1Min: 0,
+                  deadline: this.getDeadline(),
+                },
+              ],
+            }),
+          );
+        }
+        txns.push(
+          prepareContractCall({
+            contract: this.assetContract,
+            method: "collect",
+            params: [
+              {
+                tokenId,
+                recipient: owner,
+                amount0Max: maxUint128,
+                amount1Max: maxUint128,
+              },
+            ],
+          }),
+        );
+        txns.push(
+          prepareContractCall({
+            contract: this.assetContract,
+            method: "burn",
+            params: [tokenId],
+          }),
+        );
+      }
+
+      const expectedTokens = (
+        await Promise.all(
+          [...tokenAddresses].map((address) =>
+            this._fullExitTokenMetadata(address),
+          ),
+        )
+      ).filter(Boolean);
+      this.checkTxnsToDataNotUndefined(txns, "fullExitUnwind");
+      return { txns, expectedTokens };
+    }
+
+    let unstakeTxns = [];
+    let unstakedAmount;
+    if (this.mode === "single") {
+      [unstakeTxns, unstakedAmount] = await this._unstake(
+        owner,
+        1,
+        updateProgress,
+      );
+    } else if (this.mode === "LP") {
+      [unstakeTxns, unstakedAmount] = await this._unstakeLP(
+        owner,
+        1,
+        updateProgress,
+      );
+    } else {
+      throw new Error(`Invalid mode for fullExitUnwind: ${this.mode}`);
+    }
+
+    if (unstakedAmount === undefined) {
+      return { txns: [], expectedTokens: [] };
+    }
+
+    const unstakedAmountBN = ethers.BigNumber.from(unstakedAmount || 0);
+    const hasSeparateStake = unstakeTxns.length > 0;
+    const totalAmount = hasSeparateStake
+      ? unstakedAmountBN.add((await this.assetBalanceOf(owner)) || 0)
+      : unstakedAmountBN;
+    if (totalAmount.isZero()) {
+      return { txns: [], expectedTokens: [] };
+    }
+    // Some gauges revert on withdraw(0). If the staked side is already empty
+    // but LP tokens are sitting directly in the wallet, unwind those LP tokens
+    // without emitting the useless zero-amount unstake first.
+    const effectiveUnstakeTxns = unstakedAmountBN.isZero() ? [] : unstakeTxns;
+
+    let withdrawTxns = [];
+    let expectedTokens = [];
+    if (this.mode === "single") {
+      const [protocolTxns, symbol, address, decimals] =
+        await this.customWithdrawAndClaim(
+          owner,
+          totalAmount,
+          slippage,
+          tokenPricesMappingTable,
+          updateProgress,
+        );
+      withdrawTxns = protocolTxns || [];
+      if (address && ethers.utils.isAddress(address)) {
+        expectedTokens.push({
+          id: address,
+          address,
+          symbol: String(symbol || "").toLowerCase(),
+          optimized_symbol: String(symbol || "").toLowerCase(),
+          decimals: Number(decimals),
+        });
+      }
+    } else {
+      const [protocolTxns, tokenMetadatas] =
+        await this.customWithdrawLPAndClaim(
+          owner,
+          totalAmount,
+          slippage,
+          tokenPricesMappingTable,
+          updateProgress,
+        );
+      withdrawTxns = protocolTxns || [];
+      expectedTokens = (tokenMetadatas || [])
+        .filter(
+          (metadata) => metadata?.[1] && ethers.utils.isAddress(metadata[1]),
+        )
+        .map(([symbol, address, decimals]) => ({
+          id: address,
+          address,
+          symbol: String(symbol || "").toLowerCase(),
+          optimized_symbol: String(symbol || "").toLowerCase(),
+          decimals: Number(decimals),
+        }));
+    }
+
+    const txns = [...effectiveUnstakeTxns, ...withdrawTxns];
+    this.checkTxnsToDataNotUndefined(txns, "fullExitUnwind");
+    return {
+      txns,
+      expectedTokens: [...expectedTokens, ...this._fullExitRewardTokens()],
+    };
+  }
+
   async stake(protocolAssetDustInWallet, updateProgress) {
     await this._updateProgressAndWait(
       updateProgress,
