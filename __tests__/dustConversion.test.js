@@ -308,7 +308,9 @@ describe("Dust Conversion Utilities", () => {
       await fetchDustConversionRoutes({ ...mockParams, providers });
 
       expect(swap).toHaveBeenCalledTimes(mockTokens.length);
-      expect(swap.mock.calls.every((call) => call[15] === providers)).toBe(true);
+      expect(swap.mock.calls.every((call) => call[15] === providers)).toBe(
+        true,
+      );
     });
 
     it("should handle swap failures gracefully", async () => {

@@ -7,6 +7,7 @@ import {
   Input,
   Progress,
   Spin,
+  Switch,
   Tag,
   Typography,
   notification,
@@ -33,23 +34,33 @@ import {
   AA_EXIT_CHAIN_IDS,
   EXIT_FEE_USD,
   PROTOCOL_TREASURY_ADDRESS,
+  aaExitPendingDirectTransactionStorageKey,
   aaExitPendingUserOpStorageKey,
   buildClaimedRewardsGroup,
   buildProtocolGroups,
+  clearPendingAaExitDirectTransaction,
   clearPendingAaExitUserOp,
+  createPendingAaExitDirectTransaction,
   createPendingAaExitUserOp,
   diagnoseAaBatchFailure,
+  diagnoseAaBatchFailureDirect,
   executeAaExitPlan,
   isAaExitUserOpReceiptFailure,
+  isPendingAaExitUserOpDead,
   materializeExitCandidate,
   planAaExitBatches,
   probeAaBatch,
+  probeAaBatchDirect,
+  readPendingAaExitDirectTransaction,
   readPendingAaExitUserOp,
   runAaExitGroups,
   scanAaExit,
   sendAaExitBatch,
+  sendAaExitBatchDirect,
   transactionHashFromAaExitUserOpError,
+  waitForPendingAaExitDirectTransaction,
   waitForPendingAaExitUserOp,
+  writePendingAaExitDirectTransaction,
   writePendingAaExitUserOp,
 } from "../../utils/aaExit";
 import logger from "../../utils/logger";
@@ -198,7 +209,10 @@ export default function AaExit() {
   const [untransferableTokens, setUntransferableTokens] = useState([]);
   const [fellBack, setFellBack] = useState(false);
   const [retrying, setRetrying] = useState(null);
+  const [directMode, setDirectMode] = useState(false);
   const [pendingUserOp, setPendingUserOp] = useState(null);
+  const [pendingDirectTransaction, setPendingDirectTransaction] =
+    useState(null);
   const [submissionStage, setSubmissionStage] = useState("");
   const [recoveredSubmission, setRecoveredSubmission] = useState(null);
   const [scanProgress, setScanProgress] = useState({
@@ -220,6 +234,7 @@ export default function AaExit() {
   // Prepared transactions embed the recipient in calldata. Never execute a plan
   // after the input changes until it has been rebound to the new destination.
   const planRecipientRef = useRef(null);
+  const planDirectModeRef = useRef(null);
   // Mirrors each row's status outside React so a run can decide its final phase
   // without reading state it just queued an update for
   const statusRef = useRef({});
@@ -235,19 +250,43 @@ export default function AaExit() {
   const explorerUrl = LOCK_EXPLORER_URLS[activeChain?.id];
 
   const sendExitBatchTransaction = useCallback(
-    (transactions, callbacks = {}) => {
-      sendAaExitBatch({
-        transactions,
-        adminAccount: adminWallet?.getAccount(),
-        chainMetadata,
-        expectedSmartAccountAddress: account?.address,
-        onStage: callbacks.onStage,
-      }).then(
-        (result) => callbacks.onSuccess?.(result),
-        (error) => callbacks.onError?.(error),
-      );
+    async (transactions, callbacks = {}) => {
+      try {
+        const adminAccount = adminWallet?.getAccount();
+        let result;
+        if (directMode) {
+          if (adminWallet?.getChain()?.id !== chainMetadata?.id) {
+            await adminWallet?.switchChain(chainMetadata);
+          }
+          if (adminWallet?.getChain()?.id !== chainMetadata?.id) {
+            throw new Error(
+              `AA Exit admin wallet is on chain ${
+                adminWallet?.getChain()?.id ?? "unknown"
+              }, expected ${chainMetadata?.id ?? "unknown"}`,
+            );
+          }
+          result = await sendAaExitBatchDirect({
+            transactions,
+            adminAccount,
+            chainMetadata,
+            expectedSmartAccountAddress: account?.address,
+            onStage: callbacks.onStage,
+          });
+        } else {
+          result = await sendAaExitBatch({
+            transactions,
+            adminAccount,
+            chainMetadata,
+            expectedSmartAccountAddress: account?.address,
+            onStage: callbacks.onStage,
+          });
+        }
+        callbacks.onSuccess?.(result);
+      } catch (error) {
+        callbacks.onError?.(error);
+      }
     },
-    [adminWallet, chainMetadata, account?.address],
+    [adminWallet, chainMetadata, account?.address, directMode],
   );
 
   const resetResults = useCallback(() => {
@@ -255,6 +294,7 @@ export default function AaExit() {
     planRef.current = null;
     walletTokenSnapshotRef.current = null;
     planRecipientRef.current = null;
+    planDirectModeRef.current = null;
     statusRef.current = {};
     setRows([]);
     setFeePlan(null);
@@ -263,9 +303,14 @@ export default function AaExit() {
     setFellBack(false);
     setSubmissionStage("");
     setRecoveredSubmission(null);
+    setPendingDirectTransaction(null);
     setScanProgress({ percent: 0, message: "", discoveries: [] });
     setPhase("idle");
   }, []);
+
+  useEffect(() => {
+    setDirectMode(chainMetadata?.id === AA_EXIT_CHAIN_IDS.arbitrum);
+  }, [chainMetadata?.id]);
 
   const restorePendingUserOp = useCallback(
     ({ fromStorageEvent = false } = {}) => {
@@ -291,6 +336,30 @@ export default function AaExit() {
     [account?.address, chainMetadata?.id],
   );
 
+  const restorePendingDirectTransaction = useCallback(
+    ({ fromStorageEvent = false } = {}) => {
+      if (!account?.address || !chainMetadata?.id) {
+        setPendingDirectTransaction(null);
+        return null;
+      }
+      const restored = readPendingAaExitDirectTransaction({
+        chainId: chainMetadata.id,
+        smartAccountAddress: account.address,
+      });
+      setPendingDirectTransaction(restored);
+      if (restored) {
+        setRecoveredSubmission(null);
+        setSubmissionStage("submitted");
+        setPhase("submitted");
+      } else if (fromStorageEvent) {
+        setRecoveredSubmission({ status: "cleared" });
+        setPhase("idle");
+      }
+      return restored;
+    },
+    [account?.address, chainMetadata?.id],
+  );
+
   // A scan is only valid for the wallet and chain it was taken on
   useEffect(() => {
     resetResults();
@@ -300,7 +369,8 @@ export default function AaExit() {
   // second AA Exit screen cannot silently create a duplicate UserOperation.
   useEffect(() => {
     restorePendingUserOp();
-  }, [restorePendingUserOp]);
+    restorePendingDirectTransaction();
+  }, [restorePendingDirectTransaction, restorePendingUserOp]);
 
   useEffect(() => {
     if (
@@ -314,14 +384,26 @@ export default function AaExit() {
       chainMetadata.id,
       account.address,
     );
+    const directStorageKey = aaExitPendingDirectTransactionStorageKey(
+      chainMetadata.id,
+      account.address,
+    );
     const handleStorage = (event) => {
       if (event.key === storageKey) {
         restorePendingUserOp({ fromStorageEvent: true });
       }
+      if (event.key === directStorageKey) {
+        restorePendingDirectTransaction({ fromStorageEvent: true });
+      }
     };
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
-  }, [account?.address, chainMetadata?.id, restorePendingUserOp]);
+  }, [
+    account?.address,
+    chainMetadata?.id,
+    restorePendingDirectTransaction,
+    restorePendingUserOp,
+  ]);
 
   // useAdminWallet falls back to the active wallet when there is no admin, which
   // would prefill the smart wallet's own address — the one address this must not
@@ -350,12 +432,17 @@ export default function AaExit() {
     !!recipient &&
     ethers.utils.isAddress(recipient) &&
     planRecipientRef.current.toLowerCase() !== recipient.toLowerCase();
+  const modePlanStale =
+    planDirectModeRef.current !== null &&
+    planDirectModeRef.current !== directMode;
+  const exitPlanStale = recipientPlanStale || modePlanStale;
 
   const busy =
     phase === "scanning" ||
     phase === "running" ||
     phase === "submitted" ||
-    !!pendingUserOp;
+    !!pendingUserOp ||
+    !!pendingDirectTransaction;
   const canScan =
     !!account &&
     aaOn &&
@@ -383,6 +470,7 @@ export default function AaExit() {
         `chain=${chainMetadata?.id || "unknown"}`,
         `smartAccount=${account?.address || "unknown"}`,
         `userOpHash=${event.userOpHash || "none"}`,
+        `transactionHash=${event.transactionHash || "none"}`,
       );
 
       if (
@@ -405,6 +493,8 @@ export default function AaExit() {
             transactionIndex: event.transactionIndex,
             transactionCount: event.transactionCount,
             submissionStage: event.stage,
+            nonce: event.nonce,
+            paymasterValidUntil: event.paymasterValidUntil,
             createdAt:
               existing?.userOpHash === event.userOpHash.toLowerCase()
                 ? existing.createdAt
@@ -422,6 +512,49 @@ export default function AaExit() {
           setPendingUserOp(pending);
         } catch (error) {
           logger.error("AA Exit could not track submitted UserOp", error);
+        }
+      }
+
+      if (
+        event.stage === "submitted" &&
+        event.transactionHash &&
+        !event.userOpHash
+      ) {
+        try {
+          const existing = readPendingAaExitDirectTransaction({
+            chainId: chainMetadata.id,
+            smartAccountAddress: account.address,
+          });
+          const pending = createPendingAaExitDirectTransaction({
+            chainId: chainMetadata.id,
+            smartAccountAddress: account.address,
+            recipient,
+            transactionHash: event.transactionHash,
+            groupIds: event.groupIds || [],
+            batchIndex: event.batchIndex || 0,
+            batchCount: event.batchCount || 1,
+            transactionIndex: event.transactionIndex,
+            transactionCount: event.transactionCount,
+            createdAt:
+              existing?.transactionHash === event.transactionHash.toLowerCase()
+                ? existing.createdAt
+                : Date.now(),
+          });
+          const persisted = writePendingAaExitDirectTransaction(pending);
+          if (!persisted) {
+            logger.error(
+              "AA Exit could not persist pending direct transaction",
+              `chain=${chainMetadata.id}`,
+              `smartAccount=${account.address}`,
+              `transactionHash=${event.transactionHash}`,
+            );
+          }
+          setPendingDirectTransaction(pending);
+        } catch (error) {
+          logger.error(
+            "AA Exit could not track submitted direct transaction",
+            error,
+          );
         }
       }
 
@@ -450,30 +583,90 @@ export default function AaExit() {
             : current,
         );
       }
+
+      if (
+        (event.stage === "confirmed" || event.stage === "reverted") &&
+        event.transactionHash &&
+        !event.userOpHash
+      ) {
+        clearPendingAaExitDirectTransaction({
+          chainId: chainMetadata.id,
+          smartAccountAddress: account.address,
+          transactionHash: event.transactionHash,
+        });
+        setPendingDirectTransaction((current) =>
+          current?.transactionHash === event.transactionHash.toLowerCase()
+            ? null
+            : current,
+        );
+      }
     },
     [account?.address, chainMetadata?.id, recipient],
   );
 
-  const ensureNoPendingUserOp = useCallback(() => {
+  const ensureNoPendingUserOp = useCallback(async () => {
     if (!account?.address || !chainMetadata?.id) return false;
-    if (pendingUserOp) {
+    const directPending =
+      pendingDirectTransaction ||
+      readPendingAaExitDirectTransaction({
+        chainId: chainMetadata.id,
+        smartAccountAddress: account.address,
+      });
+    if (directPending) {
+      setPendingDirectTransaction(directPending);
       setPhase("submitted");
       return false;
     }
-    const existing = readPendingAaExitUserOp({
-      chainId: chainMetadata.id,
-      smartAccountAddress: account.address,
-    });
+    const existing =
+      pendingUserOp ||
+      readPendingAaExitUserOp({
+        chainId: chainMetadata.id,
+        smartAccountAddress: account.address,
+      });
     if (!existing) return true;
+    if (directMode) {
+      const pendingState = await isPendingAaExitUserOpDead({
+        pending: existing,
+        chainMetadata,
+      });
+      if (pendingState === "dead") {
+        clearPendingAaExitUserOp({
+          chainId: chainMetadata.id,
+          smartAccountAddress: account.address,
+          userOpHash: existing.userOpHash,
+        });
+        setPendingUserOp(null);
+        setSubmissionStage("");
+        setRecoveredSubmission({
+          status: "expired",
+          userOpHash: existing.userOpHash,
+        });
+        setPhase("idle");
+        openNotificationWithIcon(
+          notificationAPI,
+          "Previous sponsored operation expired",
+          "info",
+          "Its paymaster window expired without consuming the nonce. Direct mode may proceed after a fresh scan.",
+        );
+        return true;
+      }
+    }
     setPendingUserOp(existing);
     setPhase("submitted");
     return false;
-  }, [account?.address, chainMetadata?.id, pendingUserOp]);
+  }, [
+    account?.address,
+    chainMetadata,
+    directMode,
+    notificationAPI,
+    pendingDirectTransaction,
+    pendingUserOp,
+  ]);
 
   const withSubmissionLock = useCallback(
     async (submitPlan) => {
       const runIfClear = async () => {
-        if (!ensureNoPendingUserOp()) {
+        if (!(await ensureNoPendingUserOp())) {
           return { status: "blocked-pending" };
         }
         return submitPlan();
@@ -505,6 +698,28 @@ export default function AaExit() {
     let retryTimer;
     const pollReceipt = async () => {
       try {
+        if (directMode) {
+          const pendingState = await isPendingAaExitUserOpDead({
+            pending: pendingUserOp,
+            chainMetadata,
+          });
+          if (cancelled) return;
+          if (pendingState === "dead") {
+            clearPendingAaExitUserOp({
+              chainId: pendingUserOp.chainId,
+              smartAccountAddress: pendingUserOp.smartAccountAddress,
+              userOpHash: pendingUserOp.userOpHash,
+            });
+            setPendingUserOp(null);
+            setSubmissionStage("");
+            setRecoveredSubmission({
+              status: "expired",
+              userOpHash: pendingUserOp.userOpHash,
+            });
+            setPhase("idle");
+            return;
+          }
+        }
         const receipt = await waitForPendingAaExitUserOp({
           chainMetadata,
           userOpHash: pendingUserOp.userOpHash,
@@ -596,7 +811,92 @@ export default function AaExit() {
       cancelled = true;
       if (retryTimer) window.clearTimeout(retryTimer);
     };
-  }, [chainMetadata, pendingUserOp, phase, updateGroup]);
+  }, [chainMetadata, directMode, pendingUserOp, phase, updateGroup]);
+
+  useEffect(() => {
+    if (
+      !pendingDirectTransaction ||
+      (phase !== "submitted" && phase !== "unknown") ||
+      pendingDirectTransaction.chainId !== chainMetadata?.id
+    ) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let retryTimer;
+    const pollReceipt = async () => {
+      try {
+        const receipt = await waitForPendingAaExitDirectTransaction({
+          chainMetadata,
+          transactionHash: pendingDirectTransaction.transactionHash,
+        });
+        if (cancelled) return;
+        clearPendingAaExitDirectTransaction({
+          chainId: pendingDirectTransaction.chainId,
+          smartAccountAddress: pendingDirectTransaction.smartAccountAddress,
+          transactionHash: pendingDirectTransaction.transactionHash,
+        });
+        const hasRemainingTransactions =
+          Number.isInteger(pendingDirectTransaction.transactionIndex) &&
+          pendingDirectTransaction.transactionIndex <
+            pendingDirectTransaction.transactionCount - 1;
+        const receiptReverted = receipt?.status === "reverted";
+        const recoveredRowStatus = receiptReverted
+          ? "failed"
+          : hasRemainingTransactions
+          ? "partial"
+          : "success";
+        pendingDirectTransaction.groupIds.forEach((uniqueId) =>
+          updateGroup(uniqueId, {
+            status: recoveredRowStatus,
+            error: receiptReverted
+              ? "The direct executeBatch transaction reverted atomically; no assets moved."
+              : hasRemainingTransactions
+              ? "The submitted step confirmed. Scan again to rebuild the remaining steps from fresh balances."
+              : undefined,
+            transactionHash: pendingDirectTransaction.transactionHash,
+          }),
+        );
+        const hadCurrentRows = Object.keys(statusRef.current).length > 0;
+        const nextStatuses = { ...statusRef.current };
+        pendingDirectTransaction.groupIds.forEach((uniqueId) => {
+          nextStatuses[uniqueId] = recoveredRowStatus;
+        });
+        const stalled = Object.values(nextStatuses).some(
+          (status) => status === "failed" || status === "partial",
+        );
+        setPendingDirectTransaction(null);
+        setRecoveredSubmission({
+          status: receiptReverted ? "direct-failed" : "direct-confirmed",
+          transactionHash: pendingDirectTransaction.transactionHash,
+        });
+        setPhase(
+          hadCurrentRows
+            ? stalled ||
+              pendingDirectTransaction.batchIndex <
+                pendingDirectTransaction.batchCount - 1
+              ? "partial"
+              : "done"
+            : "idle",
+        );
+      } catch (error) {
+        if (cancelled) return;
+        logger.warn(
+          "AA Exit: pending direct transaction is not confirmed yet",
+          `chain=${pendingDirectTransaction.chainId}`,
+          `transactionHash=${pendingDirectTransaction.transactionHash}`,
+          error,
+        );
+        retryTimer = window.setTimeout(pollReceipt, 5_000);
+      }
+    };
+
+    pollReceipt();
+    return () => {
+      cancelled = true;
+      if (retryTimer) window.clearTimeout(retryTimer);
+    };
+  }, [chainMetadata, pendingDirectTransaction, phase, updateGroup]);
 
   const updateScanProgress = useCallback((event) => {
     setScanProgress((current) => {
@@ -696,14 +996,14 @@ export default function AaExit() {
         message: "Dry-running the exit plan before you sign…",
       }));
       const probe = (candidateGroups) =>
-        probeAaBatch({
+        (directMode ? probeAaBatchDirect : probeAaBatch)({
           groups: candidateGroups,
           adminAccount,
           chainMetadata,
           smartAccountAddress: account.address,
         });
       const diagnose = (group) =>
-        diagnoseAaBatchFailure({
+        (directMode ? diagnoseAaBatchFailureDirect : diagnoseAaBatchFailure)({
           groups: materializeExitCandidate({
             units: [group],
             chainMetadata,
@@ -736,7 +1036,7 @@ export default function AaExit() {
         percent: 100,
         message: "Scan complete. Exit plan is ready.",
       }));
-      return { result, plan, recipient };
+      return { result, plan, recipient, directMode };
     },
     [
       account?.address,
@@ -744,16 +1044,23 @@ export default function AaExit() {
       recipient,
       chainName,
       chainMetadata,
+      directMode,
       updateScanProgress,
     ],
   );
 
   const applyPreparedPlan = useCallback(
-    ({ result, plan, recipient: plannedRecipient }) => {
+    ({
+      result,
+      plan,
+      recipient: plannedRecipient,
+      directMode: plannedDirectMode,
+    }) => {
       groupsRef.current = result.groups;
       planRef.current = plan;
       walletTokenSnapshotRef.current = result.walletTokenSnapshot;
       planRecipientRef.current = plannedRecipient;
+      planDirectModeRef.current = plannedDirectMode;
       statusRef.current = {};
       const excluded = new Map(
         (plan.excluded || []).map((item) => [item.group.uniqueId, item]),
@@ -788,7 +1095,7 @@ export default function AaExit() {
   );
 
   const handleScan = useCallback(async () => {
-    if (!ensureNoPendingUserOp()) return;
+    if (!(await ensureNoPendingUserOp())) return;
     setPhase("scanning");
     setFellBack(false);
     setRecoveredSubmission(null);
@@ -845,13 +1152,19 @@ export default function AaExit() {
     let activePlan = planRef.current || { batches: [], excluded: [] };
     const plannedRecipient = planRecipientRef.current?.toLowerCase();
     const currentRecipient = recipient.toLowerCase();
-    if (plannedRecipient !== currentRecipient) {
+    const plannedDirectMode = planDirectModeRef.current;
+    if (
+      plannedRecipient !== currentRecipient ||
+      plannedDirectMode !== directMode
+    ) {
       setPhase("scanning");
       setScanProgress((current) => ({
         ...current,
         percent: 55,
         message:
-          "Updating the exit plan for the new destination without re-fetching wallet tokens…",
+          plannedRecipient !== currentRecipient
+            ? "Updating the exit plan for the new destination without re-fetching wallet tokens…"
+            : "Updating the exit plan for the selected submission mode without re-fetching wallet tokens…",
       }));
       try {
         const prepared = await prepareExitPlan({
@@ -911,6 +1224,7 @@ export default function AaExit() {
     applyPreparedPlan,
     finishRun,
     recipient,
+    directMode,
     notificationAPI,
   ]);
 
@@ -1104,49 +1418,159 @@ export default function AaExit() {
             />
           )}
 
-          {!pendingUserOp && recoveredSubmission?.status === "confirmed" && (
+          {pendingDirectTransaction && (
             <Alert
-              type="success"
+              type="warning"
               showIcon
-              message="Previous UserOperation confirmed"
+              message="Direct admin transaction submitted — waiting for confirmation"
               description={
                 <div className="text-sm">
-                  Its receipt was recovered after the page stopped waiting. Scan
-                  again to rebuild any remaining batches from fresh balances.{" "}
-                  {recoveredSubmission.transactionHash && explorerUrl && (
-                    <a
-                      href={`${explorerUrl}tx/${recoveredSubmission.transactionHash}`}
-                      target="_blank"
-                      rel="noreferrer"
+                  <p className="mb-1">
+                    This executeBatch transaction will not be sent again until
+                    its receipt is known. The page resumes checking after a
+                    reload.
+                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Text
+                      code
+                      copyable={{
+                        text: pendingDirectTransaction.transactionHash,
+                      }}
                     >
-                      View transaction
-                    </a>
-                  )}
+                      {shortAddress(pendingDirectTransaction.transactionHash)}
+                    </Text>
+                    {explorerUrl && (
+                      <a
+                        href={`${explorerUrl}tx/${pendingDirectTransaction.transactionHash}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        View transaction
+                      </a>
+                    )}
+                  </div>
                 </div>
               }
             />
           )}
 
-          {!pendingUserOp && recoveredSubmission?.status === "failed" && (
-            <Alert
-              type="error"
-              showIcon
-              message="Submitted UserOperation reverted"
-              description={recoveredSubmission.error}
-            />
-          )}
+          {!pendingUserOp &&
+            !pendingDirectTransaction &&
+            recoveredSubmission?.status === "confirmed" && (
+              <Alert
+                type="success"
+                showIcon
+                message="Previous UserOperation confirmed"
+                description={
+                  <div className="text-sm">
+                    Its receipt was recovered after the page stopped waiting.
+                    Scan again to rebuild any remaining batches from fresh
+                    balances.{" "}
+                    {recoveredSubmission.transactionHash && explorerUrl && (
+                      <a
+                        href={`${explorerUrl}tx/${recoveredSubmission.transactionHash}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        View transaction
+                      </a>
+                    )}
+                  </div>
+                }
+              />
+            )}
 
-          {!pendingUserOp && recoveredSubmission?.status === "cleared" && (
-            <Alert
-              type="info"
-              showIcon
-              message="Pending status changed in another tab"
-              description="Scan fresh balances before starting another exit."
-            />
-          )}
+          {!pendingUserOp &&
+            !pendingDirectTransaction &&
+            recoveredSubmission?.status === "failed" && (
+              <Alert
+                type="error"
+                showIcon
+                message="Submitted UserOperation reverted"
+                description={recoveredSubmission.error}
+              />
+            )}
+
+          {!pendingUserOp &&
+            !pendingDirectTransaction &&
+            recoveredSubmission?.status === "direct-confirmed" && (
+              <Alert
+                type="success"
+                showIcon
+                message="Previous direct transaction confirmed"
+                description={
+                  <span>
+                    Its receipt was recovered. Scan fresh balances before
+                    starting another exit.{" "}
+                    {explorerUrl && recoveredSubmission.transactionHash && (
+                      <a
+                        href={`${explorerUrl}tx/${recoveredSubmission.transactionHash}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        View transaction
+                      </a>
+                    )}
+                  </span>
+                }
+              />
+            )}
+
+          {!pendingUserOp &&
+            !pendingDirectTransaction &&
+            recoveredSubmission?.status === "direct-failed" && (
+              <Alert
+                type="error"
+                showIcon
+                message="Direct transaction reverted atomically"
+                description="No assets moved. Scan again to rebuild the exit from fresh balances."
+              />
+            )}
+
+          {!pendingUserOp &&
+            !pendingDirectTransaction &&
+            recoveredSubmission?.status === "expired" && (
+              <Alert
+                type="info"
+                showIcon
+                message="Previous sponsored operation expired unexecuted"
+                description="Its paymaster validity window expired and its nonce was not consumed. Direct mode is now safe to use after a fresh scan."
+              />
+            )}
+
+          {!pendingUserOp &&
+            !pendingDirectTransaction &&
+            recoveredSubmission?.status === "cleared" && (
+              <Alert
+                type="info"
+                showIcon
+                message="Pending status changed in another tab"
+                description="Scan fresh balances before starting another exit."
+              />
+            )}
 
           {aaOn && (
             <Card title="Where should everything go?">
+              <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <Text strong>Direct mode — admin pays gas</Text>
+                    <Text type="secondary" className="block text-xs mt-1">
+                      Sends one normal admin → AA.executeBatch transaction and
+                      bypasses the Thirdweb bundler. Default on Arbitrum.
+                    </Text>
+                  </div>
+                  <Switch
+                    aria-label="Direct mode — admin pays gas"
+                    checked={directMode}
+                    disabled={busy}
+                    onChange={(checked) => {
+                      setDirectMode(checked);
+                      setConfirmed(false);
+                    }}
+                  />
+                </div>
+              </div>
               <label className="block text-sm mb-1" htmlFor="aa-exit-recipient">
                 Your own wallet address
               </label>
@@ -1197,17 +1621,21 @@ export default function AaExit() {
                   deposit address.
                 </span>
               </Checkbox>
-              {recipientPlanStale && (
+              {exitPlanStale && (
                 <Alert
                   className="mt-3"
                   type="info"
                   showIcon
-                  message="Destination changed — no new wallet scan needed"
-                  description="Reconfirm the address, then use the Exit button below. The existing wallet-token snapshot will be reused and only destination-specific checks will be rebuilt before signing."
+                  message={
+                    recipientPlanStale
+                      ? "Destination changed — no new wallet scan needed"
+                      : "Submission mode changed — no new wallet scan needed"
+                  }
+                  description="Reconfirm the address, then use the Exit button below. The existing wallet-token snapshot will be reused and the exact batch will be dry-run again before signing."
                 />
               )}
               <div className="mt-3">
-                {!recipientPlanStale && (
+                {!exitPlanStale && (
                   <Button
                     type="primary"
                     disabled={!canScan}
@@ -1342,7 +1770,11 @@ export default function AaExit() {
                   type="info"
                   showIcon
                   message="Dry-run optimized the exit batches"
-                  description="The full sponsored UserOp did not pass preflight. Problematic items were excluded, or the healthy items were kept in a small number of large batches instead of being split one by one."
+                  description={
+                    directMode
+                      ? "The full direct executeBatch did not pass preflight. Problematic items were excluded, while healthy items were kept in the largest safe batches."
+                      : "The full sponsored UserOp did not pass preflight. Problematic items were excluded, or the healthy items were kept in a small number of large batches instead of being split one by one."
+                  }
                 />
               )}
 
@@ -1421,14 +1853,17 @@ export default function AaExit() {
 
               <Paragraph type="secondary" className="text-xs mt-3 mb-0">
                 Scan dry-runs the exact fixed calldata without broadcasting it.
-                Immediately before you sign, only the nonce, gas estimates and
-                sponsorship envelope are refreshed. If the full batch fails
-                preflight, dependency-aware binary isolation removes only the
-                broken group; if the issue is aggregate gas/paymaster size,
-                healthy items stay in a few large batches instead of one
-                signature per item. Claimed-reward transfers are rebuilt only
-                from protocol groups that survive preflight. Amounts are fixed
-                when you scan, so a little dust can stay behind.
+                Immediately before you sign,{" "}
+                {directMode
+                  ? "the deployed AA, admin permission, chain, gas limit and admin ETH balance are checked again"
+                  : "only the nonce, gas estimates and sponsorship envelope are refreshed"}
+                . If the full batch fails preflight, dependency-aware binary
+                isolation removes only the broken group; if the issue is
+                aggregate gas/paymaster size, healthy items stay in a few large
+                batches instead of one signature per item. Claimed-reward
+                transfers are rebuilt only from protocol groups that survive
+                preflight. Amounts are fixed when you scan, so a little dust can
+                stay behind.
               </Paragraph>
             </Card>
           )}
