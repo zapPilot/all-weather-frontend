@@ -26,6 +26,15 @@ const BURN_ALP_SELECTOR = ethers.utils
 const GET_REWARD_SELECTOR = "c00007b0";
 // safeTransferFrom(address,address,uint256)
 const SAFE_TRANSFER_FROM_SELECTOR = "42842e0e";
+const DECREASE_LIQUIDITY_SELECTOR = ethers.utils
+  .id("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))")
+  .slice(2, 10);
+const COLLECT_SELECTOR = ethers.utils
+  .id("collect((uint256,address,uint128,uint128))")
+  .slice(2, 10);
+const BURN_NFT_SELECTOR = ethers.utils.id("burn(uint256)").slice(2, 10);
+const WETH = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
+const USDC = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
 const VELO = "0x9560e827af36c94d2ac33a39bce1fe78631088db";
 const noop = () => {};
 
@@ -237,6 +246,29 @@ describe("emergencyTransfer", () => {
     expect(data).includes(word("500"));
   });
 
+  it("does not emit withdraw(0) when EOA full exit only finds wallet LP", async () => {
+    const [protocol] = protocolsOn(
+      getPortfolioHelper("Velodrome Vault"),
+      "op",
+    ).map((p) => p.interface);
+    stubBalances(protocol, { staked: "0", wallet: "500" });
+    const withdrawTxn = { data: "0x1234", to: RECIPIENT };
+    const customWithdraw = vi
+      .spyOn(protocol, "customWithdrawLPAndClaim")
+      .mockResolvedValue([[withdrawTxn], [], [], 0]);
+
+    const { txns } = await protocol.fullExitUnwind(OWNER, 1, {}, noop);
+
+    expect(txns).toEqual([withdrawTxn]);
+    expect(customWithdraw).toHaveBeenCalledWith(
+      OWNER,
+      ethers.BigNumber.from("500"),
+      1,
+      {},
+      noop,
+    );
+  });
+
   it("returns no txns when the position is empty", async () => {
     const [protocol] = protocolsOn(
       getPortfolioHelper("Velodrome Vault"),
@@ -403,6 +435,61 @@ describe("emergencyTransfer", () => {
     expect(encoded[1]).includes(word("202"));
   });
 
+  it("decreases, collects, and burns every Camelot NFT during an EOA full exit", async () => {
+    const [protocol] = protocolsOn(
+      getPortfolioHelper("Camelot Vault"),
+      "arbitrum",
+    ).map((p) => p.interface);
+    vi.spyOn(protocol, "_getAllNftIDs").mockResolvedValue([
+      ethers.BigNumber.from("101"),
+      ethers.BigNumber.from("202"),
+    ]);
+    protocol.assetContractInstance = {
+      positions: vi
+        .fn()
+        .mockResolvedValueOnce({
+          token0: WETH,
+          token1: USDC,
+          liquidity: ethers.BigNumber.from("900"),
+        })
+        .mockResolvedValueOnce({
+          token0: WETH,
+          token1: USDC,
+          liquidity: ethers.constants.Zero,
+        }),
+    };
+    vi.spyOn(protocol, "_fullExitTokenMetadata").mockImplementation(
+      async (address) => ({
+        id: address,
+        address,
+        symbol: address.toLowerCase() === WETH.toLowerCase() ? "weth" : "usdc",
+        optimized_symbol:
+          address.toLowerCase() === WETH.toLowerCase() ? "weth" : "usdc",
+        decimals: address.toLowerCase() === WETH.toLowerCase() ? 18 : 6,
+      }),
+    );
+
+    const { txns, expectedTokens } = await protocol.fullExitUnwind(
+      OWNER,
+      1,
+      {},
+      noop,
+    );
+
+    expect(txns).toHaveLength(5);
+    const encoded = await Promise.all(txns.map((txn) => encode(txn)));
+    expect(encoded[0]).includes(DECREASE_LIQUIDITY_SELECTOR);
+    expect(encoded[0]).includes(word("101"));
+    expect(encoded[1]).includes(COLLECT_SELECTOR);
+    expect(encoded[2]).includes(BURN_NFT_SELECTOR);
+    expect(encoded[3]).includes(COLLECT_SELECTOR);
+    expect(encoded[4]).includes(BURN_NFT_SELECTOR);
+    expect(encoded.join("")).not.toContain(SAFE_TRANSFER_FROM_SELECTOR);
+    expect(
+      expectedTokens.map((token) => token.optimized_symbol).sort(),
+    ).toEqual(["usdc", "weth"]);
+  });
+
   it("does not call Camelot reward APIs during the NFT handoff", async () => {
     const [protocol] = protocolsOn(
       getPortfolioHelper("Camelot Vault"),
@@ -459,6 +546,41 @@ describe("emergencyTransfer", () => {
     encoded.forEach((data) => expect(data).not.toContain(TRANSFER_SELECTOR));
     expect(rewardBalances).toEqual([]);
     expect(priceLookup).not.toHaveBeenCalled();
+  });
+
+  it("uses the ALP emergency unwind for EOA full exit and expects USDC.e", async () => {
+    const protocol = protocolsOn(
+      getPortfolioHelper("Stable+ Vault"),
+      "arbitrum",
+    )
+      .map((p) => p.interface)
+      .find((candidate) => candidate.protocolName === "pancakeswap");
+    vi.spyOn(protocol, "assetBalanceOf").mockResolvedValue(
+      ethers.BigNumber.from("300"),
+    );
+    vi.spyOn(protocol, "_legacyStakedAlpBalance").mockResolvedValue(
+      ethers.BigNumber.from("700"),
+    );
+
+    const { txns, expectedTokens } = await protocol.fullExitUnwind(
+      OWNER,
+      1,
+      {},
+      noop,
+    );
+
+    expect(txns).toHaveLength(3);
+    const encoded = await Promise.all(txns.map((txn) => encode(txn)));
+    expect(encoded[0]).includes(WITHDRAW_SELECTOR);
+    expect(encoded[1]).includes(APPROVE_SELECTOR);
+    expect(encoded[2]).includes(BURN_ALP_SELECTOR);
+    expect(encoded[2].toLowerCase()).includes(OWNER.slice(2).toLowerCase());
+    expect(expectedTokens).toEqual([
+      expect.objectContaining({
+        optimized_symbol: "usdc.e",
+        decimals: 6,
+      }),
+    ]);
   });
 
   it("does not emit a legacy ALP withdraw when all ALP is already in the wallet", async () => {
