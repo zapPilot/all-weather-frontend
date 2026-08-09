@@ -39,7 +39,7 @@ export const AA_EXIT_CHAIN_IDS = { arbitrum: 42161, base: 8453, op: 10 };
 // silently passes unknown names through, which would build a URL the backend
 // answers with an error rather than a list
 const DEBANK_CHAIN_CODE = { arbitrum: "arb", base: "base", op: "op" };
-const AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS = 60 * 60 * 1000;
+const AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS = 10 * 60 * 1000;
 const aaExitWalletTokenCache = new Map();
 const aaExitWalletTokenRequests = new Map();
 let aaExitWalletTokenCacheGeneration = 0;
@@ -65,6 +65,13 @@ const USD_SCALE = 18;
 
 const ZERO = ethers.constants.Zero;
 const noop = () => {};
+const emitProgress = (callback, payload) => {
+  try {
+    callback(payload);
+  } catch (error) {
+    logger.warn("AA Exit: progress callback failed", error);
+  }
+};
 const ERC20_EXIT_INTERFACE = new ethers.utils.Interface([
   "function balanceOf(address owner) view returns (uint256)",
   "function transfer(address to, uint256 amount) returns (bool)",
@@ -228,6 +235,7 @@ export async function preflightWalletTokens({
   chainName,
   excludeAddresses = new Set(),
   provider,
+  onTokenScanned = noop,
 }) {
   const rpc = provider || PROVIDER(chainName);
   const candidates = new Map();
@@ -241,8 +249,15 @@ export async function preflightWalletTokens({
     candidates.set(key, token);
   }
 
+  const candidateEntries = [...candidates.entries()];
+  let completed = 0;
+  emitProgress(onTokenScanned, {
+    completed: 0,
+    total: candidateEntries.length,
+  });
+
   const results = await Promise.all(
-    [...candidates.entries()].map(async ([address, token]) => {
+    candidateEntries.map(async ([address, token]) => {
       try {
         const balanceResult = await rpc.call({
           to: address,
@@ -252,7 +267,16 @@ export async function preflightWalletTokens({
           "balanceOf",
           balanceResult,
         );
-        if (balance.lte(0)) return null;
+        if (balance.lte(0)) {
+          completed += 1;
+          emitProgress(onTokenScanned, {
+            completed,
+            total: candidateEntries.length,
+            token,
+            transferable: false,
+          });
+          return null;
+        }
 
         const transferResult = await rpc.call({
           from: owner,
@@ -273,12 +297,20 @@ export async function preflightWalletTokens({
           if (!wouldTransfer) throw new Error("ERC20 transfer returned false");
         }
 
-        return {
+        const result = {
           token: {
             ...token,
             raw_amount_hex_str: balance.toHexString(),
           },
         };
+        completed += 1;
+        emitProgress(onTokenScanned, {
+          completed,
+          total: candidateEntries.length,
+          token,
+          transferable: true,
+        });
+        return result;
       } catch (error) {
         logger.warn(
           `AA Exit: token ${
@@ -286,13 +318,21 @@ export async function preflightWalletTokens({
           } cannot be transferred, leaving it behind`,
           error,
         );
-        return {
+        const result = {
           untransferable: {
             address,
             symbol: token?.optimized_symbol || token?.symbol || "Unknown token",
             reason: exitPreflightError(error),
           },
         };
+        completed += 1;
+        emitProgress(onTokenScanned, {
+          completed,
+          total: candidateEntries.length,
+          token,
+          transferable: false,
+        });
+        return result;
       }
     }),
   );
@@ -425,13 +465,41 @@ export async function buildProtocolGroups({
   recipient,
   level = 0,
   updateProgress = noop,
+  onProtocolScanned = noop,
 }) {
+  let completed = 0;
   const settled = await Promise.allSettled(
-    protocols.map((protocol) =>
-      protocol.interface.emergencyTransfer(owner, recipient, updateProgress, {
-        skipRewards: level >= 1,
-      }),
-    ),
+    protocols.map(async (protocol) => {
+      try {
+        const value = await protocol.interface.emergencyTransfer(
+          owner,
+          recipient,
+          updateProgress,
+          {
+            skipRewards: level >= 1,
+          },
+        );
+        completed += 1;
+        emitProgress(onProtocolScanned, {
+          protocol,
+          completed,
+          total: protocols.length,
+          found: (value?.txns || []).length > 0,
+          failed: false,
+        });
+        return value;
+      } catch (error) {
+        completed += 1;
+        emitProgress(onProtocolScanned, {
+          protocol,
+          completed,
+          total: protocols.length,
+          found: false,
+          failed: true,
+        });
+        throw error;
+      }
+    }),
   );
 
   const groups = [];
@@ -753,6 +821,7 @@ export async function planAaExitBatches({
   recipient,
   probe,
   diagnose,
+  onProbe = noop,
 }) {
   const units = executableExitUnits(groups);
   let probeCount = 0;
@@ -764,6 +833,10 @@ export async function planAaExitBatches({
     });
     try {
       probeCount += 1;
+      emitProgress(onProbe, {
+        probeCount,
+        candidateCount: candidateUnits.length,
+      });
       await probe(materialized);
       return { ok: true, groups: materialized };
     } catch (error) {
@@ -906,19 +979,40 @@ export async function scanAaExit({
   chainName,
   chainMetadata,
   updateProgress = noop,
+  onScanProgress = noop,
 }) {
   const protocols = collectExitProtocols(chainName);
+  emitProgress(onScanProgress, {
+    stage: "protocols",
+    completed: 0,
+    total: protocols.length,
+  });
   const protocolGroups = await buildProtocolGroups({
     protocols,
     owner,
     recipient,
     level: 0,
     updateProgress,
+    onProtocolScanned: ({ protocol, completed, total, found, failed }) =>
+      emitProgress(onScanProgress, {
+        stage: "protocols",
+        completed,
+        total,
+        found:
+          found && !failed
+            ? {
+                kind: "protocol",
+                id: protocol.uniqueId,
+                label: protocol.label,
+              }
+            : null,
+      }),
   });
   const excludeAddresses = sweptAddressesOf(protocolGroups);
 
   let walletTokens = [];
   let walletScanError = null;
+  emitProgress(onScanProgress, { stage: "wallet-fetch" });
   try {
     walletTokens = await fetchAaExitWalletTokens(chainName, owner);
   } catch (error) {
@@ -934,6 +1028,25 @@ export async function scanAaExit({
       recipient,
       chainName,
       excludeAddresses,
+      onTokenScanned: ({ completed, total, token, transferable }) => {
+        const tokenLabel =
+          token?.optimized_symbol || token?.symbol || token?.id || null;
+        emitProgress(onScanProgress, {
+          stage: "tokens",
+          completed,
+          total,
+          tokenSymbol: tokenLabel,
+          transferable,
+          found:
+            transferable && token?.id
+              ? {
+                  kind: "token",
+                  id: token.id.toLowerCase(),
+                  label: tokenLabel,
+                }
+              : null,
+        });
+      },
     });
     walletTokens = preflight.walletTokens;
     untransferableTokens = preflight.untransferableTokens;
@@ -967,13 +1080,20 @@ export async function scanAaExit({
     );
   }
 
+  emitProgress(onScanProgress, { stage: "native" });
   const nativeGroup = await buildNativeGroup({
     owner,
     chainName,
     chainMetadata,
     recipient,
   });
-  if (nativeGroup) groups.push(nativeGroup);
+  if (nativeGroup) {
+    groups.push(nativeGroup);
+    emitProgress(onScanProgress, {
+      stage: "native",
+      found: { kind: "native", id: "native", label: "Native ETH" },
+    });
+  }
 
   // Nothing to hand over means nothing to charge for — otherwise a wallet whose
   // only asset is under a dollar would pay the fee and receive nothing

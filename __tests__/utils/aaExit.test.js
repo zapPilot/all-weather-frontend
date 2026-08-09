@@ -275,6 +275,7 @@ describe("preflightWalletTokens", () => {
         )
         .mockResolvedValueOnce("0x"),
     };
+    const onTokenScanned = vi.fn();
 
     const result = await preflightWalletTokens({
       walletTokens: [token({ id: USDC_ARB, price: 1, amount: "1000000" })],
@@ -282,6 +283,7 @@ describe("preflightWalletTokens", () => {
       recipient: RECIPIENT,
       chainName: "arbitrum",
       provider,
+      onTokenScanned,
     });
 
     expect(result.untransferableTokens).toEqual([]);
@@ -289,6 +291,18 @@ describe("preflightWalletTokens", () => {
     expect(result.walletTokens[0].raw_amount_hex_str).toBe("0x07");
     expect(provider.call).toHaveBeenCalledTimes(2);
     expect(provider.call.mock.calls[1][0].from).toBe(OWNER);
+    expect(onTokenScanned).toHaveBeenNthCalledWith(1, {
+      completed: 0,
+      total: 1,
+    });
+    expect(onTokenScanned).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        completed: 1,
+        total: 1,
+        transferable: true,
+      }),
+    );
   });
 
   it("excludes hostile tokens whose transfer simulation reverts", async () => {
@@ -874,12 +888,14 @@ describe("AA UserOp probing and isolation", () => {
       if (idsOf(candidateGroups).includes("p7"))
         throw new Error("paymaster 500");
     });
+    const onProbe = vi.fn();
 
     const plan = await planAaExitBatches({
       groups,
       chainMetadata: arbitrum,
       recipient: RECIPIENT,
       probe,
+      onProbe,
     });
 
     expect(plan.excluded.map(({ group }) => group.uniqueId)).toEqual(["p7"]);
@@ -888,6 +904,11 @@ describe("AA UserOp probing and isolation", () => {
     expect(plan.batches[0].units.some((group) => group.uniqueId === "p7")).toBe(
       false,
     );
+    expect(onProbe).toHaveBeenCalled();
+    expect(onProbe.mock.calls[0][0]).toEqual({
+      probeCount: 1,
+      candidateCount: 20,
+    });
   });
 
   it("never splits an approve -> unstake -> transfer protocol dependency", async () => {
