@@ -59,6 +59,16 @@ describe("collectExitProtocols", () => {
     expect(new Set(uniqueIds).size).toBe(uniqueIds.length);
   });
 
+  it("dedupes Camelot by its shared NFT manager and sweeps it generically", () => {
+    const camelot = collectExitProtocols("arbitrum").filter(
+      (protocol) => protocol.interface.protocolName === "camelot",
+    );
+
+    expect(camelot).toHaveLength(1);
+    expect(camelot[0].uniqueId).toBe("arbitrum/camelot/v3/all-positions");
+    expect(camelot[0].label).toBe("Camelot V3 positions");
+  });
+
   // Index 500+ imports Stable+, ETH and BTC wholesale, so a naive walk would
   // emit the same position several times and transfer more than the user holds
   it("dedupes positions the index vaults re-import", () => {
@@ -784,7 +794,7 @@ describe("runAaExitGroups", () => {
         {
           kind: "fee",
           uniqueId: "exit-fee",
-          label: "Service fee",
+          label: "Gas fee",
           level: 0,
           dependent: false,
           txns: ["fee-transfer"],

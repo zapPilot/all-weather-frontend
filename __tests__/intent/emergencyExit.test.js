@@ -168,22 +168,11 @@ describe("emergencyTransfer", () => {
     expect(rewardBalances).toHaveLength(0);
   });
 
-  // Several protocols in one vault share a position manager, so an unscoped
-  // enumeration would make each of their groups try to move all of the wallet's
-  // NFTs and only the first could succeed
-  it("only lists NFT positions belonging to its own pool", async () => {
+  it("lists every NFT owned by the shared Camelot position manager", async () => {
     const [protocol] = protocolsOn(
       getPortfolioHelper("Camelot Vault"),
       "arbitrum",
     ).map((p) => p.interface);
-    const { tickLower, tickUpper } = protocol.customParams.tickers;
-    const [token0, token1] = protocol.customParams.lpTokens;
-    const mine = {
-      tickLower,
-      tickUpper,
-      token0: token0[1],
-      token1: token1[1],
-    };
     protocol.assetContractInstance = {
       balanceOf: vi.fn().mockResolvedValue(ethers.BigNumber.from(3)),
       tokenOfOwnerByIndex: vi
@@ -191,23 +180,14 @@ describe("emergencyTransfer", () => {
         .mockImplementation((_owner, idx) =>
           Promise.resolve(ethers.BigNumber.from(100 + idx)),
         ),
-      positions: vi.fn().mockImplementation((tokenId) =>
-        Promise.resolve(
-          Number(tokenId) === 101
-            ? {
-                tickLower: tickLower + 10,
-                tickUpper: tickUpper + 10,
-                token0: "0x000000000000000000000000000000000000dEaD",
-                token1: "0x000000000000000000000000000000000000bEEF",
-              }
-            : mine,
-        ),
-      ),
     };
 
     const tokenIds = await protocol._getAllNftIDs(OWNER);
 
-    expect(tokenIds.map(Number)).toEqual([100, 102]);
+    expect(tokenIds.map(Number)).toEqual([100, 101, 102]);
+    expect(
+      protocol.assetContractInstance.tokenOfOwnerByIndex,
+    ).toHaveBeenCalledTimes(3);
   });
 
   // Aave, Moonwell and PendlePT have no separate staking contract: _unstake
@@ -387,35 +367,38 @@ describe("emergencyTransfer", () => {
     expect(rewardBalances).toEqual([]);
   });
 
-  it("moves every NFT position whole instead of reading a liquidity balance", async () => {
+  it("moves every Camelot NFT whole without touching its liquidity", async () => {
     const [protocol] = protocolsOn(
       getPortfolioHelper("Camelot Vault"),
       "arbitrum",
     ).map((p) => p.interface);
     expect(protocol.assetIsNFT).toBe(true);
-    stubNoRewards(protocol);
     vi.spyOn(protocol, "_getAllNftIDs").mockResolvedValue([
       ethers.BigNumber.from("101"),
       ethers.BigNumber.from("202"),
     ]);
-    const assetBalanceOf = vi.spyOn(protocol, "assetBalanceOf");
+    const customClaim = vi.spyOn(protocol, "customClaim");
 
-    const { txns } = await protocol.emergencyTransfer(OWNER, RECIPIENT, noop);
+    const { txns, rewardBalances } = await protocol.emergencyTransfer(
+      OWNER,
+      RECIPIENT,
+      noop,
+    );
 
+    expect(customClaim).not.toHaveBeenCalled();
+    expect(rewardBalances).toEqual([]);
     expect(txns).toHaveLength(2);
     const encoded = await Promise.all(txns.map((txn) => encode(txn)));
     encoded.forEach((data) => {
       expect(data).includes(SAFE_TRANSFER_FROM_SELECTOR);
-      // an ERC20 transfer here would move the position manager's own balance
+      expect(data.toLowerCase()).includes(RECIPIENT.slice(2).toLowerCase());
       expect(data).not.toContain(TRANSFER_SELECTOR);
     });
     expect(encoded[0]).includes(word("101"));
     expect(encoded[1]).includes(word("202"));
-    // assetBalanceOf reports pooled liquidity for an NFT, not a token count
-    expect(assetBalanceOf).not.toHaveBeenCalled();
   });
 
-  it("does not let Camelot reward accounting block an otherwise-valid NFT move", async () => {
+  it("does not call Camelot reward APIs during the NFT handoff", async () => {
     const [protocol] = protocolsOn(
       getPortfolioHelper("Camelot Vault"),
       "arbitrum",
@@ -423,9 +406,7 @@ describe("emergencyTransfer", () => {
     vi.spyOn(protocol, "_getAllNftIDs").mockResolvedValue([
       ethers.BigNumber.from("303"),
     ]);
-    const customClaim = vi
-      .spyOn(protocol, "customClaim")
-      .mockRejectedValue(new Error("campaign reward is not transferable yet"));
+    const customClaim = vi.spyOn(protocol, "customClaim");
 
     const { txns, rewardBalances } = await protocol.emergencyTransfer(
       OWNER,

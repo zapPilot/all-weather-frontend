@@ -39,7 +39,7 @@ export const AA_EXIT_CHAIN_IDS = { arbitrum: 42161, base: 8453, op: 10 };
 // silently passes unknown names through, which would build a URL the backend
 // answers with an error rather than a list
 const DEBANK_CHAIN_CODE = { arbitrum: "arb", base: "base", op: "op" };
-const AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS = 120_000;
+const AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS = 60 * 60 * 1000;
 const aaExitWalletTokenCache = new Map();
 const aaExitWalletTokenRequests = new Map();
 let aaExitWalletTokenCacheGeneration = 0;
@@ -150,11 +150,28 @@ export function collectExitProtocols(chainName) {
         if (chainKey.toLowerCase() !== chainName) continue;
         for (const protocol of list || []) {
           const uniqueId = protocol.interface.uniqueId();
-          if (seen.has(uniqueId)) continue;
-          seen.add(uniqueId);
+          // Camelot V3 uses one shared NFT position manager for every pool. An
+          // emergency exit must sweep the manager itself, not only the pool/range
+          // combinations that happen to remain in today's vault config. Keep one
+          // representative protocol instance per manager so every owned Camelot
+          // NFT is transferred exactly once, including old/manual positions.
+          const camelotManager =
+            protocol.interface.protocolName === "camelot" &&
+            protocol.interface.assetIsNFT
+              ? protocol.interface.assetContract?.address?.toLowerCase()
+              : null;
+          const dedupeKey = camelotManager
+            ? `camelot-manager:${camelotManager}`
+            : uniqueId;
+          if (seen.has(dedupeKey)) continue;
+          seen.add(dedupeKey);
           protocols.push({
-            uniqueId,
-            label: protocol.interface.toString(),
+            uniqueId: camelotManager
+              ? `${chainName}/camelot/v3/all-positions`
+              : uniqueId,
+            label: camelotManager
+              ? "Camelot V3 positions"
+              : protocol.interface.toString(),
             interface: protocol.interface,
           });
         }
@@ -467,7 +484,7 @@ export function buildFeeGroup({ feePlan, chainMetadata }) {
   return {
     kind: "fee",
     uniqueId: "exit-fee",
-    label: `Service fee (~$${EXIT_FEE_USD} in ${feePlan.symbol})`,
+    label: `Gas fee (~$${EXIT_FEE_USD} in ${feePlan.symbol})`,
     level: 0,
     dependent: false,
     txns: [

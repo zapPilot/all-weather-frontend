@@ -333,13 +333,12 @@ export class BaseCamelot extends BaseProtocol {
     return [[lpFeesTxn], pendingRewards];
   }
 
-  // Camelot positions are ERC721s. Moving the NFT already moves ownership of
-  // the position (including its uncollected LP fees), while customClaim also
-  // reports address-bound campaign rewards that its `collect` transaction does
-  // not actually deliver. Treating those as claimed makes the later ERC20
-  // reward sweep ask for a balance the wallet never received and can revert an
-  // otherwise-valid NFT transfer. Emergency exit therefore prioritizes the
-  // self-contained NFT principal and leaves optional rewards behind.
+  // Camelot V3 positions are ERC721s. For an emergency exit, preserve the
+  // position whole and hand the NFT to the user's recipient wallet. Do not
+  // decrease liquidity or burn: both are unnecessary irreversible operations,
+  // and keeping the NFT also preserves any unclaimed position-linked rewards.
+  // collectExitProtocols dedupes the shared Camelot position manager, so this
+  // path can safely enumerate every NFT it owns instead of only configured pools.
   async emergencyTransfer(owner, recipient, updateProgress, options = {}) {
     return super.emergencyTransfer(owner, recipient, updateProgress, {
       ...options,
@@ -512,35 +511,19 @@ export class BaseCamelot extends BaseProtocol {
     }
     return 0;
   }
-  // Every position this wallet holds in *this* pool, unlike _getNftID which
-  // stops at the first. Scoped to the pool on purpose: several protocols in a
-  // vault share one position manager, so an unscoped list would make each of
-  // their emergency-exit groups try to move all of the wallet's NFTs and only
-  // the first would succeed.
+  // AA Exit dedupes Camelot by its shared position-manager address, so this
+  // intentionally enumerates every Camelot V3 NFT the wallet owns. Restricting
+  // this by today's configured pool/range strands old or manually-created
+  // positions such as WETH/USDC. Do not silently cap the count: if enumeration
+  // cannot complete, failing the row is safer than reporting a partial exit.
   async _getAllNftIDs(owner) {
-    const { tickLower, tickUpper } = this.customParams.tickers;
-    const [token0Metadata, token1Metadata] = this.customParams.lpTokens;
-    const balances = await this.assetContractInstance.balanceOf(owner);
+    const balance = await this.assetContractInstance.balanceOf(owner);
+    const count = ethers.BigNumber.from(balance).toNumber();
     const tokenIds = [];
-    for (let idx = 0; idx < Math.min(Number(balances), 50); idx++) {
-      // A single unreadable position must not strand the remaining ones
-      try {
-        const token_id = await this.assetContractInstance.tokenOfOwnerByIndex(
-          owner,
-          idx,
-        );
-        const position = await this.assetContractInstance.positions(token_id);
-        if (
-          position.tickLower === tickLower &&
-          position.tickUpper === tickUpper &&
-          position.token0.toLowerCase() === token0Metadata[1].toLowerCase() &&
-          position.token1.toLowerCase() === token1Metadata[1].toLowerCase()
-        ) {
-          tokenIds.push(token_id);
-        }
-      } catch (error) {
-        continue;
-      }
+    for (let idx = 0; idx < count; idx++) {
+      tokenIds.push(
+        await this.assetContractInstance.tokenOfOwnerByIndex(owner, idx),
+      );
     }
     return tokenIds;
   }

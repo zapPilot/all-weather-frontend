@@ -659,14 +659,14 @@ export default function AaExit() {
                   type="warning"
                   showIcon
                   message="Wallet token list unavailable"
-                  description="Your positions still exit, but loose tokens were left behind and the service fee is waived. Retry that row once the API recovers."
+                  description="Your positions still exit, but loose tokens were left behind and the gas fee is waived. Retry that row once the API recovers."
                 />
               )}
 
               <div className="mb-3 text-sm">
                 {feePlan ? (
                   <Text type="secondary">
-                    Service fee ~${EXIT_FEE_USD} →{" "}
+                    Gas fee ~${EXIT_FEE_USD} →{" "}
                     <Text strong>
                       {formatAmount(feePlan.feeRaw, feePlan.decimals)}{" "}
                       {feePlan.symbol}
@@ -677,8 +677,7 @@ export default function AaExit() {
                   </Text>
                 ) : (
                   <Text type="secondary">
-                    Service fee: waived — no priced token available to charge it
-                    in.
+                    Gas fee: waived — no priced token available to charge it in.
                   </Text>
                 )}
               </div>
