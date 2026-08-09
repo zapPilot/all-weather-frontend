@@ -22,7 +22,7 @@ import { InfoCircleOutlined } from "@ant-design/icons";
 import {
   useActiveAccount,
   useActiveWalletChain,
-  useSendBatchTransaction,
+  useAdminWallet,
   useSendAndConfirmCalls,
   useSwitchActiveWalletChain,
 } from "thirdweb/react";
@@ -60,6 +60,7 @@ import {
   buildEoaFullExitPlan,
   refreshEoaFullExitTokens,
 } from "../../utils/eoaFullExit";
+import { sendAaExitBatch } from "../../utils/aaExit";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -597,8 +598,8 @@ export default function DustZap() {
   const account = useActiveAccount();
   const activeChain = useActiveWalletChain();
   const switchChain = useSwitchActiveWalletChain();
+  const adminWallet = useAdminWallet();
   const { aaOn } = useWalletMode();
-  const { mutate: sendBatchTransaction } = useSendBatchTransaction();
   const { mutate: sendCalls } = useSendAndConfirmCalls();
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
@@ -628,6 +629,25 @@ export default function DustZap() {
   const [fullExitFailures, setFullExitFailures] = useState([]);
 
   const statusMessagesRef = useRef([]);
+
+  // AA mode is initialized on Base in ConnectButton. Thirdweb 5.115.3 refreshes
+  // accountContract for cross-chain single sends, but not for sendBatchTransaction.
+  // Reuse the AA Exit staged sender so DustZap always prepares/sponsors the UserOp
+  // against the chain currently being converted instead of the stale Base context.
+  const sendAaDustBatchTransaction = useCallback(
+    (transactions, callbacks = {}) => {
+      sendAaExitBatch({
+        transactions,
+        adminAccount: adminWallet?.getAccount(),
+        chainMetadata: activeChain,
+        expectedSmartAccountAddress: account?.address,
+      }).then(
+        (result) => callbacks.onSuccess?.(result),
+        (error) => callbacks.onError?.(error),
+      );
+    },
+    [adminWallet, activeChain, account?.address],
+  );
 
   // =============== EFFECTS ===============
   useEffect(() => {
@@ -990,7 +1010,7 @@ export default function DustZap() {
           );
         } else {
           await new Promise((resolve, reject) => {
-            sendBatchTransaction(allTxns.flat(Infinity), {
+            sendAaDustBatchTransaction(allTxns.flat(Infinity), {
               onSuccess: async (data) => {
                 await transactionCallbacks.onSuccess(data, true, 1);
                 resolve();

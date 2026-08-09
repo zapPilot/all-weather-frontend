@@ -4,14 +4,14 @@
 // no remove-liquidity, no price lookups on the principal path, so a depegged or
 // unpriceable token cannot block the exit.
 import { ethers } from "ethers";
+import { getContract, prepareContractCall, prepareTransaction } from "thirdweb";
 import {
-  getContract,
-  prepareContractCall,
-  prepareTransaction,
-  sendBatchTransaction as sendBatchTransactionAction,
-} from "thirdweb";
-import { smartWallet } from "thirdweb/wallets";
-import { prepareUserOp } from "thirdweb/wallets/smart";
+  bundleUserOp,
+  getUserOpHash,
+  prepareUserOp,
+  signUserOp,
+  waitForUserOpReceipt,
+} from "thirdweb/wallets/smart";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import THIRDWEB_CLIENT from "./thirdweb";
 import { PROVIDER } from "./general";
@@ -47,6 +47,7 @@ export const AA_EXIT_CHAIN_IDS = { arbitrum: 42161, base: 8453, op: 10 };
 const DEBANK_CHAIN_CODE = { arbitrum: "arb", base: "base", op: "op" };
 const AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS = 10 * 60 * 1000;
 const AA_EXIT_WALLET_TOKEN_STORAGE_PREFIX = "aa-exit-wallet-tokens:v1:";
+const AA_EXIT_PENDING_USER_OP_STORAGE_PREFIX = "aa-exit-pending-userop:v1:";
 const aaExitWalletTokenCache = new Map();
 const aaExitWalletTokenRequests = new Map();
 let aaExitWalletTokenCacheGeneration = 0;
@@ -104,6 +105,166 @@ const aaExitWalletTokenStorage = () => {
     logger.warn("AA Exit: local token cache unavailable", error);
     return null;
   }
+};
+
+export const aaExitPendingUserOpStorageKey = (chainId, smartAccountAddress) =>
+  `${AA_EXIT_PENDING_USER_OP_STORAGE_PREFIX}${chainId}:${smartAccountAddress.toLowerCase()}`;
+
+const isUserOpHash = (value) => /^0x[0-9a-fA-F]{64}$/.test(value || "");
+
+export const createPendingAaExitUserOp = ({
+  chainId,
+  smartAccountAddress,
+  recipient,
+  userOpHash,
+  groupIds = [],
+  batchIndex = 0,
+  batchCount = 1,
+  transactionIndex,
+  transactionCount,
+  submissionStage,
+  createdAt = Date.now(),
+}) => {
+  if (!Number.isInteger(chainId) || chainId <= 0) {
+    throw new Error("AA Exit pending UserOp requires a valid chain id");
+  }
+  if (!ethers.utils.isAddress(smartAccountAddress || "")) {
+    throw new Error("AA Exit pending UserOp requires a valid smart account");
+  }
+  if (!ethers.utils.isAddress(recipient || "")) {
+    throw new Error("AA Exit pending UserOp requires a valid recipient");
+  }
+  if (!isUserOpHash(userOpHash)) {
+    throw new Error("AA Exit pending UserOp requires a valid UserOp hash");
+  }
+  if (
+    !Array.isArray(groupIds) ||
+    groupIds.some((id) => typeof id !== "string")
+  ) {
+    throw new Error("AA Exit pending UserOp requires valid group ids");
+  }
+  if (
+    !Number.isInteger(batchIndex) ||
+    batchIndex < 0 ||
+    !Number.isInteger(batchCount) ||
+    batchCount <= 0 ||
+    batchIndex >= batchCount ||
+    !Number.isFinite(createdAt) ||
+    createdAt <= 0
+  ) {
+    throw new Error("AA Exit pending UserOp has invalid batch metadata");
+  }
+
+  const hasTransactionProgress =
+    transactionIndex !== undefined || transactionCount !== undefined;
+  if (
+    hasTransactionProgress &&
+    (!Number.isInteger(transactionIndex) ||
+      transactionIndex < 0 ||
+      !Number.isInteger(transactionCount) ||
+      transactionCount <= 0 ||
+      transactionIndex >= transactionCount)
+  ) {
+    throw new Error("AA Exit pending UserOp has invalid transaction progress");
+  }
+  if (
+    submissionStage !== undefined &&
+    !["submitting", "submitted"].includes(submissionStage)
+  ) {
+    throw new Error("AA Exit pending UserOp has an invalid submission stage");
+  }
+
+  const pending = {
+    version: 1,
+    chainId,
+    smartAccountAddress: smartAccountAddress.toLowerCase(),
+    recipient,
+    userOpHash: userOpHash.toLowerCase(),
+    groupIds: [...new Set(groupIds)],
+    batchIndex,
+    batchCount,
+    createdAt,
+  };
+  if (hasTransactionProgress) {
+    pending.transactionIndex = transactionIndex;
+    pending.transactionCount = transactionCount;
+  }
+  if (submissionStage) pending.submissionStage = submissionStage;
+  return pending;
+};
+
+export const readPendingAaExitUserOp = ({
+  chainId,
+  smartAccountAddress,
+  storage = aaExitWalletTokenStorage(),
+}) => {
+  if (!storage || !smartAccountAddress) return null;
+  const storageKey = aaExitPendingUserOpStorageKey(
+    chainId,
+    smartAccountAddress,
+  );
+  try {
+    const raw = storage.getItem(storageKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const pending = createPendingAaExitUserOp(parsed);
+    if (
+      parsed.version !== 1 ||
+      pending.chainId !== chainId ||
+      pending.smartAccountAddress !== smartAccountAddress.toLowerCase()
+    ) {
+      throw new Error("AA Exit pending UserOp does not match this wallet");
+    }
+    return pending;
+  } catch (error) {
+    storage.removeItem(storageKey);
+    logger.warn("AA Exit: removed invalid pending UserOp record", error);
+    return null;
+  }
+};
+
+export const writePendingAaExitUserOp = (
+  record,
+  { storage = aaExitWalletTokenStorage() } = {},
+) => {
+  if (!storage) return null;
+  const pending = createPendingAaExitUserOp(record);
+  const storageKey = aaExitPendingUserOpStorageKey(
+    pending.chainId,
+    pending.smartAccountAddress,
+  );
+  try {
+    storage.setItem(storageKey, JSON.stringify(pending));
+    return pending;
+  } catch (error) {
+    logger.warn("AA Exit: could not persist pending UserOp", error);
+    return null;
+  }
+};
+
+export const clearPendingAaExitUserOp = ({
+  chainId,
+  smartAccountAddress,
+  userOpHash,
+  storage = aaExitWalletTokenStorage(),
+}) => {
+  if (!storage || !smartAccountAddress) return false;
+  const storageKey = aaExitPendingUserOpStorageKey(
+    chainId,
+    smartAccountAddress,
+  );
+  if (userOpHash) {
+    const pending = readPendingAaExitUserOp({
+      chainId,
+      smartAccountAddress,
+      storage,
+    });
+    if (!pending || pending.userOpHash !== userOpHash.toLowerCase()) {
+      return false;
+    }
+  }
+  storage.removeItem(storageKey);
+  return true;
 };
 
 const readStoredAaExitWalletTokens = (key, now) => {
@@ -1221,23 +1382,65 @@ const TERMINAL_MESSAGE = {
     "This row's status is unknown. Check your wallet or the block explorer before trying again.",
 };
 
-const submit = (send, payload) =>
+const submit = (send, payload, onStage) =>
   new Promise((resolve, reject) => {
-    send(payload, { onSuccess: resolve, onError: reject });
+    send(payload, { onSuccess: resolve, onError: reject, onStage });
   });
 
 export const transactionHashFromResult = (data) =>
   data?.transactionHash || data?.receipts?.[0]?.transactionHash || "";
 
+export class AaExitSubmissionError extends Error {
+  constructor(
+    cause,
+    { stage, submitted = false, userOpHash, submissionUnknown = false },
+  ) {
+    super(cause?.message || String(cause));
+    this.name = "AaExitSubmissionError";
+    this.cause = cause;
+    this.stage = stage;
+    this.submitted = submitted;
+    this.userOpHash = userOpHash;
+    this.submissionUnknown = submissionUnknown;
+    if (cause?.code !== undefined) this.code = cause.code;
+  }
+}
+
+const beforeSubmissionError = (message) =>
+  new AaExitSubmissionError(new Error(message), {
+    stage: "preparing",
+    submitted: false,
+  });
+
+const errorDetails = (error) => {
+  const seen = new Set();
+  const details = [];
+  let current = error;
+  while (current && !seen.has(current)) {
+    seen.add(current);
+    if (current.message) details.push(current.message);
+    if (current.shortMessage) details.push(current.shortMessage);
+    if (current.details) details.push(current.details);
+    current = current.cause || current.error;
+  }
+  return details.join(" ").toLowerCase();
+};
+
+const isDefiniteBundlerRejection = (error) => {
+  const details = errorDetails(error);
+  if (!details.includes("eth_senduseroperation error:")) return false;
+  const status = Number(details.match(/status:\s*(\d{3})/)?.[1]);
+  if (status === 200) return true;
+  return (
+    status >= 400 && status < 500 && ![408, 409, 425, 429].includes(status)
+  );
+};
+
 /**
- * AA Exit deliberately submits through a smart account created for the chain
- * being exited instead of trusting the React active-account object. Thirdweb
- * smart accounts can be recreated when switching chains, and an older/stale
- * account object must never decide which bundler/account contract receives an
- * emergency-exit batch.
- *
- * The expected-address check is the safety boundary: if the same admin would
- * resolve to a different smart account on this chain, nothing is submitted.
+ * Build, sign, broadcast and track the UserOperation as explicit stages. This
+ * keeps the deterministic UserOp hash even when a bundler response is lost,
+ * which is the boundary between a safe retry and a potentially duplicated
+ * emergency exit.
  */
 export async function sendAaExitBatch({
   transactions,
@@ -1245,62 +1448,211 @@ export async function sendAaExitBatch({
   chainMetadata,
   expectedSmartAccountAddress,
   client = THIRDWEB_CLIENT,
-  smartWalletFactory = smartWallet,
-  sendBatchTransactionFn = sendBatchTransactionAction,
+  prepareUserOpFn = prepareUserOp,
+  signUserOpFn = signUserOp,
+  getUserOpHashFn = getUserOpHash,
+  bundleUserOpFn = bundleUserOp,
+  waitForUserOpReceiptFn = waitForUserOpReceipt,
+  onStage = noop,
 }) {
   if (!adminAccount?.address) {
-    throw new Error("AA Exit could not resolve the smart wallet admin account");
+    throw beforeSubmissionError(
+      "AA Exit could not resolve the smart wallet admin account",
+    );
   }
   if (!chainMetadata?.id) {
-    throw new Error("AA Exit could not resolve the submission chain");
+    throw beforeSubmissionError(
+      "AA Exit could not resolve the submission chain",
+    );
   }
   if (!expectedSmartAccountAddress) {
-    throw new Error(
+    throw beforeSubmissionError(
       "AA Exit could not resolve the expected smart wallet address",
     );
   }
   if (!Array.isArray(transactions) || transactions.length === 0) {
-    throw new Error("AA Exit has no transactions to submit");
+    throw beforeSubmissionError("AA Exit has no transactions to submit");
   }
 
   const wrongChain = transactions.find(
     (transaction) => transaction?.chain?.id !== chainMetadata.id,
   );
   if (wrongChain) {
-    throw new Error(
+    throw beforeSubmissionError(
       `AA Exit refused a cross-chain batch: expected chain ${
         chainMetadata.id
       }, got ${wrongChain?.chain?.id ?? "unknown"}`,
     );
   }
 
-  const wallet = smartWalletFactory({
-    chain: chainMetadata,
-    sponsorGas: true,
-  });
-  const scopedAccount = await wallet.connect({
-    client,
-    personalAccount: adminAccount,
-    chain: chainMetadata,
-  });
+  const smartWalletOptions = { chain: chainMetadata, sponsorGas: true };
+  const bundlerOptions = { chain: chainMetadata, client };
+  let stage = "preparing";
+  let localUserOpHash;
+  emitProgress(onStage, { stage });
 
-  if (
-    !scopedAccount?.address ||
-    scopedAccount.address.toLowerCase() !==
-      expectedSmartAccountAddress.toLowerCase()
-  ) {
-    throw new Error(
-      `AA Exit smart wallet mismatch on chain ${
-        chainMetadata.id
-      }: expected ${expectedSmartAccountAddress}, got ${
-        scopedAccount?.address || "unknown"
-      }`,
+  try {
+    const unsignedUserOp = await prepareUserOpFn({
+      transactions,
+      adminAccount,
+      client,
+      smartWalletOptions,
+      // The manual staged path cannot clear Thirdweb's module-global deploying
+      // flag. The real deployment state is still checked on every preparation.
+      waitForDeployment: false,
+    });
+
+    if (
+      !unsignedUserOp?.sender ||
+      unsignedUserOp.sender.toLowerCase() !==
+        expectedSmartAccountAddress.toLowerCase()
+    ) {
+      throw new Error(
+        `AA Exit smart wallet mismatch on chain ${
+          chainMetadata.id
+        }: expected ${expectedSmartAccountAddress}, got ${
+          unsignedUserOp?.sender || "unknown"
+        }`,
+      );
+    }
+
+    stage = "signing";
+    emitProgress(onStage, { stage });
+    const signedUserOp = await signUserOpFn({
+      client,
+      userOp: unsignedUserOp,
+      chain: chainMetadata,
+      adminAccount,
+    });
+    localUserOpHash = await getUserOpHashFn({
+      client,
+      userOp: signedUserOp,
+      chain: chainMetadata,
+    });
+
+    stage = "submitting";
+    emitProgress(onStage, { stage, userOpHash: localUserOpHash });
+    let userOpHash;
+    try {
+      userOpHash = await bundleUserOpFn({
+        userOp: signedUserOp,
+        options: bundlerOptions,
+      });
+    } catch (error) {
+      if (isDefiniteBundlerRejection(error)) {
+        emitProgress(onStage, {
+          stage: "rejected",
+          userOpHash: localUserOpHash,
+        });
+        throw error;
+      }
+      logger.error(
+        "AA Exit bundler response was lost",
+        `stage=${stage}`,
+        `chain=${chainMetadata.id}`,
+        `smartAccount=${expectedSmartAccountAddress}`,
+        `userOpHash=${localUserOpHash}`,
+        error,
+      );
+      emitProgress(onStage, {
+        stage: "submitted",
+        userOpHash: localUserOpHash,
+        submissionUnknown: true,
+      });
+      throw new AaExitSubmissionError(error, {
+        stage,
+        submitted: true,
+        userOpHash: localUserOpHash,
+        submissionUnknown: true,
+      });
+    }
+    if (
+      !isUserOpHash(userOpHash) ||
+      userOpHash.toLowerCase() !== localUserOpHash.toLowerCase()
+    ) {
+      emitProgress(onStage, {
+        stage: "submitted",
+        userOpHash: localUserOpHash,
+        submissionUnknown: true,
+      });
+      throw new AaExitSubmissionError(
+        new Error(
+          `AA Exit bundler returned ${
+            userOpHash || "no UserOp hash"
+          }, expected ${localUserOpHash}`,
+        ),
+        {
+          stage,
+          submitted: true,
+          userOpHash: localUserOpHash,
+          submissionUnknown: true,
+        },
+      );
+    }
+
+    stage = "submitted";
+    emitProgress(onStage, { stage, userOpHash });
+    const receipt = await waitForUserOpReceiptFn({
+      ...bundlerOptions,
+      userOpHash,
+    });
+    stage = "confirmed";
+    emitProgress(onStage, {
+      stage,
+      userOpHash,
+      transactionHash: receipt.transactionHash,
+    });
+    return {
+      userOpHash,
+      transactionHash: receipt.transactionHash,
+      receipt,
+    };
+  } catch (error) {
+    if (error instanceof AaExitSubmissionError) throw error;
+    const submitted = stage === "submitted" || stage === "confirmed";
+    const userOpHash = submitted ? localUserOpHash : undefined;
+    logger.error(
+      "AA Exit submission failed",
+      `stage=${stage}`,
+      `chain=${chainMetadata.id}`,
+      `smartAccount=${expectedSmartAccountAddress}`,
+      `userOpHash=${userOpHash || "none"}`,
+      error,
     );
+    throw new AaExitSubmissionError(error, {
+      stage,
+      submitted,
+      userOpHash,
+    });
   }
+}
 
-  return sendBatchTransactionFn({
-    account: scopedAccount,
-    transactions,
+export const isAaExitUserOpReceiptFailure = (error) =>
+  errorDetails(error).includes("userop failed");
+
+export const transactionHashFromAaExitUserOpError = (error) =>
+  errorDetails(error).match(/txhash:\s*(0x[0-9a-f]{64})/i)?.[1] || "";
+
+export async function waitForPendingAaExitUserOp({
+  chainMetadata,
+  userOpHash,
+  client = THIRDWEB_CLIENT,
+  timeoutMs = 15_000,
+  intervalMs = 3_000,
+  waitForUserOpReceiptFn = waitForUserOpReceipt,
+}) {
+  if (!chainMetadata?.id) {
+    throw new Error("AA Exit pending UserOp requires chain metadata");
+  }
+  if (!isUserOpHash(userOpHash)) {
+    throw new Error("AA Exit pending UserOp requires a valid UserOp hash");
+  }
+  return waitForUserOpReceiptFn({
+    chain: chainMetadata,
+    client,
+    userOpHash,
+    timeoutMs,
+    intervalMs,
   });
 }
 
@@ -1317,6 +1669,7 @@ export async function executeAaExitPlan({
   plan,
   sendBatchTransaction,
   updateGroup,
+  onBatchStage = noop,
 }) {
   let completedBatches = 0;
   for (const excluded of plan.excluded || []) {
@@ -1334,14 +1687,23 @@ export async function executeAaExitPlan({
     });
   }
 
-  for (const batch of plan.batches || []) {
+  const batches = plan.batches || [];
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
+    const batch = batches[batchIndex];
     const units = batch.units || [];
     const calls = preparedTransactionsOf(batch.groups);
+    const batchContext = {
+      batchIndex,
+      batchCount: batches.length,
+      groupIds: units.map((group) => group.uniqueId),
+    };
+    const emitBatchStage = (event) =>
+      emitProgress(onBatchStage, { ...event, ...batchContext });
     units.forEach((group) =>
       updateGroup(group.uniqueId, { status: "sending", error: undefined }),
     );
     try {
-      const data = await submit(sendBatchTransaction, calls);
+      const data = await submit(sendBatchTransaction, calls, emitBatchStage);
       const transactionHash = transactionHashFromResult(data);
       units.forEach((group) =>
         updateGroup(group.uniqueId, {
@@ -1354,24 +1716,35 @@ export async function executeAaExitPlan({
     } catch (error) {
       const kind = classifyEmergencyExitBatchError(error);
       const status =
-        kind === FAILURE.USER_REJECTED
+        error?.submitted && error?.userOpHash
+          ? "submitted"
+          : kind === FAILURE.USER_REJECTED
           ? "cancelled"
+          : error instanceof AaExitSubmissionError
+          ? "pre-submit-failed"
           : kind === FAILURE.UNKNOWN
           ? "unknown"
           : "pre-submit-failed";
       const message =
-        status === "cancelled"
+        status === "submitted"
+          ? `UserOperation ${error.userOpHash} was submitted and is still pending.`
+          : status === "cancelled"
           ? TERMINAL_MESSAGE.cancelled
           : status === "unknown"
           ? TERMINAL_MESSAGE.unknown
           : error?.message || "UserOperation failed before submission";
       const rowStatus = status === "pre-submit-failed" ? "failed" : status;
       units.forEach((group) =>
-        updateGroup(group.uniqueId, { status: rowStatus, error: message }),
+        updateGroup(group.uniqueId, {
+          status: rowStatus,
+          error: message,
+          userOpHash: error?.userOpHash,
+        }),
       );
       return {
         status,
         error,
+        userOpHash: error?.userOpHash,
         failedBatch: batch,
         completedBatches,
       };
@@ -1391,6 +1764,7 @@ export async function runAaExitGroups({
   updateGroup,
   rebuildGroup,
   onFallback,
+  onBatchStage = noop,
   combinedAllowed = true,
 }) {
   const live = groups.map((group) => ({ ...group }));
@@ -1421,19 +1795,46 @@ export async function runAaExitGroups({
       updateGroup(group.uniqueId, { status, ...patch });
     });
 
+  const submitGroups = (calls, affectedGroups, metadata = {}) =>
+    submit(sendBatchTransaction, calls, (event) =>
+      emitProgress(onBatchStage, {
+        ...event,
+        groupIds: affectedGroups.map((group) => group.uniqueId),
+        batchIndex: 0,
+        batchCount: 1,
+        ...metadata,
+      }),
+    );
+
   if (combinedAllowed) {
     markAll("sending", { error: undefined });
     try {
       const calls = executable.flatMap((group) => group.txns.flat(Infinity));
-      const data = await submit(sendBatchTransaction, calls);
+      const data = await submitGroups(calls, executable);
       const transactionHash = transactionHashFromResult(data);
       markAll("success", { error: undefined, transactionHash });
       return { status: "success", transactionHash, groups: live };
     } catch (error) {
       const kind = classifyEmergencyExitBatchError(error);
+      if (error?.submitted && error?.userOpHash) {
+        markAll("submitted", {
+          error: `UserOperation ${error.userOpHash} was submitted and is still pending.`,
+          userOpHash: error.userOpHash,
+        });
+        return {
+          status: "submitted",
+          error,
+          userOpHash: error.userOpHash,
+          groups: live,
+        };
+      }
       if (kind === FAILURE.USER_REJECTED) {
         markAll("cancelled", { error: TERMINAL_MESSAGE.cancelled });
         return { status: "cancelled", error, groups: live };
+      }
+      if (error instanceof AaExitSubmissionError) {
+        markAll("failed", { error: error.message });
+        return { status: "pre-submit-failed", error, groups: live };
       }
       if (kind === FAILURE.UNKNOWN) {
         markAll("unknown", {
@@ -1458,14 +1859,38 @@ export async function runAaExitGroups({
         progress: `${sent}/${txns.length}`,
       });
       try {
-        await submit(sendBatchTransaction, [txn]);
+        await submitGroups([txn], [group], {
+          transactionIndex: sent,
+          transactionCount: txns.length,
+          batchIndex: sent,
+          batchCount: txns.length,
+        });
         sent += 1;
       } catch (error) {
         const kind = classifyEmergencyExitBatchError(error);
+        if (error?.submitted && error?.userOpHash) {
+          return {
+            stop: true,
+            status: "submitted",
+            error,
+            userOpHash: error.userOpHash,
+            sent,
+            total: txns.length,
+          };
+        }
         if (kind === FAILURE.USER_REJECTED || kind === FAILURE.UNKNOWN) {
           return {
             stop: true,
             status: kind === FAILURE.USER_REJECTED ? "cancelled" : "unknown",
+            error,
+            sent,
+            total: txns.length,
+          };
+        }
+        if (error instanceof AaExitSubmissionError) {
+          return {
+            stop: true,
+            status: "pre-submit-failed",
             error,
             sent,
             total: txns.length,
@@ -1499,10 +1924,18 @@ export async function runAaExitGroups({
       if (slot.level >= 2) {
         const outcome = await sendSplit(slot);
         if (outcome.stop) {
-          slot.status = outcome.status;
+          const rowStatus =
+            outcome.status === "pre-submit-failed" ? "failed" : outcome.status;
+          slot.status = rowStatus;
           updateGroup(slot.uniqueId, {
-            status: outcome.status,
-            error: TERMINAL_MESSAGE[outcome.status],
+            status: rowStatus,
+            error:
+              outcome.status === "submitted"
+                ? `UserOperation ${outcome.userOpHash} was submitted and is still pending.`
+                : outcome.status === "pre-submit-failed"
+                ? outcome.error?.message || "UserOperation was not submitted"
+                : TERMINAL_MESSAGE[outcome.status],
+            userOpHash: outcome.userOpHash,
             progress: `${outcome.sent ?? 0}/${
               outcome.total ?? slot.txns.length
             }`,
@@ -1534,10 +1967,7 @@ export async function runAaExitGroups({
       });
       let error;
       try {
-        const data = await submit(
-          sendBatchTransaction,
-          slot.txns.flat(Infinity),
-        );
+        const data = await submitGroups(slot.txns.flat(Infinity), [slot]);
         slot.status = "success";
         updateGroup(slot.uniqueId, {
           status: "success",
@@ -1551,6 +1981,20 @@ export async function runAaExitGroups({
       }
 
       const kind = classifyEmergencyExitBatchError(error);
+      if (error?.submitted && error?.userOpHash) {
+        slot.status = "submitted";
+        updateGroup(slot.uniqueId, {
+          status: "submitted",
+          error: `UserOperation ${error.userOpHash} was submitted and is still pending.`,
+          userOpHash: error.userOpHash,
+        });
+        return {
+          stop: true,
+          status: "submitted",
+          error,
+          userOpHash: error.userOpHash,
+        };
+      }
       if (kind === FAILURE.USER_REJECTED) {
         slot.status = "cancelled";
         updateGroup(slot.uniqueId, {
@@ -1558,6 +2002,14 @@ export async function runAaExitGroups({
           error: TERMINAL_MESSAGE.cancelled,
         });
         return { stop: true, status: "cancelled", error };
+      }
+      if (error instanceof AaExitSubmissionError) {
+        slot.status = "failed";
+        updateGroup(slot.uniqueId, {
+          status: "failed",
+          error: error.message,
+        });
+        return { stop: true, status: "pre-submit-failed", error };
       }
       if (kind === FAILURE.UNKNOWN) {
         slot.status = "unknown";
@@ -1611,7 +2063,12 @@ export async function runAaExitGroups({
     }
     const outcome = await sendGroup(slot);
     if (outcome.stop) {
-      return { status: outcome.status, error: outcome.error, groups: live };
+      return {
+        status: outcome.status,
+        error: outcome.error,
+        userOpHash: outcome.userOpHash,
+        groups: live,
+      };
     }
   }
 
