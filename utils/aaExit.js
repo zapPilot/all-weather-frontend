@@ -40,6 +40,7 @@ export const AA_EXIT_CHAIN_IDS = { arbitrum: 42161, base: 8453, op: 10 };
 // answers with an error rather than a list
 const DEBANK_CHAIN_CODE = { arbitrum: "arb", base: "base", op: "op" };
 const AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS = 10 * 60 * 1000;
+const AA_EXIT_WALLET_TOKEN_STORAGE_PREFIX = "aa-exit-wallet-tokens:v1:";
 const aaExitWalletTokenCache = new Map();
 const aaExitWalletTokenRequests = new Map();
 let aaExitWalletTokenCacheGeneration = 0;
@@ -86,21 +87,84 @@ export const debankChainCode = (chainName) => {
 const aaExitWalletTokenCacheKey = (chainName, owner) =>
   `${debankChainCode(chainName)}:${owner.toLowerCase()}`;
 
+const aaExitWalletTokenStorageKey = (key) =>
+  `${AA_EXIT_WALLET_TOKEN_STORAGE_PREFIX}${key}`;
+
+const aaExitWalletTokenStorage = () => {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage;
+  } catch (error) {
+    logger.warn("AA Exit: local token cache unavailable", error);
+    return null;
+  }
+};
+
+const readStoredAaExitWalletTokens = (key, now) => {
+  const storage = aaExitWalletTokenStorage();
+  if (!storage) return null;
+  const storageKey = aaExitWalletTokenStorageKey(key);
+  try {
+    const raw = storage.getItem(storageKey);
+    if (!raw) return null;
+    const cached = JSON.parse(raw);
+    if (
+      !Array.isArray(cached?.tokens) ||
+      typeof cached?.fetchedAt !== "number" ||
+      now - cached.fetchedAt >= AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS
+    ) {
+      storage.removeItem(storageKey);
+      return null;
+    }
+    return cached;
+  } catch (error) {
+    storage.removeItem(storageKey);
+    logger.warn("AA Exit: could not read local token cache", error);
+    return null;
+  }
+};
+
+const storeAaExitWalletTokens = (key, cached) => {
+  const storage = aaExitWalletTokenStorage();
+  if (!storage) return;
+  try {
+    storage.setItem(aaExitWalletTokenStorageKey(key), JSON.stringify(cached));
+  } catch (error) {
+    logger.warn("AA Exit: could not persist local token cache", error);
+  }
+};
+
 export const clearAaExitWalletTokenCache = () => {
   aaExitWalletTokenCacheGeneration += 1;
+  aaExitWalletTokenCache.clear();
+  aaExitWalletTokenRequests.clear();
+
+  const storage = aaExitWalletTokenStorage();
+  if (!storage) return;
+  for (let index = storage.length - 1; index >= 0; index -= 1) {
+    const key = storage.key(index);
+    if (key?.startsWith(AA_EXIT_WALLET_TOKEN_STORAGE_PREFIX)) {
+      storage.removeItem(key);
+    }
+  }
+};
+
+export const clearAaExitWalletTokenMemoryCache = () => {
   aaExitWalletTokenCache.clear();
   aaExitWalletTokenRequests.clear();
 };
 
 async function fetchAaExitWalletTokens(chainName, owner) {
   const key = aaExitWalletTokenCacheKey(chainName, owner);
-  const cached = aaExitWalletTokenCache.get(key);
   const now = Date.now();
+  const memoryCached = aaExitWalletTokenCache.get(key);
+  const cached = memoryCached || readStoredAaExitWalletTokens(key, now);
 
   if (cached && now - cached.fetchedAt < AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS) {
+    aaExitWalletTokenCache.set(key, cached);
     return cached.tokens;
   }
-  if (cached) aaExitWalletTokenCache.delete(key);
+  if (memoryCached) aaExitWalletTokenCache.delete(key);
 
   const pending = aaExitWalletTokenRequests.get(key);
   if (pending) return pending;
@@ -112,10 +176,12 @@ async function fetchAaExitWalletTokens(chainName, owner) {
       // repopulate stale data after the clear. This also keeps a fresh scan
       // genuinely fresh when a previous request finishes late.
       if (generation === aaExitWalletTokenCacheGeneration) {
-        aaExitWalletTokenCache.set(key, {
+        const cached = {
           tokens,
           fetchedAt: Date.now(),
-        });
+        };
+        aaExitWalletTokenCache.set(key, cached);
+        storeAaExitWalletTokens(key, cached);
       }
       return tokens;
     })
