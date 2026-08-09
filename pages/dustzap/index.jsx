@@ -60,7 +60,7 @@ import {
   buildEoaFullExitPlan,
   refreshEoaFullExitTokens,
 } from "../../utils/eoaFullExit";
-import { sendAaExitBatch } from "../../utils/aaExit";
+import { probeAaBatch, sendAaExitBatch } from "../../utils/aaExit";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -635,16 +635,49 @@ export default function DustZap() {
   // Reuse the AA Exit staged sender so DustZap always prepares/sponsors the UserOp
   // against the chain currently being converted instead of the stale Base context.
   const sendAaDustBatchTransaction = useCallback(
-    (transactions, callbacks = {}) => {
-      sendAaExitBatch({
-        transactions,
-        adminAccount: adminWallet?.getAccount(),
-        chainMetadata: activeChain,
-        expectedSmartAccountAddress: account?.address,
-      }).then(
-        (result) => callbacks.onSuccess?.(result),
-        (error) => callbacks.onError?.(error),
-      );
+    async (transactions, callbacks = {}) => {
+      const adminAccount = adminWallet?.getAccount();
+      try {
+        // First prove the exact DustZap calldata can execute without a paymaster.
+        // This both exposes hidden simulation failures and gives us a safe
+        // fallback when Thirdweb sponsorship itself returns a server error.
+        await probeAaBatch({
+          groups: [{ txns: transactions }],
+          adminAccount,
+          chainMetadata: activeChain,
+          smartAccountAddress: account?.address,
+          sponsorGas: false,
+        });
+
+        try {
+          const result = await sendAaExitBatch({
+            transactions,
+            adminAccount,
+            chainMetadata: activeChain,
+            expectedSmartAccountAddress: account?.address,
+            sponsorGas: true,
+          });
+          callbacks.onSuccess?.(result);
+          return;
+        } catch (error) {
+          if (error?.submitted || error?.stage !== "preparing") throw error;
+          logger.warn(
+            "DustZap AA sponsorship failed before signing; falling back to unsponsored UserOp",
+            error,
+          );
+        }
+
+        const result = await sendAaExitBatch({
+          transactions,
+          adminAccount,
+          chainMetadata: activeChain,
+          expectedSmartAccountAddress: account?.address,
+          sponsorGas: false,
+        });
+        callbacks.onSuccess?.(result);
+      } catch (error) {
+        callbacks.onError?.(error);
+      }
     },
     [adminWallet, activeChain, account?.address],
   );

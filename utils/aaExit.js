@@ -1447,6 +1447,7 @@ export async function sendAaExitBatch({
   adminAccount,
   chainMetadata,
   expectedSmartAccountAddress,
+  sponsorGas = true,
   client = THIRDWEB_CLIENT,
   prepareUserOpFn = prepareUserOp,
   signUserOpFn = signUserOp,
@@ -1485,7 +1486,7 @@ export async function sendAaExitBatch({
     );
   }
 
-  const smartWalletOptions = { chain: chainMetadata, sponsorGas: true };
+  const smartWalletOptions = { chain: chainMetadata, sponsorGas };
   const bundlerOptions = { chain: chainMetadata, client };
   let stage = "preparing";
   let localUserOpHash;
