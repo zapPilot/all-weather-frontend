@@ -24,8 +24,14 @@ const BURN_ALP_SELECTOR = ethers.utils
   .slice(2, 10);
 // Gauge.getReward(address)
 const GET_REWARD_SELECTOR = "c00007b0";
-// safeTransferFrom(address,address,uint256)
-const SAFE_TRANSFER_FROM_SELECTOR = "42842e0e";
+// Camelot V3 position manager selectors
+const DECREASE_LIQUIDITY_SELECTOR = ethers.utils
+  .id("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))")
+  .slice(2, 10);
+const COLLECT_SELECTOR = ethers.utils
+  .id("collect((uint256,address,uint128,uint128))")
+  .slice(2, 10);
+const BURN_NFT_SELECTOR = ethers.utils.id("burn(uint256)").slice(2, 10);
 const VELO = "0x9560e827af36c94d2ac33a39bce1fe78631088db";
 const noop = () => {};
 
@@ -387,35 +393,43 @@ describe("emergencyTransfer", () => {
     expect(rewardBalances).toEqual([]);
   });
 
-  it("moves every NFT position whole instead of reading a liquidity balance", async () => {
+  it("fully unwinds every Camelot NFT position to the recipient", async () => {
     const [protocol] = protocolsOn(
       getPortfolioHelper("Camelot Vault"),
       "arbitrum",
     ).map((p) => p.interface);
     expect(protocol.assetIsNFT).toBe(true);
-    stubNoRewards(protocol);
     vi.spyOn(protocol, "_getAllNftIDs").mockResolvedValue([
       ethers.BigNumber.from("101"),
       ethers.BigNumber.from("202"),
     ]);
-    const assetBalanceOf = vi.spyOn(protocol, "assetBalanceOf");
+    vi.spyOn(protocol, "_getEmergencyPosition")
+      .mockResolvedValueOnce({ liquidity: ethers.BigNumber.from("700") })
+      .mockResolvedValueOnce({ liquidity: ethers.BigNumber.from("300") });
 
-    const { txns } = await protocol.emergencyTransfer(OWNER, RECIPIENT, noop);
+    const { txns, rewardBalances } = await protocol.emergencyTransfer(
+      OWNER,
+      RECIPIENT,
+      noop,
+    );
 
-    expect(txns).toHaveLength(2);
+    expect(rewardBalances).toEqual([]);
+    expect(txns).toHaveLength(6);
     const encoded = await Promise.all(txns.map((txn) => encode(txn)));
-    encoded.forEach((data) => {
-      expect(data).includes(SAFE_TRANSFER_FROM_SELECTOR);
-      // an ERC20 transfer here would move the position manager's own balance
-      expect(data).not.toContain(TRANSFER_SELECTOR);
-    });
+    expect(encoded[0]).includes(DECREASE_LIQUIDITY_SELECTOR);
     expect(encoded[0]).includes(word("101"));
-    expect(encoded[1]).includes(word("202"));
-    // assetBalanceOf reports pooled liquidity for an NFT, not a token count
-    expect(assetBalanceOf).not.toHaveBeenCalled();
+    expect(encoded[1]).includes(COLLECT_SELECTOR);
+    expect(encoded[1].toLowerCase()).includes(RECIPIENT.slice(2).toLowerCase());
+    expect(encoded[2]).includes(BURN_NFT_SELECTOR);
+    expect(encoded[3]).includes(DECREASE_LIQUIDITY_SELECTOR);
+    expect(encoded[3]).includes(word("202"));
+    expect(encoded[4]).includes(COLLECT_SELECTOR);
+    expect(encoded[4].toLowerCase()).includes(RECIPIENT.slice(2).toLowerCase());
+    expect(encoded[5]).includes(BURN_NFT_SELECTOR);
+    encoded.forEach((data) => expect(data).not.toContain(TRANSFER_SELECTOR));
   });
 
-  it("does not let Camelot reward accounting block an otherwise-valid NFT move", async () => {
+  it("collects and burns an already-empty Camelot NFT without reward APIs", async () => {
     const [protocol] = protocolsOn(
       getPortfolioHelper("Camelot Vault"),
       "arbitrum",
@@ -423,9 +437,10 @@ describe("emergencyTransfer", () => {
     vi.spyOn(protocol, "_getAllNftIDs").mockResolvedValue([
       ethers.BigNumber.from("303"),
     ]);
-    const customClaim = vi
-      .spyOn(protocol, "customClaim")
-      .mockRejectedValue(new Error("campaign reward is not transferable yet"));
+    vi.spyOn(protocol, "_getEmergencyPosition").mockResolvedValue({
+      liquidity: ethers.constants.Zero,
+    });
+    const customClaim = vi.spyOn(protocol, "customClaim");
 
     const { txns, rewardBalances } = await protocol.emergencyTransfer(
       OWNER,
@@ -435,8 +450,9 @@ describe("emergencyTransfer", () => {
 
     expect(customClaim).not.toHaveBeenCalled();
     expect(rewardBalances).toEqual([]);
-    expect(txns).toHaveLength(1);
-    expect(await encode(txns[0])).includes(SAFE_TRANSFER_FROM_SELECTOR);
+    expect(txns).toHaveLength(2);
+    expect(await encode(txns[0])).includes(COLLECT_SELECTOR);
+    expect(await encode(txns[1])).includes(BURN_NFT_SELECTOR);
   });
 
   it("unwinds non-transferable Arbitrum ALP instead of ERC20-transferring it", async () => {

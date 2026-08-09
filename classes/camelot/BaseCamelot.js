@@ -333,18 +333,68 @@ export class BaseCamelot extends BaseProtocol {
     return [[lpFeesTxn], pendingRewards];
   }
 
-  // Camelot positions are ERC721s. Moving the NFT already moves ownership of
-  // the position (including its uncollected LP fees), while customClaim also
-  // reports address-bound campaign rewards that its `collect` transaction does
-  // not actually deliver. Treating those as claimed makes the later ERC20
-  // reward sweep ask for a balance the wallet never received and can revert an
-  // otherwise-valid NFT transfer. Emergency exit therefore prioritizes the
-  // self-contained NFT principal and leaves optional rewards behind.
+  // AA Exit means emptying the smart wallet, not merely changing ownership of
+  // the NFT wrapper. Unwind every matching Camelot V3 position directly to the
+  // recipient: decrease all liquidity, collect both principal and accrued LP
+  // fees to the recipient, then burn the now-empty NFT. Campaign/xGRAIL rewards
+  // remain intentionally out of this path because they are address-bound and/or
+  // vesting and cannot be represented as a safe ERC20 transfer.
   async emergencyTransfer(owner, recipient, updateProgress, options = {}) {
-    return super.emergencyTransfer(owner, recipient, updateProgress, {
-      ...options,
-      skipRewards: true,
-    });
+    const tokenIds = await this._getAllNftIDs(owner);
+    const txns = [];
+    const maxUint128 = ethers.BigNumber.from(
+      "340282366920938463463374607431768211455",
+    );
+
+    for (const tokenId of tokenIds || []) {
+      const position = await this._getEmergencyPosition(tokenId);
+      const liquidity = ethers.BigNumber.from(position.liquidity || 0);
+      if (!liquidity.isZero()) {
+        txns.push(
+          prepareContractCall({
+            contract: this.assetContract,
+            method: "decreaseLiquidity",
+            params: [
+              {
+                tokenId,
+                liquidity,
+                amount0Min: 0,
+                amount1Min: 0,
+                deadline: this.getDeadline(),
+              },
+            ],
+          }),
+        );
+      }
+      txns.push(
+        prepareContractCall({
+          contract: this.assetContract,
+          method: "collect",
+          params: [
+            {
+              tokenId,
+              recipient,
+              amount0Max: maxUint128,
+              amount1Max: maxUint128,
+            },
+          ],
+        }),
+      );
+      txns.push(
+        prepareContractCall({
+          contract: this.assetContract,
+          method: "burn",
+          params: [tokenId],
+        }),
+      );
+    }
+
+    this.checkTxnsToDataNotUndefined(txns, "emergencyTransfer");
+    return { txns, rewardBalances: [] };
+  }
+
+  async _getEmergencyPosition(tokenId) {
+    return this.assetContractInstance.positions(tokenId);
   }
 
   async lockUpPeriod() {
