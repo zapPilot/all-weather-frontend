@@ -5,6 +5,7 @@ import {
   Card,
   Checkbox,
   Input,
+  Progress,
   Spin,
   Tag,
   Typography,
@@ -166,6 +167,11 @@ export default function AaExit() {
   const [untransferableTokens, setUntransferableTokens] = useState([]);
   const [fellBack, setFellBack] = useState(false);
   const [retrying, setRetrying] = useState(null);
+  const [scanProgress, setScanProgress] = useState({
+    percent: 0,
+    message: "",
+    discoveries: [],
+  });
 
   // The live groups hold protocol instances and prepared transactions, neither
   // of which belongs in React state
@@ -196,6 +202,7 @@ export default function AaExit() {
     setWalletScanFailed(false);
     setUntransferableTokens([]);
     setFellBack(false);
+    setScanProgress({ percent: 0, message: "", discoveries: [] });
     setPhase("idle");
   }, []);
 
@@ -246,6 +253,53 @@ export default function AaExit() {
     );
   }, []);
 
+  const updateScanProgress = useCallback((event) => {
+    setScanProgress((current) => {
+      let percent = current.percent;
+      let message = current.message;
+
+      if (event.stage === "protocols") {
+        const total = event.total || 0;
+        percent = total
+          ? 5 + Math.round(((event.completed || 0) / total) * 45)
+          : 50;
+        message = total
+          ? `Scanning protocol positions… ${event.completed || 0}/${total}`
+          : "No protocol integrations to scan on this network.";
+      } else if (event.stage === "wallet-fetch") {
+        percent = 55;
+        message = "Loading loose wallet tokens…";
+      } else if (event.stage === "tokens") {
+        const total = event.total || 0;
+        percent = total
+          ? 60 + Math.round(((event.completed || 0) / total) * 15)
+          : 75;
+        message = total
+          ? `Checking ${event.tokenSymbol || "wallet token"}… ${
+              event.completed || 0
+            }/${total}`
+          : "No loose wallet tokens need transfer checks.";
+      } else if (event.stage === "native") {
+        percent = 80;
+        message = "Checking native ETH balance…";
+      }
+
+      let discoveries = current.discoveries;
+      if (
+        event.found?.id &&
+        !discoveries.some((item) => item.id === event.found.id)
+      ) {
+        discoveries = [...discoveries, event.found];
+      }
+
+      return {
+        percent: Math.max(current.percent, percent),
+        message,
+        discoveries,
+      };
+    });
+  }, []);
+
   // Level 1 sheds the claim leg; level 2 reuses whatever the group holds and
   // splits it. Rebuilding at any level re-reads balances, so a position an
   // earlier attempt already moved comes back empty instead of reverting.
@@ -287,7 +341,13 @@ export default function AaExit() {
       recipient,
       chainName,
       chainMetadata,
+      onScanProgress: updateScanProgress,
     });
+    setScanProgress((current) => ({
+      ...current,
+      percent: Math.max(current.percent, 82),
+      message: "Dry-running the exit plan before you sign…",
+    }));
     const probe = (candidateGroups) =>
       probeAaBatch({
         groups: candidateGroups,
@@ -312,9 +372,29 @@ export default function AaExit() {
       recipient,
       probe,
       diagnose,
+      onProbe: ({ probeCount, candidateCount }) =>
+        setScanProgress((current) => ({
+          ...current,
+          percent: Math.max(current.percent, Math.min(96, 82 + probeCount * 2)),
+          message: `Dry-running exit batch ${probeCount} (${candidateCount} item${
+            candidateCount === 1 ? "" : "s"
+          })…`,
+        })),
     });
+    setScanProgress((current) => ({
+      ...current,
+      percent: 100,
+      message: "Scan complete. Exit plan is ready.",
+    }));
     return { result, plan };
-  }, [account?.address, adminWallet, recipient, chainName, chainMetadata]);
+  }, [
+    account?.address,
+    adminWallet,
+    recipient,
+    chainName,
+    chainMetadata,
+    updateScanProgress,
+  ]);
 
   const applyPreparedPlan = useCallback(({ result, plan }) => {
     groupsRef.current = result.groups;
@@ -353,6 +433,11 @@ export default function AaExit() {
   const handleScan = useCallback(async () => {
     setPhase("scanning");
     setFellBack(false);
+    setScanProgress({
+      percent: 2,
+      message: `Starting ${CHAIN_LABEL[chainName] || "network"} scan…`,
+      discoveries: [],
+    });
     try {
       const prepared = await prepareExitPlan();
       applyPreparedPlan(prepared);
@@ -366,7 +451,7 @@ export default function AaExit() {
       );
       setPhase("idle");
     }
-  }, [prepareExitPlan, applyPreparedPlan, notificationAPI]);
+  }, [prepareExitPlan, applyPreparedPlan, notificationAPI, chainName]);
 
   const finishRun = useCallback((status) => {
     if (status === "cancelled" || status === "unknown") {
@@ -605,6 +690,47 @@ export default function AaExit() {
                   Scan {CHAIN_LABEL[chainName] || "this network"}
                 </Button>
               </div>
+
+              {phase === "scanning" && (
+                <div
+                  className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3"
+                  aria-live="polite"
+                >
+                  <div className="flex items-center justify-between gap-3 mb-1">
+                    <Text strong>Scan in progress</Text>
+                    <Text type="secondary">{scanProgress.percent}%</Text>
+                  </div>
+                  <Progress
+                    percent={scanProgress.percent}
+                    showInfo={false}
+                    status="active"
+                  />
+                  <Text type="secondary" className="block text-sm mt-1">
+                    {scanProgress.message || "Scanning wallet…"}
+                  </Text>
+
+                  {scanProgress.discoveries.length > 0 && (
+                    <div className="mt-3">
+                      <Text className="text-xs block mb-1">Found so far</Text>
+                      <div className="flex flex-wrap gap-1">
+                        {scanProgress.discoveries.map((item) => (
+                          <Tag
+                            key={item.id}
+                            color={item.kind === "native" ? "geekblue" : "blue"}
+                          >
+                            {item.label}
+                          </Tag>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <Text type="secondary" className="block text-xs mt-2">
+                    Keep this page open. The scan can take a while because each
+                    discovered position is checked before anything is sent.
+                  </Text>
+                </div>
+              )}
             </Card>
           )}
 

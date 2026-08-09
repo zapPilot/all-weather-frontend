@@ -139,6 +139,29 @@ describe("buildProtocolGroups", () => {
     );
   });
 
+  it("reports a position as soon as its protocol scan finishes", async () => {
+    const [protocol] = protocolsOn("Velodrome Vault", "op");
+    stub(protocol.interface, { staked: "1000", wallet: "0" });
+    const onProtocolScanned = vi.fn();
+
+    await buildProtocolGroups({
+      protocols: [protocol],
+      owner: OWNER,
+      recipient: RECIPIENT,
+      onProtocolScanned,
+    });
+
+    expect(onProtocolScanned).toHaveBeenCalledWith(
+      expect.objectContaining({
+        protocol,
+        completed: 1,
+        total: 1,
+        found: true,
+        failed: false,
+      }),
+    );
+  });
+
   // level 1 is the retry that sheds the claim leg — the one part that reaches
   // into third-party APIs
   it("drops the claim at level 1", async () => {
@@ -319,7 +342,7 @@ describe("scanAaExit", () => {
     expect(groups.filter((group) => group.txns.length > 0)).toEqual([]);
   });
 
-  it("reuses the wallet token scan for 1 hour", async () => {
+  it("reuses the wallet token scan for 10 minutes", async () => {
     fetchWalletTokens.mockResolvedValue([]);
 
     await scanOnOptimism();
@@ -347,12 +370,12 @@ describe("scanAaExit", () => {
     expect(fetchWalletTokens).toHaveBeenCalledTimes(1);
   });
 
-  it("refreshes the wallet token scan after 1 hour", async () => {
+  it("refreshes the wallet token scan after 10 minutes", async () => {
     vi.useFakeTimers();
     fetchWalletTokens.mockResolvedValue([]);
 
     await scanOnOptimism();
-    vi.advanceTimersByTime(60 * 60 * 1000 + 1);
+    vi.advanceTimersByTime(10 * 60 * 1000 + 1);
     await scanOnOptimism();
 
     expect(fetchWalletTokens).toHaveBeenCalledTimes(2);
