@@ -928,6 +928,30 @@ describe("direct AA executeBatch preparation", () => {
     expect(await batch.value).toBe(0n);
   });
 
+  it("uses execute instead of executeBatch for a single direct call", async () => {
+    const [call] = await resolveAaCalls([
+      prepareTransaction({
+        client,
+        chain: arbitrum,
+        to: RECIPIENT,
+        value: 3n,
+        data: "0x1234",
+      }),
+    ]);
+    const transaction = buildAaExecuteBatchTransaction({
+      calls: [call],
+      smartAccountAddress: SMART_ACCOUNT,
+      chainMetadata: arbitrum,
+      client,
+    });
+    const data = await encode(transaction);
+    expect(data.slice(0, 10)).toBe(
+      new ethers.utils.Interface([
+        "function execute(address,uint256,bytes)",
+      ]).getSighash("execute"),
+    );
+  });
+
   it("probes the direct admin transaction without broadcasting", async () => {
     const estimateGasFn = vi.fn().mockResolvedValue(3_560_000n);
     const transaction = prepareTransaction({
@@ -1944,6 +1968,45 @@ describe("AA UserOp probing and isolation", () => {
       });
       expect(options.waitForDeployment).toBe(false);
     }
+  });
+
+  it("submits a planned batch one transaction at a time when split mode is enabled", async () => {
+    const first = prepareTransaction({
+      client: { clientId: "test-client" },
+      chain: arbitrum,
+      to: RECIPIENT,
+      data: "0x1111",
+    });
+    const second = prepareTransaction({
+      client: { clientId: "test-client" },
+      chain: arbitrum,
+      to: USDC_ARB,
+      data: "0x2222",
+    });
+    const plan = {
+      excluded: [],
+      batches: [
+        {
+          units: [{ uniqueId: "p0", txns: [first, second] }],
+          groups: [{ uniqueId: "p0", txns: [first, second] }],
+        },
+      ],
+    };
+    const sendBatchTransaction = vi.fn((_calls, callbacks) =>
+      callbacks.onSuccess({ transactionHash: `0x${"8".repeat(64)}` }),
+    );
+
+    const result = await executeAaExitPlan({
+      plan,
+      sendBatchTransaction,
+      updateGroup: vi.fn(),
+      splitTransactions: true,
+    });
+
+    expect(result.status).toBe("success");
+    expect(sendBatchTransaction).toHaveBeenCalledTimes(2);
+    expect(sendBatchTransaction.mock.calls[0][0]).toEqual([first]);
+    expect(sendBatchTransaction.mock.calls[1][0]).toEqual([second]);
   });
 
   it("does not retry after user rejection or unknown submission state", async () => {

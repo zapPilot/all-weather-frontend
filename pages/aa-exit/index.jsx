@@ -1147,6 +1147,11 @@ export default function AaExit() {
         sendBatchTransaction: sendExitBatchTransaction,
         updateGroup,
         onBatchStage: handleBatchStage,
+        // Arbitrum has repeatedly been the outlier for large AA batches. Keep
+        // the existing dry-run/isolation plan, but submit each surviving call
+        // sequentially so one oversized executeBatch/UserOp cannot block the
+        // entire emergency exit. Base/OP keep their current batching behavior.
+        splitTransactions: chainMetadata?.id === AA_EXIT_CHAIN_IDS.arbitrum,
       });
 
     let activePlan = planRef.current || { batches: [], excluded: [] };
@@ -1225,6 +1230,7 @@ export default function AaExit() {
     finishRun,
     recipient,
     directMode,
+    chainMetadata?.id,
     notificationAPI,
   ]);
 
@@ -1251,6 +1257,8 @@ export default function AaExit() {
             // a single group is already one signature, so there is no combined
             // attempt to make
             combinedAllowed: false,
+            forceSplitTransactions:
+              chainMetadata?.id === AA_EXIT_CHAIN_IDS.arbitrum,
           });
         });
         if (result.status === "locked") {
@@ -1288,6 +1296,7 @@ export default function AaExit() {
       handleBatchStage,
       notificationAPI,
       finishRun,
+      chainMetadata?.id,
     ],
   );
 
