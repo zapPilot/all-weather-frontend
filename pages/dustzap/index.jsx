@@ -954,6 +954,11 @@ export default function DustZap() {
           tokenPricesMappingTable: conversionPriceMapping,
           slippage,
           handleStatusUpdate,
+          // 1inch V5 currently returns AA DustZap calldata whose minReturn
+          // immediately reverts with ReturnAmountIsNotEnough (0xf32bec2f),
+          // even at the rescue UI's 49% tolerance. Keep EOA behavior unchanged
+          // and use the already-supported alternatives for the AA sunset path.
+          providers: aaOn ? ["0x", "paraswap"] : undefined,
         });
 
       setFetchingSwapRoutes(false);
