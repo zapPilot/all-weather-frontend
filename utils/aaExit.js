@@ -1322,6 +1322,16 @@ export function buildAaExecuteBatchTransaction({
     chain: chainMetadata,
     address: smartAccountAddress,
   });
+  if (calls.length === 1) {
+    const [call] = calls;
+    return prepareContractCall({
+      contract,
+      method: "function execute(address, uint256, bytes)",
+      params: [call.to, call.value ?? 0n, call.data || "0x"],
+      // execute is nonpayable. Native-value legs spend the AA's balance.
+      value: 0n,
+    });
+  }
   return prepareContractCall({
     contract,
     method: "function executeBatch(address[], uint256[], bytes[])",
@@ -2353,6 +2363,7 @@ export async function executeAaExitPlan({
   sendBatchTransaction,
   updateGroup,
   onBatchStage = noop,
+  splitTransactions = false,
 }) {
   let completedBatches = 0;
   for (const excluded of plan.excluded || []) {
@@ -2385,14 +2396,40 @@ export async function executeAaExitPlan({
     units.forEach((group) =>
       updateGroup(group.uniqueId, { status: "sending", error: undefined }),
     );
+    let transactionIndex = 0;
     try {
-      const data = await submit(sendBatchTransaction, calls, emitBatchStage);
-      const transactionHash = transactionHashFromResult(data);
+      const submissions = splitTransactions
+        ? calls.map((transaction) => [transaction])
+        : [calls];
+      let transactionHash = "";
+      for (
+        transactionIndex = 0;
+        transactionIndex < submissions.length;
+        transactionIndex += 1
+      ) {
+        const emitSubmissionStage = splitTransactions
+          ? (event) =>
+              emitBatchStage({
+                ...event,
+                transactionIndex,
+                transactionCount: submissions.length,
+              })
+          : emitBatchStage;
+        const data = await submit(
+          sendBatchTransaction,
+          submissions[transactionIndex],
+          emitSubmissionStage,
+        );
+        transactionHash = transactionHashFromResult(data) || transactionHash;
+      }
       units.forEach((group) =>
         updateGroup(group.uniqueId, {
           status: "success",
           error: undefined,
           transactionHash,
+          ...(splitTransactions
+            ? { progress: `${calls.length}/${calls.length}` }
+            : {}),
         }),
       );
       completedBatches += 1;
@@ -2423,6 +2460,9 @@ export async function executeAaExitPlan({
           error: message,
           userOpHash: error?.userOpHash,
           transactionHash: error?.transactionHash,
+          ...(splitTransactions
+            ? { progress: `${transactionIndex}/${calls.length}` }
+            : {}),
         }),
       );
       return {
@@ -2451,6 +2491,7 @@ export async function runAaExitGroups({
   onFallback,
   onBatchStage = noop,
   combinedAllowed = true,
+  forceSplitTransactions = false,
 }) {
   const live = groups.map((group) => ({ ...group }));
 
@@ -2631,7 +2672,7 @@ export async function runAaExitGroups({
         return {};
       }
 
-      if (slot.level >= 2) {
+      if (forceSplitTransactions || slot.level >= 2) {
         const outcome = await sendSplit(slot);
         if (outcome.stop) {
           const rowStatus =
