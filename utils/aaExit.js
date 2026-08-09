@@ -980,6 +980,7 @@ export async function scanAaExit({
   chainMetadata,
   updateProgress = noop,
   onScanProgress = noop,
+  walletTokensOverride = null,
 }) {
   const protocols = collectExitProtocols(chainName);
   emitProgress(onScanProgress, {
@@ -1014,11 +1015,14 @@ export async function scanAaExit({
   let walletScanError = null;
   emitProgress(onScanProgress, { stage: "wallet-fetch" });
   try {
-    walletTokens = await fetchAaExitWalletTokens(chainName, owner);
+    walletTokens = Array.isArray(walletTokensOverride)
+      ? walletTokensOverride
+      : await fetchAaExitWalletTokens(chainName, owner);
   } catch (error) {
     walletScanError = error;
     logger.warn("AA Exit: wallet token scan unavailable", error);
   }
+  const walletTokenSnapshot = walletScanError ? null : walletTokens;
 
   let untransferableTokens = [];
   if (!walletScanError) {
@@ -1107,11 +1111,18 @@ export async function scanAaExit({
       ),
       feePlan: null,
       walletScanError,
+      walletTokenSnapshot,
       untransferableTokens,
     };
   }
 
-  return { groups, feePlan, walletScanError, untransferableTokens };
+  return {
+    groups,
+    feePlan,
+    walletScanError,
+    walletTokenSnapshot,
+    untransferableTokens,
+  };
 }
 
 // 0: as built. 1: rebuilt without the claim leg (protocols only). 2: the same

@@ -17,6 +17,7 @@ vi.mock("../../utils/dustConversion", async (importOriginal) => ({
 
 const OWNER = "0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0";
 const RECIPIENT = "0x1234567890123456789012345678901234567890";
+const ALT_RECIPIENT = "0x9876543210987654321098765432109876543210";
 const USDC_OP = "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85";
 // transfer(address,uint256)
 const TRANSFER_SELECTOR = "a9059cbb";
@@ -380,6 +381,23 @@ describe("scanAaExit", () => {
 
     expect(fetchWalletTokens).toHaveBeenCalledTimes(2);
     vi.useRealTimers();
+  });
+
+  it("reuses the saved token snapshot when only the recipient changes", async () => {
+    fetchWalletTokens.mockResolvedValue([]);
+
+    const first = await scanOnOptimism();
+    clearAaExitWalletTokenCache();
+    await scanAaExit({
+      owner: OWNER,
+      recipient: ALT_RECIPIENT,
+      chainName: "op",
+      chainMetadata: optimism,
+      walletTokensOverride: first.walletTokenSnapshot,
+    });
+
+    expect(first.walletTokenSnapshot).toEqual([]);
+    expect(fetchWalletTokens).toHaveBeenCalledTimes(1);
   });
 
   it("refuses a chain it has no wallet-token mapping for", async () => {
