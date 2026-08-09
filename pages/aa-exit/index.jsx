@@ -36,7 +36,6 @@ import {
   PROTOCOL_TREASURY_ADDRESS,
   buildClaimedRewardsGroup,
   buildProtocolGroups,
-  clearAaExitWalletTokenCache,
   diagnoseAaBatchFailure,
   executeAaExitPlan,
   materializeExitCandidate,
@@ -179,6 +178,13 @@ export default function AaExit() {
   // Preflighted AA batches. These contain the dynamically materialized rewards
   // transactions that correspond only to surviving protocol groups.
   const planRef = useRef(null);
+  // The DeBank token list is recipient-independent. Keep the successful scan so
+  // editing the destination can rebuild calldata without paying for another
+  // wallet-token lookup, even after the normal 10-minute cache expires.
+  const walletTokenSnapshotRef = useRef(null);
+  // Prepared transactions embed the recipient in calldata. Never execute a plan
+  // after the input changes until it has been rebound to the new destination.
+  const planRecipientRef = useRef(null);
   // Mirrors each row's status outside React so a run can decide its final phase
   // without reading state it just queued an update for
   const statusRef = useRef({});
@@ -196,6 +202,8 @@ export default function AaExit() {
   const resetResults = useCallback(() => {
     groupsRef.current = [];
     planRef.current = null;
+    walletTokenSnapshotRef.current = null;
+    planRecipientRef.current = null;
     statusRef.current = {};
     setRows([]);
     setFeePlan(null);
@@ -233,6 +241,11 @@ export default function AaExit() {
     recipient.length > 0 &&
     (!ethers.utils.isAddress(recipient) ||
       recipient.toLowerCase() === account?.address?.toLowerCase());
+  const recipientPlanStale =
+    !!planRecipientRef.current &&
+    !!recipient &&
+    ethers.utils.isAddress(recipient) &&
+    planRecipientRef.current.toLowerCase() !== recipient.toLowerCase();
 
   const busy = phase === "scanning" || phase === "running";
   const canScan =
@@ -328,107 +341,119 @@ export default function AaExit() {
     [account?.address, recipient, chainMetadata],
   );
 
-  const prepareExitPlan = useCallback(async () => {
-    const adminAccount = adminWallet?.getAccount();
-    if (!adminAccount?.address) {
-      throw new Error(
-        "AA Exit could not resolve the smart wallet admin account",
-      );
-    }
+  const prepareExitPlan = useCallback(
+    async ({ walletTokensOverride } = {}) => {
+      const adminAccount = adminWallet?.getAccount();
+      if (!adminAccount?.address) {
+        throw new Error(
+          "AA Exit could not resolve the smart wallet admin account",
+        );
+      }
 
-    const result = await scanAaExit({
-      owner: account.address,
+      const result = await scanAaExit({
+        owner: account.address,
+        recipient,
+        chainName,
+        chainMetadata,
+        onScanProgress: updateScanProgress,
+        walletTokensOverride,
+      });
+      setScanProgress((current) => ({
+        ...current,
+        percent: Math.max(current.percent, 82),
+        message: "Dry-running the exit plan before you sign…",
+      }));
+      const probe = (candidateGroups) =>
+        probeAaBatch({
+          groups: candidateGroups,
+          adminAccount,
+          chainMetadata,
+          smartAccountAddress: account.address,
+        });
+      const diagnose = (group) =>
+        diagnoseAaBatchFailure({
+          groups: materializeExitCandidate({
+            units: [group],
+            chainMetadata,
+            recipient,
+          }),
+          adminAccount,
+          chainMetadata,
+          smartAccountAddress: account.address,
+        });
+      const plan = await planAaExitBatches({
+        groups: result.groups,
+        chainMetadata,
+        recipient,
+        probe,
+        diagnose,
+        onProbe: ({ probeCount, candidateCount }) =>
+          setScanProgress((current) => ({
+            ...current,
+            percent: Math.max(
+              current.percent,
+              Math.min(96, 82 + probeCount * 2),
+            ),
+            message: `Dry-running exit batch ${probeCount} (${candidateCount} item${
+              candidateCount === 1 ? "" : "s"
+            })…`,
+          })),
+      });
+      setScanProgress((current) => ({
+        ...current,
+        percent: 100,
+        message: "Scan complete. Exit plan is ready.",
+      }));
+      return { result, plan, recipient };
+    },
+    [
+      account?.address,
+      adminWallet,
       recipient,
       chainName,
       chainMetadata,
-      onScanProgress: updateScanProgress,
-    });
-    setScanProgress((current) => ({
-      ...current,
-      percent: Math.max(current.percent, 82),
-      message: "Dry-running the exit plan before you sign…",
-    }));
-    const probe = (candidateGroups) =>
-      probeAaBatch({
-        groups: candidateGroups,
-        adminAccount,
-        chainMetadata,
-        smartAccountAddress: account.address,
-      });
-    const diagnose = (group) =>
-      diagnoseAaBatchFailure({
-        groups: materializeExitCandidate({
-          units: [group],
-          chainMetadata,
-          recipient,
-        }),
-        adminAccount,
-        chainMetadata,
-        smartAccountAddress: account.address,
-      });
-    const plan = await planAaExitBatches({
-      groups: result.groups,
-      chainMetadata,
-      recipient,
-      probe,
-      diagnose,
-      onProbe: ({ probeCount, candidateCount }) =>
-        setScanProgress((current) => ({
-          ...current,
-          percent: Math.max(current.percent, Math.min(96, 82 + probeCount * 2)),
-          message: `Dry-running exit batch ${probeCount} (${candidateCount} item${
-            candidateCount === 1 ? "" : "s"
-          })…`,
-        })),
-    });
-    setScanProgress((current) => ({
-      ...current,
-      percent: 100,
-      message: "Scan complete. Exit plan is ready.",
-    }));
-    return { result, plan };
-  }, [
-    account?.address,
-    adminWallet,
-    recipient,
-    chainName,
-    chainMetadata,
-    updateScanProgress,
-  ]);
+      updateScanProgress,
+    ],
+  );
 
-  const applyPreparedPlan = useCallback(({ result, plan }) => {
-    groupsRef.current = result.groups;
-    planRef.current = plan;
-    statusRef.current = {};
-    const excluded = new Map(
-      (plan.excluded || []).map((item) => [item.group.uniqueId, item]),
-    );
-    setRows(
-      result.groups.map((group) => {
-        const row = toRow(group);
-        const omitted = excluded.get(group.uniqueId);
-        if (!omitted) return row;
-        return {
-          ...row,
-          status: "failed",
-          error:
-            omitted.diagnosis?.message ||
-            omitted.error?.message ||
-            "UserOperation probe failed",
-          note: "Excluded during dry-run so it cannot block the healthy exit batch.",
-        };
-      }),
-    );
-    excluded.forEach((_, uniqueId) => {
-      statusRef.current[uniqueId] = "failed";
-    });
-    setFeePlan(result.feePlan);
-    setWalletScanFailed(!!result.walletScanError);
-    setUntransferableTokens(result.untransferableTokens || []);
-    setFellBack(
-      (plan.excluded || []).length > 0 || (plan.batches || []).length > 1,
-    );
-  }, []);
+  const applyPreparedPlan = useCallback(
+    ({ result, plan, recipient: plannedRecipient }) => {
+      groupsRef.current = result.groups;
+      planRef.current = plan;
+      walletTokenSnapshotRef.current = result.walletTokenSnapshot;
+      planRecipientRef.current = plannedRecipient;
+      statusRef.current = {};
+      const excluded = new Map(
+        (plan.excluded || []).map((item) => [item.group.uniqueId, item]),
+      );
+      setRows(
+        result.groups.map((group) => {
+          const row = toRow(group);
+          const omitted = excluded.get(group.uniqueId);
+          if (!omitted) return row;
+          return {
+            ...row,
+            status: "failed",
+            error:
+              omitted.diagnosis?.message ||
+              omitted.error?.message ||
+              "UserOperation probe failed",
+            note: "Excluded during dry-run so it cannot block the healthy exit batch.",
+          };
+        }),
+      );
+      excluded.forEach((_, uniqueId) => {
+        statusRef.current[uniqueId] = "failed";
+      });
+      setFeePlan(result.feePlan);
+      setWalletScanFailed(!!result.walletScanError);
+      setUntransferableTokens(result.untransferableTokens || []);
+      setFellBack(
+        (plan.excluded || []).length > 0 || (plan.batches || []).length > 1,
+      );
+    },
+    [],
+  );
 
   const handleScan = useCallback(async () => {
     setPhase("scanning");
@@ -465,7 +490,6 @@ export default function AaExit() {
   }, []);
 
   const handleRun = useCallback(async () => {
-    setPhase("running");
     const executePlan = (plan) =>
       executeAaExitPlan({
         plan,
@@ -473,32 +497,46 @@ export default function AaExit() {
         updateGroup,
       });
 
-    let result = await executePlan(
-      planRef.current || { batches: [], excluded: [] },
-    );
-
-    // A deterministic failure before ANY planned batch landed is safe to
-    // rebuild from fresh balances/nonce and isolate again. Unknown submission
-    // state or user rejection never enters this path, and once one chunk landed
-    // we stop rather than risk charging/sending an already completed unit twice.
-    if (
-      result.status === "pre-submit-failed" &&
-      result.completedBatches === 0
-    ) {
+    let activePlan = planRef.current || { batches: [], excluded: [] };
+    const plannedRecipient = planRecipientRef.current?.toLowerCase();
+    const currentRecipient = recipient.toLowerCase();
+    if (plannedRecipient !== currentRecipient) {
+      setPhase("scanning");
+      setScanProgress((current) => ({
+        ...current,
+        percent: 55,
+        message:
+          "Updating the exit plan for the new destination without re-fetching wallet tokens…",
+      }));
       try {
-        // The normal scan deliberately caches DeBank for cost control, but a
-        // deterministic send failure is the one path where the plan explicitly
-        // requires fresh balances before rebuilding and probing again.
-        clearAaExitWalletTokenCache();
-        const prepared = await prepareExitPlan();
+        const prepared = await prepareExitPlan({
+          walletTokensOverride: walletTokenSnapshotRef.current,
+        });
         applyPreparedPlan(prepared);
-        result = await executePlan(prepared.plan);
+        activePlan = prepared.plan;
       } catch (error) {
-        result = { status: "pre-submit-failed", error, completedBatches: 0 };
+        openNotificationWithIcon(
+          notificationAPI,
+          "Could not update destination",
+          "error",
+          error?.message || String(error),
+        );
+        setPhase("ready");
+        return;
       }
     }
 
+    setPhase("running");
+    let result = await executePlan(activePlan);
+
     if (result.status === "pre-submit-failed") {
+      openNotificationWithIcon(
+        notificationAPI,
+        "Transaction was not submitted",
+        "error",
+        result.error?.message ||
+          "The wallet signed, but the UserOperation failed before submission. No automatic retry was attempted.",
+      );
       setPhase("partial");
       return;
     }
@@ -509,6 +547,8 @@ export default function AaExit() {
     prepareExitPlan,
     applyPreparedPlan,
     finishRun,
+    recipient,
+    notificationAPI,
   ]);
 
   const handleRetry = useCallback(
@@ -680,15 +720,26 @@ export default function AaExit() {
                   deposit address.
                 </span>
               </Checkbox>
+              {recipientPlanStale && (
+                <Alert
+                  className="mt-3"
+                  type="info"
+                  showIcon
+                  message="Destination changed — no new wallet scan needed"
+                  description="Reconfirm the address, then use the Exit button below. The existing wallet-token snapshot will be reused and only destination-specific checks will be rebuilt before signing."
+                />
+              )}
               <div className="mt-3">
-                <Button
-                  type="primary"
-                  disabled={!canScan}
-                  loading={phase === "scanning"}
-                  onClick={handleScan}
-                >
-                  Scan {CHAIN_LABEL[chainName] || "this network"}
-                </Button>
+                {!recipientPlanStale && (
+                  <Button
+                    type="primary"
+                    disabled={!canScan}
+                    loading={phase === "scanning"}
+                    onClick={handleScan}
+                  >
+                    Scan {CHAIN_LABEL[chainName] || "this network"}
+                  </Button>
+                )}
               </div>
 
               {phase === "scanning" && (
@@ -878,7 +929,13 @@ export default function AaExit() {
                 danger
                 type="primary"
                 loading={phase === "running" && retrying === null}
-                disabled={phase !== "ready" || movableRows.length === 0}
+                disabled={
+                  phase !== "ready" ||
+                  movableRows.length === 0 ||
+                  !recipient ||
+                  recipientError ||
+                  !confirmed
+                }
                 onClick={handleRun}
               >
                 Exit everything on {CHAIN_LABEL[chainName] || chainName}
