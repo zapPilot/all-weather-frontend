@@ -333,68 +333,17 @@ export class BaseCamelot extends BaseProtocol {
     return [[lpFeesTxn], pendingRewards];
   }
 
-  // AA Exit means emptying the smart wallet, not merely changing ownership of
-  // the NFT wrapper. Unwind every matching Camelot V3 position directly to the
-  // recipient: decrease all liquidity, collect both principal and accrued LP
-  // fees to the recipient, then burn the now-empty NFT. Campaign/xGRAIL rewards
-  // remain intentionally out of this path because they are address-bound and/or
-  // vesting and cannot be represented as a safe ERC20 transfer.
+  // Camelot V3 positions are ERC721s. For an emergency exit, preserve the
+  // position whole and hand the NFT to the user's recipient wallet. Do not
+  // decrease liquidity or burn: both are unnecessary irreversible operations,
+  // and keeping the NFT also preserves any unclaimed position-linked rewards.
+  // collectExitProtocols dedupes the shared Camelot position manager, so this
+  // path can safely enumerate every NFT it owns instead of only configured pools.
   async emergencyTransfer(owner, recipient, updateProgress, options = {}) {
-    const tokenIds = await this._getAllNftIDs(owner);
-    const txns = [];
-    const maxUint128 = ethers.BigNumber.from(
-      "340282366920938463463374607431768211455",
-    );
-
-    for (const tokenId of tokenIds || []) {
-      const position = await this._getEmergencyPosition(tokenId);
-      const liquidity = ethers.BigNumber.from(position.liquidity || 0);
-      if (!liquidity.isZero()) {
-        txns.push(
-          prepareContractCall({
-            contract: this.assetContract,
-            method: "decreaseLiquidity",
-            params: [
-              {
-                tokenId,
-                liquidity,
-                amount0Min: 0,
-                amount1Min: 0,
-                deadline: this.getDeadline(),
-              },
-            ],
-          }),
-        );
-      }
-      txns.push(
-        prepareContractCall({
-          contract: this.assetContract,
-          method: "collect",
-          params: [
-            {
-              tokenId,
-              recipient,
-              amount0Max: maxUint128,
-              amount1Max: maxUint128,
-            },
-          ],
-        }),
-      );
-      txns.push(
-        prepareContractCall({
-          contract: this.assetContract,
-          method: "burn",
-          params: [tokenId],
-        }),
-      );
-    }
-
-    this.checkTxnsToDataNotUndefined(txns, "emergencyTransfer");
-    return { txns, rewardBalances: [] };
-  }
-
-  async _getEmergencyPosition(tokenId) {
-    return this.assetContractInstance.positions(tokenId);
+    return super.emergencyTransfer(owner, recipient, updateProgress, {
+      ...options,
+      skipRewards: true,
+    });
   }
 
   async lockUpPeriod() {
@@ -562,35 +511,19 @@ export class BaseCamelot extends BaseProtocol {
     }
     return 0;
   }
-  // Every position this wallet holds in *this* pool, unlike _getNftID which
-  // stops at the first. Scoped to the pool on purpose: several protocols in a
-  // vault share one position manager, so an unscoped list would make each of
-  // their emergency-exit groups try to move all of the wallet's NFTs and only
-  // the first would succeed.
+  // AA Exit dedupes Camelot by its shared position-manager address, so this
+  // intentionally enumerates every Camelot V3 NFT the wallet owns. Restricting
+  // this by today's configured pool/range strands old or manually-created
+  // positions such as WETH/USDC. Do not silently cap the count: if enumeration
+  // cannot complete, failing the row is safer than reporting a partial exit.
   async _getAllNftIDs(owner) {
-    const { tickLower, tickUpper } = this.customParams.tickers;
-    const [token0Metadata, token1Metadata] = this.customParams.lpTokens;
-    const balances = await this.assetContractInstance.balanceOf(owner);
+    const balance = await this.assetContractInstance.balanceOf(owner);
+    const count = ethers.BigNumber.from(balance).toNumber();
     const tokenIds = [];
-    for (let idx = 0; idx < Math.min(Number(balances), 50); idx++) {
-      // A single unreadable position must not strand the remaining ones
-      try {
-        const token_id = await this.assetContractInstance.tokenOfOwnerByIndex(
-          owner,
-          idx,
-        );
-        const position = await this.assetContractInstance.positions(token_id);
-        if (
-          position.tickLower === tickLower &&
-          position.tickUpper === tickUpper &&
-          position.token0.toLowerCase() === token0Metadata[1].toLowerCase() &&
-          position.token1.toLowerCase() === token1Metadata[1].toLowerCase()
-        ) {
-          tokenIds.push(token_id);
-        }
-      } catch (error) {
-        continue;
-      }
+    for (let idx = 0; idx < count; idx++) {
+      tokenIds.push(
+        await this.assetContractInstance.tokenOfOwnerByIndex(owner, idx),
+      );
     }
     return tokenIds;
   }
