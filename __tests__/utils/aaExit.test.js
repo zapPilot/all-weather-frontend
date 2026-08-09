@@ -9,7 +9,9 @@ import {
   buildClaimedRewardsGroup,
   buildFeeGroup,
   buildWalletSweepGroups,
+  clearPendingAaExitUserOp,
   collectExitProtocols,
+  createPendingAaExitUserOp,
   debankChainCode,
   executeAaExitPlan,
   materializeExitCandidate,
@@ -17,11 +19,13 @@ import {
   planAaExitBatches,
   preflightWalletTokens,
   probeAaBatch,
+  readPendingAaExitUserOp,
   runAaExitGroups,
   selectFeeToken,
   sendAaExitBatch,
   sweptAddressesOf,
   usdToTokenRawFloor,
+  writePendingAaExitUserOp,
 } from "../../utils/aaExit";
 
 const RECIPIENT = "0x1234567890123456789012345678901234567890";
@@ -867,83 +871,428 @@ describe("runAaExitGroups", () => {
   });
 });
 
-describe("chain-scoped AA Exit submission", () => {
-  const transaction = { chain: arbitrum };
+describe("staged AA Exit submission", () => {
   const adminAccount = { address: ADMIN };
+  const client = { clientId: "test-client" };
+  const userOpHash = `0x${"a".repeat(64)}`;
+  const transactionHash = `0x${"b".repeat(64)}`;
+  const unsignedUserOp = {
+    sender: SMART_ACCOUNT,
+    nonce: 0n,
+    signature: "0x",
+  };
+  const signedUserOp = { ...unsignedUserOp, signature: "0x1234" };
 
-  it("creates the submitter on Arbitrum and sends only after the AA address matches", async () => {
-    const connect = vi.fn().mockResolvedValue({ address: SMART_ACCOUNT });
-    const smartWalletFactory = vi.fn(() => ({ connect }));
-    const sendBatchTransactionFn = vi.fn().mockResolvedValue({
-      transactionHash: "0xabc",
-    });
-    const client = { clientId: "test-client" };
-
-    const result = await sendAaExitBatch({
-      transactions: [transaction],
-      adminAccount,
-      chainMetadata: arbitrum,
-      expectedSmartAccountAddress: SMART_ACCOUNT,
-      client,
-      smartWalletFactory,
-      sendBatchTransactionFn,
-    });
-
-    expect(smartWalletFactory).toHaveBeenCalledWith({
-      chain: arbitrum,
-      sponsorGas: true,
-    });
-    expect(connect).toHaveBeenCalledWith({
-      client,
-      personalAccount: adminAccount,
-      chain: arbitrum,
-    });
-    expect(sendBatchTransactionFn).toHaveBeenCalledWith({
-      account: { address: SMART_ACCOUNT },
-      transactions: [transaction],
-    });
-    expect(result.transactionHash).toBe("0xabc");
+  const transactionFor = (chainMetadata) => ({
+    chain: chainMetadata,
+    to: RECIPIENT,
+    data: "0x",
   });
 
-  it("refuses to submit when the chain-scoped smart account address differs", async () => {
-    const smartWalletFactory = vi.fn(() => ({
-      connect: vi.fn().mockResolvedValue({
-        address: "0x3333333333333333333333333333333333333333",
-      }),
-    }));
-    const sendBatchTransactionFn = vi.fn();
+  const senderDependencies = (overrides = {}) => ({
+    prepareUserOpFn: vi.fn().mockResolvedValue(unsignedUserOp),
+    signUserOpFn: vi.fn().mockResolvedValue(signedUserOp),
+    getUserOpHashFn: vi.fn().mockResolvedValue(userOpHash),
+    bundleUserOpFn: vi.fn().mockResolvedValue(userOpHash),
+    waitForUserOpReceiptFn: vi.fn().mockResolvedValue({ transactionHash }),
+    ...overrides,
+  });
 
-    await expect(
-      sendAaExitBatch({
+  const sendWith = ({
+    chainMetadata = arbitrum,
+    dependencies = senderDependencies(),
+    onStage = vi.fn(),
+    transactions = [transactionFor(chainMetadata)],
+  } = {}) => ({
+    dependencies,
+    onStage,
+    promise: sendAaExitBatch({
+      transactions,
+      adminAccount,
+      chainMetadata,
+      expectedSmartAccountAddress: SMART_ACCOUNT,
+      client,
+      onStage,
+      ...dependencies,
+    }),
+  });
+
+  it("prepares, signs, submits and confirms on all supported chains", async () => {
+    for (const chainMetadata of [arbitrum, base, optimism]) {
+      const transaction = transactionFor(chainMetadata);
+      const dependencies = senderDependencies();
+      const onStage = vi.fn();
+      const { promise } = sendWith({
+        chainMetadata,
+        dependencies,
+        onStage,
         transactions: [transaction],
-        adminAccount,
-        chainMetadata: arbitrum,
-        expectedSmartAccountAddress: SMART_ACCOUNT,
-        smartWalletFactory,
-        sendBatchTransactionFn,
-      }),
-    ).rejects.toThrow("smart wallet mismatch");
+      });
 
-    expect(sendBatchTransactionFn).not.toHaveBeenCalled();
+      await expect(promise).resolves.toMatchObject({
+        userOpHash,
+        transactionHash,
+      });
+      expect(dependencies.prepareUserOpFn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          transactions: [transaction],
+          adminAccount,
+          client,
+          smartWalletOptions: {
+            chain: chainMetadata,
+            sponsorGas: true,
+          },
+          waitForDeployment: false,
+        }),
+      );
+      expect(dependencies.signUserOpFn).toHaveBeenCalledWith({
+        userOp: unsignedUserOp,
+        adminAccount,
+        chain: chainMetadata,
+        client,
+      });
+      expect(dependencies.getUserOpHashFn).toHaveBeenCalledWith({
+        userOp: signedUserOp,
+        chain: chainMetadata,
+        client,
+      });
+      expect(dependencies.bundleUserOpFn).toHaveBeenCalledWith({
+        userOp: signedUserOp,
+        options: { chain: chainMetadata, client },
+      });
+      expect(dependencies.waitForUserOpReceiptFn).toHaveBeenCalledWith({
+        chain: chainMetadata,
+        client,
+        userOpHash,
+      });
+      expect(onStage.mock.calls.map(([event]) => event)).toEqual([
+        { stage: "preparing" },
+        { stage: "signing" },
+        { stage: "submitting", userOpHash },
+        { stage: "submitted", userOpHash },
+        { stage: "confirmed", userOpHash, transactionHash },
+      ]);
+    }
+  });
+
+  it("marks prepare failures as definitely not submitted", async () => {
+    const dependencies = senderDependencies({
+      prepareUserOpFn: vi.fn().mockRejectedValue(new Error("prepare failed")),
+    });
+    const { promise } = sendWith({ dependencies });
+
+    await expect(promise).rejects.toMatchObject({
+      message: "prepare failed",
+      stage: "preparing",
+      submitted: false,
+    });
+    expect(dependencies.signUserOpFn).not.toHaveBeenCalled();
+    expect(dependencies.bundleUserOpFn).not.toHaveBeenCalled();
+  });
+
+  it("marks signature failures as definitely not submitted", async () => {
+    const dependencies = senderDependencies({
+      signUserOpFn: vi.fn().mockRejectedValue(new Error("signature failed")),
+    });
+    const { promise } = sendWith({ dependencies });
+
+    await expect(promise).rejects.toMatchObject({
+      message: "signature failed",
+      stage: "signing",
+      submitted: false,
+    });
+    expect(dependencies.getUserOpHashFn).not.toHaveBeenCalled();
+    expect(dependencies.bundleUserOpFn).not.toHaveBeenCalled();
+  });
+
+  it("does not submit when the deterministic UserOp hash cannot be calculated", async () => {
+    const dependencies = senderDependencies({
+      getUserOpHashFn: vi
+        .fn()
+        .mockRejectedValue(new Error("could not calculate UserOp hash")),
+    });
+    const { promise } = sendWith({ dependencies });
+
+    await expect(promise).rejects.toMatchObject({
+      message: "could not calculate UserOp hash",
+      stage: "signing",
+      submitted: false,
+    });
+    expect(dependencies.bundleUserOpFn).not.toHaveBeenCalled();
+  });
+
+  it("does not expose a hash when the bundler explicitly rejects the UserOp", async () => {
+    const dependencies = senderDependencies({
+      bundleUserOpFn: vi
+        .fn()
+        .mockRejectedValue(
+          new Error(
+            "eth_sendUserOperation error: AA23 reverted\nStatus: 400\nCode: UNKNOWN",
+          ),
+        ),
+    });
+    const { promise } = sendWith({ dependencies });
+    const error = await promise.catch((caught) => caught);
+
+    expect(error).toMatchObject({
+      message:
+        "eth_sendUserOperation error: AA23 reverted\nStatus: 400\nCode: UNKNOWN",
+      stage: "submitting",
+      submitted: false,
+    });
+    expect(error.userOpHash).toBeUndefined();
+    expect(dependencies.waitForUserOpReceiptFn).not.toHaveBeenCalled();
+  });
+
+  it("preserves the local hash for a 5xx eth_sendUserOperation response", async () => {
+    const dependencies = senderDependencies({
+      bundleUserOpFn: vi
+        .fn()
+        .mockRejectedValue(
+          new Error(
+            "eth_sendUserOperation error: gateway timeout\nStatus: 504\nCode: UNKNOWN",
+          ),
+        ),
+    });
+    const { promise } = sendWith({ dependencies });
+
+    await expect(promise).rejects.toMatchObject({
+      stage: "submitting",
+      submitted: true,
+      submissionUnknown: true,
+      userOpHash,
+    });
+  });
+
+  it("preserves the local hash when a bundler transport failure may have submitted", async () => {
+    const dependencies = senderDependencies({
+      bundleUserOpFn: vi
+        .fn()
+        .mockRejectedValue(new Error("network connection reset")),
+    });
+    const onStage = vi.fn();
+    const { promise } = sendWith({ dependencies, onStage });
+
+    await expect(promise).rejects.toMatchObject({
+      message: "network connection reset",
+      stage: "submitting",
+      submitted: true,
+      submissionUnknown: true,
+      userOpHash,
+    });
+    expect(onStage).toHaveBeenLastCalledWith({
+      stage: "submitted",
+      userOpHash,
+      submissionUnknown: true,
+    });
+    expect(dependencies.waitForUserOpReceiptFn).not.toHaveBeenCalled();
+  });
+
+  it("treats a bundler hash mismatch as submitted but unsafe to retry", async () => {
+    const returnedHash = `0x${"e".repeat(64)}`;
+    const dependencies = senderDependencies({
+      bundleUserOpFn: vi.fn().mockResolvedValue(returnedHash),
+    });
+    const { promise } = sendWith({ dependencies });
+
+    await expect(promise).rejects.toMatchObject({
+      message: expect.stringContaining(`returned ${returnedHash}`),
+      stage: "submitting",
+      submitted: true,
+      submissionUnknown: true,
+      userOpHash,
+    });
+    expect(dependencies.waitForUserOpReceiptFn).not.toHaveBeenCalled();
+  });
+
+  it("treats a missing bundler hash as submitted but unsafe to retry", async () => {
+    const dependencies = senderDependencies({
+      bundleUserOpFn: vi.fn().mockResolvedValue(undefined),
+    });
+    const { promise } = sendWith({ dependencies });
+
+    await expect(promise).rejects.toMatchObject({
+      message: expect.stringContaining("returned no UserOp hash"),
+      stage: "submitting",
+      submitted: true,
+      submissionUnknown: true,
+      userOpHash,
+    });
+    expect(dependencies.waitForUserOpReceiptFn).not.toHaveBeenCalled();
+  });
+
+  it("keeps the UserOp hash when receipt polling times out after submission", async () => {
+    const dependencies = senderDependencies({
+      waitForUserOpReceiptFn: vi
+        .fn()
+        .mockRejectedValue(new Error("Timeout waiting for userOp")),
+    });
+    const { promise } = sendWith({ dependencies });
+
+    await expect(promise).rejects.toMatchObject({
+      message: "Timeout waiting for userOp",
+      stage: "submitted",
+      submitted: true,
+      userOpHash,
+    });
+    expect(dependencies.bundleUserOpFn).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses an unexpected prepared sender before asking for a signature", async () => {
+    const dependencies = senderDependencies({
+      prepareUserOpFn: vi.fn().mockResolvedValue({
+        ...unsignedUserOp,
+        sender: "0x3333333333333333333333333333333333333333",
+      }),
+    });
+    const { promise } = sendWith({ dependencies });
+
+    await expect(promise).rejects.toMatchObject({
+      message: expect.stringContaining("smart wallet mismatch"),
+      stage: "preparing",
+      submitted: false,
+    });
+    expect(dependencies.signUserOpFn).not.toHaveBeenCalled();
+    expect(dependencies.bundleUserOpFn).not.toHaveBeenCalled();
   });
 
   it("refuses to mix a Base transaction into an Arbitrum batch", async () => {
-    const smartWalletFactory = vi.fn();
-    const sendBatchTransactionFn = vi.fn();
+    const dependencies = senderDependencies();
+    const { promise } = sendWith({
+      dependencies,
+      transactions: [transactionFor(base)],
+    });
 
-    await expect(
-      sendAaExitBatch({
-        transactions: [{ chain: base }],
-        adminAccount,
-        chainMetadata: arbitrum,
-        expectedSmartAccountAddress: SMART_ACCOUNT,
-        smartWalletFactory,
-        sendBatchTransactionFn,
+    await expect(promise).rejects.toMatchObject({
+      message: expect.stringContaining("refused a cross-chain batch"),
+      submitted: false,
+    });
+    expect(dependencies.prepareUserOpFn).not.toHaveBeenCalled();
+    expect(dependencies.bundleUserOpFn).not.toHaveBeenCalled();
+  });
+});
+
+describe("pending AA Exit UserOp storage", () => {
+  const smartAccountAddress = "0xB45AF3F83e8919e740980dc8592926936E34F01D";
+  const normalizedAddress = smartAccountAddress.toLowerCase();
+  const userOpHash = `0x${"c".repeat(64)}`;
+  const storageKey = `aa-exit-pending-userop:v1:${arbitrum.id}:${normalizedAddress}`;
+
+  const memoryStorage = () => {
+    const values = new Map();
+    return {
+      values,
+      getItem: vi.fn((key) => values.get(key) ?? null),
+      setItem: vi.fn((key, value) => values.set(key, value)),
+      removeItem: vi.fn((key) => values.delete(key)),
+    };
+  };
+
+  const pendingRecord = (overrides = {}) =>
+    createPendingAaExitUserOp({
+      chainId: arbitrum.id,
+      smartAccountAddress,
+      recipient: RECIPIENT,
+      userOpHash,
+      groupIds: ["protocol-a", "exit-fee"],
+      batchIndex: 1,
+      batchCount: 3,
+      createdAt: 1_700_000_000_000,
+      ...overrides,
+    });
+
+  it("normalizes the address and round-trips a pending batch", () => {
+    const storage = memoryStorage();
+    const record = pendingRecord();
+
+    expect(record).toEqual({
+      version: 1,
+      chainId: arbitrum.id,
+      smartAccountAddress: normalizedAddress,
+      recipient: RECIPIENT,
+      userOpHash,
+      groupIds: ["protocol-a", "exit-fee"],
+      batchIndex: 1,
+      batchCount: 3,
+      createdAt: 1_700_000_000_000,
+    });
+
+    writePendingAaExitUserOp(record, { storage });
+
+    expect(storage.setItem).toHaveBeenCalledWith(
+      storageKey,
+      JSON.stringify(record),
+    );
+    expect(
+      readPendingAaExitUserOp({
+        chainId: arbitrum.id,
+        smartAccountAddress,
+        storage,
       }),
-    ).rejects.toThrow("refused a cross-chain batch");
+    ).toEqual(record);
+  });
 
-    expect(smartWalletFactory).not.toHaveBeenCalled();
-    expect(sendBatchTransactionFn).not.toHaveBeenCalled();
+  it("removes corrupt and mismatched records instead of restoring them", () => {
+    const invalidRecords = [
+      "{not-json",
+      JSON.stringify({ ...pendingRecord(), chainId: base.id }),
+      JSON.stringify({
+        ...pendingRecord(),
+        smartAccountAddress: ADMIN,
+      }),
+      JSON.stringify({ ...pendingRecord(), version: 2 }),
+    ];
+
+    invalidRecords.forEach((rawRecord) => {
+      const storage = memoryStorage();
+      storage.values.set(storageKey, rawRecord);
+
+      expect(
+        readPendingAaExitUserOp({
+          chainId: arbitrum.id,
+          smartAccountAddress,
+          storage,
+        }),
+      ).toBeNull();
+      expect(storage.removeItem).toHaveBeenCalledWith(storageKey);
+      expect(storage.values.has(storageKey)).toBe(false);
+    });
+  });
+
+  it("only clears a hash-qualified pending record when the hash matches", () => {
+    const storage = memoryStorage();
+    const record = pendingRecord();
+    writePendingAaExitUserOp(record, { storage });
+
+    clearPendingAaExitUserOp({
+      chainId: arbitrum.id,
+      smartAccountAddress,
+      userOpHash: `0x${"d".repeat(64)}`,
+      storage,
+    });
+    expect(storage.values.get(storageKey)).toBe(JSON.stringify(record));
+
+    clearPendingAaExitUserOp({
+      chainId: arbitrum.id,
+      smartAccountAddress,
+      userOpHash,
+      storage,
+    });
+    expect(storage.values.has(storageKey)).toBe(false);
+  });
+
+  it("clears an unqualified pending record for the account", () => {
+    const storage = memoryStorage();
+    writePendingAaExitUserOp(pendingRecord(), { storage });
+
+    clearPendingAaExitUserOp({
+      chainId: arbitrum.id,
+      smartAccountAddress,
+      storage,
+    });
+
+    expect(storage.removeItem).toHaveBeenCalledWith(storageKey);
+    expect(storage.values.has(storageKey)).toBe(false);
   });
 });
 
@@ -1153,10 +1502,13 @@ describe("AA UserOp probing and isolation", () => {
   });
 });
 
-let restore;
+let restoreWarn;
+let restoreError;
 beforeEach(() => {
-  restore = vi.spyOn(console, "warn").mockImplementation(() => {});
+  restoreWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  restoreError = vi.spyOn(console, "error").mockImplementation(() => {});
 });
 afterEach(() => {
-  restore.mockRestore();
+  restoreWarn.mockRestore();
+  restoreError.mockRestore();
 });

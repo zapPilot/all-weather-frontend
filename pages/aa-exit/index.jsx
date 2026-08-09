@@ -33,17 +33,26 @@ import {
   AA_EXIT_CHAIN_IDS,
   EXIT_FEE_USD,
   PROTOCOL_TREASURY_ADDRESS,
+  aaExitPendingUserOpStorageKey,
   buildClaimedRewardsGroup,
   buildProtocolGroups,
+  clearPendingAaExitUserOp,
+  createPendingAaExitUserOp,
   diagnoseAaBatchFailure,
   executeAaExitPlan,
+  isAaExitUserOpReceiptFailure,
   materializeExitCandidate,
   planAaExitBatches,
   probeAaBatch,
+  readPendingAaExitUserOp,
   runAaExitGroups,
   scanAaExit,
   sendAaExitBatch,
+  transactionHashFromAaExitUserOpError,
+  waitForPendingAaExitUserOp,
+  writePendingAaExitUserOp,
 } from "../../utils/aaExit";
+import logger from "../../utils/logger";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -65,6 +74,7 @@ const STATUS_COLOR = {
   failed: "text-red-500",
   cancelled: "text-yellow-600",
   unknown: "text-yellow-600",
+  submitted: "text-blue-500",
 };
 
 const STATUS_ICON = {
@@ -73,6 +83,7 @@ const STATUS_ICON = {
   failed: "❌",
   cancelled: "⏹️",
   unknown: "⚠️",
+  submitted: "⏳",
 };
 
 const LEVEL_TAG = { 1: "no-claim", 2: "split" };
@@ -98,7 +109,13 @@ const formatAmount = (raw, decimals) =>
 const shortAddress = (address) =>
   `${address.slice(0, 6)}...${address.slice(-4)}`;
 
-function ResultRow({ row, explorerUrl, onRetry, disabled }) {
+function ResultRow({
+  row,
+  explorerUrl,
+  smartAccountAddress,
+  onRetry,
+  disabled,
+}) {
   const tag = KIND_TAG[row.kind] || KIND_TAG.protocol;
   return (
     <div className="flex items-start justify-between gap-3 py-2 border-b border-gray-100 last:border-0">
@@ -136,6 +153,22 @@ function ResultRow({ row, explorerUrl, onRetry, disabled }) {
             View transaction
           </a>
         )}
+        {row.userOpHash && (
+          <div className="flex items-center gap-2 flex-wrap mt-1 text-xs">
+            <Text code copyable={{ text: row.userOpHash }} className="text-xs">
+              {shortAddress(row.userOpHash)}
+            </Text>
+            {explorerUrl && smartAccountAddress && (
+              <a
+                href={`${explorerUrl}txsAA?f=${smartAccountAddress}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View AA transactions
+              </a>
+            )}
+          </div>
+        )}
       </div>
       {(row.status === "failed" || row.status === "partial") && (
         <Button size="small" disabled={disabled} onClick={onRetry}>
@@ -165,6 +198,9 @@ export default function AaExit() {
   const [untransferableTokens, setUntransferableTokens] = useState([]);
   const [fellBack, setFellBack] = useState(false);
   const [retrying, setRetrying] = useState(null);
+  const [pendingUserOp, setPendingUserOp] = useState(null);
+  const [submissionStage, setSubmissionStage] = useState("");
+  const [recoveredSubmission, setRecoveredSubmission] = useState(null);
   const [scanProgress, setScanProgress] = useState({
     percent: 0,
     message: "",
@@ -205,6 +241,7 @@ export default function AaExit() {
         adminAccount: adminWallet?.getAccount(),
         chainMetadata,
         expectedSmartAccountAddress: account?.address,
+        onStage: callbacks.onStage,
       }).then(
         (result) => callbacks.onSuccess?.(result),
         (error) => callbacks.onError?.(error),
@@ -224,14 +261,67 @@ export default function AaExit() {
     setWalletScanFailed(false);
     setUntransferableTokens([]);
     setFellBack(false);
+    setSubmissionStage("");
+    setRecoveredSubmission(null);
     setScanProgress({ percent: 0, message: "", discoveries: [] });
     setPhase("idle");
   }, []);
+
+  const restorePendingUserOp = useCallback(
+    ({ fromStorageEvent = false } = {}) => {
+      if (!account?.address || !chainMetadata?.id) {
+        setPendingUserOp(null);
+        return null;
+      }
+      const restored = readPendingAaExitUserOp({
+        chainId: chainMetadata.id,
+        smartAccountAddress: account.address,
+      });
+      setPendingUserOp(restored);
+      if (restored) {
+        setRecoveredSubmission(null);
+        setSubmissionStage(restored.submissionStage || "submitted");
+        setPhase("submitted");
+      } else if (fromStorageEvent) {
+        setRecoveredSubmission({ status: "cleared" });
+        setPhase("idle");
+      }
+      return restored;
+    },
+    [account?.address, chainMetadata?.id],
+  );
 
   // A scan is only valid for the wallet and chain it was taken on
   useEffect(() => {
     resetResults();
   }, [account?.address, activeChain?.id, resetResults]);
+
+  // A submitted hash survives reloads and is also observed across tabs so a
+  // second AA Exit screen cannot silently create a duplicate UserOperation.
+  useEffect(() => {
+    restorePendingUserOp();
+  }, [restorePendingUserOp]);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      !account?.address ||
+      !chainMetadata?.id
+    ) {
+      return undefined;
+    }
+    const storageKey = aaExitPendingUserOpStorageKey(
+      chainMetadata.id,
+      account.address,
+    );
+    const handleStorage = (event) => {
+      if (event.key === storageKey) {
+        restorePendingUserOp({ fromStorageEvent: true });
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [account?.address, chainMetadata?.id, restorePendingUserOp]);
 
   // useAdminWallet falls back to the active wallet when there is no admin, which
   // would prefill the smart wallet's own address — the one address this must not
@@ -261,7 +351,11 @@ export default function AaExit() {
     ethers.utils.isAddress(recipient) &&
     planRecipientRef.current.toLowerCase() !== recipient.toLowerCase();
 
-  const busy = phase === "scanning" || phase === "running";
+  const busy =
+    phase === "scanning" ||
+    phase === "running" ||
+    phase === "submitted" ||
+    !!pendingUserOp;
   const canScan =
     !!account &&
     aaOn &&
@@ -279,6 +373,230 @@ export default function AaExit() {
       ),
     );
   }, []);
+
+  const handleBatchStage = useCallback(
+    (event) => {
+      setSubmissionStage(event.stage || "");
+      logger.log(
+        "AA Exit submission stage",
+        `stage=${event.stage || "unknown"}`,
+        `chain=${chainMetadata?.id || "unknown"}`,
+        `smartAccount=${account?.address || "unknown"}`,
+        `userOpHash=${event.userOpHash || "none"}`,
+      );
+
+      if (
+        (event.stage === "submitting" || event.stage === "submitted") &&
+        event.userOpHash
+      ) {
+        try {
+          const existing = readPendingAaExitUserOp({
+            chainId: chainMetadata.id,
+            smartAccountAddress: account.address,
+          });
+          const pending = createPendingAaExitUserOp({
+            chainId: chainMetadata.id,
+            smartAccountAddress: account.address,
+            recipient,
+            userOpHash: event.userOpHash,
+            groupIds: event.groupIds || [],
+            batchIndex: event.batchIndex || 0,
+            batchCount: event.batchCount || 1,
+            transactionIndex: event.transactionIndex,
+            transactionCount: event.transactionCount,
+            submissionStage: event.stage,
+            createdAt:
+              existing?.userOpHash === event.userOpHash.toLowerCase()
+                ? existing.createdAt
+                : Date.now(),
+          });
+          const persisted = writePendingAaExitUserOp(pending);
+          if (!persisted) {
+            logger.error(
+              "AA Exit could not persist pending UserOp",
+              `chain=${chainMetadata.id}`,
+              `smartAccount=${account.address}`,
+              `userOpHash=${event.userOpHash}`,
+            );
+          }
+          setPendingUserOp(pending);
+        } catch (error) {
+          logger.error("AA Exit could not track submitted UserOp", error);
+        }
+      }
+
+      if (event.stage === "rejected" && event.userOpHash) {
+        clearPendingAaExitUserOp({
+          chainId: chainMetadata.id,
+          smartAccountAddress: account.address,
+          userOpHash: event.userOpHash,
+        });
+        setPendingUserOp((current) =>
+          current?.userOpHash === event.userOpHash.toLowerCase()
+            ? null
+            : current,
+        );
+      }
+
+      if (event.stage === "confirmed" && event.userOpHash) {
+        clearPendingAaExitUserOp({
+          chainId: chainMetadata.id,
+          smartAccountAddress: account.address,
+          userOpHash: event.userOpHash,
+        });
+        setPendingUserOp((current) =>
+          current?.userOpHash === event.userOpHash.toLowerCase()
+            ? null
+            : current,
+        );
+      }
+    },
+    [account?.address, chainMetadata?.id, recipient],
+  );
+
+  const ensureNoPendingUserOp = useCallback(() => {
+    if (!account?.address || !chainMetadata?.id) return false;
+    if (pendingUserOp) {
+      setPhase("submitted");
+      return false;
+    }
+    const existing = readPendingAaExitUserOp({
+      chainId: chainMetadata.id,
+      smartAccountAddress: account.address,
+    });
+    if (!existing) return true;
+    setPendingUserOp(existing);
+    setPhase("submitted");
+    return false;
+  }, [account?.address, chainMetadata?.id, pendingUserOp]);
+
+  const withSubmissionLock = useCallback(
+    async (submitPlan) => {
+      const runIfClear = async () => {
+        if (!ensureNoPendingUserOp()) {
+          return { status: "blocked-pending" };
+        }
+        return submitPlan();
+      };
+
+      if (typeof navigator === "undefined" || !navigator.locks?.request) {
+        return runIfClear();
+      }
+      const lockName = `aa-exit-submit:${
+        chainMetadata.id
+      }:${account.address.toLowerCase()}`;
+      return navigator.locks.request(lockName, { ifAvailable: true }, (lock) =>
+        lock ? runIfClear() : { status: "locked" },
+      );
+    },
+    [account?.address, chainMetadata?.id, ensureNoPendingUserOp],
+  );
+
+  useEffect(() => {
+    if (
+      !pendingUserOp ||
+      phase !== "submitted" ||
+      pendingUserOp.chainId !== chainMetadata?.id
+    ) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let retryTimer;
+    const pollReceipt = async () => {
+      try {
+        const receipt = await waitForPendingAaExitUserOp({
+          chainMetadata,
+          userOpHash: pendingUserOp.userOpHash,
+        });
+        if (cancelled) return;
+        clearPendingAaExitUserOp({
+          chainId: pendingUserOp.chainId,
+          smartAccountAddress: pendingUserOp.smartAccountAddress,
+          userOpHash: pendingUserOp.userOpHash,
+        });
+        const hasRemainingTransactions =
+          Number.isInteger(pendingUserOp.transactionIndex) &&
+          pendingUserOp.transactionIndex < pendingUserOp.transactionCount - 1;
+        const recoveredRowStatus = hasRemainingTransactions
+          ? "partial"
+          : "success";
+        pendingUserOp.groupIds.forEach((uniqueId) =>
+          updateGroup(uniqueId, {
+            status: recoveredRowStatus,
+            error: hasRemainingTransactions
+              ? "The submitted step confirmed. Scan again to rebuild the remaining steps from fresh balances."
+              : undefined,
+            userOpHash: pendingUserOp.userOpHash,
+            transactionHash: receipt.transactionHash,
+          }),
+        );
+        const hadCurrentRows = Object.keys(statusRef.current).length > 0;
+        const nextStatuses = { ...statusRef.current };
+        pendingUserOp.groupIds.forEach((uniqueId) => {
+          nextStatuses[uniqueId] = recoveredRowStatus;
+        });
+        const stalled = Object.values(nextStatuses).some(
+          (status) => status === "failed" || status === "partial",
+        );
+        setPendingUserOp(null);
+        setRecoveredSubmission({
+          status: "confirmed",
+          userOpHash: pendingUserOp.userOpHash,
+          transactionHash: receipt.transactionHash,
+        });
+        setPhase(
+          hadCurrentRows
+            ? stalled || pendingUserOp.batchIndex < pendingUserOp.batchCount - 1
+              ? "partial"
+              : "done"
+            : "idle",
+        );
+      } catch (error) {
+        if (cancelled) return;
+        if (isAaExitUserOpReceiptFailure(error)) {
+          const transactionHash = transactionHashFromAaExitUserOpError(error);
+          clearPendingAaExitUserOp({
+            chainId: pendingUserOp.chainId,
+            smartAccountAddress: pendingUserOp.smartAccountAddress,
+            userOpHash: pendingUserOp.userOpHash,
+          });
+          pendingUserOp.groupIds.forEach((uniqueId) =>
+            updateGroup(uniqueId, {
+              status: "failed",
+              error: error.message,
+              userOpHash: pendingUserOp.userOpHash,
+              transactionHash,
+            }),
+          );
+          setPendingUserOp(null);
+          setRecoveredSubmission({
+            status: "failed",
+            error: error.message,
+            userOpHash: pendingUserOp.userOpHash,
+            transactionHash,
+          });
+          setPhase(
+            Object.keys(statusRef.current).length > 0 ? "partial" : "idle",
+          );
+          return;
+        }
+        logger.warn(
+          "AA Exit: pending UserOp is not confirmed yet",
+          `chain=${pendingUserOp.chainId}`,
+          `userOpHash=${pendingUserOp.userOpHash}`,
+          error,
+        );
+        retryTimer = window.setTimeout(pollReceipt, 5_000);
+      }
+    };
+
+    pollReceipt();
+    return () => {
+      cancelled = true;
+      if (retryTimer) window.clearTimeout(retryTimer);
+    };
+  }, [chainMetadata, pendingUserOp, phase, updateGroup]);
 
   const updateScanProgress = useCallback((event) => {
     setScanProgress((current) => {
@@ -470,8 +788,10 @@ export default function AaExit() {
   );
 
   const handleScan = useCallback(async () => {
+    if (!ensureNoPendingUserOp()) return;
     setPhase("scanning");
     setFellBack(false);
+    setRecoveredSubmission(null);
     setScanProgress({
       percent: 2,
       message: `Starting ${CHAIN_LABEL[chainName] || "network"} scan…`,
@@ -490,10 +810,20 @@ export default function AaExit() {
       );
       setPhase("idle");
     }
-  }, [prepareExitPlan, applyPreparedPlan, notificationAPI, chainName]);
+  }, [
+    ensureNoPendingUserOp,
+    prepareExitPlan,
+    applyPreparedPlan,
+    notificationAPI,
+    chainName,
+  ]);
 
   const finishRun = useCallback((status) => {
-    if (status === "cancelled" || status === "unknown") {
+    if (
+      status === "cancelled" ||
+      status === "unknown" ||
+      status === "submitted"
+    ) {
       setPhase(status);
       return;
     }
@@ -509,6 +839,7 @@ export default function AaExit() {
         plan,
         sendBatchTransaction: sendExitBatchTransaction,
         updateGroup,
+        onBatchStage: handleBatchStage,
       });
 
     let activePlan = planRef.current || { batches: [], excluded: [] };
@@ -540,8 +871,24 @@ export default function AaExit() {
       }
     }
 
-    setPhase("running");
-    let result = await executePlan(activePlan);
+    const result = await withSubmissionLock(async () => {
+      setPhase("running");
+      return executePlan(activePlan);
+    });
+
+    if (result.status === "locked") {
+      openNotificationWithIcon(
+        notificationAPI,
+        "AA Exit is already open in another tab",
+        "warning",
+        "Finish or close the other submission before trying again.",
+      );
+      setPhase("ready");
+      return;
+    }
+    if (result.status === "blocked-pending") {
+      return;
+    }
 
     if (result.status === "pre-submit-failed") {
       openNotificationWithIcon(
@@ -558,6 +905,8 @@ export default function AaExit() {
   }, [
     sendExitBatchTransaction,
     updateGroup,
+    handleBatchStage,
+    withSubmissionLock,
     prepareExitPlan,
     applyPreparedPlan,
     finishRun,
@@ -572,30 +921,60 @@ export default function AaExit() {
       );
       if (!slot) return;
       setRetrying(uniqueId);
-      setPhase("running");
       try {
         // rebuilt from fresh balances, so a row whose transactions actually
         // landed comes back empty rather than reverting a second time
         const rebuilt = await rebuildGroup(slot, slot.level, groupsRef.current);
         const target = { ...slot, txns: rebuilt ? rebuilt.txns : [] };
-        const result = await runAaExitGroups({
-          groups: [target],
-          sendBatchTransaction: sendExitBatchTransaction,
-          updateGroup,
-          rebuildGroup,
-          // a single group is already one signature, so there is no combined
-          // attempt to make
-          combinedAllowed: false,
+        const result = await withSubmissionLock(async () => {
+          setPhase("running");
+          return runAaExitGroups({
+            groups: [target],
+            sendBatchTransaction: sendExitBatchTransaction,
+            updateGroup,
+            rebuildGroup,
+            onBatchStage: handleBatchStage,
+            // a single group is already one signature, so there is no combined
+            // attempt to make
+            combinedAllowed: false,
+          });
         });
+        if (result.status === "locked") {
+          openNotificationWithIcon(
+            notificationAPI,
+            "AA Exit is already open in another tab",
+            "warning",
+            "Finish or close the other submission before trying again.",
+          );
+          setPhase("partial");
+          return;
+        }
+        if (result.status === "blocked-pending") return;
         groupsRef.current = groupsRef.current.map((group) =>
           group.uniqueId === uniqueId ? result.groups[0] || group : group,
         );
+        if (result.status === "pre-submit-failed") {
+          openNotificationWithIcon(
+            notificationAPI,
+            "Transaction was not submitted",
+            "error",
+            result.error?.message || "UserOperation failed before submission.",
+          );
+        }
         finishRun(result.status);
       } finally {
         setRetrying(null);
       }
     },
-    [rebuildGroup, sendExitBatchTransaction, updateGroup, finishRun],
+    [
+      rebuildGroup,
+      withSubmissionLock,
+      sendExitBatchTransaction,
+      updateGroup,
+      handleBatchStage,
+      notificationAPI,
+      finishRun,
+    ],
   );
 
   if (!account) {
@@ -622,6 +1001,10 @@ export default function AaExit() {
   }
 
   const movableRows = rows.filter((row) => row.txnCount > 0);
+  const aaTransactionsUrl =
+    explorerUrl && account?.address
+      ? `${explorerUrl}txsAA?f=${account.address}`
+      : "";
 
   return (
     <BasePage chainId={activeChain} switchChain={switchChain}>
@@ -679,6 +1062,86 @@ export default function AaExit() {
                   ))}
                 </div>
               }
+            />
+          )}
+
+          {pendingUserOp && (
+            <Alert
+              type="warning"
+              showIcon
+              message={
+                submissionStage === "submitting"
+                  ? "UserOperation signed — checking bundler submission"
+                  : "UserOperation submitted — waiting for confirmation"
+              }
+              description={
+                <div className="text-sm">
+                  <p className="mb-1">
+                    This operation will not be signed or sent again until its
+                    status is known. The page is checking
+                    {` ${CHAIN_LABEL[chainName] || chainName}`} for its receipt,
+                    including after a reload.
+                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Text code copyable={{ text: pendingUserOp.userOpHash }}>
+                      {shortAddress(pendingUserOp.userOpHash)}
+                    </Text>
+                    {aaTransactionsUrl && (
+                      <a
+                        href={aaTransactionsUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        View AA transactions
+                      </a>
+                    )}
+                    {submissionStage && (
+                      <Text type="secondary">Stage: {submissionStage}</Text>
+                    )}
+                  </div>
+                </div>
+              }
+            />
+          )}
+
+          {!pendingUserOp && recoveredSubmission?.status === "confirmed" && (
+            <Alert
+              type="success"
+              showIcon
+              message="Previous UserOperation confirmed"
+              description={
+                <div className="text-sm">
+                  Its receipt was recovered after the page stopped waiting. Scan
+                  again to rebuild any remaining batches from fresh balances.{" "}
+                  {recoveredSubmission.transactionHash && explorerUrl && (
+                    <a
+                      href={`${explorerUrl}tx/${recoveredSubmission.transactionHash}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      View transaction
+                    </a>
+                  )}
+                </div>
+              }
+            />
+          )}
+
+          {!pendingUserOp && recoveredSubmission?.status === "failed" && (
+            <Alert
+              type="error"
+              showIcon
+              message="Submitted UserOperation reverted"
+              description={recoveredSubmission.error}
+            />
+          )}
+
+          {!pendingUserOp && recoveredSubmission?.status === "cleared" && (
+            <Alert
+              type="info"
+              showIcon
+              message="Pending status changed in another tab"
+              description="Scan fresh balances before starting another exit."
             />
           )}
 
@@ -929,6 +1392,7 @@ export default function AaExit() {
                     key={row.uniqueId}
                     row={row}
                     explorerUrl={explorerUrl}
+                    smartAccountAddress={account.address}
                     disabled={busy || retrying !== null}
                     onRetry={() => handleRetry(row.uniqueId)}
                   />
@@ -956,14 +1420,15 @@ export default function AaExit() {
               </Button>
 
               <Paragraph type="secondary" className="text-xs mt-3 mb-0">
-                Scan now dry-runs the exact sponsored AA UserOp without
-                broadcasting it. If the full batch fails, dependency-aware
-                binary isolation removes only the broken group; if the issue is
-                aggregate gas/paymaster size, healthy items stay in a few large
-                batches instead of one signature per item. Claimed-reward
-                transfers are rebuilt only from protocol groups that survive
-                preflight. Amounts are fixed when you scan, so a little dust can
-                stay behind.
+                Scan dry-runs the exact fixed calldata without broadcasting it.
+                Immediately before you sign, only the nonce, gas estimates and
+                sponsorship envelope are refreshed. If the full batch fails
+                preflight, dependency-aware binary isolation removes only the
+                broken group; if the issue is aggregate gas/paymaster size,
+                healthy items stay in a few large batches instead of one
+                signature per item. Claimed-reward transfers are rebuilt only
+                from protocol groups that survive preflight. Amounts are fixed
+                when you scan, so a little dust can stay behind.
               </Paragraph>
             </Card>
           )}
