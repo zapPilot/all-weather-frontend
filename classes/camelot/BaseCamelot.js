@@ -514,17 +514,33 @@ export class BaseCamelot extends BaseProtocol {
   // AA Exit dedupes Camelot by its shared position-manager address, so this
   // intentionally enumerates every Camelot V3 NFT the wallet owns. Restricting
   // this by today's configured pool/range strands old or manually-created
-  // positions such as WETH/USDC. Do not silently cap the count: if enumeration
+  // positions such as WETH/USDC. tokenOfOwnerByIndex calls are independent, so
+  // fetch them concurrently in small batches instead of paying one RPC round
+  // trip per NFT serially. Keep the batch bounded so a wallet with many NFTs
+  // cannot flood the RPC provider. Do not silently cap the count: if enumeration
   // cannot complete, failing the row is safer than reporting a partial exit.
   async _getAllNftIDs(owner) {
     const balance = await this.assetContractInstance.balanceOf(owner);
     const count = ethers.BigNumber.from(balance).toNumber();
-    const tokenIds = [];
-    for (let idx = 0; idx < count; idx++) {
-      tokenIds.push(
-        await this.assetContractInstance.tokenOfOwnerByIndex(owner, idx),
+    const tokenIds = new Array(count);
+    const concurrency = 8;
+
+    for (let start = 0; start < count; start += concurrency) {
+      const end = Math.min(start + concurrency, count);
+      const indexes = Array.from(
+        { length: end - start },
+        (_, offset) => start + offset,
       );
+      const ids = await Promise.all(
+        indexes.map((idx) =>
+          this.assetContractInstance.tokenOfOwnerByIndex(owner, idx),
+        ),
+      );
+      ids.forEach((tokenId, offset) => {
+        tokenIds[start + offset] = tokenId;
+      });
     }
+
     return tokenIds;
   }
   async _checkIfNFTExists(token_id) {

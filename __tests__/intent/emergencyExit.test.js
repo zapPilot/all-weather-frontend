@@ -168,18 +168,22 @@ describe("emergencyTransfer", () => {
     expect(rewardBalances).toHaveLength(0);
   });
 
-  it("lists every NFT owned by the shared Camelot position manager", async () => {
+  it("lists every NFT owned by the shared Camelot position manager in parallel", async () => {
     const [protocol] = protocolsOn(
       getPortfolioHelper("Camelot Vault"),
       "arbitrum",
     ).map((p) => p.interface);
+    let inFlight = 0;
+    let maxInFlight = 0;
     protocol.assetContractInstance = {
       balanceOf: vi.fn().mockResolvedValue(ethers.BigNumber.from(3)),
-      tokenOfOwnerByIndex: vi
-        .fn()
-        .mockImplementation((_owner, idx) =>
-          Promise.resolve(ethers.BigNumber.from(100 + idx)),
-        ),
+      tokenOfOwnerByIndex: vi.fn().mockImplementation(async (_owner, idx) => {
+        inFlight += 1;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+        await Promise.resolve();
+        inFlight -= 1;
+        return ethers.BigNumber.from(100 + idx);
+      }),
     };
 
     const tokenIds = await protocol._getAllNftIDs(OWNER);
@@ -188,6 +192,7 @@ describe("emergencyTransfer", () => {
     expect(
       protocol.assetContractInstance.tokenOfOwnerByIndex,
     ).toHaveBeenCalledTimes(3);
+    expect(maxInFlight).toBe(3);
   });
 
   // Aave, Moonwell and PendlePT have no separate staking contract: _unstake
