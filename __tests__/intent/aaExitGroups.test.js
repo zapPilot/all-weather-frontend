@@ -7,6 +7,7 @@ import { fetchWalletTokens } from "../../utils/dustConversion";
 import {
   buildProtocolGroups,
   clearAaExitWalletTokenCache,
+  clearAaExitWalletTokenMemoryCache,
   scanAaExit,
 } from "../../utils/aaExit";
 
@@ -351,6 +352,16 @@ describe("scanAaExit", () => {
 
     expect(fetchWalletTokens).toHaveBeenCalledTimes(1);
     expect(fetchWalletTokens).toHaveBeenCalledWith("op", OWNER);
+  });
+
+  it("reuses the 10-minute token scan after an in-page reload", async () => {
+    fetchWalletTokens.mockResolvedValue([]);
+
+    await scanOnOptimism();
+    clearAaExitWalletTokenMemoryCache();
+    await scanOnOptimism();
+
+    expect(fetchWalletTokens).toHaveBeenCalledTimes(1);
   });
 
   it("coalesces concurrent wallet token scans", async () => {
