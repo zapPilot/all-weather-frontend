@@ -46,7 +46,6 @@ import {
   diagnoseAaBatchFailureDirect,
   executeAaExitPlan,
   isAaExitUserOpReceiptFailure,
-  isPendingAaExitUserOpDead,
   materializeExitCandidate,
   planAaExitBatches,
   probeAaBatch,
@@ -209,7 +208,7 @@ export default function AaExit() {
   const [untransferableTokens, setUntransferableTokens] = useState([]);
   const [fellBack, setFellBack] = useState(false);
   const [retrying, setRetrying] = useState(null);
-  const [directMode, setDirectMode] = useState(false);
+  const [manualDirectMode, setManualDirectMode] = useState(false);
   const [pendingUserOp, setPendingUserOp] = useState(null);
   const [pendingDirectTransaction, setPendingDirectTransaction] =
     useState(null);
@@ -247,6 +246,12 @@ export default function AaExit() {
   }, [activeChain]);
   const chainName = normalizeChainName(chainMetadata?.name);
   const onSupportedChain = AA_EXIT_CHAINS.includes(chainName);
+  // Arbitrum must never fall back to the sponsored UserOperation path. Derive
+  // this synchronously from the active chain so the very first render already
+  // uses direct admin transactions; an effect-based default briefly exposed the
+  // old UserOp path and could restore a stale pending UserOp before flipping on.
+  const isArbitrum = chainMetadata?.id === AA_EXIT_CHAIN_IDS.arbitrum;
+  const directMode = isArbitrum || manualDirectMode;
   const explorerUrl = LOCK_EXPLORER_URLS[activeChain?.id];
 
   const sendExitBatchTransaction = useCallback(
@@ -309,12 +314,19 @@ export default function AaExit() {
   }, []);
 
   useEffect(() => {
-    setDirectMode(chainMetadata?.id === AA_EXIT_CHAIN_IDS.arbitrum);
+    setManualDirectMode(false);
   }, [chainMetadata?.id]);
 
   const restorePendingUserOp = useCallback(
     ({ fromStorageEvent = false } = {}) => {
       if (!account?.address || !chainMetadata?.id) {
+        setPendingUserOp(null);
+        return null;
+      }
+      // Legacy Arbitrum sponsored UserOps are deliberately ignored by the new
+      // direct-only flow. They must not put the page back into the old
+      // "UserOperation submitted" blocking state after a reload.
+      if (chainMetadata.id === AA_EXIT_CHAIN_IDS.arbitrum) {
         setPendingUserOp(null);
         return null;
       }
@@ -617,6 +629,12 @@ export default function AaExit() {
       setPhase("submitted");
       return false;
     }
+    // Arbitrum is direct-only. Legacy sponsored UserOp storage must not block a
+    // fresh sequential direct exit.
+    if (isArbitrum) {
+      setPendingUserOp(null);
+      return true;
+    }
     const existing =
       pendingUserOp ||
       readPendingAaExitUserOp({
@@ -624,41 +642,13 @@ export default function AaExit() {
         smartAccountAddress: account.address,
       });
     if (!existing) return true;
-    if (directMode) {
-      const pendingState = await isPendingAaExitUserOpDead({
-        pending: existing,
-        chainMetadata,
-      });
-      if (pendingState === "dead") {
-        clearPendingAaExitUserOp({
-          chainId: chainMetadata.id,
-          smartAccountAddress: account.address,
-          userOpHash: existing.userOpHash,
-        });
-        setPendingUserOp(null);
-        setSubmissionStage("");
-        setRecoveredSubmission({
-          status: "expired",
-          userOpHash: existing.userOpHash,
-        });
-        setPhase("idle");
-        openNotificationWithIcon(
-          notificationAPI,
-          "Previous sponsored operation expired",
-          "info",
-          "Its paymaster window expired without consuming the nonce. Direct mode may proceed after a fresh scan.",
-        );
-        return true;
-      }
-    }
     setPendingUserOp(existing);
     setPhase("submitted");
     return false;
   }, [
     account?.address,
     chainMetadata,
-    directMode,
-    notificationAPI,
+    isArbitrum,
     pendingDirectTransaction,
     pendingUserOp,
   ]);
@@ -698,28 +688,6 @@ export default function AaExit() {
     let retryTimer;
     const pollReceipt = async () => {
       try {
-        if (directMode) {
-          const pendingState = await isPendingAaExitUserOpDead({
-            pending: pendingUserOp,
-            chainMetadata,
-          });
-          if (cancelled) return;
-          if (pendingState === "dead") {
-            clearPendingAaExitUserOp({
-              chainId: pendingUserOp.chainId,
-              smartAccountAddress: pendingUserOp.smartAccountAddress,
-              userOpHash: pendingUserOp.userOpHash,
-            });
-            setPendingUserOp(null);
-            setSubmissionStage("");
-            setRecoveredSubmission({
-              status: "expired",
-              userOpHash: pendingUserOp.userOpHash,
-            });
-            setPhase("idle");
-            return;
-          }
-        }
         const receipt = await waitForPendingAaExitUserOp({
           chainMetadata,
           userOpHash: pendingUserOp.userOpHash,
@@ -811,7 +779,7 @@ export default function AaExit() {
       cancelled = true;
       if (retryTimer) window.clearTimeout(retryTimer);
     };
-  }, [chainMetadata, directMode, pendingUserOp, phase, updateGroup]);
+  }, [chainMetadata, pendingUserOp, phase, updateGroup]);
 
   useEffect(() => {
     if (
@@ -1388,7 +1356,7 @@ export default function AaExit() {
             />
           )}
 
-          {pendingUserOp && (
+          {pendingUserOp && !directMode && (
             <Alert
               type="warning"
               showIcon
@@ -1560,26 +1528,37 @@ export default function AaExit() {
 
           {aaOn && (
             <Card title="Where should everything go?">
-              <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <Text strong>Direct mode — admin pays gas</Text>
-                    <Text type="secondary" className="block text-xs mt-1">
-                      Sends one normal admin → AA.executeBatch transaction and
-                      bypasses the Thirdweb bundler. Default on Arbitrum.
-                    </Text>
-                  </div>
-                  <Switch
-                    aria-label="Direct mode — admin pays gas"
-                    checked={directMode}
-                    disabled={busy}
-                    onChange={(checked) => {
-                      setDirectMode(checked);
-                      setConfirmed(false);
-                    }}
-                  />
+              {isArbitrum ? (
+                <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                  <Text strong>
+                    Arbitrum safe mode — one transaction at a time
+                  </Text>
+                  <Text type="secondary" className="block text-xs mt-1">
+                    Each admin → AA.execute call is sent directly and confirmed
+                    before the next call. Thirdweb UserOperations are not used.
+                  </Text>
                 </div>
-              </div>
+              ) : (
+                <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <Text strong>Direct mode — admin pays gas</Text>
+                      <Text type="secondary" className="block text-xs mt-1">
+                        Bypasses the Thirdweb bundler on this network.
+                      </Text>
+                    </div>
+                    <Switch
+                      aria-label="Direct mode — admin pays gas"
+                      checked={manualDirectMode}
+                      disabled={busy}
+                      onChange={(checked) => {
+                        setManualDirectMode(checked);
+                        setConfirmed(false);
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
               <label className="block text-sm mb-1" htmlFor="aa-exit-recipient">
                 Your own wallet address
               </label>
