@@ -4,8 +4,25 @@
 // no remove-liquidity, no price lookups on the principal path, so a depegged or
 // unpriceable token cannot block the exit.
 import { ethers } from "ethers";
-import { getContract, prepareContractCall, prepareTransaction } from "thirdweb";
 import {
+  encode,
+  estimateGas,
+  eth_getBalance,
+  eth_getCode,
+  getContract,
+  getGasPrice,
+  getRpcClient,
+  prepareContractCall,
+  prepareTransaction,
+  readContract,
+  sendTransaction,
+  simulateTransaction,
+  waitForReceipt,
+} from "thirdweb";
+import { isAdmin } from "thirdweb/extensions/erc4337";
+import { resolvePromisedValue } from "thirdweb/utils";
+import {
+  ENTRYPOINT_ADDRESS_v0_6,
   bundleUserOp,
   getUserOpHash,
   prepareUserOp,
@@ -48,6 +65,10 @@ const DEBANK_CHAIN_CODE = { arbitrum: "arb", base: "base", op: "op" };
 const AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS = 10 * 60 * 1000;
 const AA_EXIT_WALLET_TOKEN_STORAGE_PREFIX = "aa-exit-wallet-tokens:v1:";
 const AA_EXIT_PENDING_USER_OP_STORAGE_PREFIX = "aa-exit-pending-userop:v1:";
+const AA_EXIT_PENDING_DIRECT_TX_STORAGE_PREFIX =
+  "aa-exit-pending-direct-tx:v1:";
+const AA_EXIT_PENDING_EXPIRY_SKEW_SECONDS = 90;
+const AA_EXIT_DIRECT_GAS_LIMIT = 25_600_000n;
 const aaExitWalletTokenCache = new Map();
 const aaExitWalletTokenRequests = new Map();
 let aaExitWalletTokenCacheGeneration = 0;
@@ -110,7 +131,24 @@ const aaExitWalletTokenStorage = () => {
 export const aaExitPendingUserOpStorageKey = (chainId, smartAccountAddress) =>
   `${AA_EXIT_PENDING_USER_OP_STORAGE_PREFIX}${chainId}:${smartAccountAddress.toLowerCase()}`;
 
+export const aaExitPendingDirectTransactionStorageKey = (
+  chainId,
+  smartAccountAddress,
+) =>
+  `${AA_EXIT_PENDING_DIRECT_TX_STORAGE_PREFIX}${chainId}:${smartAccountAddress.toLowerCase()}`;
+
 const isUserOpHash = (value) => /^0x[0-9a-fA-F]{64}$/.test(value || "");
+const isTransactionHash = isUserOpHash;
+
+const normalizedNonce = (nonce) => {
+  if (nonce === undefined || nonce === null || nonce === "") return undefined;
+  try {
+    const parsed = BigInt(nonce);
+    return parsed >= 0n ? parsed.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+};
 
 export const createPendingAaExitUserOp = ({
   chainId,
@@ -123,6 +161,8 @@ export const createPendingAaExitUserOp = ({
   transactionIndex,
   transactionCount,
   submissionStage,
+  nonce,
+  paymasterValidUntil,
   createdAt = Date.now(),
 }) => {
   if (!Number.isInteger(chainId) || chainId <= 0) {
@@ -173,6 +213,18 @@ export const createPendingAaExitUserOp = ({
   ) {
     throw new Error("AA Exit pending UserOp has an invalid submission stage");
   }
+  const pendingNonce = normalizedNonce(nonce);
+  if (nonce !== undefined && pendingNonce === undefined) {
+    throw new Error("AA Exit pending UserOp has an invalid nonce");
+  }
+  if (
+    paymasterValidUntil !== undefined &&
+    (!Number.isSafeInteger(paymasterValidUntil) || paymasterValidUntil < 0)
+  ) {
+    throw new Error(
+      "AA Exit pending UserOp has an invalid paymaster validity window",
+    );
+  }
 
   const pending = {
     version: 1,
@@ -190,6 +242,10 @@ export const createPendingAaExitUserOp = ({
     pending.transactionCount = transactionCount;
   }
   if (submissionStage) pending.submissionStage = submissionStage;
+  if (pendingNonce !== undefined) pending.nonce = pendingNonce;
+  if (paymasterValidUntil !== undefined) {
+    pending.paymasterValidUntil = paymasterValidUntil;
+  }
   return pending;
 };
 
@@ -266,6 +322,259 @@ export const clearPendingAaExitUserOp = ({
   storage.removeItem(storageKey);
   return true;
 };
+
+export const createPendingAaExitDirectTransaction = ({
+  chainId,
+  smartAccountAddress,
+  recipient,
+  transactionHash,
+  groupIds = [],
+  batchIndex = 0,
+  batchCount = 1,
+  transactionIndex,
+  transactionCount,
+  createdAt = Date.now(),
+}) => {
+  if (!Number.isInteger(chainId) || chainId <= 0) {
+    throw new Error(
+      "AA Exit pending direct transaction requires a valid chain id",
+    );
+  }
+  if (!ethers.utils.isAddress(smartAccountAddress || "")) {
+    throw new Error(
+      "AA Exit pending direct transaction requires a valid smart account",
+    );
+  }
+  if (!ethers.utils.isAddress(recipient || "")) {
+    throw new Error(
+      "AA Exit pending direct transaction requires a valid recipient",
+    );
+  }
+  if (!isTransactionHash(transactionHash)) {
+    throw new Error(
+      "AA Exit pending direct transaction requires a valid transaction hash",
+    );
+  }
+  if (
+    !Array.isArray(groupIds) ||
+    groupIds.some((id) => typeof id !== "string")
+  ) {
+    throw new Error(
+      "AA Exit pending direct transaction requires valid group ids",
+    );
+  }
+  if (
+    !Number.isInteger(batchIndex) ||
+    batchIndex < 0 ||
+    !Number.isInteger(batchCount) ||
+    batchCount <= 0 ||
+    batchIndex >= batchCount ||
+    !Number.isFinite(createdAt) ||
+    createdAt <= 0
+  ) {
+    throw new Error(
+      "AA Exit pending direct transaction has invalid batch metadata",
+    );
+  }
+  const hasTransactionProgress =
+    transactionIndex !== undefined || transactionCount !== undefined;
+  if (
+    hasTransactionProgress &&
+    (!Number.isInteger(transactionIndex) ||
+      transactionIndex < 0 ||
+      !Number.isInteger(transactionCount) ||
+      transactionCount <= 0 ||
+      transactionIndex >= transactionCount)
+  ) {
+    throw new Error(
+      "AA Exit pending direct transaction has invalid transaction progress",
+    );
+  }
+
+  const pending = {
+    version: 1,
+    chainId,
+    smartAccountAddress: smartAccountAddress.toLowerCase(),
+    recipient,
+    transactionHash: transactionHash.toLowerCase(),
+    groupIds: [...new Set(groupIds)],
+    batchIndex,
+    batchCount,
+    createdAt,
+  };
+  if (hasTransactionProgress) {
+    pending.transactionIndex = transactionIndex;
+    pending.transactionCount = transactionCount;
+  }
+  return pending;
+};
+
+export const readPendingAaExitDirectTransaction = ({
+  chainId,
+  smartAccountAddress,
+  storage = aaExitWalletTokenStorage(),
+}) => {
+  if (!storage || !smartAccountAddress) return null;
+  const storageKey = aaExitPendingDirectTransactionStorageKey(
+    chainId,
+    smartAccountAddress,
+  );
+  try {
+    const raw = storage.getItem(storageKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const pending = createPendingAaExitDirectTransaction(parsed);
+    if (
+      parsed.version !== 1 ||
+      pending.chainId !== chainId ||
+      pending.smartAccountAddress !== smartAccountAddress.toLowerCase()
+    ) {
+      throw new Error(
+        "AA Exit pending direct transaction does not match this wallet",
+      );
+    }
+    return pending;
+  } catch (error) {
+    storage.removeItem(storageKey);
+    logger.warn(
+      "AA Exit: removed invalid pending direct transaction record",
+      error,
+    );
+    return null;
+  }
+};
+
+export const writePendingAaExitDirectTransaction = (
+  record,
+  { storage = aaExitWalletTokenStorage() } = {},
+) => {
+  if (!storage) return null;
+  const pending = createPendingAaExitDirectTransaction(record);
+  const storageKey = aaExitPendingDirectTransactionStorageKey(
+    pending.chainId,
+    pending.smartAccountAddress,
+  );
+  try {
+    storage.setItem(storageKey, JSON.stringify(pending));
+    return pending;
+  } catch (error) {
+    logger.warn("AA Exit: could not persist pending direct transaction", error);
+    return null;
+  }
+};
+
+export const clearPendingAaExitDirectTransaction = ({
+  chainId,
+  smartAccountAddress,
+  transactionHash,
+  storage = aaExitWalletTokenStorage(),
+}) => {
+  if (!storage || !smartAccountAddress) return false;
+  const storageKey = aaExitPendingDirectTransactionStorageKey(
+    chainId,
+    smartAccountAddress,
+  );
+  if (transactionHash) {
+    const pending = readPendingAaExitDirectTransaction({
+      chainId,
+      smartAccountAddress,
+      storage,
+    });
+    if (!pending || pending.transactionHash !== transactionHash.toLowerCase()) {
+      return false;
+    }
+  }
+  storage.removeItem(storageKey);
+  return true;
+};
+
+/**
+ * v0.6 VerifyingPaymaster data is packed as:
+ * paymaster (20 bytes) | validUntil (uint48) | validAfter (uint48) | signature.
+ */
+export const parsePaymasterValidityWindow = (paymasterAndData) => {
+  if (
+    typeof paymasterAndData !== "string" ||
+    !/^0x[0-9a-fA-F]+$/.test(paymasterAndData) ||
+    paymasterAndData.length < 66 ||
+    paymasterAndData.length % 2 !== 0
+  ) {
+    return null;
+  }
+  try {
+    return {
+      validUntil: Number(BigInt(`0x${paymasterAndData.slice(42, 54)}`)),
+      validAfter: Number(BigInt(`0x${paymasterAndData.slice(54, 66)}`)),
+    };
+  } catch {
+    return null;
+  }
+};
+
+const readEntryPointNonce = async ({ sender, key, chainMetadata, client }) => {
+  const contract = getContract({
+    client,
+    chain: chainMetadata,
+    address: ENTRYPOINT_ADDRESS_v0_6,
+  });
+  return readContract({
+    contract,
+    method:
+      "function getNonce(address sender, uint192 key) view returns (uint256)",
+    params: [sender, key],
+  });
+};
+
+export async function isPendingAaExitUserOpDead({
+  pending,
+  chainMetadata,
+  client = THIRDWEB_CLIENT,
+  nowSeconds = Math.floor(Date.now() / 1000),
+  expirySkewSeconds = AA_EXIT_PENDING_EXPIRY_SKEW_SECONDS,
+  readNonceFn = readEntryPointNonce,
+}) {
+  if (!pending) return "no-pending";
+  if (
+    !chainMetadata?.id ||
+    pending.chainId !== chainMetadata.id ||
+    !ethers.utils.isAddress(pending.smartAccountAddress || "") ||
+    !Number.isSafeInteger(pending.paymasterValidUntil) ||
+    pending.paymasterValidUntil < 0 ||
+    normalizedNonce(pending.nonce) === undefined ||
+    !Number.isFinite(nowSeconds) ||
+    !Number.isFinite(expirySkewSeconds)
+  ) {
+    return "unknown";
+  }
+
+  // ERC-4337 treats a zero validUntil as no expiry.
+  if (
+    pending.paymasterValidUntil === 0 ||
+    nowSeconds <= pending.paymasterValidUntil + expirySkewSeconds
+  ) {
+    return "live";
+  }
+
+  try {
+    const pendingNonce = BigInt(pending.nonce);
+    const key = pendingNonce >> 64n;
+    const currentNonce = BigInt(
+      await readNonceFn({
+        sender: pending.smartAccountAddress,
+        key,
+        chainMetadata,
+        client,
+      }),
+    );
+    if (currentNonce >> 64n !== key || currentNonce < pendingNonce) {
+      return "unknown";
+    }
+    return currentNonce > pendingNonce ? "landed" : "dead";
+  } catch (error) {
+    logger.warn("AA Exit: could not verify pending UserOp nonce", error);
+    return "unknown";
+  }
+}
 
 const readStoredAaExitWalletTokens = (key, now) => {
   const storage = aaExitWalletTokenStorage();
@@ -961,6 +1270,143 @@ export function materializeExitCandidate({ units, chainMetadata, recipient }) {
 const preparedTransactionsOf = (groups) =>
   (groups || []).flatMap((group) => (group.txns || []).flat(Infinity));
 
+export async function resolveAaCalls(transactions) {
+  if (!Array.isArray(transactions) || transactions.length === 0) return [];
+  return Promise.all(
+    transactions.map(async (transaction) => {
+      const [data, to, value] = await Promise.all([
+        encode(transaction),
+        resolvePromisedValue(transaction?.to),
+        resolvePromisedValue(transaction?.value),
+      ]);
+      if (!to) {
+        throw new Error(
+          "AA Exit direct batch contains a transaction without a target",
+        );
+      }
+      return {
+        to,
+        value: value ?? 0n,
+        data: data || "0x",
+        chainId: transaction?.chain?.id,
+      };
+    }),
+  );
+}
+
+export function buildAaExecuteBatchTransaction({
+  calls,
+  smartAccountAddress,
+  chainMetadata,
+  client = THIRDWEB_CLIENT,
+}) {
+  if (!Array.isArray(calls) || calls.length === 0) {
+    throw new Error("AA Exit direct batch has no calls");
+  }
+  if (!ethers.utils.isAddress(smartAccountAddress || "")) {
+    throw new Error("AA Exit direct batch requires a valid smart account");
+  }
+  if (!chainMetadata?.id) {
+    throw new Error("AA Exit direct batch requires chain metadata");
+  }
+  const wrongChain = calls.find((call) => call.chainId !== chainMetadata.id);
+  if (wrongChain) {
+    throw new Error(
+      `AA Exit refused a cross-chain direct batch: expected chain ${
+        chainMetadata.id
+      }, got ${wrongChain?.chainId ?? "unknown"}`,
+    );
+  }
+  const contract = getContract({
+    client,
+    chain: chainMetadata,
+    address: smartAccountAddress,
+  });
+  return prepareContractCall({
+    contract,
+    method: "function executeBatch(address[], uint256[], bytes[])",
+    params: [
+      calls.map((call) => call.to),
+      calls.map((call) => call.value ?? 0n),
+      calls.map((call) => call.data || "0x"),
+    ],
+    // executeBatch is nonpayable. Native-value legs spend the AA's balance.
+    value: 0n,
+  });
+}
+
+const prepareAaExecuteBatchTransaction = async ({
+  transactions,
+  smartAccountAddress,
+  chainMetadata,
+  client,
+}) =>
+  buildAaExecuteBatchTransaction({
+    calls: await resolveAaCalls(transactions),
+    smartAccountAddress,
+    chainMetadata,
+    client,
+  });
+
+export async function probeAaBatchDirect({
+  groups,
+  adminAccount,
+  chainMetadata,
+  smartAccountAddress,
+  client = THIRDWEB_CLIENT,
+  estimateGasFn = estimateGas,
+}) {
+  const transactions = preparedTransactionsOf(groups);
+  if (transactions.length === 0) return { ok: true, gas: 0n };
+  if (!adminAccount?.address) {
+    throw new Error("AA Exit direct probe requires the admin account");
+  }
+  const transaction = await prepareAaExecuteBatchTransaction({
+    transactions,
+    smartAccountAddress,
+    chainMetadata,
+    client,
+  });
+  const gas = await estimateGasFn({
+    transaction,
+    from: adminAccount.address,
+  });
+  return { ok: true, gas, transaction };
+}
+
+export async function diagnoseAaBatchFailureDirect({
+  groups,
+  adminAccount,
+  chainMetadata,
+  smartAccountAddress,
+  client = THIRDWEB_CLIENT,
+  simulateTransactionFn = simulateTransaction,
+}) {
+  try {
+    const transactions = preparedTransactionsOf(groups);
+    const transaction = await prepareAaExecuteBatchTransaction({
+      transactions,
+      smartAccountAddress,
+      chainMetadata,
+      client,
+    });
+    await simulateTransactionFn({
+      transaction,
+      from: adminAccount.address,
+    });
+    return {
+      kind: "execution",
+      message:
+        "Direct gas estimation failed after transaction simulation passed.",
+    };
+  } catch (error) {
+    return {
+      kind: "execution",
+      message: `Transaction simulation failed: ${exitPreflightError(error)}`,
+    };
+  }
+}
+
 /**
  * Build the same unsigned smart-account UserOp Thirdweb would build for a real
  * batch and stop after sponsorship / gas estimation. prepareUserOp never calls
@@ -1393,7 +1839,13 @@ export const transactionHashFromResult = (data) =>
 export class AaExitSubmissionError extends Error {
   constructor(
     cause,
-    { stage, submitted = false, userOpHash, submissionUnknown = false },
+    {
+      stage,
+      submitted = false,
+      userOpHash,
+      transactionHash,
+      submissionUnknown = false,
+    },
   ) {
     super(cause?.message || String(cause));
     this.name = "AaExitSubmissionError";
@@ -1401,6 +1853,7 @@ export class AaExitSubmissionError extends Error {
     this.stage = stage;
     this.submitted = submitted;
     this.userOpHash = userOpHash;
+    this.transactionHash = transactionHash;
     this.submissionUnknown = submissionUnknown;
     if (cause?.code !== undefined) this.code = cause.code;
   }
@@ -1530,9 +1983,23 @@ export async function sendAaExitBatch({
       userOp: signedUserOp,
       chain: chainMetadata,
     });
+    const validityWindow = parsePaymasterValidityWindow(
+      signedUserOp.paymasterAndData,
+    );
+    const signedNonce = normalizedNonce(signedUserOp.nonce);
+    const pendingMetadata = {
+      ...(signedNonce !== undefined ? { nonce: signedNonce } : {}),
+      ...(validityWindow
+        ? { paymasterValidUntil: validityWindow.validUntil }
+        : {}),
+    };
 
     stage = "submitting";
-    emitProgress(onStage, { stage, userOpHash: localUserOpHash });
+    emitProgress(onStage, {
+      stage,
+      userOpHash: localUserOpHash,
+      ...pendingMetadata,
+    });
     let userOpHash;
     try {
       userOpHash = await bundleUserOpFn({
@@ -1558,6 +2025,7 @@ export async function sendAaExitBatch({
       emitProgress(onStage, {
         stage: "submitted",
         userOpHash: localUserOpHash,
+        ...pendingMetadata,
         submissionUnknown: true,
       });
       throw new AaExitSubmissionError(error, {
@@ -1574,6 +2042,7 @@ export async function sendAaExitBatch({
       emitProgress(onStage, {
         stage: "submitted",
         userOpHash: localUserOpHash,
+        ...pendingMetadata,
         submissionUnknown: true,
       });
       throw new AaExitSubmissionError(
@@ -1592,7 +2061,7 @@ export async function sendAaExitBatch({
     }
 
     stage = "submitted";
-    emitProgress(onStage, { stage, userOpHash });
+    emitProgress(onStage, { stage, userOpHash, ...pendingMetadata });
     const receipt = await waitForUserOpReceiptFn({
       ...bundlerOptions,
       userOpHash,
@@ -1628,6 +2097,194 @@ export async function sendAaExitBatch({
   }
 }
 
+const getAaExitContractCode = ({ client, chainMetadata, address }) =>
+  eth_getCode(getRpcClient({ client, chain: chainMetadata }), { address });
+
+const getAaExitNativeBalance = ({ client, chainMetadata, address }) =>
+  eth_getBalance(getRpcClient({ client, chain: chainMetadata }), { address });
+
+export async function sendAaExitBatchDirect({
+  transactions,
+  adminAccount,
+  chainMetadata,
+  expectedSmartAccountAddress,
+  client = THIRDWEB_CLIENT,
+  resolveCallsFn = resolveAaCalls,
+  getCodeFn = getAaExitContractCode,
+  isAdminFn = isAdmin,
+  simulateTransactionFn = simulateTransaction,
+  estimateGasFn = estimateGas,
+  getAdminBalanceFn = getAaExitNativeBalance,
+  getGasPriceFn = getGasPrice,
+  sendTransactionFn = sendTransaction,
+  waitForReceiptFn = waitForReceipt,
+  maxBlocksWaitTime = 3_000,
+  onStage = noop,
+}) {
+  if (!adminAccount?.address) {
+    throw beforeSubmissionError(
+      "AA Exit could not resolve the smart wallet admin account",
+    );
+  }
+  if (!ethers.utils.isAddress(adminAccount.address)) {
+    throw beforeSubmissionError("AA Exit resolved an invalid admin address");
+  }
+  if (!chainMetadata?.id) {
+    throw beforeSubmissionError(
+      "AA Exit could not resolve the direct submission chain",
+    );
+  }
+  if (!ethers.utils.isAddress(expectedSmartAccountAddress || "")) {
+    throw beforeSubmissionError(
+      "AA Exit could not resolve the expected smart wallet address",
+    );
+  }
+  if (!Array.isArray(transactions) || transactions.length === 0) {
+    throw beforeSubmissionError("AA Exit has no transactions to submit");
+  }
+  const wrongChain = transactions.find(
+    (transaction) => transaction?.chain?.id !== chainMetadata.id,
+  );
+  if (wrongChain) {
+    throw beforeSubmissionError(
+      `AA Exit refused a cross-chain direct batch: expected chain ${
+        chainMetadata.id
+      }, got ${wrongChain?.chain?.id ?? "unknown"}`,
+    );
+  }
+
+  let stage = "preparing";
+  let transactionHash;
+  emitProgress(onStage, { stage });
+
+  try {
+    const calls = await resolveCallsFn(transactions);
+    const transaction = buildAaExecuteBatchTransaction({
+      calls,
+      smartAccountAddress: expectedSmartAccountAddress,
+      chainMetadata,
+      client,
+    });
+    const accountContract = getContract({
+      client,
+      chain: chainMetadata,
+      address: expectedSmartAccountAddress,
+    });
+
+    const code = await getCodeFn({
+      client,
+      chainMetadata,
+      address: expectedSmartAccountAddress,
+    });
+    if (!code || code === "0x" || code === "0x0") {
+      throw new Error(
+        "AA Exit direct mode requires the smart account to be deployed on this chain",
+      );
+    }
+    const adminAuthorized = await isAdminFn({
+      contract: accountContract,
+      signer: adminAccount.address,
+    });
+    if (!adminAuthorized) {
+      throw new Error(
+        `${adminAccount.address} is not an admin of ${expectedSmartAccountAddress}`,
+      );
+    }
+
+    await simulateTransactionFn({
+      transaction,
+      from: adminAccount.address,
+    });
+    const gas = BigInt(
+      await estimateGasFn({
+        transaction,
+        from: adminAccount.address,
+      }),
+    );
+    if (gas > AA_EXIT_DIRECT_GAS_LIMIT) {
+      throw new Error(
+        `AA Exit direct batch needs ${gas.toString()} gas, above the 25,600,000 safety limit`,
+      );
+    }
+    const [adminBalance, gasPrice] = await Promise.all([
+      getAdminBalanceFn({
+        client,
+        chainMetadata,
+        address: adminAccount.address,
+      }),
+      getGasPriceFn({ client, chain: chainMetadata }),
+    ]);
+    const minimumGasCost = gas * BigInt(gasPrice);
+    if (BigInt(adminBalance) < minimumGasCost) {
+      throw new Error(
+        `AA Exit admin has insufficient native gas balance: needs at least ${minimumGasCost.toString()} wei`,
+      );
+    }
+
+    stage = "signing";
+    emitProgress(onStage, { stage });
+    const sent = await sendTransactionFn({
+      transaction,
+      account: adminAccount,
+    });
+    transactionHash = sent?.transactionHash;
+    if (!isTransactionHash(transactionHash)) {
+      throw new Error("AA Exit wallet returned no valid transaction hash");
+    }
+
+    stage = "submitted";
+    emitProgress(onStage, { stage, transactionHash });
+    let receipt;
+    try {
+      receipt = await waitForReceiptFn({
+        client,
+        chain: chainMetadata,
+        transactionHash,
+        maxBlocksWaitTime,
+      });
+    } catch (error) {
+      throw new AaExitSubmissionError(error, {
+        stage,
+        submitted: true,
+        transactionHash,
+        submissionUnknown: true,
+      });
+    }
+    if (receipt?.status === "reverted") {
+      emitProgress(onStage, { stage: "reverted", transactionHash });
+      throw new AaExitSubmissionError(
+        new Error(
+          `AA Exit direct transaction reverted atomically: ${transactionHash}`,
+        ),
+        { stage, submitted: true, transactionHash },
+      );
+    }
+
+    stage = "confirmed";
+    emitProgress(onStage, { stage, transactionHash });
+    return { transactionHash, receipt };
+  } catch (error) {
+    if (error instanceof AaExitSubmissionError) throw error;
+    const submitted = isTransactionHash(transactionHash);
+    const submissionUnknown =
+      submitted && classifyEmergencyExitBatchError(error) === FAILURE.UNKNOWN;
+    logger.error(
+      "AA Exit direct submission failed",
+      `stage=${stage}`,
+      `chain=${chainMetadata.id}`,
+      `smartAccount=${expectedSmartAccountAddress}`,
+      `transactionHash=${transactionHash || "none"}`,
+      error,
+    );
+    throw new AaExitSubmissionError(error, {
+      stage,
+      submitted,
+      transactionHash,
+      submissionUnknown,
+    });
+  }
+}
+
 export const isAaExitUserOpReceiptFailure = (error) =>
   errorDetails(error).includes("userop failed");
 
@@ -1654,6 +2311,31 @@ export async function waitForPendingAaExitUserOp({
     userOpHash,
     timeoutMs,
     intervalMs,
+  });
+}
+
+export async function waitForPendingAaExitDirectTransaction({
+  chainMetadata,
+  transactionHash,
+  client = THIRDWEB_CLIENT,
+  maxBlocksWaitTime = 100,
+  waitForReceiptFn = waitForReceipt,
+}) {
+  if (!chainMetadata?.id) {
+    throw new Error(
+      "AA Exit pending direct transaction requires chain metadata",
+    );
+  }
+  if (!isTransactionHash(transactionHash)) {
+    throw new Error(
+      "AA Exit pending direct transaction requires a valid transaction hash",
+    );
+  }
+  return waitForReceiptFn({
+    chain: chainMetadata,
+    client,
+    transactionHash,
+    maxBlocksWaitTime,
   });
 }
 
@@ -1721,10 +2403,10 @@ export async function executeAaExitPlan({
           ? "submitted"
           : kind === FAILURE.USER_REJECTED
           ? "cancelled"
+          : error?.submissionUnknown || kind === FAILURE.UNKNOWN
+          ? "unknown"
           : error instanceof AaExitSubmissionError
           ? "pre-submit-failed"
-          : kind === FAILURE.UNKNOWN
-          ? "unknown"
           : "pre-submit-failed";
       const message =
         status === "submitted"
@@ -1740,12 +2422,14 @@ export async function executeAaExitPlan({
           status: rowStatus,
           error: message,
           userOpHash: error?.userOpHash,
+          transactionHash: error?.transactionHash,
         }),
       );
       return {
         status,
         error,
         userOpHash: error?.userOpHash,
+        transactionHash: error?.transactionHash,
         failedBatch: batch,
         completedBatches,
       };
@@ -1833,16 +2517,30 @@ export async function runAaExitGroups({
         markAll("cancelled", { error: TERMINAL_MESSAGE.cancelled });
         return { status: "cancelled", error, groups: live };
       }
-      if (error instanceof AaExitSubmissionError) {
-        markAll("failed", { error: error.message });
-        return { status: "pre-submit-failed", error, groups: live };
-      }
-      if (kind === FAILURE.UNKNOWN) {
+      if (error?.submissionUnknown || kind === FAILURE.UNKNOWN) {
         markAll("unknown", {
           error:
             "Batch status is unknown. Refresh balances and check your wallet before trying again.",
+          transactionHash: error?.transactionHash,
         });
-        return { status: "unknown", error, groups: live };
+        return {
+          status: "unknown",
+          error,
+          transactionHash: error?.transactionHash,
+          groups: live,
+        };
+      }
+      if (error instanceof AaExitSubmissionError) {
+        markAll("failed", {
+          error: error.message,
+          transactionHash: error.transactionHash,
+        });
+        return {
+          status: "pre-submit-failed",
+          error,
+          transactionHash: error.transactionHash,
+          groups: live,
+        };
       }
       await onFallback?.(error);
       markAll("pending", { error: undefined });
@@ -1879,10 +2577,20 @@ export async function runAaExitGroups({
             total: txns.length,
           };
         }
-        if (kind === FAILURE.USER_REJECTED || kind === FAILURE.UNKNOWN) {
+        if (error?.submissionUnknown || kind === FAILURE.UNKNOWN) {
           return {
             stop: true,
-            status: kind === FAILURE.USER_REJECTED ? "cancelled" : "unknown",
+            status: "unknown",
+            error,
+            transactionHash: error?.transactionHash,
+            sent,
+            total: txns.length,
+          };
+        }
+        if (kind === FAILURE.USER_REJECTED) {
+          return {
+            stop: true,
+            status: "cancelled",
             error,
             sent,
             total: txns.length,
@@ -1893,6 +2601,7 @@ export async function runAaExitGroups({
             stop: true,
             status: "pre-submit-failed",
             error,
+            transactionHash: error.transactionHash,
             sent,
             total: txns.length,
           };
@@ -1937,6 +2646,7 @@ export async function runAaExitGroups({
                 ? outcome.error?.message || "UserOperation was not submitted"
                 : TERMINAL_MESSAGE[outcome.status],
             userOpHash: outcome.userOpHash,
+            transactionHash: outcome.transactionHash,
             progress: `${outcome.sent ?? 0}/${
               outcome.total ?? slot.txns.length
             }`,
@@ -2004,21 +2714,33 @@ export async function runAaExitGroups({
         });
         return { stop: true, status: "cancelled", error };
       }
+      if (error?.submissionUnknown || kind === FAILURE.UNKNOWN) {
+        slot.status = "unknown";
+        updateGroup(slot.uniqueId, {
+          status: "unknown",
+          error: TERMINAL_MESSAGE.unknown,
+          transactionHash: error?.transactionHash,
+        });
+        return {
+          stop: true,
+          status: "unknown",
+          error,
+          transactionHash: error?.transactionHash,
+        };
+      }
       if (error instanceof AaExitSubmissionError) {
         slot.status = "failed";
         updateGroup(slot.uniqueId, {
           status: "failed",
           error: error.message,
+          transactionHash: error.transactionHash,
         });
-        return { stop: true, status: "pre-submit-failed", error };
-      }
-      if (kind === FAILURE.UNKNOWN) {
-        slot.status = "unknown";
-        updateGroup(slot.uniqueId, {
-          status: "unknown",
-          error: TERMINAL_MESSAGE.unknown,
-        });
-        return { stop: true, status: "unknown", error };
+        return {
+          stop: true,
+          status: "pre-submit-failed",
+          error,
+          transactionHash: error.transactionHash,
+        };
       }
 
       const next = nextExitLevel(slot);
@@ -2068,6 +2790,7 @@ export async function runAaExitGroups({
         status: outcome.status,
         error: outcome.error,
         userOpHash: outcome.userOpHash,
+        transactionHash: outcome.transactionHash,
         groups: live,
       };
     }

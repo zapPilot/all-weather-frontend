@@ -60,7 +60,16 @@ import {
   buildEoaFullExitPlan,
   refreshEoaFullExitTokens,
 } from "../../utils/eoaFullExit";
-import { probeAaBatch, sendAaExitBatch } from "../../utils/aaExit";
+import {
+  clearPendingAaExitDirectTransaction,
+  clearPendingAaExitUserOp,
+  createPendingAaExitDirectTransaction,
+  isPendingAaExitUserOpDead,
+  readPendingAaExitDirectTransaction,
+  readPendingAaExitUserOp,
+  sendAaExitBatchDirect,
+  writePendingAaExitDirectTransaction,
+} from "../../utils/aaExit";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -630,49 +639,82 @@ export default function DustZap() {
 
   const statusMessagesRef = useRef([]);
 
-  // AA mode is initialized on Base in ConnectButton. Thirdweb 5.115.3 refreshes
-  // accountContract for cross-chain single sends, but not for sendBatchTransaction.
-  // Reuse the AA Exit staged sender so DustZap always prepares/sponsors the UserOp
-  // against the chain currently being converted instead of the stale Base context.
+  // AA DustZap uses a normal admin -> AA.executeBatch transaction. This avoids
+  // both Thirdweb's large-UserOp broadcast path and its paymaster policy.
   const sendAaDustBatchTransaction = useCallback(
     async (transactions, callbacks = {}) => {
       const adminAccount = adminWallet?.getAccount();
       try {
-        // First prove the exact DustZap calldata can execute without a paymaster.
-        // This both exposes hidden simulation failures and gives us a safe
-        // fallback when Thirdweb sponsorship itself returns a server error.
-        await probeAaBatch({
-          groups: [{ txns: transactions }],
-          adminAccount,
-          chainMetadata: activeChain,
+        const pendingDirect = readPendingAaExitDirectTransaction({
+          chainId: activeChain?.id,
           smartAccountAddress: account?.address,
-          sponsorGas: false,
         });
-
-        try {
-          const result = await sendAaExitBatch({
-            transactions,
-            adminAccount,
+        if (pendingDirect) {
+          throw new Error(
+            `A direct AA transaction is still pending: ${pendingDirect.transactionHash}`,
+          );
+        }
+        const pendingUserOp = readPendingAaExitUserOp({
+          chainId: activeChain?.id,
+          smartAccountAddress: account?.address,
+        });
+        if (pendingUserOp) {
+          const pendingState = await isPendingAaExitUserOpDead({
+            pending: pendingUserOp,
             chainMetadata: activeChain,
-            expectedSmartAccountAddress: account?.address,
-            sponsorGas: true,
           });
-          callbacks.onSuccess?.(result);
-          return;
-        } catch (error) {
-          if (error?.submitted || error?.stage !== "preparing") throw error;
-          logger.warn(
-            "DustZap AA sponsorship failed before signing; falling back to unsponsored UserOp",
-            error,
+          if (pendingState !== "dead") {
+            throw new Error(
+              `A previous sponsored AA operation is ${pendingState}; direct execution is blocked to prevent a duplicate.`,
+            );
+          }
+          clearPendingAaExitUserOp({
+            chainId: activeChain.id,
+            smartAccountAddress: account.address,
+            userOpHash: pendingUserOp.userOpHash,
+          });
+        }
+
+        if (adminWallet?.getChain()?.id !== activeChain?.id) {
+          await adminWallet?.switchChain(activeChain);
+        }
+        if (adminWallet?.getChain()?.id !== activeChain?.id) {
+          throw new Error(
+            `DustZap admin wallet is on chain ${
+              adminWallet?.getChain()?.id ?? "unknown"
+            }, expected ${activeChain?.id ?? "unknown"}`,
           );
         }
 
-        const result = await sendAaExitBatch({
+        const handleStage = (event) => {
+          if (event.stage === "submitted" && event.transactionHash) {
+            writePendingAaExitDirectTransaction(
+              createPendingAaExitDirectTransaction({
+                chainId: activeChain.id,
+                smartAccountAddress: account.address,
+                recipient: account.address,
+                transactionHash: event.transactionHash,
+                groupIds: ["dustzap"],
+              }),
+            );
+          }
+          if (
+            (event.stage === "confirmed" || event.stage === "reverted") &&
+            event.transactionHash
+          ) {
+            clearPendingAaExitDirectTransaction({
+              chainId: activeChain.id,
+              smartAccountAddress: account.address,
+              transactionHash: event.transactionHash,
+            });
+          }
+        };
+        const result = await sendAaExitBatchDirect({
           transactions,
           adminAccount,
           chainMetadata: activeChain,
           expectedSmartAccountAddress: account?.address,
-          sponsorGas: false,
+          onStage: handleStage,
         });
         callbacks.onSuccess?.(result);
       } catch (error) {
@@ -936,12 +978,16 @@ export default function DustZap() {
         setFullExitPhase("Fetching swap routes for resulting tokens…");
       }
 
-      const { platformFeeTxns } = await calculateAndChargeEntryFees(
-        conversionTotalValue,
-        activeChain,
-        account,
-        fetchedEthPrice,
-      );
+      // Sunset reliability takes precedence over the 0.01% platform fee in AA
+      // mode. It also avoids the referral lookup and extra executeBatch legs.
+      const { platformFeeTxns } = aaOn
+        ? { platformFeeTxns: [] }
+        : await calculateAndChargeEntryFees(
+            conversionTotalValue,
+            activeChain,
+            account,
+            fetchedEthPrice,
+          );
 
       const { fetchDustConversionRoutes } = await import(
         "../../utils/dustConversion"
@@ -954,6 +1000,11 @@ export default function DustZap() {
           tokenPricesMappingTable: conversionPriceMapping,
           slippage,
           handleStatusUpdate,
+          // 1inch V5 currently returns AA DustZap calldata whose minReturn
+          // immediately reverts with ReturnAmountIsNotEnough (0xf32bec2f),
+          // even at the rescue UI's 49% tolerance. Keep EOA behavior unchanged
+          // and use the already-supported alternatives for the AA sunset path.
+          providers: aaOn ? ["0x", "paraswap"] : undefined,
         });
 
       setFetchingSwapRoutes(false);

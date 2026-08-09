@@ -20,6 +20,7 @@ export const fetchDustConversionRoutes = async ({
   tokenPricesMappingTable,
   slippage,
   handleStatusUpdate,
+  providers,
 }) => {
   const allTxns = [];
   let totalTradingLoss = 0;
@@ -52,6 +53,7 @@ export const fetchDustConversionRoutes = async ({
           18, // toTokenDecimals (ETH)
           updatedPriceMapping,
           handleStatusUpdate,
+          providers,
         );
         return [txns, tradingLoss];
       } catch (err) {

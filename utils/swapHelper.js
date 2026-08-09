@@ -22,13 +22,13 @@ async function swap(
   toTokenDecimals,
   tokenPricesMappingTable,
   handleStatusUpdate,
+  providers = ["1inch", "0x", "paraswap"],
 ) {
   if (fromTokenAddress.toLowerCase() === toTokenAddress.toLowerCase()) {
     return;
   }
 
-  // Try all providers and collect their swap data
-  const providers = ["1inch", "0x", "paraswap"];
+  // Try all allowed providers and collect their swap data
   const eth_price = tokenPricesMappingTable["eth"];
   const to_token_price = tokenPricesMappingTable[toTokenSymbol];
   assert(eth_price !== undefined, `eth_price is undefined`);

@@ -1,30 +1,41 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ethers } from "ethers";
-import { encode } from "thirdweb";
+import { encode, prepareTransaction } from "thirdweb";
 import { arbitrum, base, optimism } from "thirdweb/chains";
 import {
   AA_EXIT_VAULTS,
+  AaExitSubmissionError,
   EXIT_FEE_USD,
   PROTOCOL_TREASURY_ADDRESS,
+  buildAaExecuteBatchTransaction,
   buildClaimedRewardsGroup,
   buildFeeGroup,
   buildWalletSweepGroups,
+  clearPendingAaExitDirectTransaction,
   clearPendingAaExitUserOp,
   collectExitProtocols,
+  createPendingAaExitDirectTransaction,
   createPendingAaExitUserOp,
   debankChainCode,
   executeAaExitPlan,
+  isPendingAaExitUserOpDead,
   materializeExitCandidate,
   nextExitLevel,
+  parsePaymasterValidityWindow,
   planAaExitBatches,
   preflightWalletTokens,
   probeAaBatch,
+  probeAaBatchDirect,
+  readPendingAaExitDirectTransaction,
   readPendingAaExitUserOp,
+  resolveAaCalls,
   runAaExitGroups,
   selectFeeToken,
   sendAaExitBatch,
+  sendAaExitBatchDirect,
   sweptAddressesOf,
   usdToTokenRawFloor,
+  writePendingAaExitDirectTransaction,
   writePendingAaExitUserOp,
 } from "../../utils/aaExit";
 
@@ -871,6 +882,157 @@ describe("runAaExitGroups", () => {
   });
 });
 
+describe("direct AA executeBatch preparation", () => {
+  const client = { clientId: "test-client" };
+
+  it("resolves PreparedTransactions and builds the SDK-compatible executeBatch calldata", async () => {
+    const transactions = [
+      prepareTransaction({
+        client,
+        chain: arbitrum,
+        to: RECIPIENT,
+        value: 3n,
+        data: "0x1234",
+      }),
+      prepareTransaction({
+        client,
+        chain: arbitrum,
+        to: USDC_ARB,
+        data: "0xabcd",
+      }),
+    ];
+    const calls = await resolveAaCalls(transactions);
+
+    expect(calls).toEqual([
+      { to: RECIPIENT, value: 3n, data: "0x1234", chainId: arbitrum.id },
+      { to: USDC_ARB, value: 0n, data: "0xabcd", chainId: arbitrum.id },
+    ]);
+
+    const batch = buildAaExecuteBatchTransaction({
+      calls,
+      smartAccountAddress: SMART_ACCOUNT,
+      chainMetadata: arbitrum,
+      client,
+    });
+    const data = await encode(batch);
+    expect(data.slice(0, 10)).toBe("0x47e1da2a");
+    const decoded = new ethers.utils.Interface([
+      "function executeBatch(address[],uint256[],bytes[])",
+    ]).decodeFunctionData("executeBatch", data);
+    expect(decoded[0].map((address) => address.toLowerCase())).toEqual([
+      RECIPIENT.toLowerCase(),
+      USDC_ARB.toLowerCase(),
+    ]);
+    expect(decoded[1].map(String)).toEqual(["3", "0"]);
+    expect(decoded[2]).toEqual(["0x1234", "0xabcd"]);
+    expect(await batch.value).toBe(0n);
+  });
+
+  it("probes the direct admin transaction without broadcasting", async () => {
+    const estimateGasFn = vi.fn().mockResolvedValue(3_560_000n);
+    const transaction = prepareTransaction({
+      client,
+      chain: arbitrum,
+      to: RECIPIENT,
+      data: "0x1234",
+    });
+    const result = await probeAaBatchDirect({
+      groups: [{ txns: [transaction] }],
+      adminAccount: { address: ADMIN },
+      chainMetadata: arbitrum,
+      smartAccountAddress: SMART_ACCOUNT,
+      client,
+      estimateGasFn,
+    });
+
+    expect(result.gas).toBe(3_560_000n);
+    expect(estimateGasFn).toHaveBeenCalledWith({
+      transaction: expect.any(Object),
+      from: ADMIN,
+    });
+  });
+});
+
+describe("paymaster validity and pending UserOp safety gate", () => {
+  const validUntil = 1_700_000_000;
+  const validAfter = 1_699_999_000;
+  const paymaster = "b2aa351111111111111111111111111111111111";
+  const uint48 = (value) => value.toString(16).padStart(12, "0");
+
+  it("parses the v0.6 VerifyingPaymaster packed validity window", () => {
+    const packed = `0x${paymaster}${uint48(validUntil)}${uint48(
+      validAfter,
+    )}${"ab".repeat(65)}`;
+
+    expect(parsePaymasterValidityWindow(packed)).toEqual({
+      validUntil,
+      validAfter,
+    });
+    for (const invalid of [
+      null,
+      "0x",
+      "0x1234",
+      "not-hex",
+      `0x${"1".repeat(63)}`,
+    ]) {
+      expect(parsePaymasterValidityWindow(invalid)).toBeNull();
+    }
+  });
+
+  it("returns no-pending, live, landed, dead and unknown conservatively", async () => {
+    const nonce = (123n << 64n) | 7n;
+    const pending = createPendingAaExitUserOp({
+      chainId: arbitrum.id,
+      smartAccountAddress: SMART_ACCOUNT,
+      recipient: RECIPIENT,
+      userOpHash: `0x${"9".repeat(64)}`,
+      nonce,
+      paymasterValidUntil: validUntil,
+    });
+
+    await expect(
+      isPendingAaExitUserOpDead({
+        pending: null,
+        chainMetadata: arbitrum,
+      }),
+    ).resolves.toBe("no-pending");
+    await expect(
+      isPendingAaExitUserOpDead({
+        pending,
+        chainMetadata: arbitrum,
+        nowSeconds: validUntil,
+        readNonceFn: vi.fn(),
+      }),
+    ).resolves.toBe("live");
+    await expect(
+      isPendingAaExitUserOpDead({
+        pending,
+        chainMetadata: arbitrum,
+        nowSeconds: validUntil + 100,
+        readNonceFn: vi.fn().mockResolvedValue(nonce + 1n),
+      }),
+    ).resolves.toBe("landed");
+    await expect(
+      isPendingAaExitUserOpDead({
+        pending,
+        chainMetadata: arbitrum,
+        nowSeconds: validUntil + 100,
+        readNonceFn: vi.fn().mockResolvedValue(nonce),
+      }),
+    ).resolves.toBe("dead");
+    await expect(
+      isPendingAaExitUserOpDead({
+        pending: createPendingAaExitUserOp({
+          ...pending,
+          nonce: undefined,
+        }),
+        chainMetadata: arbitrum,
+        nowSeconds: validUntil + 100,
+      }),
+    ).resolves.toBe("unknown");
+  });
+});
+
 describe("staged AA Exit submission", () => {
   const adminAccount = { address: ADMIN };
   const client = { clientId: "test-client" };
@@ -968,11 +1130,44 @@ describe("staged AA Exit submission", () => {
       expect(onStage.mock.calls.map(([event]) => event)).toEqual([
         { stage: "preparing" },
         { stage: "signing" },
-        { stage: "submitting", userOpHash },
-        { stage: "submitted", userOpHash },
+        { stage: "submitting", userOpHash, nonce: "0" },
+        { stage: "submitted", userOpHash, nonce: "0" },
         { stage: "confirmed", userOpHash, transactionHash },
       ]);
     }
+  });
+
+  it("emits nonce and paymaster expiry before bundler submission", async () => {
+    const validUntil = 1_786_271_915;
+    const validAfter = 1_786_271_000;
+    const pack48 = (value) => value.toString(16).padStart(12, "0");
+    const paymasterAndData = `0x${"12".repeat(20)}${pack48(validUntil)}${pack48(
+      validAfter,
+    )}${"34".repeat(65)}`;
+    const nonce = (77n << 64n) | 3n;
+    const dependencies = senderDependencies({
+      signUserOpFn: vi.fn().mockResolvedValue({
+        ...signedUserOp,
+        nonce,
+        paymasterAndData,
+      }),
+    });
+    const onStage = vi.fn();
+
+    await sendWith({ dependencies, onStage }).promise;
+
+    expect(onStage).toHaveBeenNthCalledWith(3, {
+      stage: "submitting",
+      userOpHash,
+      nonce: nonce.toString(),
+      paymasterValidUntil: validUntil,
+    });
+    expect(onStage).toHaveBeenNthCalledWith(4, {
+      stage: "submitted",
+      userOpHash,
+      nonce: nonce.toString(),
+      paymasterValidUntil: validUntil,
+    });
   });
 
   it("marks prepare failures as definitely not submitted", async () => {
@@ -1083,6 +1278,7 @@ describe("staged AA Exit submission", () => {
     expect(onStage).toHaveBeenLastCalledWith({
       stage: "submitted",
       userOpHash,
+      nonce: "0",
       submissionUnknown: true,
     });
     expect(dependencies.waitForUserOpReceiptFn).not.toHaveBeenCalled();
@@ -1172,6 +1368,216 @@ describe("staged AA Exit submission", () => {
   });
 });
 
+describe("direct admin AA Exit submission", () => {
+  const adminAccount = { address: ADMIN };
+  const client = { clientId: "test-client" };
+  const transactionHash = `0x${"d".repeat(64)}`;
+  const transactionFor = (chainMetadata = arbitrum) => ({
+    chain: chainMetadata,
+    to: RECIPIENT,
+    data: "0x1234",
+  });
+  const callsFor = (chainMetadata = arbitrum) => [
+    {
+      to: RECIPIENT,
+      value: 0n,
+      data: "0x1234",
+      chainId: chainMetadata.id,
+    },
+  ];
+  const directDependencies = (overrides = {}) => ({
+    resolveCallsFn: vi.fn().mockResolvedValue(callsFor()),
+    getCodeFn: vi.fn().mockResolvedValue("0x6000"),
+    isAdminFn: vi.fn().mockResolvedValue(true),
+    simulateTransactionFn: vi.fn().mockResolvedValue(undefined),
+    estimateGasFn: vi.fn().mockResolvedValue(3_560_000n),
+    getAdminBalanceFn: vi.fn().mockResolvedValue(10n ** 18n),
+    getGasPriceFn: vi.fn().mockResolvedValue(1n),
+    sendTransactionFn: vi.fn().mockResolvedValue({ transactionHash }),
+    waitForReceiptFn: vi.fn().mockResolvedValue({
+      status: "success",
+      transactionHash,
+    }),
+    ...overrides,
+  });
+  const sendDirectWith = ({
+    chainMetadata = arbitrum,
+    transactions = [transactionFor(chainMetadata)],
+    dependencies = directDependencies({
+      resolveCallsFn: vi.fn().mockResolvedValue(callsFor(chainMetadata)),
+    }),
+    onStage = vi.fn(),
+  } = {}) => ({
+    dependencies,
+    onStage,
+    promise: sendAaExitBatchDirect({
+      transactions,
+      adminAccount,
+      chainMetadata,
+      expectedSmartAccountAddress: SMART_ACCOUNT,
+      client,
+      onStage,
+      ...dependencies,
+    }),
+  });
+
+  it("preflights, asks for one normal signature, and confirms", async () => {
+    const { promise, dependencies, onStage } = sendDirectWith();
+
+    await expect(promise).resolves.toMatchObject({ transactionHash });
+    expect(dependencies.isAdminFn).toHaveBeenCalledWith({
+      contract: expect.objectContaining({ address: SMART_ACCOUNT }),
+      signer: ADMIN,
+    });
+    expect(dependencies.simulateTransactionFn).toHaveBeenCalledWith({
+      transaction: expect.any(Object),
+      from: ADMIN,
+    });
+    expect(dependencies.sendTransactionFn).toHaveBeenCalledWith({
+      transaction: expect.any(Object),
+      account: adminAccount,
+    });
+    expect(onStage.mock.calls.map(([event]) => event)).toEqual([
+      { stage: "preparing" },
+      { stage: "signing" },
+      { stage: "submitted", transactionHash },
+      { stage: "confirmed", transactionHash },
+    ]);
+  });
+
+  it("refuses a non-admin before asking for a signature", async () => {
+    const dependencies = directDependencies({
+      isAdminFn: vi.fn().mockResolvedValue(false),
+    });
+    const error = await sendDirectWith({ dependencies }).promise.catch(
+      (caught) => caught,
+    );
+
+    expect(error).toMatchObject({ stage: "preparing", submitted: false });
+    expect(error.message).toContain("is not an admin");
+    expect(dependencies.sendTransactionFn).not.toHaveBeenCalled();
+  });
+
+  it("refuses a wrong-chain transaction before any preflight call", async () => {
+    const dependencies = directDependencies();
+    await expect(
+      sendDirectWith({
+        dependencies,
+        transactions: [transactionFor(base)],
+      }).promise,
+    ).rejects.toMatchObject({
+      message: expect.stringContaining("cross-chain direct batch"),
+      submitted: false,
+    });
+    expect(dependencies.getCodeFn).not.toHaveBeenCalled();
+    expect(dependencies.sendTransactionFn).not.toHaveBeenCalled();
+  });
+
+  it("refuses an undeployed AA before asking for a signature", async () => {
+    const dependencies = directDependencies({
+      getCodeFn: vi.fn().mockResolvedValue("0x"),
+    });
+    await expect(
+      sendDirectWith({ dependencies }).promise,
+    ).rejects.toMatchObject({
+      message: expect.stringContaining(
+        "requires the smart account to be deployed",
+      ),
+      stage: "preparing",
+    });
+    expect(dependencies.isAdminFn).not.toHaveBeenCalled();
+    expect(dependencies.sendTransactionFn).not.toHaveBeenCalled();
+  });
+
+  it("stops on a dry-run revert without opening the wallet", async () => {
+    const dependencies = directDependencies({
+      simulateTransactionFn: vi
+        .fn()
+        .mockRejectedValue(new Error("simulation reverted")),
+    });
+    await expect(
+      sendDirectWith({ dependencies }).promise,
+    ).rejects.toMatchObject({
+      message: "simulation reverted",
+      stage: "preparing",
+      submitted: false,
+    });
+    expect(dependencies.estimateGasFn).not.toHaveBeenCalled();
+    expect(dependencies.sendTransactionFn).not.toHaveBeenCalled();
+  });
+
+  it("classifies a Rabby rejection as cancelled by the execution layer", async () => {
+    const dependencies = directDependencies({
+      sendTransactionFn: vi
+        .fn()
+        .mockRejectedValue(
+          Object.assign(new Error("user rejected"), { code: 4001 }),
+        ),
+    });
+    const plan = {
+      excluded: [],
+      batches: [
+        {
+          units: [{ uniqueId: "direct", txns: [transactionFor()] }],
+          groups: [{ uniqueId: "direct", txns: [transactionFor()] }],
+        },
+      ],
+    };
+    const sendBatchTransaction = (transactions, callbacks) =>
+      sendAaExitBatchDirect({
+        transactions,
+        adminAccount,
+        chainMetadata: arbitrum,
+        expectedSmartAccountAddress: SMART_ACCOUNT,
+        client,
+        ...dependencies,
+      }).then(callbacks.onSuccess, callbacks.onError);
+    const result = await executeAaExitPlan({
+      plan,
+      sendBatchTransaction,
+      updateGroup: vi.fn(),
+    });
+
+    expect(result.status).toBe("cancelled");
+  });
+
+  it("reports a reverted receipt explicitly with its transaction hash", async () => {
+    const dependencies = directDependencies({
+      waitForReceiptFn: vi.fn().mockResolvedValue({ status: "reverted" }),
+    });
+    const { promise, onStage } = sendDirectWith({ dependencies });
+
+    await expect(promise).rejects.toMatchObject({
+      message: expect.stringContaining("reverted atomically"),
+      stage: "submitted",
+      submitted: true,
+      transactionHash,
+      submissionUnknown: false,
+    });
+    expect(onStage).toHaveBeenLastCalledWith({
+      stage: "reverted",
+      transactionHash,
+    });
+  });
+
+  it("keeps a receipt timeout unknown and never invents a retry", async () => {
+    const dependencies = directDependencies({
+      waitForReceiptFn: vi
+        .fn()
+        .mockRejectedValue(new Error("timeout waiting for receipt")),
+    });
+    await expect(
+      sendDirectWith({ dependencies }).promise,
+    ).rejects.toMatchObject({
+      stage: "submitted",
+      submitted: true,
+      transactionHash,
+      submissionUnknown: true,
+    });
+    expect(dependencies.sendTransactionFn).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("pending AA Exit UserOp storage", () => {
   const smartAccountAddress = "0xB45AF3F83e8919e740980dc8592926936E34F01D";
   const normalizedAddress = smartAccountAddress.toLowerCase();
@@ -1197,6 +1603,8 @@ describe("pending AA Exit UserOp storage", () => {
       groupIds: ["protocol-a", "exit-fee"],
       batchIndex: 1,
       batchCount: 3,
+      nonce: (9n << 64n) | 2n,
+      paymasterValidUntil: 1_786_271_915,
       createdAt: 1_700_000_000_000,
       ...overrides,
     });
@@ -1214,6 +1622,8 @@ describe("pending AA Exit UserOp storage", () => {
       groupIds: ["protocol-a", "exit-fee"],
       batchIndex: 1,
       batchCount: 3,
+      nonce: ((9n << 64n) | 2n).toString(),
+      paymasterValidUntil: 1_786_271_915,
       createdAt: 1_700_000_000_000,
     });
 
@@ -1292,6 +1702,68 @@ describe("pending AA Exit UserOp storage", () => {
     });
 
     expect(storage.removeItem).toHaveBeenCalledWith(storageKey);
+    expect(storage.values.has(storageKey)).toBe(false);
+  });
+});
+
+describe("pending direct AA Exit transaction storage", () => {
+  const transactionHash = `0x${"e".repeat(64)}`;
+  const storageKey = `aa-exit-pending-direct-tx:v1:${
+    arbitrum.id
+  }:${SMART_ACCOUNT.toLowerCase()}`;
+  const memoryStorage = () => {
+    const values = new Map();
+    return {
+      values,
+      getItem: vi.fn((key) => values.get(key) ?? null),
+      setItem: vi.fn((key, value) => values.set(key, value)),
+      removeItem: vi.fn((key) => values.delete(key)),
+    };
+  };
+
+  it("round-trips and hash-qualifies a pending direct transaction", () => {
+    const storage = memoryStorage();
+    const record = createPendingAaExitDirectTransaction({
+      chainId: arbitrum.id,
+      smartAccountAddress: SMART_ACCOUNT,
+      recipient: RECIPIENT,
+      transactionHash,
+      groupIds: ["protocol-a"],
+      batchIndex: 0,
+      batchCount: 2,
+      createdAt: 1_700_000_000_000,
+    });
+
+    writePendingAaExitDirectTransaction(record, { storage });
+    expect(storage.setItem).toHaveBeenCalledWith(
+      storageKey,
+      JSON.stringify(record),
+    );
+    expect(
+      readPendingAaExitDirectTransaction({
+        chainId: arbitrum.id,
+        smartAccountAddress: SMART_ACCOUNT,
+        storage,
+      }),
+    ).toEqual(record);
+
+    expect(
+      clearPendingAaExitDirectTransaction({
+        chainId: arbitrum.id,
+        smartAccountAddress: SMART_ACCOUNT,
+        transactionHash: `0x${"f".repeat(64)}`,
+        storage,
+      }),
+    ).toBe(false);
+    expect(storage.values.has(storageKey)).toBe(true);
+    expect(
+      clearPendingAaExitDirectTransaction({
+        chainId: arbitrum.id,
+        smartAccountAddress: SMART_ACCOUNT,
+        transactionHash,
+        storage,
+      }),
+    ).toBe(true);
     expect(storage.values.has(storageKey)).toBe(false);
   });
 });
@@ -1499,6 +1971,44 @@ describe("AA UserOp probing and isolation", () => {
       expect(sendBatchTransaction).toHaveBeenCalledTimes(1);
       expect(["cancelled", "unknown"]).toContain(result.status);
     }
+  });
+
+  it("passes a known direct transaction hash through failed group updates", async () => {
+    const transactionHash = `0x${"7".repeat(64)}`;
+    const error = new AaExitSubmissionError(
+      new Error("direct transaction reverted atomically"),
+      {
+        stage: "submitted",
+        submitted: true,
+        transactionHash,
+      },
+    );
+    const plan = {
+      excluded: [],
+      batches: [
+        {
+          units: [probeGroup(0)],
+          groups: [probeGroup(0)],
+        },
+      ],
+    };
+    const updateGroup = vi.fn();
+    const result = await executeAaExitPlan({
+      plan,
+      sendBatchTransaction: vi.fn((_calls, callbacks) =>
+        callbacks.onError(error),
+      ),
+      updateGroup,
+    });
+
+    expect(result).toMatchObject({
+      status: "pre-submit-failed",
+      transactionHash,
+    });
+    expect(updateGroup).toHaveBeenLastCalledWith(
+      "p0",
+      expect.objectContaining({ status: "failed", transactionHash }),
+    );
   });
 });
 

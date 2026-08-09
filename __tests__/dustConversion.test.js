@@ -298,6 +298,18 @@ describe("Dust Conversion Utilities", () => {
           wbtc: 45000,
         }),
         mockParams.handleStatusUpdate,
+        undefined,
+      );
+    });
+
+    it("should forward a scoped provider list to swap", async () => {
+      const providers = ["0x", "paraswap"];
+
+      await fetchDustConversionRoutes({ ...mockParams, providers });
+
+      expect(swap).toHaveBeenCalledTimes(mockTokens.length);
+      expect(swap.mock.calls.every((call) => call[15] === providers)).toBe(
+        true,
       );
     });
 
