@@ -4,7 +4,13 @@
 // no remove-liquidity, no price lookups on the principal path, so a depegged or
 // unpriceable token cannot block the exit.
 import { ethers } from "ethers";
-import { getContract, prepareContractCall, prepareTransaction } from "thirdweb";
+import {
+  getContract,
+  prepareContractCall,
+  prepareTransaction,
+  sendBatchTransaction as sendBatchTransactionAction,
+} from "thirdweb";
+import { smartWallet } from "thirdweb/wallets";
 import { prepareUserOp } from "thirdweb/wallets/smart";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
 import THIRDWEB_CLIENT from "./thirdweb";
@@ -1222,6 +1228,81 @@ const submit = (send, payload) =>
 
 export const transactionHashFromResult = (data) =>
   data?.transactionHash || data?.receipts?.[0]?.transactionHash || "";
+
+/**
+ * AA Exit deliberately submits through a smart account created for the chain
+ * being exited instead of trusting the React active-account object. Thirdweb
+ * smart accounts can be recreated when switching chains, and an older/stale
+ * account object must never decide which bundler/account contract receives an
+ * emergency-exit batch.
+ *
+ * The expected-address check is the safety boundary: if the same admin would
+ * resolve to a different smart account on this chain, nothing is submitted.
+ */
+export async function sendAaExitBatch({
+  transactions,
+  adminAccount,
+  chainMetadata,
+  expectedSmartAccountAddress,
+  client = THIRDWEB_CLIENT,
+  smartWalletFactory = smartWallet,
+  sendBatchTransactionFn = sendBatchTransactionAction,
+}) {
+  if (!adminAccount?.address) {
+    throw new Error("AA Exit could not resolve the smart wallet admin account");
+  }
+  if (!chainMetadata?.id) {
+    throw new Error("AA Exit could not resolve the submission chain");
+  }
+  if (!expectedSmartAccountAddress) {
+    throw new Error(
+      "AA Exit could not resolve the expected smart wallet address",
+    );
+  }
+  if (!Array.isArray(transactions) || transactions.length === 0) {
+    throw new Error("AA Exit has no transactions to submit");
+  }
+
+  const wrongChain = transactions.find(
+    (transaction) => transaction?.chain?.id !== chainMetadata.id,
+  );
+  if (wrongChain) {
+    throw new Error(
+      `AA Exit refused a cross-chain batch: expected chain ${
+        chainMetadata.id
+      }, got ${wrongChain?.chain?.id ?? "unknown"}`,
+    );
+  }
+
+  const wallet = smartWalletFactory({
+    chain: chainMetadata,
+    sponsorGas: true,
+  });
+  const scopedAccount = await wallet.connect({
+    client,
+    personalAccount: adminAccount,
+    chain: chainMetadata,
+  });
+
+  if (
+    !scopedAccount?.address ||
+    scopedAccount.address.toLowerCase() !==
+      expectedSmartAccountAddress.toLowerCase()
+  ) {
+    throw new Error(
+      `AA Exit smart wallet mismatch on chain ${
+        chainMetadata.id
+      }: expected ${expectedSmartAccountAddress}, got ${
+        scopedAccount?.address || "unknown"
+      }`,
+    );
+  }
+
+  return sendBatchTransactionFn({
+    account: scopedAccount,
+    transactions,
+  });
+}
 
 /**
  * Send the groups, shrinking the batch every time one fails safely:

@@ -15,7 +15,6 @@ import {
   useActiveAccount,
   useActiveWalletChain,
   useAdminWallet,
-  useSendBatchTransaction,
   useSwitchActiveWalletChain,
 } from "thirdweb/react";
 import { ethers } from "ethers";
@@ -43,6 +42,7 @@ import {
   probeAaBatch,
   runAaExitGroups,
   scanAaExit,
+  sendAaExitBatch,
 } from "../../utils/aaExit";
 
 const { Title, Text, Paragraph } = Typography;
@@ -152,7 +152,6 @@ export default function AaExit() {
   const switchChain = useSwitchActiveWalletChain();
   const adminWallet = useAdminWallet();
   const { aaOn, initializedFromUrl } = useWalletMode();
-  const { mutate: sendBatchTransaction } = useSendBatchTransaction();
   const [notificationAPI, notificationContextHolder] =
     notification.useNotification();
 
@@ -198,6 +197,21 @@ export default function AaExit() {
   const chainName = normalizeChainName(chainMetadata?.name);
   const onSupportedChain = AA_EXIT_CHAINS.includes(chainName);
   const explorerUrl = LOCK_EXPLORER_URLS[activeChain?.id];
+
+  const sendExitBatchTransaction = useCallback(
+    (transactions, callbacks = {}) => {
+      sendAaExitBatch({
+        transactions,
+        adminAccount: adminWallet?.getAccount(),
+        chainMetadata,
+        expectedSmartAccountAddress: account?.address,
+      }).then(
+        (result) => callbacks.onSuccess?.(result),
+        (error) => callbacks.onError?.(error),
+      );
+    },
+    [adminWallet, chainMetadata, account?.address],
+  );
 
   const resetResults = useCallback(() => {
     groupsRef.current = [];
@@ -493,7 +507,7 @@ export default function AaExit() {
     const executePlan = (plan) =>
       executeAaExitPlan({
         plan,
-        sendBatchTransaction,
+        sendBatchTransaction: sendExitBatchTransaction,
         updateGroup,
       });
 
@@ -542,7 +556,7 @@ export default function AaExit() {
     }
     finishRun(result.status);
   }, [
-    sendBatchTransaction,
+    sendExitBatchTransaction,
     updateGroup,
     prepareExitPlan,
     applyPreparedPlan,
@@ -566,7 +580,7 @@ export default function AaExit() {
         const target = { ...slot, txns: rebuilt ? rebuilt.txns : [] };
         const result = await runAaExitGroups({
           groups: [target],
-          sendBatchTransaction,
+          sendBatchTransaction: sendExitBatchTransaction,
           updateGroup,
           rebuildGroup,
           // a single group is already one signature, so there is no combined
@@ -581,7 +595,7 @@ export default function AaExit() {
         setRetrying(null);
       }
     },
-    [rebuildGroup, sendBatchTransaction, updateGroup, finishRun],
+    [rebuildGroup, sendExitBatchTransaction, updateGroup, finishRun],
   );
 
   if (!account) {

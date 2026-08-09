@@ -19,6 +19,7 @@ import {
   probeAaBatch,
   runAaExitGroups,
   selectFeeToken,
+  sendAaExitBatch,
   sweptAddressesOf,
   usdToTokenRawFloor,
 } from "../../utils/aaExit";
@@ -29,6 +30,8 @@ const USDT_ARB = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9";
 const WETH_ARB = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 // transfer(address,uint256)
 const TRANSFER_SELECTOR = "a9059cbb";
+const ADMIN = "0x1111111111111111111111111111111111111111";
+const SMART_ACCOUNT = "0x2222222222222222222222222222222222222222";
 
 const token = ({
   id,
@@ -861,6 +864,86 @@ describe("runAaExitGroups", () => {
     const result = await harness.promise;
 
     expect(result.groups[0].level).toBe(2);
+  });
+});
+
+describe("chain-scoped AA Exit submission", () => {
+  const transaction = { chain: arbitrum };
+  const adminAccount = { address: ADMIN };
+
+  it("creates the submitter on Arbitrum and sends only after the AA address matches", async () => {
+    const connect = vi.fn().mockResolvedValue({ address: SMART_ACCOUNT });
+    const smartWalletFactory = vi.fn(() => ({ connect }));
+    const sendBatchTransactionFn = vi.fn().mockResolvedValue({
+      transactionHash: "0xabc",
+    });
+    const client = { clientId: "test-client" };
+
+    const result = await sendAaExitBatch({
+      transactions: [transaction],
+      adminAccount,
+      chainMetadata: arbitrum,
+      expectedSmartAccountAddress: SMART_ACCOUNT,
+      client,
+      smartWalletFactory,
+      sendBatchTransactionFn,
+    });
+
+    expect(smartWalletFactory).toHaveBeenCalledWith({
+      chain: arbitrum,
+      sponsorGas: true,
+    });
+    expect(connect).toHaveBeenCalledWith({
+      client,
+      personalAccount: adminAccount,
+      chain: arbitrum,
+    });
+    expect(sendBatchTransactionFn).toHaveBeenCalledWith({
+      account: { address: SMART_ACCOUNT },
+      transactions: [transaction],
+    });
+    expect(result.transactionHash).toBe("0xabc");
+  });
+
+  it("refuses to submit when the chain-scoped smart account address differs", async () => {
+    const smartWalletFactory = vi.fn(() => ({
+      connect: vi.fn().mockResolvedValue({
+        address: "0x3333333333333333333333333333333333333333",
+      }),
+    }));
+    const sendBatchTransactionFn = vi.fn();
+
+    await expect(
+      sendAaExitBatch({
+        transactions: [transaction],
+        adminAccount,
+        chainMetadata: arbitrum,
+        expectedSmartAccountAddress: SMART_ACCOUNT,
+        smartWalletFactory,
+        sendBatchTransactionFn,
+      }),
+    ).rejects.toThrow("smart wallet mismatch");
+
+    expect(sendBatchTransactionFn).not.toHaveBeenCalled();
+  });
+
+  it("refuses to mix a Base transaction into an Arbitrum batch", async () => {
+    const smartWalletFactory = vi.fn();
+    const sendBatchTransactionFn = vi.fn();
+
+    await expect(
+      sendAaExitBatch({
+        transactions: [{ chain: base }],
+        adminAccount,
+        chainMetadata: arbitrum,
+        expectedSmartAccountAddress: SMART_ACCOUNT,
+        smartWalletFactory,
+        sendBatchTransactionFn,
+      }),
+    ).rejects.toThrow("refused a cross-chain batch");
+
+    expect(smartWalletFactory).not.toHaveBeenCalled();
+    expect(sendBatchTransactionFn).not.toHaveBeenCalled();
   });
 });
 
