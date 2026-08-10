@@ -58,6 +58,7 @@ import {
 } from "../../utils/tokenUtils";
 import {
   buildEoaFullExitPlan,
+  getEoaFullExitTokenDeltas,
   refreshEoaFullExitTokens,
 } from "../../utils/eoaFullExit";
 import {
@@ -204,11 +205,13 @@ const HeroSection = ({
   totalValue,
   tokenCount,
   isConverting,
+  activeAction,
   onConvert,
+  onClosePositions,
+  canClosePositions,
   hasTokens,
   slippage,
   onSlippageChange,
-  fullExit = false,
 }) => (
   <div className="relative overflow-hidden">
     {/* Background gradient */}
@@ -234,13 +237,13 @@ const HeroSection = ({
           level={1}
           className="mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
         >
-          {fullExit ? "Close Everything to ETH" : "Convert Dust to ETH"}
+          Convert Dust to ETH
         </Title>
 
         <Paragraph className="mb-8 text-lg text-gray-600 leading-relaxed">
-          {fullExit
-            ? "Close supported DeFi positions first, then convert the resulting wallet tokens to ETH using fresh on-chain balances."
-            : "Transform your small token balances into valuable ETH with our free, gasless conversion service. Clean up your wallet and maximize your portfolio efficiency."}
+          Transform loose wallet tokens into ETH. On supported EOA chains, you
+          can also close LP, staking, vault, and other supported protocol
+          positions with a separate action below.
         </Paragraph>
 
         {/* Stats */}
@@ -283,23 +286,36 @@ const HeroSection = ({
             />
           </div>
 
-          <Button
-            type="primary"
-            size="large"
-            loading={isConverting}
-            disabled={!fullExit && (!hasTokens || totalValue === 0)}
-            onClick={onConvert}
-            className="h-14 px-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 border-0 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-0.5"
-            icon={<SparklesIcon className="h-5 w-5" />}
-          >
-            {isConverting
-              ? fullExit
-                ? "Closing positions..."
-                : "Converting..."
-              : fullExit
-              ? "Close Positions & Convert All to ETH"
-              : "Convert All Dust to ETH"}
-          </Button>
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Button
+              type="primary"
+              size="large"
+              loading={isConverting && activeAction === "dust"}
+              disabled={isConverting || !hasTokens || totalValue === 0}
+              onClick={onConvert}
+              className="h-14 px-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 border-0 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-0.5"
+              icon={<SparklesIcon className="h-5 w-5" />}
+            >
+              {isConverting && activeAction === "dust"
+                ? "Converting..."
+                : "Convert Wallet Tokens to ETH"}
+            </Button>
+
+            {canClosePositions && (
+              <Button
+                size="large"
+                loading={isConverting && activeAction === "positions"}
+                disabled={isConverting}
+                onClick={onClosePositions}
+                className="h-14 px-12 text-lg font-semibold border-blue-500 text-blue-600 bg-white hover:bg-blue-50 shadow-lg hover:shadow-xl transition-all duration-300"
+                icon={<ArrowPathIcon className="h-5 w-5" />}
+              >
+                {isConverting && activeAction === "positions"
+                  ? "Closing positions..."
+                  : "Close Protocol Positions to ETH"}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Service features */}
@@ -617,6 +633,7 @@ export default function DustZap() {
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
+  const [activeAction, setActiveAction] = useState(null);
   const [error, setError] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const [statusMessages, setStatusMessages] = useState([]);
@@ -766,7 +783,7 @@ export default function DustZap() {
       ),
     [filteredAndSortedTokens],
   );
-  const eoaFullExitEnabled = useMemo(() => {
+  const eoaPositionExitEnabled = useMemo(() => {
     if (aaOn || !activeChain?.name) return false;
     return ["arbitrum", "base", "op"].includes(
       normalizeChainName(activeChain.name),
@@ -848,14 +865,23 @@ export default function DustZap() {
     }
   };
 
-  const handleConvert = async () => {
+  const handleConvert = async (positionsOnly = false) => {
     if (!account?.address || !activeChain) return;
 
     const chainName = normalizeChainName(activeChain.name);
-    const fullExitEnabled =
-      !aaOn && ["arbitrum", "base", "op"].includes(chainName);
+    const closePositions = positionsOnly && eoaPositionExitEnabled;
+    if (positionsOnly && !closePositions) {
+      openNotificationWithIcon(
+        notificationAPI,
+        "Position Exit Unavailable",
+        "warning",
+        "Protocol position unwinds are currently available for EOA wallets on Arbitrum, Base, and OP.",
+      );
+      return;
+    }
 
     setIsConverting(true);
+    setActiveAction(positionsOnly ? "positions" : "dust");
     setStatusMessages([]);
     setTransactionSigned(false);
     setTotalSteps(filteredAndSortedTokens.length);
@@ -870,14 +896,16 @@ export default function DustZap() {
     setEthPrice(fetchedEthPrice);
 
     try {
-      let conversionTokens = filteredAndSortedTokens;
-      let conversionTotalValue = totalValue;
+      let conversionTokens = positionsOnly ? [] : filteredAndSortedTokens;
+      let conversionTotalValue = positionsOnly ? 0 : totalValue;
       let conversionPriceMapping = {
         eth: fetchedEthPrice,
         weth: fetchedEthPrice,
       };
+      let preparedPositionCount = 0;
+      let positionExecutionFailureCount = 0;
 
-      if (fullExitEnabled) {
+      if (closePositions) {
         setFullExitPhase("Scanning protocol positions…");
         const fullExitPlan = await buildEoaFullExitPlan({
           chainName,
@@ -898,6 +926,7 @@ export default function DustZap() {
             );
           },
         });
+        preparedPositionCount = fullExitPlan.groups.length;
         const runtimeFailures = [];
         setFullExitFailures(fullExitPlan.failures);
         conversionPriceMapping = {
@@ -905,6 +934,14 @@ export default function DustZap() {
           eth: fetchedEthPrice,
           weth: fetchedEthPrice,
         };
+
+        setFullExitPhase("Snapshotting position output balances…");
+        const beforePositionTokens = await refreshEoaFullExitTokens({
+          chainName,
+          owner: account.address,
+          expectedTokens: fullExitPlan.expectedTokens,
+          tokenPricesMappingTable: conversionPriceMapping,
+        });
 
         for (
           let groupIndex = 0;
@@ -936,9 +973,10 @@ export default function DustZap() {
               error: error?.message || String(error),
             };
             runtimeFailures.push(failure);
+            positionExecutionFailureCount = runtimeFailures.length;
             setFullExitFailures([...fullExitPlan.failures, ...runtimeFailures]);
             logger.error(
-              `EOA full exit: ${group.uniqueId} failed during execution`,
+              `EOA position exit: ${group.uniqueId} failed during execution`,
               error,
             );
           }
@@ -955,27 +993,28 @@ export default function DustZap() {
               ? `${runtimeFailures.length} position${
                   runtimeFailures.length === 1 ? "" : "s"
                 } could not be closed. Healthy positions were still processed.`
-              : "Position unwind confirmed. Refreshing actual wallet balances before swapping.",
+              : "Position unwind confirmed. Only newly received output tokens will be converted to ETH.",
           );
         }
 
-        setFullExitPhase("Refreshing actual EOA token balances…");
-        const refreshedTokens = await refreshEoaFullExitTokens({
+        setFullExitPhase("Reading position output balances…");
+        const afterPositionTokens = await refreshEoaFullExitTokens({
           chainName,
           owner: account.address,
-          expectedTokens: [...tokens, ...fullExitPlan.expectedTokens],
+          expectedTokens: fullExitPlan.expectedTokens,
           tokenPricesMappingTable: conversionPriceMapping,
         });
-        setTokens(refreshedTokens);
-        conversionTokens = refreshedTokens.filter(
-          (token) => !deletedTokenIds.has(token.id),
-        );
+        conversionTokens = getEoaFullExitTokenDeltas({
+          beforeTokens: beforePositionTokens,
+          afterTokens: afterPositionTokens,
+          expectedTokens: fullExitPlan.expectedTokens,
+        });
         conversionTotalValue = conversionTokens.reduce(
           (sum, token) => sum + token.amount * token.price,
           0,
         );
         setTotalSteps(conversionTokens.length);
-        setFullExitPhase("Fetching swap routes for resulting tokens…");
+        setFullExitPhase("Fetching swap routes for position outputs…");
       }
 
       // Sunset reliability takes precedence over the 0.01% platform fee in AA
@@ -1009,7 +1048,7 @@ export default function DustZap() {
 
       setFetchingSwapRoutes(false);
       setFullExitPhase(
-        fullExitEnabled ? "Swapping resulting tokens to ETH…" : "",
+        closePositions ? "Swapping position outputs to ETH…" : "",
       );
       setAggregateTradingLoss(totalTradingLoss);
 
@@ -1038,8 +1077,8 @@ export default function DustZap() {
             const isFeeBatch =
               batchIndex === feeInsertionBatch && platformFeeTxns.length > 0;
             const notificationTitle = isLastBatch
-              ? fullExitEnabled
-                ? "Full Exit Complete!"
+              ? closePositions
+                ? "Position Exit Complete!"
                 : "All Dust Conversions Complete!"
               : isFeeBatch
               ? `Platform Fee Charged - Batch ${batchIndex}`
@@ -1106,12 +1145,24 @@ export default function DustZap() {
             });
           });
         }
-      } else if (fullExitEnabled) {
+      } else if (closePositions) {
+        const noPositionsFound = preparedPositionCount === 0;
+        const allPreparedPositionsFailed =
+          preparedPositionCount > 0 &&
+          positionExecutionFailureCount === preparedPositionCount;
         openNotificationWithIcon(
           notificationAPI,
-          "Full Exit Complete",
-          "success",
-          "No remaining ERC20 balances needed a swap after closing positions.",
+          noPositionsFound
+            ? "No Supported Positions Found"
+            : allPreparedPositionsFailed
+            ? "Position Exit Failed"
+            : "Positions Closed",
+          allPreparedPositionsFailed ? "warning" : "success",
+          noPositionsFound
+            ? "No supported LP, staking, vault, or protocol positions were found on this chain."
+            : allPreparedPositionsFailed
+            ? "The supported positions were detected, but none could be closed. Review the position errors and retry."
+            : "The positions were closed and no newly received ERC20 output needed an additional swap.",
         );
       }
 
@@ -1119,7 +1170,7 @@ export default function DustZap() {
         `${process.env.NEXT_PUBLIC_SDK_API_URL}/discord/webhook`,
         {
           errorMsg: `<@648492945938317334> ${account?.address}: ${
-            fullExitEnabled ? "EOA full exit" : "Dust conversion"
+            closePositions ? "EOA position exit" : "Dust conversion"
           } success`,
         },
       );
@@ -1128,6 +1179,7 @@ export default function DustZap() {
       logger.error("Dust conversion failed:", err);
     } finally {
       setIsConverting(false);
+      setActiveAction(null);
       setFetchingSwapRoutes(false);
       setFullExitPhase("");
     }
@@ -1169,18 +1221,20 @@ export default function DustZap() {
           totalValue={totalValue}
           tokenCount={filteredAndSortedTokens.length}
           isConverting={isConverting}
-          onConvert={handleConvert}
+          activeAction={activeAction}
+          onConvert={() => handleConvert(false)}
+          onClosePositions={() => handleConvert(true)}
+          canClosePositions={eoaPositionExitEnabled}
           hasTokens={filteredAndSortedTokens.length > 0}
           slippage={slippage}
           onSlippageChange={setSlippage}
-          fullExit={eoaFullExitEnabled}
         />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-          {eoaFullExitEnabled && (
+          {eoaPositionExitEnabled && (
             <Alert
-              message="EOA Full Exit"
-              description="Supported DeFi positions are closed first. After those transactions confirm, the wallet is scanned again and the resulting ERC20 balances are converted to ETH."
+              message="Protocol Position Exit"
+              description="The position button is separate from the wallet-token Dust Zap. It closes supported LP, staking, vault, and protocol positions, then swaps only the token balance added by those unwinds to ETH. Existing loose wallet tokens are left untouched."
               type="info"
               showIcon
               className="mb-8"
@@ -1222,23 +1276,22 @@ export default function DustZap() {
           )}
 
           {/* No Tokens State */}
-          {!loading &&
-            !error &&
-            !eoaFullExitEnabled &&
-            filteredAndSortedTokens.length === 0 && (
-              <Card className="text-center shadow-lg border-0 bg-gradient-to-br from-green-50 to-emerald-50">
-                <div className="py-16">
-                  <CheckCircleIcon className="h-16 w-16 text-emerald-500 mx-auto mb-6" />
-                  <Title level={3} className="mb-4 text-gray-800">
-                    All Clean!
-                  </Title>
-                  <Paragraph className="text-gray-600 text-lg">
-                    No dust tokens found in your wallet. Your portfolio is
-                    already optimized!
-                  </Paragraph>
-                </div>
-              </Card>
-            )}
+          {!loading && !error && filteredAndSortedTokens.length === 0 && (
+            <Card className="text-center shadow-lg border-0 bg-gradient-to-br from-green-50 to-emerald-50">
+              <div className="py-16">
+                <CheckCircleIcon className="h-16 w-16 text-emerald-500 mx-auto mb-6" />
+                <Title level={3} className="mb-4 text-gray-800">
+                  No Loose Tokens Found
+                </Title>
+                <Paragraph className="text-gray-600 text-lg">
+                  Your wallet has no dust tokens to convert.
+                  {eoaPositionExitEnabled
+                    ? " You can still scan and close protocol positions with the position button above."
+                    : ""}
+                </Paragraph>
+              </div>
+            </Card>
+          )}
 
           {/* Conversion Progress */}
           {showProgressCard &&

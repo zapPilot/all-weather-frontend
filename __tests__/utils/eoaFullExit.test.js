@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildEoaFullExitPlan } from "../../utils/eoaFullExit";
+import {
+  buildEoaFullExitPlan,
+  getEoaFullExitTokenDeltas,
+} from "../../utils/eoaFullExit";
 
 const OWNER = "0xc774806f9fF5f3d8aaBb6b70d0Ed509e42aFE6F0";
 const USDC = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
@@ -14,6 +17,80 @@ const protocol = (uniqueId, result) => ({
         ? vi.fn().mockRejectedValue(result)
         : vi.fn().mockResolvedValue(result),
   },
+});
+
+describe("EOA full exit token deltas", () => {
+  it("only returns the token amount created by the position unwind", () => {
+    const before = [
+      {
+        id: USDC,
+        address: USDC,
+        symbol: "usdc",
+        optimized_symbol: "usdc",
+        decimals: 6,
+        amount: 10,
+        price: 1,
+        raw_amount_hex_str: "0x989680",
+      },
+    ];
+    const after = [
+      {
+        ...before[0],
+        amount: 13.5,
+        raw_amount_hex_str: "0xcdfe60",
+      },
+    ];
+
+    const deltas = getEoaFullExitTokenDeltas({
+      beforeTokens: before,
+      afterTokens: after,
+      expectedTokens: [before[0]],
+    });
+
+    expect(deltas).toHaveLength(1);
+    expect(deltas[0].amount).toBe(3.5);
+    expect(deltas[0].raw_amount_hex_str).toBe("0x3567e0");
+  });
+
+  it("does not include unrelated loose wallet tokens", () => {
+    const unrelated = "0x4200000000000000000000000000000000000006";
+    const deltas = getEoaFullExitTokenDeltas({
+      beforeTokens: [],
+      afterTokens: [
+        {
+          id: USDC,
+          address: USDC,
+          symbol: "usdc",
+          optimized_symbol: "usdc",
+          decimals: 6,
+          amount: 2,
+          price: 1,
+          raw_amount_hex_str: "0x1e8480",
+        },
+        {
+          id: unrelated,
+          address: unrelated,
+          symbol: "weth",
+          optimized_symbol: "weth",
+          decimals: 18,
+          amount: 1,
+          price: 3000,
+          raw_amount_hex_str: "0xde0b6b3a7640000",
+        },
+      ],
+      expectedTokens: [
+        {
+          id: USDC,
+          address: USDC,
+          symbol: "usdc",
+          decimals: 6,
+        },
+      ],
+    });
+
+    expect(deltas).toHaveLength(1);
+    expect(deltas[0].address.toLowerCase()).toBe(USDC.toLowerCase());
+  });
 });
 
 describe("EOA full exit planning", () => {

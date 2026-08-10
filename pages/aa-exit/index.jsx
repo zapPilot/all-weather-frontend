@@ -119,6 +119,52 @@ const formatAmount = (raw, decimals) =>
 const shortAddress = (address) =>
   `${address.slice(0, 6)}...${address.slice(-4)}`;
 
+const transactionsOfPlannedBatch = (batch) =>
+  (batch?.groups || []).flatMap((group) => (group.txns || []).flat(Infinity));
+
+export const buildArbitrumBatchExperiments = (plan) => {
+  const batches = plan?.batches || [];
+  const batchTransactions = batches.map(transactionsOfPlannedBatch);
+  const allTransactions = batchTransactions.flat();
+  const largestBatch = batchTransactions.reduce(
+    (largest, current) => (current.length > largest.length ? current : largest),
+    [],
+  );
+
+  const prefix = (count) => ({
+    id: `prefix-${count}`,
+    label: `${count} calls`,
+    description: `First ${count} calls from the healthy exit plan`,
+    transactions: allTransactions.slice(0, count),
+    available: allTransactions.length >= count,
+  });
+
+  return [
+    prefix(2),
+    prefix(4),
+    prefix(8),
+    {
+      id: "largest-batch",
+      label: "Largest planned batch",
+      description: "Largest batch produced by the current dry-run planner",
+      transactions: largestBatch,
+      available: largestBatch.length >= 2,
+    },
+    {
+      id: "full-plan",
+      label: "Full healthy plan",
+      description: "Every healthy call combined into one executeBatch",
+      transactions: allTransactions,
+      available: allTransactions.length >= 2,
+    },
+  ];
+};
+
+const batchExperimentError = (error) => {
+  const message = error?.shortMessage || error?.message || String(error);
+  return message.length > 360 ? `${message.slice(0, 357)}...` : message;
+};
+
 function ResultRow({
   row,
   explorerUrl,
@@ -209,6 +255,8 @@ export default function AaExit() {
   const [fellBack, setFellBack] = useState(false);
   const [retrying, setRetrying] = useState(null);
   const [manualDirectMode, setManualDirectMode] = useState(false);
+  const [batchExperimentRunning, setBatchExperimentRunning] = useState(null);
+  const [batchExperimentResults, setBatchExperimentResults] = useState({});
   const [pendingUserOp, setPendingUserOp] = useState(null);
   const [pendingDirectTransaction, setPendingDirectTransaction] =
     useState(null);
@@ -306,6 +354,8 @@ export default function AaExit() {
     setWalletScanFailed(false);
     setUntransferableTokens([]);
     setFellBack(false);
+    setBatchExperimentRunning(null);
+    setBatchExperimentResults({});
     setSubmissionStage("");
     setRecoveredSubmission(null);
     setPendingDirectTransaction(null);
@@ -1053,6 +1103,8 @@ export default function AaExit() {
         statusRef.current[uniqueId] = "failed";
       });
       setFeePlan(result.feePlan);
+      setBatchExperimentRunning(null);
+      setBatchExperimentResults({});
       setWalletScanFailed(!!result.walletScanError);
       setUntransferableTokens(result.untransferableTokens || []);
       setFellBack(
@@ -1092,6 +1144,75 @@ export default function AaExit() {
     notificationAPI,
     chainName,
   ]);
+
+  const handleBatchExperiment = useCallback(
+    async (experiment) => {
+      if (
+        !isArbitrum ||
+        !experiment?.available ||
+        experiment.transactions.length < 2 ||
+        phase !== "ready" ||
+        exitPlanStale
+      ) {
+        return;
+      }
+      const adminAccount = adminWallet?.getAccount();
+      if (!adminAccount?.address || !account?.address) {
+        setBatchExperimentResults((current) => ({
+          ...current,
+          [experiment.id]: {
+            status: "failed",
+            error: "Could not resolve the AA admin account",
+          },
+        }));
+        return;
+      }
+
+      setBatchExperimentRunning(experiment.id);
+      setBatchExperimentResults((current) => ({
+        ...current,
+        [experiment.id]: { status: "running" },
+      }));
+      try {
+        const result = await probeAaBatchDirect({
+          groups: [
+            {
+              uniqueId: `experiment-${experiment.id}`,
+              txns: experiment.transactions,
+            },
+          ],
+          adminAccount,
+          chainMetadata,
+          smartAccountAddress: account.address,
+        });
+        setBatchExperimentResults((current) => ({
+          ...current,
+          [experiment.id]: {
+            status: "success",
+            gas: result.gas?.toString?.() || String(result.gas || "unknown"),
+          },
+        }));
+      } catch (error) {
+        setBatchExperimentResults((current) => ({
+          ...current,
+          [experiment.id]: {
+            status: "failed",
+            error: batchExperimentError(error),
+          },
+        }));
+      } finally {
+        setBatchExperimentRunning(null);
+      }
+    },
+    [
+      account?.address,
+      adminWallet,
+      chainMetadata,
+      exitPlanStale,
+      isArbitrum,
+      phase,
+    ],
+  );
 
   const finishRun = useCallback((status) => {
     if (
@@ -1292,6 +1413,9 @@ export default function AaExit() {
   }
 
   const movableRows = rows.filter((row) => row.txnCount > 0);
+  const batchExperiments = isArbitrum
+    ? buildArbitrumBatchExperiments(planRef.current)
+    : [];
   const aaTransactionsUrl =
     explorerUrl && account?.address
       ? `${explorerUrl}txsAA?f=${account.address}`
@@ -1675,6 +1799,71 @@ export default function AaExit() {
                   </Text>
                 </div>
               )}
+            </Card>
+          )}
+
+          {isArbitrum && phase === "ready" && rows.length > 0 && (
+            <Card title="Arbitrum executeBatch experiments">
+              <Alert
+                className="mb-3"
+                type="info"
+                showIcon
+                message="Simulation only — these buttons do not send transactions"
+                description="Each test builds a real AA.executeBatch from the current healthy exit plan and asks Arbitrum to estimate its gas. ✅ means the batch simulation passed; ❌ shows the revert or RPC error. Your balances and positions are not changed."
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {batchExperiments.map((experiment) => {
+                  const result = batchExperimentResults[experiment.id];
+                  const running = batchExperimentRunning === experiment.id;
+                  return (
+                    <div
+                      key={experiment.id}
+                      className="rounded-lg border border-gray-200 bg-gray-50 p-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <Text strong>{experiment.label}</Text>
+                          <Text type="secondary" className="block text-xs mt-1">
+                            {experiment.description}
+                          </Text>
+                          <Text type="secondary" className="block text-xs mt-1">
+                            {experiment.transactions.length} call
+                            {experiment.transactions.length === 1 ? "" : "s"}
+                          </Text>
+                        </div>
+                        <Button
+                          size="small"
+                          disabled={
+                            !experiment.available ||
+                            exitPlanStale ||
+                            (batchExperimentRunning !== null && !running)
+                          }
+                          loading={running}
+                          onClick={() => handleBatchExperiment(experiment)}
+                        >
+                          Test
+                        </Button>
+                      </div>
+                      {!experiment.available && (
+                        <Text type="secondary" className="block text-xs mt-2">
+                          Not enough calls in this plan.
+                        </Text>
+                      )}
+                      {result?.status === "success" && (
+                        <Text className="block text-xs mt-2 text-green-600">
+                          ✅ executeBatch simulation passed — estimated gas:{" "}
+                          {Number(result.gas).toLocaleString("en-US")}
+                        </Text>
+                      )}
+                      {result?.status === "failed" && (
+                        <Text className="block text-xs mt-2 text-red-600 break-all">
+                          ❌ {result.error}
+                        </Text>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </Card>
           )}
 
