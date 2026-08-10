@@ -175,6 +175,42 @@ export async function buildEoaFullExitPlan({
   };
 }
 
+export function getEoaFullExitTokenDeltas({
+  beforeTokens = [],
+  afterTokens = [],
+  expectedTokens = [],
+}) {
+  const expectedAddresses = new Set(
+    dedupeTokens(expectedTokens).map((token) => token.address.toLowerCase()),
+  );
+  const beforeByAddress = new Map(
+    dedupeTokens(beforeTokens).map((token) => [
+      token.address.toLowerCase(),
+      ethers.BigNumber.from(token.raw_amount_hex_str || 0),
+    ]),
+  );
+
+  return dedupeTokens(afterTokens)
+    .filter((token) => expectedAddresses.has(token.address.toLowerCase()))
+    .map((token) => {
+      const afterBalance = ethers.BigNumber.from(token.raw_amount_hex_str || 0);
+      const beforeBalance =
+        beforeByAddress.get(token.address.toLowerCase()) ||
+        ethers.BigNumber.from(0);
+      if (afterBalance.lte(beforeBalance)) return null;
+
+      const delta = afterBalance.sub(beforeBalance);
+      const decimals = Number(token.decimals);
+      return {
+        ...token,
+        amount: Number(ethers.utils.formatUnits(delta, decimals)),
+        raw_amount_hex_str: delta.toHexString(),
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.amount * b.price - a.amount * a.price);
+}
+
 export async function refreshEoaFullExitTokens({
   chainName,
   owner,
