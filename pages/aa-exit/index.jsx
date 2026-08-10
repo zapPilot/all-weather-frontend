@@ -1343,11 +1343,6 @@ export default function AaExit() {
         sendBatchTransaction: sendExitBatchTransaction,
         updateGroup,
         onBatchStage: handleBatchStage,
-        // Arbitrum has repeatedly been the outlier for large AA batches. Keep
-        // the existing dry-run/isolation plan, but submit each surviving call
-        // sequentially so one oversized executeBatch/UserOp cannot block the
-        // entire emergency exit. Base/OP keep their current batching behavior.
-        splitTransactions: chainMetadata?.id === AA_EXIT_CHAIN_IDS.arbitrum,
       });
 
     let activePlan = planRef.current || { batches: [], excluded: [] };
@@ -1426,7 +1421,6 @@ export default function AaExit() {
     finishRun,
     recipient,
     directMode,
-    chainMetadata?.id,
     notificationAPI,
   ]);
 
@@ -1453,8 +1447,6 @@ export default function AaExit() {
             // a single group is already one signature, so there is no combined
             // attempt to make
             combinedAllowed: false,
-            forceSplitTransactions:
-              chainMetadata?.id === AA_EXIT_CHAIN_IDS.arbitrum,
           });
         });
         if (result.status === "locked") {
@@ -1492,7 +1484,6 @@ export default function AaExit() {
       handleBatchStage,
       notificationAPI,
       finishRun,
-      chainMetadata?.id,
     ],
   );
 
@@ -1764,12 +1755,12 @@ export default function AaExit() {
             <Card title="Where should everything go?">
               {isArbitrum ? (
                 <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                  <Text strong>
-                    Arbitrum safe mode — one transaction at a time
-                  </Text>
+                  <Text strong>Arbitrum direct executeBatch mode</Text>
                   <Text type="secondary" className="block text-xs mt-1">
-                    Each admin → AA.execute call is sent directly and confirmed
-                    before the next call. Thirdweb UserOperations are not used.
+                    Healthy calls are sent as admin → AA.executeBatch
+                    transactions. Thirdweb UserOperations are not used; dry-run
+                    isolation still removes or separates calls that cannot
+                    execute atomically.
                   </Text>
                 </div>
               ) : (
