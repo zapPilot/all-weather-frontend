@@ -160,6 +160,18 @@ export const buildArbitrumBatchExperiments = (plan) => {
   ];
 };
 
+export const buildArbitrumFullBatchPlan = (plan) => {
+  const batches = plan?.batches || [];
+  const units = batches.flatMap((batch) => batch.units || []);
+  const groups = batches.flatMap((batch) => batch.groups || []);
+  if (units.length === 0 || groups.length === 0) return null;
+
+  return {
+    batches: [{ units, groups }],
+    excluded: plan?.excluded || [],
+  };
+};
+
 const batchExperimentError = (error) => {
   const message = error?.shortMessage || error?.message || String(error);
   return message.length > 360 ? `${message.slice(0, 357)}...` : message;
@@ -1214,6 +1226,101 @@ export default function AaExit() {
     ],
   );
 
+  const handleArbitrumFullBatchExecute = useCallback(async () => {
+    if (
+      !isArbitrum ||
+      phase !== "ready" ||
+      exitPlanStale ||
+      !recipient ||
+      recipientError ||
+      !confirmed
+    ) {
+      return;
+    }
+
+    const fullBatchPlan = buildArbitrumFullBatchPlan(planRef.current);
+    if (!fullBatchPlan) {
+      openNotificationWithIcon(
+        notificationAPI,
+        "Nothing to execute",
+        "warning",
+        "The current healthy exit plan has no calls to submit.",
+      );
+      return;
+    }
+
+    const callCount = transactionsOfPlannedBatch(
+      fullBatchPlan.batches[0],
+    ).length;
+    const result = await withSubmissionLock(async () => {
+      setPhase("running");
+      return executeAaExitPlan({
+        plan: fullBatchPlan,
+        sendBatchTransaction: sendExitBatchTransaction,
+        updateGroup,
+        onBatchStage: handleBatchStage,
+        splitTransactions: false,
+      });
+    });
+
+    if (result.status === "locked") {
+      openNotificationWithIcon(
+        notificationAPI,
+        "AA Exit is already open in another tab",
+        "warning",
+        "Finish or close the other submission before trying again.",
+      );
+      setPhase("ready");
+      return;
+    }
+    if (result.status === "blocked-pending") return;
+
+    if (result.status === "pre-submit-failed") {
+      openNotificationWithIcon(
+        notificationAPI,
+        "Arbitrum executeBatch failed",
+        "error",
+        `${callCount} calls could not be executed as one batch. No automatic split retry was attempted; scan again to use the normal one-by-one Arbitrum exit. ${
+          result.error?.message || ""
+        }`.trim(),
+      );
+      setPhase("partial");
+      return;
+    }
+
+    if (
+      result.status === "success" ||
+      result.status === "completed-with-groups"
+    ) {
+      openNotificationWithIcon(
+        notificationAPI,
+        "Arbitrum executeBatch succeeded",
+        "success",
+        `${callCount} calls were executed in one real AA.executeBatch transaction.`,
+      );
+    }
+    if (["cancelled", "unknown", "submitted"].includes(result.status)) {
+      setPhase(result.status);
+    } else {
+      const stalled = Object.values(statusRef.current).some(
+        (rowStatus) => rowStatus === "failed" || rowStatus === "partial",
+      );
+      setPhase(stalled ? "partial" : "done");
+    }
+  }, [
+    confirmed,
+    exitPlanStale,
+    handleBatchStage,
+    isArbitrum,
+    notificationAPI,
+    phase,
+    recipient,
+    recipientError,
+    sendExitBatchTransaction,
+    updateGroup,
+    withSubmissionLock,
+  ]);
+
   const finishRun = useCallback((status) => {
     if (
       status === "cancelled" ||
@@ -1416,6 +1523,9 @@ export default function AaExit() {
   const batchExperiments = isArbitrum
     ? buildArbitrumBatchExperiments(planRef.current)
     : [];
+  const fullBatchExperiment = batchExperiments.find(
+    (experiment) => experiment.id === "full-plan",
+  );
   const aaTransactionsUrl =
     explorerUrl && account?.address
       ? `${explorerUrl}txsAA?f=${account.address}`
@@ -1864,6 +1974,32 @@ export default function AaExit() {
                   );
                 })}
               </div>
+
+              <Alert
+                className="mt-4 mb-3"
+                type="warning"
+                showIcon
+                message="Real executeBatch test — this WILL move assets"
+                description={`This bypasses Arbitrum's normal one-by-one submission and sends all ${
+                  fullBatchExperiment?.transactions.length || 0
+                } healthy calls in one real AA.executeBatch. If it fails, there is no automatic split retry; scan again and use the normal Exit button.`}
+              />
+              <Button
+                block
+                danger
+                type="primary"
+                disabled={
+                  !fullBatchExperiment?.available ||
+                  exitPlanStale ||
+                  !recipient ||
+                  !!recipientError ||
+                  !confirmed ||
+                  batchExperimentRunning !== null
+                }
+                onClick={handleArbitrumFullBatchExecute}
+              >
+                Execute Full Batch on Arbitrum (REAL)
+              </Button>
             </Card>
           )}
 
