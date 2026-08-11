@@ -705,6 +705,12 @@ describe("runAaExitGroups", () => {
     (_calls, callbacks) =>
       callbacks.onSuccess({ transactionHash: hash });
   const failWith = (error) => (_calls, callbacks) => callbacks.onError(error);
+  // What every guard inside sendAaExitBatchDirect throws before signing
+  const notSubmitted = (message) =>
+    new AaExitSubmissionError(new Error(message), {
+      stage: "preparing",
+      submitted: false,
+    });
 
   it("sends every group in one batch and marks them all done", async () => {
     const harness = runner({
@@ -745,6 +751,101 @@ describe("runAaExitGroups", () => {
     expect(result.status).toBe("unknown");
     expect(harness.sendBatchTransaction).toHaveBeenCalledTimes(1);
     expect(harness.statuses.p1.status).toBe("unknown");
+  });
+
+  // classifyEmergencyExitBatchError falls through to UNKNOWN for anything it does
+  // not recognise, which used to bury the real cause under "check your wallet"
+  it("reports a never-submitted failure with its own message, not as unknown", async () => {
+    const harness = runner({
+      groups: groupsOf({}, {}),
+      send: failWith(
+        notSubmitted(
+          "Admin wallet 0xabc holds 0.0 ETH on Arbitrum but this transaction needs at least 0.0002 ETH",
+        ),
+      ),
+    });
+    const result = await harness.promise;
+
+    expect(result.status).toBe("pre-submit-failed");
+    expect(harness.statuses.p0.status).toBe("failed");
+    expect(harness.statuses.p0.error).includes("needs at least 0.0002 ETH");
+  });
+
+  it("keeps a submitted-but-unconfirmed failure unknown", async () => {
+    const harness = runner({
+      groups: groupsOf({}, {}),
+      send: failWith(
+        new AaExitSubmissionError(new Error("receipt never arrived"), {
+          stage: "submitted",
+          submitted: true,
+          transactionHash: `0x${"3".repeat(64)}`,
+          submissionUnknown: true,
+        }),
+      ),
+    });
+    const result = await harness.promise;
+
+    expect(result.status).toBe("unknown");
+    expect(harness.statuses.p0.status).toBe("unknown");
+  });
+
+  describe("one item at a time", () => {
+    const perGroup = (failing) => (calls, callbacks) =>
+      failing.includes(calls[0])
+        ? callbacks.onError(notSubmitted(`${calls[0]} cannot be handed over`))
+        : callbacks.onSuccess({ transactionHash: `0x${calls[0]}` });
+
+    // Nothing reached the network, so the untouched groups are still safe to send
+    it("names the item that fails its own preflight and sends the rest", async () => {
+      const harness = runner({
+        groups: groupsOf({}, {}, {}, {}),
+        combinedAllowed: false,
+        continueOnPreSubmitFailure: true,
+        send: perGroup(["txn-1"]),
+      });
+      const result = await harness.promise;
+
+      expect(harness.sendBatchTransaction).toHaveBeenCalledTimes(4);
+      expect(harness.statuses.p1.status).toBe("failed");
+      expect(harness.statuses.p1.error).includes("cannot be handed over");
+      expect(
+        ["p0", "p2", "p3"].map((id) => harness.statuses[id].status),
+      ).toEqual(["success", "success", "success"]);
+      expect(result.status).toBe("completed-with-groups");
+    });
+
+    // These may already be on chain; sending the next group could exit twice
+    it.each([
+      ["unknown", new Error("timeout waiting for userop hash")],
+      ["cancelled", { code: 4001, message: "user rejected" }],
+    ])("still stops the whole run on %s", async (status, error) => {
+      const harness = runner({
+        groups: groupsOf({}, {}, {}),
+        combinedAllowed: false,
+        continueOnPreSubmitFailure: true,
+        send: (calls, callbacks) =>
+          calls[0] === "txn-1"
+            ? callbacks.onError(error)
+            : callbacks.onSuccess({ transactionHash: `0x${calls[0]}` }),
+      });
+      const result = await harness.promise;
+
+      expect(result.status).toBe(status);
+      expect(harness.sendBatchTransaction).toHaveBeenCalledTimes(2);
+      expect(harness.statuses.p2).toBeUndefined();
+    });
+
+    it("stops on a never-submitted failure when continuing is not asked for", async () => {
+      const harness = runner({
+        groups: groupsOf({}, {}, {}),
+        combinedAllowed: false,
+        send: perGroup(["txn-1"]),
+      });
+      const result = await harness.promise;
+
+      expect(result.status).toBe("pre-submit-failed");
+      expect(harness.sendBatchTransaction).toHaveBeenCalledTimes(2);
+    });
   });
 
   it("falls back to one group per batch after a safe failure", async () => {
@@ -1568,6 +1669,39 @@ describe("direct admin AA Exit submission", () => {
     ]);
   });
 
+  // "needs at least 260000000000000 wei" left users topping up the smart wallet,
+  // which cannot pay for a direct transaction at all
+  it("names the admin wallet and both ETH amounts when it cannot cover gas", async () => {
+    const dependencies = directDependencies({
+      estimateGasFn: vi.fn().mockResolvedValue(1_000_000n),
+      getGasPriceFn: vi.fn().mockResolvedValue(10n ** 9n),
+      getAdminBalanceFn: vi.fn().mockResolvedValue(10n ** 14n),
+    });
+    const error = await sendDirectWith({ dependencies }).promise.catch(
+      (caught) => caught,
+    );
+
+    expect(error.submitted).toBe(false);
+    expect(error.message).includes(ADMIN);
+    expect(error.message).includes("holds 0.0001 ETH");
+    expect(error.message).includes("needs at least 0.001 ETH");
+    expect(error.message).includes("not the smart wallet");
+    expect(dependencies.sendTransactionFn).not.toHaveBeenCalled();
+  });
+
+  it("points a batch over the gas limit at sending the items one at a time", async () => {
+    const dependencies = directDependencies({
+      estimateGasFn: vi.fn().mockResolvedValue(30_000_000n),
+    });
+    const error = await sendDirectWith({ dependencies }).promise.catch(
+      (caught) => caught,
+    );
+
+    expect(error.submitted).toBe(false);
+    expect(error.message).includes("one at a time");
+    expect(dependencies.sendTransactionFn).not.toHaveBeenCalled();
+  });
+
   it("refuses a non-admin before asking for a signature", async () => {
     const dependencies = directDependencies({
       isAdminFn: vi.fn().mockResolvedValue(false),
@@ -2186,6 +2320,63 @@ describe("AA UserOp probing, planning and triage", () => {
     expect(updateGroup).toHaveBeenLastCalledWith(
       "p0",
       expect.objectContaining({ status: "failed", transactionHash }),
+    );
+  });
+
+  // The classifier's catch-all is UNKNOWN, so a guard message it does not
+  // recognise used to reach the row as "status is unknown, check your wallet" for
+  // something that never left the browser
+  it("surfaces a never-submitted guard failure instead of calling it unknown", async () => {
+    const plan = { batches: [{ units: [probeGroup(0)], groups: [] }] };
+    const updateGroup = vi.fn();
+    const result = await executeAaExitPlan({
+      plan,
+      sendBatchTransaction: vi.fn((_calls, callbacks) =>
+        callbacks.onError(
+          new AaExitSubmissionError(
+            new Error(
+              "Admin wallet 0xabc holds 0.0 ETH on Arbitrum but this transaction needs at least 0.0002 ETH. Top up that address.",
+            ),
+            { stage: "preparing", submitted: false },
+          ),
+        ),
+      ),
+      updateGroup,
+    });
+
+    expect(result.status).toBe("pre-submit-failed");
+    expect(updateGroup).toHaveBeenLastCalledWith(
+      "p0",
+      expect.objectContaining({
+        status: "failed",
+        error: expect.stringContaining("Top up that address"),
+      }),
+    );
+  });
+
+  it("keeps a lost bundler response unknown", async () => {
+    const userOpHash = `0x${"5".repeat(64)}`;
+    const plan = { batches: [{ units: [probeGroup(0)], groups: [] }] };
+    const updateGroup = vi.fn();
+    const result = await executeAaExitPlan({
+      plan,
+      sendBatchTransaction: vi.fn((_calls, callbacks) =>
+        callbacks.onError(
+          new AaExitSubmissionError(new Error("socket hang up"), {
+            stage: "submitting",
+            submitted: true,
+            userOpHash,
+            submissionUnknown: true,
+          }),
+        ),
+      ),
+      updateGroup,
+    });
+
+    expect(result.status).toBe("submitted");
+    expect(updateGroup).toHaveBeenLastCalledWith(
+      "p0",
+      expect.objectContaining({ status: "submitted", userOpHash }),
     );
   });
 });

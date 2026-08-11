@@ -1951,6 +1951,41 @@ const beforeSubmissionError = (message) =>
     submitted: false,
   });
 
+// Callers outside this module run their own guards before handing over a batch
+// (wrong chain, missing admin). Throwing a plain Error there would be classified
+// as "unknown" and reported as "check your wallet" for something that never
+// reached the network — see aaExitFailureOutcome.
+export const aaExitBeforeSubmissionError = beforeSubmissionError;
+
+/**
+ * What a failed submission attempt actually was.
+ * An AaExitSubmissionError records whether anything reached the network, and that
+ * record outranks the message-pattern classifier: a failure that never submitted
+ * cannot be "unknown", however its message reads. classifyEmergencyExitBatchError
+ * falls through to UNKNOWN for anything it does not recognise, which used to bury
+ * actionable causes — admin out of gas, gas above the safety limit, not an admin —
+ * under "this row's status is unknown, check your wallet".
+ * "fallback" means nothing is known to have been sent and the message says the
+ * wallet rejected the batch itself, so resending the groups one by one is safe.
+ */
+const aaExitFailureOutcome = (error) => {
+  if (error?.submitted && error?.userOpHash) return "submitted";
+  const kind = classifyEmergencyExitBatchError(error);
+  // A wallet rejection is also submitted: false, so it has to be recognised
+  // before the pre-submission branch claims it
+  if (kind === FAILURE.USER_REJECTED) return "cancelled";
+  if (error instanceof AaExitSubmissionError) {
+    return error.submitted &&
+      (error.submissionUnknown || kind === FAILURE.UNKNOWN)
+      ? "unknown"
+      : "pre-submit-failed";
+  }
+  // A plain error carries no submission record, so a missing receipt or a lost
+  // transport stays conservatively unknown rather than inviting a duplicate exit
+  if (error?.submissionUnknown || kind === FAILURE.UNKNOWN) return "unknown";
+  return "fallback";
+};
+
 const errorDetails = (error) => {
   const seen = new Set();
   const details = [];
@@ -2189,6 +2224,41 @@ const getAaExitContractCode = ({ client, chainMetadata, address }) =>
 const getAaExitNativeBalance = ({ client, chainMetadata, address }) =>
   eth_getBalance(getRpcClient({ client, chain: chainMetadata }), { address });
 
+/**
+ * Native balance of the wallet that actually pays for a direct exit.
+ * Direct mode sends a plain `admin -> AA.executeBatch` transaction, so gas comes
+ * out of the admin EOA — never the smart wallet, and never Thirdweb credits. The
+ * page shows this before asking for a signature because the two are easy to
+ * confuse when the smart wallet is the one visibly holding ETH.
+ */
+export const readAaExitAdminGasBalance = async ({
+  adminAddress,
+  chainMetadata,
+  client = THIRDWEB_CLIENT,
+  getBalanceFn = getAaExitNativeBalance,
+}) => {
+  if (!ethers.utils.isAddress(adminAddress || "") || !chainMetadata?.id) {
+    return null;
+  }
+  try {
+    const balance = await getBalanceFn({
+      client,
+      chainMetadata,
+      address: adminAddress,
+    });
+    return { address: adminAddress, balanceWei: balance.toString() };
+  } catch (error) {
+    logger.warn("AA Exit: could not read the admin gas balance", error);
+    return null;
+  }
+};
+
+export const AA_EXIT_GAS_PAYER_NOTE =
+  "Gas for a direct exit comes from the admin wallet, not the smart wallet — ETH held inside the smart wallet and Thirdweb credits cannot pay for it.";
+
+const chainLabelOf = (chainMetadata) =>
+  chainMetadata?.name || `chain ${chainMetadata?.id ?? "unknown"}`;
+
 export async function sendAaExitBatchDirect({
   transactions,
   adminAccount,
@@ -2289,7 +2359,9 @@ export async function sendAaExitBatchDirect({
     );
     if (gas > AA_EXIT_DIRECT_GAS_LIMIT) {
       throw new Error(
-        `AA Exit direct batch needs ${gas.toString()} gas, above the 25,600,000 safety limit`,
+        `This batch needs ${gas.toLocaleString(
+          "en-US",
+        )} gas, above the 25,600,000 safety limit. Send the items one at a time instead, or untick some of them and dry-run again.`,
       );
     }
     const [adminBalance, gasPrice] = await Promise.all([
@@ -2303,7 +2375,15 @@ export async function sendAaExitBatchDirect({
     const minimumGasCost = gas * BigInt(gasPrice);
     if (BigInt(adminBalance) < minimumGasCost) {
       throw new Error(
-        `AA Exit admin has insufficient native gas balance: needs at least ${minimumGasCost.toString()} wei`,
+        `${AA_EXIT_GAS_PAYER_NOTE} Admin wallet ${
+          adminAccount.address
+        } holds ${ethers.utils.formatEther(
+          adminBalance.toString(),
+        )} ETH on ${chainLabelOf(
+          chainMetadata,
+        )} but this transaction needs at least ${ethers.utils.formatEther(
+          minimumGasCost.toString(),
+        )} ETH. Top up that address.`,
       );
     }
 
@@ -2495,17 +2575,9 @@ export async function executeAaExitPlan({
       );
       completedBatches += 1;
     } catch (error) {
-      const kind = classifyEmergencyExitBatchError(error);
-      const status =
-        error?.submitted && error?.userOpHash
-          ? "submitted"
-          : kind === FAILURE.USER_REJECTED
-          ? "cancelled"
-          : error?.submissionUnknown || kind === FAILURE.UNKNOWN
-          ? "unknown"
-          : error instanceof AaExitSubmissionError
-          ? "pre-submit-failed"
-          : "pre-submit-failed";
+      const outcome = aaExitFailureOutcome(error);
+      // A plan is a single atomic batch, so there is nothing to fall back to
+      const status = outcome === "fallback" ? "pre-submit-failed" : outcome;
       const message =
         status === "submitted"
           ? `UserOperation ${error.userOpHash} was submitted and is still pending.`
@@ -2549,6 +2621,11 @@ export async function runAaExitGroups({
   onBatchStage = noop,
   combinedAllowed = true,
   forceSplitTransactions = false,
+  // A group that fails its own preflight has sent nothing, so the run can mark it
+  // and carry on. Off by default: a single-row retry has nothing to carry on to.
+  // `submitted` / `unknown` / `cancelled` always stop — the first two may already
+  // be on chain, and a wallet rejection means the user wants out.
+  continueOnPreSubmitFailure = false,
 }) {
   const live = groups.map((group) => ({ ...group }));
 
@@ -2598,8 +2675,8 @@ export async function runAaExitGroups({
       markAll("success", { error: undefined, transactionHash });
       return { status: "success", transactionHash, groups: live };
     } catch (error) {
-      const kind = classifyEmergencyExitBatchError(error);
-      if (error?.submitted && error?.userOpHash) {
+      const outcome = aaExitFailureOutcome(error);
+      if (outcome === "submitted") {
         markAll("submitted", {
           error: `UserOperation ${error.userOpHash} was submitted and is still pending.`,
           userOpHash: error.userOpHash,
@@ -2611,11 +2688,11 @@ export async function runAaExitGroups({
           groups: live,
         };
       }
-      if (kind === FAILURE.USER_REJECTED) {
+      if (outcome === "cancelled") {
         markAll("cancelled", { error: TERMINAL_MESSAGE.cancelled });
         return { status: "cancelled", error, groups: live };
       }
-      if (error?.submissionUnknown || kind === FAILURE.UNKNOWN) {
+      if (outcome === "unknown") {
         markAll("unknown", {
           error:
             "Batch status is unknown. Refresh balances and check your wallet before trying again.",
@@ -2628,7 +2705,7 @@ export async function runAaExitGroups({
           groups: live,
         };
       }
-      if (error instanceof AaExitSubmissionError) {
+      if (outcome === "pre-submit-failed") {
         markAll("failed", {
           error: error.message,
           transactionHash: error.transactionHash,
@@ -2664,8 +2741,8 @@ export async function runAaExitGroups({
         });
         sent += 1;
       } catch (error) {
-        const kind = classifyEmergencyExitBatchError(error);
-        if (error?.submitted && error?.userOpHash) {
+        const outcome = aaExitFailureOutcome(error);
+        if (outcome === "submitted") {
           return {
             stop: true,
             status: "submitted",
@@ -2675,7 +2752,7 @@ export async function runAaExitGroups({
             total: txns.length,
           };
         }
-        if (error?.submissionUnknown || kind === FAILURE.UNKNOWN) {
+        if (outcome === "unknown") {
           return {
             stop: true,
             status: "unknown",
@@ -2685,7 +2762,7 @@ export async function runAaExitGroups({
             total: txns.length,
           };
         }
-        if (kind === FAILURE.USER_REJECTED) {
+        if (outcome === "cancelled") {
           return {
             stop: true,
             status: "cancelled",
@@ -2694,7 +2771,7 @@ export async function runAaExitGroups({
             total: txns.length,
           };
         }
-        if (error instanceof AaExitSubmissionError) {
+        if (outcome === "pre-submit-failed") {
           return {
             stop: true,
             status: "pre-submit-failed",
@@ -2749,7 +2826,12 @@ export async function runAaExitGroups({
               outcome.total ?? slot.txns.length
             }`,
           });
-          return outcome;
+          // A split that stopped part way through did send its earlier calls, but
+          // the call it stopped on reached nothing, so later groups are still safe
+          return continueOnPreSubmitFailure &&
+            outcome.status === "pre-submit-failed"
+            ? {}
+            : outcome;
         }
         const allSent = outcome.sent === outcome.total;
         const status = allSent
@@ -2789,8 +2871,8 @@ export async function runAaExitGroups({
         error = caught;
       }
 
-      const kind = classifyEmergencyExitBatchError(error);
-      if (error?.submitted && error?.userOpHash) {
+      const outcome = aaExitFailureOutcome(error);
+      if (outcome === "submitted") {
         slot.status = "submitted";
         updateGroup(slot.uniqueId, {
           status: "submitted",
@@ -2804,7 +2886,7 @@ export async function runAaExitGroups({
           userOpHash: error.userOpHash,
         };
       }
-      if (kind === FAILURE.USER_REJECTED) {
+      if (outcome === "cancelled") {
         slot.status = "cancelled";
         updateGroup(slot.uniqueId, {
           status: "cancelled",
@@ -2812,7 +2894,7 @@ export async function runAaExitGroups({
         });
         return { stop: true, status: "cancelled", error };
       }
-      if (error?.submissionUnknown || kind === FAILURE.UNKNOWN) {
+      if (outcome === "unknown") {
         slot.status = "unknown";
         updateGroup(slot.uniqueId, {
           status: "unknown",
@@ -2826,19 +2908,23 @@ export async function runAaExitGroups({
           transactionHash: error?.transactionHash,
         };
       }
-      if (error instanceof AaExitSubmissionError) {
+      if (outcome === "pre-submit-failed") {
         slot.status = "failed";
         updateGroup(slot.uniqueId, {
           status: "failed",
           error: error.message,
           transactionHash: error.transactionHash,
         });
-        return {
-          stop: true,
-          status: "pre-submit-failed",
-          error,
-          transactionHash: error.transactionHash,
-        };
+        // Nothing reached the network, so the remaining groups are unaffected and
+        // an item-by-item run can name the broken one and still deliver the rest
+        return continueOnPreSubmitFailure
+          ? {}
+          : {
+              stop: true,
+              status: "pre-submit-failed",
+              error,
+              transactionHash: error.transactionHash,
+            };
       }
 
       const next = nextExitLevel(slot);
