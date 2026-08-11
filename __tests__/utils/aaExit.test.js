@@ -15,6 +15,7 @@ import {
   clearPendingAaExitUserOp,
   collectExitProtocols,
   createPendingAaExitDirectTransaction,
+  clearAaExitWalletTokenCache,
   createPendingAaExitUserOp,
   debankChainCode,
   executeAaExitPlan,
@@ -34,6 +35,7 @@ import {
   sendAaExitBatch,
   sendAaExitBatchDirect,
   sweptAddressesOf,
+  triageAaExitUnits,
   usdToTokenRawFloor,
   writePendingAaExitDirectTransaction,
   writePendingAaExitUserOp,
@@ -384,6 +386,103 @@ describe("preflightWalletTokens", () => {
     });
 
     expect(result.walletTokens).toHaveLength(1);
+  });
+
+  // Two RPC round-trips per token is the second-slowest part of a scan, and the
+  // assets in these deprecated vaults do not move between visits
+  describe("cached across scans", () => {
+    const balanceThen = (amount) => {
+      const iface = new ethers.utils.Interface([
+        "function balanceOf(address owner) view returns (uint256)",
+      ]);
+      return {
+        call: vi
+          .fn()
+          .mockResolvedValueOnce(
+            iface.encodeFunctionResult("balanceOf", [
+              ethers.BigNumber.from(amount),
+            ]),
+          )
+          .mockResolvedValueOnce("0x"),
+      };
+    };
+
+    const preflight = ({ walletTokens, provider }) =>
+      preflightWalletTokens({
+        walletTokens,
+        owner: OWNER,
+        recipient: RECIPIENT,
+        chainName: "arbitrum",
+        provider,
+        useCache: true,
+      });
+
+    beforeEach(() => {
+      clearAaExitWalletTokenCache();
+    });
+
+    it("serves a second scan of the same tokens without any RPC call", async () => {
+      const walletTokens = [
+        token({ id: USDC_ARB, price: 1, amount: "1000000" }),
+      ];
+      await preflight({ walletTokens, provider: balanceThen(7) });
+
+      const second = balanceThen(99);
+      const result = await preflight({ walletTokens, provider: second });
+
+      expect(second.call).not.toHaveBeenCalled();
+      expect(result.walletTokens[0].raw_amount_hex_str).toBe("0x07");
+    });
+
+    // Reusing verdicts reached about a different set of tokens would sweep or
+    // skip the wrong ones
+    it("re-reads when the candidate token list changes", async () => {
+      await preflight({
+        walletTokens: [token({ id: USDC_ARB, price: 1, amount: "1000000" })],
+        provider: balanceThen(7),
+      });
+
+      const second = balanceThen(5);
+      await preflight({
+        walletTokens: [token({ id: USDT_ARB, price: 1, amount: "5" })],
+        provider: second,
+      });
+
+      expect(second.call).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps an untransferable verdict out of the sweep on a cache hit", async () => {
+      const walletTokens = [
+        token({ id: USDC_ARB, price: 0, amount: "1", symbol: "SPAM" }),
+      ];
+      const iface = new ethers.utils.Interface([
+        "function balanceOf(address owner) view returns (uint256)",
+      ]);
+      await preflight({
+        walletTokens,
+        provider: {
+          call: vi
+            .fn()
+            .mockResolvedValueOnce(
+              iface.encodeFunctionResult("balanceOf", [
+                ethers.BigNumber.from(1),
+              ]),
+            )
+            .mockRejectedValueOnce(
+              new Error("execution reverted: blacklisted"),
+            ),
+        },
+      });
+
+      const second = balanceThen(1);
+      const result = await preflight({ walletTokens, provider: second });
+
+      expect(second.call).not.toHaveBeenCalled();
+      expect(result.walletTokens).toEqual([]);
+      expect(result.untransferableTokens).toEqual([
+        expect.objectContaining({ symbol: "SPAM" }),
+      ]);
+    });
   });
 });
 
@@ -1792,7 +1891,7 @@ describe("pending direct AA Exit transaction storage", () => {
   });
 });
 
-describe("AA UserOp probing and isolation", () => {
+describe("AA UserOp probing, planning and triage", () => {
   const probeGroup = (index, overrides = {}) => ({
     kind: "protocol",
     uniqueId: `p${index}`,
@@ -1810,12 +1909,9 @@ describe("AA UserOp probing and isolation", () => {
       .filter((group) => group.kind !== "rewards")
       .map((group) => group.uniqueId);
 
-  it("keeps 19 healthy groups in one batch when one of 20 is bad", async () => {
+  it("puts every healthy group in one batch after a single probe", async () => {
     const groups = Array.from({ length: 20 }, (_, index) => probeGroup(index));
-    const probe = vi.fn(async (candidateGroups) => {
-      if (idsOf(candidateGroups).includes("p7"))
-        throw new Error("paymaster 500");
-    });
+    const probe = vi.fn(async () => {});
     const onProbe = vi.fn();
 
     const plan = await planAaExitBatches({
@@ -1826,17 +1922,56 @@ describe("AA UserOp probing and isolation", () => {
       onProbe,
     });
 
-    expect(plan.excluded.map(({ group }) => group.uniqueId)).toEqual(["p7"]);
+    expect(probe).toHaveBeenCalledTimes(1);
     expect(plan.batches).toHaveLength(1);
-    expect(plan.batches[0].units).toHaveLength(19);
-    expect(plan.batches[0].units.some((group) => group.uniqueId === "p7")).toBe(
-      false,
-    );
-    expect(onProbe).toHaveBeenCalled();
+    expect(plan.batches[0].units).toHaveLength(20);
+    expect(plan.needsSelection).toBeUndefined();
     expect(onProbe.mock.calls[0][0]).toEqual({
       probeCount: 1,
       candidateCount: 20,
     });
+  });
+
+  // Splitting produced batches that each passed a probe taken from the same
+  // starting state and then reverted on chain, because the first batch moved a
+  // balance the later ones still asked for.
+  it("hands a failing batch back for manual selection instead of splitting it", async () => {
+    const groups = Array.from({ length: 20 }, (_, index) => probeGroup(index));
+    const probe = vi.fn(async (candidateGroups) => {
+      if (idsOf(candidateGroups).includes("p7"))
+        throw new Error("ERC20: transfer amount exceeds balance");
+    });
+
+    const plan = await planAaExitBatches({
+      groups,
+      chainMetadata: arbitrum,
+      recipient: RECIPIENT,
+      probe,
+    });
+
+    expect(probe).toHaveBeenCalledTimes(1);
+    expect(plan.batches).toEqual([]);
+    expect(plan.needsSelection).toBe(true);
+    expect(plan.fullBatchError).toBe("ERC20: transfer amount exceeds balance");
+  });
+
+  it("dry-runs only the selected units", async () => {
+    const groups = Array.from({ length: 5 }, (_, index) => probeGroup(index));
+    const probe = vi.fn(async () => {});
+
+    const plan = await planAaExitBatches({
+      groups,
+      chainMetadata: base,
+      recipient: RECIPIENT,
+      probe,
+      selectedUnitIds: new Set(["p1", "p3"]),
+    });
+
+    expect(idsOf(probe.mock.calls[0][0])).toEqual(["p1", "p3"]);
+    expect(plan.batches[0].units.map((unit) => unit.uniqueId)).toEqual([
+      "p1",
+      "p3",
+    ]);
   });
 
   it("never splits an approve -> unstake -> transfer protocol dependency", async () => {
@@ -1846,91 +1981,71 @@ describe("AA UserOp probing and isolation", () => {
     const observed = [];
     const probe = vi.fn(async (candidateGroups) => {
       const protocol = candidateGroups.find((group) => group.uniqueId === "p1");
-      if (protocol) {
-        observed.push(protocol.txns);
-        throw new Error("reverted");
-      }
+      if (protocol) observed.push(protocol.txns);
     });
 
-    const plan = await planAaExitBatches({
+    await planAaExitBatches({
       groups: [probeGroup(0), dependency, probeGroup(2)],
       chainMetadata: arbitrum,
       recipient: RECIPIENT,
       probe,
     });
 
-    expect(plan.excluded.map(({ group }) => group.uniqueId)).toContain("p1");
     expect(observed.length).toBeGreaterThan(0);
     observed.forEach((txns) =>
       expect(txns).toEqual(["approve", "unstake", "transfer"]),
     );
   });
 
-  it("turns aggregate-only failure into a few large passing batches", async () => {
-    const groups = Array.from({ length: 8 }, (_, index) => probeGroup(index));
+  it("tells an item that fails alone apart from items that only clash together", async () => {
+    const groups = Array.from({ length: 4 }, (_, index) => probeGroup(index));
     const probe = vi.fn(async (candidateGroups) => {
-      if (idsOf(candidateGroups).length > 4)
-        throw new Error("UserOp too large");
+      if (idsOf(candidateGroups).includes("p2")) throw new Error("gauge dead");
     });
+    const diagnose = vi.fn(async () => ({
+      kind: "execution",
+      message: "Transaction simulation failed: gauge dead",
+    }));
 
-    const plan = await planAaExitBatches({
-      groups,
-      chainMetadata: base,
-      recipient: RECIPIENT,
-      probe,
-    });
-
-    expect(plan.excluded).toEqual([]);
-    expect(plan.aggregateLimited).toBe(true);
-    expect(plan.batches).toHaveLength(2);
-    expect(plan.batches.map((batch) => batch.units.length)).toEqual([4, 4]);
-  });
-
-  it("isolates two bad groups and recombines every survivor", async () => {
-    const groups = Array.from({ length: 12 }, (_, index) => probeGroup(index));
-    const bad = new Set(["p2", "p9"]);
-    const probe = vi.fn(async (candidateGroups) => {
-      if (idsOf(candidateGroups).some((id) => bad.has(id))) {
-        throw new Error("bad group");
-      }
-    });
-
-    const plan = await planAaExitBatches({
+    const triage = await triageAaExitUnits({
       groups,
       chainMetadata: optimism,
       recipient: RECIPIENT,
       probe,
+      diagnose,
     });
 
-    expect(plan.excluded.map(({ group }) => group.uniqueId).sort()).toEqual([
-      "p2",
-      "p9",
+    expect(probe).toHaveBeenCalledTimes(4);
+    expect(triage.filter((item) => !item.aloneOk)).toEqual([
+      {
+        uniqueId: "p2",
+        label: "protocol 2",
+        aloneOk: false,
+        message: "Transaction simulation failed: gauge dead",
+      },
     ]);
-    expect(plan.batches).toHaveLength(1);
-    expect(plan.batches[0].units).toHaveLength(10);
+    expect(triage.filter((item) => item.aloneOk)).toHaveLength(3);
   });
 
-  it("rebuilds claimed rewards from surviving protocol producers only", async () => {
-    const badReward = ethers.BigNumber.from(100);
-    const goodReward = ethers.BigNumber.from(7);
+  it("rebuilds claimed rewards from the producers in the batch only", async () => {
+    const excludedReward = ethers.BigNumber.from(100);
+    const includedReward = ethers.BigNumber.from(7);
     const groups = [
       probeGroup(0, {
-        rewardBalances: [{ address: USDC_ARB, balance: badReward }],
+        rewardBalances: [{ address: USDC_ARB, balance: excludedReward }],
       }),
       probeGroup(1, {
-        rewardBalances: [{ address: USDC_ARB, balance: goodReward }],
+        rewardBalances: [{ address: USDC_ARB, balance: includedReward }],
       }),
     ];
-    const probe = vi.fn(async (candidateGroups) => {
-      if (idsOf(candidateGroups).includes("p0"))
-        throw new Error("bad producer");
-    });
+    const probe = vi.fn(async () => {});
 
     const plan = await planAaExitBatches({
       groups,
       chainMetadata: arbitrum,
       recipient: RECIPIENT,
       probe,
+      selectedUnitIds: new Set(["p1"]),
     });
     const rewards = plan.batches[0].groups.find(
       (group) => group.uniqueId === "claimed-rewards",
@@ -1940,7 +2055,7 @@ describe("AA UserOp probing and isolation", () => {
     expect(rewards.txns).toHaveLength(1);
     const data = await encode(rewards.txns[0]);
     expect(ethers.BigNumber.from(`0x${data.slice(-64)}`).toString()).toBe(
-      goodReward.toString(),
+      includedReward.toString(),
     );
   });
 

@@ -195,9 +195,11 @@ export class BaseApolloX extends BaseProtocol {
     }
   }
 
-  async emergencyTransfer(owner, recipient, updateProgress) {
+  async emergencyTransfer(owner, recipient, updateProgress, options = {}) {
     const [walletBalance, stakedBalance] = await Promise.all([
-      this.assetBalanceOf(owner),
+      options.skipWalletBalance
+        ? ethers.constants.Zero
+        : this.assetBalanceOf(owner),
       this._legacyStakedAlpBalance(owner),
     ]);
     const walletAlp = ethers.BigNumber.from(walletBalance || 0);

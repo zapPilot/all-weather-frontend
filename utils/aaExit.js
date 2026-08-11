@@ -38,6 +38,10 @@ import {
   classifyEmergencyExitBatchError,
   EMERGENCY_EXIT_FAILURE_KIND as FAILURE,
 } from "./emergencyExitExecution";
+import {
+  designateWalletBalanceSweepers,
+  sharedExitAssets,
+} from "./exitAssetOwnership";
 import logger from "./logger";
 
 // Every vault a user can actually enter. Test-only vaults are excluded: their
@@ -62,8 +66,15 @@ export const AA_EXIT_CHAIN_IDS = { arbitrum: 42161, base: 8453, op: 10 };
 // silently passes unknown names through, which would build a URL the backend
 // answers with an error rather than a list
 const DEBANK_CHAIN_CODE = { arbitrum: "arb", base: "base", op: "op" };
-const AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS = 10 * 60 * 1000;
+// This page rescues funds out of vaults nobody is depositing into any more, so a
+// wallet's contents effectively do not change between visits. Every scan the
+// cache serves is one paid third-party wallet lookup not made; a refresh is a
+// button away when it matters.
+export const AA_EXIT_WALLET_TOKEN_CACHE_HOURS = 24;
+const AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS =
+  AA_EXIT_WALLET_TOKEN_CACHE_HOURS * 60 * 60 * 1000;
 const AA_EXIT_WALLET_TOKEN_STORAGE_PREFIX = "aa-exit-wallet-tokens:v1:";
+const AA_EXIT_PREFLIGHT_STORAGE_PREFIX = "aa-exit-token-preflight:v1:";
 const AA_EXIT_PENDING_USER_OP_STORAGE_PREFIX = "aa-exit-pending-userop:v1:";
 const AA_EXIT_PENDING_DIRECT_TX_STORAGE_PREFIX =
   "aa-exit-pending-direct-tx:v1:";
@@ -610,19 +621,23 @@ const storeAaExitWalletTokens = (key, cached) => {
   }
 };
 
-export const clearAaExitWalletTokenCache = () => {
-  aaExitWalletTokenCacheGeneration += 1;
-  aaExitWalletTokenCache.clear();
-  aaExitWalletTokenRequests.clear();
-
+const clearStoragePrefix = (prefix) => {
   const storage = aaExitWalletTokenStorage();
   if (!storage) return;
   for (let index = storage.length - 1; index >= 0; index -= 1) {
     const key = storage.key(index);
-    if (key?.startsWith(AA_EXIT_WALLET_TOKEN_STORAGE_PREFIX)) {
-      storage.removeItem(key);
-    }
+    if (key?.startsWith(prefix)) storage.removeItem(key);
   }
+};
+
+export const clearAaExitWalletTokenCache = () => {
+  aaExitWalletTokenCacheGeneration += 1;
+  aaExitWalletTokenCache.clear();
+  aaExitWalletTokenRequests.clear();
+  clearStoragePrefix(AA_EXIT_WALLET_TOKEN_STORAGE_PREFIX);
+  // The preflight snapshot is derived from a token list, so it can never outlive
+  // the list it was taken against
+  clearStoragePrefix(AA_EXIT_PREFLIGHT_STORAGE_PREFIX);
 };
 
 export const clearAaExitWalletTokenMemoryCache = () => {
@@ -630,36 +645,39 @@ export const clearAaExitWalletTokenMemoryCache = () => {
   aaExitWalletTokenRequests.clear();
 };
 
-async function fetchAaExitWalletTokens(chainName, owner) {
+async function fetchAaExitWalletTokens(
+  chainName,
+  owner,
+  { forceRefresh = false } = {},
+) {
   const key = aaExitWalletTokenCacheKey(chainName, owner);
   const now = Date.now();
-  const memoryCached = aaExitWalletTokenCache.get(key);
-  const cached = memoryCached || readStoredAaExitWalletTokens(key, now);
+  const memoryCached = forceRefresh ? null : aaExitWalletTokenCache.get(key);
+  const cached =
+    memoryCached ||
+    (forceRefresh ? null : readStoredAaExitWalletTokens(key, now));
 
   if (cached && now - cached.fetchedAt < AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS) {
     aaExitWalletTokenCache.set(key, cached);
-    return cached.tokens;
+    return { ...cached, fromCache: true };
   }
   if (memoryCached) aaExitWalletTokenCache.delete(key);
 
-  const pending = aaExitWalletTokenRequests.get(key);
+  const pending = forceRefresh ? null : aaExitWalletTokenRequests.get(key);
   if (pending) return pending;
 
   const generation = aaExitWalletTokenCacheGeneration;
   const request = fetchWalletTokens(debankChainCode(chainName), owner)
     .then((tokens) => {
+      const fetched = { tokens, fetchedAt: Date.now() };
       // A request that started before an explicit cache clear must never
       // repopulate stale data after the clear. This also keeps a fresh scan
       // genuinely fresh when a previous request finishes late.
       if (generation === aaExitWalletTokenCacheGeneration) {
-        const cached = {
-          tokens,
-          fetchedAt: Date.now(),
-        };
-        aaExitWalletTokenCache.set(key, cached);
-        storeAaExitWalletTokens(key, cached);
+        aaExitWalletTokenCache.set(key, fetched);
+        storeAaExitWalletTokens(key, fetched);
       }
-      return tokens;
+      return { ...fetched, fromCache: false };
     })
     .finally(() => {
       // Do not let an old request remove a newer coalesced request for the same
@@ -770,6 +788,77 @@ const rawAmountOf = (token) => {
 const exitPreflightError = (error) =>
   error?.error?.message || error?.reason || error?.message || String(error);
 
+// The transfer simulation is run from the wallet to the destination, and tokens
+// exist that reject specific recipients, so a snapshot is only valid for the pair
+// it was taken with.
+const aaExitPreflightStorageKey = ({ chainName, owner, recipient }) =>
+  `${AA_EXIT_PREFLIGHT_STORAGE_PREFIX}${debankChainCode(
+    chainName,
+  )}:${owner.toLowerCase()}:${recipient.toLowerCase()}`;
+
+const readStoredAaExitPreflight = (storageKey, fingerprint, now) => {
+  const storage = aaExitWalletTokenStorage();
+  if (!storage) return null;
+  try {
+    const raw = storage.getItem(storageKey);
+    if (!raw) return null;
+    const cached = JSON.parse(raw);
+    if (
+      typeof cached?.fetchedAt !== "number" ||
+      now - cached.fetchedAt >= AA_EXIT_WALLET_TOKEN_CACHE_TTL_MS ||
+      // A different candidate set means these transferability verdicts were
+      // reached about other tokens; reusing them would sweep or skip the wrong
+      // ones
+      cached.fingerprint !== fingerprint ||
+      !cached.balances ||
+      !Array.isArray(cached.untransferableTokens)
+    ) {
+      storage.removeItem(storageKey);
+      return null;
+    }
+    return cached;
+  } catch (error) {
+    storage.removeItem(storageKey);
+    logger.warn("AA Exit: could not read local preflight cache", error);
+    return null;
+  }
+};
+
+const storeAaExitPreflight = (storageKey, fingerprint, preflighted) => {
+  const storage = aaExitWalletTokenStorage();
+  if (!storage) return;
+  try {
+    const balances = {};
+    for (const token of preflighted.walletTokens) {
+      balances[token.id.toLowerCase()] = token.raw_amount_hex_str;
+    }
+    storage.setItem(
+      storageKey,
+      JSON.stringify({
+        fetchedAt: Date.now(),
+        fingerprint,
+        balances,
+        untransferableTokens: preflighted.untransferableTokens,
+      }),
+    );
+  } catch (error) {
+    logger.warn("AA Exit: could not persist local preflight cache", error);
+  }
+};
+
+// Only the on-chain balance and the transferability verdict are cached. The token
+// metadata is re-taken from the current candidates so a refreshed price or symbol
+// is not pinned to whatever it was when the preflight ran.
+const applyStoredPreflight = (cached, candidates) => ({
+  walletTokens: Object.entries(cached.balances).flatMap(
+    ([address, rawAmount]) => {
+      const token = candidates.get(address);
+      return token ? [{ ...token, raw_amount_hex_str: rawAmount }] : [];
+    },
+  ),
+  untransferableTokens: cached.untransferableTokens,
+});
+
 export async function preflightWalletTokens({
   walletTokens,
   owner,
@@ -778,6 +867,7 @@ export async function preflightWalletTokens({
   excludeAddresses = new Set(),
   provider,
   onTokenScanned = noop,
+  useCache = false,
 }) {
   const rpc = provider || PROVIDER(chainName);
   const candidates = new Map();
@@ -797,6 +887,21 @@ export async function preflightWalletTokens({
     completed: 0,
     total: candidateEntries.length,
   });
+
+  const cacheKey = useCache
+    ? aaExitPreflightStorageKey({ chainName, owner, recipient })
+    : null;
+  const fingerprint = candidateEntries.map(([address]) => address).join(",");
+  const cached = cacheKey
+    ? readStoredAaExitPreflight(cacheKey, fingerprint, Date.now())
+    : null;
+  if (cached) {
+    emitProgress(onTokenScanned, {
+      completed: candidateEntries.length,
+      total: candidateEntries.length,
+    });
+    return applyStoredPreflight(cached, candidates);
+  }
 
   const results = await Promise.all(
     candidateEntries.map(async ([address, token]) => {
@@ -879,7 +984,7 @@ export async function preflightWalletTokens({
     }),
   );
 
-  return {
+  const preflighted = {
     walletTokens: results
       .filter((result) => result?.token)
       .map((result) => result.token),
@@ -887,6 +992,8 @@ export async function preflightWalletTokens({
       .filter((result) => result?.untransferable)
       .map((result) => result.untransferable),
   };
+  if (cacheKey) storeAaExitPreflight(cacheKey, fingerprint, preflighted);
+  return preflighted;
 }
 
 /**
@@ -1009,6 +1116,7 @@ export async function buildProtocolGroups({
   updateProgress = noop,
   onProtocolScanned = noop,
 }) {
+  const sweepers = designateWalletBalanceSweepers(protocols);
   let completed = 0;
   const settled = await Promise.allSettled(
     protocols.map(async (protocol) => {
@@ -1019,6 +1127,7 @@ export async function buildProtocolGroups({
           updateProgress,
           {
             skipRewards: level >= 1,
+            skipWalletBalance: !sweepers.has(protocol),
           },
         );
         completed += 1;
@@ -1482,29 +1591,58 @@ export async function diagnoseAaBatchFailure(args) {
   }
 }
 
-const mergeAdjacentPassingChunks = async (chunks, probeUnits) => {
-  const merged = chunks.map((chunk) => [...chunk]);
-  let index = 0;
-  while (index < merged.length - 1) {
-    const candidate = [...merged[index], ...merged[index + 1]];
-    const result = await probeUnits(candidate);
-    if (result.ok) {
-      merged.splice(index, 2, candidate);
-      if (index > 0) index -= 1;
-    } else {
-      index += 1;
-    }
-  }
-  return merged;
-};
-
 /**
- * Find the largest practical AA batches without degrading every healthy unit to
- * a separate signature. The recursion is dependency-aware because each group is
- * indivisible; a protocol's approve -> unstake -> transfer sequence is never
- * split during isolation.
+ * One atomic batch, dry-run once. Splitting a failing batch is deliberately not
+ * attempted: the calldata fixes its amounts at scan time, so a first batch that
+ * moves a balance leaves the amounts in every later batch too large to execute —
+ * automatic splitting produced batches that each passed a probe and then reverted
+ * on chain. A batch that cannot pass preflight is handed back for the caller to
+ * narrow by hand (`selectedUnitIds`), with `triageAaExitUnits` to tell an item
+ * that is broken on its own apart from items that only clash together.
  */
 export async function planAaExitBatches({
+  groups,
+  chainMetadata,
+  recipient,
+  probe,
+  selectedUnitIds = null,
+  onProbe = noop,
+}) {
+  const units = executableExitUnits(groups).filter(
+    (group) => !selectedUnitIds || selectedUnitIds.has(group.uniqueId),
+  );
+
+  if (units.length === 0) {
+    return { batches: [], probeCount: 0 };
+  }
+
+  const materialized = materializeExitCandidate({
+    units,
+    chainMetadata,
+    recipient,
+  });
+  emitProgress(onProbe, { probeCount: 1, candidateCount: units.length });
+  try {
+    await probe(materialized);
+    return { batches: [{ units, groups: materialized }], probeCount: 1 };
+  } catch (error) {
+    return {
+      batches: [],
+      probeCount: 1,
+      needsSelection: true,
+      fullBatchError: exitPreflightError(error),
+    };
+  }
+}
+
+/**
+ * Dry-run every unit on its own. Simulation only — nothing is sent.
+ * `aloneOk: false` means that item cannot be handed over at all right now.
+ * Every item passing alone while the combined batch fails means the items clash:
+ * two of them are asking for the same balance, or the batch as a whole exceeds a
+ * gas/size limit.
+ */
+export async function triageAaExitUnits({
   groups,
   chainMetadata,
   recipient,
@@ -1513,115 +1651,34 @@ export async function planAaExitBatches({
   onProbe = noop,
 }) {
   const units = executableExitUnits(groups);
-  let probeCount = 0;
-  const probeUnits = async (candidateUnits) => {
-    const materialized = materializeExitCandidate({
-      units: candidateUnits,
-      chainMetadata,
-      recipient,
-    });
-    try {
-      probeCount += 1;
-      emitProgress(onProbe, {
-        probeCount,
-        candidateCount: candidateUnits.length,
+  let completed = 0;
+  return Promise.all(
+    units.map(async (unit) => {
+      const candidate = materializeExitCandidate({
+        units: [unit],
+        chainMetadata,
+        recipient,
       });
-      await probe(materialized);
-      return { ok: true, groups: materialized };
-    } catch (error) {
-      return { ok: false, error, groups: materialized };
-    }
-  };
-
-  if (units.length === 0) {
-    return { batches: [], excluded: [], probeCount };
-  }
-
-  const full = await probeUnits(units);
-  if (full.ok) {
-    return {
-      batches: [{ units, groups: full.groups }],
-      excluded: [],
-      probeCount,
-    };
-  }
-
-  const isolate = async (candidateUnits, knownFailure = null) => {
-    const result = knownFailure || (await probeUnits(candidateUnits));
-    if (result.ok) return { chunks: [candidateUnits], excluded: [] };
-    if (candidateUnits.length === 1) {
-      const group = candidateUnits[0];
-      const diagnosis = diagnose
-        ? await diagnose(group, result.error)
-        : { kind: "unknown", message: exitPreflightError(result.error) };
+      let aloneOk = true;
+      let diagnosis = null;
+      try {
+        await probe(candidate);
+      } catch (error) {
+        aloneOk = false;
+        diagnosis = diagnose
+          ? await diagnose(unit, error)
+          : { kind: "unknown", message: exitPreflightError(error) };
+      }
+      completed += 1;
+      emitProgress(onProbe, { completed, total: units.length });
       return {
-        chunks: [],
-        excluded: [
-          {
-            group,
-            error: result.error,
-            diagnosis,
-          },
-        ],
+        uniqueId: unit.uniqueId,
+        label: unit.label,
+        aloneOk,
+        message: diagnosis?.message || null,
       };
-    }
-
-    const middle = Math.ceil(candidateUnits.length / 2);
-    const left = candidateUnits.slice(0, middle);
-    const right = candidateUnits.slice(middle);
-    const [leftResult, rightResult] = await Promise.all([
-      isolate(left),
-      isolate(right),
-    ]);
-    return {
-      chunks: [...leftResult.chunks, ...rightResult.chunks],
-      excluded: [...leftResult.excluded, ...rightResult.excluded],
-    };
-  };
-
-  const isolated = await isolate(units, full);
-  const excludedIds = new Set(
-    isolated.excluded.map(({ group }) => group.uniqueId),
+    }),
   );
-  const healthy = units.filter((group) => !excludedIds.has(group.uniqueId));
-
-  if (healthy.length === 0) {
-    return { batches: [], excluded: isolated.excluded, probeCount };
-  }
-
-  // The common case: one or more bad units were removed, and every survivor can
-  // still stay in one atomic UserOp.
-  const healthyCombined = await probeUnits(healthy);
-  if (healthyCombined.ok) {
-    return {
-      batches: [{ units: healthy, groups: healthyCombined.groups }],
-      excluded: isolated.excluded,
-      probeCount,
-    };
-  }
-
-  // If every individual side passed but the aggregate still does not, this is
-  // an aggregate-size/gas/paymaster limit. Repartition only the healthy units,
-  // then greedily merge adjacent passing chunks so we keep a few large batches
-  // rather than N singletons.
-  const repartitioned = await isolate(healthy, healthyCombined);
-  const allExcluded = [...isolated.excluded, ...repartitioned.excluded];
-  const passingChunks = await mergeAdjacentPassingChunks(
-    repartitioned.chunks,
-    probeUnits,
-  );
-  const batches = [];
-  for (const chunk of passingChunks) {
-    const result = await probeUnits(chunk);
-    if (result.ok) batches.push({ units: chunk, groups: result.groups });
-  }
-
-  return {
-    batches,
-    excluded: allExcluded,
-    probeCount,
-    aggregateLimited: batches.length > 1,
-  };
 }
 
 export async function buildNativeGroup({
@@ -1670,6 +1727,7 @@ export async function scanAaExit({
   updateProgress = noop,
   onScanProgress = noop,
   walletTokensOverride = null,
+  forceRefreshWalletTokens = false,
 }) {
   const protocols = collectExitProtocols(chainName);
   emitProgress(onScanProgress, {
@@ -1702,11 +1760,21 @@ export async function scanAaExit({
 
   let walletTokens = [];
   let walletScanError = null;
+  let walletTokenCacheInfo = null;
   emitProgress(onScanProgress, { stage: "wallet-fetch" });
   try {
-    walletTokens = Array.isArray(walletTokensOverride)
-      ? walletTokensOverride
-      : await fetchAaExitWalletTokens(chainName, owner);
+    if (Array.isArray(walletTokensOverride)) {
+      walletTokens = walletTokensOverride;
+    } else {
+      const fetched = await fetchAaExitWalletTokens(chainName, owner, {
+        forceRefresh: forceRefreshWalletTokens,
+      });
+      walletTokens = fetched.tokens;
+      walletTokenCacheInfo = {
+        fetchedAt: fetched.fetchedAt,
+        fromCache: fetched.fromCache,
+      };
+    }
   } catch (error) {
     walletScanError = error;
     logger.warn("AA Exit: wallet token scan unavailable", error);
@@ -1721,6 +1789,9 @@ export async function scanAaExit({
       recipient,
       chainName,
       excludeAddresses,
+      // A forced refresh is the user saying the on-chain picture may have moved,
+      // so the derived balances must be re-read too
+      useCache: !forceRefreshWalletTokens,
       onTokenScanned: ({ completed, total, token, transferable }) => {
         const tokenLabel =
           token?.optimized_symbol || token?.symbol || token?.id || null;
@@ -1801,7 +1872,9 @@ export async function scanAaExit({
       feePlan: null,
       walletScanError,
       walletTokenSnapshot,
+      walletTokenCacheInfo,
       untransferableTokens,
+      sharedAssets: [],
     };
   }
 
@@ -1810,7 +1883,10 @@ export async function scanAaExit({
     feePlan,
     walletScanError,
     walletTokenSnapshot,
+    walletTokenCacheInfo,
     untransferableTokens,
+    // Only useful when a combined batch fails while every item passes alone
+    sharedAssets: sharedExitAssets(protocols),
   };
 }
 
@@ -2366,21 +2442,6 @@ export async function executeAaExitPlan({
   splitTransactions = false,
 }) {
   let completedBatches = 0;
-  for (const excluded of plan.excluded || []) {
-    const reason =
-      excluded.diagnosis?.message ||
-      exitPreflightError(excluded.error) ||
-      "UserOperation probe failed";
-    updateGroup(excluded.group.uniqueId, {
-      status: "failed",
-      error: reason,
-      note:
-        excluded.diagnosis?.kind === "sponsorship"
-          ? "Thirdweb sponsorship rejected this item; it was left in the smart wallet."
-          : "This item failed dry-run simulation and was left in the smart wallet.",
-    });
-  }
-
   const batches = plan.batches || [];
   for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
     const batch = batches[batchIndex];
@@ -2476,11 +2537,7 @@ export async function executeAaExitPlan({
     }
   }
 
-  return {
-    status:
-      (plan.excluded || []).length > 0 ? "completed-with-groups" : "success",
-    completedBatches,
-  };
+  return { status: "success", completedBatches };
 }
 
 export async function runAaExitGroups({

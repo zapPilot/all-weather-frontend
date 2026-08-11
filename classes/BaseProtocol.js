@@ -485,6 +485,8 @@ export default class BaseProtocol extends BaseUniswap {
   // options.skipRewards drops the claim leg entirely: a caller retrying a failed
   // exit needs a way to shed the one part that can fail on its own, and a claim
   // left unmade only postpones rewards, it cannot lose them.
+  // options.skipWalletBalance leaves the pre-existing wallet balance of the asset
+  // to whichever sibling position the caller designated to sweep it.
   async emergencyTransfer(owner, recipient, updateProgress, options = {}) {
     let principalTxns = [];
     if (this.assetIsNFT) {
@@ -529,10 +531,21 @@ export default class BaseProtocol extends BaseUniswap {
       // the wallet are the two amounts distinct; sweeping the pre-existing
       // balance there costs no extra txn and heals a half-finished exit
       // (unstake landed, transfer didn't) on the retry.
+      // options.skipWalletBalance hands that sweep to somebody else. When two
+      // positions share one assetContract, each would otherwise claim the whole
+      // pre-existing balance: both pass a dry-run on their own, and the combined
+      // batch reverts with "transfer amount exceeds balance". Exactly one of them
+      // may sweep it, so the rest ask only for what they themselves unstake.
       const total =
         unstakeTxns.length === 0
-          ? unstakedAmountBN
-          : unstakedAmountBN.add((await this.assetBalanceOf(owner)) || 0);
+          ? options.skipWalletBalance
+            ? ethers.constants.Zero
+            : unstakedAmountBN
+          : unstakedAmountBN.add(
+              options.skipWalletBalance
+                ? 0
+                : (await this.assetBalanceOf(owner)) || 0,
+            );
       if (!total.isZero()) {
         const transferTxn = prepareContractCall({
           contract: this.assetContract,
