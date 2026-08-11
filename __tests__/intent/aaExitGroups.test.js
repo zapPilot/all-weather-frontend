@@ -5,6 +5,7 @@ import { arbitrum, optimism } from "thirdweb/chains";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { fetchWalletTokens } from "../../utils/dustConversion";
 import {
+  AA_EXIT_WALLET_TOKEN_CACHE_HOURS,
   buildProtocolGroups,
   clearAaExitWalletTokenCache,
   clearAaExitWalletTokenMemoryCache,
@@ -204,6 +205,64 @@ describe("buildProtocolGroups", () => {
     expect(group.buildError).includes("rpc down");
     expect(group.txns).toEqual([]);
   });
+
+  // Two positions on one assetContract each pass a dry-run alone while asking for
+  // the same loose balance, so the combined batch reverts with "transfer amount
+  // exceeds balance". Only the first may sweep it.
+  describe("positions sharing one assetContract", () => {
+    const twoOnOneAsset = () => {
+      const [first] = protocolsOn("Velodrome Vault", "op");
+      const second = {
+        uniqueId: `${first.uniqueId}-sibling`,
+        label: `${first.label} (sibling)`,
+        interface: Object.create(first.interface),
+      };
+      return [first, second];
+    };
+
+    it("adds the loose balance once, to the first position only", async () => {
+      const protocols = twoOnOneAsset();
+      protocols.forEach((protocol) =>
+        stub(protocol.interface, { staked: "1000", wallet: "700" }),
+      );
+
+      const groups = await buildProtocolGroups({
+        protocols,
+        owner: OWNER,
+        recipient: RECIPIENT,
+      });
+
+      expect(groups).toHaveLength(2);
+      const amounts = await Promise.all(
+        groups.map((group) => amountIn(group.txns[group.txns.length - 1])),
+      );
+      expect(amounts.map(String)).toEqual(["1700", "1000"]);
+    });
+
+    // Nothing is unstaked, so the amount would have been the loose balance the
+    // sibling already sweeps — a second full-balance transfer of the same token
+    it("produces nothing for a sibling with no separate staking contract", async () => {
+      const protocols = twoOnOneAsset();
+      protocols.forEach((protocol) =>
+        stub(protocol.interface, { staked: "0", wallet: "700" }),
+      );
+      protocols.forEach((protocol) =>
+        vi
+          .spyOn(protocol.interface, "_unstakeLP")
+          .mockResolvedValue([[], ethers.BigNumber.from("700")]),
+      );
+
+      const groups = await buildProtocolGroups({
+        protocols,
+        owner: OWNER,
+        recipient: RECIPIENT,
+      });
+
+      expect(groups).toHaveLength(1);
+      expect(groups[0].uniqueId).toBe(protocols[0].uniqueId);
+      expect((await amountIn(groups[0].txns[0])).toString()).toBe("700");
+    });
+  });
 });
 
 describe("Venus emergencyTransfer", () => {
@@ -344,17 +403,21 @@ describe("scanAaExit", () => {
     expect(groups.filter((group) => group.txns.length > 0)).toEqual([]);
   });
 
-  it("reuses the wallet token scan for 10 minutes", async () => {
+  it("reuses the wallet token scan within the cache window", async () => {
     fetchWalletTokens.mockResolvedValue([]);
 
-    await scanOnOptimism();
-    await scanOnOptimism();
+    const first = await scanOnOptimism();
+    const second = await scanOnOptimism();
 
     expect(fetchWalletTokens).toHaveBeenCalledTimes(1);
     expect(fetchWalletTokens).toHaveBeenCalledWith("op", OWNER);
+    // Surfaced so the page can show whether the cache was used rather than
+    // leaving it to be guessed from how long the scan felt
+    expect(first.walletTokenCacheInfo.fromCache).toBe(false);
+    expect(second.walletTokenCacheInfo.fromCache).toBe(true);
   });
 
-  it("reuses the 10-minute token scan after an in-page reload", async () => {
+  it("reuses the cached token scan after an in-page reload", async () => {
     fetchWalletTokens.mockResolvedValue([]);
 
     await scanOnOptimism();
@@ -362,6 +425,22 @@ describe("scanAaExit", () => {
     await scanOnOptimism();
 
     expect(fetchWalletTokens).toHaveBeenCalledTimes(1);
+  });
+
+  it("re-fetches the wallet token list when the scan forces a refresh", async () => {
+    fetchWalletTokens.mockResolvedValue([]);
+
+    await scanOnOptimism();
+    const refreshed = await scanAaExit({
+      owner: OWNER,
+      recipient: RECIPIENT,
+      chainName: "op",
+      chainMetadata: optimism,
+      forceRefreshWalletTokens: true,
+    });
+
+    expect(fetchWalletTokens).toHaveBeenCalledTimes(2);
+    expect(refreshed.walletTokenCacheInfo.fromCache).toBe(false);
   });
 
   it("coalesces concurrent wallet token scans", async () => {
@@ -382,12 +461,26 @@ describe("scanAaExit", () => {
     expect(fetchWalletTokens).toHaveBeenCalledTimes(1);
   });
 
-  it("refreshes the wallet token scan after 10 minutes", async () => {
+  it("keeps serving the wallet token scan ten minutes in", async () => {
     vi.useFakeTimers();
     fetchWalletTokens.mockResolvedValue([]);
 
     await scanOnOptimism();
     vi.advanceTimersByTime(10 * 60 * 1000 + 1);
+    await scanOnOptimism();
+
+    expect(fetchWalletTokens).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it("refreshes the wallet token scan once the cache expires", async () => {
+    vi.useFakeTimers();
+    fetchWalletTokens.mockResolvedValue([]);
+
+    await scanOnOptimism();
+    vi.advanceTimersByTime(
+      AA_EXIT_WALLET_TOKEN_CACHE_HOURS * 60 * 60 * 1000 + 1,
+    );
     await scanOnOptimism();
 
     expect(fetchWalletTokens).toHaveBeenCalledTimes(2);

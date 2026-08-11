@@ -19,6 +19,7 @@ import flowChartEventEmitter from "../utils/FlowChartEventEmitter";
 import logger from "../utils/logger";
 import { normalizeChainName } from "../utils/chainHelper";
 import { fetchWalletTokens } from "../utils/dustConversion";
+import { designateWalletBalanceSweepers } from "../utils/exitAssetOwnership";
 const PROTOCOL_TREASURY_ADDRESS = "0x2eCBC6f229feD06044CDb0dD772437a30190CD50";
 const REWARD_SLIPPAGE = 0.8;
 // Keyed on both thirdweb's display name and the normalized form, because the
@@ -545,12 +546,18 @@ export class BasePortfolio {
       }
     }
 
+    // Two positions sharing one assetContract would each hand over the whole
+    // pre-existing wallet balance, asking for it twice
+    const sweepers = designateWalletBalanceSweepers(targets);
     const settled = await Promise.allSettled(
       targets.map((protocol) =>
         protocol.interface.emergencyTransfer(
           account,
           recipient,
           updateProgress,
+          {
+            skipWalletBalance: !sweepers.has(protocol),
+          },
         ),
       ),
     );

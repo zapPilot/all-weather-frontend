@@ -32,6 +32,7 @@ import {
 import {
   AA_EXIT_CHAINS,
   AA_EXIT_CHAIN_IDS,
+  AA_EXIT_WALLET_TOKEN_CACHE_HOURS,
   EXIT_FEE_USD,
   PROTOCOL_TREASURY_ADDRESS,
   aaExitPendingDirectTransactionStorageKey,
@@ -57,6 +58,7 @@ import {
   sendAaExitBatch,
   sendAaExitBatchDirect,
   transactionHashFromAaExitUserOpError,
+  triageAaExitUnits,
   waitForPendingAaExitDirectTransaction,
   waitForPendingAaExitUserOp,
   writePendingAaExitDirectTransaction,
@@ -119,62 +121,12 @@ const formatAmount = (raw, decimals) =>
 const shortAddress = (address) =>
   `${address.slice(0, 6)}...${address.slice(-4)}`;
 
-const transactionsOfPlannedBatch = (batch) =>
-  (batch?.groups || []).flatMap((group) => (group.txns || []).flat(Infinity));
-
-export const buildArbitrumBatchExperiments = (plan) => {
-  const batches = plan?.batches || [];
-  const batchTransactions = batches.map(transactionsOfPlannedBatch);
-  const allTransactions = batchTransactions.flat();
-  const largestBatch = batchTransactions.reduce(
-    (largest, current) => (current.length > largest.length ? current : largest),
-    [],
-  );
-
-  const prefix = (count) => ({
-    id: `prefix-${count}`,
-    label: `${count} calls`,
-    description: `First ${count} calls from the healthy exit plan`,
-    transactions: allTransactions.slice(0, count),
-    available: allTransactions.length >= count,
-  });
-
-  return [
-    prefix(2),
-    prefix(4),
-    prefix(8),
-    {
-      id: "largest-batch",
-      label: "Largest planned batch",
-      description: "Largest batch produced by the current dry-run planner",
-      transactions: largestBatch,
-      available: largestBatch.length >= 2,
-    },
-    {
-      id: "full-plan",
-      label: "Full healthy plan",
-      description: "Every healthy call combined into one executeBatch",
-      transactions: allTransactions,
-      available: allTransactions.length >= 2,
-    },
-  ];
-};
-
-export const buildArbitrumFullBatchPlan = (plan) => {
-  const batches = plan?.batches || [];
-  const units = batches.flatMap((batch) => batch.units || []);
-  const groups = batches.flatMap((batch) => batch.groups || []);
-  if (units.length === 0 || groups.length === 0) return null;
-
-  return {
-    batches: [{ units, groups }],
-    excluded: plan?.excluded || [],
-  };
-};
-
-const batchExperimentError = (error) => {
-  const message = error?.shortMessage || error?.message || String(error);
-  return message.length > 360 ? `${message.slice(0, 357)}...` : message;
+const cacheAgeLabel = (fetchedAt) => {
+  const minutes = Math.floor((Date.now() - fetchedAt) / 60_000);
+  if (minutes < 1) return "less than a minute";
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ${minutes % 60}m`;
 };
 
 function ResultRow({
@@ -183,11 +135,22 @@ function ResultRow({
   smartAccountAddress,
   onRetry,
   disabled,
+  selectable,
+  selected,
+  onSelect,
 }) {
   const tag = KIND_TAG[row.kind] || KIND_TAG.protocol;
   return (
     <div className="flex items-start justify-between gap-3 py-2 border-b border-gray-100 last:border-0">
-      <div className="min-w-0">
+      {selectable && (
+        <Checkbox
+          className="mt-1"
+          checked={selected}
+          disabled={disabled || row.status === "success" || row.txnCount === 0}
+          onChange={(event) => onSelect(row.uniqueId, event.target.checked)}
+        />
+      )}
+      <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={STATUS_COLOR[row.status] || STATUS_COLOR.pending}>
             {row.status === "sending" ? (
@@ -264,11 +227,16 @@ export default function AaExit() {
   const [feePlan, setFeePlan] = useState(null);
   const [walletScanFailed, setWalletScanFailed] = useState(false);
   const [untransferableTokens, setUntransferableTokens] = useState([]);
-  const [fellBack, setFellBack] = useState(false);
+  const [walletTokenCacheInfo, setWalletTokenCacheInfo] = useState(null);
+  const [sharedAssets, setSharedAssets] = useState([]);
   const [retrying, setRetrying] = useState(null);
   const [manualDirectMode, setManualDirectMode] = useState(false);
-  const [batchExperimentRunning, setBatchExperimentRunning] = useState(null);
-  const [batchExperimentResults, setBatchExperimentResults] = useState({});
+  // Populated only when the single combined batch fails preflight: the exit then
+  // becomes a manual pick-and-try instead of an automatic isolation run.
+  const [selectedUnitIds, setSelectedUnitIds] = useState(null);
+  const [fullBatchError, setFullBatchError] = useState(null);
+  const [triageResults, setTriageResults] = useState(null);
+  const [triageRunning, setTriageRunning] = useState(false);
   const [pendingUserOp, setPendingUserOp] = useState(null);
   const [pendingDirectTransaction, setPendingDirectTransaction] =
     useState(null);
@@ -365,9 +333,11 @@ export default function AaExit() {
     setFeePlan(null);
     setWalletScanFailed(false);
     setUntransferableTokens([]);
-    setFellBack(false);
-    setBatchExperimentRunning(null);
-    setBatchExperimentResults({});
+    setWalletTokenCacheInfo(null);
+    setSharedAssets([]);
+    setSelectedUnitIds(null);
+    setFullBatchError(null);
+    setTriageResults(null);
     setSubmissionStage("");
     setRecoveredSubmission(null);
     setPendingDirectTransaction(null);
@@ -1003,14 +973,44 @@ export default function AaExit() {
     [account?.address, recipient, chainMetadata],
   );
 
+  // Both the plan and the on-demand triage need the same simulation entry
+  // points, and both must fail loudly rather than silently skip the dry run when
+  // the admin account cannot be resolved.
+  const buildProbeFns = useCallback(() => {
+    const adminAccount = adminWallet?.getAccount();
+    if (!adminAccount?.address) {
+      throw new Error(
+        "AA Exit could not resolve the smart wallet admin account",
+      );
+    }
+    const probe = (candidateGroups) =>
+      (directMode ? probeAaBatchDirect : probeAaBatch)({
+        groups: candidateGroups,
+        adminAccount,
+        chainMetadata,
+        smartAccountAddress: account.address,
+      });
+    const diagnose = (group) =>
+      (directMode ? diagnoseAaBatchFailureDirect : diagnoseAaBatchFailure)({
+        groups: materializeExitCandidate({
+          units: [group],
+          chainMetadata,
+          recipient,
+        }),
+        adminAccount,
+        chainMetadata,
+        smartAccountAddress: account.address,
+      });
+    return { probe, diagnose };
+  }, [account?.address, adminWallet, chainMetadata, directMode, recipient]);
+
   const prepareExitPlan = useCallback(
-    async ({ walletTokensOverride } = {}) => {
-      const adminAccount = adminWallet?.getAccount();
-      if (!adminAccount?.address) {
-        throw new Error(
-          "AA Exit could not resolve the smart wallet admin account",
-        );
-      }
+    async ({
+      walletTokensOverride,
+      forceRefreshWalletTokens = false,
+      selectedUnitIds: selection = null,
+    } = {}) => {
+      const { probe } = buildProbeFns();
 
       const result = await scanAaExit({
         owner: account.address,
@@ -1019,44 +1019,24 @@ export default function AaExit() {
         chainMetadata,
         onScanProgress: updateScanProgress,
         walletTokensOverride,
+        forceRefreshWalletTokens,
       });
       setScanProgress((current) => ({
         ...current,
         percent: Math.max(current.percent, 82),
         message: "Dry-running the exit plan before you sign…",
       }));
-      const probe = (candidateGroups) =>
-        (directMode ? probeAaBatchDirect : probeAaBatch)({
-          groups: candidateGroups,
-          adminAccount,
-          chainMetadata,
-          smartAccountAddress: account.address,
-        });
-      const diagnose = (group) =>
-        (directMode ? diagnoseAaBatchFailureDirect : diagnoseAaBatchFailure)({
-          groups: materializeExitCandidate({
-            units: [group],
-            chainMetadata,
-            recipient,
-          }),
-          adminAccount,
-          chainMetadata,
-          smartAccountAddress: account.address,
-        });
       const plan = await planAaExitBatches({
         groups: result.groups,
         chainMetadata,
         recipient,
         probe,
-        diagnose,
-        onProbe: ({ probeCount, candidateCount }) =>
+        selectedUnitIds: selection,
+        onProbe: ({ candidateCount }) =>
           setScanProgress((current) => ({
             ...current,
-            percent: Math.max(
-              current.percent,
-              Math.min(96, 82 + probeCount * 2),
-            ),
-            message: `Dry-running exit batch ${probeCount} (${candidateCount} item${
+            percent: Math.max(current.percent, 90),
+            message: `Dry-running the exit batch (${candidateCount} item${
               candidateCount === 1 ? "" : "s"
             })…`,
           })),
@@ -1070,7 +1050,7 @@ export default function AaExit() {
     },
     [
       account?.address,
-      adminWallet,
+      buildProbeFns,
       recipient,
       chainName,
       chainMetadata,
@@ -1080,246 +1060,137 @@ export default function AaExit() {
   );
 
   const applyPreparedPlan = useCallback(
-    ({
-      result,
-      plan,
-      recipient: plannedRecipient,
-      directMode: plannedDirectMode,
-    }) => {
+    (
+      {
+        result,
+        plan,
+        recipient: plannedRecipient,
+        directMode: plannedDirectMode,
+      },
+      { keepSelection = null } = {},
+    ) => {
       groupsRef.current = result.groups;
       planRef.current = plan;
       walletTokenSnapshotRef.current = result.walletTokenSnapshot;
       planRecipientRef.current = plannedRecipient;
       planDirectModeRef.current = plannedDirectMode;
       statusRef.current = {};
-      const excluded = new Map(
-        (plan.excluded || []).map((item) => [item.group.uniqueId, item]),
-      );
-      setRows(
-        result.groups.map((group) => {
-          const row = toRow(group);
-          const omitted = excluded.get(group.uniqueId);
-          if (!omitted) return row;
-          return {
-            ...row,
-            status: "failed",
-            error:
-              omitted.diagnosis?.message ||
-              omitted.error?.message ||
-              "UserOperation probe failed",
-            note: "Excluded during dry-run so it cannot block the healthy exit batch.",
-          };
-        }),
-      );
-      excluded.forEach((_, uniqueId) => {
-        statusRef.current[uniqueId] = "failed";
-      });
+      setRows(result.groups.map(toRow));
       setFeePlan(result.feePlan);
-      setBatchExperimentRunning(null);
-      setBatchExperimentResults({});
       setWalletScanFailed(!!result.walletScanError);
       setUntransferableTokens(result.untransferableTokens || []);
-      setFellBack(
-        (plan.excluded || []).length > 0 || (plan.batches || []).length > 1,
+      // Absent when the scan reused a snapshot instead of consulting the cache,
+      // which must not read as "the cache was not used"
+      if (result.walletTokenCacheInfo) {
+        setWalletTokenCacheInfo(result.walletTokenCacheInfo);
+      }
+      setSharedAssets(result.sharedAssets || []);
+      setFullBatchError(plan.needsSelection ? plan.fullBatchError : null);
+      // A narrowing dry-run reaches the same items with the same balances, so
+      // per-item verdicts from an earlier triage still hold
+      if (!keepSelection) setTriageResults(null);
+      // The combined batch failed preflight, so the exit becomes a manual pick.
+      // Everything movable starts checked: the most common outcome is that only
+      // one or two items need unchecking.
+      setSelectedUnitIds(
+        keepSelection ||
+          (plan.needsSelection
+            ? new Set(
+                result.groups
+                  .filter((group) => !group.buildError && group.txns.length > 0)
+                  .map((group) => group.uniqueId),
+              )
+            : null),
       );
     },
     [],
   );
 
-  const handleScan = useCallback(async () => {
-    if (!(await ensureNoPendingUserOp())) return;
-    setPhase("scanning");
-    setFellBack(false);
-    setRecoveredSubmission(null);
-    setScanProgress({
-      percent: 2,
-      message: `Starting ${CHAIN_LABEL[chainName] || "network"} scan…`,
-      discoveries: [],
-    });
-    try {
-      const prepared = await prepareExitPlan();
-      applyPreparedPlan(prepared);
-      setPhase("ready");
-    } catch (error) {
-      openNotificationWithIcon(
-        notificationAPI,
-        "Scan failed",
-        "error",
-        error?.message || String(error),
-      );
-      setPhase("idle");
-    }
-  }, [
-    ensureNoPendingUserOp,
-    prepareExitPlan,
-    applyPreparedPlan,
-    notificationAPI,
-    chainName,
-  ]);
-
-  const handleBatchExperiment = useCallback(
-    async (experiment) => {
-      if (
-        !isArbitrum ||
-        !experiment?.available ||
-        experiment.transactions.length < 2 ||
-        phase !== "ready" ||
-        exitPlanStale
-      ) {
-        return;
-      }
-      const adminAccount = adminWallet?.getAccount();
-      if (!adminAccount?.address || !account?.address) {
-        setBatchExperimentResults((current) => ({
-          ...current,
-          [experiment.id]: {
-            status: "failed",
-            error: "Could not resolve the AA admin account",
-          },
-        }));
-        return;
-      }
-
-      setBatchExperimentRunning(experiment.id);
-      setBatchExperimentResults((current) => ({
-        ...current,
-        [experiment.id]: { status: "running" },
-      }));
+  const handleScan = useCallback(
+    async ({ forceRefresh = false, selection = null } = {}) => {
+      if (!(await ensureNoPendingUserOp())) return;
+      setPhase("scanning");
+      setRecoveredSubmission(null);
+      setScanProgress({
+        percent: 2,
+        message: `Starting ${CHAIN_LABEL[chainName] || "network"} scan…`,
+        discoveries: [],
+      });
       try {
-        const result = await probeAaBatchDirect({
-          groups: [
-            {
-              uniqueId: `experiment-${experiment.id}`,
-              txns: experiment.transactions,
-            },
-          ],
-          adminAccount,
-          chainMetadata,
-          smartAccountAddress: account.address,
+        const prepared = await prepareExitPlan({
+          forceRefreshWalletTokens: forceRefresh,
+          selectedUnitIds: selection,
+          // Narrowing an already-scanned plan must not pay for the wallet lookup
+          // again; only the dry run needs to be redone
+          walletTokensOverride: selection
+            ? walletTokenSnapshotRef.current
+            : undefined,
         });
-        setBatchExperimentResults((current) => ({
-          ...current,
-          [experiment.id]: {
-            status: "success",
-            gas: result.gas?.toString?.() || String(result.gas || "unknown"),
-          },
-        }));
+        applyPreparedPlan(prepared, { keepSelection: selection });
+        setPhase("ready");
       } catch (error) {
-        setBatchExperimentResults((current) => ({
-          ...current,
-          [experiment.id]: {
-            status: "failed",
-            error: batchExperimentError(error),
-          },
-        }));
-      } finally {
-        setBatchExperimentRunning(null);
+        openNotificationWithIcon(
+          notificationAPI,
+          "Scan failed",
+          "error",
+          error?.message || String(error),
+        );
+        setPhase("idle");
       }
     },
     [
-      account?.address,
-      adminWallet,
-      chainMetadata,
-      exitPlanStale,
-      isArbitrum,
-      phase,
+      ensureNoPendingUserOp,
+      prepareExitPlan,
+      applyPreparedPlan,
+      notificationAPI,
+      chainName,
     ],
   );
 
-  const handleArbitrumFullBatchExecute = useCallback(async () => {
-    if (
-      !isArbitrum ||
-      phase !== "ready" ||
-      exitPlanStale ||
-      !recipient ||
-      recipientError ||
-      !confirmed
-    ) {
-      return;
-    }
-
-    const fullBatchPlan = buildArbitrumFullBatchPlan(planRef.current);
-    if (!fullBatchPlan) {
-      openNotificationWithIcon(
-        notificationAPI,
-        "Nothing to execute",
-        "warning",
-        "The current healthy exit plan has no calls to submit.",
-      );
-      return;
-    }
-
-    const callCount = transactionsOfPlannedBatch(
-      fullBatchPlan.batches[0],
-    ).length;
-    const result = await withSubmissionLock(async () => {
-      setPhase("running");
-      return executeAaExitPlan({
-        plan: fullBatchPlan,
-        sendBatchTransaction: sendExitBatchTransaction,
-        updateGroup,
-        onBatchStage: handleBatchStage,
-        splitTransactions: false,
+  // Simulation only. Dry-runs every item on its own so the two very different
+  // reasons a combined batch fails can be told apart: an item that already fails
+  // alone is genuinely stuck, while items that only fail together are competing
+  // for the same balance.
+  const handleTriage = useCallback(async () => {
+    if (phase !== "ready" || exitPlanStale) return;
+    setTriageRunning(true);
+    try {
+      const { probe, diagnose } = buildProbeFns();
+      const results = await triageAaExitUnits({
+        groups: groupsRef.current,
+        chainMetadata,
+        recipient,
+        probe,
+        diagnose,
       });
-    });
-
-    if (result.status === "locked") {
+      setTriageResults(results);
+    } catch (error) {
       openNotificationWithIcon(
         notificationAPI,
-        "AA Exit is already open in another tab",
-        "warning",
-        "Finish or close the other submission before trying again.",
-      );
-      setPhase("ready");
-      return;
-    }
-    if (result.status === "blocked-pending") return;
-
-    if (result.status === "pre-submit-failed") {
-      openNotificationWithIcon(
-        notificationAPI,
-        "Arbitrum executeBatch failed",
+        "Could not dry-run the items",
         "error",
-        `${callCount} calls could not be executed as one batch. No automatic split retry was attempted; scan again to use the normal one-by-one Arbitrum exit. ${
-          result.error?.message || ""
-        }`.trim(),
+        error?.message || String(error),
       );
-      setPhase("partial");
-      return;
-    }
-
-    if (
-      result.status === "success" ||
-      result.status === "completed-with-groups"
-    ) {
-      openNotificationWithIcon(
-        notificationAPI,
-        "Arbitrum executeBatch succeeded",
-        "success",
-        `${callCount} calls were executed in one real AA.executeBatch transaction.`,
-      );
-    }
-    if (["cancelled", "unknown", "submitted"].includes(result.status)) {
-      setPhase(result.status);
-    } else {
-      const stalled = Object.values(statusRef.current).some(
-        (rowStatus) => rowStatus === "failed" || rowStatus === "partial",
-      );
-      setPhase(stalled ? "partial" : "done");
+    } finally {
+      setTriageRunning(false);
     }
   }, [
-    confirmed,
+    buildProbeFns,
+    chainMetadata,
     exitPlanStale,
-    handleBatchStage,
-    isArbitrum,
     notificationAPI,
     phase,
     recipient,
-    recipientError,
-    sendExitBatchTransaction,
-    updateGroup,
-    withSubmissionLock,
   ]);
+
+  const handleSelectUnit = useCallback((uniqueId, checked) => {
+    setSelectedUnitIds((current) => {
+      const next = new Set(current || []);
+      if (checked) next.add(uniqueId);
+      else next.delete(uniqueId);
+      return next;
+    });
+  }, []);
 
   const finishRun = useCallback((status) => {
     if (
@@ -1345,7 +1216,7 @@ export default function AaExit() {
         onBatchStage: handleBatchStage,
       });
 
-    let activePlan = planRef.current || { batches: [], excluded: [] };
+    let activePlan = planRef.current || { batches: [] };
     const plannedRecipient = planRecipientRef.current?.toLowerCase();
     const currentRecipient = recipient.toLowerCase();
     const plannedDirectMode = planDirectModeRef.current;
@@ -1365,8 +1236,9 @@ export default function AaExit() {
       try {
         const prepared = await prepareExitPlan({
           walletTokensOverride: walletTokenSnapshotRef.current,
+          selectedUnitIds,
         });
-        applyPreparedPlan(prepared);
+        applyPreparedPlan(prepared, { keepSelection: selectedUnitIds });
         activePlan = prepared.plan;
       } catch (error) {
         openNotificationWithIcon(
@@ -1421,6 +1293,7 @@ export default function AaExit() {
     finishRun,
     recipient,
     directMode,
+    selectedUnitIds,
     notificationAPI,
   ]);
 
@@ -1511,12 +1384,8 @@ export default function AaExit() {
   }
 
   const movableRows = rows.filter((row) => row.txnCount > 0);
-  const batchExperiments = isArbitrum
-    ? buildArbitrumBatchExperiments(planRef.current)
-    : [];
-  const fullBatchExperiment = batchExperiments.find(
-    (experiment) => experiment.id === "full-plan",
-  );
+  const selecting = selectedUnitIds !== null;
+  const selectedCount = selectedUnitIds ? selectedUnitIds.size : 0;
   const aaTransactionsUrl =
     explorerUrl && account?.address
       ? `${explorerUrl}txsAA?f=${account.address}`
@@ -1757,10 +1626,9 @@ export default function AaExit() {
                 <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
                   <Text strong>Arbitrum direct executeBatch mode</Text>
                   <Text type="secondary" className="block text-xs mt-1">
-                    Healthy calls are sent as admin → AA.executeBatch
-                    transactions. Thirdweb UserOperations are not used; dry-run
-                    isolation still removes or separates calls that cannot
-                    execute atomically.
+                    Every call is sent as one admin → AA.executeBatch
+                    transaction. Thirdweb UserOperations are not used because
+                    sponsorship is unavailable on this network.
                   </Text>
                 </div>
               ) : (
@@ -1847,18 +1715,38 @@ export default function AaExit() {
                   description="Reconfirm the address, then use the Exit button below. The existing wallet-token snapshot will be reused and the exact batch will be dry-run again before signing."
                 />
               )}
-              <div className="mt-3">
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
                 {!exitPlanStale && (
-                  <Button
-                    type="primary"
-                    disabled={!canScan}
-                    loading={phase === "scanning"}
-                    onClick={handleScan}
-                  >
-                    Scan {CHAIN_LABEL[chainName] || "this network"}
-                  </Button>
+                  <>
+                    <Button
+                      type="primary"
+                      disabled={!canScan}
+                      loading={phase === "scanning"}
+                      onClick={() => handleScan()}
+                    >
+                      Scan {CHAIN_LABEL[chainName] || "this network"}
+                    </Button>
+                    <Button
+                      disabled={!canScan}
+                      onClick={() => handleScan({ forceRefresh: true })}
+                    >
+                      Re-fetch wallet tokens
+                    </Button>
+                  </>
                 )}
               </div>
+              {walletTokenCacheInfo && (
+                <Text type="secondary" className="block text-xs mt-2">
+                  Wallet token list:{" "}
+                  {walletTokenCacheInfo.fromCache
+                    ? `cached, ${cacheAgeLabel(
+                        walletTokenCacheInfo.fetchedAt,
+                      )} old`
+                    : "fetched fresh this scan"}
+                  . Cached for {AA_EXIT_WALLET_TOKEN_CACHE_HOURS}h — use
+                  &ldquo;Re-fetch wallet tokens&rdquo; to bypass it.
+                </Text>
+              )}
 
               {phase === "scanning" && (
                 <div
@@ -1900,97 +1788,6 @@ export default function AaExit() {
                   </Text>
                 </div>
               )}
-            </Card>
-          )}
-
-          {isArbitrum && phase === "ready" && rows.length > 0 && (
-            <Card title="Arbitrum executeBatch experiments">
-              <Alert
-                className="mb-3"
-                type="info"
-                showIcon
-                message="Simulation only — these buttons do not send transactions"
-                description="Each test builds a real AA.executeBatch from the current healthy exit plan and asks Arbitrum to estimate its gas. ✅ means the batch simulation passed; ❌ shows the revert or RPC error. Your balances and positions are not changed."
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {batchExperiments.map((experiment) => {
-                  const result = batchExperimentResults[experiment.id];
-                  const running = batchExperimentRunning === experiment.id;
-                  return (
-                    <div
-                      key={experiment.id}
-                      className="rounded-lg border border-gray-200 bg-gray-50 p-3"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <Text strong>{experiment.label}</Text>
-                          <Text type="secondary" className="block text-xs mt-1">
-                            {experiment.description}
-                          </Text>
-                          <Text type="secondary" className="block text-xs mt-1">
-                            {experiment.transactions.length} call
-                            {experiment.transactions.length === 1 ? "" : "s"}
-                          </Text>
-                        </div>
-                        <Button
-                          size="small"
-                          disabled={
-                            !experiment.available ||
-                            exitPlanStale ||
-                            (batchExperimentRunning !== null && !running)
-                          }
-                          loading={running}
-                          onClick={() => handleBatchExperiment(experiment)}
-                        >
-                          Test
-                        </Button>
-                      </div>
-                      {!experiment.available && (
-                        <Text type="secondary" className="block text-xs mt-2">
-                          Not enough calls in this plan.
-                        </Text>
-                      )}
-                      {result?.status === "success" && (
-                        <Text className="block text-xs mt-2 text-green-600">
-                          ✅ executeBatch simulation passed — estimated gas:{" "}
-                          {Number(result.gas).toLocaleString("en-US")}
-                        </Text>
-                      )}
-                      {result?.status === "failed" && (
-                        <Text className="block text-xs mt-2 text-red-600 break-all">
-                          ❌ {result.error}
-                        </Text>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <Alert
-                className="mt-4 mb-3"
-                type="warning"
-                showIcon
-                message="Real executeBatch test — this WILL move assets"
-                description={`This bypasses Arbitrum's normal one-by-one submission and sends all ${
-                  fullBatchExperiment?.transactions.length || 0
-                } healthy calls in one real AA.executeBatch. If it fails, there is no automatic split retry; scan again and use the normal Exit button.`}
-              />
-              <Button
-                block
-                danger
-                type="primary"
-                disabled={
-                  !fullBatchExperiment?.available ||
-                  exitPlanStale ||
-                  !recipient ||
-                  !!recipientError ||
-                  !confirmed ||
-                  batchExperimentRunning !== null
-                }
-                onClick={handleArbitrumFullBatchExecute}
-              >
-                Execute Full Batch on Arbitrum (REAL)
-              </Button>
             </Card>
           )}
 
@@ -2068,16 +1865,76 @@ export default function AaExit() {
                 )}
               </div>
 
-              {fellBack && (
+              {fullBatchError && (
+                <Alert
+                  className="mb-3"
+                  type="warning"
+                  showIcon
+                  message={`The combined ${
+                    directMode ? "executeBatch" : "UserOperation"
+                  } did not pass preflight`}
+                  description={
+                    <div className="text-sm">
+                      <p className="mb-2 break-words">{fullBatchError}</p>
+                      <p className="mb-2">
+                        Nothing was sent. Untick items below and dry-run again
+                        to find a combination that passes — the amounts are
+                        fixed at scan time, so sending the items in several
+                        batches instead would let an earlier batch move a
+                        balance a later one still expects to find.
+                      </p>
+                      <p className="mb-0">
+                        &ldquo;Dry-run each item alone&rdquo; tells the two
+                        causes apart: an item that already fails on its own is
+                        stuck, while items that only fail together are asking
+                        for the same balance.
+                      </p>
+                    </div>
+                  }
+                />
+              )}
+
+              {triageResults && (
                 <Alert
                   className="mb-3"
                   type="info"
                   showIcon
-                  message="Dry-run optimized the exit batches"
+                  message={
+                    triageResults.every((item) => item.aloneOk)
+                      ? "Every item passes on its own"
+                      : `${
+                          triageResults.filter((item) => !item.aloneOk).length
+                        } item(s) cannot be handed over at all`
+                  }
                   description={
-                    directMode
-                      ? "The full direct executeBatch did not pass preflight. Problematic items were excluded, while healthy items were kept in the largest safe batches."
-                      : "The full sponsored UserOp did not pass preflight. Problematic items were excluded, or the healthy items were kept in a small number of large batches instead of being split one by one."
+                    <div className="text-sm">
+                      {triageResults.every((item) => item.aloneOk) ? (
+                        <p className="mb-0">
+                          No single item is broken, so the combined batch fails
+                          because the items clash — two of them want the same
+                          balance, or the batch as a whole is over a gas/size
+                          limit. Untick one of the items sharing an asset below.
+                        </p>
+                      ) : (
+                        <p className="mb-0">
+                          Untick the ✋ items below; the rest can still exit
+                          together.
+                        </p>
+                      )}
+                      {sharedAssets.length > 0 && (
+                        <div className="mt-2 text-xs">
+                          <Text strong className="text-xs">
+                            Positions sharing one asset
+                          </Text>
+                          {sharedAssets.map((asset) => (
+                            <div key={asset.address} className="break-all">
+                              {shortAddress(asset.address)}:{" "}
+                              {asset.labels.join(", ")}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   }
                 />
               )}
@@ -2123,17 +1980,51 @@ export default function AaExit() {
               )}
 
               <div>
-                {rows.map((row) => (
-                  <ResultRow
-                    key={row.uniqueId}
-                    row={row}
-                    explorerUrl={explorerUrl}
-                    smartAccountAddress={account.address}
-                    disabled={busy || retrying !== null}
-                    onRetry={() => handleRetry(row.uniqueId)}
-                  />
-                ))}
+                {rows.map((row) => {
+                  const triage = triageResults?.find(
+                    (item) => item.uniqueId === row.uniqueId,
+                  );
+                  return (
+                    <ResultRow
+                      key={row.uniqueId}
+                      row={
+                        triage && !triage.aloneOk
+                          ? {
+                              ...row,
+                              note: `✋ Fails on its own: ${triage.message}`,
+                            }
+                          : row
+                      }
+                      explorerUrl={explorerUrl}
+                      smartAccountAddress={account.address}
+                      disabled={busy || retrying !== null}
+                      onRetry={() => handleRetry(row.uniqueId)}
+                      selectable={selecting}
+                      selected={!!selectedUnitIds?.has(row.uniqueId)}
+                      onSelect={handleSelectUnit}
+                    />
+                  );
+                })}
               </div>
+
+              {selecting && (
+                <div className="mt-4 flex items-center gap-2 flex-wrap">
+                  <Button
+                    disabled={selectedCount === 0 || phase !== "ready"}
+                    loading={phase === "scanning"}
+                    onClick={() => handleScan({ selection: selectedUnitIds })}
+                  >
+                    Dry-run {selectedCount} selected
+                  </Button>
+                  <Button
+                    disabled={phase !== "ready"}
+                    loading={triageRunning}
+                    onClick={handleTriage}
+                  >
+                    Dry-run each item alone
+                  </Button>
+                </div>
+              )}
 
               {/* Only a fresh scan may be run wholesale: after a run, rows that
                 succeeded are done, and re-sending them would ask for balances
@@ -2148,11 +2039,17 @@ export default function AaExit() {
                   movableRows.length === 0 ||
                   !recipient ||
                   recipientError ||
-                  !confirmed
+                  !confirmed ||
+                  // Nothing passed preflight, so there is no batch to sign
+                  (planRef.current?.batches || []).length === 0
                 }
                 onClick={handleRun}
               >
-                Exit everything on {CHAIN_LABEL[chainName] || chainName}
+                {selecting
+                  ? `Exit ${selectedCount} selected on ${
+                      CHAIN_LABEL[chainName] || chainName
+                    }`
+                  : `Exit everything on ${CHAIN_LABEL[chainName] || chainName}`}
               </Button>
 
               <Paragraph type="secondary" className="text-xs mt-3 mb-0">
@@ -2161,13 +2058,14 @@ export default function AaExit() {
                 {directMode
                   ? "the deployed AA, admin permission, chain, gas limit and admin ETH balance are checked again"
                   : "only the nonce, gas estimates and sponsorship envelope are refreshed"}
-                . If the full batch fails preflight, dependency-aware binary
-                isolation removes only the broken group; if the issue is
-                aggregate gas/paymaster size, healthy items stay in a few large
-                batches instead of one signature per item. Claimed-reward
-                transfers are rebuilt only from protocol groups that survive
-                preflight. Amounts are fixed when you scan, so a little dust can
-                stay behind.
+                . Everything goes out as one atomic batch — either all of it
+                lands or none of it does. A batch that cannot pass preflight is
+                never split automatically, because the amounts are fixed at scan
+                time and an earlier batch would move balances a later one still
+                expects; untick items instead. Claimed-reward transfers are
+                rebuilt only from the protocol groups still in the batch.
+                Amounts are fixed when you scan, so a little dust can stay
+                behind.
               </Paragraph>
             </Card>
           )}

@@ -207,6 +207,9 @@ export class Venus extends BaseProtocol {
   // wallet (_stake is a no-op), so handing it over untouched is both the
   // simplest and the only correct exit. Venus pays no rewards.
   async emergencyTransfer(owner, recipient, updateProgress, options = {}) {
+    // The whole position *is* the loose vToken balance, so a designated sibling
+    // sweeping the same vToken leaves this position with nothing to hand over.
+    if (options.skipWalletBalance) return { txns: [], rewardBalances: [] };
     const vTokenBalance = await this.stakeFarmContractInstance.balanceOf(owner);
     if (vTokenBalance.isZero()) {
       return { txns: [], rewardBalances: [] };
