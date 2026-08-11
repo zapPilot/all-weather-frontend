@@ -15,6 +15,7 @@ import {
   clearPendingAaExitUserOp,
   collectExitProtocols,
   createPendingAaExitDirectTransaction,
+  aaExitPendingUserOpAction,
   clearAaExitWalletTokenCache,
   createPendingAaExitUserOp,
   debankChainCode,
@@ -1254,6 +1255,39 @@ describe("paymaster validity and pending UserOp safety gate", () => {
         nowSeconds: validUntil + 100,
       }),
     ).resolves.toBe("unknown");
+  });
+
+  // Arbitrum used to skip this gate entirely because it could not create a
+  // sponsored UserOp. Now that the gas payer is a per-chain toggle it can, so
+  // every chain has to honour the same rule.
+  describe("what a new submission may do about it", () => {
+    it("only discards a record the chain proved never executed", () => {
+      expect(aaExitPendingUserOpAction("dead")).toEqual({
+        proceed: true,
+        clear: true,
+        recovered: "expired",
+      });
+    });
+
+    it("keeps blocking without discarding anything else", () => {
+      // "landed" especially: the record is the receipt poller's only handle on a
+      // UserOp that did execute
+      for (const liveness of ["live", "landed", "unknown"]) {
+        expect(aaExitPendingUserOpAction(liveness)).toEqual({
+          proceed: false,
+          clear: false,
+          recovered: null,
+        });
+      }
+    });
+
+    it("proceeds with nothing to clear when there is no record", () => {
+      expect(aaExitPendingUserOpAction("no-pending")).toEqual({
+        proceed: true,
+        clear: false,
+        recovered: null,
+      });
+    });
   });
 });
 

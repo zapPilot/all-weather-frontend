@@ -38,6 +38,7 @@ import {
   PROTOCOL_TREASURY_ADDRESS,
   aaExitBeforeSubmissionError,
   aaExitPendingDirectTransactionStorageKey,
+  aaExitPendingUserOpAction,
   aaExitPendingUserOpStorageKey,
   buildClaimedRewardsGroup,
   buildProtocolGroups,
@@ -49,6 +50,7 @@ import {
   diagnoseAaBatchFailureDirect,
   executeAaExitPlan,
   isAaExitUserOpReceiptFailure,
+  isPendingAaExitUserOpDead,
   materializeExitCandidate,
   planAaExitBatches,
   probeAaBatch,
@@ -67,6 +69,10 @@ import {
   writePendingAaExitDirectTransaction,
   writePendingAaExitUserOp,
 } from "../../utils/aaExit";
+import {
+  classifyEmergencyExitBatchError,
+  EMERGENCY_EXIT_FAILURE_KIND,
+} from "../../utils/emergencyExitExecution";
 import logger from "../../utils/logger";
 
 const { Title, Text, Paragraph } = Typography;
@@ -123,6 +129,18 @@ const formatAmount = (raw, decimals) =>
 
 const shortAddress = (address) =>
   `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+// The sponsored path is the default on every network, but Thirdweb has rejected
+// large exit batches before. Point at the toggle when the failure came from the
+// paymaster or bundler rather than from the batch itself.
+const sponsorshipHint = (error, directMode) => {
+  if (directMode) return "";
+  return classifyEmergencyExitBatchError(error) ===
+    EMERGENCY_EXIT_FAILURE_KIND.SAFE_TO_FALLBACK &&
+    /paymaster|bundler|sponsor/i.test(error?.message || "")
+    ? "This looks like a sponsorship problem rather than a problem with the batch. Turn on Direct mode above to pay gas from your admin wallet instead."
+    : "";
+};
 
 const cacheAgeLabel = (fetchedAt) => {
   const minutes = Math.floor((Date.now() - fetchedAt) / 60_000);
@@ -234,7 +252,11 @@ export default function AaExit() {
   const [gasPayer, setGasPayer] = useState(null);
   const [sharedAssets, setSharedAssets] = useState([]);
   const [retrying, setRetrying] = useState(null);
-  const [manualDirectMode, setManualDirectMode] = useState(false);
+  // Who pays for gas. Off means a sponsored Thirdweb UserOperation; on means a
+  // plain admin -> AA.executeBatch transaction out of the admin EOA's own ETH.
+  // Deliberately not persisted: a forgotten toggle quietly spends the admin's
+  // balance, so every visit re-decides.
+  const [directMode, setDirectMode] = useState(false);
   // Populated only when the single combined batch fails preflight: the exit then
   // becomes a manual pick-and-try instead of an automatic isolation run.
   const [selectedUnitIds, setSelectedUnitIds] = useState(null);
@@ -278,12 +300,6 @@ export default function AaExit() {
   }, [activeChain]);
   const chainName = normalizeChainName(chainMetadata?.name);
   const onSupportedChain = AA_EXIT_CHAINS.includes(chainName);
-  // Arbitrum must never fall back to the sponsored UserOperation path. Derive
-  // this synchronously from the active chain so the very first render already
-  // uses direct admin transactions; an effect-based default briefly exposed the
-  // old UserOp path and could restore a stale pending UserOp before flipping on.
-  const isArbitrum = chainMetadata?.id === AA_EXIT_CHAIN_IDS.arbitrum;
-  const directMode = isArbitrum || manualDirectMode;
   const explorerUrl = LOCK_EXPLORER_URLS[activeChain?.id];
 
   const sendExitBatchTransaction = useCallback(
@@ -353,19 +369,12 @@ export default function AaExit() {
   }, []);
 
   useEffect(() => {
-    setManualDirectMode(false);
+    setDirectMode(false);
   }, [chainMetadata?.id]);
 
   const restorePendingUserOp = useCallback(
     ({ fromStorageEvent = false } = {}) => {
       if (!account?.address || !chainMetadata?.id) {
-        setPendingUserOp(null);
-        return null;
-      }
-      // Legacy Arbitrum sponsored UserOps are deliberately ignored by the new
-      // direct-only flow. They must not put the page back into the old
-      // "UserOperation submitted" blocking state after a reload.
-      if (chainMetadata.id === AA_EXIT_CHAIN_IDS.arbitrum) {
         setPendingUserOp(null);
         return null;
       }
@@ -422,6 +431,37 @@ export default function AaExit() {
     restorePendingUserOp();
     restorePendingDirectTransaction();
   }, [restorePendingDirectTransaction, restorePendingUserOp]);
+
+  // A restored record blocks every button on the page, including the Scan that
+  // would otherwise run this check, so a UserOp the chain has already declared
+  // dead has to release the page by itself.
+  useEffect(() => {
+    if (!pendingUserOp || pendingUserOp.chainId !== chainMetadata?.id) {
+      return undefined;
+    }
+    let cancelled = false;
+    isPendingAaExitUserOpDead({ pending: pendingUserOp, chainMetadata })
+      .then((liveness) => {
+        if (cancelled) return;
+        const action = aaExitPendingUserOpAction(liveness);
+        if (!action.clear) return;
+        clearPendingAaExitUserOp({
+          chainId: pendingUserOp.chainId,
+          smartAccountAddress: pendingUserOp.smartAccountAddress,
+          userOpHash: pendingUserOp.userOpHash,
+        });
+        setPendingUserOp(null);
+        setSubmissionStage("");
+        setRecoveredSubmission({ status: action.recovered });
+        setPhase("idle");
+      })
+      .catch((error) =>
+        logger.warn("AA Exit: could not classify the pending UserOp", error),
+      );
+    return () => {
+      cancelled = true;
+    };
+  }, [chainMetadata, pendingUserOp]);
 
   useEffect(() => {
     if (
@@ -668,12 +708,6 @@ export default function AaExit() {
       setPhase("submitted");
       return false;
     }
-    // Arbitrum is direct-only. Legacy sponsored UserOp storage must not block a
-    // fresh sequential direct exit.
-    if (isArbitrum) {
-      setPendingUserOp(null);
-      return true;
-    }
     const existing =
       pendingUserOp ||
       readPendingAaExitUserOp({
@@ -681,16 +715,47 @@ export default function AaExit() {
         smartAccountAddress: account.address,
       });
     if (!existing) return true;
+
+    const action = aaExitPendingUserOpAction(
+      await isPendingAaExitUserOpDead({
+        pending: existing,
+        chainMetadata,
+      }),
+    );
+    if (action.clear) {
+      clearPendingAaExitUserOp({
+        chainId: existing.chainId,
+        smartAccountAddress: existing.smartAccountAddress,
+        userOpHash: existing.userOpHash,
+      });
+      setPendingUserOp(null);
+    }
+    if (action.recovered) {
+      setRecoveredSubmission({ status: action.recovered });
+    }
+    if (action.proceed) return true;
     setPendingUserOp(existing);
     setPhase("submitted");
     return false;
   }, [
     account?.address,
     chainMetadata,
-    isArbitrum,
     pendingDirectTransaction,
     pendingUserOp,
   ]);
+
+  const handleDiscardPendingUserOp = useCallback(() => {
+    if (!pendingUserOp) return;
+    clearPendingAaExitUserOp({
+      chainId: pendingUserOp.chainId,
+      smartAccountAddress: pendingUserOp.smartAccountAddress,
+      userOpHash: pendingUserOp.userOpHash,
+    });
+    setPendingUserOp(null);
+    setRecoveredSubmission({ status: "cleared" });
+    setSubmissionStage("");
+    setPhase("idle");
+  }, [pendingUserOp]);
 
   const withSubmissionLock = useCallback(
     async (submitPlan) => {
@@ -1310,8 +1375,13 @@ export default function AaExit() {
         notificationAPI,
         "Transaction was not submitted",
         "error",
-        result.error?.message ||
-          "The wallet signed, but the UserOperation failed before submission. No automatic retry was attempted.",
+        [
+          result.error?.message ||
+            "The wallet signed, but the UserOperation failed before submission. No automatic retry was attempted.",
+          sponsorshipHint(result.error, directMode),
+        ]
+          .filter(Boolean)
+          .join(" "),
       );
       setPhase("partial");
       return;
@@ -1323,6 +1393,7 @@ export default function AaExit() {
     handleBatchStage,
     withSubmissionLock,
     ensureFreshPlan,
+    directMode,
     finishRun,
     notificationAPI,
   ]);
@@ -1556,7 +1627,10 @@ export default function AaExit() {
             />
           )}
 
-          {pendingUserOp && !directMode && (
+          {/* Shown whatever the toggle currently says: the record blocks a new
+            submission either way, and hiding it would leave the exit blocked
+            with no explanation on screen. */}
+          {pendingUserOp && (
             <Alert
               type="warning"
               showIcon
@@ -1590,6 +1664,22 @@ export default function AaExit() {
                       <Text type="secondary">Stage: {submissionStage}</Text>
                     )}
                   </div>
+                  {/* Records written before the paymaster validity window was
+                    stored cannot be verified on chain, so the automatic expiry
+                    check leaves them blocking forever. Clearing anything
+                    unverifiable on its behalf would reopen the duplicate-exit
+                    hole, so the decision belongs to whoever can read the
+                    explorer. */}
+                  <p className="mb-0 mt-2">
+                    Checked the link above and this operation never executed?{" "}
+                    <Button
+                      size="small"
+                      danger
+                      onClick={handleDiscardPendingUserOp}
+                    >
+                      Clear this record
+                    </Button>
+                  </p>
                 </div>
               }
             />
@@ -1728,36 +1818,27 @@ export default function AaExit() {
 
           {aaOn && (
             <Card title="Where should everything go?">
-              {isArbitrum ? (
-                <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                  <Text strong>Arbitrum direct executeBatch mode</Text>
-                  <Text type="secondary" className="block text-xs mt-1">
-                    Every call is sent as one admin → AA.executeBatch
-                    transaction. Thirdweb UserOperations are not used because
-                    sponsorship is unavailable on this network.
-                  </Text>
-                </div>
-              ) : (
-                <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <Text strong>Direct mode — admin pays gas</Text>
-                      <Text type="secondary" className="block text-xs mt-1">
-                        Bypasses the Thirdweb bundler on this network.
-                      </Text>
-                    </div>
-                    <Switch
-                      aria-label="Direct mode — admin pays gas"
-                      checked={manualDirectMode}
-                      disabled={busy}
-                      onChange={(checked) => {
-                        setManualDirectMode(checked);
-                        setConfirmed(false);
-                      }}
-                    />
+              <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <Text strong>Direct mode — admin wallet pays gas</Text>
+                    <Text type="secondary" className="block text-xs mt-1">
+                      {directMode
+                        ? `Every call goes out as one admin → AA.executeBatch transaction, bypassing the Thirdweb bundler and its paymaster policy. ${AA_EXIT_GAS_PAYER_NOTE}`
+                        : "Off: the exit is submitted as a sponsored Thirdweb UserOperation, so the paymaster covers gas. Turn this on if sponsorship is rejected or the bundler will not take the batch."}
+                    </Text>
                   </div>
+                  <Switch
+                    aria-label="Direct mode — admin wallet pays gas"
+                    checked={directMode}
+                    disabled={busy}
+                    onChange={(checked) => {
+                      setDirectMode(checked);
+                      setConfirmed(false);
+                    }}
+                  />
                 </div>
-              )}
+              </div>
               <label className="block text-sm mb-1" htmlFor="aa-exit-recipient">
                 Your own wallet address
               </label>
