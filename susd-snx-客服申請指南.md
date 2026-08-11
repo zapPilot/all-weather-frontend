@@ -57,7 +57,7 @@ Zap Pilot 決定對過去舊策略中的 **ALP、Synthetix / sUSD、Metronome ms
 
 **https://app.zap-pilot.org/dustzap/**
 
-![DustZap 操作畫面](dustzap-guide.jpg)
+![DustZap 操作畫面](dust.png)
 
 DustZap 現在提供兩種主要操作：
 
