@@ -62,6 +62,8 @@ import {
   refreshEoaFullExitTokens,
 } from "../../utils/eoaFullExit";
 import {
+  AA_EXIT_GAS_PAYER_NOTE,
+  aaExitBeforeSubmissionError,
   clearPendingAaExitDirectTransaction,
   clearPendingAaExitUserOp,
   createPendingAaExitDirectTransaction,
@@ -696,7 +698,9 @@ export default function DustZap() {
           await adminWallet?.switchChain(activeChain);
         }
         if (adminWallet?.getChain()?.id !== activeChain?.id) {
-          throw new Error(
+          // A plain Error here would be classified as "status unknown" for
+          // something that never reached the network
+          throw aaExitBeforeSubmissionError(
             `DustZap admin wallet is on chain ${
               adminWallet?.getChain()?.id ?? "unknown"
             }, expected ${activeChain?.id ?? "unknown"}`,
@@ -1231,6 +1235,16 @@ export default function DustZap() {
         />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+          {aaOn && (
+            <Alert
+              message="Gas comes from your admin wallet"
+              description={`${AA_EXIT_GAS_PAYER_NOTE} If you see "insufficient native gas balance", top up the wallet you connected with on this network — not the smart wallet.`}
+              type="info"
+              showIcon
+              className="mb-8"
+            />
+          )}
+
           {eoaPositionExitEnabled && (
             <Alert
               message="Protocol Position Exit"

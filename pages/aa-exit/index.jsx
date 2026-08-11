@@ -32,9 +32,11 @@ import {
 import {
   AA_EXIT_CHAINS,
   AA_EXIT_CHAIN_IDS,
+  AA_EXIT_GAS_PAYER_NOTE,
   AA_EXIT_WALLET_TOKEN_CACHE_HOURS,
   EXIT_FEE_USD,
   PROTOCOL_TREASURY_ADDRESS,
+  aaExitBeforeSubmissionError,
   aaExitPendingDirectTransactionStorageKey,
   aaExitPendingUserOpStorageKey,
   buildClaimedRewardsGroup,
@@ -51,6 +53,7 @@ import {
   planAaExitBatches,
   probeAaBatch,
   probeAaBatchDirect,
+  readAaExitAdminGasBalance,
   readPendingAaExitDirectTransaction,
   readPendingAaExitUserOp,
   runAaExitGroups,
@@ -228,6 +231,7 @@ export default function AaExit() {
   const [walletScanFailed, setWalletScanFailed] = useState(false);
   const [untransferableTokens, setUntransferableTokens] = useState([]);
   const [walletTokenCacheInfo, setWalletTokenCacheInfo] = useState(null);
+  const [gasPayer, setGasPayer] = useState(null);
   const [sharedAssets, setSharedAssets] = useState([]);
   const [retrying, setRetrying] = useState(null);
   const [manualDirectMode, setManualDirectMode] = useState(false);
@@ -292,7 +296,9 @@ export default function AaExit() {
             await adminWallet?.switchChain(chainMetadata);
           }
           if (adminWallet?.getChain()?.id !== chainMetadata?.id) {
-            throw new Error(
+            // A plain Error here would be classified as "status unknown" for
+            // something that never reached the network
+            throw aaExitBeforeSubmissionError(
               `AA Exit admin wallet is on chain ${
                 adminWallet?.getChain()?.id ?? "unknown"
               }, expected ${chainMetadata?.id ?? "unknown"}`,
@@ -334,6 +340,7 @@ export default function AaExit() {
     setWalletScanFailed(false);
     setUntransferableTokens([]);
     setWalletTokenCacheInfo(null);
+    setGasPayer(null);
     setSharedAssets([]);
     setSelectedUnitIds(null);
     setFullBatchError(null);
@@ -1001,7 +1008,7 @@ export default function AaExit() {
         chainMetadata,
         smartAccountAddress: account.address,
       });
-    return { probe, diagnose };
+    return { adminAccount, probe, diagnose };
   }, [account?.address, adminWallet, chainMetadata, directMode, recipient]);
 
   const prepareExitPlan = useCallback(
@@ -1010,7 +1017,15 @@ export default function AaExit() {
       forceRefreshWalletTokens = false,
       selectedUnitIds: selection = null,
     } = {}) => {
-      const { probe } = buildProbeFns();
+      const { adminAccount, probe } = buildProbeFns();
+      // Only direct mode spends the admin's own ETH; under sponsorship the
+      // paymaster pays and showing this balance would point at the wrong wallet
+      const gasPayer = directMode
+        ? await readAaExitAdminGasBalance({
+            adminAddress: adminAccount.address,
+            chainMetadata,
+          })
+        : null;
 
       const result = await scanAaExit({
         owner: account.address,
@@ -1046,7 +1061,7 @@ export default function AaExit() {
         percent: 100,
         message: "Scan complete. Exit plan is ready.",
       }));
-      return { result, plan, recipient, directMode };
+      return { result, plan, recipient, directMode, gasPayer };
     },
     [
       account?.address,
@@ -1066,9 +1081,11 @@ export default function AaExit() {
         plan,
         recipient: plannedRecipient,
         directMode: plannedDirectMode,
+        gasPayer,
       },
       { keepSelection = null } = {},
     ) => {
+      setGasPayer(gasPayer || null);
       groupsRef.current = result.groups;
       planRef.current = plan;
       walletTokenSnapshotRef.current = result.walletTokenSnapshot;
@@ -1207,6 +1224,55 @@ export default function AaExit() {
     setPhase(stalled ? "partial" : "done");
   }, []);
 
+  // Prepared calldata embeds the recipient, so an edited destination or a flipped
+  // submission mode has to rebuild before anything is signed. The wallet-token
+  // snapshot is reused, so this costs no third-party lookup.
+  const ensureFreshPlan = useCallback(async () => {
+    const plannedRecipient = planRecipientRef.current?.toLowerCase();
+    const currentRecipient = recipient.toLowerCase();
+    const plannedDirectMode = planDirectModeRef.current;
+    if (
+      plannedRecipient === currentRecipient &&
+      plannedDirectMode === directMode
+    ) {
+      return { ok: true, plan: planRef.current || { batches: [] } };
+    }
+
+    setPhase("scanning");
+    setScanProgress((current) => ({
+      ...current,
+      percent: 55,
+      message:
+        plannedRecipient !== currentRecipient
+          ? "Updating the exit plan for the new destination without re-fetching wallet tokens…"
+          : "Updating the exit plan for the selected submission mode without re-fetching wallet tokens…",
+    }));
+    try {
+      const prepared = await prepareExitPlan({
+        walletTokensOverride: walletTokenSnapshotRef.current,
+        selectedUnitIds,
+      });
+      applyPreparedPlan(prepared, { keepSelection: selectedUnitIds });
+      return { ok: true, plan: prepared.plan };
+    } catch (error) {
+      openNotificationWithIcon(
+        notificationAPI,
+        "Could not update destination",
+        "error",
+        error?.message || String(error),
+      );
+      setPhase("ready");
+      return { ok: false };
+    }
+  }, [
+    applyPreparedPlan,
+    directMode,
+    notificationAPI,
+    prepareExitPlan,
+    recipient,
+    selectedUnitIds,
+  ]);
+
   const handleRun = useCallback(async () => {
     const executePlan = (plan) =>
       executeAaExitPlan({
@@ -1216,41 +1282,9 @@ export default function AaExit() {
         onBatchStage: handleBatchStage,
       });
 
-    let activePlan = planRef.current || { batches: [] };
-    const plannedRecipient = planRecipientRef.current?.toLowerCase();
-    const currentRecipient = recipient.toLowerCase();
-    const plannedDirectMode = planDirectModeRef.current;
-    if (
-      plannedRecipient !== currentRecipient ||
-      plannedDirectMode !== directMode
-    ) {
-      setPhase("scanning");
-      setScanProgress((current) => ({
-        ...current,
-        percent: 55,
-        message:
-          plannedRecipient !== currentRecipient
-            ? "Updating the exit plan for the new destination without re-fetching wallet tokens…"
-            : "Updating the exit plan for the selected submission mode without re-fetching wallet tokens…",
-      }));
-      try {
-        const prepared = await prepareExitPlan({
-          walletTokensOverride: walletTokenSnapshotRef.current,
-          selectedUnitIds,
-        });
-        applyPreparedPlan(prepared, { keepSelection: selectedUnitIds });
-        activePlan = prepared.plan;
-      } catch (error) {
-        openNotificationWithIcon(
-          notificationAPI,
-          "Could not update destination",
-          "error",
-          error?.message || String(error),
-        );
-        setPhase("ready");
-        return;
-      }
-    }
+    const fresh = await ensureFreshPlan();
+    if (!fresh.ok) return;
+    const activePlan = fresh.plan;
 
     const result = await withSubmissionLock(async () => {
       setPhase("running");
@@ -1288,13 +1322,78 @@ export default function AaExit() {
     updateGroup,
     handleBatchStage,
     withSubmissionLock,
-    prepareExitPlan,
-    applyPreparedPlan,
+    ensureFreshPlan,
     finishRun,
-    recipient,
-    directMode,
-    selectedUnitIds,
     notificationAPI,
+  ]);
+
+  // One signature per item instead of one for everything. The only way out when
+  // the combined batch cannot pass preflight — and because each group runs its own
+  // simulate + estimate before signing, the broken item is named by its own error
+  // and skipped rather than stopping the rest.
+  const handleRunOneAtATime = useCallback(async () => {
+    const fresh = await ensureFreshPlan();
+    if (!fresh.ok) return;
+
+    const units = groupsRef.current.filter(
+      (group) =>
+        !group.buildError &&
+        (group.txns || []).length > 0 &&
+        (!selectedUnitIds || selectedUnitIds.has(group.uniqueId)),
+    );
+    if (units.length === 0) {
+      openNotificationWithIcon(
+        notificationAPI,
+        "Nothing to send",
+        "warning",
+        "No item in the current plan has anything to move.",
+      );
+      setPhase("ready");
+      return;
+    }
+
+    const result = await withSubmissionLock(async () => {
+      setPhase("running");
+      return runAaExitGroups({
+        // Claimed rewards are not an isolation unit; materializing inserts them
+        // after the protocol groups, and runAaExitGroups rebuilds them from
+        // whichever claims actually landed
+        groups: materializeExitCandidate({ units, chainMetadata, recipient }),
+        sendBatchTransaction: sendExitBatchTransaction,
+        updateGroup,
+        rebuildGroup,
+        onBatchStage: handleBatchStage,
+        combinedAllowed: false,
+        continueOnPreSubmitFailure: true,
+      });
+    });
+
+    if (result.status === "locked") {
+      openNotificationWithIcon(
+        notificationAPI,
+        "AA Exit is already open in another tab",
+        "warning",
+        "Finish or close the other submission before trying again.",
+      );
+      setPhase("ready");
+      return;
+    }
+    if (result.status === "blocked-pending") return;
+
+    groupsRef.current = result.groups || groupsRef.current;
+    finishRun(result.status);
+  }, [
+    chainMetadata,
+    ensureFreshPlan,
+    finishRun,
+    handleBatchStage,
+    notificationAPI,
+    rebuildGroup,
+    recipient,
+    selectedUnitIds,
+    sendExitBatchTransaction,
+    updateGroup,
+    withSubmissionLock,
   ]);
 
   const handleRetry = useCallback(
@@ -1386,6 +1485,13 @@ export default function AaExit() {
   const movableRows = rows.filter((row) => row.txnCount > 0);
   const selecting = selectedUnitIds !== null;
   const selectedCount = selectedUnitIds ? selectedUnitIds.size : 0;
+  const canSubmit =
+    phase === "ready" &&
+    movableRows.length > 0 &&
+    !!recipient &&
+    !recipientError &&
+    confirmed;
+  const oneAtATimeCount = selecting ? selectedCount : movableRows.length;
   const aaTransactionsUrl =
     explorerUrl && account?.address
       ? `${explorerUrl}txsAA?f=${account.address}`
@@ -1865,6 +1971,28 @@ export default function AaExit() {
                 )}
               </div>
 
+              {gasPayer && (
+                <div className="mb-3 text-sm">
+                  <Text type="secondary">
+                    Gas payer:{" "}
+                    <Text code copyable={{ text: gasPayer.address }}>
+                      {shortAddress(gasPayer.address)}
+                    </Text>{" "}
+                    <Text
+                      strong
+                      type={gasPayer.balanceWei === "0" ? "danger" : undefined}
+                    >
+                      {Number(
+                        ethers.utils.formatEther(gasPayer.balanceWei),
+                      ).toFixed(6)}{" "}
+                      ETH
+                    </Text>{" "}
+                    on {CHAIN_LABEL[chainName] || chainName}.{" "}
+                    {AA_EXIT_GAS_PAYER_NOTE}
+                  </Text>
+                </div>
+              )}
+
               {fullBatchError && (
                 <Alert
                   className="mb-3"
@@ -1884,10 +2012,11 @@ export default function AaExit() {
                         balance a later one still expects to find.
                       </p>
                       <p className="mb-0">
-                        &ldquo;Dry-run each item alone&rdquo; tells the two
-                        causes apart: an item that already fails on its own is
-                        stuck, while items that only fail together are asking
-                        for the same balance.
+                        Or use &ldquo;Send one item at a time&rdquo; below: each
+                        item gets its own signature and its own preflight, so a
+                        broken one is named and skipped instead of blocking the
+                        rest. &ldquo;Dry-run each item alone&rdquo; does the
+                        same diagnosis without sending anything.
                       </p>
                     </div>
                   }
@@ -2029,28 +2158,46 @@ export default function AaExit() {
               {/* Only a fresh scan may be run wholesale: after a run, rows that
                 succeeded are done, and re-sending them would ask for balances
                 that have already left the wallet. Individual rows retry above. */}
-              <Button
-                className="mt-4 w-full"
-                danger
-                type="primary"
-                loading={phase === "running" && retrying === null}
-                disabled={
-                  phase !== "ready" ||
-                  movableRows.length === 0 ||
-                  !recipient ||
-                  recipientError ||
-                  !confirmed ||
-                  // Nothing passed preflight, so there is no batch to sign
-                  (planRef.current?.batches || []).length === 0
-                }
-                onClick={handleRun}
-              >
-                {selecting
-                  ? `Exit ${selectedCount} selected on ${
-                      CHAIN_LABEL[chainName] || chainName
-                    }`
-                  : `Exit everything on ${CHAIN_LABEL[chainName] || chainName}`}
-              </Button>
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Button
+                  danger
+                  type="primary"
+                  loading={phase === "running" && retrying === null}
+                  disabled={
+                    !canSubmit ||
+                    // Nothing passed preflight, so there is no batch to sign
+                    (planRef.current?.batches || []).length === 0
+                  }
+                  onClick={handleRun}
+                >
+                  {selecting
+                    ? `Exit ${selectedCount} selected on ${
+                        CHAIN_LABEL[chainName] || chainName
+                      }`
+                    : `Exit everything on ${
+                        CHAIN_LABEL[chainName] || chainName
+                      }`}
+                </Button>
+                {/* Deliberately does not require a passing plan: a combined batch
+                  that cannot preflight is exactly when this is the only way out */}
+                <Button
+                  danger
+                  loading={phase === "running" && retrying === null}
+                  disabled={!canSubmit}
+                  onClick={handleRunOneAtATime}
+                >
+                  Send one item at a time ({oneAtATimeCount} signature
+                  {oneAtATimeCount === 1 ? "" : "s"})
+                </Button>
+              </div>
+
+              <Paragraph type="secondary" className="text-xs mt-2 mb-0">
+                One item at a time asks for a signature per row: each position
+                keeps its own approve → unstake → transfer atomic, loose wallet
+                tokens still go ten to a transaction, and an item that fails its
+                own preflight is marked with the real reason and skipped instead
+                of stopping the rest.
+              </Paragraph>
 
               <Paragraph type="secondary" className="text-xs mt-3 mb-0">
                 Scan dry-runs the exact fixed calldata without broadcasting it.
