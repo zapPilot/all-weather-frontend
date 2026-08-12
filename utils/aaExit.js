@@ -587,6 +587,22 @@ export async function isPendingAaExitUserOpDead({
   }
 }
 
+/**
+ * What a new submission may do about a pending sponsored UserOp.
+ * Only a record the chain has proven never executed may be discarded: "live" is
+ * still in flight, "landed" did execute and the receipt poller has to be left to
+ * report it, and "unknown" cannot be told apart from either of those. Clearing any
+ * of them would let a second submission hand the same assets over twice.
+ */
+export const aaExitPendingUserOpAction = (liveness) => {
+  if (liveness === "no-pending") {
+    return { proceed: true, clear: false, recovered: null };
+  }
+  return liveness === "dead"
+    ? { proceed: true, clear: true, recovered: "expired" }
+    : { proceed: false, clear: false, recovered: null };
+};
+
 const readStoredAaExitWalletTokens = (key, now) => {
   const storage = aaExitWalletTokenStorage();
   if (!storage) return null;
