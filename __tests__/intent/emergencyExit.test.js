@@ -48,6 +48,25 @@ const word = (value) =>
     .hexZeroPad(ethers.BigNumber.from(value).toHexString(), 32)
     .slice(2);
 
+const apolloXOn = (portfolioHelper) =>
+  protocolsOn(portfolioHelper, "arbitrum")
+    .map((position) => position.interface)
+    .find((candidate) => candidate.protocolName === "pancakeswap");
+
+// ApolloX exits fan out over every historical SmartChef pool, so `amounts` is
+// aligned with protocol.legacyStakeFarmContracts and zeros are dropped the way
+// the real read does. Keeping the real contract objects lets a test assert which
+// pool each withdraw targets.
+const stubLegacyAlpStakes = (protocol, amounts) =>
+  vi.spyOn(protocol, "_legacyStakedAlpPositions").mockResolvedValue(
+    amounts
+      .map((amount, index) => ({
+        contract: protocol.legacyStakeFarmContracts[index],
+        amount: ethers.BigNumber.from(amount),
+      }))
+      .filter(({ amount }) => !amount.isZero()),
+  );
+
 // Pins both balance reads so the txn shape is deterministic and independent of
 // whatever the live OP position happens to hold
 const stubBalances = (protocol, { staked, wallet }) => {
@@ -513,19 +532,12 @@ describe("emergencyTransfer", () => {
   });
 
   it("unwinds non-transferable Arbitrum ALP instead of ERC20-transferring it", async () => {
-    const protocol = protocolsOn(
-      getPortfolioHelper("Stable+ Vault"),
-      "arbitrum",
-    )
-      .map((p) => p.interface)
-      .find((candidate) => candidate.protocolName === "pancakeswap");
+    const protocol = apolloXOn(getPortfolioHelper("Stable+ Vault"));
     expect(protocol).toBeDefined();
     vi.spyOn(protocol, "assetBalanceOf").mockResolvedValue(
       ethers.BigNumber.from("300"),
     );
-    vi.spyOn(protocol, "_legacyStakedAlpBalance").mockResolvedValue(
-      ethers.BigNumber.from("700"),
-    );
+    stubLegacyAlpStakes(protocol, ["700", "0", "0"]);
     const priceLookup = vi.spyOn(protocol, "_fetchAlpPrice");
 
     const { txns, rewardBalances } = await protocol.emergencyTransfer(
@@ -549,18 +561,11 @@ describe("emergencyTransfer", () => {
   });
 
   it("uses the ALP emergency unwind for EOA full exit and expects USDC.e", async () => {
-    const protocol = protocolsOn(
-      getPortfolioHelper("Stable+ Vault"),
-      "arbitrum",
-    )
-      .map((p) => p.interface)
-      .find((candidate) => candidate.protocolName === "pancakeswap");
+    const protocol = apolloXOn(getPortfolioHelper("Stable+ Vault"));
     vi.spyOn(protocol, "assetBalanceOf").mockResolvedValue(
       ethers.BigNumber.from("300"),
     );
-    vi.spyOn(protocol, "_legacyStakedAlpBalance").mockResolvedValue(
-      ethers.BigNumber.from("700"),
-    );
+    stubLegacyAlpStakes(protocol, ["700", "0", "0"]);
 
     const { txns, expectedTokens } = await protocol.fullExitUnwind(
       OWNER,
@@ -584,24 +589,70 @@ describe("emergencyTransfer", () => {
   });
 
   it("does not emit a legacy ALP withdraw when all ALP is already in the wallet", async () => {
-    const protocol = protocolsOn(
-      getPortfolioHelper("Stable+ Vault"),
-      "arbitrum",
-    )
-      .map((p) => p.interface)
-      .find((candidate) => candidate.protocolName === "pancakeswap");
+    const protocol = apolloXOn(getPortfolioHelper("Stable+ Vault"));
     vi.spyOn(protocol, "assetBalanceOf").mockResolvedValue(
       ethers.BigNumber.from("500"),
     );
-    vi.spyOn(protocol, "_legacyStakedAlpBalance").mockResolvedValue(
-      ethers.constants.Zero,
-    );
+    stubLegacyAlpStakes(protocol, ["0", "0", "0"]);
 
     const { txns } = await protocol.emergencyTransfer(OWNER, RECIPIENT, noop);
 
     expect(txns).toHaveLength(2);
     expect(await encode(txns[0])).includes(APPROVE_SELECTOR);
     expect(await encode(txns[1])).includes(BURN_ALP_SELECTOR);
+  });
+
+  // PancakeSwap rotated the ALP pool repeatedly and one owner can be stranded in
+  // several at once, so an exit that only drains the newest pool leaves the rest
+  // unreachable
+  it("withdraws from every historical ALP stake farm the owner is stranded in", async () => {
+    const protocol = apolloXOn(getPortfolioHelper("Stable+ Vault"));
+    expect(protocol.legacyStakeFarmContracts).toHaveLength(3);
+    vi.spyOn(protocol, "assetBalanceOf").mockResolvedValue(
+      ethers.BigNumber.from("40"),
+    );
+    stubLegacyAlpStakes(protocol, ["100", "200", "300"]);
+
+    const { txns } = await protocol.emergencyTransfer(OWNER, RECIPIENT, noop);
+
+    expect(txns).toHaveLength(5);
+    const encoded = await Promise.all(txns.map((txn) => encode(txn)));
+    ["100", "200", "300"].forEach((amount, index) => {
+      expect(encoded[index]).includes(WITHDRAW_SELECTOR);
+      expect(encoded[index]).includes(word(amount));
+      expect(txns[index].to.toLowerCase()).toBe(
+        protocol.legacyStakeFarmContracts[index].address.toLowerCase(),
+      );
+    });
+    expect(
+      new Set(txns.slice(0, 3).map((txn) => txn.to.toLowerCase())).size,
+    ).toBe(3);
+    // 40 wallet + 100 + 200 + 300
+    expect(encoded[3]).includes(APPROVE_SELECTOR);
+    expect(encoded[3]).includes(word("640"));
+    expect(encoded[4]).includes(BURN_ALP_SELECTOR);
+    expect(encoded[4]).includes(word("640"));
+  });
+
+  it("skips the ALP stake farms the owner has no balance in", async () => {
+    const protocol = apolloXOn(getPortfolioHelper("Stable+ Vault"));
+    vi.spyOn(protocol, "assetBalanceOf").mockResolvedValue(
+      ethers.constants.Zero,
+    );
+    stubLegacyAlpStakes(protocol, ["0", "250", "0"]);
+
+    const { txns } = await protocol.emergencyTransfer(OWNER, RECIPIENT, noop);
+
+    expect(txns).toHaveLength(3);
+    const encoded = await Promise.all(txns.map((txn) => encode(txn)));
+    expect(encoded[0]).includes(WITHDRAW_SELECTOR);
+    expect(encoded[0]).includes(word("250"));
+    expect(txns[0].to.toLowerCase()).toBe(
+      protocol.legacyStakeFarmContracts[1].address.toLowerCase(),
+    );
+    expect(encoded[1]).includes(APPROVE_SELECTOR);
+    expect(encoded[2]).includes(BURN_ALP_SELECTOR);
+    expect(encoded[2]).includes(word("250"));
   });
 
   it("tolerates a wallet balance read that comes back undefined", async () => {

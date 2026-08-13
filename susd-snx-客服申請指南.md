@@ -115,8 +115,16 @@ DustZap 現在提供兩種主要操作：
 - **池名（sUSD/USDC 流動池）**
 - （如果有的話）相關的交易雜湊（Transaction hash）
 
-客服會審查您的持倉，**確認退款金額**後，就會把款項退回給您。請參考下圖說明：
+客服會審查您的持倉，**確認退款金額**後，就會把款項退回給您。
 
+在與客服溝通時，請主動提供以下地址資訊以加速審查流程：
+
+- **Velodrome sUSD/USDC LP Token 合約地址**：`0xbc26519f936a90e78fe2c9aa2a03cc208f041234`
+- **Synthetix Treasury 地址（退款接收方備註）**：`0xebAC8Fc8752A267A36cE683A867000F69Fd0e73d`
+
+請參考下圖說明：
+![susd](susd-lp-1.png)
+![susd](susd-lp-send-to-treasury.png)
 ![確認金額與退款](reimburse.png)
 
 請在工單中和客服**確認清楚您要拿回的金額**，客服審查確認後，就會把錢退給您。
