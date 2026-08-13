@@ -13,6 +13,18 @@ import BaseProtocol from "../BaseProtocol.js";
 import SmartChefInitializable from "../../lib/contracts/PancakeSwap/SmartChefInitializable.json" assert { type: "json" };
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
+
+// PancakeSwap rotated the ALP SmartChef pool roughly weekly, and every rotation
+// stranded whatever was still staked in the previous one. All three addresses
+// are verified on-chain to stake ALP (0xbc76...d9c9) and reward ARB, and a
+// single owner can hold a balance in more than one of them at the same time, so
+// an exit has to read all of them. Newest first.
+const LEGACY_STAKE_FARM_ADDRESSES = [
+  "0xD2e71125ec0313874d578454E28086fba7444c0c",
+  "0xaA0DE632A4071642d72Ceb03577F5534ea196927",
+  "0x97E3384447B52A63374EBA93cb36e02a20633926",
+];
+
 export class BaseApolloX extends BaseProtocol {
   constructor(chain, chaindId, symbolList, mode, customParams) {
     super(chain, chaindId, symbolList, mode, customParams);
@@ -32,13 +44,17 @@ export class BaseApolloX extends BaseProtocol {
       chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: ApolloXABI,
     });
-    this.stakeFarmContract = getContract({
-      client: THIRDWEB_CLIENT,
-      // PancakeSwap Stake would change this address from time to time
-      address: "0xD2e71125ec0313874d578454E28086fba7444c0c",
-      chain: CHAIN_ID_TO_CHAIN[this.chainId],
-      abi: SmartChefInitializable,
-    });
+    this.legacyStakeFarmContracts = LEGACY_STAKE_FARM_ADDRESSES.map((address) =>
+      getContract({
+        client: THIRDWEB_CLIENT,
+        address,
+        chain: CHAIN_ID_TO_CHAIN[this.chainId],
+        abi: SmartChefInitializable,
+      }),
+    );
+    // The newest pool, kept because BaseProtocol requires the field. Exits walk
+    // legacyStakeFarmContracts instead.
+    this.stakeFarmContract = this.legacyStakeFarmContracts[0];
     this._checkIfParamsAreSet();
 
     this.hardcodedProtocolFee = 0.003; // 0.3%
@@ -170,55 +186,65 @@ export class BaseApolloX extends BaseProtocol {
     // return [[claimTxn], pendingRewards];
   }
 
-  // Arbitrum ALP is intentionally non-transferable between wallets. Some old
-  // positions may also still sit in the historical Pancake SmartChef that this
-  // integration used before staking rewards were removed. Emergency exit must
-  // therefore unwind the position instead of building an ERC20 transfer:
-  // legacy withdraw (when needed) -> approve -> burn ALP, with the underlying
-  // sent straight to the user's recipient address.
-  async _legacyStakedAlpBalance(owner) {
-    try {
-      const stakeFarmContractInstance = new ethers.Contract(
-        this.stakeFarmContract.address,
-        SmartChefInitializable,
-        PROVIDER(this.chain),
-      );
-      const userInfo =
-        await stakeFarmContractInstance.functions.userInfo(owner);
-      return ethers.BigNumber.from(userInfo.amount || userInfo[0] || 0);
-    } catch (error) {
-      logger.warn(
-        "ApolloX emergency exit: could not read legacy Pancake stake; continuing with wallet ALP",
-        error,
-      );
-      return ethers.constants.Zero;
-    }
+  // Arbitrum ALP is intentionally non-transferable between wallets. Old
+  // positions may also still sit in any of the historical Pancake SmartChef
+  // pools this integration used before staking rewards were removed. Emergency
+  // exit must therefore unwind the position instead of building an ERC20
+  // transfer: one legacy withdraw per funded pool -> approve -> burn ALP, with
+  // the underlying sent straight to the user's recipient address.
+  async _legacyStakedAlpPositions(owner) {
+    const positions = await Promise.all(
+      // A pool that fails to read must not hide the pools that did read, so
+      // each one is tolerated on its own.
+      this.legacyStakeFarmContracts.map(async (contract) => {
+        try {
+          const stakeFarmContractInstance = new ethers.Contract(
+            contract.address,
+            SmartChefInitializable,
+            PROVIDER(this.chain),
+          );
+          const userInfo =
+            await stakeFarmContractInstance.functions.userInfo(owner);
+          return {
+            contract,
+            amount: ethers.BigNumber.from(userInfo.amount || userInfo[0] || 0),
+          };
+        } catch (error) {
+          logger.warn(
+            `ApolloX emergency exit: could not read legacy Pancake stake at ${contract.address}; continuing with the remaining pools`,
+            error,
+          );
+          return { contract, amount: ethers.constants.Zero };
+        }
+      }),
+    );
+    return positions.filter((position) => !position.amount.isZero());
   }
 
   async emergencyTransfer(owner, recipient, updateProgress, options = {}) {
-    const [walletBalance, stakedBalance] = await Promise.all([
+    const [walletBalance, stakedPositions] = await Promise.all([
       options.skipWalletBalance
         ? ethers.constants.Zero
         : this.assetBalanceOf(owner),
-      this._legacyStakedAlpBalance(owner),
+      this._legacyStakedAlpPositions(owner),
     ]);
     const walletAlp = ethers.BigNumber.from(walletBalance || 0);
-    const stakedAlp = ethers.BigNumber.from(stakedBalance || 0);
+    const stakedAlp = stakedPositions.reduce(
+      (total, position) => total.add(position.amount),
+      ethers.constants.Zero,
+    );
     const totalAlp = walletAlp.add(stakedAlp);
     if (totalAlp.isZero()) {
       return { txns: [], rewardBalances: [] };
     }
 
-    const txns = [];
-    if (!stakedAlp.isZero()) {
-      txns.push(
-        prepareContractCall({
-          contract: this.stakeFarmContract,
-          method: "withdraw",
-          params: [stakedAlp],
-        }),
-      );
-    }
+    const txns = stakedPositions.map((position) =>
+      prepareContractCall({
+        contract: position.contract,
+        method: "withdraw",
+        params: [position.amount],
+      }),
+    );
 
     txns.push(
       approve(
