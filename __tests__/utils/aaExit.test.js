@@ -130,6 +130,51 @@ describe("collectExitProtocols", () => {
   it("returns nothing for a chain no vault covers", () => {
     expect(collectExitProtocols("metis")).toEqual([]);
   });
+
+  // Walking the vault strategies is the only position discovery this page has —
+  // Debank is consulted for loose ERC20s alone — so a pool commented out of or
+  // deleted from a strategy leaves funded positions unreachable. pid 45 was
+  // commented out with ~$3.2k still in it, pid 53 was the whole BTC Vault.
+  it("includes staked positions no vault strategy lists any more", () => {
+    const byPid = new Map(
+      collectExitProtocols("arbitrum")
+        .filter((protocol) => protocol.interface.pidOfEquilibria !== undefined)
+        .map((protocol) => [protocol.interface.pidOfEquilibria, protocol]),
+    );
+
+    expect(byPid.get(45)?.interface.assetContract.address.toLowerCase()).toBe(
+      "0xa877a0e177b54a37066c1786f91a1dab68f094af",
+    );
+    expect(byPid.get(53)?.interface.assetContract.address.toLowerCase()).toBe(
+      "0x8cab5fd029ae2fbf28c53e965e4194c7260adf0c",
+    );
+  });
+
+  // BaseVelodromeV3._getAllNftIDs filters by token pair and tick range, so unlike
+  // Camelot's manager-wide sweep the position still in EthVault cannot reach this
+  // one even though both share an NFT manager
+  it("includes a retired aerodrome v3 range the live position cannot sweep", () => {
+    const retired = collectExitProtocols("base").find(
+      (protocol) =>
+        protocol.interface.customParams?.tickers?.tickLower === 1411,
+    );
+
+    expect(retired).toBeDefined();
+    expect(retired.interface.assetIsNFT).toBe(true);
+    expect(retired.interface.customParams.guageAddress.toLowerCase()).toBe(
+      "0x4197186d3d65f694018ae4b80355225ce1dd64ad",
+    );
+  });
+
+  it("keeps a retired position off the chains it never lived on", () => {
+    ["base", "op"].forEach((chainName) =>
+      expect(
+        collectExitProtocols(chainName).some((protocol) =>
+          [45, 53].includes(protocol.interface.pidOfEquilibria),
+        ),
+      ).toBe(false),
+    );
+  });
 });
 
 describe("debankChainCode", () => {
