@@ -266,6 +266,54 @@ describe("emergencyTransfer", () => {
     expect(data).includes(word("500"));
   });
 
+  it.each([
+    [44, "0x279b44E48226d40Ec389129061cb0B56C5c09e46"],
+    [45, "0xa877a0E177b54A37066c1786F91a1DAb68F094AF"],
+    [47, "0xcB471665BF23B2Ac6196D84D947490fd5571215f"],
+  ])(
+    "transfers loose Equilibria pid %s LP when the historical staking read fails",
+    async (pid, marketAddress) => {
+      const protocol = collectExitProtocols("arbitrum").find(
+        (entry) => entry.interface.pidOfEquilibria === pid,
+      ).interface;
+      vi.spyOn(protocol, "assetBalanceOf").mockResolvedValue(
+        ethers.BigNumber.from("500"),
+      );
+      vi.spyOn(protocol, "stakeBalanceOf").mockRejectedValue(
+        new Error("historical reward pool unavailable"),
+      );
+
+      const { txns, rewardBalances } = await protocol.emergencyTransfer(
+        OWNER,
+        RECIPIENT,
+        noop,
+      );
+
+      expect(txns).toHaveLength(1);
+      expect(txns[0].to.toLowerCase()).toBe(marketAddress.toLowerCase());
+      const data = await encode(txns[0]);
+      expect(data).includes(TRANSFER_SELECTOR);
+      expect(data).includes(word("500"));
+      expect(rewardBalances).toEqual([]);
+    },
+  );
+
+  it("still reports an Equilibria staking read failure when no loose LP can be confirmed", async () => {
+    const protocol = collectExitProtocols("arbitrum").find(
+      (entry) => entry.interface.pidOfEquilibria === 45,
+    ).interface;
+    vi.spyOn(protocol, "assetBalanceOf").mockResolvedValue(
+      ethers.constants.Zero,
+    );
+    vi.spyOn(protocol, "stakeBalanceOf").mockRejectedValue(
+      new Error("historical reward pool unavailable"),
+    );
+
+    await expect(
+      protocol.emergencyTransfer(OWNER, RECIPIENT, noop),
+    ).rejects.toThrow("historical reward pool unavailable");
+  });
+
   it("does not emit withdraw(0) when EOA full exit only finds wallet LP", async () => {
     const [protocol] = protocolsOn(
       getPortfolioHelper("Velodrome Vault"),
