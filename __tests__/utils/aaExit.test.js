@@ -150,6 +150,81 @@ describe("collectExitProtocols", () => {
     );
   });
 
+  it("covers the retired direct PT and common Arbitrum Aave V3 positions", () => {
+    const protocols = collectExitProtocols("arbitrum");
+    const assetAddresses = new Set(
+      protocols.map((entry) =>
+        entry.interface.assetContract?.address?.toLowerCase(),
+      ),
+    );
+
+    expect(assetAddresses).toContain(
+      "0x2be6fab4d1408e7ad6ad91ce7b77fa2a7670782f",
+    );
+    expect(assetAddresses).toContain(
+      "0x724dc807b04555b71ed48a6896b6f41593b8c637",
+    );
+    expect(assetAddresses).toContain(
+      "0xe50fa9b3c56ffb159cb0fca61f5c9d750e8128c8",
+    );
+  });
+
+  it("locks historical Arbitrum staking coverage into the registry", () => {
+    const protocols = collectExitProtocols("arbitrum").map(
+      (entry) => entry.interface,
+    );
+    const sortedNumbers = (values) => [...values].sort((a, b) => a - b);
+
+    expect(
+      sortedNumbers(
+        protocols
+          .map((protocol) => protocol.pidOfEquilibria)
+          .filter((pid) => pid !== undefined),
+      ),
+    ).toEqual([7, 8, 43, 44, 45, 47, 48, 52, 53, 55, 56, 57, 59]);
+    expect(
+      sortedNumbers(
+        protocols
+          .filter((protocol) => protocol.protocolName === "aura")
+          .map((protocol) => protocol.customParams.pid),
+      ),
+    ).toEqual([69, 93, 94]);
+    expect(
+      sortedNumbers(
+        protocols
+          .filter((protocol) => protocol.protocolName === "convex")
+          .map((protocol) => protocol.pid),
+      ),
+    ).toEqual([28, 34, 36]);
+  });
+
+  it("locks Base Aave and Moonwell exit assets into the registry", () => {
+    const protocols = collectExitProtocols("base").map(
+      (entry) => entry.interface,
+    );
+    const assetsFor = (protocolName) =>
+      new Set(
+        protocols
+          .filter((protocol) => protocol.protocolName === protocolName)
+          .map((protocol) => protocol.assetContract.address.toLowerCase()),
+      );
+
+    expect(assetsFor("aave")).toEqual(
+      new Set([
+        "0x4e65fe4dba92790696d040ac24aa414708f5c0ab",
+        "0xd4a0e0b9149bcee3c920d2e00b5de09138fd8bb7",
+      ]),
+    );
+    expect(assetsFor("moonwell")).toEqual(
+      new Set([
+        "0xb682c840b5f4fc58b20769e691a6fa1305a501a2",
+        "0x73b06d8d18de422e269645eace15400de7462417",
+        "0xedc817a28e8b93b03976fbd4a3ddbc9f7d176c22",
+        "0x627fe393bc6edda28e99ae648fd6ff362514304b",
+      ]),
+    );
+  });
+
   // BaseVelodromeV3._getAllNftIDs filters by token pair and tick range, so unlike
   // Camelot's manager-wide sweep the position still in EthVault cannot reach this
   // one even though both share an NFT manager

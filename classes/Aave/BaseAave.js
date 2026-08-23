@@ -1,9 +1,8 @@
 import AToken from "../../lib/contracts/Aave/Atoken.json" assert { type: "json" };
 import L2PoolInstance from "../../lib/contracts/Aave/L2PoolInstance.json" assert { type: "json" };
-import { base } from "thirdweb/chains";
 import axios from "axios";
 import { ethers } from "ethers";
-import { PROVIDER } from "../../utils/general.js";
+import { CHAIN_ID_TO_CHAIN, PROVIDER } from "../../utils/general.js";
 import axiosRetry from "axios-retry";
 import { getContract, prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb.js";
@@ -20,19 +19,19 @@ export class BaseAave extends BaseProtocol {
     this.assetContract = getContract({
       client: THIRDWEB_CLIENT,
       address: customParams.assetAddress,
-      chain: base,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: AToken,
     });
     this.protocolContract = getContract({
       client: THIRDWEB_CLIENT,
       address: customParams.protocolAddress,
-      chain: base,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: L2PoolInstance,
     });
     this.stakeFarmContract = getContract({
       client: THIRDWEB_CLIENT,
       address: customParams.protocolAddress,
-      chain: base,
+      chain: CHAIN_ID_TO_CHAIN[this.chainId],
       abi: L2PoolInstance,
     });
     this.assetContractInstance = new ethers.Contract(

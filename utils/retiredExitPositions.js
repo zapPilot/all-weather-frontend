@@ -24,6 +24,7 @@
 // home instead of being commented out and forgotten.
 
 import { BaseEquilibria } from "../classes/Pendle/BaseEquilibria";
+import { BaseAave } from "../classes/Aave/BaseAave";
 import { BaseMoonwell } from "../classes/Moonwell/BaseMoonwell";
 import { BasePendlePT } from "../classes/Pendle/BasePendlePT";
 import { BaseVelodrome } from "../classes/Velodrome/BaseVelodrome";
@@ -44,6 +45,38 @@ const AERODROME_REWARDS = [
 // Thunks rather than instances: one entry whose constructor throws must not take
 // the rest of the exit down with it, which needs a per-entry try/catch.
 const RETIRED_POSITION_BUILDERS = [
+  // Aave V3 Arbitrum positions are not part of any production vault strategy.
+  // Keep the common native-USDC and WETH aTokens in the exit registry; raw
+  // wallet discovery in eoaFullExit additionally handles any other V3 aToken.
+  () =>
+    new BaseAave("arbitrum", 42161, ["usdc"], "single", {
+      symbolOfBestTokenToZapInOut: "usdc",
+      zapInOutTokenAddress: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+      assetAddress: "0x724dc807b04555b71ed48a6896b6F41593b8C637",
+      protocolAddress: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      assetDecimals: 6,
+    }),
+  () =>
+    new BaseAave("arbitrum", 42161, ["weth"], "single", {
+      symbolOfBestTokenToZapInOut: "weth",
+      zapInOutTokenAddress: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+      assetAddress: "0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8",
+      protocolAddress: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      assetDecimals: 18,
+    }),
+  // Direct PT held in a wallet, distinct from the pid 45 Equilibria market LP.
+  // If Pendle no longer builds a redemption route, BaseProtocol's safe fallback
+  // leaves this PT untouched and reports it for manual handling.
+  () =>
+    new BasePendlePT("arbitrum", 42161, ["pt gusdc 26dec2024"], "single", {
+      marketAddress: "0xa877a0E177b54A37066c1786F91a1DAb68F094AF",
+      assetAddress: "0x2be6fab4d1408e7ad6ad91ce7b77fa2a7670782f",
+      ytAddress: "0x03577ffa91edb93ac3aee081efbe6f323da949e1",
+      assetDecimals: 6,
+      symbolOfBestTokenToZapOut: "usdc",
+      bestTokenAddressToZapOut: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+      decimalOfBestTokenToZapOut: 6,
+    }),
   // BTC Vault's entire position (weight 1) from 2024-10-31 until 69e48b55
   // deleted it on 2025-06-17. Staked in the Equilibria booster, so the loose
   // ERC20 sweep cannot reach it.

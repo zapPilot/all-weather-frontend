@@ -4,6 +4,7 @@ import { encode } from "thirdweb";
 import { optimism } from "thirdweb/chains";
 import { getPortfolioHelper } from "../../utils/thirdwebSmartWallet.ts";
 import { fetchWalletTokens } from "../../utils/dustConversion";
+import { collectExitProtocols } from "../../utils/aaExit";
 
 vi.mock("../../utils/dustConversion", async (importOriginal) => ({
   ...(await importOriginal()),
@@ -670,6 +671,36 @@ describe("emergencyTransfer", () => {
 
     expect(txns).toHaveLength(2);
     expect(await encode(txns[1])).includes(word("1000"));
+  });
+});
+
+describe("fullExitUnwind safe fallback", () => {
+  it("unstakes an expired position and does not expose its LP token to swaps", async () => {
+    const protocol = collectExitProtocols("arbitrum").find(
+      (entry) => entry.interface.pidOfEquilibria === 45,
+    ).interface;
+    vi.spyOn(protocol, "_unstake").mockResolvedValue([
+      ["unstake-expired-lp"],
+      ethers.BigNumber.from("1000"),
+    ]);
+    vi.spyOn(protocol, "assetBalanceOf").mockResolvedValue(
+      ethers.constants.Zero,
+    );
+    vi.spyOn(protocol, "customWithdrawAndClaim").mockRejectedValue(
+      new Error("Pendle route unavailable"),
+    );
+
+    const result = await protocol.fullExitUnwind(OWNER, 1, {}, noop);
+
+    expect(result.txns).toEqual(["unstake-expired-lp"]);
+    expect(result.expectedTokens).toEqual([]);
+    expect(result.keptTokens).toEqual([
+      expect.objectContaining({
+        address: protocol.assetContract.address,
+        keptInWallet: true,
+      }),
+    ]);
+    expect(result.safeExit).toBe(true);
   });
 });
 

@@ -26,7 +26,11 @@ import {
   useSendAndConfirmCalls,
   useSwitchActiveWalletChain,
 } from "thirdweb/react";
-import { getTokens } from "../../utils/dustConversion";
+import {
+  fetchWalletTokens,
+  getTokens,
+  isNeverSwapToken,
+} from "../../utils/dustConversion";
 import { transformToDebankChainName } from "../../utils/chainHelper";
 import { handleDustConversion } from "../../utils/dustConversion";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
@@ -655,6 +659,7 @@ export default function DustZap() {
   const [aggregateTradingLoss, setAggregateTradingLoss] = useState(0);
   const [fullExitPhase, setFullExitPhase] = useState("");
   const [fullExitFailures, setFullExitFailures] = useState([]);
+  const [fullExitFallbacks, setFullExitFallbacks] = useState([]);
 
   const statusMessagesRef = useRef([]);
 
@@ -774,10 +779,21 @@ export default function DustZap() {
   }, [account?.address, activeChain?.name]);
 
   // =============== COMPUTED VALUES ===============
+  const neverSwapTokens = useMemo(() => {
+    const baseFiltered = getFilteredAndSortedTokens(tokens);
+    return baseFiltered.filter((token) =>
+      isNeverSwapToken(activeChain?.id, token.id || token.address),
+    );
+  }, [tokens, activeChain?.id]);
+
   const filteredAndSortedTokens = useMemo(() => {
     const baseFiltered = getFilteredAndSortedTokens(tokens);
-    return baseFiltered.filter((token) => !deletedTokenIds.has(token.id));
-  }, [tokens, deletedTokenIds]);
+    return baseFiltered.filter(
+      (token) =>
+        !deletedTokenIds.has(token.id) &&
+        !isNeverSwapToken(activeChain?.id, token.id || token.address),
+    );
+  }, [tokens, deletedTokenIds, activeChain?.id]);
 
   const totalValue = useMemo(
     () =>
@@ -892,6 +908,7 @@ export default function DustZap() {
     setShowProgressCard(true);
     setFetchingSwapRoutes(true);
     setFullExitFailures([]);
+    setFullExitFallbacks([]);
 
     const priceService = new PriceService(process.env.NEXT_PUBLIC_API_URL);
     const fetchedEthPrice = await priceService.fetchPrice("eth", {
@@ -911,11 +928,23 @@ export default function DustZap() {
 
       if (closePositions) {
         setFullExitPhase("Scanning protocol positions…");
+        let rawWalletTokens = tokens;
+        try {
+          rawWalletTokens = await fetchWalletTokens(
+            transformToDebankChainName(activeChain.name.toLowerCase()),
+            account.address,
+          );
+        } catch (rawTokenError) {
+          logger.warn(
+            "EOA position exit: raw wallet discovery failed; continuing with loaded tokens",
+            rawTokenError,
+          );
+        }
         const fullExitPlan = await buildEoaFullExitPlan({
           chainName,
           owner: account.address,
           slippage,
-          walletTokens: tokens,
+          walletTokens: rawWalletTokens,
           ethPrice: fetchedEthPrice,
           onProgress: ({
             completed,
@@ -933,6 +962,7 @@ export default function DustZap() {
         preparedPositionCount = fullExitPlan.groups.length;
         const runtimeFailures = [];
         setFullExitFailures(fullExitPlan.failures);
+        setFullExitFallbacks(fullExitPlan.fallbacks);
         conversionPriceMapping = {
           ...fullExitPlan.tokenPricesMappingTable,
           eth: fetchedEthPrice,
@@ -1250,6 +1280,39 @@ export default function DustZap() {
               message="Protocol Position Exit"
               description="The position button is separate from the wallet-token Dust Zap. It closes supported LP, staking, vault, and protocol positions, then swaps only the token balance added by those unwinds to ETH. Existing loose wallet tokens are left untouched."
               type="info"
+              showIcon
+              className="mb-8"
+            />
+          )}
+
+          {neverSwapTokens.length > 0 && (
+            <Alert
+              message="Claimable asset kept in wallet"
+              description={`${neverSwapTokens
+                .map((token) => getTokenSymbol(token))
+                .join(", ")} will not be swapped by DustZap.`}
+              type="warning"
+              showIcon
+              className="mb-8"
+            />
+          )}
+
+          {fullExitFallbacks.length > 0 && (
+            <Alert
+              message={`${fullExitFallbacks.length} position${
+                fullExitFallbacks.length === 1 ? "" : "s"
+              } kept in a safe form`}
+              description={fullExitFallbacks
+                .map(
+                  (fallback) =>
+                    `${fallback.label}: ${
+                      fallback.safeExit
+                        ? "unstaked position token kept in wallet"
+                        : "left untouched for manual handling"
+                    }`,
+                )
+                .join(" • ")}
+              type="warning"
               showIcon
               className="mb-8"
             />

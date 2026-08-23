@@ -660,6 +660,74 @@ export default class BaseProtocol extends BaseUniswap {
     }
   }
 
+  _fullExitPositionToken() {
+    const address = this.assetContract?.address;
+    if (!address || !ethers.utils.isAddress(address)) return null;
+    const symbol = String(
+      this.symbolList?.join("-") || "position",
+    ).toLowerCase();
+    return {
+      id: address,
+      address,
+      symbol,
+      optimized_symbol: symbol,
+      decimals: Number(this.assetDecimals),
+      keptInWallet: true,
+    };
+  }
+
+  // Build the safest possible exit when a protocol's downstream redemption or
+  // liquidity route cannot be prepared. Staked receipt/LP tokens are returned
+  // to the EOA, while already-loose receipt tokens are left untouched. These
+  // tokens are reported separately and are never offered to the swap stage.
+  async safeExitToWallet(
+    owner,
+    updateProgress = () => {},
+    cause,
+    prepared = {},
+  ) {
+    let unstakeTxns = prepared.unstakeTxns;
+    let unstakedAmount = prepared.unstakedAmount;
+    if (!unstakeTxns) {
+      if (this.assetIsNFT) {
+        return {
+          txns: [],
+          expectedTokens: [],
+          keptTokens: [],
+          safeExit: false,
+          fallbackReason:
+            cause?.message || String(cause || "manual exit required"),
+        };
+      }
+      [unstakeTxns, unstakedAmount] =
+        this.mode === "LP"
+          ? await this._unstakeLP(owner, 1, updateProgress)
+          : await this._unstake(owner, 1, updateProgress);
+    }
+
+    const amount = ethers.BigNumber.from(unstakedAmount || 0);
+    const effectiveUnstakeTxns = amount.isZero() ? [] : unstakeTxns || [];
+    const walletBalance = prepared.totalAmount
+      ? ethers.BigNumber.from(prepared.totalAmount)
+      : amount.add((await this.assetBalanceOf(owner)) || 0);
+    const keptToken = walletBalance.isZero()
+      ? null
+      : this._fullExitPositionToken();
+
+    logger.warn(
+      `${this.uniqueId()}: full unwind unavailable; keeping the position token in the wallet`,
+      cause,
+    );
+    return {
+      txns: effectiveUnstakeTxns,
+      expectedTokens: [],
+      keptTokens: keptToken ? [keptToken] : [],
+      safeExit: effectiveUnstakeTxns.length > 0,
+      fallbackReason:
+        cause?.message || String(cause || "full unwind unavailable"),
+    };
+  }
+
   // EOA full exit: turn a protocol position into ordinary wallet tokens, but do
   // not swap them yet. The caller waits for these txns to confirm, re-reads the
   // actual wallet balances, then builds swaps from those balances. This avoids
@@ -782,46 +850,54 @@ export default class BaseProtocol extends BaseUniswap {
 
     let withdrawTxns = [];
     let expectedTokens = [];
-    if (this.mode === "single") {
-      const [protocolTxns, symbol, address, decimals] =
-        await this.customWithdrawAndClaim(
-          owner,
-          totalAmount,
-          slippage,
-          tokenPricesMappingTable,
-          updateProgress,
-        );
-      withdrawTxns = protocolTxns || [];
-      if (address && ethers.utils.isAddress(address)) {
-        expectedTokens.push({
-          id: address,
-          address,
-          symbol: String(symbol || "").toLowerCase(),
-          optimized_symbol: String(symbol || "").toLowerCase(),
-          decimals: Number(decimals),
-        });
+    try {
+      if (this.mode === "single") {
+        const [protocolTxns, symbol, address, decimals] =
+          await this.customWithdrawAndClaim(
+            owner,
+            totalAmount,
+            slippage,
+            tokenPricesMappingTable,
+            updateProgress,
+          );
+        withdrawTxns = protocolTxns || [];
+        if (address && ethers.utils.isAddress(address)) {
+          expectedTokens.push({
+            id: address,
+            address,
+            symbol: String(symbol || "").toLowerCase(),
+            optimized_symbol: String(symbol || "").toLowerCase(),
+            decimals: Number(decimals),
+          });
+        }
+      } else {
+        const [protocolTxns, tokenMetadatas] =
+          await this.customWithdrawLPAndClaim(
+            owner,
+            totalAmount,
+            slippage,
+            tokenPricesMappingTable,
+            updateProgress,
+          );
+        withdrawTxns = protocolTxns || [];
+        expectedTokens = (tokenMetadatas || [])
+          .filter(
+            (metadata) => metadata?.[1] && ethers.utils.isAddress(metadata[1]),
+          )
+          .map(([symbol, address, decimals]) => ({
+            id: address,
+            address,
+            symbol: String(symbol || "").toLowerCase(),
+            optimized_symbol: String(symbol || "").toLowerCase(),
+            decimals: Number(decimals),
+          }));
       }
-    } else {
-      const [protocolTxns, tokenMetadatas] =
-        await this.customWithdrawLPAndClaim(
-          owner,
-          totalAmount,
-          slippage,
-          tokenPricesMappingTable,
-          updateProgress,
-        );
-      withdrawTxns = protocolTxns || [];
-      expectedTokens = (tokenMetadatas || [])
-        .filter(
-          (metadata) => metadata?.[1] && ethers.utils.isAddress(metadata[1]),
-        )
-        .map(([symbol, address, decimals]) => ({
-          id: address,
-          address,
-          symbol: String(symbol || "").toLowerCase(),
-          optimized_symbol: String(symbol || "").toLowerCase(),
-          decimals: Number(decimals),
-        }));
+    } catch (error) {
+      return this.safeExitToWallet(owner, updateProgress, error, {
+        unstakeTxns: effectiveUnstakeTxns,
+        unstakedAmount: unstakedAmountBN,
+        totalAmount,
+      });
     }
 
     const txns = [...effectiveUnstakeTxns, ...withdrawTxns];
@@ -864,7 +940,7 @@ export default class BaseProtocol extends BaseUniswap {
     slippage,
     updateProgress,
   ) {
-    throw new Error("Method 'customDeposit()' must be implemented.", amount);
+    throw new Error("Method 'customDeposit()' must be implemented.");
   }
   async baseWithdrawAndClaim(
     owner,

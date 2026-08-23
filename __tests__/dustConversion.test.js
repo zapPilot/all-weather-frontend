@@ -100,14 +100,15 @@ describe("Dust Conversion Utilities", () => {
       );
 
       // Should filter out:
-      // - USDC, ETH (excluded symbols)
+      // - ETH (excluded symbol)
       // - DUST-TOKEN (contains "-")
       // - AAVE-TOKEN (aave protocol)
       // - SMALL-TOKEN (amount * price < 0.005)
-      // Should include: WBTC, ARB
-      expect(result).toHaveLength(2);
-      expect(result[0].optimized_symbol).toBe("WBTC"); // Higher value, should be first
-      expect(result[1].optimized_symbol).toBe("ARB");
+      // Should include: WBTC, ARB, and the valid USDC balance
+      expect(result).toHaveLength(3);
+      expect(result[0].optimized_symbol).toBe("USDC");
+      expect(result[1].optimized_symbol).toBe("WBTC");
+      expect(result[2].optimized_symbol).toBe("ARB");
     });
 
     it("should handle empty response", async () => {
@@ -311,6 +312,27 @@ describe("Dust Conversion Utilities", () => {
       expect(swap.mock.calls.every((call) => call[15] === providers)).toBe(
         true,
       );
+    });
+
+    it("never builds a swap for denylisted Arbitrum USDX", async () => {
+      const usdx = {
+        optimized_symbol: "USDX",
+        symbol: "USDX",
+        price: 1,
+        amount: 10,
+        decimals: 18,
+        id: "0xb2f30a7c980f052f02563fb518dcc39e6bf38175",
+        raw_amount_hex_str: "0x8ac7230489e80000",
+      };
+
+      await fetchDustConversionRoutes({
+        ...mockParams,
+        tokens: [mockTokens[0], usdx],
+      });
+
+      expect(swap).toHaveBeenCalledTimes(1);
+      expect(swap.mock.calls[0][1]).toBe(42161);
+      expect(swap.mock.calls[0][4]).toBe(mockTokens[0].id);
     });
 
     it("should handle swap failures gracefully", async () => {
@@ -525,8 +547,8 @@ describe("Dust Conversion Utilities", () => {
         handleStatusUpdate: vi.fn(),
       });
 
-      // Should process only ARB (USDC filtered out)
-      expect(result).toHaveLength(1);
+      // Both valid positive-value balances are converted.
+      expect(result).toHaveLength(2);
       expect(result[0]).toHaveProperty("data", "0xswapdata");
       expect(result[0]).toHaveProperty("to", "0xswapcontract");
 
@@ -550,6 +572,7 @@ describe("Dust Conversion Utilities", () => {
           arb: 1.2,
         }),
         expect.any(Function),
+        undefined,
       );
     });
 
