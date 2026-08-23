@@ -179,4 +179,44 @@ describe("EOA full exit planning", () => {
     expect(plan.expectedTokens).toHaveLength(1);
     expect(plan.expectedTokens[0].optimized_symbol).toBe("usdc");
   });
+
+  it("uses a safe unstake fallback and keeps its position token out of swaps", async () => {
+    const positionToken = "0xa877a0E177b54A37066c1786F91a1DAb68F094AF";
+    const broken = protocol(
+      "arbitrum/equilibria/expired",
+      new Error("Pendle route unavailable"),
+    );
+    broken.interface.safeExitToWallet = vi.fn().mockResolvedValue({
+      txns: ["unstake-only"],
+      expectedTokens: [],
+      keptTokens: [
+        {
+          id: positionToken,
+          address: positionToken,
+          symbol: "pendle-lp",
+          optimized_symbol: "pendle-lp",
+          decimals: 18,
+        },
+      ],
+      safeExit: true,
+      fallbackReason: "Pendle route unavailable",
+    });
+
+    const plan = await buildEoaFullExitPlan({
+      chainName: "arbitrum",
+      owner: OWNER,
+      slippage: 1,
+      protocols: [broken],
+    });
+
+    expect(plan.groups[0].txns).toEqual(["unstake-only"]);
+    expect(plan.expectedTokens).toEqual([]);
+    expect(plan.keptTokens[0].address.toLowerCase()).toBe(
+      positionToken.toLowerCase(),
+    );
+    expect(plan.fallbacks).toEqual([
+      expect.objectContaining({ safeExit: true }),
+    ]);
+    expect(plan.failures).toEqual([]);
+  });
 });

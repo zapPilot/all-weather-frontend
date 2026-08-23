@@ -1,9 +1,11 @@
 import { ethers } from "ethers";
 import ERC20_ABI from "../lib/contracts/ERC20.json" assert { type: "json" };
+import AToken from "../lib/contracts/Aave/Atoken.json" assert { type: "json" };
 import { PriceService, TokenPriceBatcher } from "../classes/TokenPriceService";
+import { BaseAave } from "../classes/Aave/BaseAave";
 import { collectExitProtocols, debankChainCode } from "./aaExit";
 import { fetchWalletTokens } from "./dustConversion";
-import { PROVIDER } from "./general";
+import { CHAIN_TO_CHAIN_ID, PROVIDER } from "./general";
 import logger from "./logger";
 
 const noop = () => {};
@@ -39,6 +41,79 @@ const mapInBatches = async (items, batchSize, mapper) => {
   }
   return results;
 };
+
+// Aave receipt tokens are self-describing: POOL() identifies the pool and
+// UNDERLYING_ASSET_ADDRESS() identifies what withdraw() must redeem. Discovering
+// them from the raw wallet token list prevents a deleted vault config from
+// making an otherwise valid Aave V3 position unreachable.
+export async function discoverAaveWalletPositions({
+  chainName,
+  walletTokens = [],
+  protocols = [],
+}) {
+  const chainId = CHAIN_TO_CHAIN_ID[chainName];
+  if (!chainId) return [];
+  const knownAssets = new Set(
+    protocols
+      .filter((entry) => entry.interface?.protocolName === "aave")
+      .map((entry) => entry.interface.assetContract?.address?.toLowerCase())
+      .filter(Boolean),
+  );
+  const candidates = dedupeTokens(walletTokens).filter((token) => {
+    const protocolId = String(token?.protocol_id || "").toLowerCase();
+    const address = token.address.toLowerCase();
+    return protocolId.includes("aave") && !knownAssets.has(address);
+  });
+  const provider = PROVIDER(chainName);
+
+  const discovered = await mapInBatches(
+    candidates,
+    READ_CONCURRENCY,
+    async (token) => {
+      try {
+        const receipt = new ethers.Contract(token.address, AToken, provider);
+        const [underlyingAddress, poolAddress] = await Promise.all([
+          receipt.UNDERLYING_ASSET_ADDRESS(),
+          receipt.POOL(),
+        ]);
+        const underlying = new ethers.Contract(
+          underlyingAddress,
+          ERC20_ABI,
+          provider,
+        );
+        const [symbol, decimals] = await Promise.all([
+          underlying.symbol(),
+          underlying.decimals(),
+        ]);
+        const instance = new BaseAave(
+          chainName,
+          chainId,
+          [String(symbol).toLowerCase()],
+          "single",
+          {
+            symbolOfBestTokenToZapInOut: String(symbol).toLowerCase(),
+            zapInOutTokenAddress: underlyingAddress,
+            assetAddress: token.address,
+            protocolAddress: poolAddress,
+            assetDecimals: Number(decimals),
+          },
+        );
+        return {
+          uniqueId: instance.uniqueId(),
+          label: instance.toString(),
+          interface: instance,
+        };
+      } catch (error) {
+        logger.warn(
+          `EOA full exit: ${token.address} was labelled Aave but is not a discoverable V3 aToken`,
+          error,
+        );
+        return null;
+      }
+    },
+  );
+  return discovered.filter(Boolean);
+}
 
 export async function buildEoaFullExitPriceMapping({
   protocols,
@@ -100,7 +175,15 @@ export async function buildEoaFullExitPlan({
   protocols: suppliedProtocols,
   onProgress = noop,
 }) {
-  const protocols = suppliedProtocols || collectExitProtocols(chainName);
+  let protocols = suppliedProtocols || collectExitProtocols(chainName);
+  if (!suppliedProtocols) {
+    const discoveredAave = await discoverAaveWalletPositions({
+      chainName,
+      walletTokens,
+      protocols,
+    });
+    protocols = [...protocols, ...discoveredAave];
+  }
   const tokenPricesMappingTable = await buildEoaFullExitPriceMapping({
     protocols,
     walletTokens,
@@ -131,6 +214,34 @@ export async function buildEoaFullExitPlan({
         });
         return { status: "fulfilled", protocol, value };
       } catch (error) {
+        if (typeof protocol.interface.safeExitToWallet === "function") {
+          try {
+            const value = await protocol.interface.safeExitToWallet(
+              owner,
+              noop,
+              error,
+            );
+            completed += 1;
+            onProgress({
+              completed,
+              total: protocols.length,
+              stage: "positions",
+              protocol,
+              found:
+                (value?.txns || []).length > 0 ||
+                (value?.keptTokens || []).length > 0,
+              failed: false,
+              fallback: true,
+            });
+            return { status: "fulfilled", protocol, value };
+          } catch (fallbackError) {
+            error = new Error(
+              `${error?.message || error}; safe exit also failed: ${
+                fallbackError?.message || fallbackError
+              }`,
+            );
+          }
+        }
         completed += 1;
         onProgress({
           completed,
@@ -147,6 +258,8 @@ export async function buildEoaFullExitPlan({
 
   const groups = [];
   const failures = [];
+  const fallbacks = [];
+  const keptTokens = [];
   const expectedTokens = [];
   for (const result of settled) {
     if (result.status === "rejected") {
@@ -158,6 +271,15 @@ export async function buildEoaFullExitPlan({
       continue;
     }
     const txns = result.value?.txns || [];
+    if (result.value?.fallbackReason) {
+      fallbacks.push({
+        uniqueId: result.protocol.uniqueId,
+        label: result.protocol.label,
+        safeExit: Boolean(result.value.safeExit),
+        reason: result.value.fallbackReason,
+      });
+      keptTokens.push(...(result.value.keptTokens || []));
+    }
     if (!txns.length) continue;
     groups.push({
       uniqueId: result.protocol.uniqueId,
@@ -170,6 +292,8 @@ export async function buildEoaFullExitPlan({
   return {
     groups,
     failures,
+    fallbacks,
+    keptTokens: dedupeTokens(keptTokens),
     expectedTokens: dedupeTokens(expectedTokens),
     tokenPricesMappingTable,
   };

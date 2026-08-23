@@ -42,6 +42,7 @@ import {
   designateWalletBalanceSweepers,
   sharedExitAssets,
 } from "./exitAssetOwnership";
+import { retiredExitPositions } from "./retiredExitPositions";
 import logger from "./logger";
 
 // Every vault a user can actually enter. Test-only vaults are excluded: their
@@ -708,17 +709,48 @@ async function fetchAaExitWalletTokens(
 }
 
 /**
- * Every protocol on `chainName` across every production vault, deduped.
+ * Every protocol on `chainName` across every production vault, plus the positions
+ * no vault lists any more, deduped.
  * Index vaults build their own instances of the component vaults' protocols, so
  * the same position appears more than once and must be deduped by uniqueId
  * string — object identity does not hold. Sending its transfer twice would ask
  * for twice the balance and revert.
  * `weight` is ignored on purpose: a deprecated protocol is zeroed out while
- * still holding user funds, which is exactly who needs this page.
+ * still holding user funds, which is exactly who needs this page — and a pool
+ * taken out of a strategy entirely is reachable only through
+ * retiredExitPositions.
  */
 export function collectExitProtocols(chainName) {
   const seen = new Set();
   const protocols = [];
+  const add = (protocolInterface) => {
+    const uniqueId = protocolInterface.uniqueId();
+    // Camelot V3 uses one shared NFT position manager for every pool. An
+    // emergency exit must sweep the manager itself, not only the pool/range
+    // combinations that happen to remain in today's vault config. Keep one
+    // representative protocol instance per manager so every owned Camelot
+    // NFT is transferred exactly once, including old/manual positions.
+    const camelotManager =
+      protocolInterface.protocolName === "camelot" &&
+      protocolInterface.assetIsNFT
+        ? protocolInterface.assetContract?.address?.toLowerCase()
+        : null;
+    const dedupeKey = camelotManager
+      ? `camelot-manager:${camelotManager}`
+      : uniqueId;
+    if (seen.has(dedupeKey)) return;
+    seen.add(dedupeKey);
+    protocols.push({
+      uniqueId: camelotManager
+        ? `${chainName}/camelot/v3/all-positions`
+        : uniqueId,
+      label: camelotManager
+        ? "Camelot V3 positions"
+        : protocolInterface.toString(),
+      interface: protocolInterface,
+    });
+  };
+
   for (const vaultName of AA_EXIT_VAULTS) {
     let portfolio;
     try {
@@ -731,36 +763,16 @@ export function collectExitProtocols(chainName) {
     for (const categories of Object.values(portfolio.strategy || {})) {
       for (const [chainKey, list] of Object.entries(categories || {})) {
         if (chainKey.toLowerCase() !== chainName) continue;
-        for (const protocol of list || []) {
-          const uniqueId = protocol.interface.uniqueId();
-          // Camelot V3 uses one shared NFT position manager for every pool. An
-          // emergency exit must sweep the manager itself, not only the pool/range
-          // combinations that happen to remain in today's vault config. Keep one
-          // representative protocol instance per manager so every owned Camelot
-          // NFT is transferred exactly once, including old/manual positions.
-          const camelotManager =
-            protocol.interface.protocolName === "camelot" &&
-            protocol.interface.assetIsNFT
-              ? protocol.interface.assetContract?.address?.toLowerCase()
-              : null;
-          const dedupeKey = camelotManager
-            ? `camelot-manager:${camelotManager}`
-            : uniqueId;
-          if (seen.has(dedupeKey)) continue;
-          seen.add(dedupeKey);
-          protocols.push({
-            uniqueId: camelotManager
-              ? `${chainName}/camelot/v3/all-positions`
-              : uniqueId,
-            label: camelotManager
-              ? "Camelot V3 positions"
-              : protocol.interface.toString(),
-            interface: protocol.interface,
-          });
-        }
+        for (const protocol of list || []) add(protocol.interface);
       }
     }
   }
+
+  // Last on purpose: a pool that comes back into a vault strategy wins the
+  // dedupe, so the retired list may lag behind a re-enable without ever making
+  // the page scan the same position twice.
+  for (const position of retiredExitPositions(chainName)) add(position);
+
   return protocols;
 }
 

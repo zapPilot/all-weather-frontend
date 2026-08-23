@@ -9,6 +9,7 @@ import {
   buildProtocolGroups,
   clearAaExitWalletTokenCache,
   clearAaExitWalletTokenMemoryCache,
+  collectExitProtocols,
   scanAaExit,
 } from "../../utils/aaExit";
 
@@ -317,6 +318,76 @@ describe("Venus emergencyTransfer", () => {
     expect(venusProtocol().sweptAssetAddress()).toBe(
       venusProtocol().protocolContract.address,
     );
+  });
+});
+
+// This position is in no vault strategy, so buildProtocolGroups reaching it at
+// all depends on the retired list — and these are the only assertions anywhere on
+// the calldata that empties it.
+describe("retired Equilibria position", () => {
+  const PID_45_MARKET = "0xa877a0E177b54A37066c1786F91a1DAb68F094AF";
+  const EQB_ZAP = "0xc7517f481Cc0a645e63f870830A4B2e580421e32";
+  // what poolInfo(45).token returns: the receipt token EqbZap needs approved,
+  // deliberately not the market LP the user ends up with
+  const EQB_RECEIPT_TOKEN = "0xcf12c0268bd3038d7d811d72eb511cf3b050922c";
+  // withdraw(uint256,uint256) on EqbZap, not the single-argument gauge withdraw
+  const EQB_WITHDRAW_SELECTOR = ethers.utils
+    .id("withdraw(uint256,uint256)")
+    .slice(2, 10);
+  // the amount Debank reports staked for the wallet that went unrescued
+  const STAKED = "1412058125";
+
+  const pid45 = () => {
+    const protocol = collectExitProtocols("arbitrum").find(
+      (candidate) => candidate.interface.pidOfEquilibria === 45,
+    );
+    // ethers defines contract methods as non-configurable, so the whole
+    // read-only instance is swapped out
+    protocol.interface.stakeFarmContractInstance = {
+      functions: {
+        poolInfo: vi.fn().mockResolvedValue({ token: EQB_RECEIPT_TOKEN }),
+      },
+    };
+    return protocol;
+  };
+
+  // Matches the withdraw_action Debank proposes for this position exactly
+  it("approves the receipt token, withdraws pid 45 and hands over the market LP", async () => {
+    const protocol = pid45();
+    stub(protocol.interface, { staked: STAKED, wallet: "0" });
+
+    const [group] = await buildProtocolGroups({
+      protocols: [protocol],
+      owner: OWNER,
+      recipient: RECIPIENT,
+    });
+
+    expect(group.txns).toHaveLength(3);
+    expect(group.txns[0].to.toLowerCase()).toBe(EQB_RECEIPT_TOKEN);
+
+    expect(group.txns[1].to).toBe(EQB_ZAP);
+    expect(await encode(group.txns[1])).includes(EQB_WITHDRAW_SELECTOR);
+    expect((await amountIn(group.txns[1])).toString()).toBe(STAKED);
+
+    expect(await encode(group.txns[2])).includes(TRANSFER_SELECTOR);
+    expect(group.txns[2].to).toBe(PID_45_MARKET);
+    expect((await amountIn(group.txns[2])).toString()).toBe(STAKED);
+    // the sweep must skip the market LP this hands over, not the receipt token
+    expect(group.sweptAssetAddress).toBe(PID_45_MARKET);
+  });
+
+  // Every wallet that never entered this pool pays nothing for it being listed
+  it("produces no row for a wallet holding none of it", async () => {
+    const protocol = pid45();
+    stub(protocol.interface, { staked: "0", wallet: "0" });
+
+    expect(
+      await buildProtocolGroups({
+        protocols: [protocol],
+        owner: OWNER,
+        recipient: RECIPIENT,
+      }),
+    ).toEqual([]);
   });
 });
 

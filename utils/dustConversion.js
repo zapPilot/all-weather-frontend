@@ -4,6 +4,20 @@ import swap from "./swapHelper";
 const BATCH_SIZE = 10; // Process 3 tokens at a time to avoid rate limits
 const DELAY_BETWEEN_BATCHES = 1000; // 1 second delay between batches
 
+// Assets in this list must remain claimable in the user's wallet. This is an
+// address-level last line of defence: protocol outputs and loose wallet tokens
+// both eventually pass through fetchDustConversionRoutes, so neither a symbol
+// typo nor a future caller can accidentally route them into an aggregator.
+export const NEVER_SWAP_TOKENS = {
+  42161: new Set(["0xb2f30a7c980f052f02563fb518dcc39e6bf38175"]),
+};
+
+export const isNeverSwapToken = (chainId, address) =>
+  Boolean(
+    address &&
+      NEVER_SWAP_TOKENS[Number(chainId)]?.has(String(address).toLowerCase()),
+  );
+
 /**
  * Fetches swap routes for a batch of tokens
  * @param {Object} params
@@ -24,10 +38,21 @@ export const fetchDustConversionRoutes = async ({
 }) => {
   const allTxns = [];
   let totalTradingLoss = 0;
+  const swappableTokens = (tokens || []).filter((token) => {
+    const address = token?.id || token?.address;
+    if (!isNeverSwapToken(chainId, address)) return true;
+    logger.warn(
+      `Keeping ${
+        token?.symbol || token?.optimized_symbol || address
+      } in wallet: token is on the DustZap never-swap list`,
+    );
+    return false;
+  });
+
   // Process tokens in batches
   // Ambire wallet cannot support too large batch
-  for (let i = 0; i < tokens.length; i += BATCH_SIZE) {
-    const batch = tokens.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < swappableTokens.length; i += BATCH_SIZE) {
+    const batch = swappableTokens.slice(i, i + BATCH_SIZE);
     // Process each batch concurrently
     const batchPromises = batch.map(async (token) => {
       try {
@@ -70,7 +95,7 @@ export const fetchDustConversionRoutes = async ({
     });
 
     // Wait before processing next batch
-    if (i + BATCH_SIZE < tokens.length) {
+    if (i + BATCH_SIZE < swappableTokens.length) {
       await new Promise((resolve) =>
         setTimeout(resolve, DELAY_BETWEEN_BATCHES),
       );
