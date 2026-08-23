@@ -14,6 +14,7 @@ import THIRDWEB_CLIENT from "../../utils/thirdweb.js";
 import { approve, CHAIN_ID_TO_CHAIN } from "../../utils/general.js";
 import BaseProtocol from "../BaseProtocol.js";
 import ERC20_ABI from "../../lib/contracts/ERC20.json" assert { type: "json" };
+import logger from "../../utils/logger";
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 export class BaseEquilibria extends BaseProtocol {
@@ -385,6 +386,48 @@ export class BaseEquilibria extends BaseProtocol {
   async lockUpPeriod() {
     return 0;
   }
+
+  // A retired Equilibria pool can stop answering its booster/reward-pool reads
+  // even though the Pendle Market LP is already loose in the wallet. The base
+  // emergency path asks for the staked balance before it reads that loose LP,
+  // so such a stale PID would otherwise hide a perfectly transferable ERC20.
+  // Read both paths independently: prefer the complete unstake + transfer when
+  // it builds, but fall back to handing over the loose LP when only the staking
+  // side is unreadable.
+  async emergencyTransfer(owner, recipient, updateProgress, options = {}) {
+    if (options.skipWalletBalance) {
+      return super.emergencyTransfer(owner, recipient, updateProgress, options);
+    }
+
+    const [walletBalanceResult, completeExitResult] = await Promise.allSettled([
+      this.assetBalanceOf(owner),
+      super.emergencyTransfer(owner, recipient, updateProgress, options),
+    ]);
+
+    if (completeExitResult.status === "fulfilled") {
+      return completeExitResult.value;
+    }
+
+    const walletBalance =
+      walletBalanceResult.status === "fulfilled"
+        ? ethers.BigNumber.from(walletBalanceResult.value || 0)
+        : ethers.constants.Zero;
+    if (walletBalance.isZero()) {
+      throw completeExitResult.reason;
+    }
+
+    logger.warn(
+      `Equilibria emergency exit: could not read staked pid ${this.pidOfEquilibria}; transferring the loose market LP only`,
+      completeExitResult.reason,
+    );
+    const transferTxn = prepareContractCall({
+      contract: this.assetContract,
+      method: "transfer",
+      params: [recipient, walletBalance],
+    });
+    return { txns: [transferTxn], rewardBalances: [] };
+  }
+
   async _stake(amount, updateProgress) {
     const approveTxn = approve(
       this.assetContract.address,
