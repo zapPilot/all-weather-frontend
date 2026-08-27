@@ -148,8 +148,28 @@ export class BaseApolloX extends BaseProtocol {
     const latestPrice = await this._fetchAlpPrice(updateProgress);
     const estimatedZapOutUsdValue =
       (amount * latestPrice * (100 - slippage)) / 100;
-    // TODO: we might enable zap out to other token down the road
-    const minOutAmount = Math.floor(estimatedZapOutUsdValue * 1e6);
+    // ApolloX's USDC.e side is currently depleted. Redeem to WETH instead and
+    // keep minOut deliberately permissive so users can exit even while the
+    // pool is imbalanced, while still protecting against a near-zero redemption.
+    const wethPrice = Number(
+      tokenPricesMappingTable.weth ?? tokenPricesMappingTable.eth,
+    );
+    if (!Number.isFinite(wethPrice) || wethPrice <= 0) {
+      throw new Error("ApolloX zap-out requires a valid WETH/ETH price");
+    }
+    const estimatedWethOut = estimatedZapOutUsdValue / wethPrice;
+    // Floor before converting to wei so floating-point rounding can never make
+    // the rescue threshold stricter than the intended 20% of estimated output.
+    const conservativeEstimatedWeth =
+      Math.floor(estimatedWethOut * 1e12) / 1e12;
+    const estimatedWethWei = ethers.utils.parseUnits(
+      conservativeEstimatedWeth.toFixed(12),
+      18,
+    );
+    const parsedMinOut = estimatedWethWei.mul(20).div(100);
+    const minOutAmount = parsedMinOut.isZero()
+      ? ethers.constants.One
+      : parsedMinOut;
     const [
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
@@ -325,9 +345,10 @@ export class BaseApolloX extends BaseProtocol {
     return ["usdc.e", usdcBridgedAddress, 6];
   }
   _getTheBestTokenAddressToZapOut() {
-    // TODO: minor, but we can read the composition of ALP to get the cheapest token to zap in
-    const usdcBridgedAddress = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8";
-    return ["usdc.e", usdcBridgedAddress, 6];
+    // ApolloX's USDC.e side is currently depleted, so all ALP redemptions use
+    // WETH as the exit asset.
+    const wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
+    return ["weth", wethAddress, 18];
   }
   async lockUpPeriod(address) {
     try {
