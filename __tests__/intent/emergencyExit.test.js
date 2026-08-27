@@ -580,6 +580,31 @@ describe("emergencyTransfer", () => {
     expect(await encode(txns[0])).includes(SAFE_TRANSFER_FROM_SELECTOR);
   });
 
+  it("redeems regular ApolloX zap-out to WETH with a permissive minOut", async () => {
+    const protocol = apolloXOn(getPortfolioHelper("Stable+ Vault"));
+    vi.spyOn(protocol, "_fetchAlpPrice").mockResolvedValue(1);
+
+    const [txns, symbol, address, decimals, minOutAmount] =
+      await protocol.customWithdrawAndClaim(
+        OWNER,
+        1000,
+        1,
+        { weth: 2500 },
+        noop,
+      );
+
+    expect(symbol).toBe("weth");
+    expect(address.toLowerCase()).toBe(WETH.toLowerCase());
+    expect(decimals).toBe(18);
+    expect(minOutAmount.eq(ethers.utils.parseEther("0.0792"))).toBe(true);
+    expect(txns).toHaveLength(2);
+
+    const burnData = await encode(txns[1]);
+    expect(burnData).includes(BURN_ALP_SELECTOR);
+    expect(burnData.toLowerCase()).includes(WETH.slice(2).toLowerCase());
+    expect(burnData).includes(word(minOutAmount));
+  });
+
   it("unwinds non-transferable Arbitrum ALP instead of ERC20-transferring it", async () => {
     const protocol = apolloXOn(getPortfolioHelper("Stable+ Vault"));
     expect(protocol).toBeDefined();
@@ -603,13 +628,14 @@ describe("emergencyTransfer", () => {
     expect(encoded[1]).includes(word("1000"));
     expect(encoded[2]).includes(BURN_ALP_SELECTOR);
     expect(encoded[2]).includes(word("1000"));
+    expect(encoded[2].toLowerCase()).includes(WETH.slice(2).toLowerCase());
     expect(encoded[2].toLowerCase()).includes(RECIPIENT.slice(2).toLowerCase());
     encoded.forEach((data) => expect(data).not.toContain(TRANSFER_SELECTOR));
     expect(rewardBalances).toEqual([]);
     expect(priceLookup).not.toHaveBeenCalled();
   });
 
-  it("uses the ALP emergency unwind for EOA full exit and expects USDC.e", async () => {
+  it("uses the ALP emergency unwind for EOA full exit and expects WETH", async () => {
     const protocol = apolloXOn(getPortfolioHelper("Stable+ Vault"));
     vi.spyOn(protocol, "assetBalanceOf").mockResolvedValue(
       ethers.BigNumber.from("300"),
@@ -631,8 +657,8 @@ describe("emergencyTransfer", () => {
     expect(encoded[2].toLowerCase()).includes(OWNER.slice(2).toLowerCase());
     expect(expectedTokens).toEqual([
       expect.objectContaining({
-        optimized_symbol: "usdc.e",
-        decimals: 6,
+        optimized_symbol: "weth",
+        decimals: 18,
       }),
     ]);
   });
